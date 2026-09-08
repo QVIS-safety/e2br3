@@ -173,6 +173,14 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - Import rows without a case retain the separate `uploaded_by = current_user OR include_unscoped` branch and database organization isolation. Transactions, joins, ordering, and the 200-row limit are unchanged.
 - The existing history API regression now covers empty/matching/mismatching scopes, study scope, unlinked cases, and failed-import ownership/admin/cross-organization visibility. It passed against both the original and refactored queries; all 19 scope-visibility API tests also passed using an isolated database.
 
+### P2 — Singleton POST handlers duplicate get/create/re-read control flow (remediated)
+
+- Patient, receiver, narrative, and message-header POST handlers now share `lib_rest_core::get_or_create_singleton`. Existing rows return 200 without creation; newly created rows return 201; duplicate-create recovery retains the original error if the follow-up read fails.
+- Authorization wrappers, route case-ID assignment, model transactions, and message-header input validation remain in their original order. No new trait, macro, dependency, or database operation was added.
+- GET contracts remain distinct: missing patient/message-header is 404; missing receiver/narrative is 200 with null data. Safety-report POST still updates existing data and is intentionally separate.
+- A runnable helper test checks seven read/create/error paths; the API regression now checks missing-resource responses and that repeated POSTs preserve existing IDs and values.
+- Verification passed: 7 REST-core tests, all 27 subresource API tests, and the XML import → single/ZIP export smoke test. Database tests used disposable isolated databases.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.
