@@ -6,6 +6,7 @@
 
 use crate::authorization::EnforcedScopeFilter;
 use crate::ctx::Ctx;
+use crate::model::case::case_scope_where;
 use crate::model::store::dbx::Dbx;
 use crate::model::store::{set_org_context, set_user_context};
 use crate::model::{Error, ModelManager, Result};
@@ -89,8 +90,9 @@ impl XmlExportHistoryBmc {
 		dbx: &Dbx,
 		scope: &EnforcedScopeFilter,
 	) -> Result<Vec<XmlExportHistoryRecord>> {
+		let scope_where = case_scope_where(1);
 		dbx.fetch_all(
-			sqlx::query_as::<_, XmlExportHistoryRecord>(
+			sqlx::query_as::<_, XmlExportHistoryRecord>(&format!(
 				r#"
 				SELECT h.id,
 				       h.case_id,
@@ -104,46 +106,11 @@ impl XmlExportHistoryBmc {
 				  FROM xml_export_history h
 				  JOIN cases c ON c.id = h.case_id
 				  LEFT JOIN users u ON u.id = h.exported_by
-				 WHERE (
-					cardinality($1::text[]) = 0
-					OR NOT EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'sender'
-					)
-					OR EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'sender'
-						   AND identifier = ANY($1)
-					)
-				 )
-				   AND (
-					cardinality($2::text[]) = 0
-					OR NOT EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'product'
-					)
-					OR EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'product'
-						   AND identifier = ANY($2)
-					)
-				   )
-				   AND (
-					cardinality($3::text[]) = 0
-					OR NOT EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'study'
-					)
-					OR EXISTS (
-						SELECT 1 FROM case_scope_identifiers(c.id)
-						 WHERE scope_kind = 'study'
-						   AND identifier = ANY($3)
-					)
-				   )
+				 WHERE {scope_where}
 				 ORDER BY h.exported_at DESC, h.created_at DESC
 				 LIMIT 200
-				"#,
-			)
+				"#
+			))
 			.bind(scope.sender_ids())
 			.bind(scope.product_ids())
 			.bind(scope.study_ids()),

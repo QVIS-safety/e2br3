@@ -167,6 +167,12 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - No new abstraction, dependency, environment variable, deployment change, or input-policy change was introduced.
 - Regression verification: 160 XML library tests, 6 REST-core tests, singleton POST idempotency and scoped-history API tests, and the import → single/ZIP export smoke test passed. Database-backed checks used disposable isolated databases, not `app_db`.
 
+### P2 — History queries duplicate case-scope SQL (remediated)
+
+- Import/export history collections now reuse `case_scope_where(1)`, as case lists already do. Sender/product/study values remain bound parameters; no user input is interpolated into SQL.
+- Import rows without a case retain the separate `uploaded_by = current_user OR include_unscoped` branch and database organization isolation. Transactions, joins, ordering, and the 200-row limit are unchanged.
+- The existing history API regression now covers empty/matching/mismatching scopes, study scope, unlinked cases, and failed-import ownership/admin/cross-organization visibility. It passed against both the original and refactored queries; all 19 scope-visibility API tests also passed using an isolated database.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.

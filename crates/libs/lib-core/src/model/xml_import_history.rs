@@ -6,6 +6,7 @@
 
 use crate::authorization::EnforcedScopeFilter;
 use crate::ctx::Ctx;
+use crate::model::case::case_scope_where;
 use crate::model::store::{set_full_context_dbx, set_full_context_dbx_or_rollback};
 use crate::model::ModelManager;
 use crate::model::Result;
@@ -132,9 +133,10 @@ impl XmlImportHistoryBmc {
 		dbx.begin_txn().await?;
 		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
 			.await?;
+		let scope_where = case_scope_where(1);
 		let rows = dbx
 			.fetch_all(
-				sqlx::query_as::<_, XmlImportHistoryRow>(
+				sqlx::query_as::<_, XmlImportHistoryRow>(&format!(
 					r#"
 					SELECT h.id,
 					       h.uploaded_file_name,
@@ -156,48 +158,13 @@ impl XmlImportHistoryBmc {
 						)
 						OR (
 							h.case_id IS NOT NULL
-							AND (
-								cardinality($1::text[]) = 0
-								OR NOT EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'sender'
-								)
-								OR EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'sender'
-									   AND identifier = ANY($1)
-								)
-							)
-							AND (
-								cardinality($2::text[]) = 0
-								OR NOT EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'product'
-								)
-								OR EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'product'
-									   AND identifier = ANY($2)
-								)
-							)
-							AND (
-								cardinality($3::text[]) = 0
-								OR NOT EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'study'
-								)
-								OR EXISTS (
-									SELECT 1 FROM case_scope_identifiers(c.id)
-									 WHERE scope_kind = 'study'
-									   AND identifier = ANY($3)
-								)
-							)
+							AND ({scope_where})
 						)
 					 )
 					 ORDER BY h.uploaded_at DESC, h.created_at DESC
 					 LIMIT 200
-					"#,
-				)
+					"#
+				))
 				.bind(scope.sender_ids())
 				.bind(scope.product_ids())
 				.bind(scope.study_ids())
