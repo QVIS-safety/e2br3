@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
-use crate::import_sections::shared::parse_date;
+use crate::import_sections::shared::{parse_bool_literal, parse_date};
 use crate::mapping::fda::f_test_result::FTestResultPaths;
 use crate::Result;
 use lib_core::ctx::Ctx;
@@ -292,8 +292,9 @@ fn read_f_r_6(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 
 /// e2b:F.r.7
 fn read_f_r_7(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
-	let value =
-		parse_bool_value(first_attr(xpath, node, FTestResultPaths::MORE_INFO));
+	let value = parse_bool_literal(
+		first_attr(xpath, node, FTestResultPaths::MORE_INFO).as_deref(),
+	);
 	import_constraint::boolean(
 		"moreInformationAvailable",
 		value,
@@ -331,15 +332,6 @@ fn input_string(
 ) -> Result<Option<String>> {
 	import_constraint::string(field, value.as_deref(), None, check)?;
 	Ok(value)
-}
-
-fn parse_bool_value(value: Option<String>) -> Option<bool> {
-	let val = value?;
-	match val.to_ascii_lowercase().as_str() {
-		"true" | "1" => Some(true),
-		"false" | "0" => Some(false),
-		_ => None,
-	}
 }
 
 #[cfg(test)]

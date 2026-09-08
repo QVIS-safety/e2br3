@@ -2,6 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
+use crate::import_sections::shared::parse_bool_literal;
 use crate::mapping::fda::g_drug::GDrugPaths;
 use crate::mapping::mfds::g_drug::GMfdsDrugPaths;
 use crate::Result;
@@ -643,7 +644,7 @@ fn read_g_k_2_1_2b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 /// e2b:G.k.2.5
 fn read_g_k_2_5(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
 	let raw = first_attr(xpath, node, GDrugPaths::INVESTIGATIONAL_BLINDED);
-	let value = raw.clone().and_then(parse_bool);
+	let value = parse_bool_literal(raw.as_deref());
 	import_constraint::boolean(
 		"investigationalProductBlinded",
 		value,
@@ -1230,7 +1231,7 @@ fn read_device_characteristic_value_display_name(
 /// e2b:FDA.G.k.12.r.1
 fn read_fda_g_k_12_r_1(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
 	let raw = first_attr(xpath, node, GDrugPaths::DEVICE_MALFUNCTION);
-	let value = raw.clone().and_then(parse_bool);
+	let value = parse_bool_literal(raw.as_deref());
 	Ok(value)
 }
 
@@ -1423,14 +1424,6 @@ fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 		}
 	}
 	None
-}
-
-fn parse_bool(value: String) -> Option<bool> {
-	match value.to_ascii_lowercase().as_str() {
-		"true" | "1" => Some(true),
-		"false" | "0" => Some(false),
-		_ => None,
-	}
 }
 
 fn invalid_field(field: &str, detail: impl std::fmt::Display) -> Error {

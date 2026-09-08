@@ -181,6 +181,14 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - A runnable helper test checks seven read/create/error paths; the API regression now checks missing-resource responses and that repeated POSTs preserve existing IDs and values.
 - Verification passed: 7 REST-core tests, all 27 subresource API tests, and the XML import → single/ZIP export smoke test. Database tests used disposable isolated databases.
 
+### P2 — Boolean import parsers duplicate different input contracts (remediated)
+
+- Removed five section-local boolean parsers. Section E/F/G and the shared attribute reader use `parse_bool_literal` (case-insensitive true/false/1/0, no trimming).
+- Section C/D values use `parse_trimmed_bool_with_yes_no`; the patient-death helper uses `parse_bool_with_yes_no` without trimming, preserving the existing field-specific difference.
+- Parsers borrow strings instead of consuming/cloning them. The permissive parser delegates basic literals to the common parser; no policy flag or new dependency was introduced.
+- Invalid/missing values still produce `None`, and existing field validation remains unchanged. A 17-input regression matrix preserves case, yes/no, ASCII/Unicode whitespace, and invalid-input behavior for all three contracts.
+- Verification passed: all 161 XML library tests and the import → single/ZIP export smoke test, using a disposable isolated database for the latter.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.
