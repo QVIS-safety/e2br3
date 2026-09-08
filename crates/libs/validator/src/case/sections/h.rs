@@ -457,7 +457,9 @@ mod tests {
 		ctx.sender_diagnoses = vec![diagnosis];
 
 		let codes = codes_for(&ctx);
-		assert!(codes.contains(&"ICH.H.3.r.1a.VOCABULARY".to_string()));
+		assert!(!codes.iter().any(|code| code.ends_with(".VOCABULARY")));
+		ctx.sender_diagnoses[0].diagnosis_meddra_version = Some("26.1".to_string());
+		let codes = codes_for(&ctx);
 		assert!(codes.contains(&"ICH.H.3.r.1b.VOCABULARY".to_string()));
 	}
 
@@ -532,9 +534,7 @@ mod tests {
 			.filter(|issue| {
 				matches!(
 					issue.code.as_str(),
-					"ICH.H.1.REQUIRED"
-						| "ICH.H.3.r.1a.ALLOWED.VALUE"
-						| "ICH.H.3.r.1a.VOCABULARY"
+					"ICH.H.1.REQUIRED" | "ICH.H.3.r.1a.ALLOWED.VALUE"
 				)
 			})
 			.map(|issue| {
@@ -545,7 +545,6 @@ mod tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -561,7 +560,6 @@ mod tests {
 					Some("narrative.caseNarrative".to_string()),
 					"narrative".to_string(),
 					"H".to_string(),
-					true,
 				),
 				(
 					"ICH.H.3.r.1a.ALLOWED.VALUE".to_string(),
@@ -573,19 +571,6 @@ mod tests {
 					),
 					"narrative".to_string(),
 					"H".to_string(),
-					true,
-				),
-				(
-					"ICH.H.3.r.1a.VOCABULARY".to_string(),
-					"Dictionary vocabulary constraint.".to_string(),
-					"narrative.senderDiagnoses.0.diagnosisMeddraVersion".to_string(),
-					Some(
-						"narrative.senderDiagnoses.0.diagnosisMeddraVersion"
-							.to_string()
-					),
-					"narrative".to_string(),
-					"H".to_string(),
-					true,
 				),
 			],
 		);

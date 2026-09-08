@@ -2,7 +2,7 @@ use super::helpers::{
 	max_length, reject_future_date, reject_when, require, valid_code, valid_decimal,
 	valid_dotted_version, valid_identifier, valid_iso3166, valid_meddra_term,
 	valid_meddra_version, valid_mfds_product, valid_mfds_substance, valid_ucum,
-	warn_when, DateValues,
+	DateValues,
 };
 use crate::{
 	has_text, is_fda_postmarket_batch_receiver, is_fda_premarket_message_receiver,
@@ -1793,14 +1793,6 @@ fn fda_g_k_1_route(
 				"FDA postmarket drug characterization must be 1, 3, or 4.",
 			);
 		}
-		if !matches!(role, "1" | "3" | "4") {
-			crate::push_business_warning(
-				issues,
-				"FDA.W0005",
-				"drugs.0.drugCharacterization",
-				"FDA recommends drug characterization 1, 3, or 4 for CDER reports.",
-			);
-		}
 		return;
 	}
 	let report_type_is_study = validation_ctx
@@ -1866,7 +1858,7 @@ fn fda_g_k_10a(
 	let null_flavor = null_flavor.map(str::trim).filter(|value| !value.is_empty());
 	let invalid = !matches!(value, Some("1" | "2")) && null_flavor != Some("NA");
 	if invalid {
-		crate::push_business_warning(
+		crate::push_business_issue(
 			issues,
 			"FDA.W0006",
 			format!("drugs.{idx}.fdaAdditionalInfoCoded"),
@@ -2135,7 +2127,7 @@ pub(crate) async fn collect_fda_issues(
 					&& has_text(Some(&code.value_code))
 			});
 			if local_criteria == Some("4") && !has_remedial {
-				crate::push_business_warning(
+				crate::push_business_issue(
 					issues,
 					"FDA.W0007",
 					format!("{path}.remedialActions.0.valueCode"),
@@ -2275,7 +2267,7 @@ fn mfds_g_k_2_1_companions(
 				&& !has_text(drug.phpid.as_deref()),
 		),
 	] {
-		warn_when(
+		reject_when(
 			issues,
 			code,
 			&format!("drugs.{idx}.{field}"),
@@ -2293,7 +2285,7 @@ fn mfds_g_k_2_3_r_2b(
 	substance: &DrugActiveSubstance,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.G.k.2.3.r.2b.REQUIRED",
 		&format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermId"),
@@ -2311,7 +2303,7 @@ fn mfds_g_k_2_1_kr_1a(
 	required: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.G.k.2.1.KR.1a.REQUIRED",
 		&format!("drugs.{idx}.mfdsMpidVersion"),
@@ -2335,7 +2327,7 @@ fn mfds_g_k_2_3_r_1_kr_1b(
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let path = format!("drugs.{drug_idx}.activeSubstances.{idx}.mfdsId");
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
 		&path,
@@ -2343,7 +2335,7 @@ fn mfds_g_k_2_3_r_1_kr_1b(
 		"MFDS domestic cases should provide KR ingredient coding for each active substance.",
 		domestic_ingredient_code_required && !has_text(value),
 	);
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
 		&path,
@@ -2367,7 +2359,7 @@ fn mfds_g_k_2_3_r_1_kr_1a(
 	required: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
 		&format!("drugs.{drug_idx}.activeSubstances.{idx}.mfdsVersion"),
@@ -2491,7 +2483,7 @@ fn mfds_g_k_9_i_2_r_3_kr_2(
 	required: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
 		&format!(
@@ -3254,7 +3246,9 @@ mod golden_g_required_tests {
 		ctx.indications.push(indication);
 
 		let codes = codes_for(&ctx);
-		assert!(codes.contains(&"ICH.G.k.7.r.2a.VOCABULARY".to_string()));
+		assert!(!codes.iter().any(|code| code.ends_with(".VOCABULARY")));
+		ctx.indications[0].indication_meddra_version = Some("26.1".to_string());
+		let codes = codes_for(&ctx);
 		assert!(codes.contains(&"ICH.G.k.7.r.2b.VOCABULARY".to_string()));
 	}
 
@@ -3673,7 +3667,6 @@ mod golden_g_required_tests {
 		assert_eq!(issue.code, "FDA.G.K.12.REQUIRED");
 		assert_eq!(issue.path, "drugs.2.fdaDevices.0.malfunction");
 		assert_eq!(issue.section, "drugs");
-		assert!(issue.blocking);
 	}
 
 	#[test]
@@ -3704,7 +3697,6 @@ mod golden_g_required_tests {
 		let mut issues = Vec::new();
 		fda_g_k_10a(0, None, None, true, &mut issues);
 		assert_eq!(issues[0].code, "FDA.W0006");
-		assert!(!issues[0].blocking);
 
 		issues.clear();
 		fda_g_k_10a(0, None, Some("NA"), true, &mut issues);
@@ -3739,7 +3731,6 @@ mod golden_g_required_tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -3755,7 +3746,6 @@ mod golden_g_required_tests {
 					Some("drugs.0.drugCharacterization".to_string()),
 					"drugs".to_string(),
 					"G.k".to_string(),
-					true,
 				),
 				(
 					"ICH.G.k.1.REQUIRED".to_string(),
@@ -3764,7 +3754,6 @@ mod golden_g_required_tests {
 					Some("drugs.0.drugCharacterization".to_string()),
 					"drugs".to_string(),
 					"G.k".to_string(),
-					true,
 				),
 			],
 		);

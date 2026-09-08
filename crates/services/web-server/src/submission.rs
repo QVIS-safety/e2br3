@@ -65,6 +65,83 @@ pub use types::{
 	SubmissionReconcileRuntimeStatus, SubmissionRecord, SubmissionStatus,
 };
 
+// Both initial submission and automatic retry must validate the current case.
+async fn prepare_submission_xml(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: RegulatoryAuthority,
+) -> Result<String> {
+	let case = CaseBmc::get(ctx, mm, case_id).await?;
+	if matches!(
+		case.status.trim().to_ascii_lowercase().as_str(),
+		"locked" | "deleted" | "archived"
+	) {
+		return Err(Error::BadRequest {
+			message: format!("Cannot submit a {} case.", case.status),
+		});
+	}
+	let report =
+		validator::validate_case_for_authority(ctx, mm, case_id, authority).await?;
+	check_submission_validation(&report)?;
+	let header =
+		prepare_outbound_message_header(ctx, mm, case_id, authority, None).await?;
+	let xml = export_case_xml_with_options(
+		ctx,
+		mm,
+		case_id,
+		ExportXmlOptions {
+			apply_comments: true,
+			authority,
+			outbound_message_header: export_message_header(&header)?,
+		},
+	)
+	.await
+	.map_err(Error::from)?;
+	let schema_report = validate_e2b_xml(
+		xml.as_bytes(),
+		Some(XmlValidatorConfig {
+			authority: Some(authority),
+			..XmlValidatorConfig::default()
+		}),
+	)
+	.map_err(Error::from)?;
+	if !schema_report.ok {
+		let messages = schema_report
+			.errors
+			.iter()
+			.take(3)
+			.map(|issue| issue.message.as_str())
+			.collect::<Vec<_>>()
+			.join("; ");
+		return Err(Error::BadRequest {
+			message: format!("Cannot submit: XML validation failed. {messages}"),
+		});
+	}
+	Ok(xml)
+}
+
+fn check_submission_validation(
+	report: &validator::CaseValidationReport,
+) -> Result<()> {
+	let issues = &report.issues;
+	if issues.is_empty() {
+		return Ok(());
+	}
+	let messages = issues
+		.iter()
+		.take(3)
+		.map(|issue| format!("[{}] {}", issue.section, issue.message))
+		.collect::<Vec<_>>()
+		.join("; ");
+	Err(Error::BadRequest {
+		message: format!(
+			"Cannot submit: {} validation issue(s). Correct the highlighted case fields. {}",
+			issues.len(), messages
+		),
+	})
+}
+
 pub async fn prepare_outbound_message_header(
 	ctx: &Ctx,
 	mm: &ModelManager,

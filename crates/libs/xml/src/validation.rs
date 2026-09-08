@@ -120,7 +120,7 @@ pub fn validate_e2b_xml(
 		}
 	}
 
-	report.ok = no_blocking_errors(&report.errors);
+	report.ok = report.errors.is_empty();
 	Ok(report)
 }
 
@@ -140,12 +140,11 @@ fn validate_e2b_xml_structure(
 			code: None,
 			section: None,
 			field_path: None,
-			blocking: None,
 			line: None,
 			column: None,
 		});
 	}
-	report.ok = no_blocking_errors(&report.errors);
+	report.ok = report.errors.is_empty();
 	Ok(report)
 }
 
@@ -158,12 +157,11 @@ pub fn validate_e2b_xml_for_import(
 	let config = config.unwrap_or_default();
 	let mut report = validate_e2b_xml_structure(xml, &config)?;
 	if has_mfds_causality_extension(xml) {
-		for error in &mut report.errors {
-			if is_mfds_extra_value_error(&error.message) {
-				error.blocking = Some(false);
-			}
-		}
-		report.ok = no_blocking_errors(&report.errors);
+		// This recognized MFDS extension is valid inbound data, not an error.
+		report
+			.errors
+			.retain(|error| !is_mfds_extra_value_error(&error.message));
+		report.ok = report.errors.is_empty();
 	}
 	Ok(report)
 }
@@ -179,10 +177,6 @@ fn has_mfds_causality_extension(xml: &[u8]) -> bool {
 fn is_mfds_extra_value_error(message: &str) -> bool {
 	message.contains("Element '{urn:hl7-org:v3}value': This element is not expected")
 		&& message.contains("Expected is one of ( {urn:hl7-org:v3}methodCode")
-}
-
-fn no_blocking_errors(errors: &[XmlValidationError]) -> bool {
-	errors.iter().all(|error| error.blocking == Some(false))
 }
 
 /// Lightweight validation that checks payload size, XML well-formedness, and
@@ -203,7 +197,6 @@ pub fn validate_e2b_xml_basic(
 				code: None,
 				section: None,
 				field_path: None,
-				blocking: None,
 				line: None,
 				column: None,
 			}],
@@ -233,7 +226,6 @@ pub fn validate_e2b_xml_basic(
 					code: None,
 					section: None,
 					field_path: None,
-					blocking: None,
 					line: None,
 					column: Some(reader.buffer_position()),
 				});
@@ -249,7 +241,6 @@ pub fn validate_e2b_xml_basic(
 			code: None,
 			section: None,
 			field_path: None,
-			blocking: None,
 			line: None,
 			column: None,
 		});
@@ -269,7 +260,6 @@ pub fn validate_e2b_xml_basic(
 				code: None,
 				section: None,
 				field_path: None,
-				blocking: None,
 				line: None,
 				column: None,
 			});
@@ -343,7 +333,6 @@ pub fn validate_e2b_xml_xsd(
 				code: None,
 				section: None,
 				field_path: None,
-				blocking: None,
 				line: err.line.map(|value| value as usize),
 				column: err.col.map(|value| value as usize),
 			})
@@ -379,22 +368,20 @@ fn default_xsd_candidates() -> Vec<PathBuf> {
 mod tests {
 	use super::*;
 
-	fn issue(blocking: Option<bool>) -> XmlValidationError {
+	fn issue() -> XmlValidationError {
 		XmlValidationError {
 			message: String::new(),
 			code: None,
 			section: None,
 			field_path: None,
-			blocking,
 			line: None,
 			column: None,
 		}
 	}
 
 	#[test]
-	fn warnings_do_not_fail_the_report() {
-		assert!(no_blocking_errors(&[issue(Some(false))]));
-		assert!(!no_blocking_errors(&[issue(Some(true))]));
-		assert!(!no_blocking_errors(&[issue(None)]));
+	fn xml_error_has_no_severity_flag() {
+		let value = serde_json::to_value(issue()).unwrap();
+		assert!(value.get("blocking").is_none());
 	}
 }

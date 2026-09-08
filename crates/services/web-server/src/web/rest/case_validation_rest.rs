@@ -21,6 +21,24 @@ pub struct ValidationQuery {
 	pub authority: Option<String>,
 }
 
+#[derive(Debug, Default, Deserialize)]
+pub struct ValidationAuthoritiesQuery {
+	pub authorities: Option<String>,
+}
+
+impl ValidationAuthoritiesQuery {
+	pub fn resolve(&self) -> Result<Vec<RegulatoryAuthority>> {
+		let mut authorities = Vec::new();
+		for value in self.authorities.as_deref().unwrap_or("ich").split(',') {
+			let authority = super::case_rest::parse_authority_or_bad_request(value)?;
+			if !authorities.contains(&authority) {
+				authorities.push(authority);
+			}
+		}
+		Ok(authorities)
+	}
+}
+
 pub(crate) async fn resolve_authority(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -75,7 +93,7 @@ pub async fn refresh_case_validation_cache(
 }
 
 /// GET /api/cases/{case_id}/validation
-/// Returns case validation issues split as blocking/non-blocking for the wizard.
+/// Returns all case validation issues and counts for the wizard.
 pub async fn validate_case(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,

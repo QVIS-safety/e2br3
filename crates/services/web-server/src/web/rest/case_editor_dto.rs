@@ -209,7 +209,6 @@ pub struct CaseEditorFieldEnvelope {
 pub struct CaseEditorFieldIssue {
 	pub code: String,
 	pub message: String,
-	pub blocking: bool,
 }
 
 #[derive(Debug, Deserialize)]

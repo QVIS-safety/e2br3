@@ -6,7 +6,6 @@ pub struct XmlValidationError {
 	pub code: Option<String>,
 	pub section: Option<String>,
 	pub field_path: Option<String>,
-	pub blocking: Option<bool>,
 	pub line: Option<usize>,
 	pub column: Option<usize>,
 }

@@ -471,7 +471,7 @@ async fn mark_case_validated(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	if status != StatusCode::OK {
-		if String::from_utf8_lossy(&body).contains("blocking issue(s) remain") {
+		if String::from_utf8_lossy(&body).contains("validation issue(s) remain") {
 			return Ok(());
 		}
 		let (validation_status, validation_body) = request_json(

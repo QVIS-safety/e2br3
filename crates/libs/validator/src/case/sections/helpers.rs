@@ -33,20 +33,7 @@ pub(crate) fn reject_when(
 	violated: bool,
 ) {
 	if violated {
-		crate::push_field_issue(issues, code, path, section, message, true);
-	}
-}
-
-pub(crate) fn warn_when(
-	issues: &mut Vec<ValidationIssue>,
-	code: &str,
-	path: &str,
-	section: &str,
-	message: &str,
-	violated: bool,
-) {
-	if violated {
-		crate::push_field_issue(issues, code, path, section, message, false);
+		crate::push_field_issue(issues, code, path, section, message);
 	}
 }
 

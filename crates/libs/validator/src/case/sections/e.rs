@@ -909,7 +909,6 @@ mod tests {
 		assert!(issues.iter().any(|issue| {
 			issue.code == "ICH.E.i.3.2.NI.ONLY"
 				&& issue.path == "reactions.3.seriousnessCriteria"
-				&& issue.blocking
 		}));
 
 		issues.clear();
@@ -1032,7 +1031,6 @@ mod tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -1047,7 +1045,6 @@ mod tests {
 				Some("reactions.0.reactionOutcome".to_string()),
 				"reactions".to_string(),
 				"E.i".to_string(),
-				true,
 			),],
 		);
 	}

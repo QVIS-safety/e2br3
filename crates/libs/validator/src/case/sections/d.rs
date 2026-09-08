@@ -1,7 +1,7 @@
 use super::helpers::{
 	e2b_ts_date, max_length, reject_future_date, reject_when, require, valid_code,
 	valid_decimal, valid_dotted_version, valid_identifier, valid_meddra_term,
-	valid_meddra_version, valid_mfds_product, warn_when, DateValues,
+	valid_meddra_version, valid_mfds_product, DateValues,
 };
 use crate::context::VocabularyContext;
 use crate::{
@@ -1749,7 +1749,7 @@ fn fda_d_1(
 		&& validation_ctx.patient.as_ref().is_none_or(|patient| {
 			patient.patient_initials.as_deref().map(str::trim) != Some("AGGREGATE")
 		}) {
-		crate::push_business_warning(
+		crate::push_business_issue(
 			issues,
 			"FDA.W0010",
 			"patientInformation.patientInitials",
@@ -1838,7 +1838,7 @@ fn fda_d_11_d_12_na(
 		|| matches!(null_flavor, Some("NA"))
 	{
 		if patient.race_code_null_flavor.as_deref().map(str::trim) != Some("NA") {
-			crate::push_business_warning(
+			crate::push_business_issue(
 				issues,
 				"FDA.W0003",
 				"patientInformation.raceCodeNullFlavor",
@@ -1847,7 +1847,7 @@ fn fda_d_11_d_12_na(
 		}
 		if patient.ethnicity_code_null_flavor.as_deref().map(str::trim) != Some("NA")
 		{
-			crate::push_business_warning(issues, "FDA.W0004", "patientInformation.ethnicityCodeNullFlavor", "Ethnicity should use null flavor NA for aggregate or unavailable patients");
+			crate::push_business_issue(issues, "FDA.W0004", "patientInformation.ethnicityCodeNullFlavor", "Ethnicity should use null flavor NA for aggregate or unavailable patients");
 		}
 	}
 }
@@ -1926,7 +1926,7 @@ fn mfds_d_8_r_1_kr_1b(
 			past.mfds_medicinal_product_id.as_deref(),
 		),
 	);
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.8.r.1.KR.1b.REQUIRED",
 		&path,
@@ -1945,7 +1945,7 @@ fn mfds_d_8_r_1_kr_1a(
 	receiver_is_fr: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.8.r.1.KR.1a.REQUIRED",
 		&format!(
@@ -1991,7 +1991,7 @@ fn mfds_d_8_identifier_companions(
 				&& !has_text(past.phpid.as_deref()),
 		),
 	] {
-		warn_when(
+		reject_when(
 			issues,
 			code,
 			&format!("patientInformation.pastDrugHistory.{idx}.{field}"),
@@ -2023,7 +2023,7 @@ fn mfds_d_10_8_identifier_companions(
 				&& !has_text(past.phpid.as_deref()),
 		),
 	] {
-		warn_when(
+		reject_when(
 			issues,
 			code,
 			&format!(
@@ -2063,7 +2063,7 @@ fn mfds_d_10_8_r_1_kr_1b(
 			past.mfds_medicinal_product_id.as_deref(),
 		),
 	);
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
 		&path,
@@ -2081,7 +2081,7 @@ fn mfds_d_10_8_r_1_kr_1a(
 	receiver_is_fr: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
 		&format!(
@@ -3366,7 +3366,6 @@ mod golden_companion_tests {
 		assert!(issues.iter().any(|issue| {
 			issue.code == "ICH.D.10.5.INTEGER"
 				&& issue.path == "patientInformation.parents.2.heightCm"
-				&& issue.blocking
 		}));
 
 		issues.clear();
@@ -3591,7 +3590,6 @@ mod golden_companion_tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -3607,7 +3605,6 @@ mod golden_companion_tests {
 					Some("patientInformation.patientInitials".to_string()),
 					"patient".to_string(),
 					"D.1".to_string(),
-					true,
 				),
 				(
 					"ICH.D.2.3.ALLOWED.VALUE".to_string(),
@@ -3616,7 +3613,6 @@ mod golden_companion_tests {
 					Some("patientInformation.patientAgeGroup".to_string()),
 					"patient".to_string(),
 					"D.2".to_string(),
-					true,
 				),
 				(
 					"MFDS.D.8.r.1.KR.1a.REQUIRED".to_string(),
@@ -3625,7 +3621,6 @@ mod golden_companion_tests {
 					Some("patientInformation.pastDrugHistory.4.mfdsMedicinalProductVersion".to_string()),
 					"patient".to_string(),
 					"D.8.r".to_string(),
-					false,
 				),
 			],
 		);

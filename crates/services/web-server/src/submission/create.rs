@@ -12,46 +12,7 @@ pub async fn create_submission(
 		SubmissionAuthority::Fda => RegulatoryAuthority::Fda,
 		SubmissionAuthority::Mfds => RegulatoryAuthority::Mfds,
 	};
-	let header =
-		prepare_outbound_message_header(ctx, mm, case_id, export_authority, None)
-			.await?;
-	let outbound_message_header = export_message_header(&header)?;
-	let xml = export_case_xml_with_options(
-		ctx,
-		mm,
-		case_id,
-		ExportXmlOptions {
-			apply_comments: true,
-			authority: export_authority,
-			outbound_message_header,
-		},
-	)
-	.await
-	.map_err(Error::from)?;
-	let schema_report = validate_e2b_xml(
-		xml.as_bytes(),
-		Some(XmlValidatorConfig {
-			authority: Some(export_authority),
-			..XmlValidatorConfig::default()
-		}),
-	)
-	.map_err(Error::from)?;
-	if !schema_report.ok {
-		let preview = schema_report
-			.errors
-			.iter()
-			.take(3)
-			.map(|err| err.message.as_str())
-			.collect::<Vec<_>>()
-			.join("; ");
-		return Err(Error::BadRequest {
-			message: format!(
-				"cannot submit case: XML schema/basic validation failed ({} issue(s)): {}",
-				schema_report.errors.len(),
-				preview
-			),
-		});
-	}
+	let xml = prepare_submission_xml(ctx, mm, case_id, export_authority).await?;
 	let now = OffsetDateTime::now_utc();
 	let submission_id = Uuid::new_v4();
 	let gateway = select_gateway_name(authority)?;

@@ -35,7 +35,6 @@ fn reject(
 			code: None,
 			section: Some("xml".to_string()),
 			field_path: None,
-			blocking: Some(true),
 			line: None,
 			column: None,
 		});

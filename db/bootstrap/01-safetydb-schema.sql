@@ -636,8 +636,7 @@ CREATE TABLE IF NOT EXISTS case_validation_summaries (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
     appendix VARCHAR(16) NOT NULL,
     page_id VARCHAR(16) NOT NULL,
-    blocking_count INTEGER NOT NULL DEFAULT 0,
-    non_blocking_count INTEGER NOT NULL DEFAULT 0,
+    issue_count INTEGER NOT NULL DEFAULT 0,
     required_count INTEGER NOT NULL DEFAULT 0,
     stale BOOLEAN NOT NULL DEFAULT FALSE,
     generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -646,8 +645,7 @@ CREATE TABLE IF NOT EXISTS case_validation_summaries (
         CHECK (appendix IN ('ich', 'fda', 'mfds')),
     CONSTRAINT case_validation_summary_counts_non_negative
         CHECK (
-            blocking_count >= 0
-            AND non_blocking_count >= 0
+            issue_count >= 0
             AND required_count >= 0
         )
 );

@@ -12,7 +12,6 @@ pub use c_safety_report_policy::{
 	has_report_type, should_clear_combination_product_null_flavor_on_value,
 	should_clear_local_criteria_null_flavor_on_value,
 	should_require_fda_local_criteria_report_type,
-	should_warn_fda_combination_product_indicator_missing,
 };
 pub use case::{validate_case_for_authorities, validate_case_for_authority};
 pub use context::{
@@ -47,16 +46,15 @@ pub fn has_text(value: Option<&str>) -> bool {
 	value.map(|v| !v.trim().is_empty()).unwrap_or(false)
 }
 
-fn push_direct_business_issue(
+pub(crate) fn push_business_issue(
 	issues: &mut Vec<ValidationIssue>,
 	code: &str,
 	path: impl Into<String>,
 	message: impl Into<String>,
-	blocking: bool,
 ) {
 	let path = path.into();
 	let section = case::sections::resolve_validation_section(code, Some(&path));
-	push_field_issue(issues, code, path, section, message, blocking);
+	push_field_issue(issues, code, path, section, message);
 }
 
 pub(crate) fn push_field_issue(
@@ -65,7 +63,6 @@ pub(crate) fn push_field_issue(
 	path: impl Into<String>,
 	section: impl Into<String>,
 	message: impl Into<String>,
-	blocking: bool,
 ) {
 	let path = path.into();
 	let field_path = case::sections::resolve_validation_field_path(Some(&path));
@@ -78,26 +75,7 @@ pub(crate) fn push_field_issue(
 		path,
 		section: section.into(),
 		subsection,
-		blocking,
 	});
-}
-
-pub(crate) fn push_business_issue(
-	issues: &mut Vec<ValidationIssue>,
-	code: &str,
-	path: impl Into<String>,
-	message: impl Into<String>,
-) {
-	push_direct_business_issue(issues, code, path, message, true);
-}
-
-pub(crate) fn push_business_warning(
-	issues: &mut Vec<ValidationIssue>,
-	code: &str,
-	path: impl Into<String>,
-	message: impl Into<String>,
-) {
-	push_direct_business_issue(issues, code, path, message, false);
 }
 
 pub fn build_report(
@@ -105,44 +83,31 @@ pub fn build_report(
 	case_id: Uuid,
 	issues: Vec<ValidationIssue>,
 ) -> CaseValidationReport {
-	let blocking_count = issues.iter().filter(|issue| issue.blocking).count();
-	let non_blocking_count = issues.len().saturating_sub(blocking_count);
-	let mut by_section: BTreeMap<String, (usize, usize)> = BTreeMap::new();
-	let mut by_subsection: BTreeMap<(String, String), (usize, usize)> =
-		BTreeMap::new();
+	let issue_count = issues.len();
+	let mut by_section: BTreeMap<String, usize> = BTreeMap::new();
+	let mut by_subsection: BTreeMap<(String, String), usize> = BTreeMap::new();
 	for issue in &issues {
 		let section_counts = by_section.entry(issue.section.clone()).or_default();
 		let subsection_counts = by_subsection
 			.entry((issue.section.clone(), issue.subsection.clone()))
 			.or_default();
-		if issue.blocking {
-			section_counts.0 += 1;
-			subsection_counts.0 += 1;
-		} else {
-			section_counts.1 += 1;
-			subsection_counts.1 += 1;
-		}
+		*section_counts += 1;
+		*subsection_counts += 1;
 	}
 	let section_summaries = by_section
 		.into_iter()
-		.map(|(section, (blocking_count, non_blocking_count))| {
-			ValidationSectionSummary {
-				section,
-				blocking_count,
-				non_blocking_count,
-			}
+		.map(|(section, issue_count)| ValidationSectionSummary {
+			section,
+			issue_count,
 		})
 		.collect();
 	let subsection_summaries = by_subsection
 		.into_iter()
 		.map(
-			|((section, subsection), (blocking_count, non_blocking_count))| {
-				ValidationSubsectionSummary {
-					section,
-					subsection,
-					blocking_count,
-					non_blocking_count,
-				}
+			|((section, subsection), issue_count)| ValidationSubsectionSummary {
+				section,
+				subsection,
+				issue_count,
 			},
 		)
 		.collect();
@@ -150,9 +115,8 @@ pub fn build_report(
 	CaseValidationReport {
 		authority,
 		case_id,
-		ok: blocking_count == 0,
-		blocking_count,
-		non_blocking_count,
+		ok: issues.is_empty(),
+		issue_count,
 		section_summaries,
 		subsection_summaries,
 		issues,
@@ -164,7 +128,7 @@ mod direct_business_issue_tests {
 	use super::*;
 
 	#[test]
-	fn direct_business_issue_is_blocking_without_catalog_metadata() {
+	fn direct_business_issue_fails_report_without_catalog_metadata() {
 		let mut issues = Vec::new();
 		push_business_issue(
 			&mut issues,
@@ -174,9 +138,21 @@ mod direct_business_issue_tests {
 		);
 
 		assert_eq!(issues.len(), 1);
-		assert!(issues[0].blocking);
 		assert_eq!(issues[0].section, "C");
 		assert_eq!(issues[0].subsection, "C.1");
 		assert_eq!(issues[0].message, "invalid identifier profile");
+		let report = build_report(RegulatoryAuthority::Fda, Uuid::nil(), issues);
+		assert!(!report.ok);
+		assert_eq!(report.issue_count, 1);
+		assert_eq!(report.section_summaries[0].issue_count, 1);
+		assert_eq!(report.subsection_summaries[0].issue_count, 1);
+		let json = serde_json::to_value(&report).unwrap();
+		assert_eq!(
+			json["issue_count"],
+			json["issues"].as_array().unwrap().len()
+		);
+		assert!(json.get("blocking_count").is_none());
+		assert!(json.get("non_blocking_count").is_none());
+		assert!(json["issues"][0].get("blocking").is_none());
 	}
 }
