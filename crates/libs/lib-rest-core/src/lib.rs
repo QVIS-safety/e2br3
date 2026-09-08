@@ -96,6 +96,32 @@ pub fn is_unique_violation(err: &lib_core::model::Error) -> bool {
 	}
 }
 
+/// Keep an existing singleton; only create after a not-found read.
+pub async fn get_or_create_singleton<T, Get>(
+	get: impl Fn() -> Get,
+	create: impl std::future::Future<Output = lib_core::model::Result<Uuid>>,
+) -> Result<(axum::http::StatusCode, axum::Json<DataRestResult<T>>)>
+where
+	T: Serialize,
+	Get: std::future::Future<Output = lib_core::model::Result<T>>,
+{
+	use axum::{http::StatusCode, Json};
+	let (status, data) = match get().await {
+		Ok(data) => (StatusCode::OK, data),
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {
+			match create.await {
+				Ok(_) => (StatusCode::CREATED, get().await?),
+				Err(err) if is_unique_violation(&err) => {
+					(StatusCode::OK, get().await.map_err(|_| err)?)
+				}
+				Err(err) => return Err(err.into()),
+			}
+		}
+		Err(err) => return Err(err.into()),
+	};
+	Ok((status, Json(DataRestResult { data })))
+}
+
 #[cfg(test)]
 #[test]
 fn unique_violation_preserves_typed_and_text_fallbacks() {
@@ -110,6 +136,89 @@ fn unique_violation_preserves_typed_and_text_fallbacks() {
 	assert!(!is_unique_violation(&ModelError::Store(
 		"connection closed".into()
 	)));
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn singleton_creation_preserves_read_order_and_errors() {
+	use axum::http::StatusCode;
+	use lib_core::model::Error as ModelError;
+	use std::{
+		cell::{Cell, RefCell},
+		future::ready,
+	};
+	let missing = || ModelError::EntityUuidNotFound {
+		entity: "singleton",
+		id: Uuid::nil(),
+	};
+	let fail = |message: &str| ModelError::Store(message.into());
+	for (reads, creation, expected) in [
+		(
+			vec![Ok("existing")],
+			Err(fail("must not create")),
+			Ok((StatusCode::OK, "existing")),
+		),
+		(
+			vec![Err(fail("initial read failed"))],
+			Ok(Uuid::nil()),
+			Err("initial read failed"),
+		),
+		(
+			vec![Err(missing()), Ok("created")],
+			Ok(Uuid::nil()),
+			Ok((StatusCode::CREATED, "created")),
+		),
+		(
+			vec![Err(missing()), Ok("concurrent")],
+			Err(fail("duplicate original")),
+			Ok((StatusCode::OK, "concurrent")),
+		),
+		(
+			vec![Err(missing()), Err(fail("second read failed"))],
+			Err(fail("duplicate original")),
+			Err("duplicate original"),
+		),
+		(
+			vec![Err(missing())],
+			Err(fail("create failed")),
+			Err("create failed"),
+		),
+		(
+			vec![Err(missing()), Err(fail("second read failed"))],
+			Ok(Uuid::nil()),
+			Err("second read failed"),
+		),
+	] {
+		let should_create = matches!(
+			reads.first(),
+			Some(Err(ModelError::EntityUuidNotFound { .. }))
+		);
+		let reads = RefCell::new(reads.into_iter());
+		let created = Cell::new(false);
+		let result = get_or_create_singleton(
+			|| ready(reads.borrow_mut().next().expect("unexpected read")),
+			async {
+				created.set(true);
+				creation
+			},
+		)
+		.await;
+		assert_eq!(created.get(), should_create);
+		assert!(
+			reads.borrow_mut().next().is_none(),
+			"missing follow-up read"
+		);
+		match expected {
+			Ok((status, value)) => {
+				let (actual_status, actual) = result.expect("singleton response");
+				assert_eq!(actual_status, status);
+				assert_eq!(actual.0.data, value);
+			}
+			Err(message) => assert!(
+				matches!(result, Err(Error::Model(ModelError::Store(actual))) if actual == message)
+			),
+		}
+	}
 }
 
 #[derive(Debug, Clone, Deserialize)]

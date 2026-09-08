@@ -167,6 +167,36 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - No new abstraction, dependency, environment variable, deployment change, or input-policy change was introduced.
 - Regression verification: 160 XML library tests, 6 REST-core tests, singleton POST idempotency and scoped-history API tests, and the import → single/ZIP export smoke test passed. Database-backed checks used disposable isolated databases, not `app_db`.
 
+### P2 — History queries duplicate case-scope SQL (remediated)
+
+- Import/export history collections now reuse `case_scope_where(1)`, as case lists already do. Sender/product/study values remain bound parameters; no user input is interpolated into SQL.
+- Import rows without a case retain the separate `uploaded_by = current_user OR include_unscoped` branch and database organization isolation. Transactions, joins, ordering, and the 200-row limit are unchanged.
+- The existing history API regression now covers empty/matching/mismatching scopes, study scope, unlinked cases, and failed-import ownership/admin/cross-organization visibility. It passed against both the original and refactored queries; all 19 scope-visibility API tests also passed using an isolated database.
+
+### P2 — Singleton POST handlers duplicate get/create/re-read control flow (remediated)
+
+- Patient, receiver, narrative, and message-header POST handlers now share `lib_rest_core::get_or_create_singleton`. Existing rows return 200 without creation; newly created rows return 201; duplicate-create recovery retains the original error if the follow-up read fails.
+- Authorization wrappers, route case-ID assignment, model transactions, and message-header input validation remain in their original order. No new trait, macro, dependency, or database operation was added.
+- GET contracts remain distinct: missing patient/message-header is 404; missing receiver/narrative is 200 with null data. Safety-report POST still updates existing data and is intentionally separate.
+- A runnable helper test checks seven read/create/error paths; the API regression now checks missing-resource responses and that repeated POSTs preserve existing IDs and values.
+- Verification passed: 7 REST-core tests, all 27 subresource API tests, and the XML import → single/ZIP export smoke test. Database tests used disposable isolated databases.
+
+### P2 — Boolean import parsers duplicate different input contracts (remediated)
+
+- Removed five section-local boolean parsers. Section E/F/G and the shared attribute reader use `parse_bool_literal` (case-insensitive true/false/1/0, no trimming).
+- Section C/D values use `parse_trimmed_bool_with_yes_no`; the patient-death helper uses `parse_bool_with_yes_no` without trimming, preserving the existing field-specific difference.
+- Parsers borrow strings instead of consuming/cloning them. The permissive parser delegates basic literals to the common parser; no policy flag or new dependency was introduced.
+- Invalid/missing values still produce `None`, and existing field validation remains unchanged. A 17-input regression matrix preserves case, yes/no, ASCII/Unicode whitespace, and invalid-input behavior for all three contracts.
+- Verification passed: all 161 XML library tests and the import → single/ZIP export smoke test, using a disposable isolated database for the latter.
+
+### P2 — Disabled export contracts give false coverage (remediated)
+
+- Removed the 744-line `export_contract_web.rs` and its `cfg(any())` registration. None of its nine tests were compiled or run; three manual database fixture builders and four request helpers duplicated active test infrastructure.
+- Preserved the useful contracts in the active `xml_import_export` smoke tests: explicit FDA/MFDS single and ZIP exports, exact ZIP filenames and case deduplication, duplicate authority rejection, missing batch receiver rejection, case-scoped history, persisted failure history, absence of the legacy `validationAuthority` field, and error-download content type, attachment name, and body.
+- The obsolete raw-XML passthrough expectation was not restored. A small XML-library test checks comment preservation/removal directly, while the existing smoke and runtime-settings tests cover the notation setting and request override.
+- Production code, environment/deployment settings, dependencies, and transaction ownership are unchanged.
+- Verification passed: 162 XML-library tests, 4 header/runtime-settings tests, and 2 expanded export smoke tests using a disposable isolated database; the API test target and workspace compile, formatting, and diff checks also passed.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.

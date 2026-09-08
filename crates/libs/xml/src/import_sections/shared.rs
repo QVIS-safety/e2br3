@@ -172,21 +172,32 @@ pub(crate) fn parse_bool_attr(
 	expr: &str,
 	attr: &str,
 ) -> Option<bool> {
-	let val = first_attr(xpath, node, expr, attr)?;
-	match val.to_ascii_lowercase().as_str() {
+	parse_bool_literal(first_attr(xpath, node, expr, attr).as_deref())
+}
+
+/// Case-insensitive true/false/1/0, without trimming.
+pub(crate) fn parse_bool_literal(value: Option<&str>) -> Option<bool> {
+	match value?.to_ascii_lowercase().as_str() {
 		"true" | "1" => Some(true),
 		"false" | "0" => Some(false),
 		_ => None,
 	}
 }
 
-pub(crate) fn parse_bool_value(value: Option<String>) -> Option<bool> {
-	let val = value?;
-	match val.to_ascii_lowercase().as_str() {
-		"true" | "1" | "yes" => Some(true),
-		"false" | "0" | "no" => Some(false),
-		_ => None,
+/// Also accept yes/no, without trimming.
+pub(crate) fn parse_bool_with_yes_no(value: Option<&str>) -> Option<bool> {
+	let raw = value?;
+	if raw.eq_ignore_ascii_case("yes") {
+		Some(true)
+	} else if raw.eq_ignore_ascii_case("no") {
+		Some(false)
+	} else {
+		parse_bool_literal(value)
 	}
+}
+
+pub(crate) fn parse_trimmed_bool_with_yes_no(value: Option<&str>) -> Option<bool> {
+	parse_bool_with_yes_no(value.map(str::trim))
 }
 
 pub(crate) fn parse_xml_id_opt(value: Option<String>) -> Option<String> {
@@ -416,8 +427,44 @@ fn parse_import_xml(xml: &str) -> Result<Document> {
 
 #[cfg(test)]
 mod tests {
-	use super::extract_safety_report_id;
+	use super::{
+		extract_safety_report_id, parse_bool_literal, parse_bool_with_yes_no,
+		parse_trimmed_bool_with_yes_no,
+	};
 	use crate::import_sections::d_patient::helpers::parse_patient_death;
+
+	#[test]
+	fn boolean_parsers_preserve_distinct_input_contracts() {
+		for (raw, expected) in [
+			(None, [None, None, None]),
+			(Some(""), [None, None, None]),
+			(Some("true"), [Some(true), Some(true), Some(true)]),
+			(Some("TrUe"), [Some(true), Some(true), Some(true)]),
+			(Some("1"), [Some(true), Some(true), Some(true)]),
+			(Some("false"), [Some(false), Some(false), Some(false)]),
+			(Some("FaLsE"), [Some(false), Some(false), Some(false)]),
+			(Some("0"), [Some(false), Some(false), Some(false)]),
+			(Some("YeS"), [None, Some(true), Some(true)]),
+			(Some("nO"), [None, Some(false), Some(false)]),
+			(Some(" true "), [None, None, Some(true)]),
+			(Some("\t0\n"), [None, None, Some(false)]),
+			(Some(" YES "), [None, None, Some(true)]),
+			(Some("\u{a0}no\u{a0}"), [None, None, Some(false)]),
+			(Some("2"), [None, None, None]),
+			(Some("truefalse"), [None, None, None]),
+			(Some("ＴＲＵＥ"), [None, None, None]),
+		] {
+			assert_eq!(
+				[
+					parse_bool_literal(raw),
+					parse_bool_with_yes_no(raw),
+					parse_trimmed_bool_with_yes_no(raw),
+				],
+				expected,
+				"{raw:?}"
+			);
+		}
+	}
 
 	#[test]
 	fn extract_safety_report_id_reads_matching_c_1_1_and_n_2_r_1() {

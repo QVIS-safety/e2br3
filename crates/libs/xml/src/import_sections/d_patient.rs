@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
-use crate::import_sections::shared::parse_date;
+use crate::import_sections::shared::{parse_date, parse_trimmed_bool_with_yes_no};
 use crate::mapping::fda::d_patient::DPatientPaths;
 use crate::Result;
 use lib_core::regulatory::{
@@ -279,10 +279,9 @@ fn read_d_7_2(xpath: &mut Context) -> Result<(Option<String>, Option<String>)> {
 
 /// e2b:D.7.3
 fn read_d_7_3(xpath: &mut Context) -> Result<Option<bool>> {
-	let value = parse_bool_value(first_value_root(
-		xpath,
-		DPatientPaths::CONCOMITANT_THERAPY_VALUE,
-	));
+	let value = parse_trimmed_bool_with_yes_no(
+		first_value_root(xpath, DPatientPaths::CONCOMITANT_THERAPY_VALUE).as_deref(),
+	);
 	import_constraint::boolean(
 		"concomitantTherapies",
 		value,
@@ -408,14 +407,6 @@ fn date_pair(
 	let (value, null_flavor) =
 		string_pair(value, null_flavor, field, null_field, check)?;
 	Ok((value.and_then(parse_date), null_flavor))
-}
-
-fn parse_bool_value(value: Option<String>) -> Option<bool> {
-	value.and_then(|raw| match raw.trim().to_ascii_lowercase().as_str() {
-		"true" | "1" | "yes" => Some(true),
-		"false" | "0" | "no" => Some(false),
-		_ => None,
-	})
 }
 
 #[cfg(test)]

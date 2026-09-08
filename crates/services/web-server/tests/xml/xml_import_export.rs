@@ -668,63 +668,90 @@ async fn test_import_then_export_xml() -> Result<()> {
 	ensure_batch_transmission_date(&app, &cookie, second_id).await?;
 	ensure_fda_device_characteristics(&app, &cookie, second_id).await?;
 	mark_case_validated(&app, &cookie, second_id).await?;
-	for notation in [true, false] {
-		let (status, body) = request_json(
-			&app,
-			&cookie,
-			"PUT",
-			"/api/admin/settings".to_string(),
-			Some(serde_json::json!({"data": {"notation": notation}})),
-		)
-		.await?;
-		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
-		assert_eq!(
-			serde_json::from_slice::<Value>(&body)?["notation"],
-			notation
-		);
-		let (status, body) = request_json(
-			&app,
-			&cookie,
-			"GET",
-			format!(
-				"/api/cases/{case_id}/export/xml?authority=fda&include_notation={}",
+	for authority in ["fda", "mfds"] {
+		for notation in [true, false] {
+			let (status, body) = request_json(
+				&app,
+				&cookie,
+				"PUT",
+				"/api/admin/settings".to_string(),
+				Some(serde_json::json!({"data": {"notation": notation}})),
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+			assert_eq!(
+				serde_json::from_slice::<Value>(&body)?["notation"],
+				notation
+			);
+			let (status, body) = request_json(
+				&app,
+				&cookie,
+				"GET",
+				format!(
+				"/api/cases/{case_id}/export/xml?authority={authority}&include_notation={}",
 				!notation
 			),
-			None,
-		)
-		.await?;
-		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
-		let single_xml = String::from_utf8(body)?;
-		assert!(single_xml.contains(&unique_safety_report_id));
-		if notation {
-			// Explicit override above disables comments.
-			assert!(!single_xml.contains("<!--"));
-		}
-		let (status, body) = request_json(
-			&app, &cookie, "POST", "/api/cases/export/xml".to_string(),
-			Some(serde_json::json!({ "case_ids": [case_id, second_id, case_id], "authority": "fda" })),
-		).await?;
-		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
-		let mut zip = zip::ZipArchive::new(Cursor::new(body))?;
-		assert_eq!(
-			zip.len(),
-			2,
-			"duplicate case IDs must yield one entry per case"
-		);
-		for (index, expected_id) in [case_id, second_id].into_iter().enumerate() {
-			let mut entry = zip.by_index(index)?;
-			assert!(entry.name().ends_with(&format!("-{expected_id}-fda.xml")));
-			let mut zipped_xml = String::new();
-			entry.read_to_string(&mut zipped_xml)?;
-			assert!(zipped_xml.contains("<MCCI_IN200100UV01"));
-			if !notation {
-				assert!(!zipped_xml.contains("<!--"));
+				None,
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+			let single_xml = String::from_utf8(body)?;
+			assert!(single_xml.contains(&unique_safety_report_id));
+			if notation {
+				// Explicit override above disables comments.
+				assert!(!single_xml.contains("<!--"));
 			}
-			if index == 0 {
-				assert!(zipped_xml.contains(&unique_safety_report_id));
+			let (status, body) = request_json(
+			&app, &cookie, "POST", "/api/cases/export/xml".to_string(),
+			Some(serde_json::json!({ "case_ids": [case_id, second_id, case_id], "authority": authority })),
+		).await?;
+			assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+			let mut zip = zip::ZipArchive::new(Cursor::new(body))?;
+			assert_eq!(
+				zip.len(),
+				2,
+				"duplicate case IDs must yield one entry per case"
+			);
+			for (index, expected_id) in [case_id, second_id].into_iter().enumerate()
+			{
+				let mut entry = zip.by_index(index)?;
+				assert!(entry
+					.name()
+					.ends_with(&format!("-{expected_id}-{authority}.xml")));
+				let mut zipped_xml = String::new();
+				entry.read_to_string(&mut zipped_xml)?;
+				assert!(zipped_xml.contains("<MCCI_IN200100UV01"));
+				if !notation {
+					assert!(!zipped_xml.contains("<!--"));
+				}
+				if index == 0 {
+					assert_eq!(
+						entry.name(),
+						format!(
+							"{unique_safety_report_id}-{case_id}-{authority}.xml"
+						)
+					);
+					assert!(zipped_xml.contains(&unique_safety_report_id));
+				}
 			}
 		}
 	}
+
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{case_id}/export/xml?authority=fda&authority=mfds"),
+		None,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::BAD_REQUEST,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	assert!(String::from_utf8_lossy(&body).contains("duplicate field `authority`"));
 
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
@@ -800,11 +827,14 @@ async fn test_import_then_export_xml() -> Result<()> {
 			.iter()
 			.filter(|item| item["status"] == "success")
 			.count(),
-		5,
+		9,
 		"single and ZIP successes must be recorded once per exported case"
 	);
 	assert!(items.iter().all(|item| item["caseId"] == case_id
 		&& item["exportedBy"] == seed.admin.id.to_string()));
+	assert!(items
+		.iter()
+		.all(|item| item.get("validationAuthority").is_none()));
 	let errors: Vec<_> = items
 		.iter()
 		.filter(|item| item["status"] == "error")
@@ -1283,7 +1313,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 			"case_id": case_id,
 			"message_number": format!("MSG-{case_id}"),
 			"batch_sender_identifier": "SENDER01",
-			"batch_receiver_identifier": "RECEIVER01",
+			"batch_receiver_identifier": null,
 			"message_sender_identifier": "SENDER01",
 			"message_receiver_identifier": "RECEIVER01",
 			"message_date": "20240201010101"
@@ -1296,6 +1326,41 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 		"{}",
 		String::from_utf8_lossy(&body)
 	);
+
+	// Missing batch receiver must fail before serialization, without a fallback.
+	for (method, uri, input) in [
+		(
+			"GET",
+			format!("/api/cases/{case_id}/export/xml?authority=mfds"),
+			None,
+		),
+		(
+			"POST",
+			"/api/cases/export/xml".to_string(),
+			Some(serde_json::json!({ "case_ids": [case_id], "authority": "mfds" })),
+		),
+	] {
+		let (status, body) = request_json(&app, &cookie, method, uri, input).await?;
+		assert_eq!(
+			status,
+			StatusCode::BAD_REQUEST,
+			"{}",
+			String::from_utf8_lossy(&body)
+		);
+		assert!(String::from_utf8_lossy(&body)
+			.contains("N.1.4 Batch Receiver Identifier is required"));
+	}
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/message-header"),
+		Some(
+			serde_json::json!({ "data": { "batch_receiver_identifier": "RECEIVER01" } }),
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 
 	for (method, uri, input) in [
 		(
@@ -1331,9 +1396,68 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 	let items = history["data"]["items"]
 		.as_array()
 		.ok_or("missing export history")?;
-	assert_eq!(items.len(), 2);
+	assert_eq!(items.len(), 4);
 	assert!(items.iter().all(|item| item["status"] == "error"));
 	assert!(items.iter().all(|item| item["caseId"] == case_id && item["exportedBy"] == seed.admin.id.to_string()), "history must survive the failed export's outer transaction with the original user and case");
+	let fda_errors: Vec<_> = items
+		.iter()
+		.filter(|item| {
+			item["errorMessage"]
+				.as_str()
+				.is_some_and(|message| message.contains("export task failed"))
+		})
+		.collect();
+	assert_eq!(fda_errors.len(), 2);
+	let error = fda_errors[0];
+	let history_id = error["id"].as_str().ok_or("missing history id")?;
+	let file_name = format!(
+		"{}-{case_id}-fda.xml",
+		create_body["data"]["safetyReportIdentification"]["safetyReportId"]
+			.as_str()
+			.unwrap()
+	);
+	assert_eq!(error["fileName"], file_name);
+	assert!(items
+		.iter()
+		.all(|item| item.get("validationAuthority").is_none()));
+	let req = Request::builder()
+		.uri(format!("/api/exports/history/{history_id}/error.txt"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	assert_eq!(res.headers()["content-type"], "text/plain; charset=utf-8");
+	assert_eq!(
+		res.headers()["content-disposition"],
+		format!(
+			"attachment; filename=\"export-error-{history_id}-{file_name}.txt\""
+		)
+	);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	assert_eq!(
+		String::from_utf8(body.to_vec())?,
+		error["errorMessage"]
+			.as_str()
+			.ok_or("missing error message")?
+	);
+
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		"/api/exports/history".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let all_history: Value = serde_json::from_slice(&body)?;
+	let all_items = all_history["data"]["items"]
+		.as_array()
+		.ok_or("missing global export history")?;
+	assert!(all_items.iter().any(|item| item["id"] == history_id));
+	assert!(all_items
+		.iter()
+		.all(|item| item.get("validationAuthority").is_none()));
 
 	match original {
 		Some(v) => std::env::set_var("E2BR3_EXPORT_VALIDATE", v),

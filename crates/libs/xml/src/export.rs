@@ -117,7 +117,7 @@ fn strip_xml_comments(xml: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-	use super::base_export_skeleton;
+	use super::{apply_export_xml_options, base_export_skeleton};
 	use crate::export::roundtrip::{
 		patch_c_safety_report, patch_d_patient, patch_e_reactions,
 		patch_f_test_results, patch_g_drugs, patch_h_narrative, CSafetyReportPatch,
@@ -128,6 +128,16 @@ mod tests {
 	use libxml::xpath::Context;
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
+
+	#[test]
+	fn export_options_preserve_or_strip_comments_without_changing_payload() {
+		let xml = "<root><!-- label --><case>value</case><!-- tail --></root>";
+		assert_eq!(apply_export_xml_options(xml.to_string(), true), xml);
+		assert_eq!(
+			apply_export_xml_options(xml.to_string(), false),
+			"<root><case>value</case></root>"
+		);
+	}
 
 	#[test]
 	fn fresh_export_skeleton_contains_only_required_parent_structure() {

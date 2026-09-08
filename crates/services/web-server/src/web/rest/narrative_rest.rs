@@ -8,7 +8,7 @@ use lib_core::model::narrative::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{is_unique_violation, Result};
+use lib_rest_core::{get_or_create_singleton, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use uuid::Uuid;
 
@@ -31,39 +31,11 @@ pub async fn create_narrative_information(
 				let ParamsForCreate { data } = params;
 				let mut data = data;
 				data.case_id = case_id;
-				match NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await {
-					Ok(entity) => {
-						return Ok((
-							StatusCode::OK,
-							Json(DataRestResult { data: entity }),
-						))
-					}
-					Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {}
-					Err(err) => return Err(err.into()),
-				}
-				match NarrativeInformationBmc::create(ctx, mm, data).await {
-					Ok(_) => {
-						let entity =
-							NarrativeInformationBmc::get_by_case(ctx, mm, case_id)
-								.await?;
-						Ok((
-							StatusCode::CREATED,
-							Json(DataRestResult { data: entity }),
-						))
-					}
-					Err(err) if is_unique_violation(&err) => {
-						match NarrativeInformationBmc::get_by_case(ctx, mm, case_id)
-							.await
-						{
-							Ok(entity) => Ok((
-								StatusCode::OK,
-								Json(DataRestResult { data: entity }),
-							)),
-							Err(_) => Err(err.into()),
-						}
-					}
-					Err(err) => Err(err.into()),
-				}
+				get_or_create_singleton(
+					|| NarrativeInformationBmc::get_by_case(ctx, mm, case_id),
+					NarrativeInformationBmc::create(ctx, mm, data),
+				)
+				.await
 			})
 		},
 	)

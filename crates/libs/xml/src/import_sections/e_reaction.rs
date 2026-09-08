@@ -2,7 +2,9 @@
 
 use crate::error::Error;
 use crate::import_constraint;
-use crate::import_sections::shared::{parse_xml_id_opt, ImportIdMap};
+use crate::import_sections::shared::{
+	parse_bool_literal, parse_xml_id_opt, ImportIdMap,
+};
 use crate::mapping::fda::e_reaction::EReactionPaths;
 use crate::Result;
 use lib_core::ctx::Ctx;
@@ -311,7 +313,7 @@ fn read_seriousness(
 		input_contracts::FieldInput<'a>,
 	) -> Vec<input_contracts::InputIssue>,
 ) -> Result<(Option<bool>, Option<String>)> {
-	let value = parse_bool_value(first_attr(xpath, node, value_path));
+	let value = parse_bool_literal(first_attr(xpath, node, value_path).as_deref());
 	let null_flavor = first_attr(xpath, node, null_flavor_path);
 	import_constraint::boolean(field, value, null_flavor.as_deref(), check)?;
 	Ok((value, null_flavor))
@@ -532,11 +534,9 @@ fn read_e_i_7(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 
 /// e2b:E.i.8
 fn read_e_i_8(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
-	let value = parse_bool_value(first_attr(
-		xpath,
-		node,
-		EReactionPaths::MEDICAL_CONFIRMATION,
-	));
+	let value = parse_bool_literal(
+		first_attr(xpath, node, EReactionPaths::MEDICAL_CONFIRMATION).as_deref(),
+	);
 	import_constraint::boolean(
 		"medicalConfirmation",
 		value,
@@ -703,7 +703,7 @@ fn read_e_i_kr_device_action_other(
 }
 
 fn extension_bool(xpath: &mut Context, node: &Node, code: &str) -> Option<bool> {
-	parse_bool_value(extension_value_attr(xpath, node, code, "value"))
+	parse_bool_literal(extension_value_attr(xpath, node, code, "value").as_deref())
 }
 
 fn extension_code(xpath: &mut Context, node: &Node, code: &str) -> Option<String> {
@@ -859,15 +859,6 @@ fn input_string(
 ) -> Result<Option<String>> {
 	import_constraint::string(field, value.as_deref(), None, check)?;
 	Ok(value)
-}
-
-fn parse_bool_value(value: Option<String>) -> Option<bool> {
-	let val = value?;
-	match val.to_ascii_lowercase().as_str() {
-		"true" | "1" => Some(true),
-		"false" | "0" => Some(false),
-		_ => None,
-	}
 }
 
 #[cfg(test)]

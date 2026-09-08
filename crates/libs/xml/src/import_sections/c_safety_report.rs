@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
-use crate::import_sections::shared::parse_date;
+use crate::import_sections::shared::{parse_date, parse_trimmed_bool_with_yes_no};
 use crate::mapping::fda::c_safety_report::CSafetyReportPaths;
 use crate::Result;
 use libxml::parser::Parser;
@@ -150,10 +150,10 @@ fn read_c_1_5(xpath: &mut Context) -> Result<Option<String>> {
 
 /// e2b:C.1.6.1
 fn read_c_1_6_1(xpath: &mut Context) -> Result<Option<bool>> {
-	let value = parse_bool_value(first_value_root(
-		xpath,
-		CSafetyReportPaths::ADDITIONAL_DOCUMENTS_AVAILABLE,
-	));
+	let value = parse_trimmed_bool_with_yes_no(
+		first_value_root(xpath, CSafetyReportPaths::ADDITIONAL_DOCUMENTS_AVAILABLE)
+			.as_deref(),
+	);
 	import_constraint::boolean(
 		"additionalDocumentsAvailable",
 		value,
@@ -166,7 +166,7 @@ fn read_c_1_6_1(xpath: &mut Context) -> Result<Option<bool>> {
 /// e2b:C.1.7
 fn read_c_1_7(xpath: &mut Context) -> Result<Option<bool>> {
 	let raw = first_value_root(xpath, CSafetyReportPaths::FULFIL_EXPEDITED);
-	let value = parse_bool_value(raw);
+	let value = parse_trimmed_bool_with_yes_no(raw.as_deref());
 	let null_flavor =
 		first_value_root(xpath, CSafetyReportPaths::FULFIL_EXPEDITED_NULL_FLAVOR);
 	import_constraint::boolean(
@@ -241,7 +241,7 @@ fn read_c_1_8_2(xpath: &mut Context) -> Result<Option<String>> {
 fn read_c_1_9_1(xpath: &mut Context) -> Result<(Option<bool>, Option<String>)> {
 	let raw =
 		first_value_root(xpath, CSafetyReportPaths::OTHER_CASE_IDENTIFIERS_EXIST);
-	let value = parse_bool_value(raw.clone());
+	let value = parse_trimmed_bool_with_yes_no(raw.as_deref());
 	let null_flavor = first_value_root(
 		xpath,
 		CSafetyReportPaths::OTHER_CASE_IDENTIFIERS_EXIST_NULL_FLAVOR,
@@ -296,15 +296,7 @@ fn first_text_root(xpath: &mut Context, path: &str) -> Option<String> {
 fn normalize_fda_combination_product_indicator(
 	value: Option<String>,
 ) -> Option<String> {
-	parse_bool_value(value).map(|value| value.to_string())
-}
-
-fn parse_bool_value(value: Option<String>) -> Option<bool> {
-	value.and_then(|raw| match raw.trim().to_ascii_lowercase().as_str() {
-		"true" | "1" | "yes" => Some(true),
-		"false" | "0" | "no" => Some(false),
-		_ => None,
-	})
+	parse_trimmed_bool_with_yes_no(value.as_deref()).map(|value| value.to_string())
 }
 
 fn normalize_datetime(value: &str) -> Option<String> {

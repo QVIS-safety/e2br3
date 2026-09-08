@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::import_constraint;
 use crate::import_sections::shared::{
 	first_attr, first_text, first_value, first_value_root, normalize_code,
-	parse_bool_attr, parse_bool_value, parse_date,
+	parse_bool_attr, parse_bool_with_yes_no, parse_date,
 };
 use crate::Result;
 use libxml::parser::Parser;
@@ -843,10 +843,13 @@ fn read_d_9_1(xpath: &mut Context) -> Result<(Option<Date>, Option<String>)> {
 
 /// e2b:D.9.3
 fn read_d_9_3(xpath: &mut Context) -> Result<(Option<bool>, Option<String>)> {
-	let value = parse_bool_value(first_value_root(
-		xpath,
-		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@value",
-	));
+	let value = parse_bool_with_yes_no(
+		first_value_root(
+			xpath,
+			"//hl7:observation[hl7:code[@code='5']]/hl7:value/@value",
+		)
+		.as_deref(),
+	);
 	let null_flavor = first_value_root(
 		xpath,
 		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@nullFlavor",

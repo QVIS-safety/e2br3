@@ -7,7 +7,7 @@ use lib_core::model::message_header::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{is_unique_violation, Result};
+use lib_rest_core::{get_or_create_singleton, Result};
 use lib_utils::time::format_e2b_timestamp;
 use lib_web::middleware::mw_auth::CtxW;
 use serde_json::{Map, Value};
@@ -108,37 +108,11 @@ pub async fn create_message_header(
 				data.case_id = case_id;
 				validate_message_header_fields(create_constraint_fields(&data))?;
 
-				match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
-					Ok(entity) => {
-						return Ok((
-							StatusCode::OK,
-							Json(DataRestResult { data: entity }),
-						));
-					}
-					Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {}
-					Err(err) => return Err(err.into()),
-				}
-
-				match MessageHeaderBmc::create(ctx, mm, data).await {
-					Ok(_) => {
-						let entity =
-							MessageHeaderBmc::get_by_case(ctx, mm, case_id).await?;
-						Ok((
-							StatusCode::CREATED,
-							Json(DataRestResult { data: entity }),
-						))
-					}
-					Err(err) if is_unique_violation(&err) => {
-						match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
-							Ok(entity) => Ok((
-								StatusCode::OK,
-								Json(DataRestResult { data: entity }),
-							)),
-							Err(_) => Err(err.into()),
-						}
-					}
-					Err(err) => Err(err.into()),
-				}
+				get_or_create_singleton(
+					|| MessageHeaderBmc::get_by_case(ctx, mm, case_id),
+					MessageHeaderBmc::create(ctx, mm, data),
+				)
+				.await
 			})
 		},
 	)
