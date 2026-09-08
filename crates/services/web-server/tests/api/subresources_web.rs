@@ -1284,6 +1284,186 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn parent_history_preserves_crud_scope_and_restore_contracts() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let other_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let mut parents = Vec::new();
+	for parent_case_id in [case_id, other_case_id] {
+		let patient_id = create_patient(&app, &cookie, parent_case_id).await?;
+		let (status, body) = post_json(
+			&app,
+			&cookie,
+			format!("/api/cases/{parent_case_id}/patient/parents"),
+			json!({"data": {"patient_id": patient_id, "sex": "2"}}),
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::CREATED,
+			"{}",
+			String::from_utf8_lossy(&body)
+		);
+		parents.push(extract_id(&body)?);
+	}
+	let (parent_id, other_parent_id) = (parents[0], parents[1]);
+	assert_ne!(parent_id, other_parent_id);
+
+	for (resource, field, initial, updated) in [
+		("medical-history", "meddra_code", "10012345", "10054321"),
+		("past-drugs", "drug_name", "original drug", "updated drug"),
+	] {
+		let collection =
+			format!("/api/cases/{case_id}/patient/parent/{parent_id}/{resource}");
+		let create = json!({"data": {"parent_id": other_parent_id, "sequence_number": 1, (field): initial}});
+		let update = json!({"data": {(field): updated}});
+		let (status, body) =
+			post_json(&app, &cookie, collection.clone(), create.clone()).await?;
+		assert_eq!(
+			status,
+			StatusCode::CREATED,
+			"{}",
+			String::from_utf8_lossy(&body)
+		);
+		let id = extract_id(&body)?;
+		let created: Value = serde_json::from_slice(&body)?;
+		assert_eq!(
+			created["data"]["parent_id"],
+			parent_id.to_string(),
+			"path parent must override input"
+		);
+		assert_eq!(created["data"][field], initial);
+		assert_eq!(created["data"]["deleted"], false);
+		let item = format!("{collection}/{id}");
+		let other_parent_collection = format!(
+			"/api/cases/{other_case_id}/patient/parent/{other_parent_id}/{resource}"
+		);
+		let (status, body) =
+			get_json(&app, &cookie, other_parent_collection.clone()).await?;
+		assert_eq!(status, StatusCode::OK);
+		assert_eq!(serde_json::from_slice::<Value>(&body)?["data"], json!([]));
+
+		// Check every route, not just GET: rejected writes must leave the row unchanged.
+		for (method, suffix, input) in [
+			("GET", String::new(), json!({})),
+			("POST", String::new(), create.clone()),
+			("GET", format!("/{id}"), json!({})),
+			("PUT", format!("/{id}"), update.clone()),
+			("DELETE", format!("/{id}"), json!({})),
+			("POST", format!("/{id}/restore"), json!({})),
+		] {
+			let wrong_case = format!(
+				"/api/cases/{other_case_id}/patient/parent/{parent_id}/{resource}"
+			);
+			let missing_parent = format!(
+				"/api/cases/{case_id}/patient/parent/{}/{resource}",
+				Uuid::new_v4()
+			);
+			for (request_cookie, base, expected) in [
+				(&cookie, &wrong_case, StatusCode::NOT_FOUND),
+				(&cookie, &missing_parent, StatusCode::NOT_FOUND),
+				(&cookie, &other_parent_collection, StatusCode::NOT_FOUND),
+				(&viewer_cookie, &collection, StatusCode::FORBIDDEN),
+			] {
+				if (base == &other_parent_collection && suffix.is_empty())
+					|| (request_cookie == &viewer_cookie && method == "GET")
+				{
+					continue;
+				}
+				let req = Request::builder()
+					.method(method)
+					.uri(format!("{base}{suffix}"))
+					.header("cookie", request_cookie)
+					.header("content-type", "application/json")
+					.header("x-e2br3-reason-for-change", "scope regression")
+					.body(Body::from(input.to_string()))?;
+				let res = app.clone().oneshot(req).await?;
+				let status = res.status();
+				let body = to_bytes(res.into_body(), usize::MAX).await?;
+				assert_eq!(
+					status,
+					expected,
+					"{method} {base}{suffix}: {}",
+					String::from_utf8_lossy(&body)
+				);
+			}
+		}
+		let (status, body) = get_json(&app, &cookie, item.clone()).await?;
+		assert_eq!(status, StatusCode::OK);
+		assert_eq!(serde_json::from_slice::<Value>(&body)?, created);
+		let (status, body) = put_json_with_audit_reason(
+			&app,
+			&cookie,
+			item.clone(),
+			update,
+			"parent history regression",
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+		assert_eq!(
+			serde_json::from_slice::<Value>(&body)?["data"][field],
+			updated
+		);
+
+		for deleted in [true, false] {
+			if deleted {
+				let (status, body) =
+					delete_json(&app, &cookie, item.clone()).await?;
+				assert_eq!(
+					status,
+					StatusCode::NO_CONTENT,
+					"{}",
+					String::from_utf8_lossy(&body)
+				);
+				assert!(body.is_empty());
+			} else {
+				let (status, body) =
+					post_json(&app, &cookie, format!("{item}/restore"), json!({}))
+						.await?;
+				assert_eq!(
+					status,
+					StatusCode::OK,
+					"{}",
+					String::from_utf8_lossy(&body)
+				);
+				assert_eq!(
+					serde_json::from_slice::<Value>(&body)?["data"]["id"],
+					id.to_string()
+				);
+				assert_eq!(
+					serde_json::from_slice::<Value>(&body)?["data"]["deleted"],
+					false
+				);
+			}
+			// Existing item GET exposes the soft-deleted row; list hides it.
+			let (status, body) = get_json(&app, &cookie, item.clone()).await?;
+			assert_eq!(status, StatusCode::OK);
+			let row: Value = serde_json::from_slice(&body)?;
+			assert_eq!(row["data"]["id"], id.to_string());
+			assert_eq!(row["data"]["deleted"], deleted);
+			assert_eq!(row["data"][field], updated);
+			let (status, body) = get_json(&app, &cookie, collection.clone()).await?;
+			assert_eq!(status, StatusCode::OK);
+			let list: Value = serde_json::from_slice(&body)?;
+			if deleted {
+				assert_eq!(list["data"], json!([]));
+			} else {
+				assert_eq!(list["data"], json!([row["data"]]));
+			}
+		}
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn patient_identifier_preserves_scope_and_delete_response() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

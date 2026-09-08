@@ -53,402 +53,227 @@ fn ensure_parent_scope(
 	Ok(())
 }
 
-// -- Parent Medical History (D.10.7.1.r)
+// Both parent-history resources share the same route and authorization contract.
+macro_rules! parent_history_rest_fns {
+	(
+		Bmc: $bmc:ident, Entity: $entity:ident,
+		ForCreate: $for_create:ident, ForUpdate: $for_update:ident,
+		Filter: $filter:ident,
+		CreateFn: $create_fn:ident, ListFn: $list_fn:ident,
+		GetFn: $get_fn:ident, UpdateFn: $update_fn:ident,
+		DeleteFn: $delete_fn:ident, RestoreFn: $restore_fn:ident,
+		Fingerprint: $fingerprint:literal, EntityName: $entity_name:literal
+	) => {
+		pub async fn $create_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
+			Json(params): Json<ParamsForCreate<$for_create>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:new:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let ParamsForCreate { data } = params;
+						let mut data = data;
+						data.parent_id = parent_id;
+						let id = $bmc::create(ctx, mm, data).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
 
-/// POST /api/cases/{case_id}/patient/parent/{parent_id}/medical-history
-pub async fn create_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<ParentMedicalHistoryForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:new:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let ParamsForCreate { data } = params;
-				let mut data = data;
-				data.parent_id = parent_id;
-				let id = ParentMedicalHistoryBmc::create(ctx, mm, data).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
+		pub async fn $list_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_read(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:list:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let filter = $filter {
+							parent_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+								parent_id.to_string()
+							))])),
+							..Default::default()
+						};
+						let entities = $bmc::list(
+							ctx,
+							mm,
+							Some(vec![filter]),
+							Some(ListOptions::default()),
+						)
+						.await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $get_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_read(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:{id}:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						ensure_parent_scope(
+							parent_id,
+							entity.parent_id,
+							id,
+							$entity_name,
+						)?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $update_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+			Json(params): Json<ParamsForUpdate<$for_update>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:{id}:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						ensure_parent_scope(
+							parent_id,
+							entity.parent_id,
+							id,
+							$entity_name,
+						)?;
+						let ParamsForUpdate { data } = params;
+						$bmc::update(ctx, mm, id, data).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $delete_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<StatusCode> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:{id}:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						ensure_parent_scope(
+							parent_id,
+							entity.parent_id,
+							id,
+							$entity_name,
+						)?;
+						$bmc::delete(ctx, mm, id).await?;
+						Ok(StatusCode::NO_CONTENT)
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $restore_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("{}:{id}:parent:{parent_id}", $fingerprint),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_parent_case(ctx, mm, case_id, parent_id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						ensure_parent_scope(
+							parent_id,
+							entity.parent_id,
+							id,
+							$entity_name,
+						)?;
+						$bmc::restore(ctx, mm, id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+	};
 }
 
-/// GET /api/cases/{case_id}/patient/parent/{parent_id}/medical-history
-pub async fn list_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<ParentMedicalHistory>>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:list:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let filter = ParentMedicalHistoryFilter {
-					parent_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-						parent_id.to_string()
-					))])),
-					..Default::default()
-				};
-				let entities = ParentMedicalHistoryBmc::list(
-					ctx,
-					mm,
-					Some(vec![filter]),
-					Some(ListOptions::default()),
-				)
-				.await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-			})
-		},
-	)
-	.await
+parent_history_rest_fns! {
+	Bmc: ParentMedicalHistoryBmc, Entity: ParentMedicalHistory,
+	ForCreate: ParentMedicalHistoryForCreate, ForUpdate: ParentMedicalHistoryForUpdate,
+	Filter: ParentMedicalHistoryFilter,
+	CreateFn: create_parent_medical_history, ListFn: list_parent_medical_history,
+	GetFn: get_parent_medical_history, UpdateFn: update_parent_medical_history,
+	DeleteFn: delete_parent_medical_history, RestoreFn: restore_parent_medical_history,
+	Fingerprint: "parent-medical-history", EntityName: "parent_medical_history"
 }
 
-/// GET /api/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}
-pub async fn get_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_medical_history",
-				)?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// PUT /api/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}
-pub async fn update_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ParentMedicalHistoryForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_medical_history",
-				)?;
-				let ParamsForUpdate { data } = params;
-				ParentMedicalHistoryBmc::update(ctx, mm, id, data).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// DELETE /api/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}
-pub async fn delete_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_medical_history",
-				)?;
-				ParentMedicalHistoryBmc::delete(ctx, mm, id).await?;
-				Ok(StatusCode::NO_CONTENT)
-			})
-		},
-	)
-	.await
-}
-
-/// POST /api/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}/restore
-pub async fn restore_parent_medical_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-medical-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_medical_history",
-				)?;
-				ParentMedicalHistoryBmc::restore(ctx, mm, id).await?;
-				let entity = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-// -- Parent Past Drug History (D.10.8.r)
-
-/// POST /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs
-pub async fn create_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<ParentPastDrugHistoryForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:new:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let ParamsForCreate { data } = params;
-				let mut data = data;
-				data.parent_id = parent_id;
-				let id = ParentPastDrugHistoryBmc::create(ctx, mm, data).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// GET /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs
-pub async fn list_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<ParentPastDrugHistory>>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:list:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let filter = ParentPastDrugHistoryFilter {
-					parent_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-						parent_id.to_string()
-					))])),
-					..Default::default()
-				};
-				let entities = ParentPastDrugHistoryBmc::list(
-					ctx,
-					mm,
-					Some(vec![filter]),
-					Some(ListOptions::default()),
-				)
-				.await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-			})
-		},
-	)
-	.await
-}
-
-/// GET /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}
-pub async fn get_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_past_drug_history",
-				)?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// PUT /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}
-pub async fn update_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ParentPastDrugHistoryForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_past_drug_history",
-				)?;
-				let ParamsForUpdate { data } = params;
-				ParentPastDrugHistoryBmc::update(ctx, mm, id, data).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// DELETE /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}
-pub async fn delete_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_past_drug_history",
-				)?;
-				ParentPastDrugHistoryBmc::delete(ctx, mm, id).await?;
-				Ok(StatusCode::NO_CONTENT)
-			})
-		},
-	)
-	.await
-}
-
-/// POST /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}/restore
-pub async fn restore_parent_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("parent-past-drug-history:{id}:parent:{parent_id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_parent_case(ctx, mm, case_id, parent_id).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				ensure_parent_scope(
-					parent_id,
-					entity.parent_id,
-					id,
-					"parent_past_drug_history",
-				)?;
-				ParentPastDrugHistoryBmc::restore(ctx, mm, id).await?;
-				let entity = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
+parent_history_rest_fns! {
+	Bmc: ParentPastDrugHistoryBmc, Entity: ParentPastDrugHistory,
+	ForCreate: ParentPastDrugHistoryForCreate, ForUpdate: ParentPastDrugHistoryForUpdate,
+	Filter: ParentPastDrugHistoryFilter,
+	CreateFn: create_parent_past_drug_history, ListFn: list_parent_past_drug_history,
+	GetFn: get_parent_past_drug_history, UpdateFn: update_parent_past_drug_history,
+	DeleteFn: delete_parent_past_drug_history, RestoreFn: restore_parent_past_drug_history,
+	Fingerprint: "parent-past-drug-history", EntityName: "parent_past_drug_history"
 }

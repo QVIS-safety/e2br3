@@ -197,6 +197,15 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - Production code, environment/deployment settings, dependencies, and transaction ownership are unchanged.
 - Verification passed: 162 XML-library tests, 4 header/runtime-settings tests, and 2 expanded export smoke tests using a disposable isolated database; the API test target and workspace compile, formatting, and diff checks also passed.
 
+### P2 — Parent-history REST repeats identical CRUD handlers (remediated)
+
+- Parent medical history and parent past-drug history now share one file-local handler macro. `parent_history_rest.rs` shrank from 454 to 279 lines; no new public CRUD framework, model abstraction, or dependency was added.
+- The drug-child macro was not reused because its parent checks and authorization fingerprints differ. Existing parent → patient → case checks, child → parent checks, fingerprint strings, database calls, transaction wrappers, and route names retain their original order and values.
+- Responses are unchanged: create returns 201, reads/updates/restores return 200 with the entity, and delete returns 204 with no body. Item GET still exposes soft-deleted rows while list excludes them.
+- A shared regression exercises both resources, including path-parent override, missing/mismatched parents, mismatched cases, denied viewer writes without mutation, field updates, and delete/restore behavior. The test passed on the original handlers before refactoring; all 28 subresource API tests passed afterward using a disposable isolated database.
+- Both authorization route-structure checks, workspace compilation, formatting, and diff checks passed. Substituting each macro invocation reproduces the original handler bodies after whitespace/comment normalization and equivalent fingerprint formatting.
+- Environment, deployment, model behavior, and the other REST resource families were not changed.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.
