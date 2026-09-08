@@ -208,7 +208,6 @@ fn push_if(
 			code: Some(code.to_string()),
 			section: Some("xml".to_string()),
 			field_path: None,
-			blocking: Some(true),
 			line: None,
 			column: None,
 		});

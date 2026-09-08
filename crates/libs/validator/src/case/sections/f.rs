@@ -357,7 +357,6 @@ fn f_r_7(validation_ctx: &ValidationContext, issues: &mut Vec<ValidationIssue>) 
 			"safetyReportIdentification.additionalDocumentsAvailable",
 			"case-identification",
 			"Additional documents must be marked available when more test information is available",
-			true,
 		);
 	}
 }
@@ -719,7 +718,6 @@ mod golden_f_required_tests {
 			Some("safetyReportIdentification.additionalDocumentsAvailable")
 		);
 		assert_eq!(issue.section, "case-identification");
-		assert!(issue.blocking);
 	}
 
 	#[test]
@@ -747,7 +745,6 @@ mod golden_f_required_tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -764,7 +761,6 @@ mod golden_f_required_tests {
 					Some("testResults.0.testDate".to_string()),
 					"tests".to_string(),
 					"F.r".to_string(),
-					true,
 				),
 				(
 					"ICH.F.r.3.1.ALLOWED.VALUE".to_string(),
@@ -773,7 +769,6 @@ mod golden_f_required_tests {
 					Some("testResults.0.testResultCode".to_string()),
 					"tests".to_string(),
 					"F.r".to_string(),
-					true,
 				),
 			],
 		);

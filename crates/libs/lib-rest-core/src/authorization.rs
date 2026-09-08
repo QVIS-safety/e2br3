@@ -16,6 +16,7 @@ use lib_core::model::authorization::{
 	PresaveAuthorizationKind,
 };
 use lib_core::model::case::CaseBmc;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::ModelManager;
 use std::future::Future;
@@ -1264,6 +1265,8 @@ where
 			.await
 			.map_err(map_fact_load_error)?;
 		authorize_contextual_mutation(action, snapshot, context).map_err(denied)?;
+		CaseValidationSummaryBmc::mark_stale_for_case(&authorized_ctx, mm, case_id)
+			.await?;
 		Ok(result)
 	}
 	.await;

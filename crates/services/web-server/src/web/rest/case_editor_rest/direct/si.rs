@@ -92,7 +92,7 @@ pub(super) async fn apply_si_page_rows_patch(
 				Some(vec![StudyInformationFilter {
 					case_id: Some(uuid_eq(case_id)),
 				}]),
-				Some(ListOptions::default()),
+				Some(ListOptions::from_order_bys(vec!["created_at", "id"])),
 			)
 			.await?
 			.into_iter()
@@ -138,7 +138,7 @@ pub(super) async fn apply_si_page_rows_patch(
 			Some(vec![StudyInformationFilter {
 				case_id: Some(uuid_eq(case_id)),
 			}]),
-			Some(ListOptions::default()),
+			Some(ListOptions::from_order_bys(vec!["created_at", "id"])),
 		)
 		.await?;
 		let Some(study) = studies.into_iter().min_by_key(|study| study.created_at)
@@ -364,7 +364,7 @@ pub(super) async fn load_editor_si_data(
 					study_information_id: Some(uuid_eq(study.id)),
 					..Default::default()
 				}]),
-				Some(ListOptions::default()),
+				Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
 			)
 			.await?;
 			let cross_reported = StudyFdaCrossReportedIndBmc::list(
@@ -374,7 +374,7 @@ pub(super) async fn load_editor_si_data(
 					study_information_id: Some(uuid_eq(study.id)),
 					..Default::default()
 				}]),
-				Some(ListOptions::default()),
+				Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
 			)
 			.await?;
 			(registrations, cross_reported)

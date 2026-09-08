@@ -98,13 +98,6 @@ fn is_later_than(
 	matches!((value, other), (Some(value), Some(other)) if value > other)
 }
 
-fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
-	sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())
-		.unwrap_or(fallback_idx)
-}
-
 fn trimmed(value: Option<&str>) -> Option<&str> {
 	value.map(str::trim).filter(|value| !value.is_empty())
 }
@@ -521,6 +514,9 @@ fn c_2_r_2_1(
 	report_type_is_study: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
+	if sources.is_empty() {
+		return;
+	}
 	let (value, null_flavor) = sources
 		.iter()
 		.find_map(|source| {
@@ -666,6 +662,15 @@ fn c_2_r_4(idx: usize, source: &PrimarySource, issues: &mut Vec<ValidationIssue>
 /// ICH.C.2.r.5.ALLOWED.VALUE
 /// ICH.C.2.r.5.LENGTH.MAX
 fn c_2_r_5(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
+	if sources.is_empty() {
+		crate::push_business_issue(
+			issues,
+			"ICH.C.2.r.REQUIRED",
+			"primarySources",
+			"At least one reporter is required.",
+		);
+		return;
+	}
 	for (idx, source) in sources.iter().enumerate() {
 		let path =
 			format!("primarySources.{idx}.primarySourceForRegulatoryPurposes");
@@ -684,7 +689,7 @@ fn c_2_r_5(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
 		);
 	}
 	let has_primary = sources.iter().any(primary_source_regulatory_is_one);
-	super::helpers::warn_when(
+	super::helpers::reject_when(
 		issues,
 		"ICH.C.2.r.5.REQUIRED",
 		"primarySources.0.primarySourceForRegulatoryPurposes",
@@ -1324,7 +1329,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback_idx = fallback_idx_by_study.entry(study_id).or_insert(0);
-		let idx = index_from_sequence(registration.sequence_number, *fallback_idx);
+		let idx = *fallback_idx;
 		*fallback_idx += 1;
 		c_5_1_r_1(study_idx, idx, registration, issues);
 		c_5_1_r_2(
@@ -1352,17 +1357,6 @@ pub(crate) fn collect_ich_issues(
 		c_3_4_6(sender, issues);
 		c_3_4_7(sender, issues);
 		c_3_4_8(sender, issues);
-	}
-
-	if validation_ctx.primary_sources.is_empty() {
-		required_field(
-			issues,
-			"ICH.C.2.r.4.REQUIRED",
-			"primarySources.0.qualification",
-			"reporter",
-			"[C.2.r.4] is required.",
-			false,
-		);
 	}
 }
 
@@ -1423,7 +1417,6 @@ fn fda_c_1_7_1(
 }
 
 /// FDA.C.1.12.REQUIRED
-/// FDA.C.1.12.RECOMMENDED
 fn fda_c_1_12(
 	value: Option<&str>,
 	null_flavor: Option<&str>,
@@ -1442,14 +1435,6 @@ fn fda_c_1_12(
 		PATH,
 		"case-identification",
 		"FDA requires [C.1.12] combination product report indicator.",
-		!valid,
-	);
-	super::helpers::warn_when(
-		issues,
-		"FDA.C.1.12.RECOMMENDED",
-		PATH,
-		"case-identification",
-		"FDA recommends [C.1.12] combination product report indicator.",
 		!valid,
 	);
 }
@@ -1505,15 +1490,15 @@ fn fda_repeating_flag_rules(
 		report.additional_documents_available == Some(true)
 			&& validation_ctx.documents_held_by_sender.is_empty(),
 		"FDA.R0009",
-		"documentsHeldBySender.0.documentDescription",
-		"C.1.6.1.r.1 is required when C.1.6.1 is true.",
+		"documentsHeldBySender",
+		"At least one document is required when additional documents are available.",
 	);
 	push_business_violation(
 		issues,
 		report.other_case_identifiers_exist == Some(true)
 			&& validation_ctx.other_case_identifiers.is_empty(),
 		"FDA.R0017",
-		"otherCaseIdentifiers.0.source",
+		"otherCaseIdentifiers",
 		"At least one C.1.9.1.r entry is required when C.1.9.1 is true.",
 	);
 }
@@ -1876,7 +1861,7 @@ fn fda_study_route_rules(
 		issues,
 		ind.is_some() && !cross_reported,
 		"FDA.R0026",
-		"studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber",
+		if fda_ctx.cross_reported_inds.is_empty() { "studyInformation.fdaCrossReportedIndNumbers" } else { "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber" },
 		"FDA.C.5.6.r requires a cross-reported IND or nullFlavor NA when FDA.C.5.5a is present.",
 	);
 	push_business_violation(
@@ -1890,10 +1875,10 @@ fn fda_study_route_rules(
 		trimmed(patient.patient_initials.as_deref()) == Some("AGGREGATE")
 	});
 	if aggregate && validation_ctx.linked_report_numbers.is_empty() {
-		crate::push_business_warning(
+		crate::push_business_issue(
 			issues,
 			"FDA.W0001",
-			"linkedReports.0.linkedReportNumber",
+			"linkedReports",
 			"A linked report number should be provided for an aggregate report.",
 		);
 	}
@@ -2143,7 +2128,7 @@ fn mfds_receiver_rules(
 			issues,
 			validation_ctx.study_registrations.is_empty(),
 			"MFDS.C.5.1.r.1.RECEIVER.REQUIRED",
-			"studyInformation.0.registrations.0.registrationNumber",
+			"studyInformation.registrations",
 			"MFDS CT/CU reports require a study registration number.",
 		);
 		for (idx, registration) in
@@ -2275,11 +2260,7 @@ mod conditioned_field_rule_tests {
 				.iter()
 				.map(|issue| issue.code.as_str())
 				.collect::<Vec<_>>(),
-			[
-				"FDA.C.1.7.1.REQUIRED",
-				"FDA.C.1.12.REQUIRED",
-				"FDA.C.1.12.RECOMMENDED",
-			]
+			["FDA.C.1.7.1.REQUIRED", "FDA.C.1.12.REQUIRED",]
 		);
 
 		issues.clear();
@@ -2319,7 +2300,7 @@ mod golden_c1_value_tests {
 	//! Characterization tests for the one-to-one presence/value rules inside
 	//! `collect_ich_issues` (C.1.2 / C.1.3 / C.1.4 / C.1.5 / C.1.7).
 	//!
-	//! These freeze *current* behavior (code + path + blocking) so the
+	//! These freeze *current* behavior (code + path) so the
 	//! table-driven refactor can be proven to change nothing. Deliberately
 	//! excluded from scope: C.1.1 (fires outside the `if let Some(report)`
 	//! block), cross-field date rules (`*.FUTURE_DATE`, `*.AFTER_*`), and the
@@ -2510,36 +2491,33 @@ mod golden_c1_value_tests {
 	}
 
 	/// Runs `collect_ich_issues` and returns only the in-scope C.1 value rules
-	/// as a sorted `(code, path, blocking)` snapshot. Issue *ordering* is not a
+	/// as a sorted `(code, path)` snapshot. Issue *ordering* is not a
 	/// contract (`build_report` aggregates by section), so we compare as a set.
-	fn snapshot(report: SafetyReportIdentification) -> Vec<(String, String, bool)> {
+	fn snapshot(report: SafetyReportIdentification) -> Vec<(String, String)> {
 		let mut issues = Vec::new();
 		collect_ich_issues(&ctx_with(report), &mut issues);
-		let mut out: Vec<(String, String, bool)> = issues
+		let mut out: Vec<(String, String)> = issues
 			.into_iter()
 			.filter(|issue| TARGET_CODES.contains(&issue.code.as_str()))
-			.map(|issue| (issue.code, issue.path, issue.blocking))
+			.map(|issue| (issue.code, issue.path))
 			.collect();
 		out.sort();
 		out
 	}
 
-	fn issue(code: &str, path: &str, blocking: bool) -> (String, String, bool) {
-		(code.to_string(), path.to_string(), blocking)
+	fn issue(code: &str, path: &str) -> (String, String) {
+		(code.to_string(), path.to_string())
 	}
 
-	/// Sorted `(code, path, blocking)` snapshot filtered to `targets`, for
+	/// Sorted `(code, path)` snapshot filtered to `targets`, for
 	/// contexts built with repeated-field fixtures.
-	fn filtered(
-		ctx: &ValidationContext,
-		targets: &[&str],
-	) -> Vec<(String, String, bool)> {
+	fn filtered(ctx: &ValidationContext, targets: &[&str]) -> Vec<(String, String)> {
 		let mut issues = Vec::new();
 		collect_ich_issues(ctx, &mut issues);
-		let mut out: Vec<(String, String, bool)> = issues
+		let mut out: Vec<(String, String)> = issues
 			.into_iter()
 			.filter(|issue| targets.contains(&issue.code.as_str()))
-			.map(|issue| (issue.code, issue.path, issue.blocking))
+			.map(|issue| (issue.code, issue.path))
 			.collect();
 		out.sort();
 		out
@@ -2987,9 +2965,7 @@ mod golden_c1_value_tests {
 		fda_study_route_rules(&ctx, &fda_context(Vec::new(), false), &mut issues);
 
 		assert!(issues.iter().any(|issue| issue.code == "FDA.W0002"));
-		assert!(issues
-			.iter()
-			.any(|issue| issue.code == "FDA.W0001" && !issue.blocking));
+		assert!(issues.iter().any(|issue| issue.code == "FDA.W0001"));
 	}
 
 	#[test]
@@ -3133,7 +3109,6 @@ mod golden_c1_value_tests {
 		assert!(issues.iter().any(|issue| {
 			issue.code == "ICH.C.1.1.REQUIRED"
 				&& issue.path == "safetyReportIdentification.safetyReportId"
-				&& issue.blocking
 		}));
 
 		issues.clear();
@@ -3152,27 +3127,22 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.1.2.REQUIRED",
 					"safetyReportIdentification.transmissionDate",
-					true
 				),
 				issue(
 					"ICH.C.1.3.REQUIRED",
 					"safetyReportIdentification.reportType",
-					true
 				),
 				issue(
 					"ICH.C.1.4.REQUIRED",
 					"safetyReportIdentification.dateFirstReceivedFromSource",
-					true
 				),
 				issue(
 					"ICH.C.1.5.REQUIRED",
 					"safetyReportIdentification.dateOfMostRecentInformation",
-					true
 				),
 				issue(
 					"ICH.C.1.7.REQUIRED",
 					"safetyReportIdentification.fulfilExpeditedCriteria",
-					true
 				),
 			]
 		);
@@ -3210,7 +3180,7 @@ mod golden_c1_value_tests {
 		report.fulfil_expedited_criteria = None;
 		report.fulfil_expedited_criteria_null_flavor = Some("NI".to_string());
 		let snap = snapshot(report);
-		assert!(snap.iter().any(|(code, _, _)| code == "ICH.C.1.7.REQUIRED"));
+		assert!(snap.iter().any(|(code, _)| code == "ICH.C.1.7.REQUIRED"));
 	}
 
 	#[test]
@@ -3223,7 +3193,6 @@ mod golden_c1_value_tests {
 			vec![issue(
 				"ICH.C.1.6.1.r.1.REQUIRED",
 				"documentsHeldBySender.1.documentDescription",
-				true
 			)]
 		);
 	}
@@ -3236,15 +3205,10 @@ mod golden_c1_value_tests {
 		assert_eq!(
 			filtered(&ctx, INDEXED_CODES),
 			vec![
-				issue(
-					"ICH.C.1.9.1.r.1.REQUIRED",
-					"otherCaseIdentifiers.1.source",
-					true
-				),
+				issue("ICH.C.1.9.1.r.1.REQUIRED", "otherCaseIdentifiers.1.source",),
 				issue(
 					"ICH.C.1.9.1.r.2.REQUIRED",
 					"otherCaseIdentifiers.1.caseIdentifier",
-					true
 				),
 			]
 		);
@@ -3284,27 +3248,19 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.1.10.r.LENGTH.MAX",
 					"linkedReports.0.linkedReportNumber",
-					true
 				),
 				issue(
 					"ICH.C.1.6.1.r.1.REQUIRED",
 					"documentsHeldBySender.0.documentDescription",
-					true
 				),
 				issue(
 					"ICH.C.1.6.1.r.2.ALLOWED.VALUE",
 					"documentsHeldBySender.0.includedDocument",
-					true
 				),
-				issue(
-					"ICH.C.1.9.1.r.1.REQUIRED",
-					"otherCaseIdentifiers.0.source",
-					true
-				),
+				issue("ICH.C.1.9.1.r.1.REQUIRED", "otherCaseIdentifiers.0.source",),
 				issue(
 					"ICH.C.1.9.1.r.2.REQUIRED",
 					"otherCaseIdentifiers.0.caseIdentifier",
-					true
 				),
 			]
 		);
@@ -3323,7 +3279,7 @@ mod golden_c1_value_tests {
 		fda_c_4_r_2(0, &reference, &mut issues);
 		let mut actual = issues
 			.into_iter()
-			.map(|issue| (issue.code, issue.path, issue.blocking))
+			.map(|issue| (issue.code, issue.path))
 			.collect::<Vec<_>>();
 		actual.sort();
 		assert_eq!(
@@ -3332,12 +3288,10 @@ mod golden_c1_value_tests {
 				issue(
 					"FDA.C.1.6.1.r.2.FILE_NAME.REQUIRED",
 					"documentsHeldBySender.0.includedDocument",
-					true,
 				),
 				issue(
 					"FDA.C.4.r.2.MEDIA_TYPE.MATCH",
 					"literatureReferences.0.documentBase64",
-					true,
 				),
 			]
 		);
@@ -3353,13 +3307,8 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.5.3.REQUIRED",
 					"studyInformation.0.sponsorStudyNumber",
-					true
 				),
-				issue(
-					"ICH.C.5.4.REQUIRED",
-					"studyInformation.0.studyTypeReaction",
-					true
-				),
+				issue("ICH.C.5.4.REQUIRED", "studyInformation.0.studyTypeReaction",),
 			]
 		);
 	}
@@ -3398,7 +3347,7 @@ mod golden_c1_value_tests {
 		let mut out = issues
 			.into_iter()
 			.filter(|issue| issue.code == "FDA.C.2.r.2.8.REQUIRED")
-			.map(|issue| (issue.code, issue.path, issue.blocking))
+			.map(|issue| (issue.code, issue.path))
 			.collect::<Vec<_>>();
 		out.sort();
 
@@ -3407,7 +3356,6 @@ mod golden_c1_value_tests {
 			vec![issue(
 				"FDA.C.2.r.2.8.REQUIRED",
 				"primarySources.0.reporterEmail",
-				true
 			)]
 		);
 	}
@@ -3423,7 +3371,6 @@ mod golden_c1_value_tests {
 			vec![issue(
 				"ICH.C.1.3.ALLOWED.VALUE",
 				"safetyReportIdentification.reportType",
-				true
 			)]
 		);
 	}
@@ -3439,7 +3386,6 @@ mod golden_c1_value_tests {
 			vec![issue(
 				"ICH.C.1.2.ALLOWED.VALUE",
 				"safetyReportIdentification.transmissionDate",
-				true
 			)]
 		);
 	}
@@ -3480,37 +3426,27 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.1.11.1.ALLOWED.VALUE",
 					"safetyReportIdentification.nullificationAmendmentCode",
-					true
 				),
 				issue(
 					"ICH.C.1.8.2.ALLOWED.VALUE",
 					"safetyReportIdentification.firstSenderType",
-					true
 				),
 				issue(
 					"ICH.C.1.9.1.ALLOWED.VALUE",
 					"safetyReportIdentification.otherCaseIdentifiersExist",
-					true
 				),
 				issue(
 					"ICH.C.2.r.4.ALLOWED.VALUE",
 					"primarySources.0.qualification",
-					true
 				),
 				issue(
 					"ICH.C.2.r.5.ALLOWED.VALUE",
 					"primarySources.0.primarySourceForRegulatoryPurposes",
-					true
 				),
-				issue(
-					"ICH.C.3.1.ALLOWED.VALUE",
-					"senderInformation.senderType",
-					true
-				),
+				issue("ICH.C.3.1.ALLOWED.VALUE", "senderInformation.senderType",),
 				issue(
 					"ICH.C.5.4.ALLOWED.VALUE",
 					"studyInformation.0.studyTypeReaction",
-					true
 				),
 			]
 		);
@@ -3548,62 +3484,50 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.1.1.LENGTH.MAX",
 					"safetyReportIdentification.safetyReportId",
-					true
 				),
 				issue(
 					"ICH.C.1.10.r.LENGTH.MAX",
 					"linkedReports.0.linkedReportNumber",
-					true
 				),
 				issue(
 					"ICH.C.1.11.1.LENGTH.MAX",
 					"safetyReportIdentification.nullificationAmendmentCode",
-					true
 				),
 				issue(
 					"ICH.C.1.11.2.LENGTH.MAX",
 					"safetyReportIdentification.nullificationReason",
-					true
 				),
 				issue(
 					"ICH.C.1.3.LENGTH.MAX",
 					"safetyReportIdentification.reportType",
-					true
 				),
 				issue(
 					"ICH.C.1.6.1.r.1.LENGTH.MAX",
 					"documentsHeldBySender.0.documentDescription",
-					true
 				),
 				issue(
 					"ICH.C.1.8.1.LENGTH.MAX",
 					"safetyReportIdentification.worldwideUniqueId",
-					true
 				),
 				issue(
 					"ICH.C.1.8.2.LENGTH.MAX",
 					"safetyReportIdentification.firstSenderType",
-					true
 				),
 				issue(
 					"ICH.C.1.9.1.r.1.LENGTH.MAX",
 					"otherCaseIdentifiers.0.source",
-					true
 				),
 				issue(
 					"ICH.C.1.9.1.r.2.LENGTH.MAX",
 					"otherCaseIdentifiers.0.caseIdentifier",
-					true
 				),
 				issue(
 					"ICH.C.5.3.LENGTH.MAX",
 					"studyInformation.0.sponsorStudyNumber",
-					true
 				),
 				issue(
 					"ICH.C.5.4.LENGTH.MAX",
 					"studyInformation.0.studyTypeReaction",
-					true
 				),
 			]
 		);
@@ -3655,128 +3579,72 @@ mod golden_c1_value_tests {
 		assert_eq!(
 			filtered(&ctx, C23_LENGTH_CODES),
 			vec![
-				issue(
-					"ICH.C.2.r.1.1.LENGTH.MAX",
-					"primarySources.0.reporterTitle",
-					true,
-				),
+				issue("ICH.C.2.r.1.1.LENGTH.MAX", "primarySources.0.reporterTitle",),
 				issue(
 					"ICH.C.2.r.1.2.LENGTH.MAX",
 					"primarySources.0.reporterGivenName",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.1.3.LENGTH.MAX",
 					"primarySources.0.reporterMiddleName",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.1.4.LENGTH.MAX",
 					"primarySources.0.reporterFamilyName",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.2.1.LENGTH.MAX",
 					"primarySources.0.reporterOrganization",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.2.2.LENGTH.MAX",
 					"primarySources.0.reporterDepartment",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.2.3.LENGTH.MAX",
 					"primarySources.0.reporterStreet",
-					true,
 				),
-				issue(
-					"ICH.C.2.r.2.4.LENGTH.MAX",
-					"primarySources.0.reporterCity",
-					true,
-				),
-				issue(
-					"ICH.C.2.r.2.5.LENGTH.MAX",
-					"primarySources.0.reporterState",
-					true,
-				),
+				issue("ICH.C.2.r.2.4.LENGTH.MAX", "primarySources.0.reporterCity",),
+				issue("ICH.C.2.r.2.5.LENGTH.MAX", "primarySources.0.reporterState",),
 				issue(
 					"ICH.C.2.r.2.6.LENGTH.MAX",
 					"primarySources.0.reporterPostcode",
-					true,
 				),
 				issue(
 					"ICH.C.2.r.2.7.LENGTH.MAX",
 					"primarySources.0.reporterTelephone",
-					true,
 				),
-				issue(
-					"ICH.C.2.r.3.LENGTH.MAX",
-					"primarySources.0.reporterCountry",
-					true,
-				),
-				issue(
-					"ICH.C.2.r.4.LENGTH.MAX",
-					"primarySources.0.qualification",
-					true,
-				),
+				issue("ICH.C.2.r.3.LENGTH.MAX", "primarySources.0.reporterCountry",),
+				issue("ICH.C.2.r.4.LENGTH.MAX", "primarySources.0.qualification",),
 				issue(
 					"ICH.C.2.r.5.LENGTH.MAX",
 					"primarySources.0.primarySourceForRegulatoryPurposes",
-					true,
 				),
-				issue("ICH.C.3.1.LENGTH.MAX", "senderInformation.senderType", true,),
-				issue(
-					"ICH.C.3.2.LENGTH.MAX",
-					"senderInformation.organizationName",
-					true,
-				),
-				issue(
-					"ICH.C.3.3.1.LENGTH.MAX",
-					"senderInformation.department",
-					true
-				),
-				issue(
-					"ICH.C.3.3.2.LENGTH.MAX",
-					"senderInformation.personTitle",
-					true
-				),
+				issue("ICH.C.3.1.LENGTH.MAX", "senderInformation.senderType",),
+				issue("ICH.C.3.2.LENGTH.MAX", "senderInformation.organizationName",),
+				issue("ICH.C.3.3.1.LENGTH.MAX", "senderInformation.department",),
+				issue("ICH.C.3.3.2.LENGTH.MAX", "senderInformation.personTitle",),
 				issue(
 					"ICH.C.3.3.3.LENGTH.MAX",
 					"senderInformation.personGivenName",
-					true,
 				),
 				issue(
 					"ICH.C.3.3.4.LENGTH.MAX",
 					"senderInformation.personMiddleName",
-					true,
 				),
 				issue(
 					"ICH.C.3.3.5.LENGTH.MAX",
 					"senderInformation.personFamilyName",
-					true,
 				),
-				issue(
-					"ICH.C.3.4.1.LENGTH.MAX",
-					"senderInformation.streetAddress",
-					true,
-				),
-				issue("ICH.C.3.4.2.LENGTH.MAX", "senderInformation.city", true),
-				issue("ICH.C.3.4.3.LENGTH.MAX", "senderInformation.state", true),
-				issue("ICH.C.3.4.4.LENGTH.MAX", "senderInformation.postcode", true),
-				issue(
-					"ICH.C.3.4.5.LENGTH.MAX",
-					"senderInformation.countryCode",
-					true
-				),
-				issue(
-					"ICH.C.3.4.6.LENGTH.MAX",
-					"senderInformation.telephone",
-					true
-				),
-				issue("ICH.C.3.4.7.LENGTH.MAX", "senderInformation.fax", true),
-				issue("ICH.C.3.4.8.LENGTH.MAX", "senderInformation.email", true),
-				issue("ICH.C.5.2.LENGTH.MAX", "studyInformation.0.studyName", true),
+				issue("ICH.C.3.4.1.LENGTH.MAX", "senderInformation.streetAddress",),
+				issue("ICH.C.3.4.2.LENGTH.MAX", "senderInformation.city",),
+				issue("ICH.C.3.4.3.LENGTH.MAX", "senderInformation.state",),
+				issue("ICH.C.3.4.4.LENGTH.MAX", "senderInformation.postcode",),
+				issue("ICH.C.3.4.5.LENGTH.MAX", "senderInformation.countryCode",),
+				issue("ICH.C.3.4.6.LENGTH.MAX", "senderInformation.telephone",),
+				issue("ICH.C.3.4.7.LENGTH.MAX", "senderInformation.fax",),
+				issue("ICH.C.3.4.8.LENGTH.MAX", "senderInformation.email",),
+				issue("ICH.C.5.2.LENGTH.MAX", "studyInformation.0.studyName",),
 			],
 		);
 	}
@@ -3794,7 +3662,7 @@ mod golden_c1_value_tests {
 			study_id,
 			"N".repeat(51),
 			Some("USA".to_string()),
-			1,
+			7, // Deleted earlier rows must not shift the editor error index.
 		)];
 
 		assert_eq!(
@@ -3803,17 +3671,14 @@ mod golden_c1_value_tests {
 				issue(
 					"ICH.C.4.r.1.LENGTH.MAX",
 					"literatureReferences.0.referenceText",
-					true,
 				),
 				issue(
 					"ICH.C.5.1.r.1.LENGTH.MAX",
 					"studyInformation.0.registrations.0.registrationNumber",
-					true,
 				),
 				issue(
 					"ICH.C.5.1.r.2.LENGTH.MAX",
 					"studyInformation.0.registrations.0.registrationCountry",
-					true,
 				),
 			],
 		);
@@ -3837,7 +3702,7 @@ mod golden_c1_value_tests {
 					issue.code.as_str(),
 					"ICH.C.1.REQUIRED"
 						| "ICH.C.1.3.ALLOWED.VALUE"
-						| "ICH.C.2.r.5.REQUIRED"
+						| "ICH.C.2.r.REQUIRED"
 						| "ICH.C.3.2.REQUIRED"
 						| "ICH.C.5.4.REQUIRED"
 						| "MFDS.C.3.1.KR.1.REQUIRED"
@@ -3851,7 +3716,6 @@ mod golden_c1_value_tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -3867,19 +3731,17 @@ mod golden_c1_value_tests {
 					Some("safetyReportIdentification.reportType".to_string()),
 					"case-identification".to_string(),
 					"C.1".to_string(),
-					true,
 				),
 				(
-					"ICH.C.2.r.5.REQUIRED".to_string(),
-					"[C.2.r.5] one primary source for regulatory purposes should be selected."
+					"ICH.C.2.r.REQUIRED".to_string(),
+					"At least one reporter is required."
 						.to_string(),
-					"primarySources.0.primarySourceForRegulatoryPurposes".to_string(),
+					"primarySources".to_string(),
 					Some(
-						"primarySources.0.primarySourceForRegulatoryPurposes".to_string(),
+						"primarySources".to_string(),
 					),
-					"reporter".to_string(),
+					"C".to_string(),
 					"C.2".to_string(),
-					false,
 				),
 				(
 					"ICH.C.3.2.REQUIRED".to_string(),
@@ -3888,7 +3750,6 @@ mod golden_c1_value_tests {
 					Some("senderInformation.organizationName".to_string()),
 					"sender".to_string(),
 					"C.3".to_string(),
-					true,
 				),
 				(
 					"ICH.C.5.4.REQUIRED".to_string(),
@@ -3897,7 +3758,6 @@ mod golden_c1_value_tests {
 					Some("studyInformation.0.studyTypeReaction".to_string()),
 					"study".to_string(),
 					"C.5".to_string(),
-					true,
 				),
 				(
 					"MFDS.C.3.1.KR.1.REQUIRED".to_string(),
@@ -3906,9 +3766,56 @@ mod golden_c1_value_tests {
 					Some("senderInformation.2.healthProfessionalTypeKr1".to_string()),
 					"case-identification".to_string(),
 					"C.3".to_string(),
-					true,
 				),
 			],
 		);
+	}
+
+	#[test]
+	fn missing_reporter_is_one_list_error_but_existing_reporter_has_field_errors() {
+		let mut ctx = ctx_with(study_report());
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let reporter: Vec<_> = issues
+			.iter()
+			.filter(|issue| issue.path.starts_with("primarySources"))
+			.collect();
+		assert_eq!(reporter.len(), 1, "{reporter:?}");
+		assert_eq!(reporter[0].path, "primarySources");
+		ctx.primary_sources = vec![primary_source()];
+		ctx.primary_sources[0].qualification = None;
+		ctx.primary_sources[0].primary_source_regulatory = Some("1".into());
+		issues.clear();
+		collect_ich_issues(&ctx, &mut issues);
+		assert!(!issues.iter().any(|issue| issue.path == "primarySources"));
+		assert!(issues
+			.iter()
+			.any(|issue| issue.path == "primarySources.0.qualification"));
+	}
+
+	#[test]
+	fn absent_conditional_lists_use_collection_paths() {
+		let mut ctx = ctx_with(study_report());
+		let report = ctx.safety_report.as_mut().unwrap();
+		report.additional_documents_available = Some(true);
+		report.other_case_identifiers_exist = Some(true);
+		let mut issues = Vec::new();
+		fda_repeating_flag_rules(&ctx, &mut issues);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.path.as_str())
+				.collect::<Vec<_>>(),
+			vec!["documentsHeldBySender", "otherCaseIdentifiers"]
+		);
+		ctx.message_header = Some(message_header("MFDS-O-CT", "MFDS-O-CT"));
+		issues.clear();
+		mfds_receiver_rules(&ctx, &mut issues);
+		let registration: Vec<_> = issues
+			.iter()
+			.filter(|issue| issue.path.contains("registrations"))
+			.collect();
+		assert_eq!(registration.len(), 1);
+		assert_eq!(registration[0].path, "studyInformation.registrations");
 	}
 }

@@ -138,19 +138,19 @@ async fn main() -> Result<()> {
 			.and_then(|v| v.get("ok"))
 			.and_then(|v| v.as_bool())
 			.unwrap_or(false);
-		let blocking = validation
+		let issue_count = validation
 			.get("data")
-			.and_then(|v| v.get("blocking_count"))
+			.and_then(|v| v.get("issue_count"))
 			.and_then(|v| v.as_u64())
 			.unwrap_or(999);
 		println!(
-			"[{}] {} case_id={} safety_report_id={} ok={} blocking_count={}",
+			"[{}] {} case_id={} safety_report_id={} ok={} issue_count={}",
 			idx + 1,
 			scenario.label,
 			case_id,
 			safety_report_id,
 			ok,
-			blocking
+			issue_count
 		);
 
 		client.mark_case_validated(&case_id).await?;

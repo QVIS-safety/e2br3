@@ -13,8 +13,7 @@ pub struct CaseValidationSummaryRow {
 	pub case_id: Uuid,
 	pub appendix: String,
 	pub page_id: String,
-	pub blocking_count: i32,
-	pub non_blocking_count: i32,
+	pub issue_count: i32,
 	pub required_count: i32,
 	pub stale: bool,
 	pub generated_at: OffsetDateTime,
@@ -75,9 +74,9 @@ impl CaseValidationSummaryBmc {
 				case_id,
 				&report.authority,
 				ALL_PAGE_ID,
-				report.blocking_count,
-				report.non_blocking_count,
+				report.issue_count,
 				required_count_for_report(report, None),
+				issue_keys_for_report(report, None),
 			)
 			.await?;
 
@@ -87,9 +86,9 @@ impl CaseValidationSummaryBmc {
 					case_id,
 					&report.authority,
 					page_id_for_validation_section(&section.section),
-					section.blocking_count,
-					section.non_blocking_count,
+					section.issue_count,
 					required_count_for_report(report, Some(&section.section)),
+					issue_keys_for_report(report, Some(&section.section)),
 				)
 				.await?;
 			}
@@ -103,13 +102,11 @@ impl CaseValidationSummaryBmc {
 		case_id: Uuid,
 		appendix: &str,
 		page_id: &str,
-		blocking_count: usize,
-		non_blocking_count: usize,
+		issue_count: usize,
 		required_count: usize,
+		issue_keys: serde_json::Value,
 	) -> Result<()> {
-		let blocking_count = count_as_i32(blocking_count, "blocking_count")?;
-		let non_blocking_count =
-			count_as_i32(non_blocking_count, "non_blocking_count")?;
+		let issue_count = count_as_i32(issue_count, "issue_count")?;
 		let required_count = count_as_i32(required_count, "required_count")?;
 		mm.dbx()
 			.execute(
@@ -119,18 +116,18 @@ impl CaseValidationSummaryBmc {
 						case_id,
 						appendix,
 						page_id,
-						blocking_count,
-						non_blocking_count,
+						issue_count,
 						required_count,
+						issue_keys,
 						stale,
 						generated_at
 					)
 					VALUES ($1, $2, $3, $4, $5, $6, false, now())
 					ON CONFLICT (case_id, appendix, page_id)
 					DO UPDATE SET
-						blocking_count = EXCLUDED.blocking_count,
-						non_blocking_count = EXCLUDED.non_blocking_count,
+						issue_count = EXCLUDED.issue_count,
 						required_count = EXCLUDED.required_count,
+						issue_keys = EXCLUDED.issue_keys,
 						stale = false,
 						generated_at = now()
 					"#,
@@ -138,9 +135,9 @@ impl CaseValidationSummaryBmc {
 				.bind(case_id)
 				.bind(appendix)
 				.bind(page_id)
-				.bind(blocking_count)
-				.bind(non_blocking_count)
-				.bind(required_count),
+				.bind(issue_count)
+				.bind(required_count)
+				.bind(issue_keys),
 			)
 			.await?;
 		Ok(())
@@ -150,10 +147,15 @@ impl CaseValidationSummaryBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		case_ids: &[Uuid],
+		authorities: &[crate::regulatory::RegulatoryAuthority],
 	) -> Result<HashMap<Uuid, i64>> {
-		if case_ids.is_empty() {
+		if case_ids.is_empty() || authorities.is_empty() {
 			return Ok(HashMap::new());
 		}
+		let mut appendices =
+			authorities.iter().map(|a| a.as_str()).collect::<Vec<_>>();
+		appendices.sort_unstable();
+		appendices.dedup();
 		mm.dbx().begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
 			let _ = mm.dbx().rollback_txn().await;
@@ -165,17 +167,22 @@ impl CaseValidationSummaryBmc {
 				sqlx::query_as::<_, CaseValidationTotalRow>(
 					r#"
 					SELECT case_id,
-					       COALESCE(SUM(blocking_count + non_blocking_count), 0)::bigint
+					       COUNT(DISTINCT issue_key.value)::bigint
 					           AS total_count
 					  FROM case_validation_summaries
+					  LEFT JOIN LATERAL jsonb_array_elements(issue_keys) AS issue_key(value) ON true
 					 WHERE case_id = ANY($1)
 					   AND page_id = $2
 					   AND stale = false
+					   AND appendix = ANY($3)
 					 GROUP BY case_id
+					HAVING COUNT(DISTINCT appendix) = $4
 					"#,
 				)
 				.bind(case_ids)
-				.bind(ALL_PAGE_ID),
+				.bind(ALL_PAGE_ID)
+				.bind(&appendices)
+				.bind(appendices.len() as i64),
 			)
 			.await
 		{
@@ -218,6 +225,22 @@ impl CaseValidationSummaryBmc {
 		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
+}
+
+fn issue_keys_for_report(
+	report: &CaseValidationReport,
+	section: Option<&str>,
+) -> serde_json::Value {
+	serde_json::Value::Array(
+		report
+			.issues
+			.iter()
+			.filter(|issue| {
+				section.map(|value| issue.section == value).unwrap_or(true)
+			})
+			.map(|issue| serde_json::json!([issue.code, issue.path]))
+			.collect(),
+	)
 }
 
 fn required_count_for_report(

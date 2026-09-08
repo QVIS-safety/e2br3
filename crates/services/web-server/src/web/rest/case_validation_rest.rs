@@ -5,6 +5,7 @@ use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
+use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{Error, Result};
@@ -13,12 +14,30 @@ use serde::Deserialize;
 use uuid::Uuid;
 use validator::{
 	infer_regulatory_authority_from_receivers, validate_case_for_authorities,
-	validate_case_for_authority, CaseValidationReport, RegulatoryAuthority,
+	CaseValidationReport, RegulatoryAuthority,
 };
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {
 	pub authority: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct ValidationAuthoritiesQuery {
+	pub authorities: Option<String>,
+}
+
+impl ValidationAuthoritiesQuery {
+	pub fn resolve(&self) -> Result<Vec<RegulatoryAuthority>> {
+		let mut authorities = Vec::new();
+		for value in self.authorities.as_deref().unwrap_or("ich").split(',') {
+			let authority = super::case_rest::parse_authority_or_bad_request(value)?;
+			if !authorities.contains(&authority) {
+				authorities.push(authority);
+			}
+		}
+		Ok(authorities)
+	}
 }
 
 pub(crate) async fn resolve_authority(
@@ -68,14 +87,47 @@ pub async fn refresh_case_validation_cache(
 	case_id: Uuid,
 	authorities: &[RegulatoryAuthority],
 ) -> Result<Vec<CaseValidationReport>> {
-	let reports =
-		validate_case_for_authorities(ctx, mm, case_id, authorities).await?;
-	CaseValidationSummaryBmc::upsert_for_reports(ctx, mm, case_id, &reports).await?;
-	Ok(reports)
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	let result: Result<Vec<CaseValidationReport>> = async {
+		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+		// Mutations use this same Case lock. Hold it across data loading and cache writes.
+		// ponytail: serialize validation per Case; use revisions if long validations cause contention.
+		mm.dbx()
+			.fetch_one(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM cases WHERE id = $1 FOR UPDATE",
+				)
+				.bind(case_id),
+			)
+			.await
+			.map_err(lib_core::model::Error::from)?;
+		let reports =
+			validate_case_for_authorities(ctx, mm, case_id, authorities).await?;
+		CaseValidationSummaryBmc::upsert_for_reports(ctx, mm, case_id, &reports)
+			.await?;
+		Ok(reports)
+	}
+	.await;
+	match result {
+		Ok(reports) => {
+			mm.dbx()
+				.commit_txn()
+				.await
+				.map_err(lib_core::model::Error::from)?;
+			Ok(reports)
+		}
+		Err(error) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(error)
+		}
+	}
 }
 
 /// GET /api/cases/{case_id}/validation
-/// Returns case validation issues split as blocking/non-blocking for the wizard.
+/// Returns all case validation issues and counts for the wizard.
 pub async fn validate_case(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -97,14 +149,9 @@ pub async fn validate_case(
 						.await?;
 
 				let report =
-					validate_case_for_authority(ctx, mm, case_id, authority).await?;
-				CaseValidationSummaryBmc::upsert_for_reports(
-					ctx,
-					mm,
-					case_id,
-					&[report.clone()],
-				)
-				.await?;
+					refresh_case_validation_cache(ctx, mm, case_id, &[authority])
+						.await?
+						.remove(0);
 				Ok((StatusCode::OK, Json(DataRestResult { data: report })))
 			})
 		},

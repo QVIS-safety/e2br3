@@ -204,7 +204,7 @@ fn collect_meddra_version_issues(
 			value.diagnosis_meddra_version.as_deref(),
 		));
 	}
-	collect_unavailable_meddra_version_warnings(
+	collect_unavailable_meddra_version_issues(
 		&validation_ctx.vocabulary,
 		&versions,
 		issues,
@@ -225,7 +225,7 @@ fn collect_meddra_version_issues(
 	}
 }
 
-fn collect_unavailable_meddra_version_warnings(
+fn collect_unavailable_meddra_version_issues(
 	vocabulary: &crate::context::VocabularyContext,
 	versions: &[(&str, String, Option<&str>)],
 	issues: &mut Vec<ValidationIssue>,
@@ -238,7 +238,7 @@ fn collect_unavailable_meddra_version_warnings(
 		if helpers::valid_dotted_version(Some(version))
 			&& !vocabulary.contains_meddra_version(version)
 		{
-			crate::push_business_warning(
+			crate::push_business_issue(
 				issues,
 				"ICH.MEDDRA.VERSION.UNAVAILABLE",
 				path,
@@ -401,7 +401,7 @@ mod tests {
 	}
 
 	#[test]
-	fn unavailable_meddra_release_warns_each_field_without_blocking() {
+	fn unavailable_meddra_release_blocks_submission_for_each_field() {
 		let vocabulary =
 			crate::context::VocabularyContext::for_meddra(&[("28.1", "10000001")]);
 		let versions = vec![
@@ -423,14 +423,16 @@ mod tests {
 		];
 		let mut issues = Vec::new();
 
-		collect_unavailable_meddra_version_warnings(
+		collect_unavailable_meddra_version_issues(
 			&vocabulary,
 			&versions,
 			&mut issues,
 		);
 
 		assert_eq!(issues.len(), 2);
-		assert!(issues.iter().all(|issue| !issue.blocking));
+		assert!(issues
+			.iter()
+			.all(|issue| issue.message == "MedDRA 12.0 is not loaded"));
 		assert_eq!(issues[0].section, "E");
 		assert_eq!(issues[1].section, "H");
 	}
@@ -450,7 +452,6 @@ mod tests {
 				"safetyReportIdentification.reportType",
 				"case-identification",
 				code,
-				true,
 			);
 		}
 		retain_case_business_rules(&mut issues);
@@ -472,14 +473,7 @@ mod tests {
 			"ICH.G.k.7.r.2a.ALLOWED.VALUE",
 			"ICH.H.3.r.1a.ALLOWED.VALUE",
 		] {
-			crate::push_field_issue(
-				&mut issues,
-				code,
-				"field",
-				"section",
-				code,
-				true,
-			);
+			crate::push_field_issue(&mut issues, code, "field", "section", code);
 		}
 		retain_case_business_rules(&mut issues);
 		assert_eq!(issues.len(), 9);

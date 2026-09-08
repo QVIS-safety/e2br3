@@ -53,6 +53,8 @@ pub async fn get_case_query_catalog(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseQueryRequest {
+	#[serde(flatten)]
+	pub validation: super::case_validation_rest::ValidationAuthoritiesQuery,
 	#[serde(default)]
 	pub conditions: Vec<RawCondition>,
 	#[serde(default)]
@@ -298,15 +300,14 @@ pub async fn search_cases(
 				})
 				.await?;
 				let cached_totals = CaseValidationSummaryBmc::cached_totals_by_case(
-					ctx, mm, &case_ids,
+					ctx, mm, &case_ids, &request.validation.resolve()?,
 				)
 				.await?;
 				for item in &mut items {
 					item.warn = cached_totals
 						.get(&item.case_id)
-						.copied()
-						.unwrap_or(0)
-						.to_string();
+						.map(|count| count.to_string())
+						.unwrap_or_else(|| "Not checked".to_string());
 				}
 				let element_values = if case_ids.is_empty() {
 					Vec::new()

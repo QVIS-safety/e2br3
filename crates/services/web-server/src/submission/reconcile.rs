@@ -58,10 +58,14 @@ pub async fn reconcile_due_submissions(
 				let submission_id = row.0;
 				result.attempted += 1;
 				result.processed_submission_ids.push(submission_id);
-				match reconcile_one_submission(mm, submission_id).await? {
-					ReconcileOutcome::Succeeded => result.succeeded += 1,
-					ReconcileOutcome::Failed => result.failed += 1,
-					ReconcileOutcome::Skipped => result.skipped += 1,
+				match reconcile_one_submission(mm, submission_id).await {
+					Ok(ReconcileOutcome::Succeeded) => result.succeeded += 1,
+					Ok(ReconcileOutcome::Failed) => result.failed += 1,
+					Ok(ReconcileOutcome::Skipped) => result.skipped += 1,
+					Err(error) => {
+						result.failed += 1;
+						tracing::error!(%submission_id, %error, "Submission retry failed");
+					}
 				}
 			}
 
@@ -99,6 +103,68 @@ pub(super) async fn reconcile_one_submission(
 		(Err(err), _) => Err(err),
 		(Ok(_), Err(err)) => Err(err),
 		(Ok(outcome), Ok(())) => Ok(outcome),
+	}
+}
+
+async fn record_retry_preparation_failure(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	error: &Error,
+) -> Result<()> {
+	let ctx = Ctx::root_ctx();
+	let now = OffsetDateTime::now_utc();
+	// Invalid case data/lifecycle needs user correction, not another dispatch attempt.
+	let next_retry_at = if matches!(
+		error,
+		Error::BadRequest { .. }
+			| Error::Model(ModelError::EntityUuidNotFound { .. })
+	) {
+		None
+	} else {
+		Some(now + time::Duration::minutes(5))
+	};
+	mm.dbx().begin_txn().await.map_err(ModelError::from)?;
+	let result = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+		let attempts = get_dispatch_attempt_count(mm, submission_id).await?;
+		upsert_dispatch_state_submit_failure(
+			mm,
+			submission_id,
+			now,
+			attempts,
+			&error.to_string(),
+			next_retry_at,
+		)
+		.await?;
+		append_submission_event(
+			mm,
+			submission_id,
+			"submission_retry_failed",
+			Some(json!({
+				"attempts": 0,
+				"error": error.to_string(),
+				"next_retry_at": next_retry_at,
+			})),
+		)
+		.await
+	}
+	.await;
+	match result {
+		Ok(()) => mm
+			.dbx()
+			.commit_txn()
+			.await
+			.map_err(|err| Error::from(ModelError::from(err))),
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
 	}
 }
 
@@ -193,13 +259,6 @@ async fn reconcile_one_submission_locked(
 			if !row.status.eq_ignore_ascii_case("rejected") {
 				return Ok(ReconcileOutcome::Skipped);
 			}
-			let _case = match CaseBmc::get(&system_ctx, mm, row.case_id).await {
-				Ok(case) => case,
-				Err(ModelError::EntityUuidNotFound { .. }) => {
-					return Ok(ReconcileOutcome::Skipped);
-				}
-				Err(e) => return Err(Error::from(e)),
-			};
 			let authority = if row.gateway.to_ascii_lowercase().contains("mfds") {
 				SubmissionAuthority::Mfds
 			} else {
@@ -209,32 +268,26 @@ async fn reconcile_one_submission_locked(
 				SubmissionAuthority::Fda => RegulatoryAuthority::Fda,
 				SubmissionAuthority::Mfds => RegulatoryAuthority::Mfds,
 			};
-			let header = prepare_outbound_message_header(
-				&system_ctx,
-				mm,
-				row.case_id,
-				export_authority,
-				None,
-			)
-			.await?;
-			let outbound_message_header = export_message_header(&header)?;
-
 			let export_ctx = system_ctx.with_compliance(
 				Some(SYSTEM_REASON_RECONCILE_EXPORT.to_string()),
 				None,
 			);
-			let xml = export_case_xml_with_options(
+			let xml = match prepare_submission_xml(
 				&export_ctx,
 				mm,
 				row.case_id,
-				ExportXmlOptions {
-					apply_comments: true,
-					authority: export_authority,
-					outbound_message_header,
-				},
+				export_authority,
 			)
 			.await
-			.map_err(Error::from)?;
+			{
+				Ok(xml) => xml,
+				Err(error) => {
+					let _ = mm.dbx().rollback_txn().await;
+					record_retry_preparation_failure(mm, submission_id, &error)
+						.await?;
+					return Ok(ReconcileOutcome::Failed);
+				}
+			};
 
 			let now = OffsetDateTime::now_utc();
 			let prior_attempts =

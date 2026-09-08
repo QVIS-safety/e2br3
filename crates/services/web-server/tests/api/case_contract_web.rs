@@ -1227,13 +1227,10 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
-	let blocking_count = validation_body["data"]["blocking_count"]
+	let issue_count = validation_body["data"]["issue_count"]
 		.as_u64()
-		.ok_or("missing blocking_count")?;
-	let non_blocking_count = validation_body["data"]["non_blocking_count"]
-		.as_u64()
-		.ok_or("missing non_blocking_count")?;
-	let expected_warn = (blocking_count + non_blocking_count).to_string();
+		.ok_or("missing issue_count")?;
+	let expected_warn = issue_count.to_string();
 	assert_ne!(
 		expected_warn, "0",
 		"test fixture must have at least one validation failure: {validation_body:?}"
@@ -1263,7 +1260,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	assert_eq!(
 		row["warn"].as_str(),
 		Some(expected_warn.as_str()),
-		"list-view warn should equal blocking + non-blocking validation failures; row={row:?}, validation={validation_body:?}"
+		"list-view warn should equal all validation failures; row={row:?}, validation={validation_body:?}"
 	);
 
 	Ok(())
@@ -1327,7 +1324,7 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 		.ok_or("missing projected warning case row before validation")?;
 	assert_eq!(
 		row["warn"].as_str(),
-		Some("0"),
+		Some("Not checked"),
 		"list-view should not live-validate uncached rows; row={row:?}"
 	);
 
@@ -1338,13 +1335,10 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
-	let blocking_count = validation_body["data"]["blocking_count"]
+	let issue_count = validation_body["data"]["issue_count"]
 		.as_u64()
-		.ok_or("missing blocking_count")?;
-	let non_blocking_count = validation_body["data"]["non_blocking_count"]
-		.as_u64()
-		.ok_or("missing non_blocking_count")?;
-	let expected_warn = (blocking_count + non_blocking_count).to_string();
+		.ok_or("missing issue_count")?;
+	let expected_warn = issue_count.to_string();
 	assert_ne!(expected_warn, "0", "{validation_body:?}");
 	let case_uuid = Uuid::parse_str(&case_id)?;
 	mm.dbx().begin_txn().await?;
@@ -1358,8 +1352,8 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 	let summary_rows = mm
 		.dbx()
 		.fetch_all(
-			sqlx::query_as::<_, (String, String, i32, i32)>(
-				"SELECT appendix, page_id, blocking_count, non_blocking_count
+			sqlx::query_as::<_, (String, String, i32)>(
+				"SELECT appendix, page_id, issue_count
 			   FROM case_validation_summaries
 			  WHERE case_id = $1
 			  ORDER BY appendix, page_id",
@@ -1370,17 +1364,16 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 	mm.dbx().commit_txn().await?;
 	assert!(
 		summary_rows.iter().any(
-			|(appendix, page_id, blocking, non_blocking)| appendix == "ich"
+			|(appendix, page_id, count)| appendix == "ich"
 				&& page_id == "ALL"
-				&& *blocking as u64 == blocking_count
-				&& *non_blocking as u64 == non_blocking_count
+				&& *count as u64 == issue_count
 		),
 		"single-authority validation should cache an appendix aggregate row; rows={summary_rows:?}"
 	);
 	assert!(
 		summary_rows
 			.iter()
-			.any(|(appendix, page_id, _, _)| appendix == "ich" && page_id != "ALL"),
+			.any(|(appendix, page_id, _)| appendix == "ich" && page_id != "ALL"),
 		"single-authority validation should cache appendix page rows; rows={summary_rows:?}"
 	);
 
@@ -1446,7 +1439,7 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 		.ok_or("missing projected warning case row after cache invalidation")?;
 	assert_eq!(
 		row["warn"].as_str(),
-		Some("0"),
+		Some("Not checked"),
 		"list-view should hide stale validation cache until validation refreshes it; row={row:?}"
 	);
 
@@ -1488,6 +1481,13 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["authority"], json!("fda"));
+	let fda_count = body["data"]["issue_count"].as_u64().unwrap();
+	let mut unique_issues = body["data"]["issues"]
+		.as_array()
+		.unwrap()
+		.iter()
+		.map(|issue| (issue["code"].to_string(), issue["path"].to_string()))
+		.collect::<std::collections::HashSet<_>>();
 
 	let (status, body) = get_json(
 		&app,
@@ -1497,6 +1497,46 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["authority"], json!("mfds"));
+	let mfds_count = body["data"]["issue_count"].as_u64().unwrap();
+	unique_issues.extend(
+		body["data"]["issues"]
+			.as_array()
+			.unwrap()
+			.iter()
+			.map(|issue| (issue["code"].to_string(), issue["path"].to_string())),
+	);
+	assert!(
+		unique_issues.len() < (fda_count + mfds_count) as usize,
+		"fixture must exercise shared ICH errors"
+	);
+
+	for (authorities, expected) in [
+		("ich", "Not checked".to_string()),
+		("fda", fda_count.to_string()),
+		("mfds", mfds_count.to_string()),
+		("fda,mfds", unique_issues.len().to_string()),
+		("fda,fda", fda_count.to_string()),
+		("ich,fda", "Not checked".to_string()),
+	] {
+		let (status, list) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/list-view?authorities={authorities}"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{list:?}");
+		let row = list["data"]["items"]
+			.as_array()
+			.unwrap()
+			.iter()
+			.find(|item| item["caseId"].as_str() == Some(case_id))
+			.expect("case in list");
+		assert_eq!(
+			row["warn"].as_str(),
+			Some(expected.as_str()),
+			"{authorities}: {row:?}"
+		);
+	}
 
 	let case_uuid = Uuid::parse_str(case_id)?;
 	mm.dbx().begin_txn().await?;
@@ -1601,6 +1641,85 @@ async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
 		"offset should move to the next ordered row"
 	);
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_validation_cache_waits_for_case_mutation() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let (status, body) = post_json(&app, &cookie, "/api/cases", json!({"data": {
+		"safetyReportIdentification": {"safetyReportId": format!("CACHE-RACE-{}", Uuid::new_v4())},
+		"status": "draft"
+	}})).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id = Uuid::parse_str(body["data"]["id"].as_str().unwrap())?;
+
+	// The editing user's transaction holds the same row lock as authorized mutations.
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let (pid,) = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (i32,)>("SELECT pg_backend_pid()"))
+		.await?;
+	mm.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (Uuid,)>(
+				"SELECT id FROM cases WHERE id = $1 FOR UPDATE",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	let validation = tokio::spawn(async move {
+		get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/validation?authority=ich"),
+		)
+		.await
+	});
+	let waiting = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+		loop {
+            let blocked: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid)))")
+				.bind(pid).fetch_one(mm.dbx().db()).await?;
+			if blocked { return Result::Ok(()); }
+			tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+		}
+	}).await;
+	mm.dbx().commit_txn().await?;
+	let (status, report) =
+		tokio::time::timeout(std::time::Duration::from_secs(10), validation)
+			.await???;
+	assert_eq!(status, StatusCode::OK, "{report:?}");
+	assert!(
+		waiting.is_ok(),
+		"validation must wait before loading Case data"
+	);
+	waiting??;
+	assert!(report["data"]["issue_count"].as_u64().unwrap() > 0);
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let (status, report) = get_json(
+		&web_server::app(mm.clone()),
+		&cookie_header(&viewer_token.to_string()),
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"read-only users must still validate: {report:?}"
+	);
 	Ok(())
 }
 

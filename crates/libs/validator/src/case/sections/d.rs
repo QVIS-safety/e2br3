@@ -1,7 +1,7 @@
 use super::helpers::{
 	e2b_ts_date, max_length, reject_future_date, reject_when, require, valid_code,
 	valid_decimal, valid_dotted_version, valid_identifier, valid_meddra_term,
-	valid_meddra_version, valid_mfds_product, warn_when, DateValues,
+	valid_meddra_version, valid_mfds_product, DateValues,
 };
 use crate::context::VocabularyContext;
 use crate::{
@@ -72,25 +72,6 @@ fn past_drug_has_payload(past_drug: &PastDrugHistory) -> bool {
 		|| has_text(past_drug.indication_meddra_code.as_deref())
 		|| has_text(past_drug.reaction_meddra_version.as_deref())
 		|| has_text(past_drug.reaction_meddra_code.as_deref())
-}
-
-fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
-	sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())
-		.unwrap_or(fallback_idx)
-}
-
-fn resolve_parent_past_drug_indices(
-	parent_indices: &HashMap<Uuid, usize>,
-	parent_id: Uuid,
-	sequence_number: i32,
-) -> Option<(usize, usize)> {
-	let parent_index = parent_indices.get(&parent_id).copied()?;
-	let past_drug_index = sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())?;
-	Some((parent_index, past_drug_index))
 }
 
 fn parent_index_by_id(parents: &[ParentInformation]) -> HashMap<Uuid, usize> {
@@ -1749,7 +1730,7 @@ fn fda_d_1(
 		&& validation_ctx.patient.as_ref().is_none_or(|patient| {
 			patient.patient_initials.as_deref().map(str::trim) != Some("AGGREGATE")
 		}) {
-		crate::push_business_warning(
+		crate::push_business_issue(
 			issues,
 			"FDA.W0010",
 			"patientInformation.patientInitials",
@@ -1838,7 +1819,7 @@ fn fda_d_11_d_12_na(
 		|| matches!(null_flavor, Some("NA"))
 	{
 		if patient.race_code_null_flavor.as_deref().map(str::trim) != Some("NA") {
-			crate::push_business_warning(
+			crate::push_business_issue(
 				issues,
 				"FDA.W0003",
 				"patientInformation.raceCodeNullFlavor",
@@ -1847,7 +1828,7 @@ fn fda_d_11_d_12_na(
 		}
 		if patient.ethnicity_code_null_flavor.as_deref().map(str::trim) != Some("NA")
 		{
-			crate::push_business_warning(issues, "FDA.W0004", "patientInformation.ethnicityCodeNullFlavor", "Ethnicity should use null flavor NA for aggregate or unavailable patients");
+			crate::push_business_issue(issues, "FDA.W0004", "patientInformation.ethnicityCodeNullFlavor", "Ethnicity should use null flavor NA for aggregate or unavailable patients");
 		}
 	}
 }
@@ -1926,7 +1907,7 @@ fn mfds_d_8_r_1_kr_1b(
 			past.mfds_medicinal_product_id.as_deref(),
 		),
 	);
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.8.r.1.KR.1b.REQUIRED",
 		&path,
@@ -1945,7 +1926,7 @@ fn mfds_d_8_r_1_kr_1a(
 	receiver_is_fr: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.8.r.1.KR.1a.REQUIRED",
 		&format!(
@@ -1991,7 +1972,7 @@ fn mfds_d_8_identifier_companions(
 				&& !has_text(past.phpid.as_deref()),
 		),
 	] {
-		warn_when(
+		reject_when(
 			issues,
 			code,
 			&format!("patientInformation.pastDrugHistory.{idx}.{field}"),
@@ -2023,7 +2004,7 @@ fn mfds_d_10_8_identifier_companions(
 				&& !has_text(past.phpid.as_deref()),
 		),
 	] {
-		warn_when(
+		reject_when(
 			issues,
 			code,
 			&format!(
@@ -2063,7 +2044,7 @@ fn mfds_d_10_8_r_1_kr_1b(
 			past.mfds_medicinal_product_id.as_deref(),
 		),
 	);
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
 		&path,
@@ -2081,7 +2062,7 @@ fn mfds_d_10_8_r_1_kr_1a(
 	receiver_is_fr: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	warn_when(
+	reject_when(
 		issues,
 		"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
 		&format!(
@@ -2237,7 +2218,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback = fallback_by_parent.entry(episode.parent_id).or_insert(0);
-		let idx = index_from_sequence(episode.sequence_number, *fallback);
+		let idx = *fallback;
 		*fallback += 1;
 		d_10_7_1_r_1a(parent_idx, idx, episode, issues);
 		d_10_7_1_r_1b(parent_idx, idx, episode, issues);
@@ -2252,7 +2233,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback = fallback_by_parent.entry(drug.parent_id).or_insert(0);
-		let idx = index_from_sequence(drug.sequence_number, *fallback);
+		let idx = *fallback;
 		*fallback += 1;
 		d_10_8_r_1(parent_idx, idx, drug, issues);
 		d_10_8_r_2a(parent_idx, idx, drug, issues);
@@ -2323,14 +2304,14 @@ pub(crate) fn collect_mfds_issues(
 	}
 
 	let parent_indices = parent_index_by_id(&validation_ctx.parents);
+	let mut next_by_parent = HashMap::new();
 	for past in &mfds_ctx.parent_past_drugs {
-		let Some((parent_idx, idx)) = resolve_parent_past_drug_indices(
-			&parent_indices,
-			past.parent_id,
-			past.sequence_number,
-		) else {
+		let Some(parent_idx) = parent_indices.get(&past.parent_id).copied() else {
 			continue;
 		};
+		let next = next_by_parent.entry(past.parent_id).or_insert(0);
+		let idx = *next;
+		*next += 1;
 		mfds_d_10_8_r_1_kr_1b(
 			parent_idx,
 			idx,
@@ -2703,14 +2684,16 @@ mod golden_companion_tests {
 		ctx.parents = vec![parent(first_parent_id), parent(second_parent_id)];
 		ctx.parent_medical_history =
 			vec![parent_medhist(second_parent_id, Some("10000001"), None)];
+		ctx.parent_medical_history[0].sequence_number = 7;
 		let mut exclusive_parent_past_drug =
 			parent_past_drug(second_parent_id, Some("MPID"), Some("1"));
-		exclusive_parent_past_drug.sequence_number = 2;
+		exclusive_parent_past_drug.sequence_number = 9;
 		exclusive_parent_past_drug.phpid = Some("PHPID".to_string());
 		ctx.parent_past_drugs = vec![
 			parent_past_drug(second_parent_id, Some("MPID"), None),
 			exclusive_parent_past_drug,
 		];
+		ctx.parent_past_drugs[0].sequence_number = 4;
 
 		let mut issues = Vec::new();
 		collect_ich_issues(&ctx, &mut issues);
@@ -3366,7 +3349,6 @@ mod golden_companion_tests {
 		assert!(issues.iter().any(|issue| {
 			issue.code == "ICH.D.10.5.INTEGER"
 				&& issue.path == "patientInformation.parents.2.heightCm"
-				&& issue.blocking
 		}));
 
 		issues.clear();
@@ -3591,7 +3573,6 @@ mod golden_companion_tests {
 					issue.field_path,
 					issue.section,
 					issue.subsection,
-					issue.blocking,
 				)
 			})
 			.collect::<Vec<_>>();
@@ -3607,7 +3588,6 @@ mod golden_companion_tests {
 					Some("patientInformation.patientInitials".to_string()),
 					"patient".to_string(),
 					"D.1".to_string(),
-					true,
 				),
 				(
 					"ICH.D.2.3.ALLOWED.VALUE".to_string(),
@@ -3616,7 +3596,6 @@ mod golden_companion_tests {
 					Some("patientInformation.patientAgeGroup".to_string()),
 					"patient".to_string(),
 					"D.2".to_string(),
-					true,
 				),
 				(
 					"MFDS.D.8.r.1.KR.1a.REQUIRED".to_string(),
@@ -3625,7 +3604,6 @@ mod golden_companion_tests {
 					Some("patientInformation.pastDrugHistory.4.mfdsMedicinalProductVersion".to_string()),
 					"patient".to_string(),
 					"D.8.r".to_string(),
-					false,
 				),
 			],
 		);

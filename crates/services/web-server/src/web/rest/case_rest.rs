@@ -43,7 +43,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sqlx::{types::time::OffsetDateTime, FromRow};
 use uuid::Uuid;
-use validator::validate_case_for_authority;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";
@@ -1260,6 +1259,9 @@ pub async fn list_case_view_rows(
 	ctx_w: CtxW,
 	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
+	axum::extract::Query(validation_query): axum::extract::Query<
+		super::case_validation_rest::ValidationAuthoritiesQuery,
+	>,
 ) -> Result<(
 	axum::http::StatusCode,
 	Json<DataRestResult<CaseListViewResult>>,
@@ -1270,7 +1272,13 @@ pub async fn list_case_view_rows(
 		&snapshot,
 		&mm,
 		move |ctx, mm, scope| {
-			Box::pin(list_case_view_rows_authorized(ctx, mm, scope, raw_query))
+			Box::pin(list_case_view_rows_authorized(
+				ctx,
+				mm,
+				scope,
+				raw_query,
+				validation_query,
+			))
 		},
 	)
 	.await
@@ -1281,12 +1289,14 @@ async fn list_case_view_rows_authorized(
 	mm: &ModelManager,
 	scope: &EnforcedScopeFilter,
 	raw_query: Option<String>,
+	validation_query: super::case_validation_rest::ValidationAuthoritiesQuery,
 ) -> Result<(
 	axum::http::StatusCode,
 	Json<DataRestResult<CaseListViewResult>>,
 )> {
 	let params = ParamsList::<CaseFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
+	let authorities = validation_query.resolve()?;
 	let list_options = params.list_options;
 	let (sender_ids, product_ids, study_ids) = case_scope_ids(ctx, scope);
 
@@ -1310,14 +1320,18 @@ async fn list_case_view_rows_authorized(
 	.await?;
 
 	let case_ids = items.iter().map(|item| item.case_id).collect::<Vec<_>>();
-	let cached_totals =
-		CaseValidationSummaryBmc::cached_totals_by_case(ctx, mm, &case_ids).await?;
+	let cached_totals = CaseValidationSummaryBmc::cached_totals_by_case(
+		ctx,
+		mm,
+		&case_ids,
+		&authorities,
+	)
+	.await?;
 	for item in &mut items {
 		item.warn = cached_totals
 			.get(&item.case_id)
-			.copied()
-			.unwrap_or(0)
-			.to_string();
+			.map(|count| count.to_string())
+			.unwrap_or_else(|| "Not checked".to_string());
 	}
 
 	Ok((
@@ -1691,19 +1705,19 @@ pub async fn mark_case_validated_by_validator(
 					)
 					.await?;
 				let report =
-					validate_case_for_authority(ctx, mm, id, authority).await?;
-				CaseValidationSummaryBmc::upsert_for_reports(
-					ctx,
-					mm,
-					id,
-					&[report.clone()],
-				)
-				.await?;
-				if report.blocking_count > 0 {
+					super::case_validation_rest::refresh_case_validation_cache(
+						ctx,
+						mm,
+						id,
+						&[authority],
+					)
+					.await?
+					.remove(0);
+				if report.issue_count > 0 {
 					return Err(Error::BadRequest {
 						message: format!(
-							"validator cannot mark case validated: {} blocking issue(s) remain",
-							report.blocking_count
+							"validator cannot mark case validated: {} validation issue(s) remain",
+							report.issue_count
 						),
 					});
 				}

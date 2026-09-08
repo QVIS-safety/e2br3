@@ -1109,13 +1109,12 @@ async fn test_primary_source_without_regulatory_primary_emits_warning() -> Resul
 	assert!(
 		issues.iter().any(|issue| {
 			issue["code"] == "ICH.C.2.r.5.REQUIRED"
-				&& issue["blocking"] == false
 				&& issue["path"]
 					== "primarySources.0.primarySourceForRegulatoryPurposes"
 				&& issue["field_path"]
 					== "primarySources.0.primarySourceForRegulatoryPurposes"
 		}),
-		"expected non-blocking C.2.r.5 primary source warning, body={body}"
+		"expected C.2.r.5 primary source issue, body={body}"
 	);
 	Ok(())
 }
@@ -1678,7 +1677,7 @@ async fn test_validator_endpoint_requires_token() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_validator_endpoint_rejects_blocking_cases() -> Result<()> {
+async fn test_validator_endpoint_rejects_invalid_cases() -> Result<()> {
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1694,7 +1693,7 @@ async fn test_validator_endpoint_rejects_blocking_cases() -> Result<()> {
 	assert!(body["error"]["data"]["detail"]
 		.as_str()
 		.unwrap_or_default()
-		.contains("blocking issue(s) remain"));
+		.contains("validation issue(s) remain"));
 	Ok(())
 }
 

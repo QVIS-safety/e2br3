@@ -9,10 +9,6 @@ pub fn should_require_fda_local_criteria_report_type(
 	fulfil_expedited_criteria
 }
 
-pub fn should_warn_fda_combination_product_indicator_missing() -> bool {
-	true
-}
-
 pub fn should_clear_local_criteria_null_flavor_on_value() -> bool {
 	true
 }
