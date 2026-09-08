@@ -189,6 +189,14 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - Invalid/missing values still produce `None`, and existing field validation remains unchanged. A 17-input regression matrix preserves case, yes/no, ASCII/Unicode whitespace, and invalid-input behavior for all three contracts.
 - Verification passed: all 161 XML library tests and the import → single/ZIP export smoke test, using a disposable isolated database for the latter.
 
+### P2 — Disabled export contracts give false coverage (remediated)
+
+- Removed the 744-line `export_contract_web.rs` and its `cfg(any())` registration. None of its nine tests were compiled or run; three manual database fixture builders and four request helpers duplicated active test infrastructure.
+- Preserved the useful contracts in the active `xml_import_export` smoke tests: explicit FDA/MFDS single and ZIP exports, exact ZIP filenames and case deduplication, duplicate authority rejection, missing batch receiver rejection, case-scoped history, persisted failure history, absence of the legacy `validationAuthority` field, and error-download content type, attachment name, and body.
+- The obsolete raw-XML passthrough expectation was not restored. A small XML-library test checks comment preservation/removal directly, while the existing smoke and runtime-settings tests cover the notation setting and request override.
+- Production code, environment/deployment settings, dependencies, and transaction ownership are unchanged.
+- Verification passed: 162 XML-library tests, 4 header/runtime-settings tests, and 2 expanded export smoke tests using a disposable isolated database; the API test target and workspace compile, formatting, and diff checks also passed.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.
