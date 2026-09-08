@@ -81,8 +81,10 @@ pub(crate) fn push_field_issue(
 pub fn build_report(
 	authority: RegulatoryAuthority,
 	case_id: Uuid,
-	issues: Vec<ValidationIssue>,
+	mut issues: Vec<ValidationIssue>,
 ) -> CaseValidationReport {
+	let mut seen = std::collections::HashSet::new();
+	issues.retain(|issue| seen.insert((issue.code.clone(), issue.path.clone())));
 	let issue_count = issues.len();
 	let mut by_section: BTreeMap<String, usize> = BTreeMap::new();
 	let mut by_subsection: BTreeMap<(String, String), usize> = BTreeMap::new();
@@ -126,6 +128,26 @@ pub fn build_report(
 #[cfg(test)]
 mod direct_business_issue_tests {
 	use super::*;
+
+	#[test]
+	fn report_deduplicates_rules_without_collapsing_distinct_rows() {
+		let mut issues = Vec::new();
+		for path in [
+			"reactions.0.reactionStartDate",
+			"reactions.0.reactionStartDate",
+			"reactions.1.reactionStartDate",
+		] {
+			push_business_issue(
+				&mut issues,
+				"ICH.E.i.4.REQUIRED",
+				path,
+				"Date required",
+			);
+		}
+		let report = build_report(RegulatoryAuthority::Ich, Uuid::nil(), issues);
+		assert_eq!(report.issue_count, 2);
+		assert_eq!(report.section_summaries[0].issue_count, 2);
+	}
 
 	#[test]
 	fn direct_business_issue_fails_report_without_catalog_metadata() {

@@ -98,13 +98,6 @@ fn is_later_than(
 	matches!((value, other), (Some(value), Some(other)) if value > other)
 }
 
-fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
-	sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())
-		.unwrap_or(fallback_idx)
-}
-
 fn trimmed(value: Option<&str>) -> Option<&str> {
 	value.map(str::trim).filter(|value| !value.is_empty())
 }
@@ -521,6 +514,9 @@ fn c_2_r_2_1(
 	report_type_is_study: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
+	if sources.is_empty() {
+		return;
+	}
 	let (value, null_flavor) = sources
 		.iter()
 		.find_map(|source| {
@@ -666,6 +662,15 @@ fn c_2_r_4(idx: usize, source: &PrimarySource, issues: &mut Vec<ValidationIssue>
 /// ICH.C.2.r.5.ALLOWED.VALUE
 /// ICH.C.2.r.5.LENGTH.MAX
 fn c_2_r_5(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
+	if sources.is_empty() {
+		crate::push_business_issue(
+			issues,
+			"ICH.C.2.r.REQUIRED",
+			"primarySources",
+			"At least one reporter is required.",
+		);
+		return;
+	}
 	for (idx, source) in sources.iter().enumerate() {
 		let path =
 			format!("primarySources.{idx}.primarySourceForRegulatoryPurposes");
@@ -1324,7 +1329,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback_idx = fallback_idx_by_study.entry(study_id).or_insert(0);
-		let idx = index_from_sequence(registration.sequence_number, *fallback_idx);
+		let idx = *fallback_idx;
 		*fallback_idx += 1;
 		c_5_1_r_1(study_idx, idx, registration, issues);
 		c_5_1_r_2(
@@ -1352,17 +1357,6 @@ pub(crate) fn collect_ich_issues(
 		c_3_4_6(sender, issues);
 		c_3_4_7(sender, issues);
 		c_3_4_8(sender, issues);
-	}
-
-	if validation_ctx.primary_sources.is_empty() {
-		required_field(
-			issues,
-			"ICH.C.2.r.4.REQUIRED",
-			"primarySources.0.qualification",
-			"reporter",
-			"[C.2.r.4] is required.",
-			false,
-		);
 	}
 }
 
@@ -1496,15 +1490,15 @@ fn fda_repeating_flag_rules(
 		report.additional_documents_available == Some(true)
 			&& validation_ctx.documents_held_by_sender.is_empty(),
 		"FDA.R0009",
-		"documentsHeldBySender.0.documentDescription",
-		"C.1.6.1.r.1 is required when C.1.6.1 is true.",
+		"documentsHeldBySender",
+		"At least one document is required when additional documents are available.",
 	);
 	push_business_violation(
 		issues,
 		report.other_case_identifiers_exist == Some(true)
 			&& validation_ctx.other_case_identifiers.is_empty(),
 		"FDA.R0017",
-		"otherCaseIdentifiers.0.source",
+		"otherCaseIdentifiers",
 		"At least one C.1.9.1.r entry is required when C.1.9.1 is true.",
 	);
 }
@@ -1867,7 +1861,7 @@ fn fda_study_route_rules(
 		issues,
 		ind.is_some() && !cross_reported,
 		"FDA.R0026",
-		"studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber",
+		if fda_ctx.cross_reported_inds.is_empty() { "studyInformation.fdaCrossReportedIndNumbers" } else { "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber" },
 		"FDA.C.5.6.r requires a cross-reported IND or nullFlavor NA when FDA.C.5.5a is present.",
 	);
 	push_business_violation(
@@ -1884,7 +1878,7 @@ fn fda_study_route_rules(
 		crate::push_business_issue(
 			issues,
 			"FDA.W0001",
-			"linkedReports.0.linkedReportNumber",
+			"linkedReports",
 			"A linked report number should be provided for an aggregate report.",
 		);
 	}
@@ -2134,7 +2128,7 @@ fn mfds_receiver_rules(
 			issues,
 			validation_ctx.study_registrations.is_empty(),
 			"MFDS.C.5.1.r.1.RECEIVER.REQUIRED",
-			"studyInformation.0.registrations.0.registrationNumber",
+			"studyInformation.registrations",
 			"MFDS CT/CU reports require a study registration number.",
 		);
 		for (idx, registration) in
@@ -3668,7 +3662,7 @@ mod golden_c1_value_tests {
 			study_id,
 			"N".repeat(51),
 			Some("USA".to_string()),
-			1,
+			7, // Deleted earlier rows must not shift the editor error index.
 		)];
 
 		assert_eq!(
@@ -3708,7 +3702,7 @@ mod golden_c1_value_tests {
 					issue.code.as_str(),
 					"ICH.C.1.REQUIRED"
 						| "ICH.C.1.3.ALLOWED.VALUE"
-						| "ICH.C.2.r.5.REQUIRED"
+						| "ICH.C.2.r.REQUIRED"
 						| "ICH.C.3.2.REQUIRED"
 						| "ICH.C.5.4.REQUIRED"
 						| "MFDS.C.3.1.KR.1.REQUIRED"
@@ -3739,14 +3733,14 @@ mod golden_c1_value_tests {
 					"C.1".to_string(),
 				),
 				(
-					"ICH.C.2.r.5.REQUIRED".to_string(),
-					"[C.2.r.5] one primary source for regulatory purposes should be selected."
+					"ICH.C.2.r.REQUIRED".to_string(),
+					"At least one reporter is required."
 						.to_string(),
-					"primarySources.0.primarySourceForRegulatoryPurposes".to_string(),
+					"primarySources".to_string(),
 					Some(
-						"primarySources.0.primarySourceForRegulatoryPurposes".to_string(),
+						"primarySources".to_string(),
 					),
-					"reporter".to_string(),
+					"C".to_string(),
 					"C.2".to_string(),
 				),
 				(
@@ -3775,5 +3769,53 @@ mod golden_c1_value_tests {
 				),
 			],
 		);
+	}
+
+	#[test]
+	fn missing_reporter_is_one_list_error_but_existing_reporter_has_field_errors() {
+		let mut ctx = ctx_with(study_report());
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let reporter: Vec<_> = issues
+			.iter()
+			.filter(|issue| issue.path.starts_with("primarySources"))
+			.collect();
+		assert_eq!(reporter.len(), 1, "{reporter:?}");
+		assert_eq!(reporter[0].path, "primarySources");
+		ctx.primary_sources = vec![primary_source()];
+		ctx.primary_sources[0].qualification = None;
+		ctx.primary_sources[0].primary_source_regulatory = Some("1".into());
+		issues.clear();
+		collect_ich_issues(&ctx, &mut issues);
+		assert!(!issues.iter().any(|issue| issue.path == "primarySources"));
+		assert!(issues
+			.iter()
+			.any(|issue| issue.path == "primarySources.0.qualification"));
+	}
+
+	#[test]
+	fn absent_conditional_lists_use_collection_paths() {
+		let mut ctx = ctx_with(study_report());
+		let report = ctx.safety_report.as_mut().unwrap();
+		report.additional_documents_available = Some(true);
+		report.other_case_identifiers_exist = Some(true);
+		let mut issues = Vec::new();
+		fda_repeating_flag_rules(&ctx, &mut issues);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.path.as_str())
+				.collect::<Vec<_>>(),
+			vec!["documentsHeldBySender", "otherCaseIdentifiers"]
+		);
+		ctx.message_header = Some(message_header("MFDS-O-CT", "MFDS-O-CT"));
+		issues.clear();
+		mfds_receiver_rules(&ctx, &mut issues);
+		let registration: Vec<_> = issues
+			.iter()
+			.filter(|issue| issue.path.contains("registrations"))
+			.collect();
+		assert_eq!(registration.len(), 1);
+		assert_eq!(registration[0].path, "studyInformation.registrations");
 	}
 }

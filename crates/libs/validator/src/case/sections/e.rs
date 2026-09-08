@@ -605,8 +605,12 @@ pub(crate) fn collect_ich_issues(
 		)
 	});
 	if validation_ctx.reactions.is_empty() {
-		e_i_1_1a(0, None, issues);
-		e_i_7(0, None, issues);
+		push_business_issue(
+			issues,
+			"ICH.E.i.REQUIRED",
+			"reactions",
+			"At least one reaction/event is required.",
+		);
 		return;
 	}
 	for (idx, reaction) in validation_ctx.reactions.iter().enumerate() {
@@ -851,6 +855,30 @@ mod tests {
 			.collect::<Vec<_>>();
 		out.sort();
 		out
+	}
+
+	#[test]
+	fn empty_reactions_have_one_collection_error_and_existing_rows_keep_field_errors(
+	) {
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let mut ctx = empty_ctx();
+			let mut issues = Vec::new();
+			collect(&mut issues, authority, &ctx, None);
+			assert_eq!(issues.len(), 1, "{issues:?}");
+			assert_eq!(issues[0].code, "ICH.E.i.REQUIRED");
+			assert_eq!(issues[0].path, "reactions");
+			assert_eq!(issues[0].field_path.as_deref(), Some("reactions"));
+			ctx.reactions = vec![reaction()];
+			issues.clear();
+			collect(&mut issues, authority, &ctx, None);
+			assert!(!issues.iter().any(|issue| issue.path == "reactions"));
+			assert!(issues.iter().any(|issue| issue.code == "ICH.E.i.7.REQUIRED"
+				&& issue.path == "reactions.0.reactionOutcome"));
+		}
 	}
 
 	#[test]

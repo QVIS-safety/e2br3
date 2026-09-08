@@ -10,6 +10,65 @@ include!("generated/si_fields.rs");
 
 #[serial_test::serial]
 #[tokio::test]
+async fn study_sequence_gaps_keep_validation_bound_to_editor_rows() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "SI-ROW-BINDING", &["ich"]).await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/SI");
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({
+			"authorities": ["ich"], "rows": {
+				"studyInformation": {"studyName": "Sequence gaps"},
+				"studyRegistrationNumbers": [
+					{"registrationNumber": "LATER", "countryCode": "US", "sequenceNumber": 9},
+					{"registrationNumber": "FIRST", "countryCode": "ZX", "sequenceNumber": 4}
+				]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["studyRegistrationNumbers"][0]["registration_number"],
+		"FIRST"
+	);
+	assert_eq!(
+		body["rows"]["studyRegistrationNumbers"][1]["registration_number"],
+		"LATER"
+	);
+	let (status, report) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{report}");
+	let paths: Vec<_> = report["data"]["issues"]
+		.as_array()
+		.ok_or("missing issues")?
+		.iter()
+		.filter(|issue| issue["code"] == "ICH.C.5.1.r.2.VOCABULARY")
+		.map(|issue| issue["path"].as_str().unwrap())
+		.collect();
+	assert_eq!(
+		paths,
+		vec!["studyInformation.0.registrations.0.registrationCountry"],
+		"{report}"
+	);
+	Ok(())
+}
+
+#[serial_test::serial]
+#[tokio::test]
 async fn study_name_can_be_cleared_and_reloaded() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

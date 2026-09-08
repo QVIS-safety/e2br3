@@ -1129,7 +1129,7 @@ async fn list_study_registrations(
 		return Ok(Vec::new());
 	}
 	let study_ids = studies.iter().map(|study| study.id).collect::<Vec<_>>();
-	let sql = "SELECT * FROM study_registration_numbers WHERE study_information_id = ANY($1) AND deleted = false ORDER BY study_information_id, sequence_number";
+	let sql = "SELECT * FROM study_registration_numbers WHERE study_information_id = ANY($1) AND deleted = false ORDER BY study_information_id, sequence_number, id";
 	mm.dbx()
 		.fetch_all(sqlx::query_as::<_, StudyRegistrationNumber>(sql).bind(study_ids))
 		.await

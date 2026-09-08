@@ -43,7 +43,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sqlx::{types::time::OffsetDateTime, FromRow};
 use uuid::Uuid;
-use validator::validate_case_for_authority;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";
@@ -1706,14 +1705,14 @@ pub async fn mark_case_validated_by_validator(
 					)
 					.await?;
 				let report =
-					validate_case_for_authority(ctx, mm, id, authority).await?;
-				CaseValidationSummaryBmc::upsert_for_reports(
-					ctx,
-					mm,
-					id,
-					&[report.clone()],
-				)
-				.await?;
+					super::case_validation_rest::refresh_case_validation_cache(
+						ctx,
+						mm,
+						id,
+						&[authority],
+					)
+					.await?
+					.remove(0);
 				if report.issue_count > 0 {
 					return Err(Error::BadRequest {
 						message: format!(

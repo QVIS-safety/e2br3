@@ -74,25 +74,6 @@ fn past_drug_has_payload(past_drug: &PastDrugHistory) -> bool {
 		|| has_text(past_drug.reaction_meddra_code.as_deref())
 }
 
-fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
-	sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())
-		.unwrap_or(fallback_idx)
-}
-
-fn resolve_parent_past_drug_indices(
-	parent_indices: &HashMap<Uuid, usize>,
-	parent_id: Uuid,
-	sequence_number: i32,
-) -> Option<(usize, usize)> {
-	let parent_index = parent_indices.get(&parent_id).copied()?;
-	let past_drug_index = sequence_number
-		.checked_sub(1)
-		.and_then(|value| usize::try_from(value).ok())?;
-	Some((parent_index, past_drug_index))
-}
-
 fn parent_index_by_id(parents: &[ParentInformation]) -> HashMap<Uuid, usize> {
 	parents
 		.iter()
@@ -2237,7 +2218,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback = fallback_by_parent.entry(episode.parent_id).or_insert(0);
-		let idx = index_from_sequence(episode.sequence_number, *fallback);
+		let idx = *fallback;
 		*fallback += 1;
 		d_10_7_1_r_1a(parent_idx, idx, episode, issues);
 		d_10_7_1_r_1b(parent_idx, idx, episode, issues);
@@ -2252,7 +2233,7 @@ pub(crate) fn collect_ich_issues(
 			continue;
 		};
 		let fallback = fallback_by_parent.entry(drug.parent_id).or_insert(0);
-		let idx = index_from_sequence(drug.sequence_number, *fallback);
+		let idx = *fallback;
 		*fallback += 1;
 		d_10_8_r_1(parent_idx, idx, drug, issues);
 		d_10_8_r_2a(parent_idx, idx, drug, issues);
@@ -2323,14 +2304,14 @@ pub(crate) fn collect_mfds_issues(
 	}
 
 	let parent_indices = parent_index_by_id(&validation_ctx.parents);
+	let mut next_by_parent = HashMap::new();
 	for past in &mfds_ctx.parent_past_drugs {
-		let Some((parent_idx, idx)) = resolve_parent_past_drug_indices(
-			&parent_indices,
-			past.parent_id,
-			past.sequence_number,
-		) else {
+		let Some(parent_idx) = parent_indices.get(&past.parent_id).copied() else {
 			continue;
 		};
+		let next = next_by_parent.entry(past.parent_id).or_insert(0);
+		let idx = *next;
+		*next += 1;
 		mfds_d_10_8_r_1_kr_1b(
 			parent_idx,
 			idx,
@@ -2703,14 +2684,16 @@ mod golden_companion_tests {
 		ctx.parents = vec![parent(first_parent_id), parent(second_parent_id)];
 		ctx.parent_medical_history =
 			vec![parent_medhist(second_parent_id, Some("10000001"), None)];
+		ctx.parent_medical_history[0].sequence_number = 7;
 		let mut exclusive_parent_past_drug =
 			parent_past_drug(second_parent_id, Some("MPID"), Some("1"));
-		exclusive_parent_past_drug.sequence_number = 2;
+		exclusive_parent_past_drug.sequence_number = 9;
 		exclusive_parent_past_drug.phpid = Some("PHPID".to_string());
 		ctx.parent_past_drugs = vec![
 			parent_past_drug(second_parent_id, Some("MPID"), None),
 			exclusive_parent_past_drug,
 		];
+		ctx.parent_past_drugs[0].sequence_number = 4;
 
 		let mut issues = Vec::new();
 		collect_ich_issues(&ctx, &mut issues);

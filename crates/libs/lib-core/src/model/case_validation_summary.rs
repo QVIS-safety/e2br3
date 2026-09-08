@@ -76,6 +76,7 @@ impl CaseValidationSummaryBmc {
 				ALL_PAGE_ID,
 				report.issue_count,
 				required_count_for_report(report, None),
+				issue_keys_for_report(report, None),
 			)
 			.await?;
 
@@ -87,6 +88,7 @@ impl CaseValidationSummaryBmc {
 					page_id_for_validation_section(&section.section),
 					section.issue_count,
 					required_count_for_report(report, Some(&section.section)),
+					issue_keys_for_report(report, Some(&section.section)),
 				)
 				.await?;
 			}
@@ -102,6 +104,7 @@ impl CaseValidationSummaryBmc {
 		page_id: &str,
 		issue_count: usize,
 		required_count: usize,
+		issue_keys: serde_json::Value,
 	) -> Result<()> {
 		let issue_count = count_as_i32(issue_count, "issue_count")?;
 		let required_count = count_as_i32(required_count, "required_count")?;
@@ -115,14 +118,16 @@ impl CaseValidationSummaryBmc {
 						page_id,
 						issue_count,
 						required_count,
+						issue_keys,
 						stale,
 						generated_at
 					)
-					VALUES ($1, $2, $3, $4, $5, false, now())
+					VALUES ($1, $2, $3, $4, $5, $6, false, now())
 					ON CONFLICT (case_id, appendix, page_id)
 					DO UPDATE SET
 						issue_count = EXCLUDED.issue_count,
 						required_count = EXCLUDED.required_count,
+						issue_keys = EXCLUDED.issue_keys,
 						stale = false,
 						generated_at = now()
 					"#,
@@ -131,7 +136,8 @@ impl CaseValidationSummaryBmc {
 				.bind(appendix)
 				.bind(page_id)
 				.bind(issue_count)
-				.bind(required_count),
+				.bind(required_count)
+				.bind(issue_keys),
 			)
 			.await?;
 		Ok(())
@@ -161,9 +167,10 @@ impl CaseValidationSummaryBmc {
 				sqlx::query_as::<_, CaseValidationTotalRow>(
 					r#"
 					SELECT case_id,
-					       COALESCE(SUM(issue_count), 0)::bigint
+					       COUNT(DISTINCT issue_key.value)::bigint
 					           AS total_count
 					  FROM case_validation_summaries
+					  LEFT JOIN LATERAL jsonb_array_elements(issue_keys) AS issue_key(value) ON true
 					 WHERE case_id = ANY($1)
 					   AND page_id = $2
 					   AND stale = false
@@ -218,6 +225,22 @@ impl CaseValidationSummaryBmc {
 		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
+}
+
+fn issue_keys_for_report(
+	report: &CaseValidationReport,
+	section: Option<&str>,
+) -> serde_json::Value {
+	serde_json::Value::Array(
+		report
+			.issues
+			.iter()
+			.filter(|issue| {
+				section.map(|value| issue.section == value).unwrap_or(true)
+			})
+			.map(|issue| serde_json::json!([issue.code, issue.path]))
+			.collect(),
+	)
 }
 
 fn required_count_for_report(

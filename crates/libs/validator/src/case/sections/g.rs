@@ -20,7 +20,7 @@ use lib_core::model::drug_reaction_assessment::{
 	DrugReactionAssessment, RelatednessAssessment,
 };
 use lib_core::model::{ModelManager, Result};
-use sqlx::types::Decimal;
+use sqlx::types::{Decimal, Uuid};
 use std::collections::{HashMap, HashSet};
 
 const SECTION: &str = "drugs";
@@ -91,9 +91,9 @@ fn additional_info_codes(drug: &DrugInformation) -> Vec<String> {
 fn g_k_1(drugs: &[DrugInformation], issues: &mut Vec<ValidationIssue>) {
 	required_field(
 		issues,
-		"ICH.G.k.1.REQUIRED",
-		"drugs.0.drugCharacterization",
-		"[G.k.1] is required.",
+		"ICH.G.k.REQUIRED",
+		"drugs",
+		"At least one drug is required.",
 		!drugs.is_empty(),
 	);
 	for (idx, drug) in drugs.iter().enumerate() {
@@ -225,13 +225,6 @@ fn g_k_2_1_2b(
 /// ICH.G.k.2.2.REQUIRED
 /// ICH.G.k.2.2.LENGTH.MAX
 fn g_k_2_2(drugs: &[DrugInformation], issues: &mut Vec<ValidationIssue>) {
-	required_field(
-		issues,
-		"ICH.G.k.2.2.REQUIRED",
-		"drugs.0.medicinalProduct",
-		"[G.k.2.2] is required.",
-		!drugs.is_empty(),
-	);
 	for (idx, drug) in drugs.iter().enumerate() {
 		let path = format!("drugs.{idx}.medicinalProduct");
 		let value = Some(drug.medicinal_product.as_str());
@@ -311,8 +304,12 @@ fn g_k_2_3_r(
 		crate::push_business_issue(
 			issues,
 			"ICH.G.k.2.3.r.REQUIRED",
-			format!("drugs.{drug_idx}.activeSubstances.0.substanceName"),
-			"At least one active ingredient is required when neither MPID nor PhPID is available.",
+			if substances.iter().any(|row| row.drug_id == drug.id) {
+				format!("drugs.{drug_idx}.activeSubstances.0.substanceName")
+			} else {
+				format!("drugs.{drug_idx}.activeSubstances")
+			},
+			"At least one active substance is required.",
 		);
 	}
 }
@@ -1256,6 +1253,27 @@ fn g_k_7_r_2(
 	);
 }
 
+// The editor expands each assessment into its relatedness rows, retaining one
+// empty row when no relatedness exists. All authorities use that same layout.
+fn assessment_row_offsets(ctx: &ValidationContext) -> HashMap<Uuid, usize> {
+	let mut counts = HashMap::new();
+	for row in &ctx.relatedness_assessments {
+		*counts
+			.entry(row.drug_reaction_assessment_id)
+			.or_insert(0usize) += 1;
+	}
+	let mut next_by_drug = HashMap::new();
+	ctx.drug_reaction_assessments
+		.iter()
+		.map(|assessment| {
+			let next = next_by_drug.entry(assessment.drug_id).or_insert(0);
+			let offset = *next;
+			*next += counts.get(&assessment.id).copied().unwrap_or(0).max(1);
+			(assessment.id, offset)
+		})
+		.collect()
+}
+
 fn assessment_path(nested: Option<(usize, usize)>, field: &str) -> Option<String> {
 	nested.map(|(drug_idx, idx)| {
 		format!("drugs.{drug_idx}.drugReactionAssessments.{idx}.{field}")
@@ -1623,7 +1641,7 @@ pub(crate) fn collect_ich_issues(
 		g_k_7_r_2(nested, indication, &validation_ctx.vocabulary, issues);
 	}
 
-	let mut fallback = HashMap::new();
+	let relatedness_bases = assessment_row_offsets(validation_ctx);
 	let mut assessment_indices = HashMap::new();
 	for (flat_idx, assessment) in
 		validation_ctx.drug_reaction_assessments.iter().enumerate()
@@ -1631,8 +1649,7 @@ pub(crate) fn collect_ich_issues(
 		let Some(drug_idx) = drug_indices.get(&assessment.drug_id).copied() else {
 			continue;
 		};
-		let idx = *fallback.entry(assessment.drug_id).or_insert(0);
-		*fallback.get_mut(&assessment.drug_id).expect("entry exists") += 1;
+		let idx = relatedness_bases[&assessment.id];
 		assessment_indices.insert(assessment.id, (drug_idx, idx));
 		let nested = Some((drug_idx, idx));
 		g_k_9_i_3_1a(flat_idx, nested, assessment, issues);
@@ -1641,21 +1658,6 @@ pub(crate) fn collect_ich_issues(
 		g_k_9_i_3_2b(flat_idx, nested, assessment, issues);
 		g_k_9_i_4(nested, assessment, issues);
 		cioms_item_20(nested, assessment, issues);
-	}
-	let mut relatedness_bases = HashMap::new();
-	let mut relatedness_next_by_drug = HashMap::new();
-	for assessment in &validation_ctx.drug_reaction_assessments {
-		let next = relatedness_next_by_drug
-			.entry(assessment.drug_id)
-			.or_insert(0);
-		relatedness_bases.insert(assessment.id, *next);
-		let row_count = validation_ctx
-			.relatedness_assessments
-			.iter()
-			.filter(|row| row.drug_reaction_assessment_id == assessment.id)
-			.count()
-			.max(1);
-		*next += row_count;
 	}
 	let mut fallback = HashMap::new();
 	for relatedness in &validation_ctx.relatedness_assessments {
@@ -1680,8 +1682,19 @@ fn fda_g_k_12(
 	drug_idx: usize,
 	local_criteria_is_malfunction_only: bool,
 	has_suspect_malfunction: bool,
+	has_device: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
+	if local_criteria_is_malfunction_only && !has_suspect_malfunction && !has_device
+	{
+		crate::push_business_issue(
+			issues,
+			"FDA.G.k.12.COLLECTION.REQUIRED",
+			format!("drugs.{drug_idx}.fdaDevices"),
+			"At least one device is required.",
+		);
+		return;
+	}
 	reject_when(
 		issues,
 		"FDA.G.K.12.REQUIRED",
@@ -1898,47 +1911,12 @@ fn fda_g_k_9(
 		let Some(drug_idx) = first_suspect_idx else {
 			return;
 		};
-		for (code, field, message) in [
-			(
-				"FDA.G.k.9.i.2.r.1.REQUIRED",
-				"sourceOfAssessment",
-				"Source of Assessment is required for an IND safety report.",
-			),
-			(
-				"FDA.G.k.9.i.2.r.2.REQUIRED",
-				"methodOfAssessment",
-				"Method of Assessment is required for an IND safety report.",
-			),
-			(
-				"FDA.G.k.9.i.2.r.3.REQUIRED",
-				"resultOfAssessment",
-				"A suspect product relatedness result is required for an IND safety report.",
-			),
-		] {
-			crate::push_business_issue(
-				issues,
-				code,
-				format!("drugs.{drug_idx}.drugReactionAssessments.0.{field}"),
-				message,
-			);
-		}
+		crate::push_business_issue(issues, "FDA.G.k.9.REQUIRED",
+			format!("drugs.{drug_idx}.drugReactionAssessments"),
+			"At least one drug-reaction assessment is required for an IND safety report.");
 		return;
 	}
-	let mut relatedness_bases = HashMap::new();
-	let mut relatedness_next_by_drug = HashMap::new();
-	for assessment in &validation_ctx.drug_reaction_assessments {
-		let next = relatedness_next_by_drug
-			.entry(assessment.drug_id)
-			.or_insert(0);
-		relatedness_bases.insert(assessment.id, *next);
-		let row_count = validation_ctx
-			.relatedness_assessments
-			.iter()
-			.filter(|row| row.drug_reaction_assessment_id == assessment.id)
-			.count()
-			.max(1);
-		*next += row_count;
-	}
+	let relatedness_bases = assessment_row_offsets(validation_ctx);
 	let mut has_suspect_result = false;
 	let mut first_suspect_result_path = None;
 	let mut first_suspect_assessment_path = None;
@@ -2068,6 +2046,7 @@ pub(crate) async fn collect_fda_issues(
 	let mut has_malfunction = false;
 	let mut first_product_malfunction = false;
 	let mut has_device = false;
+	let mut drugs_with_devices = HashSet::new();
 	let pre_anda_present = fda_ctx.is_some_and(|ctx| {
 		ctx.studies
 			.iter()
@@ -2081,6 +2060,9 @@ pub(crate) async fn collect_fda_issues(
 
 	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
 		let (devices, device_codes) = list_fda_devices(ctx, mm, drug.id).await?;
+		if !devices.is_empty() {
+			drugs_with_devices.insert(drug.id);
+		}
 		let malfunction_this_drug = devices
 			.iter()
 			.any(|device| device.malfunction == Some(true));
@@ -2117,7 +2099,9 @@ pub(crate) async fn collect_fda_issues(
 				crate::push_business_issue(
 					issues,
 					"FDA.G.K.12.R.3.REQUIRED",
-					format!("{path}.deviceProblemCodes.0.valueCode"),
+					if device_codes.iter().any(|code| code.device_id == device.id && code.element == "device_problem") {
+						format!("{path}.deviceProblemCodes.0.valueCode")
+					} else { format!("{path}.deviceProblemCodes") },
 					"A device problem code is required for each malfunctioning device.",
 				);
 			}
@@ -2130,7 +2114,9 @@ pub(crate) async fn collect_fda_issues(
 				crate::push_business_issue(
 					issues,
 					"FDA.W0007",
-					format!("{path}.remedialActions.0.valueCode"),
+					if device_codes.iter().any(|code| code.device_id == device.id && code.element == "remedial_action") {
+						format!("{path}.remedialActions.0.valueCode")
+					} else { format!("{path}.remedialActions") },
 					"A remedial action should be provided for each malfunctioning device in a 5-day report.",
 				);
 			}
@@ -2163,7 +2149,12 @@ pub(crate) async fn collect_fda_issues(
 		&& !has_device
 		&& !validation_ctx.drugs.is_empty()
 	{
-		fda_g_k_12_r_4_6(0, 0, [None; 3], true, issues);
+		crate::push_business_issue(
+			issues,
+			"FDA.G.k.12.COLLECTION.REQUIRED",
+			"drugs.0.fdaDevices",
+			"At least one device is required.",
+		);
 	}
 	fda_d_1_malfunction(validation_ctx, combination_true, has_malfunction, issues);
 	if let Some(drug_idx) = validation_ctx
@@ -2175,6 +2166,7 @@ pub(crate) async fn collect_fda_issues(
 			drug_idx,
 			local_criteria == Some("5"),
 			has_malfunction_suspect,
+			drugs_with_devices.contains(&validation_ctx.drugs[drug_idx].id),
 			issues,
 		);
 	}
@@ -2606,6 +2598,19 @@ pub(crate) fn collect_mfds_issues(
 					substance.drug_id == drug.id
 						&& has_text(substance.mfds_id.as_deref())
 				}) {
+				if !mfds_ctx
+					.active_substances
+					.iter()
+					.any(|row| row.drug_id == drug.id)
+				{
+					crate::push_business_issue(
+						issues,
+						"ICH.G.k.2.3.r.REQUIRED",
+						format!("drugs.{drug_idx}.activeSubstances"),
+						"At least one active substance is required.",
+					);
+					continue;
+				}
 				crate::push_business_issue(
 					issues,
 					"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
@@ -2616,14 +2621,20 @@ pub(crate) fn collect_mfds_issues(
 		}
 	}
 
+	let relatedness_bases = assessment_row_offsets(validation_ctx);
 	let mut mfds_relatedness_indices = HashMap::new();
 	for r in &mfds_ctx.relatedness {
 		let Some(drug_index) = drug_index_by_id.get(&r.drug_id).copied() else {
 			continue;
 		};
-		let assessment_index =
-			mfds_relatedness_indices.entry(r.drug_id).or_insert(0);
-		let child_index = *assessment_index;
+		let Some(base) = relatedness_bases.get(&r.drug_reaction_assessment_id)
+		else {
+			continue;
+		};
+		let assessment_index = mfds_relatedness_indices
+			.entry(r.drug_reaction_assessment_id)
+			.or_insert(0);
+		let child_index = base + *assessment_index;
 		*assessment_index += 1;
 		let has_source = has_text(r.source_of_assessment.as_deref());
 		let has_method = has_text(r.method_of_assessment_kr1.as_deref());
@@ -3175,6 +3186,71 @@ mod golden_g_required_tests {
 		issues.into_iter().map(|issue| issue.code).collect()
 	}
 
+	#[test]
+	fn assessment_errors_follow_expanded_editor_rows_including_empty_rows() {
+		for first_relatedness_count in [0, 2] {
+			let mut ctx = empty_ctx();
+			ctx.drugs = vec![drug()];
+			let first = assessment();
+			let mut second = assessment();
+			second.id = Uuid::from_u128(2);
+			second.administration_start_interval_unit = Some("d".into());
+			ctx.drug_reaction_assessments = vec![first, second];
+			ctx.relatedness_assessments = (0..first_relatedness_count)
+				.map(|_| relatedness())
+				.collect();
+			let mut last = relatedness();
+			last.drug_reaction_assessment_id = Uuid::from_u128(2);
+			last.source_of_assessment = Some("Sponsor".into());
+			ctx.relatedness_assessments.push(last);
+			let mfds = MfdsValidationContext {
+				senders: vec![],
+				studies: vec![],
+				active_substances: vec![],
+				past_drugs: vec![],
+				parent_past_drugs: vec![],
+				relatedness: ctx
+					.relatedness_assessments
+					.iter()
+					.map(|row| crate::mfds_context::RelatednessWithDrug {
+						drug_id: Uuid::nil(),
+						drug_reaction_assessment_id: row.drug_reaction_assessment_id,
+						relatedness_sequence_number: row.sequence_number,
+						source_of_assessment: row.source_of_assessment.clone(),
+						method_of_assessment: None,
+						method_of_assessment_kr1: None,
+						result_of_assessment: None,
+						result_of_assessment_kr1: None,
+						result_of_assessment_kr1_null_flavor: None,
+						result_of_assessment_kr2: None,
+					})
+					.collect(),
+			};
+			let mut issues = vec![];
+			collect_ich_issues(&ctx, &mut issues);
+			collect_mfds_issues(&ctx, &mfds, &mut issues);
+			let row = first_relatedness_count.max(1);
+			for (code, field) in [
+				(
+					"ICH.G.k.9.i.3.1a.REQUIRED",
+					"administrationStartIntervalValue",
+				),
+				("MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED", "methodOfAssessmentKr1"),
+			] {
+				let paths: Vec<_> = issues
+					.iter()
+					.filter(|issue| issue.code == code)
+					.map(|issue| issue.path.as_str())
+					.collect();
+				assert_eq!(
+					paths,
+					vec![format!("drugs.0.drugReactionAssessments.{row}.{field}")],
+					"{code}, preceding relatedness rows: {first_relatedness_count}"
+				);
+			}
+		}
+	}
+
 	fn length_issues(ctx: &ValidationContext) -> Vec<(String, String)> {
 		let mut issues = Vec::new();
 		collect_ich_issues(ctx, &mut issues);
@@ -3253,14 +3329,28 @@ mod golden_g_required_tests {
 	}
 
 	#[test]
-	fn empty_drug_collection_flags_placeholder_drug_rules() {
+	fn empty_drug_collection_has_one_collection_error() {
 		assert_eq!(
 			codes_for(&empty_ctx()),
-			vec![
-				"ICH.G.k.1.REQUIRED".to_string(),
-				"ICH.G.k.2.2.REQUIRED".to_string(),
-			]
+			vec!["ICH.G.k.REQUIRED".to_string()]
 		);
+	}
+
+	#[test]
+	fn absent_drug_children_use_list_paths_and_present_rows_use_field_paths() {
+		let mut ctx = empty_ctx();
+		ctx.drugs = vec![drug()];
+		let mut issues = vec![];
+		g_k_2_3_r(0, &ctx.drugs[0], &[], &mut issues);
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].path, "drugs.0.activeSubstances");
+		issues.clear();
+		g_k_2_3_r(0, &ctx.drugs[0], &[substance()], &mut issues);
+		assert_eq!(issues[0].path, "drugs.0.activeSubstances.0.substanceName");
+		issues.clear();
+		fda_g_k_12(0, true, false, false, &mut issues);
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].path, "drugs.0.fdaDevices");
 	}
 
 	#[test]
@@ -3657,11 +3747,11 @@ mod golden_g_required_tests {
 	#[test]
 	fn fda_malfunction_only_requires_a_suspect_malfunction() {
 		let mut issues = Vec::new();
-		fda_g_k_12(0, false, false, &mut issues);
-		fda_g_k_12(0, true, true, &mut issues);
+		fda_g_k_12(0, false, false, true, &mut issues);
+		fda_g_k_12(0, true, true, true, &mut issues);
 		assert!(issues.is_empty());
 
-		fda_g_k_12(2, true, false, &mut issues);
+		fda_g_k_12(2, true, false, true, &mut issues);
 		assert_eq!(issues.len(), 1);
 		let issue = &issues[0];
 		assert_eq!(issue.code, "FDA.G.K.12.REQUIRED");
@@ -3720,7 +3810,7 @@ mod golden_g_required_tests {
 			.filter(|issue| {
 				matches!(
 					issue.code.as_str(),
-					"ICH.G.k.1.REQUIRED" | "ICH.G.k.1.ALLOWED.VALUE"
+					"ICH.G.k.REQUIRED" | "ICH.G.k.1.ALLOWED.VALUE"
 				)
 			})
 			.map(|issue| {
@@ -3748,10 +3838,10 @@ mod golden_g_required_tests {
 					"G.k".to_string(),
 				),
 				(
-					"ICH.G.k.1.REQUIRED".to_string(),
-					"[G.k.1] is required.".to_string(),
-					"drugs.0.drugCharacterization".to_string(),
-					Some("drugs.0.drugCharacterization".to_string()),
+					"ICH.G.k.REQUIRED".to_string(),
+					"At least one drug is required.".to_string(),
+					"drugs".to_string(),
+					Some("drugs".to_string()),
 					"drugs".to_string(),
 					"G.k".to_string(),
 				),
