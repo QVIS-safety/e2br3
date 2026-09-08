@@ -233,15 +233,6 @@ fn fmt_date(date: Date) -> String {
 	)
 }
 
-fn xml_escape(value: &str) -> String {
-	value
-		.replace('&', "&amp;")
-		.replace('<', "&lt;")
-		.replace('>', "&gt;")
-		.replace('"', "&quot;")
-		.replace('\'', "&apos;")
-}
-
 #[cfg(test)]
 mod registry_coverage_tests {
 	use std::collections::BTreeSet;

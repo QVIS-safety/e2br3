@@ -185,15 +185,6 @@ pub(crate) fn write_h_2_or_h_4(text: &str, author_code: &str) -> String {
 	)
 }
 
-fn xml_escape(value: &str) -> String {
-	value
-		.replace('&', "&amp;")
-		.replace('<', "&lt;")
-		.replace('>', "&gt;")
-		.replace('"', "&quot;")
-		.replace('\'', "&apos;")
-}
-
 fn base_h_narrative_skeleton() -> &'static str {
 	"<?xml version=\"1.0\" encoding=\"utf-8\"?>\
 <MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ITSVersion=\"XML_1.0\">\

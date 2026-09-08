@@ -7,10 +7,10 @@ use lib_core::model::message_header::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::Result;
+use lib_rest_core::{is_unique_violation, Result};
+use lib_utils::time::format_e2b_timestamp;
 use lib_web::middleware::mw_auth::CtxW;
 use serde_json::{Map, Value};
-use std::borrow::Cow;
 use uuid::Uuid;
 
 use super::case_editor_rest::validate_row_payload;
@@ -53,22 +53,10 @@ fn create_constraint_fields(data: &MessageHeaderForCreate) -> Map<String, Value>
 	if let Some(value) = data.batch_transmission_date {
 		fields.insert(
 			"batchTransmissionDate".to_string(),
-			Value::String(e2b_timestamp(value)),
+			Value::String(format_e2b_timestamp(value)),
 		);
 	}
 	fields
-}
-
-fn e2b_timestamp(value: time::OffsetDateTime) -> String {
-	format!(
-		"{:04}{:02}{:02}{:02}{:02}{:02}",
-		value.year(),
-		value.month() as u8,
-		value.day(),
-		value.hour(),
-		value.minute(),
-		value.second()
-	)
 }
 
 fn update_constraint_fields(data: &MessageHeaderForUpdate) -> Map<String, Value> {
@@ -86,7 +74,7 @@ fn update_constraint_fields(data: &MessageHeaderForUpdate) -> Map<String, Value>
 	if let Some(value) = data.batch_transmission_date {
 		fields.insert(
 			"batchTransmissionDate".to_string(),
-			Value::String(e2b_timestamp(value)),
+			Value::String(format_e2b_timestamp(value)),
 		);
 	}
 	insert_string!("messageNumber", data.message_number);
@@ -97,17 +85,6 @@ fn update_constraint_fields(data: &MessageHeaderForUpdate) -> Map<String, Value>
 	);
 	insert_string!("messageDate", data.message_date);
 	fields
-}
-
-fn is_unique_violation(err: &lib_core::model::Error) -> bool {
-	matches!(err, lib_core::model::Error::UniqueViolation { .. })
-		|| matches!(
-			err.as_database_error().and_then(|db| db.code()),
-			Some(Cow::Borrowed("23505"))
-		) || {
-		let text = format!("{err:?}").to_ascii_lowercase();
-		text.contains("duplicate") || text.contains("unique")
-	}
 }
 
 pub async fn create_message_header(

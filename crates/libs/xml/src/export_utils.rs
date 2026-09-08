@@ -331,10 +331,18 @@ pub(crate) fn xml_escape(input: &str) -> String {
 mod tests {
 	use super::{
 		append_fragment_child, fmt_date_lexeme, set_xsi_type_first, wrap_fragment,
-		XSI_NAMESPACE,
+		xml_escape, XSI_NAMESPACE,
 	};
 	use libxml::parser::Parser;
 	use libxml::xpath::Context;
+
+	#[test]
+	fn xml_escape_preserves_text_and_escapes_entities_once() {
+		assert_eq!(xml_escape(""), "");
+		assert_eq!(xml_escape("환자 A"), "환자 A");
+		assert_eq!(xml_escape("&<>\"'"), "&amp;&lt;&gt;&quot;&apos;");
+		assert_eq!(xml_escape("&amp;"), "&amp;amp;");
+	}
 
 	#[test]
 	fn date_lexeme_compacts_ui_dates_without_rewriting_e2b_precision() {

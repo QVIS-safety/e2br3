@@ -109,7 +109,7 @@ The review covered these areas:
 2. Isolate internal APIs with private networking plus signed or mTLS requests.
 3. Define a durable, redacted telemetry and incident-response contract.
 4. Replace implicit `ModelManager`/`Dbx` transaction ownership.
-5. Push the remaining legacy case-list scope and pagination into SQL.
+5. ~~Push the remaining legacy case-list scope and pagination into SQL.~~ Done.
 6. Add token revocation/rotation semantics if immediate session revocation becomes a requirement.
 
 `cargo check --workspace` passed during this review. That only establishes that the current tree compiles; it does not establish production safety.
@@ -131,13 +131,13 @@ The remaining gaps are compile-time isolation of dev helpers, explicit staging s
 - Editor shell, lifecycle, and export paths now reject a missing or blank `safety_report_id`.
 - The old empty-string fallbacks no longer hide this broken domain invariant.
 
-### P2 — Case collection endpoints have inconsistent query shapes (partially remediated)
+### P2 — Case collection endpoints have inconsistent query shapes (remediated)
 
 - The list-view now applies sender/product/study scope before ordering and bounded SQL pagination ([`case.rs`](../crates/libs/lib-core/src/model/case.rs#L921)).
 - The previous 5,000-row projection, separate scope query, and in-memory pagination are gone.
 - The dynamic case-query and list-view paths share the same SQL scope predicate.
-
-The remaining legacy `GET /api/cases` path still checks scope and builds the response per case after its own pagination ([`case_rest.rs`](../crates/services/web-server/src/web/rest/case_rest.rs#L1170)).
+- The legacy `GET /api/cases` path now applies the same scope predicate before bounded SQL pagination. Its per-case scope query is gone, and workflow settings are loaded once per non-empty response instead of repeatedly per case.
+- The legacy list no longer loads `cases.raw_xml`, which was discarded before serialization; single-case and export reads retain the canonical XML payload.
 
 The dynamic case-query endpoint now applies sender/product/study scope inside the candidate SQL and supports bounded `limit`/`offset` pagination ([`case_query_catalog_rest.rs`](../crates/services/web-server/src/web/rest/case_query_catalog_rest.rs#L205)). Calls that omit pagination retain the existing 5,000-result compatibility ceiling.
 
@@ -148,11 +148,24 @@ The dynamic case-query endpoint now applies sender/product/study scope inside th
 
 ### P2 — Bulk XML export remains synchronous, but has request and byte caps
 
+- Single and bulk XML export now return only XML from one shared generation helper. The unused `Case` argument/return pair, full-payload clones, and redundant handler-level case reads are removed; authorization still checks each target before generation, and the XML serializer retains its own case read.
+- Bulk XML export loads runtime settings once, at the first case's generation step, and reuses that snapshot for the request. Settings failures still record the failing case's export history; subsequent requests reload settings. E2B timestamp formatting now lives in `lib-utils::time`, and export filenames no longer accept an unused suffix switch.
+- Export-history writes now use only `XmlExportHistoryBmc::record`. It owns a separate database transaction so failed exports cannot roll back their history; REST handlers retain the decision of when to record success or failure.
 - [`BulkXmlExportInput`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L32) is capped at 100 unique cases and 100 MiB of uncompressed XML ([`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L415)).
 - [`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L458) processes each case serially and performs repeated case, identifier, export, and history work.
 - The entire ZIP is accumulated in a `Cursor<Vec<u8>>` before responding ([`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L453)).
 
 This is still a synchronous batch job hiding behind an HTTP request. A job queue, timeout, and streaming response are deferred until the capped path proves insufficient.
+
+### P2 — Unused handlers and duplicated leaf helpers (remediated)
+
+- Deleted the unused singleton REST-handler macro and its prelude re-export; active collection CRUD handlers remain unchanged.
+- Deleted the unused import/export history `list_all` methods. HTTP collection endpoints still use `list_all_scoped`; per-case/error reads and transaction boundaries are unchanged.
+- Removed five local XML-escape implementations in favor of `export_utils::xml_escape`, preserving replacement order.
+- Section C/D/F importers now reuse `import_sections::shared::parse_date`. Digit normalization, eight-digit minimum, calendar validation, and trailing timestamp handling are unchanged; the drug parser's partial-date contract is intentionally separate.
+- Message-header creation now uses `lib_rest_core::is_unique_violation`, including its existing SQLSTATE and text fallbacks.
+- No new abstraction, dependency, environment variable, deployment change, or input-policy change was introduced.
+- Regression verification: 160 XML library tests, 6 REST-core tests, singleton POST idempotency and scoped-history API tests, and the import → single/ZIP export smoke test passed. Database-backed checks used disposable isolated databases, not `app_db`.
 
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
@@ -196,12 +209,11 @@ The repository contains 50 uses of `ListOptions::default()` across 17 Rust files
 ## Second-pass priority order
 
 1. Isolate dev initialization and known bootstrap credentials from deployed startup.
-2. Rewrite the remaining legacy `GET /api/cases` path as a bounded SQL scope projection.
-3. Replace `ModelManager`/`Dbx` transaction convention with an explicit transaction object passed through the operation.
-4. Put export batches behind timeout/job boundaries only if the existing 100-case/100-MiB cap proves insufficient.
-5. Split remaining large files only along real domain or ownership boundaries.
+2. Replace `ModelManager`/`Dbx` transaction convention with an explicit transaction object passed through the operation.
+3. Put export batches behind timeout/job boundaries only if the existing 100-case/100-MiB cap proves insufficient.
+4. Split remaining large files only along real domain or ownership boundaries.
 
-No new dependency is required. The next useful cuts are the legacy case-list query shape and implicit transaction ownership.
+No new dependency is required. The next useful architectural cut is implicit transaction ownership.
 
 ### P1 — Regulatory payloads are copied into long-lived or unsafe debug locations (partially remediated)
 
@@ -211,4 +223,4 @@ No new dependency is required. The next useful cuts are the legacy case-list que
 
 For clinical/regulatory payloads, “debug copy” is a data-retention decision. There is no visible lifecycle, encryption, cleanup, or access policy around these extra copies.
 
-net: 0 new dependencies. The stale OpenAPI layer, static/API fallback overlap, editor child N+1 queries, and case-query/list-view in-memory scope filters are gone. Remaining architecture debt is deployed dev/bootstrap startup, legacy case-list query shape, transaction ownership, and operational telemetry.
+net: 0 new dependencies. The stale OpenAPI layer, static/API fallback overlap, editor child N+1 queries, and all case-list in-memory scope filters are gone. Remaining architecture debt is deployed dev/bootstrap startup, transaction ownership, and operational telemetry.

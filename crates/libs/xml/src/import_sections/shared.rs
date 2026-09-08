@@ -264,6 +264,20 @@ pub(crate) fn parse_date(value: String) -> Option<Date> {
 	Date::from_calendar_date(y, month, d).ok()
 }
 
+#[cfg(test)]
+#[test]
+fn parse_date_preserves_existing_normalization_and_calendar_checks() {
+	let leap_day = Date::from_calendar_date(2024, Month::February, 29).unwrap();
+	for input in ["20240229", "2024-02-29", "20240229123456", "한2024/02/29"] {
+		assert_eq!(parse_date(input.to_string()), Some(leap_day), "{input}");
+	}
+	for input in [
+		"", "invalid", "2024", "202402", "20230229", "20241301", "20240100",
+	] {
+		assert_eq!(parse_date(input.to_string()), None, "{input}");
+	}
+}
+
 pub(crate) fn normalize_message_date(value: String) -> Option<String> {
 	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
 	if digits.len() < 14 {

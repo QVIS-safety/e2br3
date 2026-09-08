@@ -608,10 +608,7 @@ async fn create_case_from_intake_in_txn(
 			message_number: format!("MSG-{case_id}"),
 			message_sender_identifier,
 			message_receiver_identifier,
-			message_date:
-				crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-					now,
-				),
+			message_date: lib_utils::time::format_e2b_timestamp(now),
 		},
 	)
 	.await?;

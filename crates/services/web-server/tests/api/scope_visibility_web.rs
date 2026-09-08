@@ -702,6 +702,18 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 		None,
 	)
 	.await?;
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, seed.admin.id, seed.org_id, ROLE_SPONSOR_ADMIN_CRO)
+		.await?;
+	dbx.execute(
+		sqlx::query(
+			"UPDATE cases SET created_at = NOW() + INTERVAL '1 hour' WHERE id = $1",
+		)
+		.bind(case_b),
+	)
+	.await?;
+	dbx.commit_txn().await?;
 
 	update_user_scope(
 		&app,
@@ -711,13 +723,22 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 	)
 	.await?;
 
-	let (status, value) =
-		request_json(&app, "GET", &viewer_cookie, "/api/cases".to_string(), None)
-			.await?;
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		"/api/cases?list_options%5Blimit%5D=1&list_options%5Boffset%5D=0"
+			.to_string(),
+		None,
+	)
+	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	let cases = value["data"].as_array().ok_or("missing cases array")?;
-	assert!(cases.iter().any(|row| row["id"] == case_a.to_string()));
-	assert!(!cases.iter().any(|row| row["id"] == case_b.to_string()));
+	assert_eq!(cases.len(), 1, "{value:?}");
+	assert_eq!(cases[0]["id"], case_a.to_string());
+	assert_eq!(cases[0]["can_act_on_workflow"], false);
+	assert_eq!(cases[0]["workflow_block_reason"], "workflow_not_enabled");
+	assert!(cases[0]["case_write_block_reason"].is_null());
 
 	let (status, list_view) = request_json(
 		&app,

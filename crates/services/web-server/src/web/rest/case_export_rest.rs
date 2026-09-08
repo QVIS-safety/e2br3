@@ -4,7 +4,6 @@ use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
 use axum::Json;
-use lib_core::model::case::CaseBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::safety_report::SafetyReportIdentificationBmc;
 use lib_core::model::xml_export_history::{
@@ -20,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use std::collections::HashSet;
 use std::io::{Cursor, Write};
-use time::Month;
 use uuid::Uuid;
 use xml::{export_case_xml_with_options, ExportXmlOptions};
 use zip::write::SimpleFileOptions;
@@ -50,32 +48,6 @@ pub struct XmlExportHistoryList {
 }
 
 // -- Helpers
-
-pub fn format_message_timestamp_utc_pub(now: OffsetDateTime) -> String {
-	let month = match now.month() {
-		Month::January => 1,
-		Month::February => 2,
-		Month::March => 3,
-		Month::April => 4,
-		Month::May => 5,
-		Month::June => 6,
-		Month::July => 7,
-		Month::August => 8,
-		Month::September => 9,
-		Month::October => 10,
-		Month::November => 11,
-		Month::December => 12,
-	};
-	format!(
-		"{:04}{:02}{:02}{:02}{:02}{:02}",
-		now.year(),
-		month,
-		now.day(),
-		now.hour(),
-		now.minute(),
-		now.second()
-	)
-}
 
 fn required_env_identifier(name: &str) -> Result<String> {
 	let value = std::env::var(name).map_err(|_| Error::BadRequest {
@@ -119,23 +91,6 @@ fn resolve_requested_export_authority(
 	})
 }
 
-async fn export_xml_options(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	include_notation: Option<bool>,
-	authority: RegulatoryAuthority,
-	outbound_message_header: xml::OutboundMessageHeader,
-) -> Result<ExportXmlOptions> {
-	let apply_comments = runtime_settings::load(ctx, mm)
-		.await?
-		.resolve_notation(include_notation);
-	Ok(ExportXmlOptions {
-		apply_comments,
-		authority,
-		outbound_message_header,
-	})
-}
-
 async fn safety_report_id_for_case(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
@@ -155,100 +110,37 @@ fn export_file_name(
 	safety_report_id: &str,
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
-	include_authority_suffix: bool,
 ) -> String {
-	if include_authority_suffix {
-		format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
-	} else {
-		format!("{safety_report_id}-{case_id}.xml")
-	}
+	format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
 }
 
-pub async fn generate_case_xml_for_authority(
+async fn generate_case_xml_for_authority(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
 	id: Uuid,
-	case: lib_core::model::case::Case,
-	authority: RegulatoryAuthority,
-) -> Result<(lib_core::model::case::Case, String)> {
-	generate_case_xml_for_authority_with_notation(ctx, mm, id, case, authority, None)
-		.await
-}
-
-async fn generate_case_xml_for_authority_with_notation(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	id: Uuid,
-	case: lib_core::model::case::Case,
 	authority: RegulatoryAuthority,
 	include_notation: Option<bool>,
-) -> Result<(lib_core::model::case::Case, String)> {
+	settings: &mut Option<runtime_settings::RuntimeSettings>,
+) -> Result<String> {
 	let mut header = MessageHeaderBmc::get_by_case(ctx, mm, id)
 		.await
 		.map_err(Error::Model)?;
 	header.batch_transmission_date = Some(OffsetDateTime::now_utc());
-	let options = export_xml_options(
-		ctx,
-		mm,
-		include_notation,
+	let outbound_message_header = export_message_header(&header)?;
+	let settings = match settings {
+		Some(settings) => settings,
+		None => settings.insert(runtime_settings::load(ctx, mm).await?),
+	};
+	let options = ExportXmlOptions {
+		apply_comments: settings.resolve_notation(include_notation),
 		authority,
-		export_message_header(&header)?,
-	)
-	.await?;
-	let xml = export_case_xml_with_options(ctx, mm, id, options)
+		outbound_message_header,
+	};
+	export_case_xml_with_options(ctx, mm, id, options)
 		.await
 		.map_err(|err| Error::BadRequest {
 			message: format!("export task failed: {err}"),
-		})?;
-
-	Ok((case, xml))
-}
-
-pub async fn record_xml_export(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	case_id: Uuid,
-	case_number: Option<&str>,
-	file_name: &str,
-	status: &str,
-	error_message: Option<&str>,
-) -> Result<()> {
-	let mut tx = mm.dbx().db().begin().await.map_err(|err| {
-		Error::Model(lib_core::model::Error::Store(err.to_string()))
-	})?;
-	lib_core::model::store::set_user_context(&mut tx, ctx.user_id())
-		.await
-		.map_err(Error::Model)?;
-	lib_core::model::store::set_org_context(
-		&mut tx,
-		ctx.organization_id(),
-		ctx.role(),
-	)
-	.await
-	.map_err(Error::Model)?;
-	sqlx::query(
-		"INSERT INTO xml_export_history (
-			case_id,
-			case_number,
-			file_name,
-			status,
-			error_message,
-			exported_by
-		) VALUES ($1, $2, $3, $4, $5, $6)",
-	)
-	.bind(case_id)
-	.bind(case_number)
-	.bind(file_name)
-	.bind(status)
-	.bind(error_message)
-	.bind(ctx.user_id())
-	.execute(&mut *tx)
-	.await
-	.map_err(|err| Error::Model(lib_core::model::Error::Store(err.to_string())))?;
-	tx.commit().await.map_err(|err| {
-		Error::Model(lib_core::model::Error::Store(err.to_string()))
-	})?;
-	Ok(())
+		})
 }
 
 // -- Handlers
@@ -280,26 +172,25 @@ async fn export_case_authorized(
 	id: Uuid,
 	query: ExportCaseQuery,
 ) -> Result<Response> {
-	let case = CaseBmc::get(ctx, mm, id).await?;
 	let safety_report_id = safety_report_id_for_case(ctx, mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
-	let file_name = export_file_name(&safety_report_id, id, authority, true);
-	let (_case, xml) = match generate_case_xml_for_authority_with_notation(
+	let file_name = export_file_name(&safety_report_id, id, authority);
+	let xml = match generate_case_xml_for_authority(
 		ctx,
 		mm,
 		id,
-		case.clone(),
 		authority,
 		query.include_notation,
+		&mut None,
 	)
 	.await
 	{
 		Ok(result) => result,
 		Err(err) => {
 			let error_message = err.to_string();
-			if let Err(record_err) = record_xml_export(
-				ctx,
+			if let Err(record_err) = XmlExportHistoryBmc::record(
 				mm,
+				ctx,
 				id,
 				Some(safety_report_id.as_str()),
 				&file_name,
@@ -315,9 +206,9 @@ async fn export_case_authorized(
 			return Err(err);
 		}
 	};
-	if let Err(err) = record_xml_export(
-		ctx,
+	if let Err(err) = XmlExportHistoryBmc::record(
 		mm,
+		ctx,
 		id,
 		Some(safety_report_id.as_str()),
 		&file_name,
@@ -400,30 +291,31 @@ async fn export_cases_zip_authorized(
 	let options =
 		SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 	let mut xml_bytes = 0usize;
+	let mut settings = None;
 	{
 		let mut zip = ZipWriter::new(&mut cursor);
 		for case_id in unique_case_ids {
-			let case = CaseBmc::get(ctx, mm, case_id).await?;
 			let safety_report_id =
 				safety_report_id_for_case(ctx, mm, case_id).await?;
 			{
 				let file_name =
-					export_file_name(&safety_report_id, case_id, authority, true);
-				let (_case, xml) = match generate_case_xml_for_authority(
+					export_file_name(&safety_report_id, case_id, authority);
+				let xml = match generate_case_xml_for_authority(
 					ctx,
 					mm,
 					case_id,
-					case.clone(),
 					authority,
+					None,
+					&mut settings,
 				)
 				.await
 				{
 					Ok(result) => result,
 					Err(err) => {
 						let error_message = err.to_string();
-						if let Err(record_err) = record_xml_export(
-							ctx,
+						if let Err(record_err) = XmlExportHistoryBmc::record(
 							mm,
+							ctx,
 							case_id,
 							Some(safety_report_id.as_str()),
 							&file_name,
@@ -460,9 +352,9 @@ async fn export_cases_zip_authorized(
 					.map_err(|err| Error::BadRequest {
 						message: format!("failed to write zip entry: {err}"),
 					})?;
-				if let Err(err) = record_xml_export(
-					ctx,
+				if let Err(err) = XmlExportHistoryBmc::record(
 					mm,
+					ctx,
 					case_id,
 					Some(safety_report_id.as_str()),
 					&file_name,

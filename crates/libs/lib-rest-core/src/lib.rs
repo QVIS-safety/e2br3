@@ -96,6 +96,22 @@ pub fn is_unique_violation(err: &lib_core::model::Error) -> bool {
 	}
 }
 
+#[cfg(test)]
+#[test]
+fn unique_violation_preserves_typed_and_text_fallbacks() {
+	use lib_core::model::Error as ModelError;
+	assert!(is_unique_violation(&ModelError::UniqueViolation {
+		table: "message_headers".into(),
+		constraint: "message_headers_case_id_key".into(),
+	}));
+	for message in ["DUPLICATE key", "UNIQUE constraint"] {
+		assert!(is_unique_violation(&ModelError::Store(message.into())));
+	}
+	assert!(!is_unique_violation(&ModelError::Store(
+		"connection closed".into()
+	)));
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct WorkflowStatusConfigDoc {
 	name: String,
@@ -206,38 +222,32 @@ pub async fn workflow_role_exists_and_is_active(
 	Ok(roles.contains(&role))
 }
 
-async fn workflow_admin_override_allowed(
+fn workflow_ownership_decision(
 	ctx: &Ctx,
-	mm: &ModelManager,
-) -> Result<bool> {
-	if ctx.is_system_admin() {
-		return Ok(false);
-	}
-	if ctx.is_sponsor_admin() {
-		return Ok(true);
-	}
-	let _ = mm;
-	Ok(false)
-}
-
-pub async fn workflow_ownership_for_case(
-	ctx: &Ctx,
-	mm: &ModelManager,
 	case: &Case,
 	rule: &WorkflowStatusRule,
-) -> Result<WorkflowOwnershipDecision> {
+) -> WorkflowOwnershipDecision {
 	let role_match = current_user_matches_workflow_role(ctx, rule);
 	let user_match = current_user_matches_workflow_assignment(ctx, case);
 	let admin_override_allowed = if role_match && user_match {
 		false
 	} else {
-		workflow_admin_override_allowed(ctx, mm).await?
+		ctx.is_sponsor_admin() && !ctx.is_system_admin()
 	};
-	Ok(WorkflowOwnershipDecision {
+	WorkflowOwnershipDecision {
 		role_match,
 		user_match,
 		admin_override_allowed,
-	})
+	}
+}
+
+pub async fn workflow_ownership_for_case(
+	ctx: &Ctx,
+	_mm: &ModelManager,
+	case: &Case,
+	rule: &WorkflowStatusRule,
+) -> Result<WorkflowOwnershipDecision> {
+	Ok(workflow_ownership_decision(ctx, case, rule))
 }
 
 pub fn qc_state_for_case_status(
@@ -777,68 +787,83 @@ pub async fn case_write_block_reason_for_case(
 	mm: &ModelManager,
 	case: &Case,
 ) -> Result<Option<WorkflowBlockReason>> {
+	if let Some(reason) = legacy_case_write_block_reason(case) {
+		return Ok(Some(reason));
+	}
+	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
+	Ok(case_write_block_reason_with_workflow(ctx, case, &workflow))
+}
+
+fn legacy_case_write_block_reason(case: &Case) -> Option<WorkflowBlockReason> {
 	let legacy_status = case.status.trim();
 	if legacy_status.eq_ignore_ascii_case("deleted") {
-		return Ok(Some(WorkflowBlockReason {
+		return Some(WorkflowBlockReason {
 			code: "case_deleted",
 			message: "deleted cases are read-only".to_string(),
-		}));
+		});
 	}
 	if legacy_status.eq_ignore_ascii_case("locked") {
-		return Ok(Some(WorkflowBlockReason {
+		return Some(WorkflowBlockReason {
 			code: "case_locked",
 			message: "locked cases are read-only".to_string(),
-		}));
+		});
 	}
 	if legacy_status.eq_ignore_ascii_case("reviewed")
 		|| legacy_status.eq_ignore_ascii_case("validated")
 	{
-		return Ok(Some(WorkflowBlockReason {
+		return Some(WorkflowBlockReason {
 			code: "case_qced",
 			message: "QCed cases are read-only".to_string(),
-		}));
+		});
 	}
+	None
+}
 
-	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
+fn case_write_block_reason_with_workflow(
+	ctx: &Ctx,
+	case: &Case,
+	workflow: &WorkflowRuntimeSettings,
+) -> Option<WorkflowBlockReason> {
+	if let Some(reason) = legacy_case_write_block_reason(case) {
+		return Some(reason);
+	}
 	if workflow.enabled {
 		let Some(rule) = workflow.find_status(&case.workflow_status) else {
-			return Ok(Some(WorkflowBlockReason {
+			return Some(WorkflowBlockReason {
 				code: "workflow_status_not_configured",
 				message: format!(
 					"workflow status '{}' is not configured",
 					case.workflow_status
 				),
-			}));
+			});
 		};
-		let ownership = workflow_ownership_for_case(ctx, mm, case, rule).await?;
+		let ownership = workflow_ownership_decision(ctx, case, rule);
 		if !ownership.role_match && !ownership.admin_override_allowed {
-			return Ok(Some(WorkflowBlockReason {
+			return Some(WorkflowBlockReason {
 				code: "workflow_role_mismatch",
 				message: format!(
 					"workflow status '{}' is assigned to a different role",
 					rule.name
 				),
-			}));
+			});
 		}
 		if !ownership.user_match && !ownership.admin_override_allowed {
-			return Ok(Some(WorkflowBlockReason {
+			return Some(WorkflowBlockReason {
 				code: "workflow_user_mismatch",
 				message: format!(
 					"workflow status '{}' is assigned to a different user",
 					rule.name
 				),
-			}));
+			});
 		}
 		if !rule.editable {
-			return Ok(Some(WorkflowBlockReason {
+			return Some(WorkflowBlockReason {
 				code: "workflow_status_read_only",
 				message: format!("workflow status '{}' is read-only", rule.name),
-			}));
+			});
 		}
-		return Ok(None);
 	}
-
-	Ok(None)
+	None
 }
 
 pub async fn workflow_actionability_for_case(
@@ -846,55 +871,83 @@ pub async fn workflow_actionability_for_case(
 	mm: &ModelManager,
 	case: &Case,
 ) -> Result<WorkflowActionability> {
+	if let Some(actionability) = locked_case_actionability(case) {
+		return Ok(actionability);
+	}
+	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
+	Ok(workflow_actionability_with_workflow(ctx, case, &workflow))
+}
+
+fn locked_case_actionability(case: &Case) -> Option<WorkflowActionability> {
 	let legacy_status = case.status.trim();
 	if legacy_status.eq_ignore_ascii_case("locked") {
-		return Ok(WorkflowActionability {
+		return Some(WorkflowActionability {
 			can_act_on_workflow: false,
 			workflow_block_reason: Some("case_locked"),
 		});
 	}
+	None
+}
 
-	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
+fn workflow_actionability_with_workflow(
+	ctx: &Ctx,
+	case: &Case,
+	workflow: &WorkflowRuntimeSettings,
+) -> WorkflowActionability {
+	if let Some(actionability) = locked_case_actionability(case) {
+		return actionability;
+	}
 	if !workflow.enabled {
-		return Ok(WorkflowActionability {
+		return WorkflowActionability {
 			can_act_on_workflow: false,
 			workflow_block_reason: Some("workflow_not_enabled"),
-		});
+		};
 	}
 
 	let Some(rule) = workflow.find_status(&case.workflow_status) else {
-		return Ok(WorkflowActionability {
+		return WorkflowActionability {
 			can_act_on_workflow: false,
 			workflow_block_reason: Some("workflow_status_not_configured"),
-		});
+		};
 	};
 
-	let ownership = workflow_ownership_for_case(ctx, mm, case, rule).await?;
+	let ownership = workflow_ownership_decision(ctx, case, rule);
 	if ownership.used_admin_override() {
-		return Ok(WorkflowActionability {
+		return WorkflowActionability {
 			can_act_on_workflow: true,
 			workflow_block_reason: Some("workflow_admin_override_allowed"),
-		});
+		};
 	}
 
 	if !ownership.role_match {
-		return Ok(WorkflowActionability {
+		return WorkflowActionability {
 			can_act_on_workflow: false,
 			workflow_block_reason: Some("workflow_role_mismatch"),
-		});
+		};
 	}
 
 	if !ownership.user_match {
-		return Ok(WorkflowActionability {
+		return WorkflowActionability {
 			can_act_on_workflow: false,
 			workflow_block_reason: Some("workflow_user_mismatch"),
-		});
+		};
 	}
 
-	Ok(WorkflowActionability {
+	WorkflowActionability {
 		can_act_on_workflow: true,
 		workflow_block_reason: None,
-	})
+	}
+}
+
+pub fn case_read_decisions_with_workflow(
+	ctx: &Ctx,
+	case: &Case,
+	workflow: &WorkflowRuntimeSettings,
+) -> (WorkflowActionability, Option<WorkflowBlockReason>) {
+	(
+		workflow_actionability_with_workflow(ctx, case, workflow),
+		case_write_block_reason_with_workflow(ctx, case, workflow),
+	)
 }
 
 #[cfg(test)]

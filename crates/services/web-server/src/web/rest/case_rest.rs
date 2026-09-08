@@ -33,8 +33,10 @@ use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
 use lib_rest_core::{
-	case_write_block_reason_for_case, qc_state_for_case_status,
-	workflow_actionability_for_case,
+	case_read_decisions_with_workflow, case_write_block_reason_for_case,
+	load_workflow_runtime_settings, qc_state_for_case_status,
+	workflow_actionability_for_case, WorkflowActionability, WorkflowBlockReason,
+	WorkflowRuntimeSettings,
 };
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
@@ -881,7 +883,29 @@ pub async fn case_to_read_result(
 	let actionability = workflow_actionability_for_case(ctx, mm, &case).await?;
 	let write_block_reason =
 		case_write_block_reason_for_case(ctx, mm, &case).await?;
-	Ok(CaseReadResult {
+	Ok(build_case_read_result(
+		case,
+		actionability,
+		write_block_reason,
+	))
+}
+
+fn case_to_read_result_with_workflow(
+	ctx: &Ctx,
+	case: Case,
+	workflow: &WorkflowRuntimeSettings,
+) -> CaseReadResult {
+	let (actionability, write_block_reason) =
+		case_read_decisions_with_workflow(ctx, &case, workflow);
+	build_case_read_result(case, actionability, write_block_reason)
+}
+
+fn build_case_read_result(
+	case: Case,
+	actionability: WorkflowActionability,
+	write_block_reason: Option<WorkflowBlockReason>,
+) -> CaseReadResult {
+	CaseReadResult {
 		qc_state: qc_state_for_case_status(
 			&case.status,
 			case.status_before_lock.as_deref(),
@@ -891,7 +915,22 @@ pub async fn case_to_read_result(
 		can_act_on_workflow: actionability.can_act_on_workflow,
 		workflow_block_reason: actionability.workflow_block_reason,
 		case_write_block_reason: write_block_reason.map(|reason| reason.code),
-	})
+	}
+}
+
+fn case_scope_ids(
+	ctx: &Ctx,
+	scope: &EnforcedScopeFilter,
+) -> (Vec<String>, Vec<String>, Vec<String>) {
+	if ctx.is_system_admin() || ctx.is_sponsor_admin() {
+		(Vec::new(), Vec::new(), Vec::new())
+	} else {
+		(
+			scope.sender_ids().to_vec(),
+			scope.product_ids().to_vec(),
+			scope.study_ids().to_vec(),
+		)
+	}
 }
 
 // -- Handlers
@@ -1005,9 +1044,7 @@ async fn create_follow_up_case_in_txn(
 	validate_case_create_payload(&case_create)?;
 	let case_id = CaseBmc::create(ctx, mm, case_create).await?;
 	let transmission_date =
-		crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-			OffsetDateTime::now_utc(),
-		);
+		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,
@@ -1100,9 +1137,7 @@ async fn create_case_authorized(
 
 	let id = CaseBmc::create(ctx, mm, data).await?;
 	let creation_timestamp =
-		crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-			OffsetDateTime::now_utc(),
-		);
+		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,
@@ -1182,26 +1217,37 @@ pub async fn list_cases(
 		&ctx,
 		&snapshot,
 		&mm,
-		move |ctx, mm, _scope| {
+		move |ctx, mm, scope| {
 			Box::pin(async move {
 				let params =
 					ParamsList::<CaseFilter>::from_raw_query(raw_query.as_deref())
 						.map_err(|message| Error::BadRequest { message })?;
-				let entities =
-					CaseBmc::list(ctx, mm, params.filters, params.list_options)
-						.await?;
-				let mut scoped = Vec::with_capacity(entities.len());
-				for entity in entities {
-					if lib_rest_core::case_matches_user_scope(ctx, mm, entity.id)
-						.await?
-					{
-						scoped.push(case_to_read_result(ctx, mm, entity).await?);
-					}
+				let (sender_ids, product_ids, study_ids) =
+					case_scope_ids(ctx, scope);
+				let entities = CaseBmc::list(
+					ctx,
+					mm,
+					params.filters,
+					params.list_options,
+					&sender_ids,
+					&product_ids,
+					&study_ids,
+				)
+				.await?;
+				if entities.is_empty() {
+					return Ok((
+						axum::http::StatusCode::OK,
+						Json(DataRestResult { data: Vec::new() }),
+					));
 				}
-				Ok((
-					axum::http::StatusCode::OK,
-					Json(DataRestResult { data: scoped }),
-				))
+				let workflow = load_workflow_runtime_settings(ctx, mm).await?;
+				let data = entities
+					.into_iter()
+					.map(|entity| {
+						case_to_read_result_with_workflow(ctx, entity, &workflow)
+					})
+					.collect();
+				Ok((axum::http::StatusCode::OK, Json(DataRestResult { data })))
 			})
 		},
 	)
@@ -1253,16 +1299,7 @@ async fn list_case_view_rows_authorized(
 		.map_err(|message| Error::BadRequest { message })?;
 	let authorities = validation_query.resolve()?;
 	let list_options = params.list_options;
-	let (sender_ids, product_ids, study_ids) =
-		if ctx.is_system_admin() || ctx.is_sponsor_admin() {
-			(Vec::new(), Vec::new(), Vec::new())
-		} else {
-			(
-				scope.sender_ids().to_vec(),
-				scope.product_ids().to_vec(),
-				scope.study_ids().to_vec(),
-			)
-		};
+	let (sender_ids, product_ids, study_ids) = case_scope_ids(ctx, scope);
 
 	let mut items = lib_rest_core::with_rls_read(mm, ctx, |dbx| {
 		let list_options = list_options.clone();

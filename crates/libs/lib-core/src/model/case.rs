@@ -302,7 +302,15 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 
 #[cfg(test)]
 mod list_view_rows_tests {
-	use super::list_view_rows_sql;
+	use super::{case_select, list_view_rows_sql};
+
+	#[test]
+	fn case_select_loads_raw_xml_only_for_details() {
+		let list_sql = case_select(false);
+		assert!(list_sql.contains("NULL::bytea AS raw_xml"));
+		assert!(!list_sql.contains("c.raw_xml"));
+		assert!(case_select(true).contains("c.raw_xml AS raw_xml"));
+	}
 
 	#[test]
 	fn draft_cases_are_left_to_the_export_endpoint_for_validation() {
@@ -455,7 +463,14 @@ impl DbBmc for CaseBmc {
 	const TABLE: &'static str = "cases";
 }
 
-const CASE_SELECT: &str = r#"
+fn case_select(load_raw_xml: bool) -> String {
+	let raw_xml = if load_raw_xml {
+		"c.raw_xml"
+	} else {
+		"NULL::bytea"
+	};
+	format!(
+		r#"
 	SELECT
 		c.id,
 		c.organization_id,
@@ -477,7 +492,7 @@ const CASE_SELECT: &str = r#"
 		c.updated_by,
 		c.submitted_by,
 		c.submitted_at,
-		c.raw_xml,
+		{raw_xml} AS raw_xml,
 		c.dirty_c,
 		c.dirty_d,
 		c.dirty_e,
@@ -488,7 +503,9 @@ const CASE_SELECT: &str = r#"
 		c.updated_at
 	FROM cases c
 	LEFT JOIN safety_report_identification s ON s.case_id = c.id
-"#;
+"#
+	)
+}
 
 fn first_string_eq(values: &OpValsString) -> Option<String> {
 	values.0.iter().find_map(|op| match op {
@@ -564,7 +581,7 @@ impl CaseBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
-		let sql = format!("{CASE_SELECT} WHERE c.id = $1");
+		let sql = format!("{} WHERE c.id = $1", case_select(true));
 		let entity = dbx
 			.fetch_optional(sqlx::query_as::<_, Case>(&sql).bind(id))
 			.await?;
@@ -588,6 +605,9 @@ impl CaseBmc {
 		mm: &ModelManager,
 		filters: Option<Vec<CaseFilter>>,
 		list_options: Option<ListOptions>,
+		sender_ids: &[String],
+		product_ids: &[String],
+		study_ids: &[String],
 	) -> Result<Vec<Case>> {
 		let mut conditions: Vec<String> = Vec::new();
 		let mut organization_id: Option<Uuid> = None;
@@ -619,23 +639,25 @@ impl CaseBmc {
 		if status.is_some() {
 			conditions.push(format!("c.status = ${}", conditions.len() + 1));
 		}
-		let mut sql = CASE_SELECT.to_string();
-		if !conditions.is_empty() {
-			sql.push_str(" WHERE ");
-			sql.push_str(&conditions.join(" AND "));
-		}
+		let scope_bind = conditions.len() + 1;
+		conditions.push(case_scope_where(scope_bind));
+		let limit_bind = scope_bind + 3;
+		let offset_bind = limit_bind + 1;
+		let limit = list_options
+			.as_ref()
+			.and_then(|options| options.limit)
+			.unwrap_or(1000)
+			.clamp(0, 5000);
+		let offset = list_options
+			.as_ref()
+			.and_then(|options| options.offset)
+			.unwrap_or(0)
+			.max(0);
+		let mut sql = case_select(false);
+		sql.push_str(" WHERE ");
+		sql.push_str(&conditions.join(" AND "));
 		sql.push_str(" ORDER BY c.created_at DESC, c.id DESC");
-		if let Some(limit) = list_options.as_ref().and_then(|options| options.limit)
-		{
-			sql.push_str(&format!(" LIMIT {}", limit.clamp(0, 5000)));
-		} else {
-			sql.push_str(" LIMIT 1000");
-		}
-		if let Some(offset) =
-			list_options.as_ref().and_then(|options| options.offset)
-		{
-			sql.push_str(&format!(" OFFSET {}", offset.max(0)));
-		}
+		sql.push_str(&format!(" LIMIT ${limit_bind} OFFSET ${offset_bind}"));
 
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
@@ -655,7 +677,16 @@ impl CaseBmc {
 		if let Some(value) = status {
 			query = query.bind(value);
 		}
-		let entities = dbx.fetch_all(query).await?;
+		let entities = dbx
+			.fetch_all(
+				query
+					.bind(sender_ids)
+					.bind(product_ids)
+					.bind(study_ids)
+					.bind(limit)
+					.bind(offset),
+			)
+			.await?;
 		dbx.commit_txn().await?;
 		Ok(entities)
 	}
