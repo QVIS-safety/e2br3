@@ -299,412 +299,233 @@ pub async fn delete_patient_death_information(
 	.await
 }
 
-// -- Reported Cause of Death (D.9.2.r)
+// Reported and autopsy causes share a contract, including child-first scope checks.
+macro_rules! death_cause_rest_fns {
+	(
+		Bmc: $bmc:ident, Entity: $entity:ident,
+		ForCreate: $for_create:ident, ForUpdate: $for_update:ident,
+		Filter: $filter:ident,
+		CreateFn: $create_fn:ident, ListFn: $list_fn:ident,
+		GetFn: $get_fn:ident, UpdateFn: $update_fn:ident,
+		DeleteFn: $delete_fn:ident, RestoreFn: $restore_fn:ident,
+		Route: $route:literal, EntityName: $entity_name:literal
+	) => {
+		pub async fn $create_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
+			Json(params): Json<ParamsForCreate<$for_create>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						let ParamsForCreate { data } = params;
+						let mut data = data;
+						data.death_info_id = death_info_id;
+						let id = $bmc::create(ctx, mm, data).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
 
-/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes
-pub async fn create_reported_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<ReportedCauseOfDeathForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				let ParamsForCreate { data } = params;
-				let mut data = data;
-				data.death_info_id = death_info_id;
-				let id = ReportedCauseOfDeathBmc::create(ctx, mm, data).await?;
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
+		pub async fn $list_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_read(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						let filter = $filter {
+							death_info_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+								json!(death_info_id.to_string()),
+							)])),
+							..Default::default()
+						};
+						let entities = $bmc::list(
+							ctx,
+							mm,
+							Some(vec![filter]),
+							Some(ListOptions::default()),
+						)
+						.await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $get_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_read(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}/{id}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						let entity = $bmc::get(ctx, mm, id).await?;
+						if entity.death_info_id != death_info_id {
+							return Err(model::Error::EntityUuidNotFound {
+								entity: $entity_name,
+								id,
+							}
+							.into());
+						}
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $update_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+			Json(params): Json<ParamsForUpdate<$for_update>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}/{id}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						let ParamsForUpdate { data } = params;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						if entity.death_info_id != death_info_id {
+							return Err(model::Error::EntityUuidNotFound {
+								entity: $entity_name,
+								id,
+							}
+							.into());
+						}
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						$bmc::update(ctx, mm, id, data).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $delete_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<StatusCode> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}/{id}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						let entity = $bmc::get(ctx, mm, id).await?;
+						if entity.death_info_id != death_info_id {
+							return Err(model::Error::EntityUuidNotFound {
+								entity: $entity_name,
+								id,
+							}
+							.into());
+						}
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						$bmc::delete(ctx, mm, id).await?;
+						Ok(StatusCode::NO_CONTENT)
+					})
+				},
+			)
+			.await
+		}
+
+		pub async fn $restore_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+			Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			lib_rest_core::with_authorized_case_child_mutation(
+				&ctx,
+				&snapshot,
+				&mm,
+				case_id,
+				format!("patient/death-info/{death_info_id}/{}/{id}", $route),
+				move |ctx, mm| {
+					Box::pin(async move {
+						let entity = $bmc::get(ctx, mm, id).await?;
+						if entity.death_info_id != death_info_id {
+							return Err(model::Error::EntityUuidNotFound {
+								entity: $entity_name,
+								id,
+							}
+							.into());
+						}
+						ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
+						$bmc::restore(ctx, mm, id).await?;
+						let entity = $bmc::get(ctx, mm, id).await?;
+						Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+					})
+				},
+			)
+			.await
+		}
+	};
 }
 
-/// GET /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes
-pub async fn list_reported_causes_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<ReportedCauseOfDeath>>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				let filter = ReportedCauseOfDeathFilter {
-					death_info_id: Some(OpValsValue::from(vec![OpValValue::Eq(
-						json!(death_info_id.to_string()),
-					)])),
-					..Default::default()
-				};
-				let entities = ReportedCauseOfDeathBmc::list(
-					ctx,
-					mm,
-					Some(vec![filter]),
-					Some(ListOptions::default()),
-				)
-				.await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-			})
-		},
-	)
-	.await
+death_cause_rest_fns! {
+	Bmc: ReportedCauseOfDeathBmc, Entity: ReportedCauseOfDeath,
+	ForCreate: ReportedCauseOfDeathForCreate, ForUpdate: ReportedCauseOfDeathForUpdate,
+	Filter: ReportedCauseOfDeathFilter,
+	CreateFn: create_reported_cause_of_death, ListFn: list_reported_causes_of_death,
+	GetFn: get_reported_cause_of_death, UpdateFn: update_reported_cause_of_death,
+	DeleteFn: delete_reported_cause_of_death, RestoreFn: restore_reported_cause_of_death,
+	Route: "reported-causes", EntityName: "reported_causes_of_death"
 }
 
-/// GET /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}
-pub async fn get_reported_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "reported_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// PUT /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}
-pub async fn update_reported_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ReportedCauseOfDeathForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let ParamsForUpdate { data } = params;
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "reported_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				ReportedCauseOfDeathBmc::update(ctx, mm, id, data).await?;
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// DELETE /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}
-pub async fn delete_reported_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "reported_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				ReportedCauseOfDeathBmc::delete(ctx, mm, id).await?;
-				Ok(StatusCode::NO_CONTENT)
-			})
-		},
-	)
-	.await
-}
-
-/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}/restore
-pub async fn restore_reported_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/reported-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "reported_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				ReportedCauseOfDeathBmc::restore(ctx, mm, id).await?;
-				let entity = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-// -- Autopsy Cause of Death (D.9.4.r)
-
-/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes
-pub async fn create_autopsy_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<AutopsyCauseOfDeathForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				let ParamsForCreate { data } = params;
-				let mut data = data;
-				data.death_info_id = death_info_id;
-				let id = AutopsyCauseOfDeathBmc::create(ctx, mm, data).await?;
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// GET /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes
-pub async fn list_autopsy_causes_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<AutopsyCauseOfDeath>>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				let filter = AutopsyCauseOfDeathFilter {
-					death_info_id: Some(OpValsValue::from(vec![OpValValue::Eq(
-						json!(death_info_id.to_string()),
-					)])),
-					..Default::default()
-				};
-				let entities = AutopsyCauseOfDeathBmc::list(
-					ctx,
-					mm,
-					Some(vec![filter]),
-					Some(ListOptions::default()),
-				)
-				.await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-			})
-		},
-	)
-	.await
-}
-
-/// GET /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}
-pub async fn get_autopsy_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_read(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "autopsy_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// PUT /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}
-pub async fn update_autopsy_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<AutopsyCauseOfDeathForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let ParamsForUpdate { data } = params;
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "autopsy_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				AutopsyCauseOfDeathBmc::update(ctx, mm, id, data).await?;
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
-}
-
-/// DELETE /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}
-pub async fn delete_autopsy_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "autopsy_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				AutopsyCauseOfDeathBmc::delete(ctx, mm, id).await?;
-				Ok(StatusCode::NO_CONTENT)
-			})
-		},
-	)
-	.await
-}
-
-/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}/restore
-pub async fn restore_autopsy_cause_of_death(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_child_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		format!("patient/death-info/{death_info_id}/autopsy-causes/{id}"),
-		move |ctx, mm| {
-			Box::pin(async move {
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if entity.death_info_id != death_info_id {
-					return Err(model::Error::EntityUuidNotFound {
-						entity: "autopsy_causes_of_death",
-						id,
-					}
-					.into());
-				}
-				ensure_death_info_case(ctx, mm, case_id, death_info_id).await?;
-				AutopsyCauseOfDeathBmc::restore(ctx, mm, id).await?;
-				let entity = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-			})
-		},
-	)
-	.await
+death_cause_rest_fns! {
+	Bmc: AutopsyCauseOfDeathBmc, Entity: AutopsyCauseOfDeath,
+	ForCreate: AutopsyCauseOfDeathForCreate, ForUpdate: AutopsyCauseOfDeathForUpdate,
+	Filter: AutopsyCauseOfDeathFilter,
+	CreateFn: create_autopsy_cause_of_death, ListFn: list_autopsy_causes_of_death,
+	GetFn: get_autopsy_cause_of_death, UpdateFn: update_autopsy_cause_of_death,
+	DeleteFn: delete_autopsy_cause_of_death, RestoreFn: restore_autopsy_cause_of_death,
+	Route: "autopsy-causes", EntityName: "autopsy_causes_of_death"
 }
 
 // -- Parent Information (D.10)

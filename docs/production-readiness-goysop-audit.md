@@ -206,6 +206,15 @@ This is still a synchronous batch job hiding behind an HTTP request. A job queue
 - Both authorization route-structure checks, workspace compilation, formatting, and diff checks passed. Substituting each macro invocation reproduces the original handler bodies after whitespace/comment normalization and equivalent fingerprint formatting.
 - Environment, deployment, model behavior, and the other REST resource families were not changed.
 
+### P2 — Reported/autopsy cause REST handlers duplicate the same contract (remediated)
+
+- Reported and autopsy causes now share one file-local handler macro. `patient_sub_rest.rs` shrank from 722 to 543 lines; the patient-death-information handlers and other patient resources are unchanged.
+- Create/list still validate the death-info parent first. Item get/update/delete/restore still load the child, reject a mismatched death-info ID, then validate death-info → patient → case. Existing authorization fingerprints, error entity names, database call order, and transaction wrappers are preserved.
+- The parent-history regression now also covers both death-cause resources using the same request/assertion flow, instead of copying the test. All four resources check path-parent override, missing/mismatched parents and cases, viewer write rejection without mutation, updates, empty 204 delete responses, soft-deleted item reads/list exclusion, and restore with preserved IDs/values.
+- The expanded regression passed on the original code before refactoring. Substituting both macro invocations reproduces the original handler bodies after whitespace/comment normalization and equivalent fingerprint formatting.
+- Verification passed afterward: all 28 subresource API tests on an isolated database, 2 authorization route-structure checks, workspace compilation, formatting, and diff checks.
+- No environment, deployment, schema, model, dependency, or universal CRUD-framework changes were made.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.
