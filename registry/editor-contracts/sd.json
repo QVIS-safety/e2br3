@@ -330,7 +330,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.C.3.4.8.LENGTH.MAX",
-        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        "invalidValue": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.test"
       },
       "businessValidation": {
         "status": "verified",

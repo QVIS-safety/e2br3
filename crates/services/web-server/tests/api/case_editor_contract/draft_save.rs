@@ -39,7 +39,13 @@ async fn draft_save_ui_regressions() -> crate::common::Result<()> {
 			.any(|r| r["value_value"] == "SN-1"),
 		"{saved}"
 	);
-	let (status, body) = patch_json(&app, &cookie, &uri, json!({"authorities":["ich"],"rows":{"drug":{"fdaDevices":[]}}})).await?;
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"drug":{"fdaDevices":[]}}}),
+	)
+	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let (_, saved) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(

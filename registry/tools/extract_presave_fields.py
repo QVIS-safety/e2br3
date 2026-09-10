@@ -32,7 +32,10 @@ PRESAVE_SECTIONS = {
         "SenderPresaveData",
         "components/presave/SenderForm.tsx",
         ("SenderPresave", "SenderPresaveGateway", "SenderPresaveResponsiblePerson"),
-        ("app/(protected)/[authority]/case/[id]/detail/SD/hooks/useSenderPresaveImport.ts",),
+        (
+            "app/(protected)/[authority]/case/[id]/detail/SD/hooks/useSenderPresaveImport.ts",
+            "lib/presave/canonicalMappers.ts",
+        ),
     ),
     "receiver": PresaveSectionConfig(
         "receiver",
@@ -114,23 +117,31 @@ def value_assignment(target: str, source: str) -> str:
     return rf"\b{re.escape(target)}\s*[:=]\s*{re.escape(source)}"
 
 
+def sender_transfer(target: str, source: str) -> tuple[str, ...]:
+    return (
+        r"Object\.entries\(mapSenderPresaveToCase\(d\)\)",
+        transfer_call("senderInformation.${field}", "value"),
+        value_assignment(target, source),
+    )
+
+
 TRANSFER_SPECS = {
     "sender": (
-        TransferSpec("SenderPresave", "sender_type", "SenderInformation", "sender_type", (transfer_call("senderInformation.senderType", "d.senderType"),)),
-        TransferSpec("SenderPresave", "organization_name", "SenderInformation", "organization_name", (transfer_call("senderInformation.organizationName", "d.senderOrganization"),)),
-        TransferSpec("SenderPresave", "street_address", "SenderInformation", "street_address", (transfer_call("senderInformation.streetAddress", "d.senderStreetAddress"),)),
-        TransferSpec("SenderPresave", "city", "SenderInformation", "city", (transfer_call("senderInformation.city", "d.senderCity"),)),
-        TransferSpec("SenderPresave", "state", "SenderInformation", "state", (transfer_call("senderInformation.state", "d.senderState"),)),
-        TransferSpec("SenderPresave", "postcode", "SenderInformation", "postcode", (transfer_call("senderInformation.postcode", "d.senderPostcode"),)),
-        TransferSpec("SenderPresave", "country_code", "SenderInformation", "country_code", (transfer_call("senderInformation.countryCode", "d.senderCountryCode"),)),
-        TransferSpec("SenderPresave", "telephone", "SenderInformation", "telephone", (transfer_call("senderInformation.telephone", "d.senderTelephone"),)),
-        TransferSpec("SenderPresave", "fax", "SenderInformation", "fax", (transfer_call("senderInformation.fax", "d.senderFax"),)),
-        TransferSpec("SenderPresave", "email", "SenderInformation", "email", (transfer_call("senderInformation.email", "d.senderEmail"),)),
-        TransferSpec("SenderPresaveResponsiblePerson", "department", "SenderInformation", "department", (transfer_call("senderInformation.department", "defaultPerson.department"),)),
-        TransferSpec("SenderPresaveResponsiblePerson", "person_title", "SenderInformation", "person_title", (transfer_call("senderInformation.personTitle", "defaultPerson.title"),)),
-        TransferSpec("SenderPresaveResponsiblePerson", "person_given_name", "SenderInformation", "person_given_name", (transfer_call("senderInformation.personGivenName", "defaultPerson.givenName"),)),
-        TransferSpec("SenderPresaveResponsiblePerson", "person_middle_name", "SenderInformation", "person_middle_name", (transfer_call("senderInformation.personMiddleName", "defaultPerson.middleName"),)),
-        TransferSpec("SenderPresaveResponsiblePerson", "person_family_name", "SenderInformation", "person_family_name", (transfer_call("senderInformation.personFamilyName", "defaultPerson.familyName"),)),
+        TransferSpec("SenderPresave", "sender_type", "SenderInformation", "sender_type", sender_transfer("senderType", "data.senderType")),
+        TransferSpec("SenderPresave", "organization_name", "SenderInformation", "organization_name", sender_transfer("organizationName", "data.senderOrganization")),
+        TransferSpec("SenderPresave", "street_address", "SenderInformation", "street_address", sender_transfer("streetAddress", "data.senderStreetAddress")),
+        TransferSpec("SenderPresave", "city", "SenderInformation", "city", sender_transfer("city", "data.senderCity")),
+        TransferSpec("SenderPresave", "state", "SenderInformation", "state", sender_transfer("state", "data.senderState")),
+        TransferSpec("SenderPresave", "postcode", "SenderInformation", "postcode", sender_transfer("postcode", "data.senderPostcode")),
+        TransferSpec("SenderPresave", "country_code", "SenderInformation", "country_code", sender_transfer("countryCode", "data.senderCountryCode")),
+        TransferSpec("SenderPresave", "telephone", "SenderInformation", "telephone", sender_transfer("telephone", "data.senderTelephone")),
+        TransferSpec("SenderPresave", "fax", "SenderInformation", "fax", sender_transfer("fax", "data.senderFax")),
+        TransferSpec("SenderPresave", "email", "SenderInformation", "email", sender_transfer("email", "data.senderEmail")),
+        TransferSpec("SenderPresaveResponsiblePerson", "department", "SenderInformation", "department", sender_transfer("department", "person?.department")),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_title", "SenderInformation", "person_title", sender_transfer("personTitle", "person?.title")),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_given_name", "SenderInformation", "person_given_name", sender_transfer("personGivenName", "person?.givenName")),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_middle_name", "SenderInformation", "person_middle_name", sender_transfer("personMiddleName", "person?.middleName")),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_family_name", "SenderInformation", "person_family_name", sender_transfer("personFamilyName", "person?.familyName")),
         TransferSpec("SenderPresaveGateway", "sender_identifier", "MessageHeader", "message_sender_identifier", (transfer_call("messageHeader.messageSenderIdentifier", "routingGateway.senderId"),)),
     ),
     "receiver": (

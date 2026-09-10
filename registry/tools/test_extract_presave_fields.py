@@ -139,6 +139,27 @@ importValue("messageHeader.messageReceiverIdentifier", batchReceiverIdentifier);
 
         self.assertFalse(extractor.transfer_spec_matches(source, narrative_spec))
 
+    def test_sender_transfer_requires_mapper_assignment_and_form_binding(self):
+        city_spec = next(
+            spec for spec in extractor.TRANSFER_SPECS["sender"]
+            if spec.source_field == "city"
+        )
+        assignment = "city: data.senderCity,"
+        binding = '''
+for (const [field, value] of Object.entries(mapSenderPresaveToCase(d))) {
+  setValue(`senderInformation.${field}`, value, { shouldDirty: true });
+}
+'''
+        self.assertTrue(extractor.transfer_spec_matches(assignment + binding, city_spec))
+        for source in (
+            assignment,
+            binding,
+            binding.replace("senderInformation.", "receiverInformation.") + assignment,
+            binding + assignment.replace("data.senderCity", "data.senderState"),
+        ):
+            with self.subTest(source=source):
+                self.assertFalse(extractor.transfer_spec_matches(source, city_spec))
+
 
 if __name__ == "__main__":
     unittest.main()

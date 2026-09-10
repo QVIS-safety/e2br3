@@ -283,6 +283,9 @@ async fn create_safety_report(
 				"date_first_received_from_source": "20241001",
 				"date_of_most_recent_information": "20241001",
 				"fulfil_expedited_criteria": false,
+				"additional_documents_available": false,
+				"worldwide_unique_id": format!("US-SENDER-{}", case_id.simple()),
+				"first_sender_type": "1",
 				"local_criteria_report_type": "2",
 				"combination_product_report_indicator": "false",
 				"other_case_identifiers_exist": null,
@@ -805,20 +808,6 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 	let app = web_server::app(mm.clone());
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	let (status, report) = put_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/safety-report"),
-		json!({
-			"data": {
-				"additional_documents_available": false,
-				"worldwide_unique_id": format!("US-SENDER-{}", case_id.simple()),
-				"first_sender_type": "1"
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{report:?}");
 	let (status, reactions) =
 		get_json(&app, &cookie, &format!("/api/cases/{case_id}/reactions")).await?;
 	assert_eq!(status, StatusCode::OK, "{reactions:?}");
