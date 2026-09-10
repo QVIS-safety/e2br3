@@ -309,6 +309,11 @@ fn validate_intake_value(
 
 fn validate_intake_pairs(data: &CaseIntakeCheckInput) -> Result<()> {
 	validate_intake_value(
+		data.age_d2_2a.as_deref(),
+		"patientInformation.patientAge.value",
+		input_contracts::generated::d::d_2_2a,
+	)?;
+	validate_intake_value(
 		data.date_of_most_recent_information.as_deref(),
 		"safetyReportIdentification.dateOfMostRecentInformation",
 		input_contracts::generated::c::c_1_5,
@@ -676,7 +681,16 @@ async fn create_case_from_intake_in_txn(
 			.as_deref()
 			.map(str::trim)
 			.filter(|v| !v.is_empty())
-			.and_then(|v| v.parse().ok());
+			.map(|v| {
+				v.parse().map_err(|_| {
+					Error::ConstraintViolation(ConstraintViolation {
+						rule_code: "ICH.D.2.2a.ALLOWED.VALUE".into(),
+						path: "patientInformation.patientAge.value".into(),
+						message: "must be a number".into(),
+					})
+				})
+			})
+			.transpose()?;
 		let patient_id = PatientInformationBmc::create(
 			ctx,
 			mm,
@@ -832,6 +846,26 @@ fn format_e2b_datetime(date: Date) -> String {
 #[cfg(test)]
 mod tests {
 	use super::{validate_intake_pair, validate_intake_value};
+
+	#[test]
+	fn intake_age_rejects_non_numeric_without_discarding_it() {
+		for (value, valid) in [
+			("abc", false),
+			("12.5", true),
+			("", true),
+			("123456", false),
+		] {
+			assert_eq!(
+				validate_intake_value(
+					Some(value),
+					"patientInformation.patientAge.value",
+					input_contracts::generated::d::d_2_2a
+				)
+				.is_ok(),
+				valid
+			);
+		}
+	}
 
 	#[test]
 	fn intake_null_flavor_uses_explicit_catalog_companion() {

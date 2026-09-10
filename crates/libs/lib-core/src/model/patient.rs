@@ -114,7 +114,7 @@ pub struct PatientInformation {
 	pub updated_by: Option<Uuid>,
 }
 
-#[derive(Fields, Deserialize)]
+#[derive(Default, Fields, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PatientInformationForCreate {
 	pub case_id: Uuid,
@@ -658,6 +658,29 @@ impl DbBmc for PatientInformationBmc {
 }
 
 impl PatientInformationBmc {
+	/// Used by case-editor child saves; preserves an existing patient's values.
+	pub async fn get_or_create_by_case(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+	) -> Result<Uuid> {
+		match Self::get_by_case(ctx, mm, case_id).await {
+			Ok(patient) => Ok(patient.id),
+			Err(crate::model::Error::EntityUuidNotFound { .. }) => {
+				Self::create(
+					ctx,
+					mm,
+					PatientInformationForCreate {
+						case_id,
+						..Default::default()
+					},
+				)
+				.await
+			}
+			Err(error) => Err(error),
+		}
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,

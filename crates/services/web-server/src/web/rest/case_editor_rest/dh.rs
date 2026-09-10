@@ -235,9 +235,10 @@ async fn editor_dh_create_extras(
 	case_id: Uuid,
 	row: &serde_json::Map<String, Value>,
 ) -> Result<Vec<(&'static str, Value)>> {
-	let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id).await?;
+	let patient_id =
+		PatientInformationBmc::get_or_create_by_case(ctx, mm, case_id).await?;
 	Ok(vec![
-		("patient_id", json!(patient.id)),
+		("patient_id", json!(patient_id)),
 		(
 			"sequence_number",
 			json!(

@@ -92,7 +92,9 @@ pub struct DrugInformationForCreate {
 	pub case_id: Uuid,
 	pub source_product_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
+	#[serde(default)]
 	pub drug_characterization: String,
+	#[serde(default)]
 	pub medicinal_product: String,
 	pub drug_authorization_number: Option<String>,
 	pub manufacturer_name: Option<String>,

@@ -6,11 +6,37 @@ use lib_rest_core::Result;
 use serde_json::{Map, Value};
 use std::collections::BTreeSet;
 
+#[cfg(test)]
+#[test]
+fn draft_assessment_selections_allow_clear_but_reject_unknown_codes() {
+	use input_contracts::InputValue;
+	for value in [
+		InputValue::Missing,
+		InputValue::Null,
+		InputValue::String(""),
+	] {
+		assert!(cioms_dechallenge_result(FieldInput::new(value, None)).is_empty());
+		assert!(assessment_expectedness(FieldInput::new(value, None)).is_empty());
+	}
+	assert!(!cioms_dechallenge_result(FieldInput::new(
+		InputValue::String("4"),
+		None
+	))
+	.is_empty());
+	assert!(!assessment_expectedness(FieldInput::new(
+		InputValue::String("3"),
+		None
+	))
+	.is_empty());
+}
+
 fn cioms_dechallenge_result(input: FieldInput<'_>) -> Vec<InputIssue> {
 	let valid = match input.value {
-		input_contracts::InputValue::Missing => true,
+		input_contracts::InputValue::Missing | input_contracts::InputValue::Null => {
+			true
+		}
 		input_contracts::InputValue::String(value) => {
-			matches!(value.trim(), "1" | "2" | "3")
+			matches!(value.trim(), "" | "1" | "2" | "3")
 		}
 		_ => false,
 	};
@@ -26,9 +52,11 @@ fn cioms_dechallenge_result(input: FieldInput<'_>) -> Vec<InputIssue> {
 
 fn assessment_expectedness(input: FieldInput<'_>) -> Vec<InputIssue> {
 	let valid = match input.value {
-		input_contracts::InputValue::Missing => true,
+		input_contracts::InputValue::Missing | input_contracts::InputValue::Null => {
+			true
+		}
 		input_contracts::InputValue::String(value) => {
-			matches!(value.trim(), "1" | "2")
+			matches!(value.trim(), "" | "1" | "2")
 		}
 		_ => false,
 	};
@@ -521,6 +549,12 @@ fn dg(
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
 ) -> Result<()> {
+	super::validate_local_text(
+		row,
+		"drugBatchNumber",
+		"drugs[].drugBatchNumber",
+		35,
+	)?;
 	validate_field(
 		row,
 		"activeSubstances[].mfdsId",

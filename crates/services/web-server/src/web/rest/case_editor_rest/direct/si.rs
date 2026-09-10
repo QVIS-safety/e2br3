@@ -54,7 +54,13 @@ pub(super) async fn apply_si_page_rows_patch(
 		rows,
 		&["studyInformation", "studyRegistrationNumbers"],
 	)?;
-	let study = optional_row_object(page_id, rows, "studyInformation")?;
+	let rows = &super::super::common::without_empty_row_lists(rows);
+	let empty_study = serde_json::Map::new();
+	let study =
+		optional_row_object(page_id, rows, "studyInformation")?.or_else(|| {
+			rows.contains_key("studyRegistrationNumbers")
+				.then_some(&empty_study)
+		});
 	let study_id = if let Some(study) = study {
 		let update = StudyInformationForUpdate {
 			source_study_presave_id: uuid_field(study, &["sourceStudyPresaveId"]),
@@ -143,13 +149,6 @@ pub(super) async fn apply_si_page_rows_patch(
 		.await?;
 		let Some(study) = studies.into_iter().min_by_key(|study| study.created_at)
 		else {
-			if rows.contains_key("studyRegistrationNumbers") {
-				return Err(Error::BadRequest {
-					message: format!(
-						"{page_id}.studyInformation is required before child rows"
-					),
-				});
-			}
 			return Ok(());
 		};
 		study.id
@@ -219,9 +218,7 @@ pub(super) async fn apply_si_page_rows_patch(
 					&clear_fields,
 				)
 				.await?;
-			} else if update.registration_number.is_some()
-				|| update.registration_number_null_flavor.is_some()
-			{
+			} else {
 				StudyRegistrationNumberBmc::create(
 					ctx,
 					mm,

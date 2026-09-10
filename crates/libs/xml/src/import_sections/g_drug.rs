@@ -375,6 +375,20 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				read_device_characteristic_code_system(&mut xpath, &ch);
 			let code_display_name =
 				read_device_characteristic_code_display_name(&mut xpath, &ch);
+			// MFDS device fields are UI-only; do not import retired vendor extensions.
+			if [code.as_deref(), code_display_name.as_deref()]
+				.into_iter()
+				.flatten()
+				.any(|value| {
+					value
+						.chars()
+						.filter(char::is_ascii_alphanumeric)
+						.collect::<String>()
+						.to_ascii_uppercase()
+						.starts_with("KRDVC")
+				}) {
+				continue;
+			}
 			let value_type = read_device_characteristic_value_type(&mut xpath, &ch);
 			let value_value =
 				read_device_characteristic_value_value(&mut xpath, &ch);

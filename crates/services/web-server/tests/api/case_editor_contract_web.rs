@@ -10,6 +10,8 @@ mod dg;
 mod dh;
 #[path = "case_editor_contract/dm.rs"]
 mod dm;
+#[path = "case_editor_contract/draft_save.rs"]
+mod draft_save;
 #[path = "case_editor_contract/lb.rs"]
 mod lb;
 #[path = "case_editor_contract/lr.rs"]

@@ -98,6 +98,28 @@ pub(crate) fn boolean(
 	}
 }
 
+pub(crate) fn email(
+	issues: &mut Vec<InputIssue>,
+	code: &'static str,
+	value: InputValue<'_>,
+) {
+	let valid = match normalized(value) {
+		InputValue::Missing => true,
+		InputValue::String(value) => {
+			let parts: Vec<_> = value.split('@').collect();
+			parts.len() == 2
+				&& !parts[0].is_empty()
+				&& !value.chars().any(char::is_whitespace)
+				&& parts[1].split('.').count() >= 2
+				&& parts[1].split('.').all(|v| !v.is_empty())
+		}
+		_ => false,
+	};
+	if !valid {
+		push(issues, code, "must be a valid email address".into());
+	}
+}
+
 pub(crate) fn numeric(
 	issues: &mut Vec<InputIssue>,
 	code: &'static str,

@@ -188,6 +188,46 @@ pub(super) fn validate_direct_rows(
 	for (key, value) in rows {
 		reject_control_characters(value, &format!("{section}.{key}"))?;
 	}
+	if section == "CI" {
+		if let Some(row) = optional_row_object(section, rows, "case")? {
+			validate_field(
+				row,
+				"reportYear",
+				"case.reportYear",
+				InputType::String,
+				None,
+				None,
+				&[],
+				|input| match input.value {
+					InputValue::Missing | InputValue::Null => Vec::new(),
+					InputValue::String(value)
+						if value.trim().is_empty()
+							|| (value.trim().len() == 4
+								&& value
+									.trim()
+									.bytes()
+									.all(|b| b.is_ascii_digit())) =>
+					{
+						Vec::new()
+					}
+					_ => vec![InputIssue {
+						code: "LOCAL.REPORT_YEAR.FORMAT",
+						message: "must be a four-digit year".into(),
+					}],
+				},
+			)?;
+		}
+	}
+	if section == "NR" {
+		if let Some(row) = optional_row_object(section, rows, "narrative")? {
+			validate_local_text(
+				row,
+				"additionalInformation",
+				"narrative.additionalInformation",
+				20000,
+			)?;
+		}
+	}
 	let normalized = match section {
 		"CI" => {
 			let mut normalized =
@@ -1235,6 +1275,33 @@ pub(super) fn validate_direct_rows(
 		validate_section_fields(section, &row, None, &[], fda)?;
 	}
 	Ok(())
+}
+
+pub(super) fn validate_local_text(
+	row: &Map<String, Value>,
+	request: &str,
+	path: &str,
+	limit: usize,
+) -> Result<()> {
+	validate_field(
+		row,
+		request,
+		path,
+		InputType::String,
+		None,
+		None,
+		&[],
+		|input| match input.value {
+			InputValue::Missing | InputValue::Null => vec![],
+			InputValue::String(value) if value.trim().chars().count() <= limit => {
+				vec![]
+			}
+			_ => vec![InputIssue {
+				code: "LOCAL.LENGTH.MAX",
+				message: format!("must contain at most {limit} characters"),
+			}],
+		},
+	)
 }
 
 fn normalized_changed_path(path: &str) -> String {

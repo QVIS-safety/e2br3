@@ -142,20 +142,6 @@ const DM_PARENT_PAST_DRUG_PATCH_FIELDS: &[(&str, &[&str])] = &[
 	("reaction_meddra_version", &["reactionMeddraVersion"]),
 	("reaction_meddra_code", &["reactionMeddraCode"]),
 ];
-fn patch_value_has_content(value: &Value) -> bool {
-	match value {
-		Value::Null => false,
-		Value::String(value) => !value.trim().is_empty(),
-		Value::Array(values) => values.iter().any(patch_value_has_content),
-		Value::Object(values) => values.iter().any(|(key, value)| {
-			!matches!(
-				key.as_str(),
-				"id" | "deleted" | "_delete" | "sequenceNumber"
-			) && patch_value_has_content(value)
-		}),
-		Value::Bool(_) | Value::Number(_) => true,
-	}
-}
 
 pub(super) async fn apply_dm_page_rows_patch(
 	ctx: &lib_core::ctx::Ctx,
@@ -179,6 +165,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 			"parentPastDrugs",
 		],
 	)?;
+	let rows = &super::super::common::without_empty_row_lists(rows);
+	if rows.is_empty() {
+		return Ok(());
+	}
 	let patient = optional_row_object(page_id, rows, "patientInformation")?;
 	fn value_at_path<'a>(
 		row: &'a Map<String, Value>,
@@ -481,17 +471,7 @@ pub(super) async fn apply_dm_page_rows_patch(
 			Err(err) => return Err(err.into()),
 		}
 	} else {
-		match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
-			Ok(entity) => entity.id,
-			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {
-				return Err(Error::BadRequest {
-					message: format!(
-						"{page_id}.patientInformation is required before dependent rows"
-					),
-				});
-			}
-			Err(err) => return Err(err.into()),
-		}
+		PatientInformationBmc::get_or_create_by_case(ctx, mm, case_id).await?
 	};
 
 	if let Some(value) = rows.get("medicalHistoryEpisodes") {
@@ -667,9 +647,11 @@ pub(super) async fn apply_dm_page_rows_patch(
 		}
 	}
 
-	let death_info_row = optional_row_object(page_id, rows, "deathInfo")?;
 	let has_death_children =
 		rows.contains_key("reportedCauses") || rows.contains_key("autopsyCauses");
+	let empty_death_info = Map::new();
+	let death_info_row = optional_row_object(page_id, rows, "deathInfo")?
+		.or_else(|| has_death_children.then_some(&empty_death_info));
 	let existing_death_info = PatientDeathInformationBmc::list(
 		ctx,
 		mm,
@@ -859,7 +841,12 @@ pub(super) async fn apply_dm_page_rows_patch(
 		}
 	}
 
-	if let Some(parent) = optional_row_object(page_id, rows, "parentInfo")? {
+	let empty_parent = Map::new();
+	let has_parent_children = rows.contains_key("parentMedicalHistory")
+		|| rows.contains_key("parentPastDrugs");
+	let parent_patch = optional_row_object(page_id, rows, "parentInfo")?
+		.or_else(|| has_parent_children.then_some(&empty_parent));
+	if let Some(parent) = parent_patch {
 		let existing = ParentInformationBmc::list(
 			ctx,
 			mm,
@@ -947,14 +934,7 @@ pub(super) async fn apply_dm_page_rows_patch(
 					&clear_fields,
 				)
 				.await?;
-			} else if patch_value_has_content(&Value::Object(parent.clone()))
-				|| rows
-					.get("parentMedicalHistory")
-					.is_some_and(patch_value_has_content)
-				|| rows
-					.get("parentPastDrugs")
-					.is_some_and(patch_value_has_content)
-			{
+			} else {
 				ParentInformationBmc::create(
 					ctx,
 					mm,

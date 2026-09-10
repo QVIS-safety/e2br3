@@ -213,3 +213,20 @@ fn import_g_dosage_null_flavor_from_scenario1() {
 	assert_eq!(first_dosage.end_date, None);
 	assert_eq!(first_dosage.end_date_null_flavor.as_deref(), Some("ASKU"));
 }
+
+#[test]
+fn import_g_ignores_retired_mfds_device_characteristics() {
+	let source = String::from_utf8(g_fixture("FAERS2022Scenario6.xml")).unwrap();
+	let original = parse_g_drugs(source.as_bytes()).unwrap();
+	let replaced = source.replace("C94031", "KR_DVC_SN");
+	assert_ne!(source, replaced);
+	let drugs = parse_g_drugs(replaced.as_bytes()).unwrap();
+	assert_eq!(
+		drugs[0].characteristics.len(),
+		original[0].characteristics.len() - 1
+	);
+	assert!(drugs
+		.iter()
+		.flat_map(|drug| &drug.characteristics)
+		.all(|value| value.code.as_deref() != Some("KR_DVC_SN")));
+}

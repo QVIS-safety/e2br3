@@ -9,7 +9,7 @@ CREATE TABLE drug_information (
     sequence_number INTEGER NOT NULL,  -- k value (drug index)
 
     -- G.k.1 - Characterization of Drug Role (MANDATORY - E2B(R3) codes)
-    drug_characterization VARCHAR(1) NOT NULL CHECK (drug_characterization IN ('1', '2', '3', '4')),
+    drug_characterization VARCHAR(1) NOT NULL CHECK (drug_characterization IN ('', '1', '2', '3', '4')),
     -- 1=Suspect, 2=Concomitant, 3=Interacting, 4=Drug Not Administered
 
     -- G.k.2.2 - Medicinal Product Name as Reported

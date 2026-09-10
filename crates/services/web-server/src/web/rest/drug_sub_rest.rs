@@ -39,30 +39,47 @@ fn ensure_drug_scope(
 
 #[derive(Deserialize)]
 pub struct FdaDeviceCodeInput {
+	#[serde(alias = "valueCode")]
 	pub value_code: String,
 }
 
 #[derive(Deserialize)]
 pub struct FdaDeviceReplaceInput {
 	pub malfunction: Option<bool>,
+	#[serde(alias = "deviceBrandName")]
 	pub device_brand_name: Option<String>,
+	#[serde(alias = "deviceBrandNameNullFlavor")]
 	pub device_brand_name_null_flavor: Option<String>,
+	#[serde(alias = "commonDeviceName")]
 	pub common_device_name: Option<String>,
+	#[serde(alias = "commonDeviceNameNullFlavor")]
 	pub common_device_name_null_flavor: Option<String>,
+	#[serde(alias = "deviceProductCode")]
 	pub device_product_code: Option<String>,
+	#[serde(alias = "manufacturerName")]
 	pub manufacturer_name: Option<String>,
+	#[serde(alias = "manufacturerAddress")]
 	pub manufacturer_address: Option<String>,
+	#[serde(alias = "manufacturerCity")]
 	pub manufacturer_city: Option<String>,
+	#[serde(alias = "manufacturerState")]
 	pub manufacturer_state: Option<String>,
+	#[serde(alias = "manufacturerCountry")]
 	pub manufacturer_country: Option<String>,
+	#[serde(alias = "deviceUsage")]
 	pub device_usage: Option<String>,
+	#[serde(alias = "deviceLotNumber")]
 	pub device_lot_number: Option<String>,
+	#[serde(alias = "operatorOfDevice")]
 	pub operator_of_device: Option<String>,
 	#[serde(default)]
+	#[serde(alias = "followUpTypes")]
 	pub follow_up_types: Vec<FdaDeviceCodeInput>,
 	#[serde(default)]
+	#[serde(alias = "deviceProblemCodes")]
 	pub device_problem_codes: Vec<FdaDeviceCodeInput>,
 	#[serde(default)]
+	#[serde(alias = "remedialActions")]
 	pub remedial_actions: Vec<FdaDeviceCodeInput>,
 }
 
@@ -70,6 +87,77 @@ pub struct FdaDeviceReplaceInput {
 pub struct ReplaceFdaDevicesInput {
 	#[serde(default)]
 	pub devices: Vec<FdaDeviceReplaceInput>,
+}
+
+pub(crate) async fn persist_fda_devices(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	drug_id: Uuid,
+	devices: Vec<FdaDeviceReplaceInput>,
+) -> Result<Vec<FdaDeviceInformation>> {
+	let mut filter = FdaDeviceInformationFilter::default();
+	filter.drug_id = Some(modql::filter::OpValsValue::from(vec![
+		modql::filter::OpValValue::Eq(serde_json::json!(drug_id.to_string())),
+	]));
+	for existing in FdaDeviceInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(modql::filter::ListOptions::default()),
+	)
+	.await?
+	{
+		FdaDeviceInformationBmc::delete(ctx, mm, existing.id).await?;
+	}
+
+	let mut created = Vec::with_capacity(devices.len());
+	for (device_index, device) in devices.into_iter().enumerate() {
+		let id = FdaDeviceInformationBmc::create(
+			ctx,
+			mm,
+			FdaDeviceInformationForCreate {
+				drug_id,
+				sequence_number: device_index as i32 + 1,
+				malfunction: device.malfunction,
+				device_brand_name: device.device_brand_name,
+				device_brand_name_null_flavor: device.device_brand_name_null_flavor,
+				common_device_name: device.common_device_name,
+				common_device_name_null_flavor: device
+					.common_device_name_null_flavor,
+				device_product_code: device.device_product_code,
+				manufacturer_name: device.manufacturer_name,
+				manufacturer_address: device.manufacturer_address,
+				manufacturer_city: device.manufacturer_city,
+				manufacturer_state: device.manufacturer_state,
+				manufacturer_country: device.manufacturer_country,
+				device_usage: device.device_usage,
+				device_lot_number: device.device_lot_number,
+				operator_of_device: device.operator_of_device,
+			},
+		)
+		.await?;
+		for (element, codes) in [
+			("follow_up_type", device.follow_up_types),
+			("device_problem", device.device_problem_codes),
+			("remedial_action", device.remedial_actions),
+		] {
+			for (code_index, code) in codes.into_iter().enumerate() {
+				FdaDeviceCodeBmc::create(
+					ctx,
+					mm,
+					FdaDeviceCodeForCreate {
+						device_id: id,
+						element: element.to_string(),
+						sequence_number: code_index as i32 + 1,
+						value_code: code.value_code,
+					},
+				)
+				.await?;
+			}
+		}
+		created.push(FdaDeviceInformationBmc::get(ctx, mm, id).await?);
+	}
+	Ok(created)
 }
 
 pub async fn replace_fda_devices(
@@ -96,73 +184,9 @@ pub async fn replace_fda_devices(
 		move |ctx, mm| {
 			Box::pin(async move {
 				DrugInformationBmc::get_in_case(ctx, mm, case_id, drug_id).await?;
-				let mut filter = FdaDeviceInformationFilter::default();
-				filter.drug_id = Some(modql::filter::OpValsValue::from(vec![
-					modql::filter::OpValValue::Eq(serde_json::json!(
-						drug_id.to_string()
-					)),
-				]));
-				for existing in FdaDeviceInformationBmc::list(
-					ctx,
-					mm,
-					Some(vec![filter]),
-					Some(modql::filter::ListOptions::default()),
-				)
-				.await?
-				{
-					FdaDeviceInformationBmc::delete(ctx, mm, existing.id).await?;
-				}
-
-				let mut created = Vec::with_capacity(params.data.devices.len());
-				for (device_index, device) in
-					params.data.devices.into_iter().enumerate()
-				{
-					let id = FdaDeviceInformationBmc::create(
-						ctx,
-						mm,
-						FdaDeviceInformationForCreate {
-							drug_id,
-							sequence_number: device_index as i32 + 1,
-							malfunction: device.malfunction,
-							device_brand_name: device.device_brand_name,
-							device_brand_name_null_flavor: device
-								.device_brand_name_null_flavor,
-							common_device_name: device.common_device_name,
-							common_device_name_null_flavor: device
-								.common_device_name_null_flavor,
-							device_product_code: device.device_product_code,
-							manufacturer_name: device.manufacturer_name,
-							manufacturer_address: device.manufacturer_address,
-							manufacturer_city: device.manufacturer_city,
-							manufacturer_state: device.manufacturer_state,
-							manufacturer_country: device.manufacturer_country,
-							device_usage: device.device_usage,
-							device_lot_number: device.device_lot_number,
-							operator_of_device: device.operator_of_device,
-						},
-					)
-					.await?;
-					for (element, codes) in [
-						("follow_up_type", device.follow_up_types),
-						("device_problem", device.device_problem_codes),
-						("remedial_action", device.remedial_actions),
-					] {
-						for (code_index, code) in codes.into_iter().enumerate() {
-							FdaDeviceCodeBmc::create(
-								ctx,
-								mm,
-								FdaDeviceCodeForCreate {
-									device_id: id,
-									element: element.to_string(),
-									sequence_number: code_index as i32 + 1,
-									value_code: code.value_code,
-								},
-							)
-							.await?;
-						}
-					}
-					created.push(FdaDeviceInformationBmc::get(ctx, mm, id).await?);
-				}
+				let created =
+					persist_fda_devices(ctx, mm, drug_id, params.data.devices)
+						.await?;
 				Ok((
 					axum::http::StatusCode::OK,
 					axum::Json(lib_rest_core::rest_result::DataRestResult {

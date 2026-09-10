@@ -750,6 +750,7 @@ pub fn c_3_4_7(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 /// ICH.C.3.4.8.LENGTH.MAX
 pub fn c_3_4_8(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
+	crate::helpers::email(&mut issues, "ICH.C.3.4.8.FORMAT", input.value);
 	crate::helpers::max_length(
 		&mut issues,
 		"ICH.C.3.4.8.LENGTH.MAX",

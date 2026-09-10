@@ -72,6 +72,7 @@ pub struct TestResultForCreate {
 	)]
 	pub test_date: Option<Date>,
 	pub test_date_null_flavor: Option<String>,
+	#[serde(default)]
 	pub test_name: String,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,

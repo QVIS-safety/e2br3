@@ -31,6 +31,9 @@ use lib_core::model::drug_reaction_assessment::{
 };
 use std::collections::BTreeMap;
 
+#[path = "dg_devices.rs"]
+mod devices;
+
 const DRUG_ROW_ALIASES: &[(&str, &[&str])] = &[
 	("source_product_presave_id", &["sourceProductPresaveId"]),
 	("medicinal_product", &["medicinalProduct"]),
@@ -256,7 +259,7 @@ async fn persist_active_substances(
 				>(ctx, mm, id, update, &clear_fields)
 				.await?;
 			}
-		} else if !deleted && child_row_has_content(row) {
+		} else if !deleted {
 			let model = row_model_value(
 				"DG",
 				"activeSubstances[].",
@@ -364,7 +367,7 @@ macro_rules! persist_drug_children {
 						)
 						.await?;
 					}
-				} else if !deleted && child_row_has_content(row) {
+				} else if !deleted {
 					let model = row_model_value(
 						"DG",
 						concat!($key, "[]."),
@@ -1117,7 +1120,7 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 					row,
 					&["drugCharacterization", "drugRole", "drug_characterization",],
 				)
-				.unwrap_or_else(|| "1".to_string())),
+				.unwrap_or_default()),
 			),
 		],
 	);
@@ -1127,6 +1130,7 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 	persist_dosage_information(ctx, mm, row_id, row).await?;
 	persist_indications(ctx, mm, row_id, row).await?;
 	persist_drug_reaction_assessments(ctx, mm, case_id, row_id, row).await?;
+	devices::persist_devices(ctx, mm, row_id, row).await?;
 	Ok((row_id, requested_authorities))
 }
 
@@ -1214,6 +1218,7 @@ pub async fn patch_editor_dg_page_row(
 				persist_indications(ctx, mm, row_id, row).await?;
 				persist_drug_reaction_assessments(ctx, mm, case_id, row_id, row)
 					.await?;
+				devices::persist_devices(ctx, mm, row_id, row).await?;
 				mark_editor_validation_summary_stale(
 					ctx,
 					mm,

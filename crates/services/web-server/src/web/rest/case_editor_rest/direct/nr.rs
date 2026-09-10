@@ -40,8 +40,17 @@ pub(super) async fn apply_nr_page_rows_patch(
 		rows,
 		&["narrative", "senderDiagnoses", "caseSummaryInformation"],
 	)?;
-	if let Some(narrative) = optional_row_object(page_id, rows, "narrative")? {
-		let case_narrative = string_field(narrative, &["caseNarrative"]);
+	let rows = &super::super::common::without_empty_row_lists(rows);
+	let empty_narrative = serde_json::Map::new();
+	let has_nested_rows = rows.contains_key("senderDiagnoses")
+		|| rows.contains_key("caseSummaryInformation");
+	let narrative_patch = optional_row_object(page_id, rows, "narrative")?
+		.or_else(|| has_nested_rows.then_some(&empty_narrative));
+	if let Some(narrative) = narrative_patch {
+		let case_narrative = narrative
+			.get("caseNarrative")
+			.and_then(Value::as_str)
+			.map(str::to_owned);
 		let update = NarrativeInformationForUpdate {
 			source_narrative_presave_id: uuid_field(
 				narrative,
@@ -70,9 +79,6 @@ pub(super) async fn apply_nr_page_rows_patch(
 				.await?
 			}
 			None => {
-				let Some(case_narrative) = case_narrative else {
-					return Ok(());
-				};
 				NarrativeInformationBmc::create(
 					ctx,
 					mm,
@@ -80,7 +86,7 @@ pub(super) async fn apply_nr_page_rows_patch(
 						case_id,
 						source_narrative_presave_id: update
 							.source_narrative_presave_id,
-						case_narrative,
+						case_narrative: case_narrative.unwrap_or_default(),
 						reporter_comments: update.reporter_comments,
 						sender_comments: update.sender_comments,
 						additional_information: update.additional_information,
@@ -91,18 +97,9 @@ pub(super) async fn apply_nr_page_rows_patch(
 		}
 	}
 
-	let has_nested_rows = rows.contains_key("senderDiagnoses")
-		|| rows.contains_key("caseSummaryInformation");
 	let Some(narrative) =
 		NarrativeInformationBmc::get_by_case_optional(ctx, mm, case_id).await?
 	else {
-		if has_nested_rows {
-			return Err(Error::BadRequest {
-				message: format!(
-					"{page_id} nested rows require an existing narrative"
-				),
-			});
-		}
 		return Ok(());
 	};
 

@@ -352,6 +352,8 @@ struct CiLinkedReportRowPatch {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CiSourceDocumentRowPatch {
 	#[serde(default)]
+	deleted: Option<bool>,
+	#[serde(default)]
 	id: Option<Uuid>,
 	#[serde(default)]
 	source_document_name: Option<String>,
@@ -549,6 +551,9 @@ pub(super) async fn apply_ci_rows_patch(
 				.map_err(|err| ci_row_error("documentsHeldBySender", err))?;
 		let raw_patches = value.as_array().expect("validated CI document array");
 		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
+			if patch.id.is_none() && patch.deleted == Some(true) {
+				continue;
+			}
 			if let Some(id) = patch.id {
 				let current = DocumentsHeldBySenderBmc::get(ctx, mm, id).await?;
 				if current.case_id != case_id {
@@ -650,16 +655,11 @@ pub(super) async fn apply_ci_rows_patch(
 				)
 				.await?;
 			} else {
-				let source = patch.source.ok_or_else(|| Error::BadRequest {
-					message: "CI.otherCaseIdentifiers[].source is required"
-						.to_string(),
-				})?;
-				let case_identifier =
-					patch.case_identifier.ok_or_else(|| Error::BadRequest {
-						message:
-							"CI.otherCaseIdentifiers[].caseIdentifier is required"
-								.to_string(),
-					})?;
+				if patch.deleted == Some(true) {
+					continue;
+				}
+				let source = patch.source.unwrap_or_default();
+				let case_identifier = patch.case_identifier.unwrap_or_default();
 				OtherCaseIdentifierBmc::create(
 					ctx,
 					mm,
@@ -756,6 +756,9 @@ pub(super) async fn apply_ci_rows_patch(
 			.as_array()
 			.expect("validated CI source document array");
 		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
+			if patch.id.is_none() && patch.deleted == Some(true) {
+				continue;
+			}
 			if let Some(id) = patch.id {
 				let current = SourceDocumentBmc::get(ctx, mm, id).await?;
 				if current.case_id != case_id {
@@ -771,6 +774,10 @@ pub(super) async fn apply_ci_rows_patch(
 						.expect("validated CI source document row"),
 					CI_SOURCE_DOCUMENT_PATCH_FIELDS,
 				);
+				if patch.deleted == Some(true) {
+					SourceDocumentBmc::delete(ctx, mm, id).await?;
+					continue;
+				}
 				lib_core::model::update_uuid_patch::<SourceDocumentBmc, _>(
 					ctx,
 					mm,

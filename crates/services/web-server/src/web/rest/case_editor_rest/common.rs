@@ -99,6 +99,37 @@ pub(super) fn uuid_eq(id: Uuid) -> OpValsValue {
 	OpValsValue::from(vec![OpValValue::Eq(json!(id.to_string()))])
 }
 
+// Row lists are patches: [] changes nothing; [{}] adds an unfinished row.
+pub(super) fn without_empty_row_lists(
+	rows: &BTreeMap<String, Value>,
+) -> BTreeMap<String, Value> {
+	rows.iter()
+		.filter_map(|(key, value)| {
+			if value.as_array().is_some_and(Vec::is_empty) {
+				return None;
+			}
+			let mut value = value.clone();
+			let nested: &[&str] = match key.as_str() {
+				"studyInformation" => &["fdaCrossReportedIndNumbers"],
+				"parentInfo" => &["medicalHistoryEpisodes", "pastDrugHistory"],
+				"deathInfo" => &["reportedCausesOfDeath", "autopsyCausesOfDeath"],
+				_ => &[],
+			};
+			if let Some(object) = value.as_object_mut() {
+				let before = object.len();
+				object.retain(|key, value| {
+					!(nested.contains(&key.as_str())
+						&& value.as_array().is_some_and(Vec::is_empty))
+				});
+				if object.len() != before && object.keys().all(|key| key == "id") {
+					return None;
+				}
+			}
+			Some((key.clone(), value))
+		})
+		.collect()
+}
+
 pub(super) async fn next_child_sequence(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -425,6 +456,22 @@ pub(super) fn row_model_value(
 	}
 	let mut value = Value::Object(map);
 	omit_blank_strings(&mut value);
+	// These NOT NULL text columns use an empty string for an unfinished draft.
+	for (section, source, target) in [
+		("LB", "testName", "test_name"),
+		("DG", "medicinalProduct", "medicinal_product"),
+		("DG", "drugCharacterization", "drug_characterization"),
+	] {
+		if _section == section && _request_prefix.is_empty() {
+			if let Some(text) = row
+				.get(source)
+				.or_else(|| row.get(target))
+				.and_then(Value::as_str)
+			{
+				value[target] = json!(text);
+			}
+		}
+	}
 	value
 }
 

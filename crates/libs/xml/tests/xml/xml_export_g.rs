@@ -139,7 +139,7 @@ fn export_g_drug_basic() {
 		id: Uuid::new_v4(),
 		drug_id,
 		sequence_number: 1,
-		code: Some("C1".to_string()),
+		code: Some("KR_DVC_SN".to_string()),
 		code_system: Some("CS1".to_string()),
 		code_display_name: Some("Device".to_string()),
 		value_type: Some("ST".to_string()),
@@ -164,6 +164,7 @@ fn export_g_drug_basic() {
 		&[],
 	)
 	.expect("export xml");
+	assert!(!xml.contains("KR_DVC_SN"));
 	let parser = Parser::default();
 	let doc = parser.parse_string(&xml).expect("parse");
 	let mut xpath = Context::new(&doc).expect("xpath");
