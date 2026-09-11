@@ -6,6 +6,7 @@ use chrono::{NaiveDate, Utc};
 use lib_core::authorization::eligible_action_ids;
 use lib_core::ctx::{canonical_role, Ctx};
 use lib_core::model::admin_settings::AdminSettingsBmc;
+use lib_core::model::terminology_import;
 use lib_core::model::ModelManager;
 use lib_rest_core::{
 	notice_read_allowed, with_authorized_notice_update,
@@ -749,22 +750,53 @@ async fn payload_to_value(
 	let validated_payload =
 		serde_json::from_value::<AdminSettingsPayload>(merged.clone())?;
 	runtime_settings_payload(validated_payload.clone(), Vec::new(), String::new())?;
-	if validated_payload
+	let meddra_language = validated_payload
 		.meddra_language
 		.as_deref()
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
-		.is_none()
-		|| validated_payload
-			.meddra_version
-			.as_deref()
-			.map(str::trim)
-			.filter(|value| !value.is_empty())
-			.is_none()
-	{
-		return Err(Error::BadRequest {
+		.ok_or_else(|| Error::BadRequest {
 			message: "MedDRA language and version are required".to_string(),
-		});
+		})?;
+	let meddra_version = validated_payload
+		.meddra_version
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.ok_or_else(|| Error::BadRequest {
+			message: "MedDRA language and version are required".to_string(),
+		})?;
+	if ["meddra_language", "meddra_version"].iter().any(|field| {
+		merged.get(*field) != existing.and_then(|value| value.get(*field))
+	}) {
+		let language = match meddra_language.to_ascii_lowercase().as_str() {
+			"english" => "en".to_string(),
+			"korean" => "ko".to_string(),
+			_ => meddra_language.to_ascii_lowercase(),
+		};
+		let releases = terminology_import::fetch_releases(mm, Some("meddra"), None)
+			.await
+			.map_err(|error| match error {
+				terminology_import::ImportError::BadInput(message) => {
+					Error::BadRequest { message }
+				}
+				terminology_import::ImportError::Store(message) => {
+					Error::Model(lib_core::model::Error::Store(message))
+				}
+			})?;
+		if !releases.iter().any(|release| {
+			release.language.eq_ignore_ascii_case(&language)
+				&& release.version == meddra_version
+				&& matches!(
+					release.status.as_str(),
+					"active" | "approved" | "validated"
+				)
+		}) {
+			return Err(Error::BadRequest {
+				message: "Select an available MedDRA language and version."
+					.to_string(),
+			});
+		}
 	}
 	if validated_payload.workflow_enabled.is_none() {
 		return Err(Error::BadRequest {

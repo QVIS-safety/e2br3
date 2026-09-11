@@ -35,7 +35,7 @@ pub async fn get_editor_shell(
 					Json(CaseEditorShellDto::from_case_read_result(
 						case,
 						safety_report_id,
-					)),
+					)?),
 				))
 			})
 		},

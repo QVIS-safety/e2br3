@@ -1,4 +1,5 @@
 use crate::web::rest::case_rest::CaseReadResult;
+use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::time::OffsetDateTime;
@@ -26,6 +27,7 @@ pub struct CaseEditorShellDto {
 	pub can_act_on_workflow: bool,
 	pub workflow_block_reason: Option<&'static str>,
 	pub case_write_block_reason: Option<&'static str>,
+	pub review_receivers: Value,
 }
 
 #[derive(Debug, Serialize)]
@@ -38,8 +40,31 @@ impl CaseEditorShellDto {
 	pub fn from_case_read_result(
 		value: CaseReadResult,
 		safety_report_id: String,
-	) -> Self {
-		Self {
+	) -> serde_json::Result<Self> {
+		let review_receivers = value
+			.case
+			.review_receivers_json
+			.as_deref()
+			.map(serde_json::from_str)
+			.transpose()?
+			.unwrap_or_else(|| Value::Array(Vec::new()));
+		let review_receivers = match review_receivers {
+			Value::Array(rows) => Value::Array(rows),
+			Value::Object(mut object) => object
+				.remove("reviewReceivers")
+				.filter(Value::is_array)
+				.ok_or_else(|| {
+					serde_json::Error::custom(
+						"review_receivers_json object must contain a reviewReceivers array",
+					)
+				})?,
+			_ => {
+				return Err(serde_json::Error::custom(
+					"review_receivers_json must be an array or object",
+				));
+			}
+		};
+		Ok(Self {
 			id: value.case.id,
 			status: value.case.status,
 			organization_id: value.case.organization_id,
@@ -60,7 +85,8 @@ impl CaseEditorShellDto {
 			can_act_on_workflow: value.can_act_on_workflow,
 			workflow_block_reason: value.workflow_block_reason,
 			case_write_block_reason: value.case_write_block_reason,
-		}
+			review_receivers,
+		})
 	}
 }
 
@@ -268,8 +294,10 @@ pub struct CaseEditorLbListRowDto {
 	pub deleted: bool,
 	pub test_name: String,
 	pub test_date: Option<String>,
-	pub result_value: Option<String>,
-	pub result_unit: Option<String>,
+	pub test_result_code: Option<String>,
+	pub test_result: Option<String>,
+	pub test_result_unstructured: Option<String>,
+	pub comments: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

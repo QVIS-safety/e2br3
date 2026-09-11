@@ -1,5 +1,44 @@
 // Generated once from registry/dictionary/*.json; explicit field functions are maintained here.
 
+pub fn local_mfds_device_cause_other(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"LOCAL.E.i.KR.device.causeOther.LENGTH.MAX",
+		input.value,
+		20000,
+	);
+	issues
+}
+
+pub fn local_mfds_device_action_reason(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"LOCAL.E.i.KR.device.actionReason.LENGTH.MAX",
+		input.value,
+		20000,
+	);
+	issues
+}
+
+pub fn local_mfds_device_action_other(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"LOCAL.E.i.KR.device.actionOther.LENGTH.MAX",
+		input.value,
+		20000,
+	);
+	issues
+}
+
 /// FDA.E.i.3.2h.ALLOWED.VALUE
 /// FDA.E.i.3.2h.NULLFLAVOR.ALLOWED
 pub fn fda_e_i_3_2h(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {

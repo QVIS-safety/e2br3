@@ -1938,6 +1938,19 @@ async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
 #[tokio::test]
 async fn test_admin_settings_round_trips_alignment_fields() -> Result<()> {
 	let mm = init_test_mm().await?;
+	lib_core::model::terminology_import::stage_meddra_rows(
+		&mm,
+		system_user_id(),
+		&[lib_core::model::terminology_import::MeddraRow {
+			code: "10000001".to_string(),
+			term: "Settings regression term".to_string(),
+			level: "LLT".to_string(),
+		}],
+		"28.0",
+		"en",
+		"settings-regression",
+	)
+	.await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());

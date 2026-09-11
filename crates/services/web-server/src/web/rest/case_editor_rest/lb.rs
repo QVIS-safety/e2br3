@@ -45,8 +45,10 @@ async fn load_editor_lb_list_rows(
 				deleted: test.deleted,
 				test_name: test.test_name,
 				test_date: test.test_date.map(|date| date.to_string()),
-				result_value: test.test_result_value,
-				result_unit: test.test_result_unit,
+				test_result_code: test.test_result_code,
+				test_result: test.test_result_value,
+				test_result_unstructured: test.result_unstructured,
+				comments: test.comments,
 			})
 			.collect(),
 	)

@@ -252,7 +252,7 @@ fn write_d_9_3(
 			out.push_str(&xml_escape(autopsy_performed_null_flavor.unwrap()));
 			out.push('"');
 		}
-		None => return String::new(),
+		None => {}
 	}
 	out.push_str("/>");
 	for cause in causes {

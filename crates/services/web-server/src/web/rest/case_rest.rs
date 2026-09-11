@@ -278,19 +278,22 @@ fn validate_review_receiver_row(
 				),
 			});
 		}
-	} else {
-		requirements.needs_report_due_default = true;
 	}
 
-	if let Some(value) = review_receiver_date_field(
+	let has_report_due_date = if let Some(value) = review_receiver_date_field(
 		idx,
 		object,
 		&["reportDueDate", "report_due_date"],
 		"reportDueDate",
 	)? {
 		validate_review_receiver_date(idx, "reportDueDate", value)?;
+		true
 	} else {
 		requirements.needs_report_due_date = true;
+		false
+	};
+	if report_due.is_none() && !has_report_due_date {
+		requirements.needs_report_due_default = true;
 	}
 	if let Some(value) = review_receiver_date_field(
 		idx,
@@ -338,6 +341,9 @@ fn normalize_review_receiver_row(
 			.ok_or_else(|| Error::BadRequest {
 				message: format!("review receiver row {idx} receiver is required"),
 			})?;
+	if text_field(object, &["reportDueDate", "report_due_date"]).is_some() {
+		return Ok(());
+	}
 	let report_due = match review_receiver_integer_field(
 		idx,
 		object,
@@ -362,9 +368,6 @@ fn normalize_review_receiver_row(
 				"review receiver row {idx} reportDue must be non-negative"
 			),
 		});
-	}
-	if text_field(object, &["reportDueDate", "report_due_date"]).is_some() {
-		return Ok(());
 	}
 	let c15 = c15.ok_or_else(|| Error::BadRequest {
 		message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),

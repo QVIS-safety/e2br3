@@ -147,3 +147,53 @@ fn patch_d_section_updates_death_cause_comments() {
 		.unwrap();
 	assert_eq!(autopsy_text, "Updated autopsy cause");
 }
+
+#[test]
+fn patch_d_section_keeps_empty_autopsy_cause_without_parent_answer() {
+	let cause = [DPatientDeathCausePatch {
+		meddra_version: None,
+		meddra_code: None,
+		comments: None,
+	}];
+	let patch = DPatientPatch {
+		patient_name: None,
+		sex: None,
+		birth_date: None,
+		age_value: None,
+		age_unit: None,
+		weight_kg: None,
+		height_cm: None,
+		date_of_death: None,
+		autopsy_performed: None,
+		autopsy_performed_null_flavor: None,
+		reported_causes: &[],
+		autopsy_causes: &cause,
+	};
+
+	let raw = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><primaryRole><player1><name/><birthTime/><administrativeGenderCode/></player1></primaryRole></MCCI_IN200100UV01>"#;
+	let patched =
+		patch_d_patient(raw, &patch).expect("patch empty autopsy cause");
+	let doc = Parser::default().parse_string(&patched).expect("parse patched");
+	let mut xpath = Context::new(&doc).expect("xpath");
+	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+
+	let autopsy_value = xpath
+		.findnodes(
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='5']]/hl7:value",
+			None,
+		)
+		.unwrap();
+	assert_eq!(autopsy_value.len(), 1);
+	assert!(autopsy_value[0].get_property("value").is_none());
+	assert!(autopsy_value[0].get_property("nullFlavor").is_none());
+	assert_eq!(
+		xpath
+			.findnodes(
+				"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='5']]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='8']]",
+				None,
+			)
+			.unwrap()
+			.len(),
+		1
+	);
+}

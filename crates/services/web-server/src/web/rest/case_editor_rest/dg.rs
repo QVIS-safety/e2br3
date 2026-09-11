@@ -450,7 +450,24 @@ async fn persist_drug_reaction_assessments(
 		})?;
 		let delete_assessment =
 			bool_field(row, &["_deleteAssessment"]).unwrap_or(false);
-		if !delete_assessment && !child_row_has_content(row) {
+		let deleted = bool_field(row, &["deleted"]).unwrap_or(false);
+		let relatedness_id = string_field(row, &["id"])
+			.map(|value| {
+				Uuid::parse_str(&value).map_err(|_| Error::BadRequest {
+					message: format!(
+						"invalid DG.drug.drugReactionAssessments[{index}].id"
+					),
+				})
+			})
+			.transpose()?;
+		if deleted && relatedness_id.is_none() && !delete_assessment {
+			return Err(Error::BadRequest {
+				message: format!(
+					"missing DG.drug.drugReactionAssessments[{index}].id for deletion"
+				),
+			});
+		}
+		if !delete_assessment && !deleted && !child_row_has_content(row) {
 			continue;
 		}
 		let assessment_id = string_field(row, &["drugReactionAssessmentId"])
@@ -581,16 +598,6 @@ async fn persist_drug_reaction_assessments(
 			DrugReactionAssessmentBmc::create(ctx, mm, create).await?
 		};
 
-		let relatedness_id = string_field(row, &["id"])
-			.map(|value| {
-				Uuid::parse_str(&value).map_err(|_| Error::BadRequest {
-					message: format!(
-						"invalid DG.drug.drugReactionAssessments[{index}].id"
-					),
-				})
-			})
-			.transpose()?;
-		let deleted = bool_field(row, &["deleted"]).unwrap_or(false);
 		if let Some(relatedness_id) = relatedness_id {
 			let relatedness =
 				RelatednessAssessmentBmc::get(ctx, mm, relatedness_id).await?;

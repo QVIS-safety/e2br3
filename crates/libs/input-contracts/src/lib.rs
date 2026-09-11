@@ -124,4 +124,31 @@ mod tests {
 				.is_empty()
 		);
 	}
+
+	#[test]
+	fn device_code_rows_require_values_and_mfds_device_text_matches_storage() {
+		for check in [
+			generated::g::fda_g_k_12_r_2_r,
+			generated::g::fda_g_k_12_r_3_r,
+			generated::g::fda_g_k_12_r_11_r,
+		] {
+			assert!(!check(FieldInput::new(InputValue::String(""), None)).is_empty());
+		}
+		for check in [
+			generated::e::local_mfds_device_cause_other,
+			generated::e::local_mfds_device_action_reason,
+			generated::e::local_mfds_device_action_other,
+		] {
+			assert!(check(FieldInput::new(
+				InputValue::String(&"x".repeat(20000)),
+				None,
+			))
+			.is_empty());
+			assert!(!check(FieldInput::new(
+				InputValue::String(&"x".repeat(20001)),
+				None,
+			))
+			.is_empty());
+		}
+	}
 }

@@ -305,6 +305,111 @@ async fn create_re_validation_case(
 
 #[serial]
 #[tokio::test]
+async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
+	let receivers = json!({
+		"reviewReceivers": [{
+			"receiver": "MFDS",
+			"reportDueDate": "2026-09-10",
+			"reportedDate": "2026-09-11"
+		}]
+	});
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": { "review_receivers_json": serde_json::to_string(&receivers)? },
+			"reason_for_change": "save review receiver"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, shell) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/shell"))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{shell:?}");
+	assert_eq!(shell["reviewReceivers"], receivers["reviewReceivers"]);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn explicit_review_receiver_date_does_not_require_a_presave_in_mixed_rows(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id =
+		create_re_validation_case(&app, &cookie, "SR-RE-EXPLICIT-DATE").await?;
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE safety_report_identification
+				 SET date_of_most_recent_information = DATE '2026-09-11'
+				 WHERE case_id = $1",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+
+	let receivers = json!({"reviewReceivers": [
+		{
+			"receiver": "UI regression receiver",
+			"reportDueDate": "2026-09-12",
+			"reportedDate": "2026-09-11"
+		},
+		{
+			"receiver": "Calculated date receiver",
+			"reportDue": 7
+		}
+	]});
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": { "review_receivers_json": serde_json::to_string(&receivers)? },
+			"reason_for_change": "save mixed review receiver dates"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let saved: Value = serde_json::from_str(
+		body["data"]["review_receivers_json"]
+			.as_str()
+			.ok_or("missing review_receivers_json")?,
+	)?;
+	assert_eq!(saved["reviewReceivers"][0], receivers["reviewReceivers"][0]);
+	assert_eq!(
+		saved["reviewReceivers"][1]["reportDueDate"],
+		json!("2026-09-18")
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn update_case_rejects_malformed_review_receiver_json() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

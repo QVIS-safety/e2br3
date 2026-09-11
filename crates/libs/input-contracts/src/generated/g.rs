@@ -79,6 +79,13 @@ pub fn fda_g_k_12_r_10(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 /// FDA.G.k.12.r.11.r.LENGTH.MAX
 pub fn fda_g_k_12_r_11_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
+	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
+	{
+		issues.push(crate::InputIssue {
+			code: "FDA.G.k.12.r.11.r.REQUIRED",
+			message: "is required".to_string(),
+		});
+	}
 	crate::helpers::max_length(
 		&mut issues,
 		"FDA.G.k.12.r.11.r.LENGTH.MAX",
@@ -92,6 +99,13 @@ pub fn fda_g_k_12_r_11_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue>
 /// FDA.G.k.12.r.2.r.ALLOWED.VALUE
 pub fn fda_g_k_12_r_2_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
+	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
+	{
+		issues.push(crate::InputIssue {
+			code: "FDA.G.k.12.r.2.r.REQUIRED",
+			message: "is required".to_string(),
+		});
+	}
 	crate::helpers::max_length(
 		&mut issues,
 		"FDA.G.k.12.r.2.r.LENGTH.MAX",
@@ -110,6 +124,13 @@ pub fn fda_g_k_12_r_2_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> 
 /// FDA.G.k.12.r.3.r.LENGTH.MAX
 pub fn fda_g_k_12_r_3_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
+	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
+	{
+		issues.push(crate::InputIssue {
+			code: "FDA.G.k.12.r.3.r.REQUIRED",
+			message: "is required".to_string(),
+		});
+	}
 	crate::helpers::max_length(
 		&mut issues,
 		"FDA.G.k.12.r.3.r.LENGTH.MAX",

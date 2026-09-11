@@ -30,6 +30,27 @@ fn draft_assessment_selections_allow_clear_but_reject_unknown_codes() {
 	.is_empty());
 }
 
+#[cfg(test)]
+#[test]
+fn drug_additional_information_codes_validate_scalar_and_object_rows() {
+	use serde_json::json;
+
+	for codes in [json!(["1"]), json!([{"valueCode": "1"}])] {
+		let row =
+			Map::from_iter([("drugAdditionalInformationCodes".to_string(), codes)]);
+		assert!(dg(&row, None, &[]).is_ok());
+	}
+	for codes in [
+		json!(["0"]),
+		json!([{"valueCode": "0"}]),
+		json!([{"valueCode": "1"}, 1]),
+	] {
+		let row =
+			Map::from_iter([("drugAdditionalInformationCodes".to_string(), codes)]);
+		assert!(dg(&row, None, &[]).is_err());
+	}
+}
+
 fn cioms_dechallenge_result(input: FieldInput<'_>) -> Vec<InputIssue> {
 	let valid = match input.value {
 		input_contracts::InputValue::Missing | input_contracts::InputValue::Null => {
@@ -99,6 +120,35 @@ fn ae(
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
 ) -> Result<()> {
+	for (request_path, frontend_path, check) in [
+		(
+			"mfdsDeviceAe.causeOther",
+			"reactions[].mfdsDeviceAe.causeOther",
+			input_contracts::generated::e::local_mfds_device_cause_other
+				as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>,
+		),
+		(
+			"mfdsDeviceAe.actionReason",
+			"reactions[].mfdsDeviceAe.actionReason",
+			input_contracts::generated::e::local_mfds_device_action_reason,
+		),
+		(
+			"mfdsDeviceAe.actionOther",
+			"reactions[].mfdsDeviceAe.actionOther",
+			input_contracts::generated::e::local_mfds_device_action_other,
+		),
+	] {
+		validate_field(
+			row,
+			request_path,
+			frontend_path,
+			InputType::String,
+			None,
+			changed_paths,
+			outer_indexes,
+			check,
+		)?;
+	}
 	validate_field(
 		row,
 		"medicalConfirmation",
@@ -875,10 +925,33 @@ fn dg(
 		outer_indexes,
 		input_contracts::generated::g::g_k_11,
 	)?;
+	let normalized_codes_row = if let Some(Value::Array(codes)) =
+		row.get("drugAdditionalInformationCodes")
+	{
+		let mut normalized = row.clone();
+		normalized.insert(
+			"drugAdditionalInformationCodes".to_string(),
+			Value::Array(
+				codes
+					.iter()
+					.map(|code| match code {
+						Value::Object(_) => code.clone(),
+						_ => Value::Object(Map::from_iter([(
+							"valueCode".to_string(),
+							code.clone(),
+						)])),
+					})
+					.collect(),
+			),
+		);
+		Some(normalized)
+	} else {
+		None
+	};
 	validate_field(
-		row,
-		"drugAdditionalInformationCodes[]",
-		"drugs[].drugAdditionalInformationCodes[]",
+		normalized_codes_row.as_ref().unwrap_or(row),
+		"drugAdditionalInformationCodes[].valueCode",
+		"drugs[].drugAdditionalInformationCodes[].valueCode",
 		InputType::String,
 		None,
 		changed_paths,

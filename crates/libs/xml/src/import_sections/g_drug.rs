@@ -1264,6 +1264,9 @@ fn read_fda_g_k_12_r_2_r(
 	xpath: &mut Context,
 	node: &Node,
 ) -> Result<Option<String>> {
+	if first_attr(xpath, node, "hl7:code/@code").as_deref() != Some("C54592") {
+		return Ok(None);
+	}
 	input_string(
 		read_fda_device_code(xpath, node, "C54592"),
 		"fdaDevices[].followUpTypes[].valueCode",
@@ -1276,6 +1279,9 @@ fn read_fda_g_k_12_r_3_r(
 	xpath: &mut Context,
 	node: &Node,
 ) -> Result<Option<String>> {
+	if first_attr(xpath, node, "hl7:code/@code").as_deref() != Some("C54451") {
+		return Ok(None);
+	}
 	input_string(
 		read_fda_device_code(xpath, node, "C54451"),
 		"fdaDevices[].deviceProblemCodes[].valueCode",
@@ -1402,6 +1408,9 @@ fn read_fda_g_k_12_r_11_r(
 	xpath: &mut Context,
 	node: &Node,
 ) -> Result<Option<String>> {
+	if first_attr(xpath, node, "hl7:code/@code").as_deref() != Some("C54594") {
+		return Ok(None);
+	}
 	input_string(
 		read_fda_device_code(xpath, node, "C54594"),
 		"fdaDevices[].remedialActions[].valueCode",
@@ -1715,6 +1724,36 @@ mod tests {
 			.find(|drug| drug.medicinal_product == "Drug B")
 			.expect("Drug B");
 		assert_eq!(drug_b.fda_other_characterization.as_deref(), Some("1"));
+	}
+
+	#[test]
+	fn fda_device_code_contract_applies_only_to_the_matching_characteristic() {
+		for (code, element, value) in [
+			("C54592", "follow_up_type", "1"),
+			("C54451", "device_problem", "C1234"),
+			("C54594", "remedial_action", "2"),
+		] {
+			let characteristic = format!(
+				"<characteristic><code code=\"{code}\"/><value code=\"{value}\"/></characteristic>"
+			);
+			let xml = format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><name>Drug A</name><part><partProduct classCode="DEV"><asManufacturedProduct><subjectOf>{characteristic}</subjectOf></asManufacturedProduct></partProduct></part></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></MCCI_IN200100UV01>"#
+			);
+			let drugs = parse_g_drugs(with_drug_role(&xml).as_bytes())
+				.expect("unrelated absent device-code elements are not required");
+			assert!(drugs[0].devices[0]
+				.codes
+				.iter()
+				.any(|entry| entry.element == element && entry.value_code == value));
+
+			let missing_value = xml.replace(
+				&format!("<value code=\"{value}\"/>"),
+				"<value/>",
+			);
+			let error = parse_g_drugs(with_drug_role(&missing_value).as_bytes())
+				.expect_err("matching device-code element requires its value code");
+			assert!(error.to_string().contains("REQUIRED"), "{error}");
+		}
 	}
 
 	#[test]
