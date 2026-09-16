@@ -388,6 +388,15 @@ where
 		.map_err(de::Error::custom)
 }
 
+pub(super) fn deserialize_patch_access_datetime_option<'de, D>(
+	deserializer: D,
+) -> std::result::Result<Option<Option<OffsetDateTime>>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	deserialize_access_datetime_option(deserializer).map(Some)
+}
+
 pub(super) fn parse_access_datetime(
 	value: &str,
 ) -> std::result::Result<OffsetDateTime, String> {

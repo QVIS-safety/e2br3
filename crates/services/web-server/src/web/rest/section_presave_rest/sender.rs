@@ -20,7 +20,7 @@ pub async fn create_sender_presave(
 				super::input_contract::sender_create(&data.rows.sender)?;
 				for gateway in &data.rows.gateways {
 					validate_sender_gateway_detail_create(gateway)?;
-					if gateway.deleted {
+					if gateway.deleted == Some(true) {
 						return Err(Error::BadRequest {
 							message: "new sender gateway cannot be deleted".into(),
 						});
@@ -31,7 +31,7 @@ pub async fn create_sender_presave(
 				{
 					super::input_contract::sender_person_detail(person, index)?;
 					validate_sender_responsible_person_detail_create(person)?;
-					if person.deleted {
+					if person.deleted == Some(true) {
 						return Err(Error::BadRequest {
 							message:
 								"new sender responsible person cannot be deleted"
@@ -223,8 +223,7 @@ pub struct SenderPresaveRowsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SenderGatewayDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub gateway_authority: Option<String>,
 	pub sender_identifier: Option<String>,
@@ -244,7 +243,7 @@ impl SenderGatewayDetailsForUpdate {
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -282,8 +281,7 @@ impl SenderGatewayDetailsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SenderResponsiblePersonDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub department: Option<String>,
 	pub person_title: Option<String>,
@@ -303,7 +301,7 @@ impl SenderResponsiblePersonDetailsForUpdate {
 			person_middle_name: self.person_middle_name,
 			person_family_name: self.person_family_name,
 			is_default: self.is_default,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -376,7 +374,7 @@ pub async fn update_sender_presave_details(
 				}
 				if let Some(persons) = &rows.responsible_persons {
 					for (index, person) in persons.iter().enumerate() {
-						if !person.deleted {
+						if person.deleted != Some(true) {
 							super::input_contract::sender_person_detail(
 								person, index,
 							)?;
@@ -514,7 +512,7 @@ async fn preflight_sender_gateway_detail(
 	sender_id: Uuid,
 	gateway: &SenderGatewayDetailsForUpdate,
 ) -> Result<()> {
-	if gateway.deleted && gateway.id.is_none() {
+	if gateway.deleted == Some(true) && gateway.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "sender gateway delete requires id".to_string(),
 		});
@@ -528,7 +526,7 @@ async fn preflight_sender_gateway_detail(
 			id,
 			"sender_presave_gateways",
 		)?;
-	} else if !gateway.deleted {
+	} else if gateway.deleted != Some(true) {
 		validate_sender_gateway_detail_create(gateway)?;
 	}
 
@@ -560,7 +558,7 @@ async fn preflight_sender_responsible_person_detail(
 	sender_id: Uuid,
 	responsible_person: &SenderResponsiblePersonDetailsForUpdate,
 ) -> Result<()> {
-	if responsible_person.deleted && responsible_person.id.is_none() {
+	if responsible_person.deleted == Some(true) && responsible_person.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "sender responsible person delete requires id".to_string(),
 		});
@@ -574,7 +572,7 @@ async fn preflight_sender_responsible_person_detail(
 			id,
 			"sender_presave_responsible_persons",
 		)?;
-	} else if !responsible_person.deleted {
+	} else if responsible_person.deleted != Some(true) {
 		validate_sender_responsible_person_detail_create(responsible_person)?;
 	}
 
@@ -601,7 +599,7 @@ async fn upsert_sender_gateway_detail(
 	sender_id: Uuid,
 	gateway: SenderGatewayDetailsForUpdate,
 ) -> Result<()> {
-	if gateway.deleted && gateway.id.is_none() {
+	if gateway.deleted == Some(true) && gateway.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "sender gateway delete requires id".to_string(),
 		});
@@ -615,7 +613,7 @@ async fn upsert_sender_gateway_detail(
 			id,
 			"sender_presave_gateways",
 		)?;
-		if gateway.deleted {
+		if gateway.deleted == Some(true) {
 			SenderPresaveGatewayBmc::update(
 				ctx,
 				mm,
@@ -644,7 +642,7 @@ async fn upsert_sender_responsible_person_detail(
 	sender_id: Uuid,
 	responsible_person: SenderResponsiblePersonDetailsForUpdate,
 ) -> Result<()> {
-	if responsible_person.deleted && responsible_person.id.is_none() {
+	if responsible_person.deleted == Some(true) && responsible_person.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "sender responsible person delete requires id".to_string(),
 		});
@@ -658,7 +656,7 @@ async fn upsert_sender_responsible_person_detail(
 			id,
 			"sender_presave_responsible_persons",
 		)?;
-		if responsible_person.deleted {
+		if responsible_person.deleted == Some(true) {
 			SenderPresaveResponsiblePersonBmc::update(
 				ctx,
 				mm,

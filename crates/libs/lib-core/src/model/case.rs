@@ -217,6 +217,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       		SELECT 1
 		       		  FROM reactions r
 		       		 WHERE r.case_id = c.id
+					   AND COALESCE(r.deleted, false) = false
 		       		   AND COALESCE(r.serious, false) = true
 		       	)
 		       	THEN 'Yes'
@@ -226,6 +227,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       	SELECT NULLIF(r.reaction_meddra_code, '')
 		       	  FROM reactions r
 		       	 WHERE r.case_id = c.id
+					   AND COALESCE(r.deleted, false) = false
 		       	 ORDER BY r.sequence_number ASC, r.created_at ASC
 		       	 LIMIT 1
 		       ), 'N/A') AS meddra,
@@ -233,6 +235,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       	SELECT NULLIF(r.primary_source_reaction, '')
 		       	  FROM reactions r
 		       	 WHERE r.case_id = c.id
+					   AND COALESCE(r.deleted, false) = false
 		       	 ORDER BY r.sequence_number ASC, r.created_at ASC
 		       	 LIMIT 1
 		       ), 'N/A') AS ae_term,

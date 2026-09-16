@@ -212,8 +212,20 @@ pub(super) fn render_box(
 	max_lines: usize,
 ) {
 	canvas.rect(x, y, w, h);
-	canvas.wrapped_text(x + 4, y + h - 12, 7, max_chars, 2, label);
-	canvas.wrapped_text(x + 4, y + h - 30, 9, max_chars, max_lines, value);
+	if max_lines == 1 && wrap_pdf_text(label, max_chars).len() > 2 {
+		canvas.wrapped_text(
+			x + 4,
+			y + h - 8,
+			5,
+			max_chars.saturating_mul(7) / 5,
+			4,
+			label,
+		);
+		canvas.wrapped_text(x + 4, y + 4, 7, max_chars, max_lines, value);
+	} else {
+		canvas.wrapped_text(x + 4, y + h - 12, 7, max_chars, 2, label);
+		canvas.wrapped_text(x + 4, y + h - 30, 9, max_chars, max_lines, value);
+	}
 }
 
 pub(super) fn render_checkbox(
@@ -357,4 +369,53 @@ pub(super) fn render_cioms_notation(
 	}
 	canvas.text(x, y + 14, 7, "CIOMS NOTATION");
 	canvas.wrapped_text(x, y, 7, 90, 1, &notation);
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn item_20_and_21_titles_fit_without_overlapping_values() {
+		for max_chars in [14_usize, 20] {
+			for title in [
+				"20. DID REACTION ABATE AFTER STOPPING DRUG?",
+				"21. DID REACTION REAPPEAR AFTER REINTRODUCTION?",
+			] {
+				let mut canvas = PdfCanvas::new();
+				render_box(&mut canvas, 0, 0, 100, 42, title, "Yes", max_chars, 1);
+				let text_ops = canvas
+					.stream
+					.lines()
+					.filter(|line| line.ends_with(" Tj ET"))
+					.collect::<Vec<_>>();
+				let rendered = text_ops
+					.iter()
+					.map(|line| {
+						line.split_once('(')
+							.and_then(|(_, text)| text.rsplit_once(") Tj ET"))
+							.map(|(text, _)| text)
+							.expect("ASCII text operation")
+					})
+					.collect::<Vec<_>>();
+				assert_eq!(rendered.last(), Some(&"Yes"));
+				assert_eq!(rendered[..rendered.len() - 1].join(" "), title);
+				assert!(rendered.len() <= 5, "{max_chars}: {rendered:?}");
+
+				let y_positions = text_ops
+					.iter()
+					.map(|line| {
+						line.split_whitespace()
+							.nth(5)
+							.expect("text y coordinate")
+							.parse::<i32>()
+							.expect("numeric text y coordinate")
+					})
+					.collect::<Vec<_>>();
+				let value_y = *y_positions.last().expect("value y coordinate");
+				let last_label_y = y_positions[y_positions.len() - 2];
+				assert!(last_label_y > value_y + 7, "{max_chars}: {y_positions:?}");
+			}
+		}
+	}
 }

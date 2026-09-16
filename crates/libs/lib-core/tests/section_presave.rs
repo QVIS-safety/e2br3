@@ -164,6 +164,31 @@ async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<
 	Ok(())
 }
 
+#[test]
+fn product_update_distinguishes_missing_null_and_present_optional_values() {
+	let missing = serde_json::from_value::<ProductPresaveForUpdate>(json!({}))
+		.expect("missing patch fields deserialize");
+	assert_eq!(missing.receiver_presave_id, None);
+	assert_eq!(missing.investigational_product_blinded, None);
+
+	let cleared = serde_json::from_value::<ProductPresaveForUpdate>(json!({
+		"receiverPresaveId": null,
+		"investigationalProductBlinded": null
+	}))
+	.expect("null patch fields deserialize");
+	assert_eq!(cleared.receiver_presave_id, Some(None));
+	assert_eq!(cleared.investigational_product_blinded, Some(None));
+
+	let receiver_id = Uuid::new_v4();
+	let present = serde_json::from_value::<ProductPresaveForUpdate>(json!({
+		"receiverPresaveId": receiver_id,
+		"investigationalProductBlinded": true
+	}))
+	.expect("present patch fields deserialize");
+	assert_eq!(present.receiver_presave_id, Some(Some(receiver_id)));
+	assert_eq!(present.investigational_product_blinded, Some(Some(true)));
+}
+
 #[serial]
 #[tokio::test]
 async fn presave_lifecycle_archives_unreferenced_and_blocks_used_receiver(

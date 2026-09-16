@@ -1110,7 +1110,9 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		"{row:?}"
 	);
 	assert_eq!(row["sender"].as_str(), Some(sender.as_str()), "{row:?}");
+	assert_eq!(row["meddra"].as_str(), Some("10019211"), "{row:?}");
 	assert_eq!(row["aeTerm"].as_str(), Some(ae_term.as_str()), "{row:?}");
+	assert_eq!(row["sae"].as_str(), Some("Yes"), "{row:?}");
 	assert_eq!(row["studyNo"].as_str(), Some(study_no.as_str()), "{row:?}");
 	assert_eq!(
 		row["dateOfCreation"].as_str(),
@@ -1133,6 +1135,30 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		Some("Report from study"),
 		"{row:?}"
 	);
+
+	let case_id = Uuid::parse_str(&case_id)?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query("UPDATE reactions SET deleted = true WHERE case_id = $1")
+		.bind(case_id)
+		.execute(&mut *tx)
+		.await?;
+	tx.commit().await?;
+
+	let (status, raw_body) = get_raw(&app, &cookie, "/api/cases/list-view").await?;
+	assert_eq!(status, StatusCode::OK);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id_string = case_id.to_string();
+	let row = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items after reaction deletion")?
+		.iter()
+		.find(|item| item["caseId"].as_str() == Some(case_id_string.as_str()))
+		.ok_or("missing projected case row after reaction deletion")?;
+	assert_eq!(row["meddra"].as_str(), Some("N/A"), "{row:?}");
+	assert_eq!(row["aeTerm"].as_str(), Some("N/A"), "{row:?}");
+	assert_eq!(row["sae"].as_str(), Some("No"), "{row:?}");
 	Ok(())
 }
 

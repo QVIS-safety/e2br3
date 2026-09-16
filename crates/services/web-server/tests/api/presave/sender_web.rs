@@ -571,6 +571,99 @@ async fn test_sender_presave_direct_child_delete_soft_deletes_details_rows(
 		Some("Kim")
 	);
 
+	put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+		json!({
+			"data": { "rows": {
+				"gateways": [{ "id": gateway_id, "senderIdentifier": "DELETE" }],
+				"responsiblePersons": [{ "id": responsible_id, "personGivenName": "Ari" }]
+			} }
+		}),
+	)
+	.await?;
+	let after_deleted_omission = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+	)
+	.await?;
+	for (rows_key, child_id) in [
+		("gateways", gateway_id),
+		("responsiblePersons", responsible_id),
+	] {
+		let child = after_deleted_omission["data"]["rows"][rows_key]
+			.as_array()
+			.unwrap()
+			.iter()
+			.find(|row| row["id"].as_str() == Some(&child_id.to_string()))
+			.ok_or("missing child after omitted deleted flag")?;
+		assert_eq!(child["deleted"].as_bool(), Some(true));
+	}
+
+	put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+		json!({
+			"data": { "rows": {
+				"gateways": [{ "id": gateway_id, "deleted": false }],
+				"responsiblePersons": [{ "id": responsible_id, "deleted": false }]
+			} }
+		}),
+	)
+	.await?;
+	let after_restore = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+	)
+	.await?;
+	for (rows_key, child_id) in [
+		("gateways", gateway_id),
+		("responsiblePersons", responsible_id),
+	] {
+		let child = after_restore["data"]["rows"][rows_key]
+			.as_array()
+			.unwrap()
+			.iter()
+			.find(|row| row["id"].as_str() == Some(&child_id.to_string()))
+			.ok_or("missing restored child")?;
+		assert_eq!(child["deleted"].as_bool(), Some(false));
+	}
+
+	put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+		json!({
+			"data": { "rows": {
+				"gateways": [{ "id": gateway_id, "deleted": true }],
+				"responsiblePersons": [{ "id": responsible_id, "deleted": true }]
+			} }
+		}),
+	)
+	.await?;
+	let after_redelete = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+	)
+	.await?;
+	for (rows_key, child_id) in [
+		("gateways", gateway_id),
+		("responsiblePersons", responsible_id),
+	] {
+		let child = after_redelete["data"]["rows"][rows_key]
+			.as_array()
+			.unwrap()
+			.iter()
+			.find(|row| row["id"].as_str() == Some(&child_id.to_string()))
+			.ok_or("missing re-deleted child")?;
+		assert_eq!(child["deleted"].as_bool(), Some(true));
+	}
+
 	Ok(())
 }
 

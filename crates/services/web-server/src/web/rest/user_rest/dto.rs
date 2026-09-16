@@ -126,10 +126,10 @@ pub struct UserForUpdateAdminPayload {
 	pub active: Option<bool>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
-	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
-	pub access_start_at: Option<OffsetDateTime>,
-	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
-	pub access_end_at: Option<OffsetDateTime>,
+	#[serde(default, deserialize_with = "deserialize_patch_access_datetime_option")]
+	pub access_start_at: Option<Option<OffsetDateTime>>,
+	#[serde(default, deserialize_with = "deserialize_patch_access_datetime_option")]
+	pub access_end_at: Option<Option<OffsetDateTime>>,
 	pub active_sender_identifier: Option<String>,
 	pub access_sender_ids: Option<ScopeListInput>,
 	pub access_product_ids: Option<ScopeListInput>,

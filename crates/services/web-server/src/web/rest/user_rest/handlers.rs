@@ -338,6 +338,9 @@ pub async fn update_user(
 		"user.update.built_in_administrator",
 		move |db_ctx, mm| {
 			Box::pin(async move {
+				let clear_access_start_at =
+					matches!(data.access_start_at, Some(None));
+				let clear_access_end_at = matches!(data.access_end_at, Some(None));
 				validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 				validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 				validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -400,6 +403,11 @@ pub async fn update_user(
 				}
 				let email = normalize_optional_email_input(data.email)?;
 				let username = normalize_optional_username_input(data.username)?;
+				if username.as_deref().is_some_and(str::is_empty) {
+					return Err(Error::BadRequest {
+						message: "username is required".to_string(),
+					});
+				}
 				let update = UserForUpdate {
 					organization_id: None,
 					email,
@@ -408,8 +416,8 @@ pub async fn update_user(
 					active: data.active,
 					comments: data.comments,
 					other_information: data.other_information,
-					access_start_at: data.access_start_at,
-					access_end_at: data.access_end_at,
+					access_start_at: data.access_start_at.flatten(),
+					access_end_at: data.access_end_at.flatten(),
 					access_sender_ids: serialize_scope_input(data.access_sender_ids),
 					access_product_ids: serialize_scope_input(
 						data.access_product_ids,
@@ -419,7 +427,15 @@ pub async fn update_user(
 					active_sender_identifier: data.active_sender_identifier,
 					last_login_at: data.last_login_at,
 				};
-				UserBmc::update(db_ctx, mm, id, update).await?;
+				UserBmc::update_patch(
+					db_ctx,
+					mm,
+					id,
+					update,
+					clear_access_start_at,
+					clear_access_end_at,
+				)
+				.await?;
 				let entity: User = UserBmc::get(db_ctx, mm, id).await?;
 				Ok((
 					StatusCode::OK,

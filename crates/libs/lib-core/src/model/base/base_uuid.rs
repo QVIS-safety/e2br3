@@ -235,7 +235,7 @@ where
 	update_patch_in_transaction::<MC, E>(ctx, mm, id, data, &[]).await
 }
 
-async fn update_patch_in_transaction<MC, E>(
+pub(crate) async fn update_patch_in_transaction<MC, E>(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	id: Uuid,

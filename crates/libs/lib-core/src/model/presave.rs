@@ -26,6 +26,16 @@ fn clean_presave_text(value: Option<&str>) -> Option<String> {
 		.map(str::to_string)
 }
 
+fn deserialize_patch_option<'de, D, T>(
+	deserializer: D,
+) -> std::result::Result<Option<Option<T>>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+	T: Deserialize<'de>,
+{
+	Option::<T>::deserialize(deserializer).map(Some)
+}
+
 macro_rules! clear_blank_patch_fields {
 	($data:expr, [$($field:ident),+ $(,)?]) => {{
 		let mut fields = Vec::new();
@@ -1285,12 +1295,13 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 	}
 }
 
-#[derive(Default, Fields, Deserialize)]
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProductPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
-	pub receiver_presave_id: Option<Uuid>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub receiver_presave_id: Option<Option<Uuid>>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1308,12 +1319,39 @@ pub struct ProductPresaveForUpdate {
 	pub phpid: Option<String>,
 	#[serde(rename = "phpidVersion")]
 	pub phpid_version: Option<String>,
-	pub investigational_product_blinded: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub investigational_product_blinded: Option<Option<bool>>,
 	pub obtain_drug_country: Option<String>,
 	pub drug_authorization_number: Option<String>,
 	pub drug_authorization_country: Option<String>,
 	pub drug_authorization_holder: Option<String>,
 	pub holder_applicant_name_notation: Option<String>,
+}
+
+#[derive(Fields)]
+struct ProductPresavePatch {
+	deleted: Option<bool>,
+	sender_presave_id: Option<Uuid>,
+	receiver_presave_id: Option<Uuid>,
+	product_id: Option<String>,
+	medicinal_product: Option<String>,
+	medicinal_product_notation: Option<String>,
+	preapproval_ip_name: Option<String>,
+	brand_name: Option<String>,
+	original_manufacturer: Option<String>,
+	product_description: Option<String>,
+	mpid: Option<String>,
+	mpid_version: Option<String>,
+	mfds_mpid: Option<String>,
+	mfds_mpid_version: Option<String>,
+	phpid: Option<String>,
+	phpid_version: Option<String>,
+	investigational_product_blinded: Option<bool>,
+	obtain_drug_country: Option<String>,
+	drug_authorization_number: Option<String>,
+	drug_authorization_country: Option<String>,
+	drug_authorization_holder: Option<String>,
+	holder_applicant_name_notation: Option<String>,
 }
 
 pub struct ProductPresaveBmc;
@@ -1380,8 +1418,18 @@ impl ProductPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: ProductPresaveForUpdate,
+		mut data: ProductPresaveForUpdate,
 	) -> Result<()> {
+		let mut clear_fields = clear_blank_patch_fields!(
+			data,
+			[obtain_drug_country, drug_authorization_country,]
+		);
+		if matches!(data.receiver_presave_id, Some(None)) {
+			clear_fields.push("receiver_presave_id");
+		}
+		if matches!(data.investigational_product_blinded, Some(None)) {
+			clear_fields.push("investigational_product_blinded");
+		}
 		if data.deleted == Some(true) {
 			return Err(validation_error(
 				"presave deletion must use lifecycle service",
@@ -1389,8 +1437,12 @@ impl ProductPresaveBmc {
 		}
 		Self::ensure_sender_assignment_allowed(ctx, mm, data.sender_presave_id)
 			.await?;
-		Self::ensure_receiver_assignment_allowed(ctx, mm, data.receiver_presave_id)
-			.await?;
+		Self::ensure_receiver_assignment_allowed(
+			ctx,
+			mm,
+			data.receiver_presave_id.flatten(),
+		)
+		.await?;
 		{
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
@@ -1416,7 +1468,33 @@ impl ProductPresaveBmc {
 			)
 			.await?;
 		}
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		let data = ProductPresavePatch {
+			deleted: data.deleted,
+			sender_presave_id: data.sender_presave_id,
+			receiver_presave_id: data.receiver_presave_id.flatten(),
+			product_id: data.product_id,
+			medicinal_product: data.medicinal_product,
+			medicinal_product_notation: data.medicinal_product_notation,
+			preapproval_ip_name: data.preapproval_ip_name,
+			brand_name: data.brand_name,
+			original_manufacturer: data.original_manufacturer,
+			product_description: data.product_description,
+			mpid: data.mpid,
+			mpid_version: data.mpid_version,
+			mfds_mpid: data.mfds_mpid,
+			mfds_mpid_version: data.mfds_mpid_version,
+			phpid: data.phpid,
+			phpid_version: data.phpid_version,
+			investigational_product_blinded: data
+				.investigational_product_blinded
+				.flatten(),
+			obtain_drug_country: data.obtain_drug_country,
+			drug_authorization_number: data.drug_authorization_number,
+			drug_authorization_country: data.drug_authorization_country,
+			drug_authorization_holder: data.drug_authorization_holder,
+			holder_applicant_name_notation: data.holder_applicant_name_notation,
+		};
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -1845,6 +1923,9 @@ impl ReporterPresaveBmc {
 				postcode_null_flavor,
 				telephone_null_flavor,
 				reporter_email_null_flavor,
+				country_code,
+				qualification_kr1,
+				primary_source_regulatory,
 				qualification_null_flavor,
 			]
 		);
@@ -2235,7 +2316,11 @@ impl StudyPresaveBmc {
 	) -> Result<()> {
 		let clear_fields = clear_blank_patch_fields!(
 			data,
-			[study_name_null_flavor, sponsor_study_number_null_flavor,]
+			[
+				study_name_null_flavor,
+				sponsor_study_number_null_flavor,
+				study_type_reaction_kr1,
+			]
 		);
 		data.validate_fields()?;
 		if data.deleted == Some(true) {

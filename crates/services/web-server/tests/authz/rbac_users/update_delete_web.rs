@@ -160,6 +160,61 @@ async fn test_admin_can_update_user() -> Result<()> {
 	Ok(())
 }
 
+#[tokio::test]
+async fn test_admin_user_update_rejects_blank_name_and_clears_start_date(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let blank_name = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({ "data": { "username": "   " } }).to_string(),
+		))?;
+	assert_eq!(
+		app.clone().oneshot(blank_name).await?.status(),
+		StatusCode::BAD_REQUEST
+	);
+
+	let set_date = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({ "data": { "access_start_at": "2026-03-02T00:00:00Z" } })
+				.to_string(),
+		))?;
+	assert_eq!(
+		app.clone().oneshot(set_date).await?.status(),
+		StatusCode::OK
+	);
+
+	let clear_date = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({ "data": { "access_start_at": null } }).to_string(),
+		))?;
+	let response = app.oneshot(clear_date).await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+	let value: serde_json::Value = serde_json::from_slice(&body)?;
+	assert!(
+		value["data"]["scope"]["accessStartAt"].is_null(),
+		"{value:?}"
+	);
+	Ok(())
+}
+
 #[serial]
 #[tokio::test]
 async fn test_user_role_update_changes_the_normalized_assignment_atomically(

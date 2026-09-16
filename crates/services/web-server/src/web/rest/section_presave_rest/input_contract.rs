@@ -365,7 +365,7 @@ pub(super) fn reporter_update(data: &ReporterPresaveForUpdate) -> Result<()> {
 }
 
 macro_rules! product_parent {
-	($data:expr) => {{
+	($data:expr, $investigational_product_blinded:expr) => {{
 		// ICH.G.k.2.1-5
 		check_text!(
 			"mpidVersion",
@@ -404,11 +404,11 @@ macro_rules! product_parent {
 		);
 		check(
 			"investigationalProductBlinded",
-			boolean($data.investigational_product_blinded),
+			boolean($investigational_product_blinded),
 			None,
 			input_contracts::generated::g::g_k_2_5,
 		)?;
-		if $data.investigational_product_blinded == Some(false) {
+		if $investigational_product_blinded == Some(false) {
 			return Err(Error::ConstraintViolation(ConstraintViolation {
 				rule_code: "ICH.G.k.2.5.ALLOWED.VALUE".to_owned(),
 				path: "investigationalProductBlinded".to_owned(),
@@ -441,11 +441,11 @@ macro_rules! product_parent {
 }
 
 pub(super) fn product_create(data: &ProductPresaveForCreate) -> Result<()> {
-	product_parent!(data)
+	product_parent!(data, data.investigational_product_blinded)
 }
 
 pub(super) fn product_update(data: &ProductPresaveForUpdate) -> Result<()> {
-	product_parent!(data)
+	product_parent!(data, data.investigational_product_blinded.flatten())
 }
 
 macro_rules! substance {
@@ -858,7 +858,7 @@ mod tests {
 		));
 		assert!(matches!(
 			product_update(&ProductPresaveForUpdate {
-				investigational_product_blinded: Some(false),
+				investigational_product_blinded: Some(Some(false)),
 				..Default::default()
 			}),
 			Err(Error::ConstraintViolation(_))

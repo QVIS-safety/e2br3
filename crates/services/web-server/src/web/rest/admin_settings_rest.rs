@@ -1023,20 +1023,21 @@ pub async fn get_runtime_settings(
 ) -> Result<(StatusCode, Json<RuntimeSettingsPayload>)> {
 	let ctx = ctx_w.0;
 	let payload = load_admin_settings_payload(&ctx, &mm).await?;
-	let notices =
-		if notice_read_allowed(&snapshot) || notice_update_allowed(&snapshot) {
-			active_notices(
-				load_notices(&ctx, &mm).await?,
-				payload
-					.timezone
-					.as_deref()
-					.ok_or_else(|| Error::BadRequest {
-						message: "timezone is required".to_string(),
-					})?,
-			)?
-		} else {
-			Vec::new()
-		};
+	let notices = if notice_update_allowed(&snapshot) {
+		load_notices(&ctx, &mm).await?
+	} else if notice_read_allowed(&snapshot) {
+		active_notices(
+			load_notices(&ctx, &mm).await?,
+			payload
+				.timezone
+				.as_deref()
+				.ok_or_else(|| Error::BadRequest {
+					message: "timezone is required".to_string(),
+				})?,
+		)?
+	} else {
+		Vec::new()
+	};
 	let notices_revision = AdminSettingsBmc::dashboard_notices_revision(&ctx, &mm)
 		.await
 		.map_err(Error::Model)?;

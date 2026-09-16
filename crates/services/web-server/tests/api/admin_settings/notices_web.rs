@@ -24,9 +24,12 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let other_viewer_token =
 		generate_web_token(&other_seed.viewer.email, other_seed.viewer.token_salt)?;
+	let other_admin_token =
+		generate_web_token(&other_seed.admin.email, other_seed.admin.token_salt)?;
 	let sponsor_admin_cookie = cookie_header(&sponsor_admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let other_viewer_cookie = cookie_header(&other_viewer_token.to_string());
+	let other_admin_cookie = cookie_header(&other_admin_token.to_string());
 	let app = web_server::app(mm.clone());
 	let (_, runtime) = request_json(
 		&app,
@@ -111,6 +114,17 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["notices"].as_array().unwrap().len(), 0);
+
+	let (status, value) = request_json(
+		&app,
+		&other_admin_cookie,
+		Method::GET,
+		"/api/settings/runtime",
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["notices"], json!([]));
 
 	let dbx = mm.dbx();
 	dbx.begin_txn().await?;

@@ -582,6 +582,17 @@ impl UserBmc {
 		id: Uuid,
 		user_u: UserForUpdate,
 	) -> Result<()> {
+		Self::update_patch(ctx, mm, id, user_u, false, false).await
+	}
+
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		user_u: UserForUpdate,
+		clear_access_start_at: bool,
+		clear_access_end_at: bool,
+	) -> Result<()> {
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
 			let mut user_u = user_u.clone();
 			// A membership owns its role assignment. Selecting another active
@@ -609,9 +620,22 @@ impl UserBmc {
 				let _ = dbx.rollback_txn().await;
 				return Err(err);
 			}
+			let mut clear_fields = Vec::new();
+			if clear_access_start_at {
+				clear_fields.push("access_start_at");
+			}
+			if clear_access_end_at {
+				clear_fields.push("access_end_at");
+			}
 			let result = async {
-				base_uuid::update_in_transaction::<Self, _>(ctx, mm, id, user_u)
-					.await?;
+				base_uuid::update_patch_in_transaction::<Self, _>(
+					ctx,
+					mm,
+					id,
+					user_u,
+					&clear_fields,
+				)
+				.await?;
 				if sync_assignment {
 					let (organization_id, role) = dbx
 						.fetch_one(sqlx::query_as::<_, (Uuid, String)>(
