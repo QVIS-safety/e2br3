@@ -58,11 +58,15 @@ fn retain_case_business_rules(issues: &mut Vec<ValidationIssue>) {
 			issue.code.as_str(),
 			"ICH.C.1.6.1.r.2.ALLOWED.VALUE"
 				| "ICH.C.4.r.2.ALLOWED.VALUE"
+				| "ICH.D.7.1.r.6.ALLOWED.VALUE"
+				| "ICH.D.7.3.ALLOWED.VALUE"
+				| "ICH.D.10.2.2b.ALLOWED.VALUE"
 				| "ICH.D.6.NULLFLAVOR.ALLOWED"
 				| "ICH.D.7.1.r.1a.ALLOWED.VALUE"
 				| "ICH.D.10.7.1.r.1a.ALLOWED.VALUE"
 				| "ICH.E.i.2.1a.ALLOWED.VALUE"
 				| "ICH.F.r.2.2a.ALLOWED.VALUE"
+				| "ICH.G.k.2.5.ALLOWED.VALUE"
 				| "ICH.G.k.7.r.2a.ALLOWED.VALUE"
 				| "ICH.H.3.r.1a.ALLOWED.VALUE"
 		) || (!issue.code.ends_with(".LENGTH.MAX")
@@ -466,17 +470,21 @@ mod tests {
 			"ICH.C.1.6.1.r.2.ALLOWED.VALUE",
 			"ICH.C.4.r.2.ALLOWED.VALUE",
 			"ICH.D.6.NULLFLAVOR.ALLOWED",
+			"ICH.D.7.1.r.6.ALLOWED.VALUE",
+			"ICH.D.7.3.ALLOWED.VALUE",
+			"ICH.D.10.2.2b.ALLOWED.VALUE",
 			"ICH.D.7.1.r.1a.ALLOWED.VALUE",
 			"ICH.D.10.7.1.r.1a.ALLOWED.VALUE",
 			"ICH.E.i.2.1a.ALLOWED.VALUE",
 			"ICH.F.r.2.2a.ALLOWED.VALUE",
+			"ICH.G.k.2.5.ALLOWED.VALUE",
 			"ICH.G.k.7.r.2a.ALLOWED.VALUE",
 			"ICH.H.3.r.1a.ALLOWED.VALUE",
 		] {
 			crate::push_field_issue(&mut issues, code, "field", "section", code);
 		}
 		retain_case_business_rules(&mut issues);
-		assert_eq!(issues.len(), 9);
+		assert_eq!(issues.len(), 13);
 	}
 
 	#[test]

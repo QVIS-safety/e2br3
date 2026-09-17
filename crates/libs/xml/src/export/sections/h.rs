@@ -29,37 +29,30 @@ pub(crate) fn apply_h_5_case_summaries(
 	xpath: &mut Context,
 	summaries: &[CaseSummaryInformation],
 ) -> Result<()> {
-	let Some(summary) = summaries.iter().find(|s| {
-		s.summary_text
-			.as_deref()
-			.is_some_and(|v| !v.trim().is_empty())
-	}) else {
-		return Ok(());
-	};
-
-	let node_path = "//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]";
-	if xpath
-		.findnodes(node_path, None)
-		.map(|nodes| nodes.is_empty())
-		.unwrap_or(true)
-	{
-		let fragment = "<component typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"36\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"summaryAndComment\"/><value xsi:type=\"ED\"/><author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.21\" displayName=\"reporter\"/></assignedEntity></author></observationEvent></component>";
+	let node_path = "//hl7:investigationEvent/hl7:component[hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]]";
+	remove_nodes(xpath, node_path);
+	for (text, language_code) in summaries.iter().filter_map(|summary| {
+		summary.summary_text.as_deref().and_then(|text| {
+			(!text.trim().is_empty())
+				.then_some((text, summary.language_code.as_deref()))
+		})
+	}) {
+		let text = xml_escape(text);
+		let language = if let Some(value) = language_code {
+			format!(" language=\"{}\"", xml_escape(value))
+		} else {
+			String::new()
+		};
+		let fragment = format!("<component typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"36\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"summaryAndComment\"/><value xsi:type=\"ED\"{language}>{text}</value><author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.21\" displayName=\"reporter\"/></assignedEntity></author></observationEvent></component>");
 		append_fragment_child(
 			doc,
 			parser,
 			xpath,
 			"//hl7:investigationEvent",
-			fragment,
+			&fragment,
 		)?;
-		reorder_investigation_event_children(xpath);
 	}
-
-	if let Some(text) = summary.summary_text.as_deref() {
-		write_h_5_r_1a(xpath, text);
-	}
-	if let Some(language) = summary.language_code.as_deref() {
-		write_h_5_r_1b(xpath, language);
-	}
+	reorder_investigation_event_children(xpath);
 	Ok(())
 }
 
@@ -208,7 +201,69 @@ fn base_h_narrative_skeleton() -> &'static str {
 
 #[cfg(test)]
 mod tests {
+	use super::*;
+	use libxml::parser::Parser;
+	use libxml::xpath::Context;
+	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Uuid;
 	use std::collections::BTreeSet;
+
+	#[test]
+	fn h_5_exports_all_nonempty_summaries_in_source_order() {
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(crate::export::base_export_skeleton())
+			.expect("parse skeleton");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("HL7 namespace");
+		let summary =
+			|sequence_number, text: Option<&str>, language: Option<&str>| {
+				CaseSummaryInformation {
+					id: Uuid::new_v4(),
+					narrative_id: Uuid::new_v4(),
+					sequence_number,
+					deleted: false,
+					language_code: language.map(str::to_string),
+					summary_text: text.map(str::to_string),
+					created_at: OffsetDateTime::UNIX_EPOCH,
+					updated_at: OffsetDateTime::UNIX_EPOCH,
+					created_by: Uuid::nil(),
+					updated_by: None,
+				}
+			};
+		let summaries = [
+			summary(1, Some("  "), Some("jpn")),
+			summary(2, Some("first & <summary>"), Some("eng")),
+			summary(3, Some("두번째 요약"), Some("kor")),
+		];
+		apply_h_5_case_summaries(&mut doc, &parser, &mut xpath, &summaries)
+			.expect("apply H.5 summaries");
+
+		let values = "//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:value";
+		assert_eq!(xpath.findnodes(values, None).expect("H.5 values").len(), 2);
+		assert_eq!(
+			xpath.findvalue(&format!("({values})[1]"), None).unwrap(),
+			"first & <summary>"
+		);
+		assert_eq!(
+			xpath
+				.findvalue(&format!("({values})[1]/@language"), None)
+				.unwrap(),
+			"eng"
+		);
+		assert_eq!(
+			xpath.findvalue(&format!("({values})[2]"), None).unwrap(),
+			"두번째 요약"
+		);
+		assert_eq!(
+			xpath
+				.findvalue(&format!("({values})[2]/@language"), None)
+				.unwrap(),
+			"kor"
+		);
+	}
 
 	#[test]
 	fn section_h_writers_cover_exported_registry_fields() {

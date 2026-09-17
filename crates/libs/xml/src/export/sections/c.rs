@@ -259,7 +259,7 @@ fn apply_c_2_primary_source_values(
 	}
 	write_c_2_r_4(xpath, &base, primary);
 	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds) {
-		write_c_2_r_4_kr_1(xpath, &base, primary);
+		write_c_2_r_4_kr_1(doc, parser, xpath, &base, primary)?;
 	}
 	write_c_2_r_5(xpath, &relationship, primary);
 
@@ -427,8 +427,42 @@ fn write_c_2_r_4(xpath: &mut Context, base: &str, value: &PrimarySource) {
 }
 
 /// e2b:C.2.r.4.KR.1
-fn write_c_2_r_4_kr_1(_xpath: &mut Context, _base: &str, _value: &PrimarySource) {
-	// No XML mapping exists in the current MFDS profile.
+fn write_c_2_r_4_kr_1(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
+	const CODE_SYSTEM: &str = "2.16.840.1.113883.3.989.5.1.10.1.1";
+	let path = format!(
+		"{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='{CODE_SYSTEM}']"
+	);
+	if let Some(code) = value.qualification_kr1.as_deref() {
+		let nodes = xpath
+			.findnodes(&path, None)
+			.map_err(|_| Error::InvalidXml {
+				message: format!("Failed to find nodes for path {path}"),
+				line: None,
+				column: None,
+			})?;
+		if nodes.is_empty() {
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&format!("{base}/hl7:assignedPerson"),
+				&format!("<asQualifiedEntity><code codeSystem=\"{CODE_SYSTEM}\" code=\"{}\"/></asQualifiedEntity>", xml_escape(code)),
+			)?;
+		} else {
+			set_attr_first(xpath, &path, "code", code);
+		}
+	} else {
+		remove_nodes(xpath, &format!(
+			"{base}/hl7:assignedPerson/hl7:asQualifiedEntity[hl7:code[@codeSystem='{CODE_SYSTEM}']]"
+		));
+	}
+	Ok(())
 }
 
 /// e2b:C.2.r.5
@@ -953,6 +987,34 @@ mod primary_source_null_flavor_tests {
 			.map(|node| node.get_name())
 			.collect::<Vec<_>>();
 		assert_eq!(children, ["priorityNumber", "relatedInvestigation"]);
+	}
+
+	#[test]
+	fn mfds_primary_source_keeps_common_and_kr_qualification_codes() {
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(crate::export::base_export_skeleton())
+			.expect("parse skeleton");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+		let mut primary = source();
+		primary.qualification = Some("3".to_string());
+		primary.qualification_kr1 = Some("1".to_string());
+
+		apply_c_2_primary_source_values(
+			&mut doc,
+			&parser,
+			&mut xpath,
+			&primary,
+			lib_core::regulatory::RegulatoryAuthority::Mfds,
+			1,
+		)
+		.expect("apply MFDS primary source");
+
+		let common = "//hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.6']/@code";
+		let kr = "//hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.1.1']/@code";
+		assert_eq!(xpath.findvalue(common, None).unwrap(), "3");
+		assert_eq!(xpath.findvalue(kr, None).unwrap(), "1");
 	}
 
 	#[test]

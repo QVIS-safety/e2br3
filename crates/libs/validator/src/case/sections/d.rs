@@ -1077,6 +1077,7 @@ fn d_10_2_2a(
 }
 
 /// ICH.D.10.2.2b.REQUIRED
+/// ICH.D.10.2.2b.ALLOWED.VALUE
 /// ICH.D.10.2.2b.LENGTH.MAX
 fn d_10_2_2b(
 	idx: usize,
@@ -1091,6 +1092,18 @@ fn d_10_2_2b(
 		"[D.10.2.2b] Parent age unit is required when [D.10.2.2a] is provided.",
 		parent.parent_age.is_some(),
 		has_text(parent.parent_age_unit.as_deref()),
+	);
+	reject_when(
+		issues,
+		"ICH.D.10.2.2b.ALLOWED.VALUE",
+		&path,
+		SECTION,
+		"[D.10.2.2b] Parent age unit must be years (a) or decades (10.a).",
+		parent
+			.parent_age_unit
+			.as_deref()
+			.map(str::trim)
+			.is_some_and(|value| !matches!(value, "a" | "10.a")),
 	);
 	length(
 		issues,

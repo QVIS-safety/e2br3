@@ -467,9 +467,6 @@ async fn persist_drug_reaction_assessments(
 				),
 			});
 		}
-		if !delete_assessment && !deleted && !child_row_has_content(row) {
-			continue;
-		}
 		let assessment_id = string_field(row, &["drugReactionAssessmentId"])
 			.map(|value| {
 				Uuid::parse_str(&value).map_err(|_| Error::BadRequest {
@@ -479,6 +476,13 @@ async fn persist_drug_reaction_assessments(
 				})
 			})
 			.transpose()?;
+		if !delete_assessment
+			&& !deleted
+			&& assessment_id.is_none()
+			&& !child_row_has_content(row)
+		{
+			continue;
+		}
 
 		let persisted_assessment = if let Some(assessment_id) = assessment_id {
 			let assessment =

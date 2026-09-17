@@ -2,7 +2,7 @@ use crate::common::{demo_ctx, init_test_mm, system_user_id, unique_suffix, Resul
 use lib_core::model::store::set_full_context_dbx_or_rollback;
 use lib_core::model::terminology::{
 	ControlledTermBmc, E2bCodeListBmc, FdaHierarchicalCodeListBmc, IsoCountryBmc,
-	MeddraTermBmc, MfdsProductBmc, UcumUnitBmc, WhodrugProductBmc,
+	MeddraTermBmc, MeddraTermKey, MfdsProductBmc, UcumUnitBmc, WhodrugProductBmc,
 };
 use serial_test::serial;
 
@@ -193,7 +193,7 @@ async fn test_terminology_queries() -> Result<()> {
 			)
 			.bind(&meddra_code)
 			.bind(&meddra_term)
-			.bind("PT")
+			.bind("LLT")
 			.bind(&meddra_version)
 			.bind("en"),
 		)
@@ -202,6 +202,17 @@ async fn test_terminology_queries() -> Result<()> {
 		dbx.rollback_txn().await?;
 		return Err(err.into());
 	}
+	let hlt_code = format!("HLT{}", &suffix[..8]);
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO meddra_terms (code, term, level, version, language)
+		 VALUES ($1, $2, 'HLT', $3, 'en')",
+		)
+		.bind(&hlt_code)
+		.bind(format!("{meddra_term} HLT"))
+		.bind(&meddra_version),
+	)
+	.await?;
 
 	if let Err(err) = dbx
 		.execute(
@@ -252,10 +263,39 @@ async fn test_terminology_queries() -> Result<()> {
 		"TestTerm",
 		Some(&meddra_version),
 		Some("en"),
+		None,
 		5,
 	)
 	.await?;
 	assert!(meddra_terms.iter().any(|t| t.code == meddra_code));
+	let llt_terms = MeddraTermBmc::search(
+		&ctx,
+		&mm,
+		"TestTerm",
+		Some(&meddra_version),
+		Some("en"),
+		Some("LLT"),
+		10,
+	)
+	.await?;
+	assert!(llt_terms.iter().any(|term| term.code == meddra_code));
+	assert!(llt_terms.iter().all(|term| term.code != hlt_code));
+	let active_keys = MeddraTermBmc::existing_active_keys(
+		&mm,
+		&[
+			MeddraTermKey {
+				version: meddra_version.clone(),
+				code: meddra_code.clone(),
+			},
+			MeddraTermKey {
+				version: meddra_version.clone(),
+				code: hlt_code,
+			},
+		],
+	)
+	.await?;
+	assert_eq!(active_keys.len(), 1);
+	assert_eq!(active_keys[0].code, meddra_code);
 
 	let whodrug = WhodrugProductBmc::search(&ctx, &mm, &whodrug_name, 50).await?;
 	assert!(whodrug.iter().any(|p| p.code == whodrug_code));

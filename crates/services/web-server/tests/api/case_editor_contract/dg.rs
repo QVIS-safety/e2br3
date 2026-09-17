@@ -346,6 +346,28 @@ async fn relatedness_delete_preserves_sibling_and_parent_delete_removes_assessme
 		&uri,
 		json!({"authorities": ["ich"], "rows": {"drug": {
 			"drugReactionAssessments": [{
+				"drugReactionAssessmentId": parent_only_id,
+				"reactionId": reaction_ids[1],
+				"expectedness": null
+			}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let cleared_parent = body["data"]["drug"]["drugReactionAssessments"]
+		.as_array()
+		.ok_or("missing assessments after erase-only patch")?
+		.iter()
+		.find(|row| row["reactionId"] == json!(reaction_ids[1]))
+		.ok_or("missing parent-only assessment after erase-only patch")?;
+	assert_eq!(cleared_parent["expectedness"], Value::Null, "{body}");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"drugReactionAssessments": [{
 				"id": relatedness_id,
 				"drugReactionAssessmentId": assessment_id,
 				"reactionId": reaction_ids[0],

@@ -69,7 +69,9 @@ async fn load_editor_dh_list_rows(
 		id: history.id,
 		sequence_number: history.sequence_number,
 		drug_name: history.drug_name,
+		mpid: history.mpid,
 		indication: history.indication_meddra_code,
+		reaction: history.reaction_meddra_code,
 		start_date: ci_date(history.start_date),
 		end_date: ci_date(history.end_date),
 	})

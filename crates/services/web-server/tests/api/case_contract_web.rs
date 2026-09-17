@@ -312,6 +312,22 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"message_number": format!("MSG-{case_id}"),
+				"message_sender_identifier": "SENDER01",
+				"message_receiver_identifier": "MFDS",
+				"message_date": "20260917000000"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 	let receivers = json!({
 		"reviewReceivers": [{
 			"receiver": "MFDS",
@@ -337,6 +353,10 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 			.await?;
 	assert_eq!(status, StatusCode::OK, "{shell:?}");
 	assert_eq!(shell["reviewReceivers"], receivers["reviewReceivers"]);
+	assert_eq!(
+		shell["messageHeader"]["messageReceiverIdentifier"], "MFDS",
+		"{shell:?}"
+	);
 
 	Ok(())
 }

@@ -4,8 +4,8 @@ use super::helpers::{
 	DateValues,
 };
 use crate::{
-	has_test_payload, has_text, RegulatoryAuthority, ValidationContext,
-	ValidationIssue,
+	has_test_name, has_test_payload, has_text, RegulatoryAuthority,
+	ValidationContext, ValidationIssue,
 };
 use lib_core::model::test_result::TestResult;
 
@@ -24,7 +24,7 @@ fn f_r_1(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[F.r.1] Test date is required when [F.r.2] is populated.",
-		has_text(Some(test.test_name.as_str()))
+		has_test_name(test)
 			&& test.test_date.is_none()
 			&& !has_text(test.test_date_null_flavor.as_deref()),
 	);
@@ -46,7 +46,7 @@ fn f_r_2(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&format!("testResults.{idx}.testName"),
 		SECTION,
 		"[F.r.2] is required when test payload is present.",
-		has_test_payload(test) && !has_text(Some(test.test_name.as_str())),
+		has_test_payload(test) && !has_test_name(test),
 	);
 }
 
@@ -183,7 +183,7 @@ fn f_r_3_1(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[F.r.3.1] Test result (coded) is required when [F.r.2] is populated and neither [F.r.3.2] nor [F.r.3.4] is populated.",
-		has_text(Some(test.test_name.as_str()))
+		has_test_name(test)
 			&& !has_text(test.test_result_value.as_deref())
 			&& !has_text(test.result_unstructured.as_deref())
 			&& !has_text(test.test_result_code.as_deref()),
@@ -218,7 +218,7 @@ fn f_r_3_2(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[F.r.3.2] Test result (value/finding) is required when [F.r.2] is populated and [F.r.3.1] and [F.r.3.4] are not populated.",
-		has_text(Some(test.test_name.as_str()))
+		has_test_name(test)
 			&& !has_text(test.test_result_code.as_deref())
 			&& !has_text(test.result_unstructured.as_deref())
 			&& !has_text(test.test_result_value.as_deref()),
@@ -285,7 +285,7 @@ fn f_r_3_4(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[F.r.3.4] Result unstructured data is required when [F.r.2] is populated and [F.r.3] is not populated.",
-		has_text(Some(test.test_name.as_str()))
+		has_test_name(test)
 			&& !has_text(test.test_result_code.as_deref())
 			&& !has_text(test.test_result_value.as_deref())
 			&& !has_text(test.result_unstructured.as_deref()),
@@ -627,7 +627,16 @@ mod golden_f_required_tests {
 		let mut test = test_result();
 		test.test_meddra_code = Some("10000001".to_string());
 
-		assert_eq!(codes_for(test), vec!["ICH.F.r.2.2a.REQUIRED".to_string()]);
+		assert_eq!(
+			codes_for(test),
+			vec![
+				"ICH.F.r.1.REQUIRED".to_string(),
+				"ICH.F.r.2.2a.REQUIRED".to_string(),
+				"ICH.F.r.3.1.REQUIRED".to_string(),
+				"ICH.F.r.3.2.REQUIRED".to_string(),
+				"ICH.F.r.3.4.REQUIRED".to_string(),
+			]
+		);
 	}
 
 	#[test]

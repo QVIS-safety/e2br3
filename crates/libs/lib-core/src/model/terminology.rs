@@ -208,7 +208,7 @@ impl MeddraTermBmc {
 			 FROM meddra_terms terms \
 			 JOIN requested ON requested.version = terms.version \
 			 AND requested.code = terms.code \
-			 WHERE terms.active = true",
+			 WHERE terms.active = true AND UPPER(terms.level) = 'LLT'",
 		);
 
 		Ok(mm
@@ -223,6 +223,7 @@ impl MeddraTermBmc {
 		query: &str,
 		version: Option<&str>,
 		language: Option<&str>,
+		level: Option<&str>,
 		limit: i64,
 	) -> Result<Vec<MeddraTerm>> {
 		let search_pattern = format!("%{}%", query.trim());
@@ -240,6 +241,11 @@ impl MeddraTermBmc {
 		if let Some(lang) = language {
 			qb.push(" AND LOWER(language) = LOWER(")
 				.push_bind(lang.trim())
+				.push(")");
+		}
+		if let Some(level) = level {
+			qb.push(" AND UPPER(level) = UPPER(")
+				.push_bind(level.trim())
 				.push(")");
 		}
 		qb.push(" ORDER BY term LIMIT ")

@@ -32,6 +32,7 @@ pub struct TerminologySearchParams {
 	pub limit: i64,
 	pub version: Option<String>,
 	pub language: Option<String>,
+	pub level: Option<String>,
 }
 
 fn default_limit() -> i64 {
@@ -162,6 +163,7 @@ pub async fn search_meddra(
 				&params.q,
 				params.version.as_deref(),
 				params.language.as_deref(),
+				params.level.as_deref(),
 				params.limit,
 			)
 			.await?;

@@ -153,13 +153,15 @@ pub(crate) fn patch_g_drugs_for_authority(
 			&fragment,
 		)?;
 		let causality_fragment = write_g_k_1_causality(drug);
-		append_fragment_child(
-			&mut doc,
-			&parser,
-			&mut xpath,
-			"//hl7:adverseEventAssessment",
-			&causality_fragment,
-		)?;
+		if !causality_fragment.is_empty() {
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				"//hl7:adverseEventAssessment",
+				&causality_fragment,
+			)?;
+		}
 		if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
 			let fragment = write_fda_g_k_1_a_causality(drug);
 			if !fragment.is_empty() {

@@ -459,7 +459,7 @@ pub(super) async fn apply_ci_rows_patch(
 
 		let clear_fields =
 			explicit_null_model_fields(row, CI_SAFETY_REPORT_PATCH_FIELDS);
-		SafetyReportIdentificationBmc::update_by_case_patch(
+		let update_result = SafetyReportIdentificationBmc::update_by_case_patch(
 			ctx,
 			mm,
 			case_id,
@@ -519,7 +519,20 @@ pub(super) async fn apply_ci_rows_patch(
 			},
 			&clear_fields,
 		)
-		.await?;
+		.await;
+		match update_result {
+			Err(lib_core::model::Error::Store(message))
+				if message
+					== "compliance context required for nullification status transition" =>
+			{
+				return Err(Error::BadRequest {
+					message: "Nullification requires both a reason for change and an electronic signature; this editor request did not provide the required compliance context"
+						.to_string(),
+				});
+			}
+			Err(err) => return Err(err.into()),
+			Ok(()) => {}
+		}
 	}
 
 	if let Some(value) = rows.get("case") {

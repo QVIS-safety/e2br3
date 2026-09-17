@@ -100,6 +100,66 @@ async fn clearing_numeric_result_clears_qualifier_and_keeps_free_text(
 		&app,
 		&cookie,
 		&uri,
+		json!({"authorities": ["ich"], "rows": {"testResult": {"testResult": "5.6"}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["data"]["testResult"]["test_result_value"], "5.6",
+		"{body}"
+	);
+	assert_eq!(
+		body["data"]["testResult"]["test_result_qualifier"], "LE",
+		"{body}"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"testResult": {"testResultQualifier": "GE"}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["data"]["testResult"]["test_result_value"], "5.6",
+		"{body}"
+	);
+	assert_eq!(
+		body["data"]["testResult"]["test_result_qualifier"], "GE",
+		"{body}"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"testResult": {"testResultQualifier": null}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["data"]["testResult"]["test_result_value"], "5.6",
+		"{body}"
+	);
+	assert_eq!(
+		body["data"]["testResult"]["test_result_qualifier"],
+		Value::Null,
+		"{body}"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"testResult": {"testResultQualifier": "LE"}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
 		json!({"authorities": ["ich"], "rows": {"testResult": {"testResult": null}}}),
 	)
 	.await?;

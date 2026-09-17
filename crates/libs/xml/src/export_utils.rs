@@ -77,7 +77,7 @@ pub(crate) fn set_xsi_type(node: &mut Node, value: &str) -> Result<()> {
 pub(crate) fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
 	if let Ok(nodes) = xpath.findnodes(path, None) {
 		if let Some(mut node) = nodes.into_iter().next() {
-			let _ = node.set_content(value);
+			let _ = node.set_content(&xml_escape(value));
 		}
 	}
 }
@@ -330,8 +330,8 @@ pub(crate) fn xml_escape(input: &str) -> String {
 #[cfg(test)]
 mod tests {
 	use super::{
-		append_fragment_child, fmt_date_lexeme, set_xsi_type_first, wrap_fragment,
-		xml_escape, XSI_NAMESPACE,
+		append_fragment_child, fmt_date_lexeme, set_text_first, set_xsi_type_first,
+		wrap_fragment, xml_escape, XSI_NAMESPACE,
 	};
 	use libxml::parser::Parser;
 	use libxml::xpath::Context;
@@ -342,6 +342,26 @@ mod tests {
 		assert_eq!(xml_escape("환자 A"), "환자 A");
 		assert_eq!(xml_escape("&<>\"'"), "&amp;&lt;&gt;&quot;&apos;");
 		assert_eq!(xml_escape("&amp;"), "&amp;amp;");
+	}
+
+	#[test]
+	fn set_text_first_preserves_literal_xml_sensitive_text() {
+		let parser = Parser::default();
+		let doc = parser
+			.parse_string("<root><value/></root>")
+			.expect("source document");
+		let mut xpath = Context::new(&doc).expect("source XPath");
+		let value = "환자 <text> & literal &amp; entity\n둘째 줄";
+		set_text_first(&mut xpath, "//value", value);
+		let serialized = doc.to_string();
+		let reparsed = parser.parse_string(&serialized).expect("serialized XML");
+		let mut reparsed_xpath = Context::new(&reparsed).expect("reparsed XPath");
+		assert_eq!(
+			reparsed_xpath
+				.findvalue("//value", None)
+				.expect("value text"),
+			value
+		);
 	}
 
 	#[test]

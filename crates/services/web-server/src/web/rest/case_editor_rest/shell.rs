@@ -1,6 +1,7 @@
 use super::common::{
 	case_to_read_result, CaseBmc, CaseEditorShellDto, CtxW, Error, Json,
-	ModelManager, Path, Result, SafetyReportIdentificationBmc, State, Uuid,
+	MessageHeaderBmc, ModelManager, Path, Result, SafetyReportIdentificationBmc,
+	State, Uuid,
 };
 
 pub async fn get_editor_shell(
@@ -30,11 +31,16 @@ pub async fn get_editor_shell(
 								"case {case_id} has no safety report ID"
 							),
 						})?;
+				let message_receiver_identifier =
+					MessageHeaderBmc::get_by_case(ctx, mm, case_id)
+						.await?
+						.message_receiver_identifier;
 				Ok((
 					axum::http::StatusCode::OK,
 					Json(CaseEditorShellDto::from_case_read_result(
 						case,
 						safety_report_id,
+						message_receiver_identifier,
 					)?),
 				))
 			})
