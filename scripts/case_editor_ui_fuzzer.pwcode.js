@@ -169,7 +169,7 @@ async (page) => {
       else if (expectsReject) classification = status == null || ariaDisabled === "true" ? "CLIENT_REJECTED" : "FAIL";
       else if (mutation.expectation === "accept" || mutation.expectation === "length_boundary") classification = status === 200 ? "SAVED" : "FAIL";
       else if (mutation.expectation === "accept_or_forbidden") classification = status === 200 || status === 403 ? "SAVED" : "FAIL";
-      else classification = status === 200 ? "SAVED" : status == null ? "CLIENT_REJECTED" : [400, 409, 422].includes(status) ? "SERVER_REJECTED" : "FAIL";
+      else classification = "NO_EXPECTATION";
       record(field, mutation, classification, { status });
       await page.reload();
       await page.waitForLoadState("domcontentloaded");

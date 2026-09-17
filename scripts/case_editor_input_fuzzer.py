@@ -34,8 +34,8 @@ from audit_trail_consistency_fuzzer import (
 )
 
 
-DEFAULT_CONTRACT = Path(__file__).resolve().parents[1] / "../frontend/E2BR3-frontend/lib/case-editor/generated/editorContracts.json"
-DEFAULT_NULL_FLAVOR_PAIRS = Path(__file__).resolve().parents[1] / "../frontend/E2BR3-frontend/lib/case-save/pages/null-flavor-pairs.ts"
+DEFAULT_CONTRACT = Path(__file__).resolve().parents[2] / "frontend-origin-dev/lib/case-editor/generated/editorContracts.json"
+DEFAULT_NULL_FLAVOR_PAIRS = Path(__file__).resolve().parents[2] / "frontend-origin-dev/lib/case-save/pages/null-flavor-pairs.ts"
 ROW_PAGES = {"AE": "reaction", "DG": "drug", "DH": "pastDrugHistory", "LB": "testResult", "LR": "literatureReference"}
 NULL_FLAVOR_TOKENS = (
     "NI", "INV", "DER", "OTH", "NINF", "PINF", "UNC", "MSK",
@@ -130,9 +130,35 @@ class Event:
 
 
 def normalized_classification(actual: Any, before: Any, audit_complete: bool) -> str:
+    if actual is not None and not is_blank_candidate(actual):
+        return "CLEAR_NOT_APPLIED" if values_equal(actual, before) else "NORMALIZATION_UNVERIFIED"
     if values_equal(actual, before):
         return "NOOP_ACCEPTED"
     return "SAVE_NORMALIZED" if audit_complete else "AUDIT_MISMATCH"
+
+
+def run_verdict(events: list[Event], planned: int, interrupted: str | None,
+                unsupported: list[str], setup_only: bool = False) -> dict[str, Any]:
+    mutations = [event for event in events if event.kind == "mutation"]
+    accepted = {
+        "PASS", "SAVE_ACCEPTED", "NOOP_ACCEPTED", "SAVE_NORMALIZED",
+        "CONSTRAINT_REJECTED", "BACKEND_REJECTED", "CONFLICT_REJECTED",
+        "NULLFLAVOR_REJECTED", "AUDIT_CHAIN_PREEXISTING", "GATE_PASS",
+    }
+    unresolved = sorted({event.classification for event in events if event.classification not in accepted})
+    complete = bool(planned) and len(mutations) == planned and not interrupted and not unsupported and not unresolved
+    baseline_only = setup_only and planned == 0 and not mutations and not interrupted and not unresolved and any(
+        event.kind == "create" and event.classification == "PASS" for event in events
+    )
+    return {
+        "verdict": "SELECTED_API_CHECKS_PASSED" if complete else "BASELINE_ONLY" if baseline_only else "INCOMPLETE_OR_FAILED",
+        "planned_mutations": planned,
+        "executed_mutations": len(mutations),
+        "unsupported_null_flavor_pairs": unsupported,
+        "unresolved_classifications": unresolved,
+        "official_compliance_verified": False,
+        "ui_verified": False,
+    }
 
 
 def unwrap(value: Any) -> Any:
@@ -236,7 +262,7 @@ def candidate_rng(seed: int, field: dict[str, Any], ordinal: int, sample: int) -
         str(field.get(key, "")) for key in ("authority", "code", "frontendPath", "payloadPath")
     )
     digest = hashlib.sha256(f"{seed}|{identity}|{ordinal}|{sample}".encode()).digest()
-    return random.Random(int.from_bytes(digest[:8]))
+    return random.Random(int.from_bytes(digest[:8], "big"))
 
 
 def candidate_fingerprint(
@@ -581,9 +607,7 @@ def expectation_error(
     if outcome == "length_boundary":
         if status == 200:
             return None
-        if status in {400, 409, 422} and actual_rule and actual_rule != expected_rule:
-            return None
-        return f"exact maximum rejected by {actual_rule or status}"
+        return f"exact maximum was not saved: {actual_rule or status}"
     if status not in {400, 409, 422}:
         return f"expected input rejection, got {status}"
     if expected_rule and actual_rule != expected_rule:
@@ -689,6 +713,7 @@ def expand_null_flavor_contracts(
     contract: list[dict[str, Any]],
     pairs_by_page: dict[str, list[dict[str, str]]],
     allowed_by_code: dict[str, list[str]],
+    unsupported: list[str] | None = None,
 ) -> int:
     identifier_codes = {
         "gpMedicalRecordNumber": ("D.1.1.1", "1"),
@@ -793,7 +818,9 @@ def expand_null_flavor_contracts(
             )
             derived += 1
     if unresolved:
-        raise ValueError(f"unresolved NullFlavor pairs: {', '.join(unresolved)}")
+        if unsupported is None:
+            raise ValueError(f"unresolved NullFlavor pairs: {', '.join(unresolved)}")
+        unsupported.extend(unresolved)
     return derived
 
 
@@ -881,24 +908,31 @@ def main(args: argparse.Namespace) -> int:
     guard_target(args.base_url, args.allow_remote)
     if args.samples_per_category < 1:
         raise SystemExit("--samples-per-category must be at least 1")
+    if args.values_per_field < 0:
+        raise SystemExit("--values-per-field must be nonnegative")
     if not args.password and not args.dry_run:
         raise SystemExit("set E2BR3_ADMIN_PASSWORD")
     contract_path = Path(args.contract).resolve()
     contract = json.loads(contract_path.read_text())
     apply_meddra_baseline(contract, args.meddra_version, args.meddra_code)
     backend_root = Path(__file__).resolve().parents[1]
+    pages = [page.strip().upper() for page in args.pages.split(",") if page.strip()]
+    unknown_pages = set(pages) - {page["pageId"] for page in contract}
+    if unknown_pages:
+        raise SystemExit(f"unsupported pages: {', '.join(sorted(unknown_pages))}")
     max_length_fields = apply_max_lengths(contract, load_max_lengths(backend_root))
     identifier_fields, boolean_fields = apply_generated_rules(
         contract,
         load_generated_rules(backend_root, IDENTIFIER_RE),
         load_generated_rules(backend_root, BOOLEAN_RE),
     )
+    unsupported: list[str] = []
     derived_null_flavors = expand_null_flavor_contracts(
-        contract,
+        [page for page in contract if page["pageId"] in pages],
         load_null_flavor_pairs(Path(args.null_flavor_pairs).resolve()),
         load_dictionary_null_flavors(Path(__file__).resolve().parents[1]),
+        unsupported,
     )
-    pages = [page.strip().upper() for page in args.pages.split(",") if page.strip()]
     requested_fields = set(args.field or ())
     available_fields = {
         field.get("code") for page in pages for field in contract_rows(contract, page)
@@ -922,6 +956,17 @@ def main(args: argparse.Namespace) -> int:
 
     def add(event: Event) -> None:
         events.append(event)
+
+    planned_mutations = sum(
+        candidate_sample_count(field, ordinal, args.samples_per_category)
+        for page in pages for field in page_fields(page)
+        for ordinal in range(candidate_count(field, args.values_per_field))
+    )
+    excluded_fields = [
+        {"page": page["pageId"], "code": field["code"]}
+        for page in contract if page["pageId"] in pages
+        for field in page["fields"] if field not in contract_rows(contract, page["pageId"])
+    ]
 
     def request(method: str, path: str, payload: dict[str, Any] | None = None) -> tuple[int | None, Any, dict[str, Any]]:
         nonlocal interrupted, request_count
@@ -971,7 +1016,13 @@ def main(args: argparse.Namespace) -> int:
             total += mutations
             print(f"{page}: fields={len(fields)} owners={len(groups)} mutations={mutations}")
         print(f"seed={args.seed} total_mutations={total} derived_null_flavors={derived_null_flavors} max_length_fields={max_length_fields} identifier_fields={identifier_fields} boolean_fields={boolean_fields} contract={contract_path}")
-        return 0
+        print(json.dumps({"verdict": "NOT_RUN", "planned_mutations": total,
+                          "excluded_fields": excluded_fields,
+                          "unsupported_null_flavor_pairs": unsupported}, sort_keys=True))
+        return 1 if unsupported or not total else 0
+
+    if not planned_mutations and args.values_per_field != 0:
+        raise SystemExit("no input mutations selected; no API requests were sent")
 
     status, _, summary = request(
         "POST",
@@ -1227,6 +1278,11 @@ def main(args: argparse.Namespace) -> int:
                     classification = "SERVER_ERROR" if status >= 500 else "UNEXPECTED_STATUS"
                 invalid_nullflavor = nullflavor_invalid_candidate(field, candidate) or nullflavor_with_value
                 expectation = candidate_expectation(field, ordinal)
+                if is_nullflavor_field(field):
+                    if invalid_nullflavor:
+                        expectation = ("reject", field.get("constraint", {}).get("ruleCode"))
+                    elif ordinal in {2, 3}:
+                        expectation = ("accept", None)
                 detail: dict[str, Any] = {
                     "candidate": redacted(candidate),
                     "candidate_kind": candidate_kind(field, ordinal),
@@ -1283,7 +1339,7 @@ def main(args: argparse.Namespace) -> int:
                             classification = normalized_classification(actual, before_actual, audit_complete)
                             detail.update({"audit_new_logs": len(changed), "audit_complete": audit_complete})
                         else:
-                            classification = "NOOP_ACCEPTED" if candidate is None else "SAVE_READBACK_MISMATCH"
+                            classification = "CLEAR_NOT_APPLIED" if candidate is None else "SAVE_READBACK_MISMATCH"
                 elif status in {400, 409, 422}:
                     read_status, actual = readback(page, owner, projection_leaf(field, owner), row_route, row_ids.get(owner))
                     logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
@@ -1328,7 +1384,19 @@ def main(args: argparse.Namespace) -> int:
                     if classification not in {
                         "AUDIT_MISMATCH", "INCONCLUSIVE", "SERVER_ERROR", "SAVE_READBACK_MISMATCH"
                     }:
-                        classification = "FAIL"
+                        classification = (
+                            "BOUNDARY_BLOCKED"
+                            if expectation and expectation[0] == "length_boundary"
+                            and status in {400, 409, 422}
+                            and summary.get("error_rule_code") != expectation[1]
+                            else "FAIL"
+                        )
+                if expectation is None and classification not in {
+                    "AUDIT_MISMATCH", "FAIL", "INCONCLUSIVE", "SERVER_ERROR",
+                    "SAVE_READBACK_MISMATCH", "UNEXPECTED_STATUS",
+                    "CLEAR_NOT_APPLIED", "NORMALIZATION_UNVERIFIED", "BOUNDARY_BLOCKED",
+                }:
+                    classification = "NO_EXPECTATION"
                 add(Event("mutation", field["code"], page, owner, f"value_{ordinal}_sample_{sample}", classification, status, {**summary, **detail}))
                 if status == 200 and read_status == 200:
                     before_status, before_actual = read_status, actual
@@ -1372,20 +1440,17 @@ def main(args: argparse.Namespace) -> int:
     out_dir = Path(args.artifact_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     artifact = out_dir / f"case-editor-{args.seed}.jsonl"
+    verdict = run_verdict(events, planned_mutations, interrupted, unsupported, args.values_per_field == 0)
     with artifact.open("w", encoding="utf-8") as handle:
         for event in events:
             handle.write(json.dumps({"seed": args.seed, "commit": commit_sha(), **asdict(event)}, sort_keys=True) + "\n")
-        handle.write(json.dumps({"kind": "run", "seed": args.seed, "case_id": case_id, "cases": len(events), "requests": request_count, "elapsed_seconds": round(time.monotonic() - started, 3), "interrupted": interrupted, "artifact": str(artifact), "contract": str(contract_path), "candidate_schema_version": 6, "samples_per_category": args.samples_per_category, "field_filter": sorted(requested_fields), "derived_null_flavors": derived_null_flavors, "max_length_fields": max_length_fields, "identifier_fields": identifier_fields, "boolean_fields": boolean_fields, "null_flavor_only": args.null_flavor_only, "surface": "api", "validator_excluded": not args.run_gates, "frontend_gate": "run" if args.run_gates else "not_run"}, sort_keys=True) + "\n")
+        handle.write(json.dumps({"kind": "run", **verdict, "excluded_fields": excluded_fields, "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(), "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "seed": args.seed, "case_id": case_id, "cases": len(events), "requests": request_count, "elapsed_seconds": round(time.monotonic() - started, 3), "interrupted": interrupted, "artifact": str(artifact), "contract": str(contract_path), "candidate_schema_version": 6, "samples_per_category": args.samples_per_category, "field_filter": sorted(requested_fields), "derived_null_flavors": derived_null_flavors, "max_length_fields": max_length_fields, "identifier_fields": identifier_fields, "boolean_fields": boolean_fields, "null_flavor_only": args.null_flavor_only, "surface": "api", "validator_excluded": not args.run_gates, "frontend_gate": "run" if args.run_gates else "not_run"}, sort_keys=True) + "\n")
     counts: dict[str, int] = {}
     for event in events:
         counts[event.classification] = counts.get(event.classification, 0) + 1
     print(f"events={len(events)} counts={json.dumps(counts, sort_keys=True)} artifact={artifact}")
-    failures = {
-        "AUDIT_MISMATCH", "BASELINE_REJECTED", "FAIL", "GATE_FAIL",
-        "INCONCLUSIVE", "SERVER_ERROR", "SKIPPED_BASELINE",
-        "UNEXPECTED_STATUS", "SAVE_READBACK_MISMATCH",
-    }
-    return 2 if interrupted else 1 if any(event.classification in failures for event in events) else 0
+    print(json.dumps(verdict, sort_keys=True))
+    return 2 if interrupted else 0 if verdict["verdict"] in {"SELECTED_API_CHECKS_PASSED", "BASELINE_ONLY"} else 1
 
 
 def parser() -> argparse.ArgumentParser:

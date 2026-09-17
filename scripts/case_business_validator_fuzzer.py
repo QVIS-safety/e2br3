@@ -15,10 +15,8 @@ import json
 import os
 import random
 import re
-import subprocess
 import sys
 import time
-import urllib.parse
 import uuid
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
@@ -1246,46 +1244,6 @@ def generated_scenario(scenario: Scenario, seed: int, sample_ordinal: int) -> Sc
     return replace(generated, generation_fingerprint=fingerprint)
 
 
-def seed_reference_fixtures(database_url: str) -> None:
-    parsed = urllib.parse.urlparse(database_url)
-    database = parsed.path.lstrip("/")
-    if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname not in {None, "", "127.0.0.1", "localhost", "::1"}:
-        raise SystemExit("reference fixture database must be local PostgreSQL")
-    if not database.startswith("e2br3_ui_") or database == "app_db":
-        raise SystemExit("reference fixtures require a dedicated e2br3_ui_* database")
-    sql = """
-BEGIN;
-SELECT set_current_user_context('00000000-0000-0000-0000-000000000001');
-INSERT INTO meddra_terms (code, term, level, version, language, active)
-VALUES ('10000001', 'Business fuzz term', 'LLT', '26.0', 'en', true)
-ON CONFLICT (code, version, language) DO UPDATE SET active = true;
-INSERT INTO controlled_terminology_terms
-    (dictionary, version, language, scope, code, display_name, active)
-VALUES ('ich_constrained_ucum', 'BUSINESS-FUZZ', 'en', 'frequency', 'd', 'day', true)
-ON CONFLICT (dictionary, version, language, scope, code) DO UPDATE SET active = true;
-INSERT INTO whodrug_products (code, drug_name, version, language, active)
-VALUES ('WHO0001', 'Business fuzz WHO product', 'FUZZ1', 'en', true)
-ON CONFLICT (code, version, language) DO UPDATE SET active = true;
-INSERT INTO controlled_terminology_terms
-    (dictionary, version, language, scope, code, display_name, active)
-VALUES ('whodrug', 'FUZZ1', 'en', 'cas', 'CAS123', 'Business fuzz CAS', true)
-ON CONFLICT (dictionary, version, language, scope, code) DO UPDATE SET active = true;
-INSERT INTO mfds_products (item_seq, product_name_kr, version, active)
-VALUES ('1234567890', '비즈니스 퍼즈 제품', 'BUSINESS-FUZZ', true)
-ON CONFLICT (item_seq, version) DO UPDATE SET active = true;
-INSERT INTO mfds_product_substances
-    (item_seq, substance_code, substance_name_kr, version, active)
-VALUES ('1234567890', 'MFDS-SUB-1', '비즈니스 퍼즈 성분', 'BUSINESS-FUZZ', true)
-ON CONFLICT (item_seq, substance_code, material_sequence, total_amount_sequence, version)
-DO UPDATE SET active = true;
-COMMIT;
-"""
-    subprocess.run(
-        ["psql", database_url, "-v", "ON_ERROR_STOP=1", "-c", sql],
-        check=True, stdout=subprocess.DEVNULL,
-    )
-
-
 def issue_codes(value: Any) -> set[str]:
     issues = value.get("issues", []) if isinstance(value, dict) else []
     return {
@@ -1305,10 +1263,32 @@ def issue_complete(value: Any, code: str) -> bool:
         and isinstance(issue.get("path"), str)
         and bool(issue.get("path"))
         and isinstance(issue.get("section"), str)
+        and bool(issue.get("section"))
         and isinstance(issue.get("subsection"), str)
-        and isinstance(issue.get("blocking"), bool)
+        and bool(issue.get("subsection"))
+        and "field_path" in issue
+        and (issue["field_path"] is None or (
+            isinstance(issue["field_path"], str) and bool(issue["field_path"])
+        ))
         for issue in issues
     )
+
+
+def rules_with_both_edges_passed(scenarios: list[Scenario], events: list[Event]) -> set[str]:
+    passed_edges = {
+        (event.scenario_id, event.sample_ordinal, event.kind)
+        for event in events
+        if event.classification == "PASS" and event.kind in {"invalid_edge", "valid_edge"}
+    }
+    return {
+        code
+        for code in {scenario.expected_code for scenario in scenarios}
+        if all(
+            (scenario.scenario_id, scenario.sample_ordinal, edge) in passed_edges
+            for scenario in scenarios if scenario.expected_code == code
+            for edge in ("invalid_edge", "valid_edge")
+        )
+    }
 
 
 def parser() -> argparse.ArgumentParser:
@@ -1322,11 +1302,6 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--max-actions", type=int, default=30000)
     result.add_argument("--deadline-seconds", type=float, default=600)
     result.add_argument("--samples-per-scenario", type=int, default=3)
-    result.add_argument(
-        "--fixture-database-url",
-        default=os.getenv("E2BR3_FUZZ_DATABASE_URL"),
-        help="dedicated local e2br3_ui_* database used for reference fixtures",
-    )
     result.add_argument("--scenario", action="append", help="run only this scenario id (repeatable)")
     result.add_argument("--allow-remote", action="store_true")
     result.add_argument("--dry-run", action="store_true")
@@ -1351,7 +1326,7 @@ def main(args: argparse.Namespace) -> int:
         for sample_ordinal in range(args.samples_per_scenario)
     ]
     inventory = discover_business_rule_codes()
-    covered = {scenario.expected_code for scenario in scenarios}
+    planned_rules = {scenario.expected_code for scenario in scenarios}
     raw_uncovered = inventory - catalog_covered
     dispositions = {
         code: detail
@@ -1374,21 +1349,27 @@ def main(args: argparse.Namespace) -> int:
                 (family, sum(item.generator_family == family for item in scenarios))
                 for family in GENERATOR_FAMILIES
             )),
-            "covered_rules": len(covered),
-            "inventory_rules": len(inventory),
+            "catalog_rule_count": len(catalog_covered),
+            "catalog_rules": sorted(catalog_covered),
+            "planned_rule_count": len(planned_rules),
+            "planned_rules": sorted(planned_rules),
+            "inventory_catalog_intersection_rule_count": len(inventory & catalog_covered),
+            "inventory_catalog_intersection_rules": sorted(inventory & catalog_covered),
+            "verified_both_edges_rules": [],
+            "unverified_planned_rules": sorted(planned_rules),
+            "inventory_rule_count": len(inventory),
             "raw_uncovered_rules": sorted(raw_uncovered),
             "dispositioned_rules": dispositions,
-            "test_backed_rules": test_backed,
-            "uncovered_rules": sorted(unexplained),
+            "test_backed_rule_mappings_not_executed": test_backed,
+            "unsupported_inventory_rules": sorted(unexplained),
+            "complete": False,
+            "verdict": "NOT_RUN",
+            "official_compliance_verified": False,
+            "ui_verified": False,
         }, sort_keys=True))
-        return 0
+        return 1
     if not args.password:
         raise SystemExit("set E2BR3_ADMIN_PASSWORD")
-    if any(scenario.reference_fixture for scenario in scenarios):
-        if not args.fixture_database_url:
-            raise SystemExit("reference scenarios require --fixture-database-url")
-        seed_reference_fixtures(args.fixture_database_url)
-
     client = ApiClient(args.base_url, args.timeout)
     events: list[Event] = []
     started = time.monotonic()
@@ -1465,10 +1446,18 @@ def main(args: argparse.Namespace) -> int:
     def validation(case_id: str, authority: str) -> tuple[int | None, Any, dict[str, Any]]:
         return request("GET", f"/api/cases/{case_id}/validation?authority={authority}")
 
-    status, _, summary = request("POST", "/auth/v1/login", {"email": args.email, "pwd": args.password})
-    add("login", None, "PASS" if status == 200 else "FAIL", status, summary)
-    if status != 200:
-        interrupted = interrupted or "login_failed"
+    runnable_scenarios = [scenario for scenario in scenarios if not scenario.reference_fixture]
+    for scenario in scenarios:
+        if scenario.reference_fixture:
+            add("reference_data", scenario, "BLOCKED_REFERENCE_DATA", None, {
+                "expected_code": scenario.expected_code,
+                "reason": "authoritative reference-data binding is not implemented",
+            })
+    if runnable_scenarios:
+        status, _, summary = request("POST", "/auth/v1/login", {"email": args.email, "pwd": args.password})
+        add("login", None, "PASS" if status == 200 else "FAIL", status, summary)
+        if status != 200:
+            interrupted = interrupted or "login_failed"
 
     year = int(scenario_catalog(args.seed)[0].invalid_value[:4])
 
@@ -2487,7 +2476,7 @@ def main(args: argparse.Namespace) -> int:
             "audit_field_match": field_match,
         })
 
-    ordered = scenarios[:]
+    ordered = runnable_scenarios[:]
     random.Random(args.seed).shuffle(ordered)
     for scenario in ordered:
         if interrupted:
@@ -2496,13 +2485,20 @@ def main(args: argparse.Namespace) -> int:
         if not interrupted:
             run_edge(scenario, "valid_edge", scenario.valid_value)
 
-    if not interrupted:
+    if runnable_scenarios and not interrupted:
         status, value, summary = request("GET", "/api/audit-logs/verify-integrity")
         broken = value.get("broken_rows", value.get("brokenRows")) if isinstance(value, dict) else None
         add("audit_chain", None, "PASS" if status == 200 and broken == 0 else "FAIL", status, {
             **summary,
             "broken_rows": broken,
         })
+
+    verified_rules = rules_with_both_edges_passed(scenarios, events)
+    unverified_planned = planned_rules - verified_rules
+    unverified_inventory = inventory - verified_rules
+    complete = bool(scenarios) and not interrupted and not unexplained and not unverified_planned and not unverified_inventory and all(
+        event.classification == "PASS" for event in events
+    )
 
     out_dir = Path(args.artifact_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -2523,12 +2519,25 @@ def main(args: argparse.Namespace) -> int:
                 (family, sum(item.generator_family == family for item in scenarios))
                 for family in GENERATOR_FAMILIES
             )),
-            "covered_rules": sorted(covered),
+            "catalog_rules": sorted(catalog_covered),
+            "catalog_rule_count": len(catalog_covered),
+            "planned_rule_count": len(planned_rules),
+            "planned_rules": sorted(planned_rules),
+            "inventory_catalog_intersection_rule_count": len(inventory & catalog_covered),
+            "inventory_catalog_intersection_rules": sorted(inventory & catalog_covered),
+            "verified_both_edges_rules": sorted(verified_rules),
+            "unverified_planned_rules": sorted(unverified_planned),
+            "unverified_inventory_rules": sorted(unverified_inventory),
             "inventory_rule_count": len(inventory),
             "raw_uncovered_rules": sorted(raw_uncovered),
             "dispositioned_rules": dispositions,
-            "test_backed_rules": test_backed,
-            "uncovered_rules": sorted(unexplained),
+            "test_backed_rule_mappings_not_executed": test_backed,
+            "unsupported_inventory_rules": sorted(unexplained),
+            "complete": complete,
+            "verdict": "INVENTORIED_API_CHECKS_PASSED" if complete else "INCOMPLETE_OR_FAILED",
+            "official_compliance_verified": False,
+            "ui_verified": False,
+            "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             "artifact": str(artifact),
             "surface": "case-validation-api",
         }, sort_keys=True) + "\n")
@@ -2536,7 +2545,7 @@ def main(args: argparse.Namespace) -> int:
     for event in events:
         counts[event.classification] = counts.get(event.classification, 0) + 1
     print(f"events={len(events)} counts={json.dumps(counts, sort_keys=True)} artifact={artifact}")
-    return 2 if interrupted else 1 if any(event.classification != "PASS" for event in events) else 0
+    return 2 if interrupted else 0 if complete and all(event.classification == "PASS" for event in events) else 1
 
 
 if __name__ == "__main__":

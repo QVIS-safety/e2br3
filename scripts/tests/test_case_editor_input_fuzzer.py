@@ -2,6 +2,7 @@
 
 import random
 import sys
+import tempfile
 import unicodedata
 import unittest
 from pathlib import Path
@@ -105,14 +106,17 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         )
         self.assertIsNone(fuzzer.expectation_error(("reject", "RULE"), 422, "RULE"))
         self.assertIsNotNone(fuzzer.expectation_error(("reject", "RULE"), 422, "OTHER"))
-        self.assertIsNone(fuzzer.expectation_error(("length_boundary", "LENGTH"), 422, "FORMAT"))
+        self.assertIsNotNone(fuzzer.expectation_error(("length_boundary", "LENGTH"), 422, "FORMAT"))
+        self.assertIsNone(fuzzer.expectation_error(("length_boundary", "LENGTH"), 200, None))
         self.assertIsNotNone(fuzzer.expectation_error(("length_boundary", "LENGTH"), 422, "LENGTH"))
         self.assertIsNone(fuzzer.expectation_error(("accept_or_forbidden", None), 403, None))
 
     def test_normalization_requires_audit_only_when_value_changes(self) -> None:
-        self.assertEqual(fuzzer.normalized_classification("old", "old", False), "NOOP_ACCEPTED")
-        self.assertEqual(fuzzer.normalized_classification("new", "old", True), "SAVE_NORMALIZED")
-        self.assertEqual(fuzzer.normalized_classification("new", "old", False), "AUDIT_MISMATCH")
+        self.assertEqual(fuzzer.normalized_classification("old", "old", False), "CLEAR_NOT_APPLIED")
+        self.assertEqual(fuzzer.normalized_classification("new", "old", True), "NORMALIZATION_UNVERIFIED")
+        self.assertEqual(fuzzer.normalized_classification(None, "old", True), "SAVE_NORMALIZED")
+        self.assertEqual(fuzzer.normalized_classification(None, "old", False), "AUDIT_MISMATCH")
+        self.assertEqual(fuzzer.normalized_classification(None, None, False), "NOOP_ACCEPTED")
         self.assertEqual(fuzzer.audit_field_key("safetyReportId"), "safety_report_id")
         self.assertEqual(fuzzer.audit_field_key("reporterCountry"), "country_code")
         self.assertTrue(fuzzer.audit_key_matches(
@@ -142,6 +146,39 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             self.assertEqual(rbac_rls_blackbox.commit_sha(), "abc123")
         check_output.assert_called_once()
         rbac_rls_blackbox.commit_sha.cache_clear()
+
+    def test_api_verdict_never_promotes_setup_missing_or_unknown_checks(self) -> None:
+        saved = fuzzer.Event("mutation", "D.1", "DM", "patient", "one", "SAVE_ACCEPTED", 200, {})
+        baseline = fuzzer.Event("baseline", None, "DM", "patient", None, "PASS", 200, {})
+        self.assertEqual(fuzzer.run_verdict([baseline], 0, None, [])["verdict"], "INCOMPLETE_OR_FAILED")
+        self.assertEqual(fuzzer.run_verdict([saved], 2, None, [])["executed_mutations"], 1)
+        for planned, interrupted, unsupported in [(2, None, []), (1, "deadline", []), (1, None, ["DG:device"])]:
+            self.assertEqual(fuzzer.run_verdict([saved], planned, interrupted, unsupported)["verdict"], "INCOMPLETE_OR_FAILED")
+        for classification in ["NO_EXPECTATION", "CLEAR_NOT_APPLIED", "NORMALIZATION_UNVERIFIED", "BOUNDARY_BLOCKED", "AUTHORIZATION_BLOCKED", "FUTURE_UNRECOGNIZED_STATUS"]:
+            event = fuzzer.Event("mutation", "D.1", "DM", "patient", "one", classification, 200, {})
+            self.assertEqual(fuzzer.run_verdict([event], 1, None, [])["verdict"], "INCOMPLETE_OR_FAILED")
+        result = fuzzer.run_verdict([saved], 1, None, [])
+        self.assertEqual(result["verdict"], "SELECTED_API_CHECKS_PASSED")
+        self.assertFalse(result["official_compliance_verified"])
+        self.assertFalse(result["ui_verified"])
+        created = fuzzer.Event("create", None, None, None, None, "PASS", 201, {})
+        setup = fuzzer.run_verdict([created, baseline], 0, None, ["DG:device"], setup_only=True)
+        self.assertEqual(setup["verdict"], "BASELINE_ONLY")
+        self.assertEqual(setup["executed_mutations"], 0)
+        self.assertEqual(setup["unsupported_null_flavor_pairs"], ["DG:device"])
+        gate = fuzzer.Event("validator_gate", None, None, None, None, "GATE_PASS", None, {})
+        self.assertEqual(fuzzer.run_verdict([saved, gate], 1, None, [])["verdict"], "SELECTED_API_CHECKS_PASSED")
+        gate.classification = "GATE_BLOCKED"
+        self.assertEqual(fuzzer.run_verdict([saved, gate], 1, None, [])["verdict"], "INCOMPLETE_OR_FAILED")
+
+    def test_unmapped_pairs_are_explicit_and_other_callers_still_fail_closed(self) -> None:
+        contract = [{"pageId": "DG", "fields": []}]
+        pairs = {"DG": [{"value": "fdaDevices[].deviceBrandName", "nullFlavor": "fdaDevices[].brandNF"}]}
+        with self.assertRaisesRegex(ValueError, "unresolved NullFlavor pairs"):
+            fuzzer.expand_null_flavor_contracts(contract, pairs, {})
+        unsupported = []
+        self.assertEqual(fuzzer.expand_null_flavor_contracts(contract, pairs, {}, unsupported), 0)
+        self.assertEqual(unsupported, ["DG:fdaDevices[].deviceBrandName"])
 
     def test_seeded_samples_are_reproducible_and_vary(self) -> None:
         field = {"authority": "ICH", "code": "H.1", "payloadPath": "caseNarrative", "roundTripValue": "base"}
@@ -247,6 +284,32 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         ]
         self.assertEqual(sum(shard["fieldCount"] for shard in shards), plan["fieldCount"])
         self.assertEqual(sum(shard["mutationCount"] for shard in shards), plan["mutationCount"])
+
+    def test_ui_wrapper_fails_incomplete_or_empty_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            args = ui_fuzzer.parser().parse_args([
+                "--seed", "1", "--case-id", "case-id", "--pwcli", "unused",
+                "--artifact-dir", artifact_dir,
+            ])
+            plan = {"fieldCount": 1, "mutationCount": 1, "fields": []}
+            with (
+                mock.patch.object(ui_fuzzer, "build_plan", return_value=plan),
+                mock.patch.object(ui_fuzzer, "guard_target"),
+            ):
+                for classification in ("NOT_RUN", "UNRENDERABLE", "NO_EXPECTATION"):
+                    incomplete = {
+                        "counts": {classification: 1},
+                        "results": [{"classification": classification}],
+                    }
+                    with mock.patch.object(ui_fuzzer, "run_browser", return_value=incomplete):
+                        self.assertEqual(ui_fuzzer.main(args), 1)
+
+            with mock.patch.object(
+                ui_fuzzer,
+                "build_plan",
+                return_value={"fieldCount": 0, "mutationCount": 0, "fields": []},
+            ):
+                self.assertEqual(ui_fuzzer.main(args), 1)
 
 
 if __name__ == "__main__":

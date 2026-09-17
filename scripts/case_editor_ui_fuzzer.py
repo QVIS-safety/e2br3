@@ -189,6 +189,9 @@ def main(args: argparse.Namespace) -> int:
     if args.dry_run:
         print(f"fields={plan['fieldCount']} mutations={plan['mutationCount']} artifact={plan_path}")
         return 0
+    if not plan["mutationCount"]:
+        print(f"fields=0 mutations=0 artifact={plan_path}")
+        return 1
     guard_target(args.base_url, False)
     if not args.pwcli:
         raise SystemExit("set PWCLI or pass --pwcli; no browser fallback is used")
@@ -198,7 +201,11 @@ def main(args: argparse.Namespace) -> int:
     result = run_browser(args, plan_path, str(case_id))
     result_path = out_dir / f"ui-result-{args.seed}-{args.shard_index}.json"
     result_path.write_text(json.dumps(result, ensure_ascii=True, indent=2, sort_keys=True), encoding="utf-8")
-    failures = result.get("counts", {}).get("FAIL", 0) + result.get("counts", {}).get("FIELD_MISSING", 0)
+    counts = result.get("counts", {})
+    failures = sum(counts.get(name, 0) for name in {
+        "FAIL", "FIELD_MISSING", "NOT_RUN", "UNRENDERABLE", "NO_EXPECTATION",
+    })
+    failures += len(result.get("results", [])) != plan["mutationCount"]
     print(f"fields={plan['fieldCount']} mutations={plan['mutationCount']} counts={json.dumps(result.get('counts', {}), sort_keys=True)} artifact={result_path}")
     return 1 if failures else 0
 
