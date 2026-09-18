@@ -195,10 +195,12 @@ fn validate_allowed_optional_text(
 ) -> Result<()> {
 	if let Some(value) = value {
 		if !allowed_values.contains(&value) {
-			return Err(crate::model::Error::Store(format!(
-				"{entity} field `{field}` must be one of: {}",
-				allowed_values.join(", ")
-			)));
+			return Err(crate::model::Error::Validation {
+				message: format!(
+					"{entity} field `{field}` must be one of: {}",
+					allowed_values.join(", ")
+				),
+			});
 		}
 	}
 	Ok(())

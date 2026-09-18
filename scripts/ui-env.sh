@@ -86,6 +86,13 @@ if psql "$admin_url" -Atqc "SELECT 1 FROM pg_database WHERE datname = '$database
 		printf 'Incomplete UI database %s; run: scripts/ui-env.sh reset %s\n' "$database_name" "$name" >&2
 		exit 2
 	}
+elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
+	validate_name "$UI_DB_TEMPLATE"
+	createdb --maintenance-db="$admin_url" --owner="$app_db_user" --template="$UI_DB_TEMPLATE" "$database_name"
+	psql "$admin_ui_url" -Atqc "SELECT to_regclass('public.ui_env_ready')" | grep -q ui_env_ready || {
+		printf 'Template %s is not a ready UI database.\n' "$UI_DB_TEMPLATE" >&2
+		exit 2
+	}
 else
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" "$database_name"
 	: >"$log_dir/init.log"
@@ -113,7 +120,7 @@ export E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS="${E2BR3_DEFAULT_MESSAGE_RECEIVER_MFD
 
 (cd "$repo_root" && "$binary") >"$log_dir/backend.log" 2>&1 &
 backend_pid=$!
-(cd "$frontend_root" && API_PROXY_TARGET="http://127.0.0.1:$backend_port" UI_NEXT_DIST_DIR=".next-ui-$name" UI_TSCONFIG_PATH="$ui_tsconfig_path" ./node_modules/.bin/next dev --port "$frontend_port") >"$log_dir/frontend.log" 2>&1 &
+(cd "$frontend_root" && API_PROXY_TARGET="http://127.0.0.1:$backend_port" UI_NEXT_DIST_DIR=".next-ui-$name" UI_TSCONFIG_PATH="$ui_tsconfig_path" ./node_modules/.bin/next dev --hostname 127.0.0.1 --port "$frontend_port") >"$log_dir/frontend.log" 2>&1 &
 frontend_pid=$!
 
 cleanup() {

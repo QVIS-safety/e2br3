@@ -13,6 +13,223 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import case_editor_input_fuzzer as fuzzer
 import case_editor_ui_fuzzer as ui_fuzzer
 import rbac_rls_blackbox
+import presave_case_roundtrip_fuzzer as presave_fuzzer
+
+
+class PresaveVerdictTests(unittest.TestCase):
+    def test_receiver_local_storage_contract(self) -> None:
+        fields = presave_fuzzer.load_fields(["receiver"], unsupported=[])
+        self.assertEqual(len(fields), 26)
+        self.assertEqual(sum(field["model"] == "ReceiverPresave" for field in fields), 12)
+        by_name = {field["backendField"]: field for field in fields}
+        count = by_name["nsae_solicited_day_count"]
+        for value, expected in [(None, ("accept", None)), (0, ("accept", None)),
+                                (-1, ("reject", "INVALID_REQUEST")),
+                                (True, ("reject", "INPUT.JSON.INVALID")),
+                                (2147483648, ("reject", "INPUT.JSON.INVALID"))]:
+            self.assertEqual(presave_fuzzer.presave_expectation(count, value), expected)
+        self.assertEqual(presave_fuzzer.presave_expectation(by_name["description"], ""), ("accept", None))
+        self.assertEqual(presave_fuzzer.presave_expectation(by_name["organization_name"], ""), ("reject", "INVALID_REQUEST"))
+        self.assertIsNone(by_name["organization_name"]["official"])
+
+    def test_native_loader_has_no_case_editor_contract_dependency(self) -> None:
+        inventory = []
+        excluded = []
+        with (
+            mock.patch.object(fuzzer, "DEFAULT_CONTRACT", object()),
+            mock.patch.object(fuzzer, "DEFAULT_NULL_FLAVOR_PAIRS", object()),
+        ):
+            fields = presave_fuzzer.load_fields(
+                list(presave_fuzzer.SECTIONS), excluded, [], inventory)
+
+        self.assertEqual(len(fields), 143)
+        self.assertFalse(excluded)
+        self.assertEqual(
+            {model: sum(field["model"] == model for field in fields) for model in presave_fuzzer.MODEL_GROUPS},
+            {
+                "SenderPresave": 12,
+                "SenderPresaveGateway": 7,
+                "SenderPresaveResponsiblePerson": 7,
+                "ReceiverPresave": 12,
+                "ReceiverPresaveConsignee": 4,
+                "ReceiverPresaveRoute": 10,
+                "ReporterPresave": 29,
+                "ProductPresave": 21,
+                "ProductPresaveActiveSubstance": 8,
+                "StudyPresave": 13,
+                "StudyPresaveRegistrationNumber": 5,
+                "StudyPresaveFdaCrossReportedIndNumber": 3,
+                "NarrativePresave": 4,
+                "StudyPresaveProduct": 3,
+                "StudyPresaveReporter": 5,
+            },
+        )
+        self.assertFalse(any(field["backendField"] == "deleted" for field in fields))
+        self.assertEqual(
+            {item["disposition"] for item in inventory},
+            {"scalar", "collection", "alias", "lifecycle", "server_owned"},
+        )
+        self.assertEqual(len(inventory), 171)
+        self.assertFalse(any(item["disposition"] == "unresolved" for item in inventory))
+
+    def test_official_provenance_does_not_invent_a_presave_validator(self) -> None:
+        fields = presave_fuzzer.load_fields(["sender", "receiver"], unsupported=[])
+        for code in ["N.1.4", "N.2.r.2", "N.2.r.3"]:
+            field = next(item for item in fields if item["code"] == code)
+            self.assertIsNotNone(field["official"])
+            self.assertIsNone(field["presaveValidator"])
+            self.assertEqual(presave_fuzzer.presave_expectation(
+                field, "X" * (field["dto"]["width"] + 1)), ("reject", "INVALID_REQUEST"))
+            self.assertEqual(presave_fuzzer.presave_expectation(
+                field, "A\x00B"), ("reject", "INVALID_REQUEST"))
+
+    def test_native_loader_preserves_serde_and_relationship_shapes(self) -> None:
+        fields = presave_fuzzer.load_fields(["product", "study"], unsupported=[])
+        by_target = {(field["model"], field["backendField"]): field for field in fields}
+        self.assertEqual(
+            by_target[("ProductPresave", "preapproval_ip_name")]["apiField"],
+            "preApprovalIpName",
+        )
+        self.assertEqual(
+            by_target[("ProductPresave", "brand_name")]["apiField"],
+            "drugBrandName",
+        )
+        self.assertEqual(
+            by_target[("ProductPresaveActiveSubstance", "substance_termid_version")]["apiField"],
+            "substanceTermIdVersion",
+        )
+        for field in fields:
+            if "Uuid" in field["dto"]["type"]:
+                self.assertEqual(len(field["_presaveCandidates"]), 7)
+                self.assertIn("00000000-0000-0000-0000-000000000000", field["_presaveCandidates"][:-1])
+                self.assertIsNone(field["_presaveCandidates"][-1])
+        self.assertTrue(by_target[("ProductPresave", "receiver_presave_id")]["dto"]["nullClear"])
+        self.assertTrue(by_target[("ProductPresave", "investigational_product_blinded")]["dto"]["nullClear"])
+        self.assertEqual(
+            {(field["model"], field["backendField"], field["group"]) for field in fields
+             if field["model"] in {"StudyPresaveProduct", "StudyPresaveReporter"}},
+            {
+                ("StudyPresaveProduct", "sequence_number", "products"),
+                ("StudyPresaveProduct", "product_presave_id", "products"),
+                ("StudyPresaveProduct", "product_name", "products"),
+                ("StudyPresaveReporter", "sequence_number", "reporters"),
+                ("StudyPresaveReporter", "reporter_presave_id", "reporters"),
+                ("StudyPresaveReporter", "reporter_organization", "reporters"),
+                ("StudyPresaveReporter", "reporter_given_name", "reporters"),
+                ("StudyPresaveReporter", "reporter_qualification", "reporters"),
+            },
+        )
+
+    def test_registry_non_scalars_are_explicitly_accounted_for(self) -> None:
+        inventory = []
+        excluded = []
+        presave_fuzzer.load_fields(
+            list(presave_fuzzer.SECTIONS), excluded, [], inventory)
+        counts = {kind: sum(item["disposition"] == kind for item in inventory)
+                  for kind in {item["disposition"] for item in inventory}}
+        self.assertEqual(counts, {
+            "scalar": 143,
+            "collection": 9,
+            "alias": 7,
+            "lifecycle": 3,
+            "server_owned": 9,
+        })
+        self.assertFalse(excluded)
+        self.assertTrue(all(item["covered_by"] for item in inventory))
+
+    def test_presave_expectations_distinguish_encoding_storage_and_submission(self) -> None:
+        field = {"code": "C.2.r.1.1", "official": {
+            "dictionary_file": "ich-e2br3.json", "max_length": "50"}}
+        self.assertEqual(presave_fuzzer.presave_expectation(field, "한글"), ("accept", None))
+        self.assertEqual(presave_fuzzer.presave_expectation(field, ["text"]), ("reject", "INPUT.JSON.INVALID"))
+        self.assertEqual(presave_fuzzer.presave_expectation(field, "a" * 51), ("reject", "ICH.C.2.r.1.1.LENGTH.MAX"))
+        self.assertEqual(presave_fuzzer.presave_expectation({"code": "G.k.2.5"}, False), ("reject", "ICH.G.k.2.5.ALLOWED.VALUE"))
+        self.assertIsNone(presave_fuzzer.presave_expectation({"code": "unknown"}, "value"))
+        country = next(field for field in presave_fuzzer.load_fields(["sender"], unsupported=[])
+                       if field["code"] == "C.3.4.5")
+        self.assertEqual(presave_fuzzer.presave_expectation(country, ""), ("accept", None))
+        self.assertEqual(presave_fuzzer.presave_expectation(country, "   "), ("accept", None))
+        mfds = {"code": "C.2.r.4.KR.1", "official": {
+            "dictionary_file": "mfds-regional.json", "max_length": "1",
+            "allowed_values": "1=간호사\n2=기타"}}
+        self.assertEqual(presave_fuzzer.presave_expectation(mfds, "2"), ("accept", None))
+        self.assertEqual(presave_fuzzer.presave_expectation(mfds, "3"), ("reject", "MFDS.C.2.r.4.KR.1.ALLOWED.VALUE"))
+        self.assertEqual(presave_fuzzer.presave_expectation(mfds, "11"), ("reject", "MFDS.C.2.r.4.KR.1.LENGTH.MAX"))
+
+    def test_presave_length_inputs_do_not_fail_unrelated_type_checks(self) -> None:
+        from decimal import Decimal
+        email = presave_fuzzer.mutation_value({"code": "C.3.4.8"}, random.Random(1), 0, 0)
+        self.assertEqual(len(email), 101)
+        self.assertEqual(email.count("@"), 1)
+        number = presave_fuzzer.mutation_value({"code": "G.k.2.3.r.3a"}, random.Random(1), 0, 0)
+        self.assertEqual(Decimal(number), Decimal("11111111111"))
+        self.assertEqual(len(number), 11)
+
+    def test_null_comparison_preserves_nested_values_and_identity(self) -> None:
+        before = {"parent": {"updatedAt": 1, "updatedBy": "user"}, "children": [{"id": "a", "value": "kept", "updatedAt": 1}]}
+        after = {"parent": {"updatedAt": 2, "updatedBy": "user"}, "children": [{"id": "a", "value": "kept", "updatedAt": 2}]}
+        self.assertTrue(presave_fuzzer.unchanged_row_values(before, after))
+        after["children"][0]["value"] = None
+        self.assertFalse(presave_fuzzer.unchanged_row_values(before, after))
+        after["children"][0]["value"] = "kept"
+        after["parent"]["updatedBy"] = "other"
+        self.assertTrue(presave_fuzzer.unchanged_row_values(before, after))
+        after["children"][0]["id"] = "other"
+        self.assertFalse(presave_fuzzer.unchanged_row_values(before, after))
+
+    def test_readback_and_audit_cannot_hide_ignored_input(self) -> None:
+        for candidate, before, actual, complete, changed, expected in (
+            (None, "old", "old", False, False, "NOOP_ACCEPTED"),
+            (None, "old", None, True, True, "NULL_IGNORE_MISMATCH"),
+            (None, "old", "old", True, True, "NULL_IGNORE_MISMATCH"),
+            (None, None, None, False, False, "NOOP_ACCEPTED"),
+            ("", "old", "old", False, False, "CLEAR_NOT_APPLIED"),
+            ("new", "old", "old", False, False, "SAVE_READBACK_MISMATCH"),
+            ("new", "old", "new", False, True, "AUDIT_MISMATCH"),
+            ("new", "old", "new", True, True, "SAVE_ACCEPTED"),
+            ("old", "old", "old", False, False, "NOOP_ACCEPTED"),
+            ("", "old", None, True, True, "SAVE_NORMALIZED"),
+        ):
+            with self.subTest(expected=expected):
+                self.assertEqual(presave_fuzzer.saved_value_classification(
+                    candidate, before, actual, complete, changed), expected)
+
+    def test_explicit_nullable_patch_requires_clear_and_audit(self) -> None:
+        for actual, complete, changed, expected in [
+            (None, True, True, "SAVE_ACCEPTED"),
+            (True, False, False, "SAVE_READBACK_MISMATCH"),
+            (None, False, True, "AUDIT_MISMATCH"),
+        ]:
+            self.assertEqual(presave_fuzzer.saved_value_classification(
+                None, True, actual, complete, changed, null_clears=True), expected)
+        country = next(field for field in presave_fuzzer.load_fields(["study"], unsupported=[])
+                       if field["code"] == "C.5.1.r.2")
+        self.assertEqual(presave_fuzzer.presave_expectation(
+            country, "\t\t\t"), ("reject", "INVALID_REQUEST"))
+
+    def test_partial_and_unknown_campaigns_fail(self) -> None:
+        import time
+        with tempfile.TemporaryDirectory() as directory:
+            args = presave_fuzzer.parser().parse_args([
+                "--sections", "reporter", "--seed", "1", "--artifact-dir", directory])
+            args.planned_mutations = 1
+            args.runner_sha256 = "isolated-test-runner"
+            args.contract_sha256 = "isolated-test-contract"
+            args.excluded_fields = []
+            args.unsupported_contract_pairs = []
+            args.interrupted = None
+            events = [{"kind": "lifecycle", "classification": "PASS"} for _ in range(3)]
+            self.assertEqual(presave_fuzzer.write_artifacts(
+                args, events, {}, [], 0, time.monotonic(), None), 1)
+            events.append({"kind": "mutation", "classification": "NO_EXPECTATION"})
+            self.assertEqual(presave_fuzzer.write_artifacts(
+                args, events, {}, [], 0, time.monotonic(), None), 1)
+            events[-1]["classification"] = "SAVE_ACCEPTED"
+            self.assertEqual(presave_fuzzer.write_artifacts(
+                args, events, {}, [], 0, time.monotonic(), None), 0)
+            args.interrupted = "deadline"
+            self.assertEqual(presave_fuzzer.write_artifacts(
+                args, events, {}, [], 0, time.monotonic(), None), 2)
 
 
 class CaseEditorInputFuzzerTests(unittest.TestCase):

@@ -171,9 +171,10 @@ fn patch_d_section_keeps_empty_autopsy_cause_without_parent_answer() {
 	};
 
 	let raw = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><primaryRole><player1><name/><birthTime/><administrativeGenderCode/></player1></primaryRole></MCCI_IN200100UV01>"#;
-	let patched =
-		patch_d_patient(raw, &patch).expect("patch empty autopsy cause");
-	let doc = Parser::default().parse_string(&patched).expect("parse patched");
+	let patched = patch_d_patient(raw, &patch).expect("patch empty autopsy cause");
+	let doc = Parser::default()
+		.parse_string(&patched)
+		.expect("parse patched");
 	let mut xpath = Context::new(&doc).expect("xpath");
 	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
 

@@ -24,7 +24,7 @@ use lib_core::model::presave::{
 	StudyPresaveFdaCrossReportedIndNumberBmc,
 	StudyPresaveFdaCrossReportedIndNumberForCreate,
 	StudyPresaveFdaCrossReportedIndNumberForUpdate, StudyPresaveForCreate,
-	StudyPresaveProductBmc, StudyPresaveProductForCreate,
+	StudyPresaveForUpdate, StudyPresaveProductBmc, StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumberBmc,
 	StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
@@ -382,19 +382,6 @@ async fn presave_lifecycle_reference_race_preserves_active_reference_invariant(
 	let receiver = ReceiverPresaveBmc::get(&ctx, &setup_mm, receiver_id).await?;
 	assert!(!receiver.deleted);
 	Ok(())
-}
-
-fn expect_store_error<T>(result: lib_core::model::Result<T>, expected: &str) {
-	match result {
-		Err(ModelError::Store(message)) => assert!(
-			message.contains(expected),
-			"expected Store error containing {expected:?}, got {message:?}"
-		),
-		Err(err) => {
-			panic!("expected Store error containing {expected:?}, got {err:?}")
-		}
-		Ok(_) => panic!("expected Store error containing {expected:?}, got Ok"),
-	}
 }
 
 fn expect_validation_error<T>(result: lib_core::model::Result<T>, expected: &str) {
@@ -1629,7 +1616,15 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 	);
 	study.product_presave_id = Some(product_id);
 	study.exclude_case_key_from_sync = Some(true);
+	study.sponsor_study_number_kind = Some("STUDY_NO".into());
 	let study_id = StudyPresaveBmc::create(&ctx, &mm, study).await?;
+	assert_eq!(
+		StudyPresaveBmc::get(&ctx, &mm, study_id)
+			.await?
+			.sponsor_study_number_kind
+			.as_deref(),
+		Some("STUDY_NO")
+	);
 	StudyPresaveProductBmc::create(
 		&ctx,
 		&mm,
@@ -1649,9 +1644,29 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 	);
 	invalid_kind_study.product_presave_id = Some(product_id);
 	invalid_kind_study.sponsor_study_number_kind = Some("other_no".into());
-	expect_store_error(
+	expect_validation_error(
 		StudyPresaveBmc::create(&ctx, &mm, invalid_kind_study).await,
 		"sponsor_study_number_kind",
+	);
+	expect_validation_error(
+		StudyPresaveBmc::update(
+			&ctx,
+			&mm,
+			study_id,
+			StudyPresaveForUpdate {
+				sponsor_study_number_kind: Some(String::new()),
+				..Default::default()
+			},
+		)
+		.await,
+		"sponsor_study_number_kind",
+	);
+	assert_eq!(
+		StudyPresaveBmc::get(&ctx, &mm, study_id)
+			.await?
+			.sponsor_study_number_kind
+			.as_deref(),
+		Some("STUDY_NO")
 	);
 
 	Ok(())

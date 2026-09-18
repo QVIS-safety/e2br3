@@ -1746,10 +1746,8 @@ mod tests {
 				.iter()
 				.any(|entry| entry.element == element && entry.value_code == value));
 
-			let missing_value = xml.replace(
-				&format!("<value code=\"{value}\"/>"),
-				"<value/>",
-			);
+			let missing_value =
+				xml.replace(&format!("<value code=\"{value}\"/>"), "<value/>");
 			let error = parse_g_drugs(with_drug_role(&missing_value).as_bytes())
 				.expect_err("matching device-code element requires its value code");
 			assert!(error.to_string().contains("REQUIRED"), "{error}");
