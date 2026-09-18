@@ -558,7 +558,7 @@ BEGIN
         -- audit trails from no-op saves.
         v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
         v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
-        IF v_old_business = v_new_business THEN
+        IF NOT audit_jsonb_is_distinct(v_old_business, v_new_business) THEN
             RETURN NEW;
         END IF;
 
@@ -627,7 +627,7 @@ BEGIN
         -- audit trails from no-op saves.
         v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
         v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
-        IF v_old_business = v_new_business THEN
+        IF NOT audit_jsonb_is_distinct(v_old_business, v_new_business) THEN
             RETURN NEW;
         END IF;
 
@@ -694,7 +694,7 @@ BEGIN
     ELSIF TG_OP = 'UPDATE' THEN
         v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
         v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
-        IF v_old_business = v_new_business THEN
+        IF NOT audit_jsonb_is_distinct(v_old_business, v_new_business) THEN
             RETURN NEW;
         END IF;
 
@@ -1985,7 +1985,7 @@ DECLARE
 BEGIN
   v_old_business := to_jsonb(p_old) - 'updated_at' - 'updated_by';
   v_new_business := to_jsonb(p_new) - 'updated_at' - 'updated_by';
-  RETURN v_old_business IS DISTINCT FROM v_new_business;
+  RETURN audit_jsonb_is_distinct(v_old_business, v_new_business);
 END;
 $$ LANGUAGE plpgsql;
 

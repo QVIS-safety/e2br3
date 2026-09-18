@@ -1255,6 +1255,25 @@ EXCEPTION
 END;
 $$;
 
+-- Fast exact inequality for JSONB values. Different hashes prove inequality;
+-- equal hashes still use PostgreSQL's native comparison for collision safety.
+CREATE OR REPLACE FUNCTION audit_jsonb_is_distinct(
+    p_old JSONB,
+    p_new JSONB
+)
+RETURNS BOOLEAN
+LANGUAGE SQL
+IMMUTABLE
+PARALLEL SAFE
+AS $$
+    SELECT CASE
+        WHEN pg_catalog.jsonb_hash_extended(p_old, 0)
+             IS DISTINCT FROM pg_catalog.jsonb_hash_extended(p_new, 0)
+            THEN TRUE
+        ELSE p_old IS DISTINCT FROM p_new
+    END;
+$$;
+
 -- Compute field-level delta as:
 -- {"path.to.field": {"old": <jsonb>, "new": <jsonb>}}
 CREATE OR REPLACE FUNCTION compute_audit_changed_fields(
@@ -1301,7 +1320,7 @@ BEGIN
                 IF v_nested <> '{}'::JSONB THEN
                     v_result := v_result || v_nested;
                 END IF;
-            ELSIF v_old_value IS DISTINCT FROM v_new_value THEN
+            ELSIF audit_jsonb_is_distinct(v_old_value, v_new_value) THEN
                 v_result := v_result || jsonb_build_object(
                     v_path,
                     jsonb_build_object('old', v_old_value, 'new', v_new_value)
@@ -1311,7 +1330,7 @@ BEGIN
         RETURN v_result;
     END IF;
 
-    IF p_old IS DISTINCT FROM p_new THEN
+    IF audit_jsonb_is_distinct(p_old, p_new) THEN
         v_path := CASE
             WHEN p_prefix IS NULL OR p_prefix = '' THEN '$'
             ELSE p_prefix
@@ -1443,6 +1462,8 @@ GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT, TEXT) TO e2br3_app_
 GRANT EXECUTE ON FUNCTION get_current_change_reason() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_change_category() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_esignature_id() TO e2br3_app_role;
+REVOKE ALL ON FUNCTION audit_jsonb_is_distinct(JSONB, JSONB) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION audit_jsonb_is_distinct(JSONB, JSONB) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION compute_audit_changed_fields(JSONB, JSONB, TEXT) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_auditor_role;
