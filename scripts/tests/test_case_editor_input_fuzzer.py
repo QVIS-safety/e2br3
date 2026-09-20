@@ -249,6 +249,48 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertFalse(fuzzer.values_equal(64.5, ["64.50", "99"]))
         self.assertFalse(fuzzer.values_equal(["x"], ["y"]))
 
+    def test_ae_list_projection_row_id(self) -> None:
+        reaction_id = "e5f7f72f-f77e-4454-b25a-2caadffc8ee5"
+        projection = {
+            "caseId": "8e96c341-c00d-4f75-8188-e41a6740b0e4",
+            "pageId": "AE",
+            "rows": {"rows": [{"id": reaction_id, "sequenceNumber": 1}]},
+        }
+        self.assertEqual(fuzzer.extract_row_id(projection, "rows"), reaction_id)
+        self.assertIsNone(fuzzer.extract_row_id(projection, "reaction"))
+
+    def test_nested_drug_identity_extraction_requires_projected_ids(self) -> None:
+        relatedness_id = "11111111-1111-1111-1111-111111111111"
+        assessment_id = "22222222-2222-2222-2222-222222222222"
+        reaction_id = "33333333-3333-3333-3333-333333333333"
+        current = [{
+            "id": relatedness_id,
+            "drugReactionAssessmentId": assessment_id,
+            "reactionId": reaction_id,
+            "sourceOfAssessment": "Reporter",
+        }]
+        identity = fuzzer.object_identity(current)
+        self.assertEqual(identity, {
+            "id": relatedness_id,
+            "drugReactionAssessmentId": assessment_id,
+            "reactionId": reaction_id,
+        })
+        self.assertNotIn(
+            "id",
+            fuzzer.object_identity([{
+                "drugReactionAssessmentId": assessment_id,
+                "reactionId": reaction_id,
+            }]),
+        )
+        self.assertNotIn(
+            "drugReactionAssessmentId",
+            fuzzer.object_identity([{
+                "id": relatedness_id,
+                "reactionId": reaction_id,
+            }]),
+        )
+        self.assertEqual(fuzzer.object_identity([{"id": "not-a-uuid"}]), {})
+
     def test_unicode_and_exact_length_candidates(self) -> None:
         field = {"roundTripValue": "base", "_maxLength": 4}
         self.assertEqual(fuzzer.candidate_count(field, 99), 17)
@@ -268,18 +310,79 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
 
     def test_generated_max_lengths_and_candidate_caps(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        limits = fuzzer.load_max_lengths(root)
+        limits, max_only = fuzzer.load_max_lengths(root)
         self.assertEqual(limits["ICH.C.1.1.LENGTH.MAX"], 100)
+        self.assertIn("ICH.G.k.9.i.2.r.1.LENGTH.MAX", max_only)
+        self.assertNotIn("FDA.G.k.1.a.LENGTH.MAX", max_only)
         contract = [{"fields": [{
             "authority": "ICH",
             "code": "C.1.11.1",
             "roundTripValue": "base",
             "constraint": {"ruleCode": "ICH.C.1.11.1.ALLOWED.VALUE"},
         }]}]
-        self.assertEqual(fuzzer.apply_max_lengths(contract, limits), 1)
+        self.assertEqual(fuzzer.apply_max_lengths(contract, (limits, max_only)), 1)
         self.assertEqual(contract[0]["fields"][0]["_maxLength"], 1)
         self.assertEqual(fuzzer.candidate_count({"roundTripValue": 1}, 17), 8)
         self.assertEqual(fuzzer.candidate_count({"roundTripValue": ["x"]}, 17), 14)
+
+    def test_max_length_only_expectations_and_projection_empty_noop(self) -> None:
+        field = {
+            "_maxLength": 60,
+            "_maxLengthRule": "ICH.G.k.9.i.2.r.1.LENGTH.MAX",
+            "_maxLengthOnly": True,
+        }
+        self.assertEqual(fuzzer.candidate_expectation(field, 1, None), ("accept", None))
+        self.assertEqual(fuzzer.candidate_expectation(field, 3, "x" * 60), ("accept", None))
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 3, "  " + "🙂" * 60 + "  "),
+            ("accept", None),
+        )
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 3, "  " + "🙂" * 61 + "  "),
+            ("reject", "ICH.G.k.9.i.2.r.1.LENGTH.MAX"),
+        )
+        self.assertIsNone(fuzzer.candidate_expectation(field, 3, 123))
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 7, ["unexpected"]),
+            ("reject", "ICH.G.k.9.i.2.r.1.LENGTH.MAX"),
+        )
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 11, "x" * 61),
+            ("reject", "ICH.G.k.9.i.2.r.1.LENGTH.MAX"),
+        )
+        self.assertEqual(fuzzer.candidate_expectation(field, 12, "\ud800"), ("reject", None))
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 13, "\x7f"),
+            ("reject", "INPUT.CONTROL_CHAR.REJECTED"),
+        )
+        field["_maxLengthOnly"] = False
+        self.assertIsNone(fuzzer.candidate_expectation(field, 3, "valid length"))
+        self.assertEqual(fuzzer.normalized_classification([None], [None], False), "NOOP_ACCEPTED")
+        self.assertEqual(
+            fuzzer.normalized_classification([None, None], [None, None], False),
+            "CLEAR_NOT_APPLIED",
+        )
+
+    def test_length_candidates_preserve_known_value_grammar(self) -> None:
+        coded = {"code": "C.1.3", "roundTripValue": "1", "_maxLength": 1}
+        meddra = {
+            "code": "D.10.7.1.r.1b",
+            "roundTripValue": "10000001",
+            "_maxLength": 8,
+        }
+        email = {
+            "code": "C.3.4.8",
+            "roundTripValue": "sender@example.test",
+            "_maxLength": 100,
+            "constraint": {"invalidValue": "X" * 101},
+        }
+        self.assertEqual(fuzzer.field_value(coded, random.Random(1), 14), "1")
+        self.assertEqual(fuzzer.field_value(meddra, random.Random(1), 14), "10000001")
+        for ordinal, length in ((0, 101), (14, 100), (15, 101), (16, 200)):
+            value = fuzzer.field_value(email, random.Random(1), ordinal)
+            self.assertEqual(len(value), length)
+            self.assertEqual(len(value.split("@")), 2)
+            self.assertEqual(value.rsplit("@", 1)[1], "a.co")
 
     def test_generated_identifier_boolean_rules_and_expectations(self) -> None:
         root = Path(__file__).resolve().parents[2]
@@ -431,6 +534,103 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             fuzzer.field_value(field, random.Random(1), 18)
         self.assertEqual(fuzzer.parser().parse_args([]).samples_per_category, 3)
         self.assertEqual(fuzzer.parser().parse_args(["--field", "H.1"]).field, ["H.1"])
+
+    def test_live_intake_requires_explicit_product_and_meddra_inputs(self) -> None:
+        with mock.patch.dict(
+            fuzzer.os.environ,
+            {"E2BR3_PRODUCT_KEY": "", "E2BR3_MEDDRA_VERSION": "", "E2BR3_MEDDRA_CODE": ""},
+        ), mock.patch.object(fuzzer, "guard_target"):
+            with self.assertRaisesRegex(SystemExit, "product-key"):
+                fuzzer.main(fuzzer.parser().parse_args(["--values-per-field", "0"]))
+            with self.assertRaisesRegex(SystemExit, "meddra-version"):
+                fuzzer.main(fuzzer.parser().parse_args([
+                    "--values-per-field", "0", "--product-key", "PRODUCT-1",
+                ]))
+        with mock.patch.dict(fuzzer.os.environ, {
+            "E2BR3_PRODUCT_KEY": "PRODUCT-1",
+            "E2BR3_MEDDRA_VERSION": "28.1",
+            "E2BR3_MEDDRA_CODE": "10019211",
+        }):
+            args = fuzzer.parser().parse_args([])
+            self.assertEqual(
+                (args.product_key, args.meddra_version, args.meddra_code),
+                ("PRODUCT-1", "28.1", "10019211"),
+            )
+
+    def test_case_bootstrap_uses_intake_and_checks_ui_shell(self) -> None:
+        calls = []
+        case_id = "11111111-1111-1111-1111-111111111111"
+
+        class Client:
+            def __init__(self, *_args):
+                pass
+
+            def request(self, method, path, payload=None):
+                calls.append((method, path, payload))
+                if path == "/auth/v1/login":
+                    return 200, '{"data":{}}', None
+                if path == "/api/presaves/products":
+                    return 200, '{"data":[{"product_id":"PRODUCT-1"}]}', None
+                if path == "/api/cases/from-intake":
+                    return 201, '{"data":{"case_id":"%s"}}' % case_id, None
+                if path == f"/api/cases/{case_id}/editor/shell":
+                    return 200, '{"data":{}}', None
+                raise AssertionError(f"unexpected request: {method} {path}")
+
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            with (
+                mock.patch.object(fuzzer, "ApiClient", Client),
+                mock.patch.object(fuzzer, "guard_target"),
+            ):
+                args = fuzzer.parser().parse_args([
+                    "--pages", "CI", "--values-per-field", "0", "--no-run-gates",
+                    "--max-actions", "4",
+                    "--password", "fixture-password",
+                    "--artifact-dir", artifact_dir, "--product-key", "PRODUCT-1",
+                    "--meddra-version", "28.1", "--meddra-code", "10019211",
+                ])
+                self.assertEqual(fuzzer.main(args), 2)
+
+        create = next(call for call in calls if call[1] == "/api/cases/from-intake")
+        intake = create[2]["data"]
+        self.assertEqual(intake["dg_prd_key"], "PRODUCT-1")
+        self.assertEqual(intake["reaction_meddra_version"], "28.1")
+        self.assertEqual(intake["reaction_meddra_code"], "10019211")
+        self.assertNotIn("allow_duplicate_override", intake)
+        self.assertEqual(intake["date_first_received_from_source"], intake["date_of_most_recent_information"])
+        self.assertIn(("GET", f"/api/cases/{case_id}/editor/shell", None), calls)
+
+    def test_case_bootstrap_rejects_inaccessible_product_before_create(self) -> None:
+        calls = []
+
+        class Client:
+            def __init__(self, *_args):
+                pass
+
+            def request(self, method, path, payload=None):
+                calls.append((method, path, payload))
+                if path == "/auth/v1/login":
+                    return 200, '{"data":{}}', None
+                if path == "/api/presaves/products":
+                    return 200, '{"data":[{"product_id":"PRODUCT-1"}]}', None
+                raise AssertionError(f"unexpected request: {method} {path}")
+
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            with (
+                mock.patch.object(fuzzer, "ApiClient", Client),
+                mock.patch.object(fuzzer, "guard_target"),
+            ):
+                args = fuzzer.parser().parse_args([
+                    "--pages", "CI", "--values-per-field", "0", "--no-run-gates",
+                    "--password", "fixture-password", "--artifact-dir", artifact_dir,
+                    "--product-key", "MISSING-PRODUCT", "--meddra-version", "28.1",
+                    "--meddra-code", "10019211",
+                ])
+                self.assertEqual(fuzzer.main(args), 2)
+
+        self.assertEqual([path for _, path, _ in calls], [
+            "/auth/v1/login", "/api/presaves/products",
+        ])
 
     def test_nullflavor_error_candidates_and_value_conflict(self) -> None:
         field = {

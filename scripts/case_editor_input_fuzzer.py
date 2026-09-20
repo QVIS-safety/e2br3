@@ -101,6 +101,14 @@ BOOLEAN_RE = re.compile(
     r'boolean\(\s*&mut issues,\s*"([^"]+)",\s*input\.value',
     re.DOTALL,
 )
+MAX_LENGTH_ONLY_RE = re.compile(
+    r'pub fn \w+\(input: crate::FieldInput<\'_>\) -> Vec<crate::InputIssue> \{'
+    r'\s*let mut issues = Vec::new\(\);'
+    r'\s*crate::helpers::max_length\('
+    r'\s*&mut issues,\s*"([^"]+)",\s*input\.value,\s*\d+,\s*\);'
+    r'\s*issues\s*\}',
+    re.DOTALL,
+)
 CANDIDATE_KINDS = (
     "verified_invalid", "null", "primitive_or_blank", "boundary", "blank",
     "unicode_basic", "control_chars", "type_mismatch", "unicode_nfd",
@@ -130,6 +138,8 @@ class Event:
 
 
 def normalized_classification(actual: Any, before: Any, audit_complete: bool) -> str:
+    if actual == [None] and before == [None]:
+        return "NOOP_ACCEPTED"
     if actual is not None and not is_blank_candidate(actual):
         return "CLEAR_NOT_APPLIED" if values_equal(actual, before) else "NORMALIZATION_UNVERIFIED"
     if values_equal(actual, before):
@@ -183,6 +193,19 @@ def object_id(value: Any) -> str | None:
             if found:
                 return found
     return None
+
+
+def object_identity(value: Any) -> dict[str, str]:
+    if isinstance(value, list):
+        value = next((item for item in value if isinstance(item, dict)), None)
+    if not isinstance(value, dict):
+        return {}
+    return {
+        key: candidate
+        for key in ("id", "drugReactionAssessmentId", "reactionId")
+        if isinstance(candidate := value.get(key), str)
+        and re.fullmatch(r"[0-9a-fA-F-]{36}", candidate)
+    }
 
 
 def set_path(target: dict[str, Any], path: str, value: Any) -> None:
@@ -359,6 +382,9 @@ def field_value(field: dict[str, Any], rng: random.Random, ordinal: int, sample:
     if ordinal == 0:
         if "invalidValue" not in constraint:
             raise ValueError(f"verified field has no invalidValue: {field.get('code')}")
+        if code == "C.3.4.8" and isinstance(field.get("_maxLength"), int):
+            length = field["_maxLength"] + 1
+            return "a" * (length - len("@a.co")) + "@a.co"
         return invalid
     if ordinal == 1:
         return None
@@ -446,6 +472,10 @@ def field_value(field: dict[str, Any], rng: random.Random, ordinal: int, sample:
     if 14 <= ordinal < 17 and isinstance(baseline, str) and isinstance(field.get("_maxLength"), int):
         limit = field["_maxLength"]
         length = (limit, limit + 1, limit + min(max(limit, 64), 4096))[ordinal - 14]
+        if ordinal == 14 and len(baseline) == limit:
+            return baseline
+        if code == "C.3.4.8":
+            return chr(ord("a") + sample % 26) * (length - len("@a.co")) + "@a.co"
         return "".join(chr(rng.randint(0xAC00, 0xD7A3)) for _ in range(length))
     if ordinal == 17 and field.get("_identifierRule"):
         return f"A{sample}{rng.choice([chr(9), chr(10), chr(13)])}B{rng.choice([chr(9), chr(10)])}C"
@@ -478,7 +508,9 @@ def add_nullflavor_partner(field: dict[str, Any], mutation: dict[str, Any], ordi
     return True
 
 
-def candidate_expectation(field: dict[str, Any], ordinal: int) -> tuple[str, str | None] | None:
+def candidate_expectation(
+    field: dict[str, Any], ordinal: int, candidate: Any = ...
+) -> tuple[str, str | None] | None:
     if is_nullflavor_field(field):
         return None
     constraint = field.get("constraint", {})
@@ -497,15 +529,34 @@ def candidate_expectation(field: dict[str, Any], ordinal: int) -> tuple[str, str
             return "length_boundary", field.get("_maxLengthRule")
         if ordinal in {15, 16}:
             return "reject", field.get("_maxLengthRule")
+        if field.get("_maxLengthOnly") and candidate is not ...:
+            if ordinal == 12:
+                return "reject", None
+            if ordinal == 13:
+                return "reject", "INPUT.CONTROL_CHAR.REJECTED"
+            if candidate is None:
+                return "accept", None
+            if isinstance(candidate, (int, float)) and not isinstance(candidate, bool):
+                return None
+            if not isinstance(candidate, str):
+                return "reject", field.get("_maxLengthRule")
+            return (
+                ("reject", field.get("_maxLengthRule"))
+                if len(candidate.strip()) > field["_maxLength"]
+                else ("accept", None)
+            )
     return None
 
 
-def load_max_lengths(root: Path) -> dict[str, int]:
+def load_max_lengths(root: Path) -> tuple[dict[str, int], set[str]]:
     limits: dict[str, int] = {}
+    max_only: set[str] = set()
     for path in sorted((root / "crates/libs/input-contracts/src/generated").glob("*.rs")):
-        for rule_code, limit in MAX_LENGTH_RE.findall(path.read_text(encoding="utf-8")):
+        source = path.read_text(encoding="utf-8")
+        for rule_code, limit in MAX_LENGTH_RE.findall(source):
             limits[rule_code] = int(limit)
-    return limits
+        max_only.update(MAX_LENGTH_ONLY_RE.findall(source))
+    return limits, max_only
 
 
 def load_generated_rules(root: Path, pattern: re.Pattern[str]) -> set[str]:
@@ -547,7 +598,10 @@ def field_rule_prefix(field: dict[str, Any]) -> str:
     return code if code.upper().startswith(f"{authority}.") else f"{authority}.{code}"
 
 
-def apply_max_lengths(contract: list[dict[str, Any]], limits: dict[str, int]) -> int:
+def apply_max_lengths(
+    contract: list[dict[str, Any]], metadata: tuple[dict[str, int], set[str]]
+) -> int:
+    limits, max_only = metadata
     matched = 0
     for page in contract:
         for field in page.get("fields", []):
@@ -555,6 +609,7 @@ def apply_max_lengths(contract: list[dict[str, Any]], limits: dict[str, int]) ->
             if isinstance(field.get("roundTripValue"), str) and rule_code in limits:
                 field["_maxLength"] = limits[rule_code]
                 field["_maxLengthRule"] = rule_code
+                field["_maxLengthOnly"] = rule_code in max_only
                 matched += 1
     return matched
 
@@ -910,6 +965,10 @@ def main(args: argparse.Namespace) -> int:
         raise SystemExit("--samples-per-category must be at least 1")
     if args.values_per_field < 0:
         raise SystemExit("--values-per-field must be nonnegative")
+    if not args.dry_run and not args.product_key:
+        raise SystemExit("set --product-key or E2BR3_PRODUCT_KEY to an accessible product ID")
+    if not args.dry_run and (not args.meddra_version or not args.meddra_code):
+        raise SystemExit("set both --meddra-version and --meddra-code for live intake creation")
     if not args.password and not args.dry_run:
         raise SystemExit("set E2BR3_ADMIN_PASSWORD")
     contract_path = Path(args.contract).resolve()
@@ -1034,15 +1093,51 @@ def main(args: argparse.Namespace) -> int:
         interrupted = interrupted or "login_failed"
 
     if not interrupted:
+        status, products, summary = request("GET", "/api/presaves/products")
+        product_found = (
+            status == 200
+            and isinstance(products, list)
+            and all(isinstance(product, dict) for product in products)
+            and any(product.get("product_id") == args.product_key for product in products)
+        )
+        add(Event("product", None, None, None, None, "PASS" if product_found else "FAIL", status, summary))
+        if not product_found:
+            interrupted = interrupted or "product_key_not_accessible"
+
+    if not interrupted:
+        intake_id = f"FUZZ-{uuid.uuid4().hex[:12]}"
+        intake_date = time.strftime("%Y%m%d", time.gmtime())
         status, created, summary = request(
             "POST",
-            "/api/cases",
-			{"data": {"safetyReportIdentification": {"safetyReportId": f"FUZZ-{uuid.uuid4().hex[:9]}"}, "status": "draft"}},
+            "/api/cases/from-intake",
+            {"data": {
+                "authority": "ich",
+                "safety_report_id": intake_id,
+                "date_first_received_from_source": intake_date,
+                "date_of_most_recent_information": intake_date,
+                "report_type": "1",
+                "status": "draft",
+                "patient_initials": intake_id[-6:],
+                "age_d2_2a": "41",
+                "sex_d5": "2",
+                "dg_prd_key": args.product_key,
+                "reaction_meddra_version": args.meddra_version,
+                "reaction_meddra_code": args.meddra_code,
+                "ae_start_date": intake_date,
+            }},
         )
-        case_id = object_id(created)
+        case_id = created.get("case_id") if isinstance(created, dict) else None
+        if not isinstance(case_id, str) or not re.fullmatch(r"[0-9a-fA-F-]{36}", case_id):
+            case_id = None
         add(Event("create", None, None, None, None, "PASS" if status == 201 and case_id else "FAIL", status, summary))
-        if not case_id:
+        if status != 201 or not case_id:
             interrupted = interrupted or "case_create_failed"
+
+    if case_id and not interrupted:
+        status, _, summary = request("GET", f"/api/cases/{case_id}/editor/shell")
+        add(Event("shell", None, None, "editor_shell", None, "PASS" if status == 200 else "FAIL", status, summary))
+        if status != 200:
+            interrupted = interrupted or "editor_shell_missing"
 
     chain_before: int | None = None
     if case_id and not interrupted:
@@ -1106,24 +1201,14 @@ def main(args: argparse.Namespace) -> int:
             continue
         route = f"/api/cases/{case_id}/editor/pages/{page}"
         if page == "DG" and reaction_id is None:
-            reaction_status, reaction_value, reaction_summary = request(
-                "POST",
-                f"/api/cases/{case_id}/editor/pages/AE/rows",
-                {
-                    "authorities": ["ich"],
-                    "rows": {
-                        "reaction": {
-                            "sequenceNumber": 1,
-                            "primarySourceReaction": "Fuzz reaction",
-                            "reactionMeddraVersionLLT": args.meddra_version or "26.0",
-                            "reactionMeddraCodeLLT": args.meddra_code or "10000001",
-                        }
-                    },
-                },
+            reaction_status, reaction_projection, reaction_summary = request(
+                "GET", f"/api/cases/{case_id}/editor/pages/AE"
             )
-            reaction_id = created_row_id(reaction_value)
-            add(Event("dependency_create", None, page, "reaction", None, "PASS" if reaction_status == 201 and reaction_id else "BASELINE_REJECTED", reaction_status, reaction_summary))
-            if reaction_id is None:
+            reaction_id = extract_row_id(reaction_projection, "rows")
+            ready = reaction_status == 200 and bool(reaction_id)
+            add(Event("dependency_create", None, page, "reaction", None, "PASS" if ready else "BASELINE_REJECTED", reaction_status, reaction_summary))
+            if not ready:
+                interrupted = interrupted or "intake_reaction_missing"
                 continue
         row_route = page in ROW_PAGES
         row_ids: dict[str, str | None] = {}
@@ -1162,20 +1247,31 @@ def main(args: argparse.Namespace) -> int:
             if page == "AE" and owner == "reaction":
                 # AE create contract requires an explicit positive sequence.
                 baseline.setdefault("sequenceNumber", 1)
-                baseline.setdefault("reactionMeddraVersionLLT", args.meddra_version or "26.0")
-                baseline.setdefault("reactionMeddraCodeLLT", args.meddra_code or "10000001")
+                baseline.setdefault("reactionMeddraVersionLLT", args.meddra_version)
+                baseline.setdefault("reactionMeddraCodeLLT", args.meddra_code)
             if page == "DG" and owner == "drug":
                 baseline.setdefault("drugCharacterization", "1")
                 baseline.setdefault("medicinalProduct", "Fuzz product")
                 if reaction_id:
                     set_path(baseline, "drugReactionAssessments[].reactionId", reaction_id)
             if row_route:
-                status, value, summary = request("POST", f"{route}/rows", {"authorities": authorities_for(owner_fields), "rows": {owner: baseline}})
-                row_ids[owner] = created_row_id(value)
-                owner_ready[owner] = status == 201 and bool(row_ids[owner])
                 if page == "AE" and owner == "reaction":
-                    reaction_id = row_ids[owner]
-                add(Event("row_create", None, page, owner, None, "PASS" if status == 201 else "BASELINE_REJECTED", status, summary))
+                    read_status, projection, _ = request("GET", route)
+                    existing_id = extract_row_id(projection, "rows") if read_status == 200 else None
+                    if not existing_id:
+                        owner_ready[owner] = False
+                        add(Event("row_create", None, page, owner, None, "BASELINE_REJECTED", read_status, {"reason": "intake reaction missing"}))
+                        interrupted = interrupted or "intake_reaction_missing"
+                        break
+                    status, _, summary = request("PATCH", f"{route}/rows/{existing_id}", {"authorities": authorities_for(owner_fields), "rows": {owner: baseline}})
+                    row_ids[owner] = existing_id
+                    owner_ready[owner] = status == 200
+                    reaction_id = existing_id
+                else:
+                    status, value, summary = request("POST", f"{route}/rows", {"authorities": authorities_for(owner_fields), "rows": {owner: baseline}})
+                    row_ids[owner] = created_row_id(value)
+                    owner_ready[owner] = status == 201 and bool(row_ids[owner])
+                add(Event("row_create", None, page, owner, None, "PASS" if owner_ready[owner] else "BASELINE_REJECTED", status, summary))
             else:
                 array_owner = any(str(field["payloadPath"]).startswith("[]") for field in owner_fields)
                 status, _, summary = request("PATCH", route, {"authorities": authorities_for(owner_fields), "rows": owner_patch(owner, baseline, array_owner)})
@@ -1187,7 +1283,7 @@ def main(args: argparse.Namespace) -> int:
             if interrupted:
                 break
 
-        nested_row_ids: dict[tuple[str, str], str | None] = {}
+        nested_row_identities: dict[tuple[str, str], dict[str, str]] = {}
         for field in fields:
             if interrupted:
                 break
@@ -1198,7 +1294,7 @@ def main(args: argparse.Namespace) -> int:
                 add(Event("mutation", field["code"], page, owner, None, "SKIPPED_BASELINE", None, {"reason": "owner baseline did not save"}))
                 continue
             root = nested_root(payload_path)
-            if root and (owner, root) not in nested_row_ids:
+            if root and (owner, root) not in nested_row_identities:
                 root_fields = [
                     candidate
                     for candidate in setup_groups.get(owner, fields)
@@ -1218,13 +1314,20 @@ def main(args: argparse.Namespace) -> int:
                 else:
                     status, _, summary = request("PATCH", route, {"authorities": authorities_for(root_fields), "rows": owner_patch(owner, nested_baseline, array_owner)})
                 read_status, current = read_current(page, owner, row_route, row_ids.get(owner))
-                nested_row_ids[(owner, root)] = object_id(get_path(current, root)) if read_status == 200 else None
-                ready = status == 200 and bool(nested_row_ids[(owner, root)])
-                add(Event("nested_baseline", field["code"], page, owner, None, "PASS" if ready else "BASELINE_REJECTED", status, summary))
+                identity = object_identity(get_path(current, root)) if read_status == 200 else {}
+                required_identity = (
+                    {"id", "drugReactionAssessmentId", "reactionId"}
+                    if page == "DG" and root.startswith("drugReactionAssessments[]")
+                    else {"id"}
+                )
+                missing_identity = sorted(required_identity - identity.keys())
+                ready = status == 200 and not missing_identity
+                nested_row_identities[(owner, root)] = identity if ready else {}
+                add(Event("nested_baseline", field["code"], page, owner, None, "PASS" if ready else "BASELINE_REJECTED", status, {**summary, **({"reason": f"nested projection missing {', '.join(missing_identity)}"} if missing_identity else {})}))
                 if not ready:
                     continue
-            if root and not nested_row_ids.get((owner, root)):
-                add(Event("mutation", field["code"], page, owner, None, "SKIPPED_BASELINE", None, {"reason": "nested row baseline did not save"}))
+            if root and not nested_row_identities.get((owner, root)):
+                add(Event("mutation", field["code"], page, owner, None, "SKIPPED_BASELINE", None, {"reason": "nested row baseline identity unavailable"}))
                 continue
             candidates = (
                 (ordinal, sample)
@@ -1250,7 +1353,8 @@ def main(args: argparse.Namespace) -> int:
                 if page == "DG" and "drugReactionAssessments[]" in payload_path and reaction_id:
                     set_path(mutation, "drugReactionAssessments[].reactionId", reaction_id)
                 if root:
-                    set_path(mutation, f"{root}.id", nested_row_ids[(owner, root)])
+                    for key, value in nested_row_identities[(owner, root)].items():
+                        set_path(mutation, f"{root}.{key}", value)
                 if row_ids.get(owner):
                     mutation["id"] = row_ids[owner]
                 audit_path = projection_leaf(field, owner)
@@ -1277,7 +1381,7 @@ def main(args: argparse.Namespace) -> int:
                 else:
                     classification = "SERVER_ERROR" if status >= 500 else "UNEXPECTED_STATUS"
                 invalid_nullflavor = nullflavor_invalid_candidate(field, candidate) or nullflavor_with_value
-                expectation = candidate_expectation(field, ordinal)
+                expectation = candidate_expectation(field, ordinal, candidate)
                 if is_nullflavor_field(field):
                     if invalid_nullflavor:
                         expectation = ("reject", field.get("constraint", {}).get("ruleCode"))
@@ -1320,11 +1424,10 @@ def main(args: argparse.Namespace) -> int:
                             if audit_key_matches(log.get("changedFields", log.get("changed_fields", {})), audit_path)
                         ]
                         audit_complete = any(audit_log_complete(log) for log in matched_logs)
-                        if not changed and (
-                            candidate is None
-                            or is_blank_candidate(candidate)
-                            or values_equal(candidate, before_actual)
-                            or values_equal(candidate, field.get("roundTripValue"))
+                        if (
+                            not changed
+                            and before_status == 200
+                            and values_equal(candidate, before_actual)
                         ):
                             classification = "NOOP_ACCEPTED"
                         elif not changed or not field_match or not audit_complete:
@@ -1340,6 +1443,11 @@ def main(args: argparse.Namespace) -> int:
                             detail.update({"audit_new_logs": len(changed), "audit_complete": audit_complete})
                         else:
                             classification = "CLEAR_NOT_APPLIED" if candidate is None else "SAVE_READBACK_MISMATCH"
+                    if classification == "CLEAR_NOT_APPLIED" and candidate == "":
+                        detail.update({
+                            "surface": "raw_api",
+                            "normalization_explanation": "UI save canonicalizes blank strings to null",
+                        })
                 elif status in {400, 409, 422}:
                     read_status, actual = readback(page, owner, projection_leaf(field, owner), row_route, row_ids.get(owner))
                     logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
@@ -1475,8 +1583,9 @@ def parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float, default=20)
     parser.add_argument("--contract", default=str(DEFAULT_CONTRACT))
     parser.add_argument("--null-flavor-pairs", default=str(DEFAULT_NULL_FLAVOR_PAIRS))
-    parser.add_argument("--meddra-version", help="override contract MedDRA version for a valid fixture")
-    parser.add_argument("--meddra-code", help="override contract MedDRA code for a valid fixture")
+    parser.add_argument("--meddra-version", default=os.getenv("E2BR3_MEDDRA_VERSION"), help="live MedDRA version (or E2BR3_MEDDRA_VERSION)")
+    parser.add_argument("--meddra-code", default=os.getenv("E2BR3_MEDDRA_CODE"), help="live MedDRA code (or E2BR3_MEDDRA_CODE)")
+    parser.add_argument("--product-key", default=os.getenv("E2BR3_PRODUCT_KEY"), help="accessible product_id from GET /api/presaves/products")
     parser.add_argument("--null-flavor-only", action="store_true")
     parser.add_argument("--complete-baseline", action="store_true", help="populate every concrete contract field during owner setup")
     parser.add_argument("--artifact-dir", default="tmp/rbac-rls-fuzz/case-editor-contract")
