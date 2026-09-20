@@ -1053,7 +1053,8 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 				"primary_source_reaction": ae_term,
 				"reaction_meddra_code": "10019211",
 				"reaction_meddra_version": "27.1",
-				"serious": true
+				"serious": false,
+				"criteria_death": true
 			}
 		}),
 	)
@@ -1108,6 +1109,15 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		String::from_utf8_lossy(&raw_body)
 	);
 
+	let (status, raw_body) =
+		get_raw(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(status, StatusCode::OK);
+	let detail: Value = serde_json::from_slice(&raw_body)?;
+	let updated_at = detail["data"]
+		.get("updated_at")
+		.ok_or("case detail is missing updated_at")?;
+	assert!(!updated_at.is_null());
+
 	let (status, raw_body) = get_raw(&app, &cookie, "/api/cases/list-view").await?;
 	assert_eq!(
 		status,
@@ -1130,6 +1140,7 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		"{row:?}"
 	);
 	assert_eq!(row["sender"].as_str(), Some(sender.as_str()), "{row:?}");
+	assert_eq!(row.get("updatedAt"), Some(updated_at), "{row:?}");
 	assert_eq!(row["meddra"].as_str(), Some("10019211"), "{row:?}");
 	assert_eq!(row["aeTerm"].as_str(), Some(ae_term.as_str()), "{row:?}");
 	assert_eq!(row["sae"].as_str(), Some("Yes"), "{row:?}");

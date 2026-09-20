@@ -144,6 +144,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 	match order_by {
 		OrderBy::Asc(field) => match field.as_str() {
 			"created_at" => "c.created_at ASC, c.id ASC",
+			"updated_at" => "c.updated_at ASC, c.id ASC",
 			"case_no" | "caseNo" | "safety_report_id" => {
 				"s.safety_report_id ASC, c.id ASC"
 			}
@@ -155,6 +156,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 		},
 		OrderBy::Desc(field) => match field.as_str() {
 			"created_at" => "c.created_at DESC, c.id DESC",
+			"updated_at" => "c.updated_at DESC, c.id DESC",
 			"case_no" | "caseNo" | "safety_report_id" => {
 				"s.safety_report_id DESC, c.id DESC"
 			}
@@ -189,6 +191,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		r#"
 		SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
 		       c.id AS case_id,
+		       c.updated_at,
 		       COALESCE(NULLIF(s.safety_report_id, ''), c.id::text) AS case_no,
 		       GREATEST(COALESCE(s.version, 1) - 1, 0) AS fu,
 			       COALESCE(
@@ -219,7 +222,13 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       		  FROM reactions r
 		       		 WHERE r.case_id = c.id
 					   AND COALESCE(r.deleted, false) = false
-		       		   AND COALESCE(r.serious, false) = true
+					   AND (COALESCE(r.serious, false) = true
+					        OR COALESCE(r.criteria_death, false) = true
+					        OR COALESCE(r.criteria_life_threatening, false) = true
+					        OR COALESCE(r.criteria_hospitalization, false) = true
+					        OR COALESCE(r.criteria_disabling, false) = true
+					        OR COALESCE(r.criteria_congenital_anomaly, false) = true
+					        OR COALESCE(r.criteria_other_medically_important, false) = true)
 		       	)
 		       	THEN 'Yes'
 		       	ELSE 'No'
@@ -306,7 +315,8 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 
 #[cfg(test)]
 mod list_view_rows_tests {
-	use super::{case_select, list_view_rows_sql};
+	use super::{case_select, list_view_order_clause, list_view_rows_sql};
+	use modql::filter::OrderBys;
 
 	#[test]
 	fn case_select_loads_raw_xml_only_for_details() {
@@ -314,6 +324,23 @@ mod list_view_rows_tests {
 		assert!(list_sql.contains("NULL::bytea AS raw_xml"));
 		assert!(!list_sql.contains("c.raw_xml"));
 		assert!(case_select(true).contains("c.raw_xml AS raw_xml"));
+	}
+
+	#[test]
+	fn list_view_rows_include_case_update_time() {
+		let ascending = OrderBys::from("updated_at");
+		let descending = OrderBys::from("!updated_at");
+		assert_eq!(
+			list_view_order_clause(Some(&ascending)),
+			"c.updated_at ASC, c.id ASC"
+		);
+		assert_eq!(
+			list_view_order_clause(Some(&descending)),
+			"c.updated_at DESC, c.id DESC"
+		);
+		let sql = list_view_rows_sql(list_view_order_clause(Some(&descending)), "");
+		assert!(sql.contains("c.updated_at,"));
+		assert!(sql.contains("ORDER BY c.updated_at DESC, c.id DESC"));
 	}
 
 	#[test]
@@ -331,6 +358,23 @@ mod list_view_rows_tests {
 		assert!(sql.contains(
 			"lower(COALESCE(c.status_before_lock, '')) IN ('reviewed', 'validated')"
 		));
+	}
+
+	#[test]
+	fn active_seriousness_criteria_mark_case_list_rows_as_sae() {
+		let sql = list_view_rows_sql("c.created_at DESC", "");
+		let sql = sql.split_whitespace().collect::<Vec<_>>().join(" ");
+		assert!(sql.contains("COALESCE(r.deleted, false) = false"));
+		for criterion in [
+			"criteria_death",
+			"criteria_life_threatening",
+			"criteria_hospitalization",
+			"criteria_disabling",
+			"criteria_congenital_anomaly",
+			"criteria_other_medically_important",
+		] {
+			assert!(sql.contains(criterion));
+		}
 	}
 }
 
@@ -432,6 +476,7 @@ pub struct CaseLinkOption {
 pub struct CaseListViewRow {
 	pub no: i64,
 	pub case_id: Uuid,
+	pub updated_at: OffsetDateTime,
 	pub case_no: String,
 	pub fu: i32,
 	pub date_of_creation: String,
