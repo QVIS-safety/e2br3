@@ -417,15 +417,7 @@ async fn test_system_admin_can_list_audit_logs_by_record() -> Result<()> {
 async fn test_case_audit_trail_paginates_projected_rows() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_two_orgs_manager_cases(&mm).await?;
-	let system_admin = insert_user(
-		&mm,
-		seed.org1_id,
-		ROLE_SYSTEM_ADMIN,
-		system_user_id(),
-		Some("systempwd"),
-	)
-	.await?;
-	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let token = generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
 	let app = web_server::app(mm);
 
 	let get_page = |offset| {
