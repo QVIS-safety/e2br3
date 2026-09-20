@@ -212,7 +212,7 @@ fn export_e_reaction_omits_unverified_mfds_device_extensions() {
 }
 
 #[test]
-fn export_e_reaction_requires_outcome() {
+fn export_e_reaction_without_outcome_does_not_block_export() {
 	let reaction = Reaction {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
@@ -273,8 +273,22 @@ fn export_e_reaction_requires_outcome() {
 		updated_by: None,
 	};
 
-	let err = export_e_reactions_xml(&[reaction])
-		.expect_err("missing outcome should fail");
-	let msg = format!("{err}");
-	assert!(msg.contains("ICH.E.i.7.REQUIRED"));
+	let xml = export_e_reactions_xml(&[reaction]).expect("export XML");
+	let doc = Parser::default().parse_string(&xml).expect("parse");
+	let mut xpath = Context::new(&doc).expect("xpath");
+	xpath
+		.register_namespace("hl7", "urn:hl7-org:v3")
+		.expect("namespace");
+	assert_eq!(
+		xpath
+			.findvalue("count(//hl7:subjectOf2/hl7:observation)", None)
+			.expect("reaction count"),
+		"1"
+	);
+	assert_eq!(
+		xpath
+			.findvalue("count(//hl7:observation[hl7:code[@code='27']])", None)
+			.expect("outcome count"),
+		"0"
+	);
 }
