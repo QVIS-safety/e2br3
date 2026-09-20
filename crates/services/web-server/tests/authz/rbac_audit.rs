@@ -414,6 +414,69 @@ async fn test_system_admin_can_list_audit_logs_by_record() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_audit_trail_paginates_projected_rows() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_two_orgs_manager_cases(&mm).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org1_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let get_page = |offset| {
+		Request::builder()
+			.method("GET")
+			.uri(format!(
+				"/api/cases/{}/audit-trail?list_options.limit=1&list_options.offset={offset}&list_options.order_bys=!created_at",
+				seed.case_org1
+			))
+			.header("cookie", cookie_header(&token.to_string()))
+			.body(Body::empty())
+	};
+	let first_res = app.clone().oneshot(get_page(0)?).await?;
+	assert_eq!(first_res.status(), StatusCode::OK);
+	let first: serde_json::Value =
+		serde_json::from_slice(&to_bytes(first_res.into_body(), usize::MAX).await?)?;
+	let second_res = app.oneshot(get_page(1)?).await?;
+	assert_eq!(second_res.status(), StatusCode::OK);
+	let second: serde_json::Value = serde_json::from_slice(
+		&to_bytes(second_res.into_body(), usize::MAX).await?,
+	)?;
+	let first_rows = first["data"]
+		.as_array()
+		.ok_or("expected first audit page")?;
+	let second_rows = second["data"]
+		.as_array()
+		.ok_or("expected second audit page")?;
+	assert_eq!(first_rows.len(), 1);
+	assert_eq!(second_rows.len(), 1);
+	assert_ne!(first_rows[0], second_rows[0]);
+	assert_eq!(first_rows[0]["auditLogId"], second_rows[0]["auditLogId"]);
+	assert_ne!(first_rows[0]["item"], second_rows[0]["item"]);
+	let first_time = time::OffsetDateTime::parse(
+		first_rows[0]["dateTime"]
+			.as_str()
+			.ok_or("first audit row should include an RFC3339 dateTime")?,
+		&time::format_description::well_known::Rfc3339,
+	)?;
+	let second_time = time::OffsetDateTime::parse(
+		second_rows[0]["dateTime"]
+			.as_str()
+			.ok_or("second audit row should include an RFC3339 dateTime")?,
+		&time::format_description::well_known::Rfc3339,
+	)?;
+	assert!(first_time >= second_time);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_user_and_viewer_cannot_list_audit_logs_by_record() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
