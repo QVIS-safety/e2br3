@@ -1724,14 +1724,14 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 		}
 		Err(err) => return Err(err),
 	};
-	let expected_batch_number = format!("BATCH-{case_id}");
 	for expected in [
 		sentinel_wuid.as_str(),
 		sentinel_null_reason.as_str(),
-		expected_batch_number.as_str(),
-		"TEST-SENDER",
-		"ZZFDA",
-		"CDER",
+		sentinel_batch.as_str(),
+		sentinel_batch_sender.as_str(),
+		sentinel_batch_receiver.as_str(),
+		sentinel_msg_sender.as_str(),
+		sentinel_msg_receiver.as_str(),
 	] {
 		assert!(
 			xml.contains(expected),
