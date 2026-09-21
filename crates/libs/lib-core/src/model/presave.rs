@@ -36,6 +36,20 @@ where
 	Option::<T>::deserialize(deserializer).map(Some)
 }
 
+fn deserialize_clearable_text<'de, D>(
+	deserializer: D,
+) -> std::result::Result<Option<String>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	// Serde skips this function for an omitted field. An explicit JSON null is
+	// represented as blank so the same clear-field path handles null and blanks.
+	match Option::<String>::deserialize(deserializer)? {
+		Some(value) => Ok(Some(value)),
+		None => Ok(Some(String::new())),
+	}
+}
+
 macro_rules! clear_blank_patch_fields {
 	($data:expr, [$($field:ident),+ $(,)?]) => {{
 		let mut fields = Vec::new();
@@ -91,7 +105,8 @@ macro_rules! impl_child_bmc {
 		$create:ty,
 		$update:ty,
 		$table:literal,
-		$parent_col:literal
+		$parent_col:literal,
+		[$($text_field:ident),* $(,)?]
 	) => {
 		pub struct $bmc;
 
@@ -103,8 +118,9 @@ macro_rules! impl_child_bmc {
 			pub async fn create(
 				ctx: &Ctx,
 				mm: &ModelManager,
-				data: $create,
+				mut data: $create,
 			) -> Result<Uuid> {
+				let _ = clear_blank_patch_fields!(data, [$($text_field),*]);
 				base_uuid::create::<Self, _>(ctx, mm, data).await
 			}
 
@@ -134,9 +150,10 @@ macro_rules! impl_child_bmc {
 				ctx: &Ctx,
 				mm: &ModelManager,
 				id: Uuid,
-				data: $update,
+				mut data: $update,
 			) -> Result<()> {
-				base_uuid::update::<Self, _>(ctx, mm, id, data).await
+				let clear_fields = clear_blank_patch_fields!(data, [$($text_field),*]);
+				base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 			}
 
 			pub async fn delete(
@@ -370,16 +387,27 @@ impl IntoOrgScopedCreate for SenderPresaveForCreate {
 pub struct SenderPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub is_default: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sender_type: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub organization_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub organization_name_notation: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub street_address: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub city: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub state: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub postcode: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub country_code: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub telephone: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub fax: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub email: Option<String>,
 }
 
@@ -393,8 +421,24 @@ impl SenderPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: SenderPresaveForCreate,
+		mut data: SenderPresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				sender_type,
+				organization_name,
+				organization_name_notation,
+				street_address,
+				city,
+				state,
+				postcode,
+				country_code,
+				telephone,
+				fax,
+				email
+			]
+		);
 		Self::ensure_sender_count_allowed(ctx, mm).await?;
 		Self::validate_identity(
 			data.sender_type.as_deref(),
@@ -442,22 +486,40 @@ impl SenderPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: SenderPresaveForUpdate,
+		mut data: SenderPresaveForUpdate,
 	) -> Result<()> {
+		let clear_fields = clear_blank_patch_fields!(
+			data,
+			[
+				sender_type,
+				organization_name,
+				organization_name_notation,
+				street_address,
+				city,
+				state,
+				postcode,
+				country_code,
+				telephone,
+				fax,
+				email
+			]
+		);
 		if data.deleted == Some(true) {
 			return Err(validation_error(
 				"presave deletion must use lifecycle service",
 			));
 		}
 		let current = Self::get(ctx, mm, id).await?;
-		let sender_type = data
-			.sender_type
-			.as_deref()
-			.or(current.sender_type.as_deref());
-		let organization_name = data
-			.organization_name
-			.as_deref()
-			.or(current.organization_name.as_deref());
+		let sender_type = patched_text(
+			&data.sender_type,
+			&current.sender_type,
+			clear_fields.contains(&"sender_type"),
+		);
+		let organization_name = patched_text(
+			&data.organization_name,
+			&current.organization_name,
+			clear_fields.contains(&"organization_name"),
+		);
 		Self::validate_identity(sender_type, organization_name)?;
 		Self::ensure_unique_identity(
 			ctx,
@@ -467,7 +529,7 @@ impl SenderPresaveBmc {
 			organization_name,
 		)
 		.await?;
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -566,9 +628,13 @@ pub struct SenderPresaveGatewayForCreate {
 pub struct SenderPresaveGatewayForUpdate {
 	pub sequence_number: Option<i32>,
 	pub gateway_authority: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sender_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub routing_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub cde_sender_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 	pub deleted: Option<bool>,
@@ -580,7 +646,13 @@ impl_child_bmc!(
 	SenderPresaveGatewayForCreate,
 	SenderPresaveGatewayForUpdate,
 	"sender_presave_gateways",
-	"sender_presave_id"
+	"sender_presave_id",
+	[
+		sender_identifier,
+		routing_identifier,
+		cde_sender_identifier,
+		cdr_sender_identifier
+	]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -617,10 +689,15 @@ pub struct SenderPresaveResponsiblePersonForCreate {
 #[derive(Default, Fields, Deserialize)]
 pub struct SenderPresaveResponsiblePersonForUpdate {
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub department: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_title: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_given_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_middle_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_family_name: Option<String>,
 	pub is_default: Option<bool>,
 	pub deleted: Option<bool>,
@@ -632,7 +709,14 @@ impl_child_bmc!(
 	SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate,
 	"sender_presave_responsible_persons",
-	"sender_presave_id"
+	"sender_presave_id",
+	[
+		department,
+		person_title,
+		person_given_name,
+		person_middle_name,
+		person_family_name
+	]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -720,8 +804,11 @@ impl IntoOrgScopedCreate for ReceiverPresaveForCreate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReceiverPresaveForUpdate {
 	pub deleted: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub receiver_type: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub organization_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub day_count_rule: Option<String>,
 	pub nsae_solicited_day_count: Option<i32>,
 	pub nsae_solicited_not_applicable: Option<bool>,
@@ -731,6 +818,7 @@ pub struct ReceiverPresaveForUpdate {
 	pub sae_solicited_not_applicable: Option<bool>,
 	pub sae_non_solicited_day_count: Option<i32>,
 	pub sae_non_solicited_not_applicable: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub description: Option<String>,
 }
 
@@ -748,8 +836,17 @@ impl ReceiverPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: ReceiverPresaveForCreate,
+		mut data: ReceiverPresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				receiver_type,
+				organization_name,
+				day_count_rule,
+				description
+			]
+		);
 		Self::validate_identity(
 			data.receiver_type.as_deref(),
 			data.organization_name.as_deref(),
@@ -805,25 +902,43 @@ impl ReceiverPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: ReceiverPresaveForUpdate,
+		mut data: ReceiverPresaveForUpdate,
 	) -> Result<()> {
+		let clear_fields = clear_blank_patch_fields!(
+			data,
+			[
+				receiver_type,
+				organization_name,
+				day_count_rule,
+				description
+			]
+		);
 		if data.deleted == Some(true) {
 			return Err(validation_error(
 				"presave deletion must use lifecycle service",
 			));
 		}
 		let current = Self::get(ctx, mm, id).await?;
-		let receiver_type = data.receiver_type.as_deref();
+		let receiver_type = if clear_fields.contains(&"receiver_type") {
+			None
+		} else {
+			data.receiver_type.as_deref()
+		};
 		let current_receiver_type = current.receiver_type.as_deref();
-		let organization_name = data
-			.organization_name
-			.as_deref()
-			.or(current.organization_name.as_deref());
-		Self::validate_update_identity(
-			receiver_type,
-			current_receiver_type,
-			organization_name,
-		)?;
+		let organization_name = patched_text(
+			&data.organization_name,
+			&current.organization_name,
+			clear_fields.contains(&"organization_name"),
+		);
+		if clear_fields.contains(&"receiver_type") {
+			Self::validate_identity(None, organization_name)?;
+		} else {
+			Self::validate_update_identity(
+				receiver_type,
+				current_receiver_type,
+				organization_name,
+			)?;
+		}
 		let clear_nsae_non_solicited_day_count =
 			data.nsae_non_solicited_not_applicable == Some(true);
 		let clear_sae_non_solicited_day_count =
@@ -867,7 +982,7 @@ impl ReceiverPresaveBmc {
 				.or(current.sae_solicited_not_applicable),
 		)?;
 		Self::ensure_unique_identity(ctx, mm, Some(id), organization_name).await?;
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await?;
 		Self::clear_not_applicable_day_counts(
 			ctx,
 			mm,
@@ -1102,8 +1217,11 @@ pub struct ReceiverPresaveConsigneeForCreate {
 #[derive(Default, Fields, Deserialize)]
 pub struct ReceiverPresaveConsigneeForUpdate {
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub phone: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub email: Option<String>,
 }
 
@@ -1113,7 +1231,8 @@ impl_child_bmc!(
 	ReceiverPresaveConsigneeForCreate,
 	ReceiverPresaveConsigneeForUpdate,
 	"receiver_presave_consignees",
-	"receiver_presave_id"
+	"receiver_presave_id",
+	[name, phone, email]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -1156,6 +1275,7 @@ pub struct ReceiverPresaveRouteForUpdate {
 	pub sequence_number: Option<i32>,
 	pub authority: Option<String>,
 	pub receiver_label: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub batch_receiver_identifier: Option<String>,
 	pub message_receiver_identifier: Option<String>,
 	pub condition_page: Option<String>,
@@ -1171,7 +1291,8 @@ impl_child_bmc!(
 	ReceiverPresaveRouteForCreate,
 	ReceiverPresaveRouteForUpdate,
 	"receiver_presave_routes",
-	"receiver_presave_id"
+	"receiver_presave_id",
+	[batch_receiver_identifier]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -1304,29 +1425,47 @@ pub struct ProductPresaveForUpdate {
 	pub sender_presave_id: Option<Uuid>,
 	#[serde(default, deserialize_with = "deserialize_patch_option")]
 	pub receiver_presave_id: Option<Option<Uuid>>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub product_id: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub medicinal_product: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub medicinal_product_notation: Option<String>,
 	#[serde(rename = "preApprovalIpName")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub preapproval_ip_name: Option<String>,
 	#[serde(rename = "drugBrandName")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub brand_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub original_manufacturer: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub product_description: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mpid: Option<String>,
 	#[serde(rename = "mpidVersion")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mpid_version: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_mpid: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_mpid_version: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub phpid: Option<String>,
 	#[serde(rename = "phpidVersion")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub phpid_version: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_option")]
 	pub investigational_product_blinded: Option<Option<bool>>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub obtain_drug_country: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub drug_authorization_number: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub drug_authorization_country: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub drug_authorization_holder: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub holder_applicant_name_notation: Option<String>,
 }
 
@@ -1366,8 +1505,31 @@ impl ProductPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: ProductPresaveForCreate,
+		mut data: ProductPresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				product_id,
+				medicinal_product,
+				medicinal_product_notation,
+				preapproval_ip_name,
+				brand_name,
+				original_manufacturer,
+				product_description,
+				mpid,
+				mpid_version,
+				mfds_mpid,
+				mfds_mpid_version,
+				phpid,
+				phpid_version,
+				obtain_drug_country,
+				drug_authorization_number,
+				drug_authorization_country,
+				drug_authorization_holder,
+				holder_applicant_name_notation
+			]
+		);
 		Self::ensure_sender_assignment_allowed(ctx, mm, data.sender_presave_id)
 			.await?;
 		Self::ensure_receiver_assignment_allowed(ctx, mm, data.receiver_presave_id)
@@ -1424,7 +1586,26 @@ impl ProductPresaveBmc {
 	) -> Result<()> {
 		let mut clear_fields = clear_blank_patch_fields!(
 			data,
-			[obtain_drug_country, drug_authorization_country,]
+			[
+				product_id,
+				medicinal_product,
+				medicinal_product_notation,
+				preapproval_ip_name,
+				brand_name,
+				original_manufacturer,
+				product_description,
+				mpid,
+				mpid_version,
+				mfds_mpid,
+				mfds_mpid_version,
+				phpid,
+				phpid_version,
+				obtain_drug_country,
+				drug_authorization_number,
+				drug_authorization_country,
+				drug_authorization_holder,
+				holder_applicant_name_notation
+			]
 		);
 		if matches!(data.receiver_presave_id, Some(None)) {
 			clear_fields.push("receiver_presave_id");
@@ -1449,12 +1630,16 @@ impl ProductPresaveBmc {
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
 				data.sender_presave_id.or(current.sender_presave_id);
-			let product_id =
-				data.product_id.as_deref().or(current.product_id.as_deref());
-			let preapproval_ip_name = data
-				.preapproval_ip_name
-				.as_deref()
-				.or(current.preapproval_ip_name.as_deref());
+			let product_id = patched_text(
+				&data.product_id,
+				&current.product_id,
+				clear_fields.contains(&"product_id"),
+			);
+			let preapproval_ip_name = patched_text(
+				&data.preapproval_ip_name,
+				&current.preapproval_ip_name,
+				clear_fields.contains(&"preapproval_ip_name"),
+			);
 			Self::validate_identity(
 				sender_presave_id,
 				product_id,
@@ -1626,12 +1811,18 @@ pub struct ProductPresaveActiveSubstanceForCreate {
 #[serde(deny_unknown_fields)]
 pub struct ProductPresaveActiveSubstanceForUpdate {
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_termid_version: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_termid: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_version: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub strength_unit: Option<String>,
 }
 
@@ -1641,7 +1832,15 @@ impl_child_bmc!(
 	ProductPresaveActiveSubstanceForCreate,
 	ProductPresaveActiveSubstanceForUpdate,
 	"product_presave_active_substances",
-	"product_presave_id"
+	"product_presave_id",
+	[
+		substance_name,
+		substance_termid_version,
+		substance_termid,
+		mfds_version,
+		mfds_id,
+		strength_unit
+	]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -1798,35 +1997,64 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReporterPresaveForUpdate {
 	pub deleted: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_title: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_title_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_given_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_given_name_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_middle_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_middle_name_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_family_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_family_name_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub organization: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub organization_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub department: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub department_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub street: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub street_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub city: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub city_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub state: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub state_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub postcode: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub postcode_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub telephone: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub telephone_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_email: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_email_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub country_code: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub qualification: Option<String>,
 	// MFDS.C.2.r.4.KR.1 - Other health professional type
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub qualification_kr1: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub primary_source_regulatory: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub qualification_null_flavor: Option<String>,
 }
 
@@ -1840,8 +2068,42 @@ impl ReporterPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: ReporterPresaveForCreate,
+		mut data: ReporterPresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				reporter_title,
+				reporter_title_null_flavor,
+				reporter_given_name,
+				reporter_given_name_null_flavor,
+				reporter_middle_name,
+				reporter_middle_name_null_flavor,
+				reporter_family_name,
+				reporter_family_name_null_flavor,
+				organization,
+				organization_null_flavor,
+				department,
+				department_null_flavor,
+				street,
+				street_null_flavor,
+				city,
+				city_null_flavor,
+				state,
+				state_null_flavor,
+				postcode,
+				postcode_null_flavor,
+				telephone,
+				telephone_null_flavor,
+				reporter_email,
+				reporter_email_null_flavor,
+				country_code,
+				qualification,
+				qualification_kr1,
+				primary_source_regulatory,
+				qualification_null_flavor
+			]
+		);
 		Self::validate_null_flavors(
 			data.reporter_title_null_flavor.as_deref(),
 			data.reporter_given_name_null_flavor.as_deref(),
@@ -1913,19 +2175,32 @@ impl ReporterPresaveBmc {
 		let clear_fields = clear_blank_patch_fields!(
 			data,
 			[
+				reporter_title,
 				reporter_title_null_flavor,
+				reporter_given_name,
 				reporter_given_name_null_flavor,
+				reporter_middle_name,
 				reporter_middle_name_null_flavor,
+				reporter_family_name,
 				reporter_family_name_null_flavor,
+				organization,
 				organization_null_flavor,
+				department,
 				department_null_flavor,
+				street,
 				street_null_flavor,
+				city,
 				city_null_flavor,
+				state,
 				state_null_flavor,
+				postcode,
 				postcode_null_flavor,
+				telephone,
 				telephone_null_flavor,
+				reporter_email,
 				reporter_email_null_flavor,
 				country_code,
+				qualification,
 				qualification_kr1,
 				primary_source_regulatory,
 				qualification_null_flavor,
@@ -1953,18 +2228,21 @@ impl ReporterPresaveBmc {
 		)?;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
-			let reporter_given_name = data
-				.reporter_given_name
-				.as_deref()
-				.or(current.reporter_given_name.as_deref());
-			let organization = data
-				.organization
-				.as_deref()
-				.or(current.organization.as_deref());
-			let qualification = data
-				.qualification
-				.as_deref()
-				.or(current.qualification.as_deref());
+			let reporter_given_name = patched_text(
+				&data.reporter_given_name,
+				&current.reporter_given_name,
+				clear_fields.contains(&"reporter_given_name"),
+			);
+			let organization = patched_text(
+				&data.organization,
+				&current.organization,
+				clear_fields.contains(&"organization"),
+			);
+			let qualification = patched_text(
+				&data.qualification,
+				&current.qualification,
+				clear_fields.contains(&"qualification"),
+			);
 			Self::validate_identity(
 				reporter_given_name,
 				patched_text(
@@ -2214,15 +2492,25 @@ impl StudyPresaveForCreate {
 pub struct StudyPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub product_presave_id: Option<Uuid>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub study_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub study_name_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub study_name_notation: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sponsor_study_number: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sponsor_study_number_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sponsor_study_number_kind: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub study_type_reaction: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub study_type_reaction_kr1: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub fda_ind_number_occurred: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
@@ -2261,8 +2549,23 @@ impl StudyPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: StudyPresaveForCreate,
+		mut data: StudyPresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				study_name,
+				study_name_null_flavor,
+				study_name_notation,
+				sponsor_study_number,
+				sponsor_study_number_null_flavor,
+				sponsor_study_number_kind,
+				study_type_reaction,
+				study_type_reaction_kr1,
+				fda_ind_number_occurred,
+				fda_pre_anda_number_occurred
+			]
+		);
 		data.validate_fields()?;
 		Self::validate_identity(
 			data.product_presave_id,
@@ -2319,9 +2622,16 @@ impl StudyPresaveBmc {
 		let clear_fields = clear_blank_patch_fields!(
 			data,
 			[
+				study_name,
 				study_name_null_flavor,
+				study_name_notation,
+				sponsor_study_number,
 				sponsor_study_number_null_flavor,
+				sponsor_study_number_kind,
+				study_type_reaction,
 				study_type_reaction_kr1,
+				fda_ind_number_occurred,
+				fda_pre_anda_number_occurred
 			]
 		);
 		data.validate_fields()?;
@@ -2334,12 +2644,16 @@ impl StudyPresaveBmc {
 			let current = Self::get(ctx, mm, id).await?;
 			let product_presave_id =
 				data.product_presave_id.or(current.product_presave_id);
-			let sponsor_study_number = data
-				.sponsor_study_number
-				.as_deref()
-				.or(current.sponsor_study_number.as_deref());
-			let study_name =
-				data.study_name.as_deref().or(current.study_name.as_deref());
+			let sponsor_study_number = patched_text(
+				&data.sponsor_study_number,
+				&current.sponsor_study_number,
+				clear_fields.contains(&"sponsor_study_number"),
+			);
+			let study_name = patched_text(
+				&data.study_name,
+				&current.study_name,
+				clear_fields.contains(&"study_name"),
+			);
 			let study_name_null_flavor = data.study_name_null_flavor.as_deref();
 			let study_name_null_flavor = if clear_fields
 				.contains(&"study_name_null_flavor")
@@ -2357,10 +2671,11 @@ impl StudyPresaveBmc {
 					sponsor_study_number_null_flavor
 						.or(current.sponsor_study_number_null_flavor.as_deref())
 				};
-			let study_type_reaction = data
-				.study_type_reaction
-				.as_deref()
-				.or(current.study_type_reaction.as_deref());
+			let study_type_reaction = patched_text(
+				&data.study_type_reaction,
+				&current.study_type_reaction,
+				clear_fields.contains(&"study_type_reaction"),
+			);
 			Self::validate_identity(
 				product_presave_id,
 				sponsor_study_number,
@@ -2457,9 +2772,13 @@ pub struct StudyPresaveRegistrationNumberForCreate {
 #[derive(Default, Fields, Deserialize)]
 pub struct StudyPresaveRegistrationNumberForUpdate {
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub registration_number: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub registration_number_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub country_code: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub country_code_null_flavor: Option<String>,
 	pub deleted: Option<bool>,
 }
@@ -2496,9 +2815,18 @@ impl StudyPresaveRegistrationNumberBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: StudyPresaveRegistrationNumberForCreate,
+		mut data: StudyPresaveRegistrationNumberForCreate,
 	) -> Result<Uuid> {
 		data.validate_fields()?;
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				registration_number,
+				registration_number_null_flavor,
+				country_code,
+				country_code_null_flavor
+			]
+		);
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -2532,7 +2860,12 @@ impl StudyPresaveRegistrationNumberBmc {
 	) -> Result<()> {
 		let clear_fields = clear_blank_patch_fields!(
 			data,
-			[registration_number_null_flavor, country_code_null_flavor,]
+			[
+				registration_number,
+				registration_number_null_flavor,
+				country_code,
+				country_code_null_flavor,
+			]
 		);
 		data.validate_fields()?;
 		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
@@ -2602,7 +2935,9 @@ pub struct StudyPresaveFdaCrossReportedIndNumberForCreate {
 #[derive(Default, Fields, Deserialize)]
 pub struct StudyPresaveFdaCrossReportedIndNumberForUpdate {
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub ind_number: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub ind_number_null_flavor: Option<String>,
 	pub deleted: Option<bool>,
 }
@@ -2617,8 +2952,10 @@ impl StudyPresaveFdaCrossReportedIndNumberBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: StudyPresaveFdaCrossReportedIndNumberForCreate,
+		mut data: StudyPresaveFdaCrossReportedIndNumberForCreate,
 	) -> Result<Uuid> {
+		let _ =
+			clear_blank_patch_fields!(data, [ind_number, ind_number_null_flavor]);
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -2636,7 +2973,8 @@ impl StudyPresaveFdaCrossReportedIndNumberBmc {
 		id: Uuid,
 		mut data: StudyPresaveFdaCrossReportedIndNumberForUpdate,
 	) -> Result<()> {
-		let clear_fields = clear_blank_patch_fields!(data, [ind_number_null_flavor]);
+		let clear_fields =
+			clear_blank_patch_fields!(data, [ind_number, ind_number_null_flavor]);
 		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 	}
 
@@ -2702,6 +3040,7 @@ pub struct StudyPresaveProductForCreate {
 pub struct StudyPresaveProductForUpdate {
 	pub sequence_number: Option<i32>,
 	pub product_presave_id: Option<Uuid>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub product_name: Option<String>,
 	pub deleted: Option<bool>,
 }
@@ -2712,7 +3051,8 @@ impl_child_bmc!(
 	StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate,
 	"study_presave_products",
-	"study_presave_id"
+	"study_presave_id",
+	[product_name]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -2746,8 +3086,11 @@ pub struct StudyPresaveReporterForCreate {
 pub struct StudyPresaveReporterForUpdate {
 	pub sequence_number: Option<i32>,
 	pub reporter_presave_id: Option<Uuid>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_organization: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_given_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub reporter_qualification: Option<String>,
 	pub deleted: Option<bool>,
 }
@@ -2758,7 +3101,12 @@ impl_child_bmc!(
 	StudyPresaveReporterForCreate,
 	StudyPresaveReporterForUpdate,
 	"study_presave_reporters",
-	"study_presave_id"
+	"study_presave_id",
+	[
+		reporter_organization,
+		reporter_given_name,
+		reporter_qualification
+	]
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -2813,9 +3161,13 @@ impl IntoOrgScopedCreate for NarrativePresaveForCreate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NarrativePresaveForUpdate {
 	pub deleted: Option<bool>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub template_title: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub case_narrative: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub case_narrative_notation: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub additional_information: Option<String>,
 }
 
@@ -2829,8 +3181,17 @@ impl NarrativePresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		data: NarrativePresaveForCreate,
+		mut data: NarrativePresaveForCreate,
 	) -> Result<Uuid> {
+		let _ = clear_blank_patch_fields!(
+			data,
+			[
+				template_title,
+				case_narrative,
+				case_narrative_notation,
+				additional_information
+			]
+		);
 		let identity = narrative_presave_identity(
 			data.case_narrative.as_deref(),
 			data.additional_information.as_deref(),
@@ -2871,8 +3232,17 @@ impl NarrativePresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: NarrativePresaveForUpdate,
+		mut data: NarrativePresaveForUpdate,
 	) -> Result<()> {
+		let clear_fields = clear_blank_patch_fields!(
+			data,
+			[
+				template_title,
+				case_narrative,
+				case_narrative_notation,
+				additional_information
+			]
+		);
 		if data.deleted == Some(true) {
 			return Err(validation_error(
 				"presave deletion must use lifecycle service",
@@ -2880,21 +3250,23 @@ impl NarrativePresaveBmc {
 		}
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
-			let case_narrative = data
-				.case_narrative
-				.as_deref()
-				.or(current.case_narrative.as_deref());
-			let additional_information = data
-				.additional_information
-				.as_deref()
-				.or(current.additional_information.as_deref());
+			let case_narrative = patched_text(
+				&data.case_narrative,
+				&current.case_narrative,
+				clear_fields.contains(&"case_narrative"),
+			);
+			let additional_information = patched_text(
+				&data.additional_information,
+				&current.additional_information,
+				clear_fields.contains(&"additional_information"),
+			);
 			let identity =
 				narrative_presave_identity(case_narrative, additional_information);
 			Self::validate_identity(identity.as_deref())?;
 			Self::ensure_unique_identity(ctx, mm, Some(id), identity.as_deref())
 				.await?;
 		}
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

@@ -138,8 +138,10 @@ class Event:
 
 
 def normalized_classification(actual: Any, before: Any, audit_complete: bool) -> str:
-    if actual == [None] and before == [None]:
-        return "NOOP_ACCEPTED"
+    if actual == [None]:
+        if before == [None]:
+            return "NOOP_ACCEPTED"
+        return "SAVE_NORMALIZED" if audit_complete else "AUDIT_MISMATCH"
     if actual is not None and not is_blank_candidate(actual):
         return "CLEAR_NOT_APPLIED" if values_equal(actual, before) else "NORMALIZATION_UNVERIFIED"
     if values_equal(actual, before):

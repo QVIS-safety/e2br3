@@ -398,6 +398,18 @@ pub(super) async fn apply_ci_rows_patch(
 
 	if let Some(row) = optional_row_object("CI", rows, "safetyReportIdentification")?
 	{
+		if row
+			.get("safety_report_id")
+			.or_else(|| row.get("safetyReportId"))
+			.and_then(Value::as_str)
+			.is_some_and(|value| value.trim().is_empty())
+		{
+			return Err(Error::BadRequest {
+				message:
+					"CI.safetyReportIdentification.safetyReportId must not be blank"
+						.to_string(),
+			});
+		}
 		fn patch_string(
 			row: &Map<String, Value>,
 			key: &str,

@@ -163,14 +163,27 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 			"{body}"
 		);
 	}
-	for (section, owner, field, column) in [
-		("LB", "testResult", "testName", "test_name"),
-		("DG", "drug", "medicinalProduct", "medicinal_product"),
+	for (section, owner, field, column, initial) in [
+		("LB", "testResult", "testName", "test_name", "Before"),
+		(
+			"DG",
+			"drug",
+			"medicinalProduct",
+			"medicinal_product",
+			"Before",
+		),
+		(
+			"DG",
+			"drug",
+			"drugCharacterization",
+			"drug_characterization",
+			"1",
+		),
 	] {
 		let id =
 			create_case_for_editor(&app, &cookie, "CLEAR-NAME", &["ich"]).await?;
 		let uri = format!("/api/cases/{id}/editor/pages/{section}/rows");
-		let mut row = json!({field:"Before"});
+		let mut row = json!({field:initial});
 		if section == "DG" {
 			row["activeSubstances"] = json!([{}]);
 			row["dosageInformation"] = json!([{}]);
@@ -223,6 +236,36 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 			"{saved}"
 		);
 	}
+	Ok(())
+}
+
+#[serial_test::serial]
+#[tokio::test]
+async fn blank_safety_report_id_is_rejected() -> crate::common::Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "BLANK-SAFETY-REPORT-ID", &["ich"])
+			.await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/CI");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"safetyReportIdentification":{"safetyReportId":"  "}}}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(
+		body.to_string()
+			.contains("safetyReportId must not be blank"),
+		"{body}"
+	);
 	Ok(())
 }
 

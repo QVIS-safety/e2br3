@@ -18,6 +18,7 @@ use lib_core::model::case::{
 };
 use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
+use lib_core::model::patch::{deserialize_patch_value, PatchValue};
 use lib_core::model::presave::{ReceiverPresave, ReceiverPresaveBmc};
 use lib_core::model::reaction::{Reaction, ReactionBmc};
 use lib_core::model::safety_report::{
@@ -612,27 +613,70 @@ fn to_internal_case_for_create(
 ) -> InternalCaseForCreate {
 	InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
-		dg_prd_key: data.dg_prd_key,
+		dg_prd_key: data.dg_prd_key.filter(|value| !value.trim().is_empty()),
 		status: data.status,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
-		mfds_report_type: data.mfds_report_type,
-		fda_report_type: data.fda_report_type,
-		report_year: data.report_year,
+		mfds_report_type: data
+			.mfds_report_type
+			.filter(|value| !value.trim().is_empty()),
+		fda_report_type: data
+			.fda_report_type
+			.filter(|value| !value.trim().is_empty()),
+		report_year: data.report_year.filter(|value| !value.trim().is_empty()),
 	}
 }
 
-fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpdate {
-	InternalCaseForUpdate {
-		dg_prd_key: data.dg_prd_key,
+fn optional_text_patch(
+	value: PatchValue<String>,
+	field: &'static str,
+	clear_fields: &mut Vec<&'static str>,
+) -> Option<String> {
+	match value {
+		PatchValue::Missing => None,
+		PatchValue::Null => {
+			clear_fields.push(field);
+			None
+		}
+		PatchValue::Value(value) if value.trim().is_empty() => {
+			clear_fields.push(field);
+			None
+		}
+		PatchValue::Value(value) => Some(value),
+	}
+}
+
+fn to_internal_case_for_update(
+	data: PublicCaseForUpdate,
+) -> (InternalCaseForUpdate, Vec<&'static str>) {
+	let mut clear_fields = Vec::new();
+	let update = InternalCaseForUpdate {
+		dg_prd_key: optional_text_patch(
+			data.dg_prd_key,
+			"dg_prd_key",
+			&mut clear_fields,
+		),
 		status: data.status,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
-		mfds_report_type: data.mfds_report_type,
-		fda_report_type: data.fda_report_type,
-		report_year: data.report_year,
+		mfds_report_type: optional_text_patch(
+			data.mfds_report_type,
+			"mfds_report_type",
+			&mut clear_fields,
+		),
+		fda_report_type: optional_text_patch(
+			data.fda_report_type,
+			"fda_report_type",
+			&mut clear_fields,
+		),
+		report_year: optional_text_patch(
+			data.report_year,
+			"report_year",
+			&mut clear_fields,
+		),
 		..Default::default()
-	}
+	};
+	(update, clear_fields)
 }
 
 fn case_status_update(status: String) -> InternalCaseForUpdate {
@@ -719,13 +763,17 @@ pub struct PublicCaseForCreate {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PublicCaseForUpdate {
-	pub dg_prd_key: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub dg_prd_key: PatchValue<String>,
 	pub status: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
-	pub mfds_report_type: Option<String>,
-	pub fda_report_type: Option<String>,
-	pub report_year: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub mfds_report_type: PatchValue<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub fda_report_type: PatchValue<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub report_year: PatchValue<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1377,9 +1425,10 @@ async fn update_case_authorized(
 		reason_for_change,
 		e_signature,
 	} = params;
-	let mut data = to_internal_case_for_update(data);
+	let (mut data, clear_fields) = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
-	let touches_non_status = update_touches_non_status_fields(&data);
+	let touches_non_status =
+		update_touches_non_status_fields(&data) || !clear_fields.is_empty();
 	let current = CaseBmc::get(ctx, mm, id).await?;
 	normalize_review_receivers_for_update(ctx, mm, id, &mut data).await?;
 	let requested_status = data.status.clone();
@@ -1433,7 +1482,12 @@ async fn update_case_authorized(
 		})
 		.unwrap_or(false);
 	let requires_reason_for_identity_or_scope =
-		case_identity_or_scope_update_requires_reason(&current, &data);
+		case_identity_or_scope_update_requires_reason(&current, &data)
+			|| (clear_fields.contains(&"dg_prd_key")
+				&& current
+					.dg_prd_key
+					.as_deref()
+					.is_some_and(|value| !value.trim().is_empty()));
 
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(
@@ -1470,7 +1524,7 @@ async fn update_case_authorized(
 		ctx.clone()
 	};
 
-	CaseBmc::update(&ctx_for_update, mm, id, data).await?;
+	CaseBmc::update_patch(&ctx_for_update, mm, id, data, &clear_fields).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(ctx, mm, id).await?;
 	let entity = CaseBmc::get(ctx, mm, id).await?;
 	let entity = case_to_read_result(ctx, mm, entity).await?;

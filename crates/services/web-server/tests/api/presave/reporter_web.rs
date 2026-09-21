@@ -71,7 +71,7 @@ async fn test_reporter_presave_round_trips_mfds_qualification_detail() -> Result
 		format!("/api/presaves/reporters/{reporter_id}"),
 		Some(json!({
 			"data": { "rows": { "reporter": {
-				"qualificationKr1": null
+				"reporterFamilyName": "Hopper"
 			} } }
 		})),
 	)
@@ -80,6 +80,23 @@ async fn test_reporter_presave_round_trips_mfds_qualification_detail() -> Result
 	assert_eq!(
 		value["data"]["rows"]["reporter"]["qualificationKr1"].as_str(),
 		Some("2")
+	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/reporters/{reporter_id}"),
+		Some(json!({
+			"data": { "rows": { "reporter": {
+				"qualificationKr1": null
+			} } }
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["rows"]["reporter"].get("qualificationKr1"),
+		Some(&json!(null))
 	);
 
 	let (status, value) = request_json(

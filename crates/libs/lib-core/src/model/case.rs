@@ -810,6 +810,16 @@ impl CaseBmc {
 		Ok(())
 	}
 
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		case_u: CaseForUpdate,
+		clear_fields: &[&'static str],
+	) -> Result<()> {
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, case_u, clear_fields).await
+	}
+
 	pub async fn toggle_review(
 		ctx: &Ctx,
 		mm: &ModelManager,
