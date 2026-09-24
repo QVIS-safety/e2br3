@@ -121,6 +121,56 @@ class PresaveVerdictTests(unittest.TestCase):
             },
         )
 
+    def test_presave_null_clear_follows_only_explicit_deserializers(self) -> None:
+        models = presave_fuzzer.prepared_contract(["sender", "product"])
+        self.assertTrue(models["SenderPresave"]["sender_type"]["nullClear"])
+        self.assertTrue(models["ProductPresave"]["receiver_presave_id"]["nullClear"])
+        self.assertFalse(models["SenderPresaveGateway"]["gateway_authority"]["nullClear"])
+
+    def test_presave_null_expectation_respects_clear_and_identity_contracts(self) -> None:
+        fields = presave_fuzzer.load_fields(
+            ["sender", "receiver", "product", "study"], unsupported=[])
+        by_target = {(field["model"], field["backendField"]): field for field in fields}
+        self.assertEqual(
+            presave_fuzzer.presave_expectation(
+                by_target[("SenderPresave", "email")], None),
+            ("accept", None),
+        )
+        self.assertEqual(
+            presave_fuzzer.presave_expectation(
+                by_target[("SenderPresave", "sender_type")], None),
+            ("reject", "INVALID_REQUEST"),
+        )
+        self.assertEqual(
+            presave_fuzzer.presave_expectation(
+                by_target[("SenderPresaveGateway", "gateway_authority")], None),
+            ("accept", None),
+        )
+        self.assertEqual(
+            presave_fuzzer.presave_expectation(
+                by_target[("ProductPresave", "investigational_product_blinded")], None),
+            ("accept", None),
+        )
+        for value in (None, "", "   "):
+            self.assertEqual(
+                presave_fuzzer.presave_expectation(
+                    by_target[("StudyPresave", "sponsor_study_number_kind")], value),
+                ("accept", None),
+            )
+            self.assertEqual(
+                presave_fuzzer.presave_expectation(
+                    by_target[("ReceiverPresave", "receiver_type")], value),
+                ("reject", "PRESAVE.RECEIVER_TYPE.ALLOWED"),
+            )
+        for target in (
+            ("SenderPresave", "country_code"),
+            ("StudyPresaveRegistrationNumber", "country_code"),
+        ):
+            self.assertEqual(
+                presave_fuzzer.presave_expectation(by_target[target], "\t\t\t"),
+                ("accept", None),
+            )
+
     def test_registry_non_scalars_are_explicitly_accounted_for(self) -> None:
         inventory = []
         excluded = []
@@ -206,7 +256,7 @@ class PresaveVerdictTests(unittest.TestCase):
         country = next(field for field in presave_fuzzer.load_fields(["study"], unsupported=[])
                        if field["code"] == "C.5.1.r.2")
         self.assertEqual(presave_fuzzer.presave_expectation(
-            country, "\t\t\t"), ("reject", "INVALID_REQUEST"))
+            country, "\t\t\t"), ("accept", None))
 
     def test_partial_and_unknown_campaigns_fail(self) -> None:
         import time
@@ -481,6 +531,12 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(
             fuzzer.mismatched_save_classification("new", "old", "old", False),
             "SAVE_READBACK_MISMATCH",
+        )
+        self.assertEqual(fuzzer.normalized_classification([None], ["old"], True), "SAVE_NORMALIZED")
+        self.assertEqual(fuzzer.normalized_classification([None], ["old"], False), "AUDIT_MISMATCH")
+        self.assertEqual(
+            fuzzer.normalized_classification([None, None], ["old"], True),
+            "NORMALIZATION_UNVERIFIED",
         )
         self.assertEqual(fuzzer.audit_field_key("safetyReportId"), "safety_report_id")
         self.assertEqual(fuzzer.audit_field_key("reporterCountry"), "country_code")

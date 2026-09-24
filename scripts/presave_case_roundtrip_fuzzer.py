@@ -97,7 +97,8 @@ def prepared_contract(section_names: list[str], unsupported: list[str] | None = 
             width = re.search(r'VARCHAR\((\d+)\)', column[1])
             fields[name] = {'type': rust_type, 'api': rename[1] if rename else api_field(name),
                             'width': int(width[1]) if width else None,
-                            'nullClear': 'deserialize_patch_option' in attrs}
+                            'nullClear': any(deserializer in attrs for deserializer in (
+                                'deserialize_patch_option', 'deserialize_clearable_text'))}
         models[model] = fields
     return models
 
@@ -268,9 +269,12 @@ def presave_expectation(field: dict[str, Any], value: Any) -> tuple[str, str | N
     Submission conformance, vocabulary membership and conditional business rules
     are not inferred from a successful Presave write.
     """
-    if value is None:
-        return "accept", None
     dtype = field.get("dto", {}).get("type", "")
+    if value is None:
+        if field.get("dto", {}).get("nullClear") and dtype == "Option<String>":
+            value = ""
+        else:
+            return "accept", None
     name = field.get("backendField", "")
     if "Uuid" in dtype:
         if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", value):
@@ -313,7 +317,9 @@ def presave_expectation(field: dict[str, Any], value: Any) -> tuple[str, str | N
                   "condition_operator": {"Equal"}, "sponsor_study_number_kind": {"STUDY_NO", "PROTOCOL_NO"},
                   "receiver_type": {"Regulatory Authority", "Original Manufacturer"}}
     if name in local_enum and value not in local_enum[name]:
-        return "reject", "PRESAVE.RECEIVER_TYPE.ALLOWED" if name == "receiver_type" else "INVALID_REQUEST"
+        clearable_blank = field.get("dto", {}).get("nullClear") and not value.strip()
+        if not clearable_blank or name == "receiver_type":
+            return "reject", "PRESAVE.RECEIVER_TYPE.ALLOWED" if name == "receiver_type" else "INVALID_REQUEST"
     if name == "organization_name_notation" and len(value) > 50:
         return "reject", "PRESAVE.SENDER.ORGANIZATION_NAME_NOTATION.LENGTH.MAX"
     if not field.get("official") or ("dto" in field and not field.get("presaveValidator")):
@@ -332,9 +338,11 @@ def presave_expectation(field: dict[str, Any], value: Any) -> tuple[str, str | N
             return "reject", field["constraint"]["ruleCode"]
         return "accept", None
     if not value.strip():
-        # These DTOs retain whitespace. PostgreSQL truncates excess ASCII spaces
-        # in VARCHAR(2), but rejects other overlong whitespace (e.g. tabs).
-        if field["code"] in {"C.3.4.5", "C.5.1.r.2"} and len(value.rstrip(" ")) > 2:
+        # Legacy DTOs without the clearable-text deserializer retain whitespace.
+        # PostgreSQL rejects their overlong non-space whitespace (e.g. tabs).
+        if (not field.get("dto", {}).get("nullClear")
+                and field["code"] in {"C.3.4.5", "C.5.1.r.2"}
+                and len(value.rstrip(" ")) > 2):
             return "reject", "INVALID_REQUEST"
         # App-specific Presave identities, not authority submission conformance.
         required = {"C.3.1", "C.3.2", "C.2.r.1.2", "C.2.r.2.1", "C.2.r.4",
@@ -810,9 +818,6 @@ def run(args: argparse.Namespace) -> int:
                 if candidates.is_nullflavor_field(field) and ordinal == 13:
                     expectation = ("reject", "INPUT_CONTRACT.NULLFLAVOR.PAIR")
                 expectation_failure = candidates.expectation_error(expectation, status, rule)
-                if candidate is None:
-                    expectation = ("accept", None)
-                    expectation_failure = candidates.expectation_error(expectation, status, rule)
                 partner_classification = None
                 day_count_clear_verified = None
                 if status == 200 and status_get == 200:

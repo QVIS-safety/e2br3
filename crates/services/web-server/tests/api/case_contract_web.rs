@@ -2067,6 +2067,126 @@ async fn test_case_save_updates_fda_report_type_public_field() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn update_case_optional_metadata_clears_blanks_and_null_but_preserves_omitted(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-METADATA-{}", Uuid::new_v4())
+				},
+				"dgPrdKey": "",
+				"mfdsReportType": "   ",
+				"fdaReportType": null,
+				"reportYear": "\t",
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	for field in [
+		"dg_prd_key",
+		"mfds_report_type",
+		"fda_report_type",
+		"report_year",
+	] {
+		assert!(body["data"][field].is_null(), "{field}: {body:?}");
+	}
+	let case_id = body["data"]["id"].as_str().ok_or("missing case id")?;
+	let uri = format!("/api/cases/{case_id}");
+
+	let populated = json!({
+		"dg_prd_key": "PRODUCT-1",
+		"mfds_report_type": "1",
+		"fda_report_type": "4",
+		"report_year": "2026"
+	});
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"data": populated.clone(), "reason_for_change": "set case metadata"}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let (status, body) = put_json(&app, &cookie, &uri, json!({"data": {}})).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	for (field, expected) in [
+		("dg_prd_key", "PRODUCT-1"),
+		("mfds_report_type", "1"),
+		("fda_report_type", "4"),
+		("report_year", "2026"),
+	] {
+		assert_eq!(body["data"][field], expected, "{field}: {body:?}");
+	}
+	let (status, body) =
+		put_json(&app, &cookie, &uri, json!({"data": {"dg_prd_key": null}})).await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body["error"]["data"]["detail"]
+			.as_str()
+			.ok_or("missing error detail")?
+			.contains("reason_for_change"),
+		"{body:?}"
+	);
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({
+			"data": {
+				"dg_prd_key": "",
+				"mfds_report_type": "   ",
+				"fda_report_type": null,
+				"report_year": "\t"
+			},
+			"reason_for_change": "clear case metadata"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	for field in [
+		"dg_prd_key",
+		"mfds_report_type",
+		"fda_report_type",
+		"report_year",
+	] {
+		assert!(body["data"][field].is_null(), "{field}: {body:?}");
+	}
+
+	let (status, _) = put_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"data": populated, "reason_for_change": "restore case metadata"}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let (status, body) =
+		put_json(&app, &cookie, &uri, json!({"data": {"report_year": null}}))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["dg_prd_key"], "PRODUCT-1");
+	assert_eq!(body["data"]["mfds_report_type"], "1");
+	assert_eq!(body["data"]["fda_report_type"], "4");
+	assert!(body["data"]["report_year"].is_null(), "{body:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_imported_case_save_updates_public_fields_without_import_noise(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

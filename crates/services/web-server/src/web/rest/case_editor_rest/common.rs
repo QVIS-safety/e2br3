@@ -413,10 +413,21 @@ pub(super) fn explicit_null_model_fields(
 	aliases
 		.iter()
 		.filter_map(|(field, candidates)| {
-			std::iter::once(*field)
+			let value = std::iter::once(*field)
 				.chain(candidates.iter().copied())
-				.find_map(|path| value_at_path(row, path))
-				.is_some_and(Value::is_null)
+				.find_map(|path| value_at_path(row, path));
+			value
+				.is_some_and(|value| {
+					value.is_null()
+						|| (!matches!(
+							*field,
+							"test_name"
+								| "medicinal_product" | "drug_characterization"
+								| "case_narrative"
+						) && value
+							.as_str()
+							.is_some_and(|value| value.trim().is_empty()))
+				})
 				.then_some(*field)
 		})
 		.collect()
@@ -679,6 +690,66 @@ mod canonical_row_persistence_tests {
 
 		assert!(!model.contains_key("drug_name"));
 		assert_eq!(model.get("drug_name_null_flavor"), Some(&json!("UNK")));
+	}
+
+	#[test]
+	fn blank_text_is_an_explicit_clear_but_omission_is_not() {
+		const ALIASES: &[(&str, &[&str])] = &[("drug_name", &["drugName"])];
+		let blank = json!({ "drugName": "  " })
+			.as_object()
+			.expect("row object")
+			.clone();
+		let omitted = json!({}).as_object().expect("row object").clone();
+		let canonical_wins = json!({ "drug_name": "keep", "drugName": "" })
+			.as_object()
+			.expect("row object")
+			.clone();
+
+		assert_eq!(
+			explicit_null_model_fields(&blank, ALIASES),
+			vec!["drug_name"]
+		);
+		assert!(explicit_null_model_fields(&omitted, ALIASES).is_empty());
+		assert!(explicit_null_model_fields(&canonical_wins, ALIASES).is_empty());
+	}
+
+	#[test]
+	fn blank_not_null_draft_text_is_not_cleared() {
+		const ALIASES: &[(&str, &[&str])] = &[
+			("test_name", &[]),
+			("medicinal_product", &[]),
+			("drug_characterization", &[]),
+			("case_narrative", &[]),
+		];
+		let row = json!({
+			"test_name": "",
+			"medicinal_product": " ",
+			"drug_characterization": "\t",
+			"case_narrative": "\n",
+		})
+		.as_object()
+		.expect("row object")
+		.clone();
+
+		assert!(explicit_null_model_fields(&row, ALIASES).is_empty());
+		let nulls = json!({
+			"test_name": null,
+			"medicinal_product": null,
+			"drug_characterization": null,
+			"case_narrative": null,
+		})
+		.as_object()
+		.expect("row object")
+		.clone();
+		assert_eq!(
+			explicit_null_model_fields(&nulls, ALIASES),
+			vec![
+				"test_name",
+				"medicinal_product",
+				"drug_characterization",
+				"case_narrative",
+			]
+		);
 	}
 
 	#[test]
