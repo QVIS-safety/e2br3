@@ -7,7 +7,7 @@ use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
 use serde::{Deserialize, Serialize};
-use sqlx::types::time::{Date, OffsetDateTime};
+use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::FromRow;
 
@@ -20,7 +20,7 @@ pub struct TestResult {
 	pub sequence_number: i32,
 
 	// F.r.1 - Test Date
-	pub test_date: Option<Date>,
+	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
 
 	// F.r.2 - Test Name
@@ -68,9 +68,9 @@ pub struct TestResultForCreate {
 	pub sequence_number: i32,
 	#[serde(
 		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+		deserialize_with = "crate::serde::flex_date::deserialize_option_f_r_1_ts"
 	)]
-	pub test_date: Option<Date>,
+	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
 	#[serde(default)]
 	pub test_name: String,
@@ -92,9 +92,9 @@ pub struct TestResultForUpdate {
 	pub test_name: Option<String>,
 	#[serde(
 		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+		deserialize_with = "crate::serde::flex_date::deserialize_option_f_r_1_ts"
 	)]
-	pub test_date: Option<Date>,
+	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,
@@ -560,5 +560,51 @@ impl TestResultBmc {
 		}
 		mm.dbx().commit_txn().await?;
 		Ok(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::TestResultForCreate;
+
+	fn create_payload(test_date: &str) -> serde_json::Value {
+		serde_json::json!({
+			"case_id": sqlx::types::Uuid::nil(),
+			"sequence_number": 1,
+			"test_date": test_date,
+			"test_date_null_flavor": null,
+			"test_name": "ALT",
+			"test_meddra_version": null,
+			"test_meddra_code": null,
+			"test_result_code": null,
+			"test_result_value": null,
+			"test_result_qualifier": null,
+			"test_result_unit": null,
+			"result_unstructured": null,
+			"normal_low_value": null,
+			"normal_high_value": null,
+			"comments": null,
+			"more_info_available": null
+		})
+	}
+
+	#[test]
+	fn native_create_dto_preserves_valid_test_dates_and_rejects_invalid_dates() {
+		for value in ["2024", "202402", "20240229", "20240229123045+0900"] {
+			let parsed: TestResultForCreate =
+				serde_json::from_value(create_payload(value))
+					.expect("valid test date");
+			assert_eq!(parsed.test_date.as_deref(), Some(value));
+		}
+		for value in ["202413", "20230229"] {
+			assert!(
+				serde_json::from_value::<TestResultForCreate>(create_payload(value))
+					.is_err()
+			);
+		}
+		let parsed: TestResultForCreate =
+			serde_json::from_value(create_payload("2024-02-29"))
+				.expect("compatible ISO date");
+		assert_eq!(parsed.test_date.as_deref(), Some("20240229"));
 	}
 }

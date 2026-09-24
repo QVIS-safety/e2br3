@@ -685,6 +685,106 @@ async fn fda_device_replace_rolls_back_on_constraint_violation() -> Result<()> {
 	Ok(())
 }
 
+#[serial]
+#[tokio::test]
+async fn fda_device_replace_normalizes_blank_null_flavors() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let drug_id = create_drug(&app, &cookie, case_id).await?;
+	let uri = format!("/api/cases/{case_id}/drugs/{drug_id}/devices/replace");
+
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		uri.clone(),
+		json!({
+			"data": {
+				"devices": [{
+					"device_brand_name_null_flavor": "",
+					"common_device_name_null_flavor": "  "
+				}]
+			}
+		}),
+		"New Data",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/devices"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let payload: Value = serde_json::from_slice(&body)?;
+	let devices = payload["data"]
+		.as_array()
+		.ok_or("device data is not an array")?;
+	assert_eq!(devices.len(), 1);
+	let device = devices[0]
+		.as_object()
+		.ok_or("device row is not an object")?;
+	let id = device
+		.get("id")
+		.and_then(Value::as_str)
+		.ok_or("missing device id")?;
+	assert!(!Uuid::parse_str(id)?.is_nil());
+	assert_eq!(device.get("drug_id"), Some(&json!(drug_id)));
+	assert!(device.contains_key("device_brand_name_null_flavor"));
+	assert!(device.contains_key("common_device_name_null_flavor"));
+	assert!(device["device_brand_name_null_flavor"].is_null());
+	assert!(device["common_device_name_null_flavor"].is_null());
+
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		uri,
+		json!({
+			"data": {
+				"devices": [{
+					"device_brand_name_null_flavor": "NI",
+					"common_device_name_null_flavor": "NI"
+				}]
+			}
+		}),
+		"Edited Data",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/devices"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let payload: Value = serde_json::from_slice(&body)?;
+	let devices = payload["data"]
+		.as_array()
+		.ok_or("device data is not an array")?;
+	assert_eq!(devices.len(), 1);
+	let device = devices[0]
+		.as_object()
+		.ok_or("device row is not an object")?;
+	let id = device
+		.get("id")
+		.and_then(Value::as_str)
+		.ok_or("missing device id")?;
+	assert!(!Uuid::parse_str(id)?.is_nil());
+	assert_eq!(device.get("drug_id"), Some(&json!(drug_id)));
+	assert!(device.contains_key("device_brand_name_null_flavor"));
+	assert!(device.contains_key("common_device_name_null_flavor"));
+	assert_eq!(device["device_brand_name_null_flavor"], "NI");
+	assert_eq!(device["common_device_name_null_flavor"], "NI");
+	Ok(())
+}
+
 async fn create_reaction(app: &Router, cookie: &str, case_id: Uuid) -> Result<Uuid> {
 	let body = json!({
 		"data": {

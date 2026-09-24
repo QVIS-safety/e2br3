@@ -1,7 +1,7 @@
 use super::helpers::{
-	max_length, reject_future_date, reject_when, valid_code, valid_decimal,
-	valid_dotted_version, valid_meddra_term, valid_meddra_version, valid_ucum,
-	DateValues,
+	e2b_ts_date, max_length, reject_future_date, reject_when, valid_code,
+	valid_decimal, valid_dotted_version, valid_meddra_term, valid_meddra_version,
+	valid_ucum, DateValues,
 };
 use crate::{
 	has_test_name, has_test_payload, has_text, RegulatoryAuthority,
@@ -34,7 +34,7 @@ fn f_r_1(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[F.r.1] Test date must not be later than today.",
-		DateValues::One(test.test_date),
+		DateValues::One(e2b_ts_date(test.test_date.as_deref())),
 	);
 }
 
@@ -373,13 +373,13 @@ pub(crate) fn collect(
 				.test_date_null_flavor
 				.as_deref()
 				.map(str::trim)
-				.is_some_and(|value| value != "MSK")
+				.is_some_and(|value| value != "UNK")
 			{
 				crate::push_business_issue(
 					issues,
 					"MFDS.F.r.1.NULLFLAVOR.VOCABULARY",
 					format!("testResults.{idx}.testDateNullFlavor"),
-					"MFDS only allows MSK as the [F.r.1] nullFlavor.",
+					"MFDS only allows UNK as the [F.r.1] nullFlavor.",
 				);
 			}
 		}
@@ -413,9 +413,8 @@ mod golden_f_required_tests {
 	use super::*;
 	use lib_core::model::case::Case;
 	use lib_core::model::test_result::TestResult;
-	use sqlx::types::time::{Date, OffsetDateTime};
+	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
-	use time::Month;
 
 	fn dummy_case() -> Case {
 		Case {
@@ -517,16 +516,33 @@ mod golden_f_required_tests {
 	}
 
 	#[test]
-	fn mfds_only_allows_msk_test_date_null_flavor() {
+	fn mfds_only_allows_unk_test_date_null_flavor() {
 		let mut ctx = empty_ctx();
 		let mut row = test_result();
-		row.test_date_null_flavor = Some("UNK".to_string());
+		row.test_date_null_flavor = Some("MSK".to_string());
 		ctx.tests = vec![row];
 		let mut issues = Vec::new();
 		collect(&mut issues, RegulatoryAuthority::Mfds, &ctx);
 		assert!(issues
 			.iter()
 			.any(|issue| issue.code == "MFDS.F.r.1.NULLFLAVOR.VOCABULARY"));
+
+		ctx.tests[0].test_date_null_flavor = Some("UNK".to_string());
+		issues.clear();
+		collect(&mut issues, RegulatoryAuthority::Mfds, &ctx);
+		assert!(!issues
+			.iter()
+			.any(|issue| issue.code == "MFDS.F.r.1.NULLFLAVOR.VOCABULARY"));
+	}
+
+	#[test]
+	fn future_test_date_uses_available_precision() {
+		for value in ["2999", "299901", "29990101", "29990101123045+0900"] {
+			let mut test = test_result();
+			test.test_date = Some(value.to_string());
+			assert!(codes_for(test)
+				.contains(&"ICH.F.r.1.FUTURE_DATE.FORBIDDEN".to_string()));
+		}
 	}
 
 	fn codes_for(test: TestResult) -> Vec<String> {
@@ -559,8 +575,7 @@ mod golden_f_required_tests {
 	fn allowed_value_rule_flags_invalid_test_result_code() {
 		let mut test = test_result();
 		test.test_name = "ALT".to_string();
-		test.test_date =
-			Some(Date::from_calendar_date(2020, Month::January, 1).unwrap());
+		test.test_date = Some("20200101".to_string());
 		test.test_result_code = Some("9".to_string());
 
 		assert!(codes_for(test).contains(&"ICH.F.r.3.1.ALLOWED.VALUE".to_string()));
@@ -570,8 +585,7 @@ mod golden_f_required_tests {
 	fn numeric_rule_flags_non_numeric_test_result_value() {
 		let mut test = test_result();
 		test.test_name = "ALT".to_string();
-		test.test_date =
-			Some(Date::from_calendar_date(2020, Month::January, 1).unwrap());
+		test.test_date = Some("20200101".to_string());
 		test.test_result_value = Some("not-numeric".to_string());
 
 		assert!(codes_for(test).contains(&"ICH.F.r.3.2.ALLOWED.VALUE".to_string()));
@@ -609,8 +623,7 @@ mod golden_f_required_tests {
 	#[test]
 	fn test_date_without_name_or_meddra_code_flags_name_variants() {
 		let mut test = test_result();
-		test.test_date =
-			Some(Date::from_calendar_date(2020, Month::January, 1).unwrap());
+		test.test_date = Some("20200101".to_string());
 
 		assert_eq!(
 			codes_for(test),

@@ -794,6 +794,12 @@ CREATE TRIGGER audit_test_results AFTER INSERT OR UPDATE OR DELETE ON test_resul
 CREATE TRIGGER audit_drug_information AFTER INSERT OR UPDATE OR DELETE ON drug_information
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_fda_device_information AFTER INSERT OR UPDATE OR DELETE ON fda_device_information
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_fda_device_codes AFTER INSERT OR UPDATE OR DELETE ON fda_device_codes
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_drug_active_substances AFTER INSERT OR UPDATE OR DELETE ON drug_active_substances
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 

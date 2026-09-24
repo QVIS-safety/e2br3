@@ -8,7 +8,7 @@ CREATE TABLE test_results (
     sequence_number INTEGER NOT NULL,
 
     -- F.r.1 - Test Date
-    test_date DATE,
+    test_date TEXT,
     test_date_null_flavor VARCHAR(10) CHECK (test_date_null_flavor IN ('UNK')),
 
     -- F.r.2 - Test Name (free text or MedDRA coded)

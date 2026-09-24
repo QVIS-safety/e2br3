@@ -798,6 +798,7 @@ pub struct PublicCaseView {
 	pub workflow_status: String,
 	pub workflow_assigned_role: Option<String>,
 	pub workflow_assigned_user_id: Option<Uuid>,
+	#[serde(with = "time::serde::rfc3339::option")]
 	pub workflow_due_at: Option<sqlx::types::time::OffsetDateTime>,
 	pub workflow_description: Option<String>,
 	pub workflow_updated_at: sqlx::types::time::OffsetDateTime,

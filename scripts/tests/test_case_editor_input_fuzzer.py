@@ -14,6 +14,7 @@ import case_editor_input_fuzzer as fuzzer
 import case_editor_ui_fuzzer as ui_fuzzer
 import rbac_rls_blackbox
 import presave_case_roundtrip_fuzzer as presave_fuzzer
+import rich_case_export_import_fuzzer as rich_fuzzer
 
 
 class PresaveVerdictTests(unittest.TestCase):
@@ -282,6 +283,30 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 "reactionId": reaction_id,
             }]),
         )
+
+        other_id = "44444444-4444-4444-4444-444444444444"
+        rows = [
+            {"id": other_id, "source_of_assessment": "Sponsor"},
+            {"id": relatedness_id, "source_of_assessment": "Reporter"},
+        ]
+        selected = fuzzer.row_with_identity(rows, {"id": relatedness_id})
+        self.assertEqual(fuzzer.get_path(selected, "source_of_assessment"), "Reporter")
+        self.assertIsNone(fuzzer.row_with_identity(rows, {"id": reaction_id}))
+        self.assertIsNone(fuzzer.row_with_identity(rows + [rows[1]], {"id": relatedness_id}))
+        response = {"drug": {"fdaDevices": [{"id": other_id}]}}
+        self.assertEqual(
+            fuzzer.replacement_identity(response, "drug", "fdaDevices[]", {"id"}),
+            {"id": other_id},
+        )
+        self.assertEqual(
+            fuzzer.replacement_identity(response, "drug", "fdaDevices[]", {"id", "reactionId"}),
+            {},
+        )
+        response["drug"]["fdaDevices"].append({"id": relatedness_id})
+        self.assertEqual(
+            fuzzer.replacement_identity(response, "drug", "fdaDevices[]", {"id"}),
+            {},
+        )
         self.assertNotIn(
             "drugReactionAssessmentId",
             fuzzer.object_identity([{
@@ -360,7 +385,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(fuzzer.normalized_classification([None], [None], False), "NOOP_ACCEPTED")
         self.assertEqual(
             fuzzer.normalized_classification([None, None], [None, None], False),
-            "CLEAR_NOT_APPLIED",
+            "NOOP_ACCEPTED",
         )
 
     def test_length_candidates_preserve_known_value_grammar(self) -> None:
@@ -437,6 +462,26 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(fuzzer.normalized_classification(None, "old", True), "SAVE_NORMALIZED")
         self.assertEqual(fuzzer.normalized_classification(None, "old", False), "AUDIT_MISMATCH")
         self.assertEqual(fuzzer.normalized_classification(None, None, False), "NOOP_ACCEPTED")
+        self.assertEqual(
+            fuzzer.mismatched_save_classification(None, "old", "old", False),
+            "NOOP_ACCEPTED",
+        )
+        self.assertEqual(
+            fuzzer.mismatched_save_classification(None, "old", "different", False),
+            "CLEAR_NOT_APPLIED",
+        )
+        self.assertEqual(
+            fuzzer.mismatched_save_classification("", "old", "old", False),
+            "CLEAR_NOT_APPLIED",
+        )
+        self.assertEqual(
+            fuzzer.mismatched_save_classification("", None, None, False),
+            "NOOP_ACCEPTED",
+        )
+        self.assertEqual(
+            fuzzer.mismatched_save_classification("new", "old", "old", False),
+            "SAVE_READBACK_MISMATCH",
+        )
         self.assertEqual(fuzzer.audit_field_key("safetyReportId"), "safety_report_id")
         self.assertEqual(fuzzer.audit_field_key("reporterCountry"), "country_code")
         self.assertTrue(fuzzer.audit_key_matches(
@@ -447,6 +492,27 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             {"reporter_email_backup": {"old": None, "new": "x"}},
             "reporterEmail",
         ))
+
+    def test_encoding_edge_expectation_matches_control_character_contract(self) -> None:
+        field = {
+            "code": "C.test",
+            "roundTripValue": "base",
+            "_maxLength": 10,
+            "_maxLengthRule": "ICH.C.test.LENGTH.MAX",
+            "_maxLengthOnly": True,
+        }
+        self.assertFalse(fuzzer.contains_rejected_control("0\uffff\ufffe\ufffd"))
+        self.assertEqual(fuzzer.candidate_expectation(field, 13, "0\uffff\ufffe\ufffd"), ("accept", None))
+        self.assertTrue(fuzzer.contains_rejected_control("0\x7f\uffff"))
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 13, "0\x7f\uffff"),
+            ("reject", "INPUT.CONTROL_CHAR.REJECTED"),
+        )
+        field["_maxLength"] = 4
+        self.assertEqual(
+            fuzzer.candidate_expectation(field, 13, "0\uffff\ufffe\ufffd\U0010ffff"),
+            ("reject", "ICH.C.test.LENGTH.MAX"),
+        )
         self.assertIn("drug_additional_info_codes_json", fuzzer.UNFILTERED_AUDIT_FIELDS)
         self.assertTrue(fuzzer.audit_log_complete({
             "user_id": "u", "organization_id": "o", "created_at": "t", "action": "UPDATE",
@@ -493,12 +559,94 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
 
     def test_unmapped_pairs_are_explicit_and_other_callers_still_fail_closed(self) -> None:
         contract = [{"pageId": "DG", "fields": []}]
-        pairs = {"DG": [{"value": "fdaDevices[].deviceBrandName", "nullFlavor": "fdaDevices[].brandNF"}]}
+        pairs = {"DG": [{"value": "unsupported[].name", "nullFlavor": "unsupported[].nameNullFlavor"}]}
         with self.assertRaisesRegex(ValueError, "unresolved NullFlavor pairs"):
             fuzzer.expand_null_flavor_contracts(contract, pairs, {})
         unsupported = []
         self.assertEqual(fuzzer.expand_null_flavor_contracts(contract, pairs, {}, unsupported), 0)
-        self.assertEqual(unsupported, ["DG:fdaDevices[].deviceBrandName"])
+        self.assertEqual(unsupported, ["DG:unsupported[].name"])
+
+    def test_device_null_flavors_use_backend_contract_codes_and_dictionary_values(self) -> None:
+        contract = [{"pageId": "DG", "fields": []}]
+        pairs = {"DG": [
+            {"value": "fdaDevices[].deviceBrandName", "nullFlavor": "fdaDevices[].deviceBrandNameNullFlavor"},
+            {"value": "fdaDevices[].commonDeviceName", "nullFlavor": "fdaDevices[].commonDeviceNameNullFlavor"},
+        ]}
+        allowed = {"FDA.G.k.12.r.4": ["NI"], "FDA.G.k.12.r.5": ["NI"]}
+        unsupported = []
+        self.assertEqual(fuzzer.expand_null_flavor_contracts(contract, pairs, allowed, unsupported), 2)
+        self.assertEqual(unsupported, [])
+        by_code = {field["code"]: field for field in contract[0]["fields"]}
+        for code, leaf in (("FDA.G.k.12.r.4", "deviceBrandName"),
+                           ("FDA.G.k.12.r.5", "commonDeviceName")):
+            field = by_code[f"{code}.nullFlavor"]
+            self.assertEqual(field["roundTripValue"], "NI")
+            self.assertEqual(field["payloadPath"], f"fdaDevices[].{leaf}NullFlavor")
+            self.assertEqual(field["nullFlavorPartnerCode"], code)
+            self.assertEqual(field["patch"], {"kind": "row", "owner": "drug"})
+            sibling = "commonDeviceName" if leaf == "deviceBrandName" else "deviceBrandName"
+            self.assertEqual(field["_mutationFixedPayload"], {
+                f"fdaDevices[].{sibling}": f"Fuzz {sibling}",
+            })
+            self.assertEqual(
+                fuzzer.candidate_expectation(field, 4, ""),
+                ("accept", None),
+            )
+            self.assertIn(field["payloadPath"], fuzzer.DEVICE_NULL_FLAVOR_PATHS)
+
+        baseline = fuzzer.baseline_for(contract[0]["fields"], minimal=True)
+        device = baseline["fdaDevices"][0]
+        self.assertEqual(device, {
+            "deviceBrandNameNullFlavor": "NI",
+            "commonDeviceNameNullFlavor": "NI",
+        })
+
+        brand = by_code["FDA.G.k.12.r.4.nullFlavor"]
+        mutation = fuzzer.baseline_for([brand])
+        for path, value in brand["_mutationFixedPayload"].items():
+            fuzzer.set_path(mutation, path, value)
+        fuzzer.set_path(mutation, fuzzer.leaf_path(brand["payloadPath"]), None)
+        self.assertEqual(mutation["fdaDevices"][0], {
+            "deviceBrandNameNullFlavor": None,
+            "commonDeviceName": "Fuzz commonDeviceName",
+        })
+        self.assertEqual(
+            fuzzer.normalized_classification(None, "NI", True),
+            "SAVE_NORMALIZED",
+        )
+
+    def test_setup_callers_forward_explicit_intake_inputs(self) -> None:
+        expected = ["--product-key", "PRODUCT-1", "--meddra-version", "28.1",
+                    "--meddra-code", "10019211", "--contract", "/tmp/contracts.json",
+                    "--null-flavor-pairs", "/tmp/null-flavor-pairs.ts"]
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            def completed(command, **_kwargs):
+                setup_dir = Path(command[command.index("--artifact-dir") + 1])
+                setup_dir.mkdir(parents=True, exist_ok=True)
+                seed = command[command.index("--seed") + 1]
+                (setup_dir / f"case-editor-{seed}.jsonl").write_text(
+                    '{"case_id":"11111111-1111-1111-1111-111111111111"}\n',
+                    encoding="utf-8",
+                )
+                return mock.Mock(returncode=0, stdout="", stderr="")
+
+            callers = (
+                (ui_fuzzer, ui_fuzzer.setup_case,
+                 ui_fuzzer.parser().parse_args([*expected, "--seed", "1", "--artifact-dir", artifact_dir])),
+                (presave_fuzzer, presave_fuzzer.setup_case,
+                 presave_fuzzer.parser().parse_args([*expected, "--seed", "1", "--artifact-dir", artifact_dir])),
+                (rich_fuzzer, lambda args: rich_fuzzer.setup_rich_case(args, 1, Path(artifact_dir)),
+                 rich_fuzzer.parser().parse_args([*expected, "--seed", "1", "--artifact-dir", artifact_dir])),
+            )
+            for module, caller, args in callers:
+                with mock.patch.object(module.subprocess, "run", side_effect=completed) as run:
+                    caller(args)
+                command = run.call_args.args[0]
+                self.assertEqual((args.product_key, args.meddra_version, args.meddra_code),
+                                 ("PRODUCT-1", "28.1", "10019211"))
+                for option in expected[::2]:
+                    index = command.index(option)
+                    self.assertEqual(command[index + 1], expected[expected.index(option) + 1])
 
     def test_seeded_samples_are_reproducible_and_vary(self) -> None:
         field = {"authority": "ICH", "code": "H.1", "payloadPath": "caseNarrative", "roundTripValue": "base"}
@@ -690,8 +838,10 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(len({field["code"] for field in plan["fields"]}), plan["fieldCount"])
         null_flavor = next(field for field in plan["fields"] if field["nullFlavor"])
         invalid = next(mutation for mutation in null_flavor["mutations"] if mutation["kind"] == "nullflavor_unknown")
+        null = next(mutation for mutation in null_flavor["mutations"] if mutation["kind"] == "nullflavor_null")
         conflict = next(mutation for mutation in null_flavor["mutations"] if mutation["kind"] == "nullflavor_with_value")
         self.assertEqual(invalid["expectation"], "reject")
+        self.assertEqual(null["expectation"], "accept")
         self.assertEqual(conflict["expectation"], "reject")
         shards = [
             ui_fuzzer.build_plan(ui_fuzzer.parser().parse_args([

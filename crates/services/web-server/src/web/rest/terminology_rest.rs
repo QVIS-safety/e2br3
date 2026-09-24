@@ -20,10 +20,18 @@ use lib_rest_core::{
 use lib_web::middleware::mw_auth::CtxW;
 use lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::fs::OpenOptions;
+use std::os::unix::fs::OpenOptionsExt;
+use std::path::PathBuf;
+use tokio::io::AsyncWriteExt;
+use uuid::Uuid;
 
 // -- Params
 
 const MAX_TERMINOLOGY_UPLOAD_BYTES: usize = 250 * 1024 * 1024;
+pub const MAX_WHODRUG_UPLOAD_BYTES: usize = 512 * 1024 * 1024;
+pub const MAX_WHODRUG_REQUEST_BYTES: usize = MAX_WHODRUG_UPLOAD_BYTES + 1024 * 1024;
 
 #[derive(Deserialize)]
 pub struct TerminologySearchParams {
@@ -143,6 +151,94 @@ async fn read_field_limited(
 		bytes.extend_from_slice(&chunk);
 	}
 	Ok(bytes)
+}
+
+struct TemporaryUpload {
+	path: PathBuf,
+	checksum: String,
+	cleaned: bool,
+}
+
+impl TemporaryUpload {
+	fn cleanup(&mut self) -> Result<()> {
+		std::fs::remove_file(&self.path).map_err(|err| Error::BadRequest {
+			message: format!("terminology temporary file cleanup error: {err}"),
+		})?;
+		self.cleaned = true;
+		Ok(())
+	}
+}
+
+impl Drop for TemporaryUpload {
+	fn drop(&mut self) {
+		if !self.cleaned {
+			if let Err(err) = std::fs::remove_file(&self.path) {
+				tracing::warn!(path = %self.path.display(), %err, "failed to clean up WHODrug upload");
+			}
+		}
+	}
+}
+
+async fn spool_whodrug_upload(mut multipart: Multipart) -> Result<TemporaryUpload> {
+	while let Some(mut field) =
+		multipart
+			.next_field()
+			.await
+			.map_err(|err| Error::BadRequest {
+				message: format!("multipart error: {err}"),
+			})? {
+		if field.name() != Some("file") {
+			continue;
+		}
+		let path = std::env::temp_dir()
+			.join(format!("e2br3-whodrug-{}.zip", Uuid::new_v4()));
+		let std_file = OpenOptions::new()
+			.write(true)
+			.create_new(true)
+			.mode(0o600)
+			.open(&path)
+			.map_err(|err| Error::BadRequest {
+				message: format!("terminology temporary file error: {err}"),
+			})?;
+		let mut upload = TemporaryUpload {
+			path,
+			checksum: String::new(),
+			cleaned: false,
+		};
+		let mut file = tokio::fs::File::from_std(std_file);
+		let mut size = 0usize;
+		let mut digest = Sha256::new();
+		while let Some(chunk) =
+			field.chunk().await.map_err(|err| Error::BadRequest {
+				message: format!("multipart read error: {err}"),
+			})? {
+			size =
+				size.checked_add(chunk.len())
+					.ok_or_else(|| Error::BadRequest {
+						message: "terminology upload size overflow".to_string(),
+					})?;
+			if size > MAX_WHODRUG_UPLOAD_BYTES {
+				return Err(Error::BadRequest { message: format!("terminology upload exceeds {MAX_WHODRUG_UPLOAD_BYTES} bytes") });
+			}
+			digest.update(&chunk);
+			file.write_all(&chunk)
+				.await
+				.map_err(|err| Error::BadRequest {
+					message: format!(
+						"terminology temporary file write error: {err}"
+					),
+				})?;
+		}
+		file.flush().await.map_err(|err| Error::BadRequest {
+			message: format!("terminology temporary file flush error: {err}"),
+		})?;
+		drop(file);
+		upload.checksum = format!("{:x}", digest.finalize());
+		return Ok(upload);
+	}
+	Err(Error::BadRequest {
+		message: "missing terminology file field".to_string(),
+	})
 }
 
 // -- Handlers
@@ -405,27 +501,56 @@ async fn import_whodrug_authorized(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
-	let bytes = read_upload_bytes(multipart).await?;
-	let rows =
-		terminology_import::parse_whodrug_upload(&bytes).map_err(map_import_err)?;
-	let cas_numbers = terminology_import::parse_whodrug_cas_numbers(&bytes)
+	let mut upload = spool_whodrug_upload(multipart).await?;
+	let is_c3 = terminology_import::whodrug_zip_is_official_c3(&upload.path)
 		.map_err(map_import_err)?;
-
-	if !params.dry_run {
-		let checksum = terminology_import::sha256_hex(&bytes);
-		terminology_import::stage_whodrug_rows(
+	let loaded_rows = if is_c3 {
+		terminology_import::stage_whodrug_c3_zip(
 			mm,
 			ctx.user_id(),
-			&rows,
-			&cas_numbers,
+			&upload.path,
 			&params.version,
 			&language,
-			&checksum,
+			&upload.checksum,
+			params.dry_run,
 		)
 		.await
-		.map_err(map_import_err)?;
-	}
+		.map_err(map_import_err)?
+	} else {
+		let metadata = tokio::fs::metadata(&upload.path).await.map_err(|err| {
+			Error::BadRequest {
+				message: format!("terminology temporary file error: {err}"),
+			}
+		})?;
+		if metadata.len() > MAX_TERMINOLOGY_UPLOAD_BYTES as u64 {
+			return Err(Error::BadRequest { message: format!("non-C3 terminology upload exceeds {MAX_TERMINOLOGY_UPLOAD_BYTES} bytes") });
+		}
+		let bytes = tokio::fs::read(&upload.path).await.map_err(|err| {
+			Error::BadRequest {
+				message: format!("terminology temporary file read error: {err}"),
+			}
+		})?;
+		let rows = terminology_import::parse_whodrug_upload(&bytes)
+			.map_err(map_import_err)?;
+		let cas_numbers = terminology_import::parse_whodrug_cas_numbers(&bytes)
+			.map_err(map_import_err)?;
+		if !params.dry_run {
+			terminology_import::stage_whodrug_rows(
+				mm,
+				ctx.user_id(),
+				&rows,
+				&cas_numbers,
+				&params.version,
+				&language,
+				&upload.checksum,
+			)
+			.await
+			.map_err(map_import_err)?;
+		}
+		rows.len() as i64
+	};
 
+	upload.cleanup()?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -433,7 +558,7 @@ async fn import_whodrug_authorized(
 				dictionary: "whodrug".to_string(),
 				version: params.version,
 				language,
-				loaded_rows: rows.len() as i64,
+				loaded_rows,
 				dry_run: params.dry_run,
 				status: if params.dry_run {
 					"dry_run_validated".to_string()

@@ -63,6 +63,8 @@ def summary(status: int | None, body: bytes, transport: str | None = None) -> di
 
 
 def setup_rich_case(args: argparse.Namespace, seed: int, output_dir: Path) -> tuple[str | None, dict[str, Any]]:
+	if not args.product_key or not args.meddra_version or not args.meddra_code:
+		raise SystemExit("rich case setup requires --product-key, --meddra-version, and --meddra-code")
 	setup_dir = output_dir / f"round-{seed}" / "setup"
 	setup_dir.mkdir(parents=True, exist_ok=True)
 	command = [
@@ -76,8 +78,9 @@ def setup_rich_case(args: argparse.Namespace, seed: int, output_dir: Path) -> tu
 		"--complete-baseline",
 		"--values-per-field", "0",
 		"--samples-per-category", "1",
-		"--meddra-version", "28.1",
-		"--meddra-code", "10000001",
+		"--product-key", args.product_key,
+		"--meddra-version", args.meddra_version,
+		"--meddra-code", args.meddra_code,
 		"--artifact-dir", str(setup_dir),
 		"--no-run-gates",
 	]
@@ -449,6 +452,9 @@ def parser() -> argparse.ArgumentParser:
 	parser.add_argument("--artifact-dir", default="tmp/rich-case-export-import")
 	parser.add_argument("--contract", default=os.getenv("E2BR3_EDITOR_CONTRACT"))
 	parser.add_argument("--null-flavor-pairs", default=os.getenv("E2BR3_NULL_FLAVOR_PAIRS"))
+	parser.add_argument("--product-key", default=os.getenv("E2BR3_PRODUCT_KEY"))
+	parser.add_argument("--meddra-version", default=os.getenv("E2BR3_MEDDRA_VERSION"))
+	parser.add_argument("--meddra-code", default=os.getenv("E2BR3_MEDDRA_CODE"))
 	parser.add_argument("--keep-cases", action="store_true")
 	parser.add_argument("--allow-remote", action="store_true")
 	return parser

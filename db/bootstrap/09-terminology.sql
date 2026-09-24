@@ -30,7 +30,7 @@ CREATE TABLE whodrug_products (
     code VARCHAR(20) NOT NULL,
     drug_name TEXT NOT NULL,
     atc_code VARCHAR(20),  -- Anatomical Therapeutic Chemical code
-    version VARCHAR(10) NOT NULL,
+    version VARCHAR(20) NOT NULL,
     language VARCHAR(2) DEFAULT 'en',
     active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

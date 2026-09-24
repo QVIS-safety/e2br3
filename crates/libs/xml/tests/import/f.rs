@@ -1,4 +1,4 @@
-use crate::common::{date, fixture};
+use crate::common::fixture;
 use xml::import_sections::f_test_result::parse_f_test_results;
 
 #[test]
@@ -9,7 +9,7 @@ fn import_f_section_all_fields_from_scenario6() {
 	assert_eq!(tests.len(), 7);
 
 	let first = &tests[0];
-	assert_eq!(first.test_date, Some(date(2009, 1, 1)));
+	assert_eq!(first.test_date.as_deref(), Some("20090101"));
 	assert_eq!(first.test_date_null_flavor, None);
 	assert_eq!(first.test_name, "Calcium Level");
 	assert_eq!(first.test_meddra_version.as_deref(), Some("12.0"));
@@ -27,7 +27,7 @@ fn import_f_section_all_fields_from_scenario6() {
 	assert_eq!(first.more_info_available, Some(true));
 
 	let sixth = &tests[5];
-	assert_eq!(sixth.test_date, Some(date(2009, 1, 1)));
+	assert_eq!(sixth.test_date.as_deref(), Some("20090101"));
 	assert_eq!(sixth.test_date_null_flavor, None);
 	assert_eq!(sixth.test_name, "");
 	assert_eq!(sixth.test_meddra_version.as_deref(), Some("12.0"));
@@ -81,20 +81,39 @@ fn import_f_section_rejects_test_date_value_and_null_flavor_together() {
 		.contains("value and nullFlavor cannot both be present"));
 }
 
-fn scenario6_with_first_test_date_null_flavor() -> String {
+#[test]
+fn import_f_section_preserves_test_date_precision_and_time() {
+	for value in ["2009", "200901", "20090101", "20090101123045-0800"] {
+		let xml = scenario6_with_first_test_date(&format!("value=\"{value}\""));
+		let tests = parse_f_test_results(xml.as_bytes()).expect("parse");
+		assert_eq!(tests[0].test_date.as_deref(), Some(value));
+	}
+}
+
+#[test]
+fn import_f_section_rejects_invalid_test_date() {
+	let xml = scenario6_with_first_test_date("value=\"20230229\"");
+	assert!(parse_f_test_results(xml.as_bytes()).is_err());
+}
+
+fn scenario6_with_first_test_date(attributes: &str) -> String {
 	let xml = String::from_utf8(fixture("FAERS2022Scenario6.xml")).expect("utf-8");
 	let original = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime value=\"20090101\"/>";
-	let replacement = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime nullFlavor=\"UNK\"/>";
-	let updated = xml.replacen(original, replacement, 1);
-	assert_ne!(updated, xml, "fixture patch should replace one F.r.1 date");
-	updated
+	let replacement = format!(
+		"<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime {attributes}/>"
+	);
+	assert_eq!(
+		xml.matches(original).count(),
+		1,
+		"fixture must identify one F.r.1 date"
+	);
+	xml.replacen(original, &replacement, 1)
+}
+
+fn scenario6_with_first_test_date_null_flavor() -> String {
+	scenario6_with_first_test_date("nullFlavor=\"UNK\"")
 }
 
 fn scenario6_with_first_test_date_value_and_null_flavor() -> String {
-	let xml = String::from_utf8(fixture("FAERS2022Scenario6.xml")).expect("utf-8");
-	let original = "<effectiveTime value=\"20090101\"/>";
-	let replacement = "<effectiveTime value=\"20090101\" nullFlavor=\"UNK\"/>";
-	let updated = xml.replacen(original, replacement, 1);
-	assert_ne!(updated, xml, "fixture patch should replace one F.r.1 date");
-	updated
+	scenario6_with_first_test_date("value=\"20090101\" nullFlavor=\"UNK\"")
 }

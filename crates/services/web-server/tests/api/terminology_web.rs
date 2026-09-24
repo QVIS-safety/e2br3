@@ -4,6 +4,8 @@ use crate::common::{
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::{ROLE_SYSTEM_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+use lib_core::model::store::{set_org_context, set_user_context};
 use serde_json::json;
 use serial_test::serial;
 use std::io::Write;
@@ -266,6 +268,160 @@ async fn test_admin_can_dry_run_whodrug_import() -> Result<()> {
 	assert_eq!(payload["data"]["dictionary"], "whodrug");
 	assert_eq!(payload["data"]["dry_run"], true);
 	assert_eq!(payload["data"]["loaded_rows"], 1);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_c3_dry_run_streams_batches_and_rejects_late_invalid_data(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let version = format!("C3{}", short_tag());
+
+	let valid = make_c3_zip_bytes(&version, 1001, None)?;
+	let boundary = "----whodrug-c3-batches";
+	let (content_type, body) = make_multipart_file_body(
+		boundary,
+		"global-c3.zip",
+		"application/zip",
+		&valid,
+	);
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("POST")
+				.uri(format!("/api/terminology/import/whodrug?version={version}&language=en&dry_run=true"))
+				.header("cookie", cookie.clone())
+				.header("content-type", content_type)
+				.body(Body::from(body))?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let body = to_bytes(response.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"]["loaded_rows"], 1001);
+	assert_eq!(c3_admin_persisted_state(&mm, &version).await?.0, (0, 0, 0));
+
+	for (suffix, package_version, bad_row, expected) in [
+		(
+			"duplicate",
+			version.as_str(),
+			Some("R000000000"),
+			"duplicate WHODrug C3 Record_Id",
+		),
+		(
+			"late-invalid",
+			version.as_str(),
+			Some("RID-INVALID"),
+			"invalid Record_Id",
+		),
+		(
+			"version",
+			"DIFFERENT",
+			None,
+			"does not match package short version",
+		),
+	] {
+		let zip = make_c3_zip_bytes(package_version, 1001, bad_row)?;
+		let boundary = format!("----whodrug-c3-{suffix}");
+		let (content_type, body) = make_multipart_file_body(
+			&boundary,
+			"global-c3.zip",
+			"application/zip",
+			&zip,
+		);
+		let response = app
+			.clone()
+			.oneshot(
+				Request::builder()
+					.method("POST")
+					.uri(format!("/api/terminology/import/whodrug?version={version}&language=en&dry_run=true"))
+					.header("cookie", cookie.clone())
+					.header("content-type", content_type)
+					.body(Body::from(body))?,
+			)
+			.await?;
+		assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+		let body = to_bytes(response.into_body(), usize::MAX).await?;
+		assert!(String::from_utf8_lossy(&body).contains(expected));
+		assert_eq!(c3_admin_persisted_state(&mm, &version).await?.0, (0, 0, 0));
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_c3_stage_persists_thirteen_character_short_once() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let version = format!("C3SHORT{}", short_tag());
+	assert_eq!(version.len(), 13);
+	let zip = make_c3_zip_bytes(&version, 2, None)?;
+	let expected_checksum = lib_core::model::terminology_import::sha256_hex(&zip);
+
+	let (content_type, body) = make_multipart_file_body(
+		"----whodrug-c3-stage",
+		"global-c3.zip",
+		"application/zip",
+		&zip,
+	);
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("POST")
+				.uri(format!("/api/terminology/import/whodrug?version={version}&language=en&dry_run=false"))
+				.header("cookie", cookie.clone())
+				.header("content-type", content_type)
+				.body(Body::from(body))?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	assert_eq!(c3_persisted_counts(&mm, &version).await?, (1, 0, 0));
+	let stored = c3_admin_persisted_state(&mm, &version).await?;
+	assert_eq!(stored.0, (1, 2, 1));
+	assert_eq!(stored.1.as_deref(), Some("validated"));
+	assert_eq!(stored.2, Some(2));
+	assert_eq!(stored.3.as_deref(), Some(expected_checksum.as_str()));
+	assert_eq!(stored.4, Some(true));
+	assert_eq!(stored.5.as_deref(), Some("Drug 0"));
+	assert_eq!(stored.6, Some(true));
+
+	let replacement = make_c3_zip_bytes(&version, 1, None)?;
+	let (content_type, body) = make_multipart_file_body(
+		"----whodrug-c3-reimport",
+		"global-c3.zip",
+		"application/zip",
+		&replacement,
+	);
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("POST")
+				.uri(format!("/api/terminology/import/whodrug?version={version}&language=en&dry_run=false"))
+				.header("cookie", cookie)
+				.header("content-type", content_type)
+				.body(Body::from(body))?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+	let preserved = c3_admin_persisted_state(&mm, &version).await?;
+	assert_eq!(preserved.0, (1, 2, 1));
+	assert_eq!(preserved.1.as_deref(), Some("validated"));
+	assert_eq!(preserved.2, Some(2));
+	assert_eq!(preserved.3.as_deref(), Some(expected_checksum.as_str()));
+	assert_eq!(preserved.5.as_deref(), Some("Drug 0"));
 
 	Ok(())
 }
@@ -1246,6 +1402,126 @@ fn make_single_file_zip_bytes(filename: &str, content: &[u8]) -> Result<Vec<u8>>
 		zip.finish()?;
 	}
 	Ok(cursor.into_inner())
+}
+
+fn make_c3_zip_bytes(
+	version: &str,
+	rows: usize,
+	last_record_id: Option<&str>,
+) -> Result<Vec<u8>> {
+	let mut mp = String::new();
+	for index in 0..rows {
+		let record_id = if index + 1 == rows {
+			last_record_id
+				.map(str::to_string)
+				.unwrap_or_else(|| format!("R{index:09}"))
+		} else {
+			format!("R{index:09}")
+		};
+		mp.push_str(&format!(
+			"{record_id},,000001,01,001,0000000001,0000000001,Y,Drug {index},,,,,N/A,,0,001,N/A,,001,19851231,20250930\n"
+		));
+	}
+	let mut cursor = std::io::Cursor::new(Vec::<u8>::new());
+	{
+		let mut zip = ZipWriter::new(&mut cursor);
+		let options = SimpleFileOptions::default()
+			.compression_method(CompressionMethod::Deflated);
+		zip.start_file("Version.csv", options)?;
+		zip.write_all(format!("Global C3,{version}\n").as_bytes())?;
+		zip.start_file("C3/MP.csv", options)?;
+		zip.write_all(mp.as_bytes())?;
+		zip.start_file("C3/SUN.csv", options)?;
+		zip.write_all(b"1,1234567890,Substance,0,0,0\n")?;
+		zip.finish()?;
+	}
+	Ok(cursor.into_inner())
+}
+
+async fn c3_persisted_counts(
+	mm: &lib_core::model::ModelManager,
+	version: &str,
+) -> Result<(i64, i64, i64)> {
+	Ok(mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as(
+				"SELECT
+				   (SELECT COUNT(*) FROM terminology_releases
+				     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+				   (SELECT COUNT(*) FROM whodrug_products
+				     WHERE version=$1 AND language='en'),
+				   (SELECT COUNT(*) FROM controlled_terminology_terms
+				     WHERE dictionary='whodrug' AND version=$1 AND language='en')",
+			)
+			.bind(version),
+		)
+		.await?)
+}
+
+type C3PersistedState = (
+	(i64, i64, i64),
+	Option<String>,
+	Option<i64>,
+	Option<String>,
+	Option<bool>,
+	Option<String>,
+	Option<bool>,
+);
+
+async fn c3_admin_persisted_state(
+	mm: &lib_core::model::ModelManager,
+	version: &str,
+) -> Result<C3PersistedState> {
+	let system_user_id = Uuid::parse_str(SYSTEM_USER_ID)?;
+	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+	let state: (
+		i64,
+		i64,
+		i64,
+		Option<String>,
+		Option<i64>,
+		Option<String>,
+		Option<bool>,
+		Option<String>,
+		Option<bool>,
+	) = sqlx::query_as(
+		"SELECT
+		   (SELECT COUNT(*) FROM terminology_releases
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+		   (SELECT COUNT(*) FROM whodrug_products
+		     WHERE version=$1 AND language='en'),
+		   (SELECT COUNT(*) FROM controlled_terminology_terms
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+		   (SELECT status FROM terminology_releases
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+		   (SELECT loaded_rows FROM terminology_releases
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+		   (SELECT source_checksum FROM terminology_releases
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en'),
+		   (SELECT bool_and(NOT active) FROM whodrug_products
+		     WHERE version=$1 AND language='en'),
+		   (SELECT MIN(drug_name) FROM whodrug_products
+		     WHERE version=$1 AND language='en'),
+		   (SELECT bool_and(NOT active) FROM controlled_terminology_terms
+		     WHERE dictionary='whodrug' AND version=$1 AND language='en')",
+	)
+	.bind(version)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.rollback().await?;
+	Ok((
+		(state.0, state.1, state.2),
+		state.3,
+		state.4,
+		state.5,
+		state.6,
+		state.7,
+		state.8,
+	))
 }
 
 fn short_tag() -> String {

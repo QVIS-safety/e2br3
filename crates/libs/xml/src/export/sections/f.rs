@@ -14,8 +14,6 @@ pub(crate) async fn export_patch(
 	patch_f_test_results(raw_xml, &tests)
 }
 
-use sqlx::types::time::Date;
-
 fn write_f_r_3_bound(
 	out: &mut String,
 	name: &str,
@@ -148,7 +146,7 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 /// e2b:F.r.1
 fn write_f_r_1(result: &TestResult) -> Result<String> {
 	let field = E2bNullFlavorValue::from_parts(
-		result.test_date,
+		result.test_date.as_deref(),
 		result.test_date_null_flavor.as_deref(),
 	)
 	.map_err(|err| Error::InvalidXml {
@@ -159,7 +157,7 @@ fn write_f_r_1(result: &TestResult) -> Result<String> {
 
 	match field {
 		Some(E2bNullFlavorValue::Value { value }) => {
-			Ok(format!("<effectiveTime value=\"{}\"/>", fmt_date(value)))
+			Ok(format!("<effectiveTime value=\"{}\"/>", xml_escape(value)))
 		}
 		Some(E2bNullFlavorValue::NullFlavor { null_flavor }) => Ok(format!(
 			"<effectiveTime nullFlavor=\"{}\"/>",
@@ -222,15 +220,6 @@ fn write_f_r_6(value: &TestResult) -> Option<&str> {
 /// e2b:F.r.7
 fn write_f_r_7(value: &TestResult) -> Option<bool> {
 	value.more_info_available
-}
-
-fn fmt_date(date: Date) -> String {
-	format!(
-		"{:04}{:02}{:02}",
-		date.year(),
-		u8::from(date.month()),
-		date.day()
-	)
 }
 
 #[cfg(test)]
@@ -301,9 +290,15 @@ mod tests {
 		);
 		assert!(xml.contains("<high nullFlavor=\"PINF\"/>"));
 
-		result.test_date_null_flavor = Some("ASKU".to_string());
+		for value in ["2024", "202401", "20240103", "20240103121530.1234-0800"] {
+			result.test_date = Some(value.to_string());
+			let xml = write_f_r_test_result(&result).expect("export date precision");
+			assert!(xml.contains(&format!("<effectiveTime value=\"{value}\"/>")));
+		}
+		result.test_date = None;
+		result.test_date_null_flavor = Some("UNK".to_string());
 		let xml = write_f_r_test_result(&result).expect("export date NullFlavor");
-		assert!(xml.contains("<effectiveTime nullFlavor=\"ASKU\"/>"));
+		assert!(xml.contains("<effectiveTime nullFlavor=\"UNK\"/>"));
 
 		result.test_name.clear();
 		result.test_meddra_code = Some("10006824".to_string());

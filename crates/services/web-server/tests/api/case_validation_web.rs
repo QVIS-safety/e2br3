@@ -2391,6 +2391,7 @@ async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
 	let (status, body) = transition_case_workflow(
 		&app,
 		&cookie,
@@ -2411,6 +2412,25 @@ async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()
 		Some("To be reviewed")
 	);
 	assert_eq!(body["data"]["workflow_assigned_role"].as_str(), Some("pvm"));
+	assert_eq!(
+		body["data"]["workflow_due_at"].as_str(),
+		Some("2026-04-20T09:00:00Z")
+	);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{case_id}/editor/shell"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let shell = serde_json::from_slice::<Value>(&body)?;
+	assert_eq!(status, StatusCode::OK, "{shell:?}");
+	assert_eq!(
+		shell["workflowDueAt"].as_str(),
+		Some("2026-04-20T09:00:00Z")
+	);
 
 	let (status, events) = get_workflow_events(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{events:?}");

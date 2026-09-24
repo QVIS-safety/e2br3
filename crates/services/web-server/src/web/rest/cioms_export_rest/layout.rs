@@ -1225,7 +1225,7 @@ pub(super) fn render_cioms_continuation_pages(
 		.map(|test| {
 			let value = join_present(
 				&[
-					test.test_date.map(|date| format!("Date: {date}")),
+					test.test_date.as_ref().map(|date| format!("Date: {date}")),
 					Some(format!("F.r.2 Test: {}", test.test_name)),
 					test.test_meddra_code
 						.clone()

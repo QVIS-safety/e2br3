@@ -82,7 +82,11 @@ NESTED_AUDIT_TABLES = {
     "drugReactionAssessments[].sourceOfAssessment": "relatedness_assessments",
     "drugReactionAssessments[].methodOfAssessment": "relatedness_assessments",
     "drugReactionAssessments[].resultOfAssessment": "relatedness_assessments",
+    "drugReactionAssessments[].source_of_assessment": "relatedness_assessments",
+    "drugReactionAssessments[].method_of_assessment": "relatedness_assessments",
+    "drugReactionAssessments[].result_of_assessment": "relatedness_assessments",
     "drugReactionAssessments[]": "drug_reaction_assessments",
+    "fdaDevices[]": "fda_device_information",
 }
 BASE_CANDIDATES = 8
 STRING_CANDIDATES = 14
@@ -123,6 +127,10 @@ NULLFLAVOR_CANDIDATE_KINDS = (
     "nullflavor_lowercase", "nullflavor_overlong", "nullflavor_array",
     "nullflavor_boolean", "nullflavor_with_value",
 )
+DEVICE_NULL_FLAVOR_PATHS = {
+    "fdaDevices[].deviceBrandNameNullFlavor",
+    "fdaDevices[].commonDeviceNameNullFlavor",
+}
 
 
 @dataclass
@@ -138,13 +146,21 @@ class Event:
 
 
 def normalized_classification(actual: Any, before: Any, audit_complete: bool) -> str:
-    if actual == [None] and before == [None]:
-        return "NOOP_ACCEPTED"
-    if actual is not None and not is_blank_candidate(actual):
-        return "CLEAR_NOT_APPLIED" if values_equal(actual, before) else "NORMALIZATION_UNVERIFIED"
     if values_equal(actual, before):
-        return "NOOP_ACCEPTED"
+        return "NOOP_ACCEPTED" if is_empty_value(before) else "CLEAR_NOT_APPLIED"
+    if actual is not None and not is_blank_candidate(actual):
+        return "NORMALIZATION_UNVERIFIED"
     return "SAVE_NORMALIZED" if audit_complete else "AUDIT_MISMATCH"
+
+
+def mismatched_save_classification(
+    candidate: Any, before: Any, actual: Any, audit_complete: bool
+) -> str:
+    if candidate is None:
+        return "NOOP_ACCEPTED" if values_equal(actual, before) else "CLEAR_NOT_APPLIED"
+    if is_blank_candidate(candidate):
+        return normalized_classification(actual, before, audit_complete)
+    return "SAVE_READBACK_MISMATCH"
 
 
 def run_verdict(events: list[Event], planned: int, interrupted: str | None,
@@ -206,6 +222,31 @@ def object_identity(value: Any) -> dict[str, str]:
         if isinstance(candidate := value.get(key), str)
         and re.fullmatch(r"[0-9a-fA-F-]{36}", candidate)
     }
+
+
+def row_with_identity(value: Any, identity: dict[str, str]) -> dict[str, Any] | None:
+    if not isinstance(value, list) or not identity:
+        return None
+    matches = [
+        row for row in value
+        if isinstance(row, dict)
+        and all(object_identity(row).get(key) == expected for key, expected in identity.items())
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def replacement_identity(
+    response: Any,
+    owner: str,
+    root: str,
+    required_keys: set[str],
+) -> dict[str, str]:
+    owner_value = response.get(owner) if isinstance(response, dict) else None
+    rows = get_path(owner_value, root)
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        return {}
+    identity = object_identity(rows[0])
+    return identity if required_keys and required_keys <= identity.keys() else {}
 
 
 def set_path(target: dict[str, Any], path: str, value: Any) -> None:
@@ -512,6 +553,8 @@ def candidate_expectation(
     field: dict[str, Any], ordinal: int, candidate: Any = ...
 ) -> tuple[str, str | None] | None:
     if is_nullflavor_field(field):
+        if field.get("payloadPath") in DEVICE_NULL_FLAVOR_PATHS and ordinal == 4:
+            return "accept", None
         return None
     constraint = field.get("constraint", {})
     if ordinal == 0 and "invalidValue" in constraint:
@@ -532,7 +575,7 @@ def candidate_expectation(
         if field.get("_maxLengthOnly") and candidate is not ...:
             if ordinal == 12:
                 return "reject", None
-            if ordinal == 13:
+            if ordinal == 13 and contains_rejected_control(candidate):
                 return "reject", "INPUT.CONTROL_CHAR.REJECTED"
             if candidate is None:
                 return "accept", None
@@ -722,6 +765,26 @@ def is_blank_candidate(value: Any) -> bool:
     return isinstance(value, str) and not value.strip()
 
 
+def is_empty_value(value: Any) -> bool:
+    if value is None or is_blank_candidate(value):
+        return True
+    return isinstance(value, list) and bool(value) and all(is_empty_value(item) for item in value)
+
+
+def contains_rejected_control(value: Any) -> bool:
+    if isinstance(value, str):
+        return any(
+            unicodedata.category(character) == "Cc"
+            and character not in {"\t", "\n", "\r"}
+            for character in value
+        )
+    if isinstance(value, list):
+        return any(contains_rejected_control(item) for item in value)
+    if isinstance(value, dict):
+        return any(contains_rejected_control(item) for item in value.values())
+    return False
+
+
 def contract_rows(contract: list[dict[str, Any]], page: str) -> list[dict[str, Any]]:
     return [
         field
@@ -776,6 +839,10 @@ def expand_null_flavor_contracts(
         "hospitalRecordNumber": ("D.1.1.3", "3"),
         "investigationNumber": ("D.1.1.4", "4"),
     }
+    device_codes = {
+        "fdaDevices[].deviceBrandName": "FDA.G.k.12.r.4",
+        "fdaDevices[].commonDeviceName": "FDA.G.k.12.r.5",
+    }
     derived = 0
     unresolved: list[str] = []
     for page in contract:
@@ -824,6 +891,20 @@ def expand_null_flavor_contracts(
                     "projectionPath": "drug.drugReactionAssessments[].result_of_assessment_kr1",
                     "patch": {"kind": "row", "owner": "drug"},
                     "payloadPath": pair["value"],
+                }
+            if base is None and page_id == "DG" and pair["value"] in device_codes:
+                code = device_codes[pair["value"]]
+                leaf = pair["value"].rsplit(".", 1)[-1]
+                sibling = next(path for path in device_codes if path != pair["value"])
+                base = {
+                    "code": code,
+                    "authority": "FDA",
+                    "frontendPath": f"drugs[].{pair['value']}",
+                    "projectionPath": f"drug.fdaDevices[].{snake(leaf)}",
+                    "patch": {"kind": "row", "owner": "drug"},
+                    "payloadPath": pair["value"],
+                    "roundTripValue": f"Fuzz {leaf}",
+                    "_mutationFixedPayload": {sibling: f"Fuzz {sibling.rsplit('.', 1)[-1]}"},
                 }
             if base is None:
                 unresolved.append(f"{page_id}:{pair['value']}")
@@ -1146,7 +1227,10 @@ def main(args: argparse.Namespace) -> int:
             chain_before = value.get("broken_rows", value.get("brokenRows"))
 
     def audit_logs(owner: str | None = None, row_id: str | None = None, field_path: str = "") -> list[dict[str, Any]]:
-        nested_table = next((table for prefix, table in NESTED_AUDIT_TABLES.items() if field_path.startswith(prefix)), None)
+        nested_table = next(
+            (table for prefix, table in NESTED_AUDIT_TABLES.items() if field_path.startswith(prefix)),
+            None,
+        )
         if nested_table:
             status, value, _ = request("GET", f"/api/audit-logs/by-record/cases/{case_id}")
             if status != 200:
@@ -1179,12 +1263,33 @@ def main(args: argparse.Namespace) -> int:
             rows = value.get("rows", {}) if isinstance(value, dict) else {}
             current = rows.get(owner) if isinstance(rows, dict) else None
             if isinstance(current, list):
-                current = next((row for row in current if isinstance(row, dict) and row.get("id") == row_id), current[0] if current else None)
+                current = next(
+                    (
+                        row for row in current
+                        if row_id and isinstance(row, dict) and row.get("id") == row_id
+                    ),
+                    None,
+                )
         return status, current
 
-    def readback(page: str, owner: str, payload_path: str, row_route: bool, row_id: str | None) -> tuple[int | None, Any]:
+    def readback(
+        page: str,
+        owner: str,
+        payload_path: str,
+        row_route: bool,
+        row_id: str | None,
+        nested_identity: dict[str, str] | None = None,
+    ) -> tuple[int | None, Any, bool]:
         status, current = read_current(page, owner, row_route, row_id)
-        return status, get_path(current, leaf_path(payload_path))
+        root = nested_root(payload_path)
+        if status == 200 and root and nested_identity:
+            nested = row_with_identity(get_path(current, root), nested_identity)
+            if nested is None:
+                return None, None, False
+            remainder = payload_path.removeprefix(root).lstrip(".")
+            return status, get_path(nested, remainder), remainder in nested
+        leaf = leaf_path(payload_path)
+        return status, get_path(current, leaf), isinstance(current, dict) and leaf in current
 
     for page in pages:
         if interrupted or not case_id:
@@ -1334,8 +1439,13 @@ def main(args: argparse.Namespace) -> int:
                 for ordinal in range(candidate_count(field, args.values_per_field))
                 for sample in range(candidate_sample_count(field, ordinal, args.samples_per_category))
             )
-            before_status, before_actual = readback(
-                page, owner, projection_leaf(field, owner), row_route, row_ids.get(owner)
+            before_status, before_actual, _ = readback(
+                page,
+                owner,
+                projection_leaf(field, owner),
+                row_route,
+                row_ids.get(owner),
+                nested_row_identities.get((owner, root)) if root else None,
             )
             logs_before = audit_logs(owner, row_ids.get(owner), projection_leaf(field, owner))
             for ordinal, sample in candidates:
@@ -1348,6 +1458,8 @@ def main(args: argparse.Namespace) -> int:
                     sample,
                 )
                 mutation = copy.deepcopy(baseline_for([field]))
+                for path, value in field.get("_mutationFixedPayload", {}).items():
+                    set_path(mutation, path, copy.deepcopy(value))
                 set_path(mutation, leaf_path(payload_path), candidate)
                 nullflavor_with_value = add_nullflavor_partner(field, mutation, ordinal)
                 if page == "DG" and "drugReactionAssessments[]" in payload_path and reaction_id:
@@ -1366,6 +1478,15 @@ def main(args: argparse.Namespace) -> int:
                     status, value, summary = request(
                         "PATCH", route, {"authorities": authorities_for([field]), "rows": owner_patch(owner, mutation, array_owner)}
                     )
+                refreshed_identity: dict[str, str] = {}
+                if status == 200 and root:
+                    current_identity = nested_row_identities[(owner, root)]
+                    refreshed_identity = replacement_identity(
+                        value, owner, root, set(current_identity)
+                    )
+                    if refreshed_identity:
+                        nested_row_identities[(owner, root)] = refreshed_identity
+                identity_refreshed = bool(refreshed_identity)
                 if status == 200:
                     classification = "SAVE_ACCEPTED"
                 elif status == 422:
@@ -1385,7 +1506,7 @@ def main(args: argparse.Namespace) -> int:
                 if is_nullflavor_field(field):
                     if invalid_nullflavor:
                         expectation = ("reject", field.get("constraint", {}).get("ruleCode"))
-                    elif ordinal in {2, 3}:
+                    elif ordinal in {1, 2, 3}:
                         expectation = ("accept", None)
                 detail: dict[str, Any] = {
                     "candidate": redacted(candidate),
@@ -1406,13 +1527,20 @@ def main(args: argparse.Namespace) -> int:
                 actual = None
                 logs_after = None
                 if status == 200:
-                    read_status, actual = readback(page, owner, projection_leaf(field, owner), row_route, row_ids.get(owner))
+                    read_status, actual, readback_key_present = readback(
+                        page,
+                        owner,
+                        projection_leaf(field, owner),
+                        row_route,
+                        row_ids.get(owner),
+                        nested_row_identities.get((owner, root)) if root else None,
+                    )
                     detail.update({"readback_status": read_status, "readback": redacted(actual), "row_id_present": bool(row_ids.get(owner))})
+                    logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
+                    changed = [log for log in logs_after if log not in logs_before and isinstance(log, dict)]
                     if read_status != 200:
                         classification = "INCONCLUSIVE"
                     elif values_equal(candidate, actual):
-                        logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
-                        changed = [log for log in logs_after if log not in logs_before and isinstance(log, dict)]
                         changed_fields = [
                             log.get("changedFields", log.get("changed_fields", {}))
                             for log in changed
@@ -1434,22 +1562,47 @@ def main(args: argparse.Namespace) -> int:
                             classification = "AUDIT_MISMATCH"
                         detail.update({"audit_new_logs": len(changed), "audit_field_match": field_match, "audit_complete": audit_complete, "audit_path": audit_path, "audit_changed_keys": sorted({str(key) for fields_map in changed_fields for key in fields_map})})
                     else:
+                        audit_complete = False
                         if is_blank_candidate(candidate):
-                            logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
-                            changed = [log for log in logs_after if log not in logs_before and isinstance(log, dict)]
                             matched_logs = [log for log in changed if audit_key_matches(log.get("changedFields", log.get("changed_fields", {})), audit_path)]
                             audit_complete = any(audit_log_complete(log) for log in matched_logs)
-                            classification = normalized_classification(actual, before_actual, audit_complete)
                             detail.update({"audit_new_logs": len(changed), "audit_complete": audit_complete})
-                        else:
-                            classification = "CLEAR_NOT_APPLIED" if candidate is None else "SAVE_READBACK_MISMATCH"
+                        classification = mismatched_save_classification(
+                            candidate, before_actual, actual, audit_complete
+                        )
                     if classification == "CLEAR_NOT_APPLIED" and candidate == "":
                         detail.update({
                             "surface": "raw_api",
                             "normalization_explanation": "UI save canonicalizes blank strings to null",
                         })
+                    if (
+                        payload_path in DEVICE_NULL_FLAVOR_PATHS
+                        and ordinal == 4
+                    ):
+                        normalized = (
+                            read_status == 200
+                            and readback_key_present
+                            and actual is None
+                            and identity_refreshed
+                            and classification == "SAVE_NORMALIZED"
+                        )
+                        classification = "SAVE_NORMALIZED" if normalized else "FAIL"
+                        detail.update({
+                            "readback_key_present": readback_key_present,
+                            "nested_identity_refreshed": identity_refreshed,
+                            "normalization_explanation": (
+                                "Device NullFlavor blank is trimmed to null by the API"
+                            ),
+                        })
                 elif status in {400, 409, 422}:
-                    read_status, actual = readback(page, owner, projection_leaf(field, owner), row_route, row_ids.get(owner))
+                    read_status, actual, _ = readback(
+                        page,
+                        owner,
+                        projection_leaf(field, owner),
+                        row_route,
+                        row_ids.get(owner),
+                        nested_row_identities.get((owner, root)) if root else None,
+                    )
                     logs_after = audit_logs(owner, row_ids.get(owner), audit_path)
                     changed = [log for log in logs_after if log not in logs_before and isinstance(log, dict)]
                     structured_error = summary.get("error_code") != "SERVICE_ERROR" and bool(

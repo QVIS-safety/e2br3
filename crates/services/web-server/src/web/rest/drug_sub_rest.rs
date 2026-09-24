@@ -112,6 +112,14 @@ pub(crate) async fn persist_fda_devices(
 
 	let mut created = Vec::with_capacity(devices.len());
 	for (device_index, device) in devices.into_iter().enumerate() {
+		let device_brand_name_null_flavor = device
+			.device_brand_name_null_flavor
+			.map(|value| value.trim().to_owned())
+			.filter(|value| !value.is_empty());
+		let common_device_name_null_flavor = device
+			.common_device_name_null_flavor
+			.map(|value| value.trim().to_owned())
+			.filter(|value| !value.is_empty());
 		let id = FdaDeviceInformationBmc::create(
 			ctx,
 			mm,
@@ -120,10 +128,9 @@ pub(crate) async fn persist_fda_devices(
 				sequence_number: device_index as i32 + 1,
 				malfunction: device.malfunction,
 				device_brand_name: device.device_brand_name,
-				device_brand_name_null_flavor: device.device_brand_name_null_flavor,
+				device_brand_name_null_flavor,
 				common_device_name: device.common_device_name,
-				common_device_name_null_flavor: device
-					.common_device_name_null_flavor,
+				common_device_name_null_flavor,
 				device_product_code: device.device_product_code,
 				manufacturer_name: device.manufacturer_name,
 				manufacturer_address: device.manufacturer_address,

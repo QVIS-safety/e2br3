@@ -345,7 +345,7 @@ BEGIN
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
-        v_test_result_id, v_case_id, 1, DATE '2026-04-08', 'Alanine aminotransferase',
+        v_test_result_id, v_case_id, 1, '20260408', 'Alanine aminotransferase',
         '27.1', '10001927', 'H', '86', 'U/L',
         'ALT elevated above reference interval.', '7', '56',
         'Repeat liver function test recommended.', true,

@@ -1119,6 +1119,8 @@ def run(args: argparse.Namespace) -> int:
 
 
 def setup_case(args: argparse.Namespace) -> str | None:
+    if not args.product_key or not args.meddra_version or not args.meddra_code:
+        raise SystemExit("--prepare-case requires --product-key, --meddra-version, and --meddra-code")
     setup_dir = Path(args.artifact_dir) / "case-setup"
     command = [
         sys.executable,
@@ -1133,6 +1135,11 @@ def setup_case(args: argparse.Namespace) -> str | None:
         "--samples-per-category", "1",
         "--artifact-dir", str(setup_dir),
         "--no-run-gates",
+        "--product-key", args.product_key,
+        "--meddra-version", args.meddra_version,
+        "--meddra-code", args.meddra_code,
+        "--contract", args.contract,
+        "--null-flavor-pairs", args.null_flavor_pairs,
     ]
     subprocess.run(command, cwd=ROOT, check=True)
     artifact = setup_dir / f"case-editor-{args.seed}.jsonl"
@@ -1270,6 +1277,11 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--deadline-seconds", type=float, default=1800)
     value.add_argument("--timeout", type=float, default=15)
     value.add_argument("--dry-run", action="store_true")
+    value.add_argument("--product-key", default=os.getenv("E2BR3_PRODUCT_KEY"))
+    value.add_argument("--meddra-version", default=os.getenv("E2BR3_MEDDRA_VERSION"))
+    value.add_argument("--meddra-code", default=os.getenv("E2BR3_MEDDRA_CODE"))
+    value.add_argument("--contract", default=str(candidates.DEFAULT_CONTRACT))
+    value.add_argument("--null-flavor-pairs", default=str(candidates.DEFAULT_NULL_FLAVOR_PAIRS))
     return value
 
 

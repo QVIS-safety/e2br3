@@ -1035,10 +1035,12 @@ fn c_1_9_1_r_1(
 }
 
 /// ICH.C.1.9.1.r.2.REQUIRED
+/// ICH.C.1.9.1.r.2.FORMAT
 /// ICH.C.1.9.1.r.2.LENGTH.MAX
 fn c_1_9_1_r_2(
 	idx: usize,
 	identifier: &OtherCaseIdentifier,
+	vocabulary: &crate::context::VocabularyContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let path = format!("otherCaseIdentifiers.{idx}.caseIdentifier");
@@ -1050,6 +1052,26 @@ fn c_1_9_1_r_2(
 		"case-identification",
 		"[C.1.9.1.r.2] Case identifier is required when an other case identifier row is present.",
 		has_text(value),
+	);
+	let valid_format = trimmed(value).is_none_or(|value| {
+		let mut parts = value.splitn(3, '-');
+		matches!(
+			(parts.next(), parts.next(), parts.next()),
+			(Some(country), Some(sender), Some(report))
+				if country.len() == 2
+					&& country.bytes().all(|byte| byte.is_ascii_uppercase())
+					&& !sender.trim().is_empty()
+					&& !report.trim().is_empty()
+					&& valid_iso3166(vocabulary, Some(country))
+		)
+	});
+	reject_when(
+		issues,
+		"ICH.C.1.9.1.r.2.FORMAT",
+		&path,
+		"case-identification",
+		"[C.1.9.1.r.2] Case identifier must use country code-company or regulator name-report number format.",
+		!valid_format,
 	);
 	length(issues, "ICH.C.1.9.1.r.2.LENGTH.MAX", &path, value, 100);
 }
@@ -1176,25 +1198,9 @@ fn c_5_2(idx: usize, study: &StudyInformation, issues: &mut Vec<ValidationIssue>
 	);
 }
 
-/// ICH.C.5.3.REQUIRED
 /// ICH.C.5.3.LENGTH.MAX
-fn c_5_3(
-	idx: usize,
-	study: &StudyInformation,
-	report_type_is_study: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
+fn c_5_3(idx: usize, study: &StudyInformation, issues: &mut Vec<ValidationIssue>) {
 	let path = format!("studyInformation.{idx}.sponsorStudyNumber");
-	if report_type_is_study {
-		required_field(
-			issues,
-			"ICH.C.5.3.REQUIRED",
-			&path,
-			"study",
-			"[C.5.3] Sponsor study number is required when report type is study (C.1.3=2).",
-			has_text(study.sponsor_study_number.as_deref()),
-		);
-	}
 	length(
 		issues,
 		"ICH.C.5.3.LENGTH.MAX",
@@ -1306,14 +1312,14 @@ pub(crate) fn collect_ich_issues(
 	for (idx, identifier) in validation_ctx.other_case_identifiers.iter().enumerate()
 	{
 		c_1_9_1_r_1(idx, identifier, issues);
-		c_1_9_1_r_2(idx, identifier, issues);
+		c_1_9_1_r_2(idx, identifier, &validation_ctx.vocabulary, issues);
 	}
 	for (idx, report) in validation_ctx.linked_report_numbers.iter().enumerate() {
 		c_1_10_r(idx, report, issues);
 	}
 	for (idx, study) in validation_ctx.studies.iter().enumerate() {
 		c_5_2(idx, study, issues);
-		c_5_3(idx, study, report_type_is_study, issues);
+		c_5_3(idx, study, issues);
 	}
 	c_5_4(&validation_ctx.studies, report_type_is_study, issues);
 	let study_indices = validation_ctx
@@ -3215,13 +3221,58 @@ mod golden_c1_value_tests {
 	}
 
 	#[test]
-	fn c1_9_1_r_2_accepts_free_text_identifier() {
-		let identifier = other_identifier("Legacy Safety DB", "LEGACY-2026-4451");
+	fn c1_9_1_r_2_validates_country_sender_report_format() {
+		let vocabulary = crate::context::VocabularyContext::for_active_codes(&[
+			("ISO3166", crate::VocabularyScope::All, "EU"),
+			("ISO3166", crate::VocabularyScope::All, "KR"),
+		]);
+		let identifier = other_identifier("Legacy Safety DB", "EU-ORG-2026-4451");
 		let mut issues = Vec::new();
 
-		c_1_9_1_r_2(0, &identifier, &mut issues);
+		c_1_9_1_r_2(0, &identifier, &vocabulary, &mut issues);
 
 		assert!(issues.is_empty(), "{issues:?}");
+
+		let mut ctx = ctx_with(base_report());
+		ctx.vocabulary = vocabulary.clone();
+		ctx.other_case_identifiers = vec![
+			other_identifier("Prior sender", "KR-ORG-127524"),
+			other_identifier("Prior sender", "bad-ee1b6e"),
+		];
+		collect_ich_issues(&ctx, &mut issues);
+		assert_eq!(
+			issues
+				.iter()
+				.filter(|issue| issue.code == "ICH.C.1.9.1.r.2.FORMAT")
+				.map(|issue| issue.path.as_str())
+				.collect::<Vec<_>>(),
+			vec!["otherCaseIdentifiers.1.caseIdentifier"]
+		);
+
+		issues.clear();
+		for value in [
+			"KR--127524",
+			"KR-ORG",
+			"ZZ-ORG-127524",
+			"-ORG-123",
+			"KR- -123",
+			"KR-ORG-   ",
+			"K R-ORG-123",
+		] {
+			c_1_9_1_r_2(
+				0,
+				&other_identifier("Prior sender", value),
+				&vocabulary,
+				&mut issues,
+			);
+		}
+		assert_eq!(
+			issues
+				.iter()
+				.filter(|issue| issue.code == "ICH.C.1.9.1.r.2.FORMAT")
+				.count(),
+			7
+		);
 	}
 
 	#[test]
@@ -3303,13 +3354,10 @@ mod golden_c1_value_tests {
 		ctx.studies = vec![study(None, None)];
 		assert_eq!(
 			filtered(&ctx, STUDY_CODES),
-			vec![
-				issue(
-					"ICH.C.5.3.REQUIRED",
-					"studyInformation.0.sponsorStudyNumber",
-				),
-				issue("ICH.C.5.4.REQUIRED", "studyInformation.0.studyTypeReaction",),
-			]
+			vec![issue(
+				"ICH.C.5.4.REQUIRED",
+				"studyInformation.0.studyTypeReaction",
+			)]
 		);
 	}
 
@@ -3326,6 +3374,18 @@ mod golden_c1_value_tests {
 		let mut ctx = ctx_with(study_report());
 		ctx.studies = vec![study(Some("1"), Some("SPONSOR-1"))];
 		assert_eq!(filtered(&ctx, STUDY_CODES), Vec::new());
+	}
+
+	#[test]
+	fn sponsor_study_number_is_optional_with_or_without_null_flavor() {
+		for null_flavor in [None, Some("ASKU"), Some("NASK")] {
+			let mut study = study(Some("1"), None);
+			study.sponsor_study_number_null_flavor = null_flavor.map(str::to_string);
+			let mut ctx = ctx_with(study_report());
+			ctx.studies = vec![study];
+
+			assert_eq!(filtered(&ctx, STUDY_CODES), Vec::new());
+		}
 	}
 
 	#[test]

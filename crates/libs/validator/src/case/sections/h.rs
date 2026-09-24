@@ -3,8 +3,8 @@ use super::helpers::{
 	valid_iso639, valid_meddra_term, valid_meddra_version,
 };
 use crate::{
-	has_text, push_business_issue, should_require_case_narrative,
-	RegulatoryAuthority, ValidationContext, ValidationIssue,
+	has_text, push_business_issue, RegulatoryAuthority, ValidationContext,
+	ValidationIssue,
 };
 use lib_core::model::narrative::{
 	CaseSummaryInformation, NarrativeInformation, SenderDiagnosis,
@@ -22,10 +22,8 @@ const VOCABULARY_MESSAGE: &str = "Dictionary vocabulary constraint.";
 /// ICH.H.1.LENGTH.MAX
 fn h_1(narrative: Option<&NarrativeInformation>, issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "narrative.caseNarrative";
-	let present = narrative.is_some_and(|narrative| {
-		!should_require_case_narrative(narrative)
-			|| has_text(Some(narrative.case_narrative.as_str()))
-	});
+	let present = narrative
+		.is_some_and(|narrative| has_text(Some(narrative.case_narrative.as_str())));
 	require(
 		issues,
 		"ICH.H.1.REQUIRED",
@@ -444,6 +442,42 @@ mod tests {
 		let mut issues = Vec::new();
 		collect_ich_issues(ctx, &mut issues);
 		issues.into_iter().map(|issue| issue.code).collect()
+	}
+
+	#[test]
+	fn h_1_is_required_independently_of_other_narrative_content() {
+		let required_count = |ctx: &ValidationContext| {
+			codes_for(ctx)
+				.into_iter()
+				.filter(|code| code == "ICH.H.1.REQUIRED")
+				.count()
+		};
+
+		assert_eq!(required_count(&empty_ctx()), 1);
+
+		let mut empty_row = empty_ctx();
+		empty_row.narrative = Some(narrative());
+		assert_eq!(required_count(&empty_row), 1);
+
+		let mut whitespace = narrative();
+		whitespace.case_narrative = " \t\n ".to_string();
+		let mut whitespace_ctx = empty_ctx();
+		whitespace_ctx.narrative = Some(whitespace);
+		assert_eq!(required_count(&whitespace_ctx), 1);
+
+		let mut h_5_only = empty_ctx();
+		h_5_only.narrative = Some(narrative());
+		let mut summary = case_summary();
+		summary.summary_text = Some("Case summary only".to_string());
+		summary.language_code = Some("eng".to_string());
+		h_5_only.case_summaries = vec![summary];
+		assert_eq!(required_count(&h_5_only), 1);
+
+		let mut populated = narrative();
+		populated.case_narrative = "Required narrative".to_string();
+		let mut populated_ctx = empty_ctx();
+		populated_ctx.narrative = Some(populated);
+		assert_eq!(required_count(&populated_ctx), 0);
 	}
 
 	#[test]

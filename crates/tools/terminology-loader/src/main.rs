@@ -1493,17 +1493,20 @@ mod tests {
 		let zip_path = write_zip(&[
 			(
 				"MP.csv",
-				"1,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\n",
+				"RID0000001,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\nRID2,,000001,01,001,0000000001,0000000001,N,Aldomet,,,,,USA,,6546,010,USA,68,001,19851231,20250930\n",
 			),
 			("ATC.csv", "C02AB,ANTIHYPERTENSIVES\n"),
 		]);
 
 		let rows = parse_whodrug(&zip_path).expect("official C3 zip should parse");
 
-		assert_eq!(rows.len(), 1);
-		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows.len(), 2);
+		assert_eq!(rows[0].code, "RID0000001");
 		assert_eq!(rows[0].drug_name, "Methyldopa");
 		assert_eq!(rows[0].atc_code, None);
+		assert_eq!(rows[1].code, "RID2");
+		assert_eq!(rows[1].drug_name, "Aldomet");
+		assert_eq!(rows[1].atc_code, None);
 		let _ = fs::remove_file(zip_path);
 	}
 
