@@ -1648,25 +1648,22 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		StudyPresaveBmc::create(&ctx, &mm, invalid_kind_study).await,
 		"sponsor_study_number_kind",
 	);
-	expect_validation_error(
-		StudyPresaveBmc::update(
-			&ctx,
-			&mm,
-			study_id,
-			StudyPresaveForUpdate {
-				sponsor_study_number_kind: Some(String::new()),
-				..Default::default()
-			},
-		)
-		.await,
-		"sponsor_study_number_kind",
-	);
+	StudyPresaveBmc::update(
+		&ctx,
+		&mm,
+		study_id,
+		StudyPresaveForUpdate {
+			sponsor_study_number_kind: Some(String::new()),
+			..Default::default()
+		},
+	)
+	.await?;
 	assert_eq!(
 		StudyPresaveBmc::get(&ctx, &mm, study_id)
 			.await?
 			.sponsor_study_number_kind
 			.as_deref(),
-		Some("STUDY_NO")
+		None
 	);
 
 	Ok(())

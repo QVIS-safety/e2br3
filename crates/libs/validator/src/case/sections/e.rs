@@ -571,10 +571,8 @@ fn fda_e_i_3_2h(
 		"FDA.E.i.3.2h.REQUIRED",
 		&format!("reactions.{idx}.requiredIntervention"),
 		SECTION,
-		"FDA requires [E.i.3.2h] when other medically important condition is selected.",
-		reaction.criteria_other_medically_important == Some(true)
-			&& reaction.required_intervention.is_none()
-			&& null_flavor.is_none(),
+		"FDA postmarket reports require [E.i.3.2h] Required Intervention.",
+		reaction.required_intervention.is_none() && null_flavor.is_none(),
 	);
 }
 
@@ -897,20 +895,28 @@ mod tests {
 	}
 
 	#[test]
-	fn fda_reaction_rule_uses_catalog_condition_and_concrete_path() {
+	fn fda_postmarket_required_intervention_is_unconditional() {
+		for other_medically_important in [Some(true), Some(false), None] {
+			let mut reaction = reaction();
+			reaction.criteria_other_medically_important = other_medically_important;
+			let mut issues = Vec::new();
+			fda_e_i_3_2h(3, &reaction, false, &mut issues);
+			assert_eq!(issues.len(), 1);
+			assert_eq!(issues[0].code, "FDA.E.i.3.2h.REQUIRED");
+			assert_eq!(
+				issues[0].field_path.as_deref(),
+				Some("reactions.3.requiredIntervention")
+			);
+		}
+
 		let mut reaction = reaction();
-		reaction.criteria_other_medically_important = Some(true);
+		reaction.required_intervention = Some(true);
 		let mut issues = Vec::new();
 		fda_e_i_3_2h(3, &reaction, false, &mut issues);
-		assert_eq!(issues.len(), 1);
-		assert_eq!(issues[0].code, "FDA.E.i.3.2h.REQUIRED");
-		assert_eq!(
-			issues[0].field_path.as_deref(),
-			Some("reactions.3.requiredIntervention")
-		);
+		assert!(issues.is_empty());
 
-		issues.clear();
-		reaction.criteria_other_medically_important = Some(false);
+		reaction.required_intervention = None;
+		reaction.required_intervention_null_flavor = Some("NI".to_string());
 		fda_e_i_3_2h(3, &reaction, false, &mut issues);
 		assert!(issues.is_empty());
 	}
@@ -923,9 +929,34 @@ mod tests {
 		assert_eq!(issues[0].code, "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED");
 
 		issues.clear();
+		reaction.required_intervention = Some(true);
+		fda_e_i_3_2h(0, &reaction, true, &mut issues);
+		assert_eq!(issues[0].code, "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED");
+
+		issues.clear();
+		reaction.required_intervention = None;
 		reaction.required_intervention_null_flavor = Some("NI".to_string());
 		fda_e_i_3_2h(0, &reaction, true, &mut issues);
 		assert!(issues.is_empty());
+	}
+
+	#[test]
+	fn required_intervention_rule_is_fda_only() {
+		let mut ctx = empty_ctx();
+		ctx.reactions = vec![reaction()];
+		for authority in [RegulatoryAuthority::Ich, RegulatoryAuthority::Mfds] {
+			let mut issues = Vec::new();
+			collect(&mut issues, authority, &ctx, None);
+			assert!(!issues
+				.iter()
+				.any(|issue| issue.code.starts_with("FDA.E.i.3.2h")));
+		}
+
+		let mut issues = Vec::new();
+		collect(&mut issues, RegulatoryAuthority::Fda, &ctx, None);
+		assert!(issues
+			.iter()
+			.any(|issue| issue.code == "FDA.E.i.3.2h.REQUIRED"));
 	}
 
 	#[test]

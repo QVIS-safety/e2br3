@@ -42,7 +42,7 @@ def prepared_contract(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 def field_shard(field: dict[str, Any], count: int) -> int:
     identity = "|".join(str(field.get(key, "")) for key in ("authority", "code", "frontendPath", "payloadPath"))
-    return int.from_bytes(hashlib.sha256(identity.encode()).digest()[:8]) % count
+    return int.from_bytes(hashlib.sha256(identity.encode()).digest()[:8], "big") % count
 
 
 def build_plan(args: argparse.Namespace) -> dict[str, Any]:
@@ -65,7 +65,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
                     if candidates.is_nullflavor_field(field):
                         if candidates.nullflavor_invalid_candidate(field, value) or ordinal == 13:
                             expectation = ("reject", field.get("constraint", {}).get("ruleCode"))
-                        elif ordinal in {2, 3}:
+                        elif ordinal in {1, 2, 3}:
                             expectation = ("accept", None)
                     mutations.append({
                         "ordinal": ordinal,
@@ -101,6 +101,8 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def setup_case(args: argparse.Namespace) -> str:
+    if not args.product_key or not args.meddra_version or not args.meddra_code:
+        raise SystemExit("--setup-case requires --product-key, --meddra-version, and --meddra-code")
     setup_dir = Path(args.artifact_dir) / "setup"
     command = [
         sys.executable, str(ROOT / "scripts/case_editor_input_fuzzer.py"),
@@ -108,6 +110,11 @@ def setup_case(args: argparse.Namespace) -> str:
         "--seed", str(args.seed), "--pages", args.pages, "--values-per-field", "0",
         "--samples-per-category", "1", "--artifact-dir", str(setup_dir), "--no-run-gates",
         "--complete-baseline",
+        "--product-key", args.product_key,
+        "--meddra-version", args.meddra_version,
+        "--meddra-code", args.meddra_code,
+        "--contract", args.contract,
+        "--null-flavor-pairs", args.null_flavor_pairs,
     ]
     subprocess.run(command, cwd=ROOT, check=True)
     artifact = setup_dir / f"case-editor-{args.seed}.jsonl"
@@ -174,6 +181,9 @@ def parser() -> argparse.ArgumentParser:
     parser.add_argument("--artifact-dir", default="tmp/rbac-rls-fuzz/case-editor-ui")
     parser.add_argument("--contract", default=str(candidates.DEFAULT_CONTRACT))
     parser.add_argument("--null-flavor-pairs", default=str(candidates.DEFAULT_NULL_FLAVOR_PAIRS))
+    parser.add_argument("--product-key", default=os.getenv("E2BR3_PRODUCT_KEY"))
+    parser.add_argument("--meddra-version", default=os.getenv("E2BR3_MEDDRA_VERSION"))
+    parser.add_argument("--meddra-code", default=os.getenv("E2BR3_MEDDRA_CODE"))
     parser.add_argument("--dry-run", action="store_true")
     return parser
 

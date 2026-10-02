@@ -101,6 +101,120 @@ async fn study_name_can_be_cleared_and_reloaded() -> Result<()> {
 	Ok(())
 }
 
+#[serial_test::serial]
+#[tokio::test]
+async fn registration_blank_values_can_be_replaced_by_null_flavors() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-SI-NULL-FLAVOR", &["ich"])
+			.await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/SI");
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {
+			"studyInformation": {"studyName": "Null flavor study"},
+			"studyRegistrationNumbers": [
+				{"registrationNumber": "REG-1", "countryCode": "KR", "sequenceNumber": 1},
+				{"registrationNumber": "REG-2", "countryCode": "US", "sequenceNumber": 2}
+			]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, initial) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{initial}");
+	let first_id = initial["rows"]["studyRegistrationNumbers"][0]["id"]
+		.as_str()
+		.ok_or("missing first registration id")?;
+	let sibling = initial["rows"]["studyRegistrationNumbers"][1].clone();
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {
+			"studyRegistrationNumbers": [{
+				"id": first_id,
+				"registrationNumber": "",
+				"registrationNumberNullFlavor": "ASKU"
+			}]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, after_registration) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{after_registration}");
+	assert_eq!(
+		after_registration["rows"]["studyRegistrationNumbers"][0]["registration_number"],
+		serde_json::Value::Null
+	);
+	assert_eq!(
+		after_registration["rows"]["studyRegistrationNumbers"][0]
+			["registration_number_null_flavor"],
+		"ASKU"
+	);
+	assert_eq!(
+		after_registration["rows"]["studyRegistrationNumbers"][1],
+		sibling
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {
+			"studyRegistrationNumbers": [{
+				"id": first_id,
+				"countryCode": " ",
+				"countryCodeNullFlavor": "ASKU"
+			}]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, after_country) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{after_country}");
+	assert_eq!(
+		after_country["rows"]["studyRegistrationNumbers"][0]["country_code"],
+		serde_json::Value::Null
+	);
+	assert_eq!(
+		after_country["rows"]["studyRegistrationNumbers"][0]
+			["country_code_null_flavor"],
+		"ASKU"
+	);
+	assert_eq!(after_country["rows"]["studyRegistrationNumbers"][1], sibling);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {
+			"studyRegistrationNumbers": [{
+				"id": first_id,
+				"registrationNumber": "REG-CONFLICT",
+				"registrationNumberNullFlavor": "ASKU"
+			}]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"],
+		"studyInformation.studyRegistrationNumbers.0.registrationNumberNullFlavor"
+	);
+	let (status, unchanged) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{unchanged}");
+	assert_eq!(unchanged, after_country);
+	Ok(())
+}
+
 #[tokio::test]
 async fn isolates_study_children_and_rejects_foreign_ids() -> Result<()> {
 	let mm = init_test_mm().await?;

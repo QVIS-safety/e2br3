@@ -817,8 +817,16 @@ async fn load_editor_dg_row_detail(
 	mm: &ModelManager,
 	case_id: Uuid,
 	drug_id: Uuid,
+	include_deleted: bool,
 ) -> Result<Value> {
-	let drug = DrugInformationBmc::get_in_case(ctx, mm, case_id, drug_id).await?;
+	let drug = DrugInformationBmc::get_in_case_with_deleted(
+		ctx,
+		mm,
+		case_id,
+		drug_id,
+		include_deleted,
+	)
+	.await?;
 	let active_substances = DrugActiveSubstanceBmc::list(
 		ctx,
 		mm,
@@ -1066,7 +1074,8 @@ pub async fn get_editor_dg(
 		move |ctx, mm| {
 			Box::pin(async move {
 				let drug =
-					load_editor_dg_row_detail(ctx, mm, case_id, drug_id).await?;
+					load_editor_dg_row_detail(ctx, mm, case_id, drug_id, false)
+						.await?;
 				Ok((
 					axum::http::StatusCode::OK,
 					Json(CaseEditorRowDetailResponse {
@@ -1093,7 +1102,7 @@ async fn build_editor_dg_page_row_response(
 	row_id: Uuid,
 	authorities: Option<String>,
 ) -> Result<Value> {
-	let drug = load_editor_dg_row_detail(ctx, mm, case_id, row_id).await?;
+	let drug = load_editor_dg_row_detail(ctx, mm, case_id, row_id, true).await?;
 	editor_page_row_response(
 		case_id,
 		"DG",
@@ -1205,7 +1214,10 @@ pub async fn patch_editor_dg_page_row(
 				let requested_authorities = validate_request_projection_context(
 					request.authorities.as_deref(),
 				)?;
-				DrugInformationBmc::get_in_case(ctx, mm, case_id, row_id).await?;
+				DrugInformationBmc::get_in_case_with_deleted(
+					ctx, mm, case_id, row_id, true,
+				)
+				.await?;
 
 				let row = required_row_object("DG", &request.rows, "drug")?;
 				validate_row_payload("DG", "drug", row, None)?;
@@ -1230,6 +1242,18 @@ pub async fn patch_editor_dg_page_row(
 				persist_drug_reaction_assessments(ctx, mm, case_id, row_id, row)
 					.await?;
 				devices::persist_devices(ctx, mm, row_id, row).await?;
+				if row.get("deleted").and_then(Value::as_bool) == Some(false) {
+					let current = DrugInformationBmc::get_in_case_with_deleted(
+						ctx, mm, case_id, row_id, true,
+					)
+					.await?;
+					if current.deleted {
+						DrugInformationBmc::restore_in_case(
+							ctx, mm, case_id, row_id,
+						)
+						.await?;
+					}
+				}
 				mark_editor_validation_summary_stale(
 					ctx,
 					mm,

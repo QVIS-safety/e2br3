@@ -102,6 +102,9 @@ fn input_value<'a>(value: &'a Value, value_type: InputType) -> InputValue<'a> {
 		return InputValue::Null;
 	}
 	match (value_type, value) {
+		(InputType::String, Value::String(value)) if value.trim().is_empty() => {
+			InputValue::Null
+		}
 		(InputType::String, Value::String(value)) => InputValue::String(value),
 		(InputType::Boolean, Value::Bool(value)) => InputValue::Boolean(*value),
 		(InputType::Number, Value::Number(value)) => InputValue::Number(value),
@@ -1752,6 +1755,46 @@ mod input_contract_save_tests {
 			detail.path,
 			"patientInformation.parentInformation.medicalHistoryEpisodes.0.continuingNullFlavor"
 		);
+	}
+
+	#[test]
+	fn input_contract_save_treats_blank_si_registration_values_as_null() {
+		for row in [
+			json!({
+				"registrationNumber": "",
+				"registrationNumberNullFlavor": "ASKU"
+			}),
+			json!({
+				"countryCode": "  ",
+				"countryCodeNullFlavor": "ASKU"
+			}),
+		] {
+			let rows = BTreeMap::from([
+				("studyInformation".to_string(), json!({})),
+				("studyRegistrationNumbers".to_string(), json!([row])),
+			]);
+			validate_direct_rows("SI", &rows, false).unwrap();
+		}
+
+		let rows = BTreeMap::from([
+			("studyInformation".to_string(), json!({})),
+			(
+				"studyRegistrationNumbers".to_string(),
+				json!([{
+					"registrationNumber": "REG-1",
+					"registrationNumberNullFlavor": "ASKU"
+				}]),
+			),
+		]);
+		let detail = constraint_violation(
+			validate_direct_rows("SI", &rows, false).unwrap_err(),
+		);
+		assert_eq!(detail.rule_code, "ICH.C.5.1.r.1.NULLFLAVOR.ALLOWED");
+		assert_eq!(
+			detail.path,
+			"studyInformation.studyRegistrationNumbers.0.registrationNumberNullFlavor"
+		);
+		assert_eq!(detail.message, "value and NullFlavor cannot both be set");
 	}
 
 	#[test]

@@ -507,7 +507,7 @@ const LB_ITEMS: &[CatalogItem] = &[
 	item(
 		"test_date",
 		"Test Date (F.r.1)",
-		Date,
+		Text,
 		"test_date",
 		OneToMany("test_results"),
 	),

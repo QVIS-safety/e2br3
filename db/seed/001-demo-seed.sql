@@ -512,7 +512,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO test_results (id, case_id, sequence_number, test_date, test_name, created_by, created_at, updated_at)
-    VALUES (v_test_result_id, v_case_id, 1, CURRENT_DATE, 'Blood Test', v_user_id, NOW(), NOW())
+    VALUES (v_test_result_id, v_case_id, 1, TO_CHAR(CURRENT_DATE, 'YYYYMMDD'), 'Blood Test', v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO drug_information (id, case_id, sequence_number, drug_characterization, medicinal_product, action_taken, created_by, created_at, updated_at)

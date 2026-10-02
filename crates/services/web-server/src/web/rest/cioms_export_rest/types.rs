@@ -175,7 +175,7 @@ fn cioms_reaction_description(data: &CiomsCaseData) -> String {
 	for test in &data.test_results {
 		let result = join_present(
 			&[
-				test.test_date.map(|date| format!("Date: {date}")),
+				test.test_date.as_ref().map(|date| format!("Date: {date}")),
 				Some(test.test_name.clone()),
 				test.test_result_code
 					.clone()

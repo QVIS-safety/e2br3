@@ -239,6 +239,69 @@ where
 	})
 }
 
+pub fn deserialize_option_f_r_1_ts<'de, D>(
+	deserializer: D,
+) -> Result<Option<String>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let value = Option::<FlexDateInput>::deserialize(deserializer)?;
+	let Some(value) = value else { return Ok(None) };
+	let format_date = |date: Date| {
+		format!(
+			"{:04}{:02}{:02}",
+			date.year(),
+			u8::from(date.month()),
+			date.day()
+		)
+	};
+	match value {
+		FlexDateInput::Str(value) => {
+			let value = value.trim();
+			if value.is_empty() {
+				return Ok(None);
+			}
+			let issues = input_contracts::generated::f::f_r_1(
+				input_contracts::FieldInput::new(
+					input_contracts::InputValue::String(value),
+					None,
+				),
+			);
+			if issues.is_empty() {
+				return Ok(Some(value.to_string()));
+			}
+			let date = (value.len() == 10
+				&& value.as_bytes().get(4) == Some(&b'-')
+				&& value.as_bytes().get(7) == Some(&b'-'))
+			.then(|| {
+				let year = value.get(0..4)?.parse().ok()?;
+				let month = value.get(5..7)?.parse::<u8>().ok()?;
+				let day = value.get(8..10)?.parse().ok()?;
+				Date::from_calendar_date(year, Month::try_from(month).ok()?, day)
+					.ok()
+			})
+			.flatten();
+			date.map(format_date)
+				.map(Some)
+				.ok_or_else(|| de::Error::custom("invalid F.r.1 test date"))
+		}
+		FlexDateInput::YearOrdinal(year, ordinal) => {
+			Date::from_ordinal_date(year, ordinal)
+				.map(format_date)
+				.map(Some)
+				.map_err(|_| de::Error::custom("invalid F.r.1 test date"))
+		}
+		FlexDateInput::YearMonthDay(year, month, day) => {
+			let month = Month::try_from(month)
+				.map_err(|_| de::Error::custom("invalid F.r.1 test date"))?;
+			Date::from_calendar_date(year, month, day)
+				.map(format_date)
+				.map(Some)
+				.map_err(|_| de::Error::custom("invalid F.r.1 test date"))
+		}
+	}
+}
+
 pub fn e2b_datetime_date(value: &str) -> Option<Date> {
 	let value = value.trim();
 	let local = value
@@ -256,7 +319,7 @@ pub fn e2b_datetime_date(value: &str) -> Option<Date> {
 #[cfg(test)]
 mod tests {
 	use super::{
-		deserialize_option_date_with_partial_precision,
+		deserialize_option_date_with_partial_precision, deserialize_option_f_r_1_ts,
 		deserialize_optional_partial_ts_raw,
 	};
 	use serde::Deserialize;
@@ -317,5 +380,39 @@ mod tests {
 			super::e2b_datetime_date("20240101120000.1234+0900"),
 			Date::from_calendar_date(2024, Month::January, 1).ok()
 		);
+	}
+
+	#[derive(Deserialize)]
+	struct TestDateInput {
+		#[serde(deserialize_with = "deserialize_option_f_r_1_ts")]
+		value: Option<String>,
+	}
+
+	#[test]
+	fn f_r_1_deserializer_preserves_valid_precision_and_rejects_invalid_dates() {
+		for value in ["2024", "202402", "20240229", "20240229123045+0900"] {
+			let parsed: TestDateInput = serde_json::from_value(serde_json::json!({
+				"value": value
+			}))
+			.expect("valid F.r.1 date");
+			assert_eq!(parsed.value.as_deref(), Some(value));
+		}
+		for value in ["202413", "20230229"] {
+			assert!(serde_json::from_value::<TestDateInput>(serde_json::json!({
+				"value": value
+			}))
+			.is_err());
+		}
+		for (value, expected) in [
+			(serde_json::json!("2024-02-29"), "20240229"),
+			(serde_json::json!([2024, 60]), "20240229"),
+			(serde_json::json!([2024, 2, 29]), "20240229"),
+		] {
+			let parsed: TestDateInput = serde_json::from_value(serde_json::json!({
+				"value": value
+			}))
+			.expect("compatible full date");
+			assert_eq!(parsed.value.as_deref(), Some(expected));
+		}
 	}
 }

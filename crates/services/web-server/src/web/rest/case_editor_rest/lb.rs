@@ -1,5 +1,5 @@
 use super::common::{
-	ci_date, editor_page_row_response, i32_field, json, query_authorities_csv,
+	editor_page_row_response, i32_field, json, query_authorities_csv,
 	repeatable_page_projection_response, CaseEditorLbListRowDto,
 	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse,
 	CaseEditorRowDetailResponse, CtxW, Json, ModelManager, Path, Query, Result,
@@ -44,7 +44,7 @@ async fn load_editor_lb_list_rows(
 				sequence_number: test.sequence_number,
 				deleted: test.deleted,
 				test_name: test.test_name,
-				test_date: test.test_date.map(|date| date.to_string()),
+				test_date: test.test_date,
 				test_result_code: test.test_result_code,
 				test_result: test.test_result_value,
 				test_result_unstructured: test.result_unstructured,
@@ -144,19 +144,26 @@ async fn build_editor_lb_page_row_response(
 	row_id: Uuid,
 	authorities: Option<String>,
 ) -> Result<Value> {
-	let persisted = TestResultBmc::get_in_case(ctx, mm, case_id, row_id).await?;
-	let test_date = ci_date(persisted.test_date);
-	let mut test_result = json!(persisted);
-	if let Value::Object(ref mut map) = test_result {
-		map.insert("test_date".to_string(), json!(test_date));
-	}
+	let persisted =
+		TestResultBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true)
+			.await?;
 	editor_page_row_response(
 		case_id,
 		"LB",
 		row_id,
 		authorities,
-		json!({ "testResult": test_result }),
+		json!({ "testResult": persisted }),
 	)
+}
+
+async fn verify_editor_lb_page_row(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+) -> Result<()> {
+	TestResultBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true).await?;
+	Ok(())
 }
 
 repeatable_page_row_create_handler!(
@@ -183,7 +190,9 @@ repeatable_page_row_patch_handler!(
 	row_key: "testResult",
 	bmc: TestResultBmc,
 	model: TestResultForUpdate,
+	verify: verify_editor_lb_page_row,
 	aliases: TEST_RESULT_ROW_ALIASES,
+	restore_in_case_on_false: true,
 	build_response: build_editor_lb_page_row_response,
 );
 

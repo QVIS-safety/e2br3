@@ -1705,6 +1705,7 @@ version = "0.1.0"
 dependencies = [
  "csv",
  "derive_more",
+ "input-contracts",
  "lib-auth",
  "lib-utils",
  "modql",

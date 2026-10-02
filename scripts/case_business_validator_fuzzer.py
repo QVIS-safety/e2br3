@@ -29,6 +29,7 @@ from case_editor_input_fuzzer import (
     created_row_id,
     get_path,
     object_id,
+    object_identity,
     redacted,
     response_summary,
     set_path,
@@ -71,6 +72,145 @@ GENERATED_BUSINESS_RULE_CODES = {
     ),
 }
 
+MEDDRA_CODE_SCENARIO_IDS = {
+    "d-history-code-vocabulary",
+    "d-parent-history-code-vocabulary",
+    "d-past-indication-code-vocabulary",
+    "d-past-reaction-code-vocabulary",
+    "d-parent-past-indication-code-vocabulary",
+    "d-parent-past-reaction-code-vocabulary",
+    "d-reported-cause-code-vocabulary",
+    "d-autopsy-cause-code-vocabulary",
+    "e-reaction-code-vocabulary",
+    "f-test-code-vocabulary",
+    "g-indication-code-vocabulary",
+    "h-diagnosis-code-vocabulary",
+}
+
+MEDDRA_CONTEXT_SCENARIO_IDS = {
+    "d-family-history-allowed-value",
+    "reactions-collection-required",
+    "f-test-meddra-code-required",
+    "reaction-seriousness-null-flavor-ni-only",
+    "mfds-test-date-null-flavor-vocabulary",
+}
+
+MEDDRA_VERSION_SCENARIO_PATHS = {
+    "d-history-version-vocabulary": "patientInformation.medicalHistory.0.meddraVersion",
+    "d-parent-history-version-vocabulary": "patientInformation.parents.0.medicalHistory.0.meddraVersion",
+    "d-past-indication-version-vocabulary": "patientInformation.pastDrugHistory.0.indicationMeddraVersion",
+    "d-past-reaction-version-vocabulary": "patientInformation.pastDrugHistory.0.reactionMeddraVersion",
+    "d-parent-past-indication-version-vocabulary": "patientInformation.parents.0.pastDrugs.0.indicationMeddraVersion",
+    "d-parent-past-reaction-version-vocabulary": "patientInformation.parents.0.pastDrugs.0.reactionMeddraVersion",
+    "d-reported-cause-version-vocabulary": "patientInformation.death.reportedCauses.0.meddraVersion",
+    "d-autopsy-cause-version-vocabulary": "patientInformation.death.autopsyCauses.0.meddraVersion",
+    "e-reaction-version-vocabulary": "reactions.0.reactionMeddraVersion",
+    "f-test-version-vocabulary": "testResults.0.testMeddraVersion",
+    "g-indication-version-vocabulary": "drugs.0.indications.0.indicationMeddraVersion",
+    "h-diagnosis-version-vocabulary": "narrative.senderDiagnoses.0.diagnosisMeddraVersion",
+}
+
+EXPECTED_SCENARIO_ISSUE_PATHS = {
+    "d-concomitant-therapy-allowed-value": "patientInformation.concomitantTherapy",
+    "d-family-history-allowed-value": "patientInformation.medicalHistory.0.familyHistory",
+    "d-parent-age-unit-allowed-value": "patientInformation.parents.0.parentAgeUnit",
+    "g-investigational-product-allowed-value": "drugs.0.investigationalProductBlinded",
+    "g-dosage-frequency-unit-vocabulary": "drugs.0.dosageInformation.0.frequencyUnit",
+    "c1-other-identifier-format": "otherCaseIdentifiers.0.caseIdentifier",
+    "d-patient-height-integer": "patientInformation.heightCm",
+    "d-parent-height-integer": "patientInformation.parents.0.heightCm",
+    "d-lmp-null-flavor-allowed": "patientInformation.lastMenstrualPeriodDateNullFlavor",
+    "g-drug-characterization-required": "drugs.0.drugCharacterization",
+    "g-medicinal-product-required": "drugs.0.medicinalProduct",
+    "fda-postmarket-cross-report-forbidden": (
+        "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber"
+    ),
+    "primary-sources-collection-required": "primarySources",
+    "drugs-collection-required": "drugs",
+    "f-test-name-group-required": "testResults.0.testName",
+    "f-test-name-text-required": "testResults.0.testName",
+    "c1-safety-report-id-required": "safetyReportIdentification.safetyReportId",
+    "c1-transmission-date-required": "safetyReportIdentification.transmissionDate",
+    "reactions-collection-required": "reactions",
+    "f-test-meddra-code-required": "testResults.0.testMeddraCode",
+    "reaction-seriousness-null-flavor-ni-only": "reactions.0.seriousnessCriteria",
+    "mfds-test-date-null-flavor-vocabulary": "testResults.0.testDateNullFlavor",
+    "fda-device-collection-required": "drugs.0.fdaDevices",
+    "fda-assessment-collection-required": "drugs.0.drugReactionAssessments",
+}
+
+EXPECTED_SCENARIO_ISSUE_MESSAGES = {
+    "d-concomitant-therapy-allowed-value": "Dictionary allowed values constraint.",
+    "d-family-history-allowed-value": "Dictionary allowed values constraint.",
+    "d-parent-age-unit-allowed-value": (
+        "[D.10.2.2b] Parent age unit must be years (a) or decades (10.a)."
+    ),
+    "g-investigational-product-allowed-value": "Dictionary allowed values constraint.",
+    "g-dosage-frequency-unit-vocabulary": "Dictionary allowed values constraint.",
+    "c1-other-identifier-format": (
+        "[C.1.9.1.r.2] Case identifier must use country code-company or regulator name-report number format."
+    ),
+}
+
+UCUM_FREQUENCY_SCENARIO_ID = "g-dosage-frequency-unit-vocabulary"
+
+SUPPLEMENTAL_RETAINED_SCENARIO_IDS = {
+    "d-concomitant-therapy-allowed-value",
+    "d-family-history-allowed-value",
+    "d-parent-age-unit-allowed-value",
+    "g-investigational-product-allowed-value",
+}
+
+XML_BOUNDARY_SCENARIO_IDS = {
+    "n-batch-number-required",
+    "n-batch-sender-required",
+    "n-batch-receiver-required",
+    "n-batch-transmission-required",
+    "n-batch-transmission-future",
+    "n-message-sender-required",
+    "n-message-receiver-required",
+    "fda-postmarket-batch-route",
+    "fda-premarket-batch-route",
+    "fda-postmarket-message-route",
+    "fda-premarket-message-route",
+    "fda-sender-route-pair",
+    "fda-vaers-route-pair",
+    "mfds-batch-receiver-route",
+    "mfds-message-receiver-route",
+    "mfds-receiver-route-pair",
+}
+
+MEDDRA_FIELDS_BY_OWNER = {
+    "medicalHistoryEpisodes": (("meddraVersion", "meddraCode"),),
+    "parentMedicalHistory": (("meddraVersion", "meddraCode"),),
+    "pastDrugHistory": (
+        ("indicationMeddraVersion", "indicationMeddraCode"),
+        ("reactionMeddraVersion", "reactionMeddraCode"),
+    ),
+    "parentPastDrugs": (
+        ("indicationMeddraVersion", "indicationMeddraCode"),
+        ("reactionMeddraVersion", "reactionMeddraCode"),
+    ),
+    "reportedCauses": (("meddraVersion", "meddraCode"),),
+    "autopsyCauses": (("meddraVersion", "meddraCode"),),
+    "reaction": (("reactionMeddraVersionLLT", "reactionMeddraCodeLLT"),),
+    "testResult": (("testMeddraVersion", "testMeddraCode"),),
+    "drug": (("indications[].indicationMeddraVersion", "indications[].indicationMeddraCode"),),
+    "senderDiagnoses": (("diagnosisMeddraVersion", "diagnosisMeddraCode"),),
+}
+
+WHODRUG_VERSION_SCENARIOS = {
+    "mfds-d-past-product-version-required": "MFDS.D.8.r.1.KR.1b.VOCABULARY",
+    "mfds-d-parent-past-product-version-required": "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
+    "mfds-g-product-version-required": "MFDS.G.k.2.1.KR.1b.VOCABULARY",
+}
+
+WHODRUG_CODE_FIELDS = {
+    "pastDrugHistory": "mfdsMedicinalProductId",
+    "parentPastDrugs": "mfdsMedicinalProductId",
+    "drug": "mfdsMpid",
+}
+
 DISPOSITION_GROUPS = {
     "EXTERNAL_VOCABULARY_FIXTURE": (
         "The rule is conditional on an active MedDRA, WHO Drug, EDQM, or MFDS reference-data release; a clean isolated database intentionally has no authoritative release to invent.",
@@ -103,17 +243,11 @@ DISPOSITION_GROUPS = {
     ),
     "INPUT_CONTRACT_OR_PERSISTENCE_GUARD": (
         "The invalid state is rejected or normalized before persistence, so it cannot be a persisted business-validator edge with readback and audit evidence.",
-        {
-            "ICH.D.10.5.INTEGER", "ICH.D.4.INTEGER", "ICH.D.6.NULLFLAVOR.ALLOWED",
-            "ICH.E.i.3.2.NI.ONLY", "ICH.F.r.2.1.REQUIRED",
-            "ICH.F.r.2.2b.REQUIRED", "ICH.F.r.2.REQUIRED",
-            "ICH.G.k.1.REQUIRED", "ICH.G.k.2.2.REQUIRED",
-            "MFDS.F.r.1.NULLFLAVOR.VOCABULARY",
-        },
+        set(),
     ),
     "SERVER_MANAGED_OR_DEFERRED_SINGLETON": (
         "The API creates, defaults, or deliberately defers this singleton field, so the missing state cannot be retained by a one-field editor save.",
-        {"ICH.C.1.1.REQUIRED", "ICH.C.1.2.REQUIRED", "ICH.D.1.REQUIRED", "ICH.H.1.REQUIRED"},
+        {"ICH.D.1.REQUIRED", "ICH.H.1.REQUIRED"},
     ),
     "COLLECTION_TOPOLOGY_NOT_FIELD_MUTATION": (
         "The violation is absence or presence of an entire repeating row/section rather than a mutation of one existing field, which is outside this fuzzer's one-field contract.",
@@ -137,18 +271,6 @@ DISPOSITION_GROUPS = {
 }
 
 TEST_BACKED_RULES = {
-    "ICH.C.1.1.REQUIRED": "case::sections::c::golden_c1_value_tests::c_1_1_required_has_both_edges",
-    "ICH.C.1.2.REQUIRED": "case::sections::c::golden_c1_value_tests::all_missing_flags_every_value_rule",
-    "ICH.D.10.5.INTEGER": "case::sections::d::golden_companion_tests::parent_height_integer_has_both_edges",
-    "ICH.D.4.INTEGER": "case::sections::d::golden_companion_tests::heights_must_be_whole_numbers",
-    "ICH.D.6.NULLFLAVOR.ALLOWED": "case::sections::d::golden_companion_tests::d_6_null_flavor_is_a_case_validation_rule",
-    "ICH.E.i.3.2.NI.ONLY": "case::sections::e::tests::seriousness_null_flavor_ni_only_has_both_edges",
-    "ICH.F.r.2.1.REQUIRED": "case::sections::f::golden_f_required_tests::test_date_without_name_or_meddra_code_flags_name_variants",
-    "ICH.F.r.2.2b.REQUIRED": "case::sections::f::golden_f_required_tests::test_date_without_name_or_meddra_code_flags_name_variants",
-    "ICH.F.r.2.REQUIRED": "case::sections::f::golden_f_required_tests::test_payload_without_name_flags_test_name",
-    "ICH.G.k.1.REQUIRED": "case::sections::g::golden_g_required_tests::empty_drug_collection_flags_placeholder_drug_rules",
-    "ICH.G.k.2.2.REQUIRED": "case::sections::g::golden_g_required_tests::empty_drug_collection_flags_placeholder_drug_rules",
-    "MFDS.F.r.1.NULLFLAVOR.VOCABULARY": "case::sections::f::golden_f_required_tests::mfds_only_allows_msk_test_date_null_flavor",
 }
 
 
@@ -506,19 +628,6 @@ def scenario_catalog(seed: int) -> list[Scenario]:
             (("dosageInformation[].doseFormTermId", "DF-1"),),
         ),
         Scenario(
-            21,
-            "g-route-term-version-required",
-            "ich",
-            "DG",
-            "drug",
-            "dosageInformation[].routeTermIdVersion",
-            "dosageInformation.route_termid_version",
-            "ICH.G.k.4.r.10.2a.REQUIRED",
-            None,
-            "1",
-            (("dosageInformation[].routeOfAdministration", "oral"),),
-        ),
-        Scenario(
             22,
             "g-parent-route-term-version-required",
             "ich",
@@ -712,7 +821,6 @@ def scenario_catalog(seed: int) -> list[Scenario]:
         Scenario(107, "c2-primary-source-exactly-once", "ich", "RP", "primarySources", "primarySourceForRegulatoryPurposes", "primarySourceForRegulatoryPurposes", "ICH.C.2.r.5.EXACTLY_ONCE", "1", None),
         Scenario(108, "c3-sender-type-required", "ich", "SD", "senderInformation", "senderType", "senderType", "ICH.C.3.1.REQUIRED", None, "1"),
         Scenario(109, "c3-sender-organization-required", "ich", "SD", "senderInformation", "organizationName", "organizationName", "ICH.C.3.2.REQUIRED", None, "Business Sender"),
-        Scenario(110, "c5-sponsor-study-number-required", "ich", "SI", "studyInformation", "sponsorStudyNumber", "sponsor_study_number", "ICH.C.5.3.REQUIRED", None, f"STUDY-{suffix}"),
         Scenario(111, "c5-study-type-reaction-required", "ich", "SI", "studyInformation", "studyTypeReaction", "study_type_reaction", "ICH.C.5.4.REQUIRED", None, "1"),
         Scenario(112, "mfds-d-past-drug-mpid-version-required", "mfds", "DH", "pastDrugHistory", "mpidVersion", "mpid_version", "MFDS.D.8.r.2a.REQUIRED", None, "1"),
         Scenario(113, "mfds-d-past-drug-mpid-required", "mfds", "DH", "pastDrugHistory", "mpid", "mpid", "MFDS.D.8.r.2b.REQUIRED", None, f"MPID-{suffix}", (("mpidVersion", "1"),)),
@@ -761,7 +869,6 @@ def scenario_catalog(seed: int) -> list[Scenario]:
         Scenario(156, "fda-ethnicity-required", "fda", "DM", "patientInformation", "ethnicityCodeNullFlavor", "ethnicityCodeNullFlavor", "FDA.D.12.REQUIRED", None, "NA"),
         Scenario(157, "fda-aggregate-race-na-recommended", "fda", "DM", "patientInformation", "raceCodeNullFlavor", "raceCodeNullFlavor", "FDA.W0003", None, "NA", (("patientInitials", "AGGREGATE"),)),
         Scenario(158, "fda-aggregate-ethnicity-na-recommended", "fda", "DM", "patientInformation", "ethnicityCodeNullFlavor", "ethnicityCodeNullFlavor", "FDA.W0004", None, "NA", (("patientInitials", "AGGREGATE"),)),
-        Scenario(159, "mfds-relatedness-source-required", "mfds", "DG", "drug", "drugReactionAssessments[].sourceOfAssessment", "drugReactionAssessments[].sourceOfAssessment", "MFDS.G.k.9.i.2.r.1.REQUIRED", None, "Sponsor", (("drugReactionAssessments[].methodOfAssessmentKr1", "1"),)),
         Scenario(160, "mfds-relatedness-method-required", "mfds", "DG", "drug", "drugReactionAssessments[].methodOfAssessmentKr1", "drugReactionAssessments[].methodOfAssessmentKr1", "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED", None, "1", (("drugReactionAssessments[].sourceOfAssessment", "Sponsor"),)),
         Scenario(161, "mfds-relatedness-krct-result-required", "mfds", "DG", "drug", "drugReactionAssessments[].resultOfAssessmentKr2", "drugReactionAssessments[].resultOfAssessmentKr2", "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED", None, "1", (("drugReactionAssessments[].sourceOfAssessment", "Sponsor"), ("drugReactionAssessments[].methodOfAssessmentKr1", "2"))),
         Scenario(162, "n-batch-number-required", "ich", "N", "messageHeaders", "batchNumber", "batch_number", "ICH.N.1.2.REQUIRED", "", "BATCH-VALID"),
@@ -835,7 +942,7 @@ def scenario_catalog(seed: int) -> list[Scenario]:
         Scenario(230, "c5-registration-country-vocabulary", "ich", "SI", "studyRegistrationNumbers", "countryCode", "country_code", "ICH.C.5.1.r.2.VOCABULARY", "ZZ", "KR"),
         Scenario(231, "c1-other-identifier-source-required", "ich", "CI", "otherCaseIdentifiers", "source", "source", "ICH.C.1.9.1.r.1.REQUIRED", "", "CI source", (("caseIdentifier", "KR-ORG-001"),)),
         Scenario(232, "c1-other-identifier-required", "ich", "CI", "otherCaseIdentifiers", "caseIdentifier", "caseIdentifier", "ICH.C.1.9.1.r.2.REQUIRED", "", "KR-ORG-001", (("source", "CI source"),)),
-        Scenario(233, "c1-other-identifier-profile", "ich", "CI", "otherCaseIdentifiers", "caseIdentifier", "caseIdentifier", "ICH.C.1.9.1.r.2.PROFILE", "bad", "KR-ORG-001", (("source", "CI source"),)),
+        Scenario(233, "c1-other-identifier-format", "ich", "CI", "otherCaseIdentifiers", "caseIdentifier", "caseIdentifier", "ICH.C.1.9.1.r.2.FORMAT", "bad", "KR-ORG-001", (("source", "CI source"),)),
         Scenario(234, "fda-vaers-primary-contact-required", "fda", "RP", "primarySources", "reporterGivenName", "reporterGivenName", "FDA.C.2.PRIMARY.REQUIRED", None, "Business", (("reporterFamilyName", "Reporter"), ("reporterStreet", "1 Test Street"), ("reporterCity", "Seoul"), ("reporterState", "Seoul"), ("reporterPostcode", "04524"), ("reporterTelephone", "+82-2-1234-5678")), header_values=(("batch_receiver_identifier", "CBER_VAERS"), ("message_receiver_identifier", "CBER_VAERS"))),
         Scenario(235, "fda-vaers-primary-msk-forbidden", "fda", "RP", "primarySources", "reporterGivenNameNullFlavor", "reporterGivenNameNullFlavor", "FDA.C.2.PRIMARY.MSK.FORBIDDEN", "MSK", None, (("reporterCountry", "US"),), header_values=(("batch_receiver_identifier", "CBER_VAERS"), ("message_receiver_identifier", "CBER_VAERS"))),
         Scenario(236, "fda-vaers-primary-email-required", "fda", "RP", "primarySources", "reporterEmail", "reporterEmail", "FDA.C.2.r.2.8.REQUIRED", None, "reporter@example.com", header_values=(("batch_receiver_identifier", "CBER_VAERS"), ("message_receiver_identifier", "CBER_VAERS"))),
@@ -855,6 +962,96 @@ def scenario_catalog(seed: int) -> list[Scenario]:
         Scenario(250, "fda-premarket-death-date-required", "fda", "DM", "deathInfo", "dateOfDeath", "date_of_death", "FDA.D.9.1.REQUIRED", None, f"{year}0303", ci_values=(("reportType", "2"),), header_values=(("batch_receiver_identifier", "ZZFDA_PREMKT"), ("message_receiver_identifier", "CDER_IND")), reaction_values=(("seriousness.criteriaResultsInDeath", True),)),
         Scenario(251, "fda-preanda-additional-info-recommended", "fda", "DG", "drug", "fdaAdditionalInfoCoded", "fda_additional_info_coded", "FDA.W0006", None, "1", ci_values=(("reportType", "2"),), header_values=(("batch_receiver_identifier", "ZZFDA_PREMKT"), ("message_receiver_identifier", "CDER_IND_EXEMPT_BA_BE")), study_values=(("fdaPreAndaNumberOccurred", "123456"), ("studyTypeReaction", "1"))),
     ]
+    scenarios = [
+        replace(scenario, ordinal=ordinal)
+        for ordinal, scenario in enumerate(scenarios)
+    ]
+    scenarios.extend([
+        Scenario(
+            len(scenarios), "d-patient-height-integer", "ich", "DM",
+            "patientInformation", "patientHeight.value", "height_cm",
+            "ICH.D.4.INTEGER", 1.5, 175,
+        ),
+        Scenario(
+            len(scenarios) + 1, "d-parent-height-integer", "ich", "DM",
+            "parentInfo", "parentHeight.value", "height_cm",
+            "ICH.D.10.5.INTEGER", 1.5, 175,
+        ),
+        Scenario(
+            len(scenarios) + 2, "d-lmp-null-flavor-allowed", "ich", "DM",
+            "patientInformation", "lastMenstrualPeriodDateNullFlavor",
+            "last_menstrual_period_date_null_flavor",
+            "ICH.D.6.NULLFLAVOR.ALLOWED", "NASK", "MSK",
+        ),
+        Scenario(
+            len(scenarios) + 3, "g-drug-characterization-required", "ich", "DG",
+            "drug", "drugCharacterization", "drug_characterization",
+            "ICH.G.k.1.REQUIRED", "", "1",
+        ),
+        Scenario(
+            len(scenarios) + 4, "g-medicinal-product-required", "ich", "DG",
+            "drug", "medicinalProduct", "medicinal_product",
+            "ICH.G.k.2.2.REQUIRED", "", "Business fuzz product",
+        ),
+        Scenario(
+            len(scenarios) + 5, "f-test-name-group-required", "ich", "LB",
+            "testResult", "testName", "test_name",
+            "ICH.F.r.2.REQUIRED", "", "ALT",
+            (("testMeddraVersion", None), ("testMeddraCode", None)),
+        ),
+        Scenario(
+            len(scenarios) + 6, "f-test-name-text-required", "ich", "LB",
+            "testResult", "testName", "test_name",
+            "ICH.F.r.2.1.REQUIRED", "", "ALT",
+            (("testMeddraVersion", None), ("testMeddraCode", None)),
+        ),
+        Scenario(
+            len(scenarios) + 7, "f-test-meddra-code-required", "ich", "LB",
+            "testResult", "testMeddraCode", "test_meddra_code",
+            "ICH.F.r.2.2b.REQUIRED", None, "BOUND-MEDDRA-CODE",
+            (("testName", ""),), reference_fixture=True,
+        ),
+        Scenario(
+            len(scenarios) + 8, "reaction-seriousness-null-flavor-ni-only",
+            "ich", "AE", "reaction",
+            "seriousness.criteriaResultsInDeathNullFlavor",
+            "criteria_death_null_flavor", "ICH.E.i.3.2.NI.ONLY",
+            "UNK", "NI", (("seriousness.criteriaResultsInDeath", None),),
+            reference_fixture=True,
+        ),
+        Scenario(
+            len(scenarios) + 9, "mfds-test-date-null-flavor-vocabulary",
+            "mfds", "LB", "testResult", "testDateNullFlavor",
+            "test_date_null_flavor", "MFDS.F.r.1.NULLFLAVOR.VOCABULARY",
+            "MSK", "UNK", (("testDate", None),), reference_fixture=True,
+        ),
+    ])
+    scenarios.extend([
+        Scenario(
+            len(scenarios), "d-concomitant-therapy-allowed-value", "ich", "DM",
+            "patientInformation", "concomitantTherapies", "concomitant_therapy",
+            "ICH.D.7.3.ALLOWED.VALUE", False, True,
+        ),
+        Scenario(
+            len(scenarios) + 1, "d-family-history-allowed-value", "ich", "DM",
+            "medicalHistoryEpisodes", "familyHistory", "family_history",
+            "ICH.D.7.1.r.6.ALLOWED.VALUE", False, True,
+            reference_fixture=True,
+        ),
+        Scenario(
+            len(scenarios) + 2, "d-parent-age-unit-allowed-value", "ich", "DM",
+            "parentInfo", "parentAge.unit", "parent_age_unit",
+            "ICH.D.10.2.2b.ALLOWED.VALUE", "mo", "a",
+            (("parentAge.value", 54),),
+        ),
+        Scenario(
+            len(scenarios) + 3, "g-investigational-product-allowed-value", "ich", "DG",
+            "drug", "investigationalProductBlinded", "investigational_product_blinded",
+            "ICH.G.k.2.5.ALLOWED.VALUE", False, True,
+            ci_values=(("reportType", "2"),),
+            study_values=(("studyTypeReaction", "1"),),
+        ),
+    ])
     scenarios.extend(reference_vocabulary_scenarios(len(scenarios)))
     scenarios.extend(reference_required_scenarios(len(scenarios)))
     scenarios.extend(device_integration_scenarios(len(scenarios)))
@@ -905,6 +1102,7 @@ def reference_vocabulary_scenarios(start: int) -> list[Scenario]:
         add(f"{prefix}-code-vocabulary", "ich", page, owner, code_field, code_projection, code_rule, "99999999", "10000001", ((version_field, "26.0"),))
 
     add("g-substance-strength-unit-vocabulary", "ich", "DG", "drug", "activeSubstances[].substanceStrengthUnit", "activeSubstances[].strength_unit", "ICH.G.k.2.3.r.3b.VOCABULARY", "not-a-unit", "mg", (("activeSubstances[].substanceName", "Fuzz substance"), ("activeSubstances[].substanceStrengthValue", 10)))
+    scenarios[-1] = replace(scenarios[-1], reference_fixture=False)
     add("g-dosage-frequency-unit-vocabulary", "ich", "DG", "drug", "dosageInformation[].frequencyUnit", "dosageInformation[].frequency_unit", "ICH.G.k.4.r.3.VOCABULARY", "not-a-frequency", "d", (("dosageInformation[].numberOfUnits", 1),))
 
     kr_header = (("batch_receiver_identifier", "MFDS-O-KR"), ("message_receiver_identifier", "MFDS-O-KR"))
@@ -949,6 +1147,7 @@ def device_integration_scenarios(start: int) -> list[Scenario]:
         ("fda-device-problem-required", "deviceProblemCodes", "fdaDevices[].deviceProblemCodes", "FDA.G.K.12.R.3.REQUIRED", None, "1234567"),
         ("fda-device-other-characterization-required", "fdaOtherCharacterization", "fda_other_characterization", "FDA.R0072", None, "1"),
         ("fda-device-remedial-action-recommended", "remedialActions", "fdaDevices[].remedialActions", "FDA.W0007", None, "1"),
+        ("fda-device-collection-required", "collectionPresent", "collection_present", "FDA.G.k.12.COLLECTION.REQUIRED", False, True),
     ]
     return [
         Scenario(
@@ -985,6 +1184,7 @@ def topology_integration_scenarios(start: int) -> list[Scenario]:
         ("mfds-study-patient-identifier-topology", "mfds", "patientIdentifiers", "MFDS.D.1.1.4.REQUIRED", False, True),
         ("mfds-study-registration-topology", "mfds", "studyRegistrationNumbers", "MFDS.C.5.1.r.1.RECEIVER.REQUIRED", False, True),
         ("mfds-study-registration-nullflavor-topology", "mfds", "registrationNumberNullFlavor", "MFDS.C.5.1.r.1.NULLFLAVOR.FORBIDDEN", "ASKU", None),
+        ("fda-assessment-collection-required", "fda", "drugReactionAssessments", "FDA.G.k.9.REQUIRED", False, True),
     ]
     return [
         Scenario(
@@ -1000,6 +1200,11 @@ def singleton_integration_scenarios(start: int) -> list[Scenario]:
     return [
         Scenario(start, "singleton-patient-required", "ich", "SN", "patientInformation", "patientInitials", "patientInitials", "ICH.D.1.REQUIRED", None, "BUSINESS-FUZZ", surface="singleton"),
         Scenario(start + 1, "singleton-narrative-required", "ich", "SN", "narrative", "caseNarrative", "caseNarrative", "ICH.H.1.REQUIRED", None, "Business fuzz narrative", surface="singleton"),
+        Scenario(start + 2, "primary-sources-collection-required", "ich", "SN", "primarySources", "collectionPresent", "collection_present", "ICH.C.2.r.REQUIRED", False, True, surface="singleton"),
+        Scenario(start + 3, "drugs-collection-required", "ich", "SN", "drugs", "collectionPresent", "collection_present", "ICH.G.k.REQUIRED", False, True, surface="singleton"),
+        Scenario(start + 4, "c1-safety-report-id-required", "ich", "SN", "safetyReportIdentification", "safetyReportId", "safetyReportId", "ICH.C.1.1.REQUIRED", None, "BUSINESS-FUZZ", surface="singleton"),
+        Scenario(start + 5, "c1-transmission-date-required", "ich", "SN", "safetyReportIdentification", "transmissionDate", "transmissionDate", "ICH.C.1.2.REQUIRED", None, "20260305000000", surface="singleton"),
+        Scenario(start + 6, "reactions-collection-required", "ich", "SN", "reaction", "collectionPresent", "collection_present", "ICH.E.i.REQUIRED", False, True, reference_fixture=True, surface="singleton"),
     ]
 
 
@@ -1115,6 +1320,8 @@ def _generated_string(
             return f"{value}-{token[:6]}"
         return value
     if family == "vocabulary_condition" and edge == "invalid":
+        if scenario.scenario_id == "mfds-test-date-null-flavor-vocabulary":
+            return value
         if value == "99.9":
             return f"{rng.randint(80, 99)}.{rng.randint(0, 9)}"
         if value.isdigit() and set(value) == {"9"}:
@@ -1160,7 +1367,7 @@ def _generated_string(
     if any(token_name in normalized for token_name in (
         "comments", "description", "name", "narrative", "organization",
         "city", "reason", "reference", "source", "state", "street",
-        "telephone", "text", "title",
+        "telephone", "text", "title", "product",
         "initial", "unstructured",
     )):
         if normalized.endswith("source_of_assessment"):
@@ -1183,7 +1390,10 @@ def _generated_value(
     if isinstance(value, int):
         return rng.randint(1, 999)
     if isinstance(value, float):
-        return rng.randint(1, 9999) / 10
+        upper = 9 if scenario.scenario_id in {
+            "d-patient-height-integer", "d-parent-height-integer",
+        } else 999
+        return (rng.randint(1, upper) * 10 + rng.randint(1, 9)) / 10
     if isinstance(value, list):
         if len(value) == 9 and all(isinstance(item, int) for item in value):
             return [rng.randint(2010, 2024), rng.randint(1, 365), *value[2:]]
@@ -1191,6 +1401,19 @@ def _generated_value(
     if isinstance(value, str):
         return _generated_string(scenario, path, value, edge, family, rng, token)
     raise TypeError(f"unsupported generated value for {scenario.scenario_id}: {type(value).__name__}")
+
+
+def scenario_fingerprint(scenario: Scenario) -> str:
+    return hashlib.sha256(json.dumps({
+        "invalid": scenario.invalid_value,
+        "valid": scenario.valid_value,
+        "fixture": scenario.fixture_values,
+        "ci": scenario.ci_values,
+        "header": scenario.header_values,
+        "study": scenario.study_values,
+        "reaction": scenario.reaction_values,
+        "token": scenario.generation_token,
+    }, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
 def generated_scenario(scenario: Scenario, seed: int, sample_ordinal: int) -> Scenario:
@@ -1204,6 +1427,11 @@ def generated_scenario(scenario: Scenario, seed: int, sample_ordinal: int) -> Sc
     else:
         invalid_value = _generated_value(scenario, scenario.field, scenario.invalid_value, "invalid", family, rng, token)
         valid_value = _generated_value(scenario, scenario.field, scenario.valid_value, "valid", family, rng, token)
+    if (
+        scenario.scenario_id == "d-parent-age-unit-allowed-value"
+        and sample_ordinal % 2 == 1
+    ):
+        valid_value = "10.a"
 
     def generated_pairs(items: tuple[tuple[str, Any], ...]) -> tuple[tuple[str, Any], ...]:
         return tuple(
@@ -1231,17 +1459,7 @@ def generated_scenario(scenario: Scenario, seed: int, sample_ordinal: int) -> Sc
         sample_ordinal=sample_ordinal,
         generation_token=token,
     )
-    fingerprint = hashlib.sha256(json.dumps({
-        "invalid": generated.invalid_value,
-        "valid": generated.valid_value,
-        "fixture": generated.fixture_values,
-        "ci": generated.ci_values,
-        "header": generated.header_values,
-        "study": generated.study_values,
-        "reaction": generated.reaction_values,
-        "token": token,
-    }, sort_keys=True, default=str).encode()).hexdigest()[:16]
-    return replace(generated, generation_fingerprint=fingerprint)
+    return replace(generated, generation_fingerprint=scenario_fingerprint(generated))
 
 
 def issue_codes(value: Any) -> set[str]:
@@ -1274,6 +1492,19 @@ def issue_complete(value: Any, code: str) -> bool:
     )
 
 
+def complete_issue_count(
+    value: Any, code: str, field_path: str, message: str | None = None,
+) -> int:
+    issues = value.get("issues", []) if isinstance(value, dict) else []
+    return sum(
+        issue_complete({"issues": [issue]}, code)
+        and issue.get("field_path") == field_path
+        and (message is None or issue.get("message") == message)
+        for issue in issues
+        if isinstance(issue, dict)
+    )
+
+
 def rules_with_both_edges_passed(scenarios: list[Scenario], events: list[Event]) -> set[str]:
     passed_edges = {
         (event.scenario_id, event.sample_ordinal, event.kind)
@@ -1282,7 +1513,10 @@ def rules_with_both_edges_passed(scenarios: list[Scenario], events: list[Event])
     }
     return {
         code
-        for code in {scenario.expected_code for scenario in scenarios}
+        for code in {
+            scenario.expected_code for scenario in scenarios
+            if scenario.scenario_id not in MEDDRA_VERSION_SCENARIO_PATHS
+        }
         if all(
             (scenario.scenario_id, scenario.sample_ordinal, edge) in passed_edges
             for scenario in scenarios if scenario.expected_code == code
@@ -1291,11 +1525,206 @@ def rules_with_both_edges_passed(scenarios: list[Scenario], events: list[Event])
     }
 
 
+def meddra_binding(
+    rows: Any,
+    absent_rows: Any,
+    invalid_candidate: str = "99999999",
+) -> tuple[str, str, str]:
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise ValueError("active MedDRA lookup must return exactly one row")
+    row = rows[0]
+    version = row.get("version")
+    code = row.get("code")
+    if not (
+        row.get("active") is True
+        and version == "28.1"
+        and str(row.get("language", "")).lower() == "en"
+        and str(row.get("level", "")).upper() == "LLT"
+        and isinstance(code, str)
+        and code.isdecimal()
+        and code
+    ):
+        raise ValueError("active MedDRA row metadata does not match 28.1/en/LLT")
+    if not isinstance(absent_rows, list) or len(absent_rows) >= 100:
+        raise ValueError("invalid MedDRA lookup is malformed or may be truncated")
+    if any(not isinstance(item, dict) for item in absent_rows):
+        raise ValueError("invalid MedDRA lookup contains a malformed row")
+    if any(item.get("code") == invalid_candidate for item in absent_rows):
+        raise ValueError("invalid MedDRA candidate exists in the active release")
+    return version, code, invalid_candidate
+
+
+def meddra_unavailable_version(
+    releases: Any, absent_version_rows: Any, valid_version: str,
+    invalid_version: str = "27.1",
+) -> str:
+    if not isinstance(releases, list) or any(
+        not isinstance(item, dict) for item in releases
+    ):
+        raise ValueError("MedDRA release lookup is malformed")
+    active = [
+        item for item in releases
+        if item.get("dictionary") == "meddra"
+        and str(item.get("language", "")).lower() == "en"
+        and item.get("status") == "active"
+        and isinstance(item.get("loaded_rows", item.get("loadedRows")), int)
+        and item.get("loaded_rows", item.get("loadedRows")) > 0
+    ]
+    if len(active) != 1 or active[0].get("version") != valid_version:
+        raise ValueError("MedDRA 28.1 must be the sole active loaded en release")
+    if not isinstance(absent_version_rows, list) or absent_version_rows:
+        raise ValueError("MedDRA 27.1 has active terminology rows")
+    return invalid_version
+
+
+def bind_meddra_code_scenarios(
+    scenarios: list[Scenario],
+    version: str,
+    valid_code: str,
+    invalid_code: str,
+) -> list[Scenario]:
+    bound: list[Scenario] = []
+    for scenario in scenarios:
+        if scenario.scenario_id not in (
+            MEDDRA_CODE_SCENARIO_IDS | MEDDRA_CONTEXT_SCENARIO_IDS
+        ):
+            bound.append(scenario)
+            continue
+        fixtures = dict(scenario.fixture_values)
+        for version_field, code_field in MEDDRA_FIELDS_BY_OWNER[scenario.owner]:
+            fixtures[version_field] = version
+            fixtures[code_field] = valid_code
+        rebound = replace(
+            scenario,
+            invalid_value=(
+                scenario.invalid_value
+                if scenario.scenario_id in MEDDRA_CONTEXT_SCENARIO_IDS
+                else invalid_code
+            ),
+            valid_value=(
+                valid_code
+                if scenario.scenario_id == "f-test-meddra-code-required"
+                else scenario.valid_value
+                if scenario.scenario_id in MEDDRA_CONTEXT_SCENARIO_IDS
+                else valid_code
+            ),
+            fixture_values=tuple(fixtures.items()),
+            reference_fixture=False,
+        )
+        bound.append(replace(
+            rebound, generation_fingerprint=scenario_fingerprint(rebound),
+        ))
+    return bound
+
+
+def bind_meddra_version_scenarios(
+    scenarios: list[Scenario], valid_version: str, invalid_version: str,
+    valid_code: str,
+) -> list[Scenario]:
+    bound: list[Scenario] = []
+    for scenario in scenarios:
+        if scenario.scenario_id not in MEDDRA_VERSION_SCENARIO_PATHS:
+            bound.append(scenario)
+            continue
+        fixtures = dict(scenario.fixture_values)
+        for version_field, code_field in MEDDRA_FIELDS_BY_OWNER[scenario.owner]:
+            fixtures[version_field] = valid_version
+            fixtures[code_field] = valid_code
+        rebound = replace(
+            scenario,
+            expected_code="ICH.MEDDRA.VERSION.UNAVAILABLE",
+            invalid_value=invalid_version,
+            valid_value=valid_version,
+            fixture_values=tuple(fixtures.items()),
+            reference_fixture=False,
+        )
+        bound.append(replace(
+            rebound, generation_fingerprint=scenario_fingerprint(rebound),
+        ))
+    return bound
+
+
+def whodrug_binding(releases: Any, products: Any) -> tuple[str, str]:
+    if not isinstance(releases, list) or any(
+        not isinstance(item, dict) for item in releases
+    ):
+        raise ValueError("WHODrug release lookup is malformed")
+    active = [
+        item for item in releases
+        if item.get("dictionary") == "whodrug"
+        and str(item.get("language", "")).lower() == "en"
+        and item.get("status") == "active"
+    ]
+    if len(active) != 1:
+        raise ValueError("WHODrug must have exactly one active en release")
+    release = active[0]
+    version = release.get("version")
+    loaded_rows = release.get("loaded_rows", release.get("loadedRows"))
+    if not isinstance(version, str) or not version or not isinstance(loaded_rows, int) or loaded_rows < 1:
+        raise ValueError("active WHODrug release metadata is incomplete")
+    if not isinstance(products, list) or len(products) != 1 or not isinstance(products[0], dict):
+        raise ValueError("active WHODrug product lookup must return exactly one row")
+    product = products[0]
+    code = product.get("code")
+    if not (
+        product.get("active") is True
+        and product.get("version") == version
+        and str(product.get("language", "")).lower() == "en"
+        and isinstance(code, str)
+        and bool(code)
+        and isinstance(product.get("drug_name"), str)
+        and bool(product["drug_name"])
+    ):
+        raise ValueError("WHODrug product metadata does not match the active en release")
+    return version, code
+
+
+def bind_whodrug_version_scenarios(
+    scenarios: list[Scenario], version: str, product_code: str,
+) -> list[Scenario]:
+    bound: list[Scenario] = []
+    for scenario in scenarios:
+        if scenario.scenario_id not in WHODRUG_VERSION_SCENARIOS:
+            bound.append(scenario)
+            continue
+        fixtures = dict(scenario.fixture_values)
+        fixtures[WHODRUG_CODE_FIELDS[scenario.owner]] = product_code
+        rebound = replace(
+            scenario,
+            invalid_value=None,
+            valid_value=version,
+            fixture_values=tuple(fixtures.items()),
+            reference_fixture=False,
+        )
+        bound.append(replace(
+            rebound, generation_fingerprint=scenario_fingerprint(rebound),
+        ))
+    return bound
+
+
+def omit_whodrug_unrelated_meddra(payload: dict[str, Any], scenario: Scenario) -> None:
+    if scenario.scenario_id not in WHODRUG_VERSION_SCENARIOS:
+        return
+    for field in (
+        "indicationMeddraVersion", "indicationMeddraCode",
+        "reactionMeddraVersion", "reactionMeddraCode",
+    ):
+        payload.pop(field, None)
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser()
     result.add_argument("--base-url", default=os.getenv("E2BR3_BASE_URL", "http://127.0.0.1:8080"))
     result.add_argument("--email", default=os.getenv("E2BR3_ADMIN_EMAIL", "demo.cro.admin@example.com"))
     result.add_argument("--password", default=os.getenv("E2BR3_ADMIN_PASSWORD", "welcome"))
+    result.add_argument(
+        "--message-sender-identifier",
+        default=os.getenv("E2BR3_DEFAULT_MESSAGE_SENDER"),
+    )
+    result.add_argument(
+        "--ich-message-receiver-identifier",
+        default=os.getenv("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH"),
+    )
     result.add_argument("--seed", type=int, default=int(time.time()))
     result.add_argument("--artifact-dir", default="tmp/rbac-rls-fuzz/business-validator")
     result.add_argument("--timeout", type=float, default=20)
@@ -1326,7 +1755,20 @@ def main(args: argparse.Namespace) -> int:
         for sample_ordinal in range(args.samples_per_scenario)
     ]
     inventory = discover_business_rule_codes()
-    planned_rules = {scenario.expected_code for scenario in scenarios}
+    planned_rules = {
+        scenario.expected_code for scenario in scenarios
+        if scenario.scenario_id not in XML_BOUNDARY_SCENARIO_IDS
+        and scenario.scenario_id not in MEDDRA_VERSION_SCENARIO_PATHS
+        and scenario.scenario_id not in SUPPLEMENTAL_RETAINED_SCENARIO_IDS
+    }
+    supplemental_planned_rules = {
+        scenario.expected_code for scenario in scenarios
+        if scenario.scenario_id in SUPPLEMENTAL_RETAINED_SCENARIO_IDS
+    }
+    xml_boundary_planned_rules = {
+        scenario.expected_code for scenario in scenarios
+        if scenario.scenario_id in XML_BOUNDARY_SCENARIO_IDS
+    }
     raw_uncovered = inventory - catalog_covered
     dispositions = {
         code: detail
@@ -1353,9 +1795,19 @@ def main(args: argparse.Namespace) -> int:
             "catalog_rules": sorted(catalog_covered),
             "planned_rule_count": len(planned_rules),
             "planned_rules": sorted(planned_rules),
+            "supplemental_retained_planned_rule_count": len(supplemental_planned_rules),
+            "supplemental_retained_planned_rules": sorted(supplemental_planned_rules),
+            "supplemental_retained_verified_rules": [],
+            "supplemental_retained_unverified_rules": sorted(supplemental_planned_rules),
+            "xml_boundary_planned_rule_count": len(xml_boundary_planned_rules),
+            "xml_boundary_planned_rules": sorted(xml_boundary_planned_rules),
+            "unverified_xml_boundary_rule_count": len(xml_boundary_planned_rules),
+            "unverified_xml_boundary_rules": sorted(xml_boundary_planned_rules),
             "inventory_catalog_intersection_rule_count": len(inventory & catalog_covered),
             "inventory_catalog_intersection_rules": sorted(inventory & catalog_covered),
             "verified_both_edges_rules": [],
+            "verified_meddra_version_field_scenarios": [],
+            "verified_meddra_version_field_scenario_count": 0,
             "unverified_planned_rules": sorted(planned_rules),
             "inventory_rule_count": len(inventory),
             "raw_uncovered_rules": sorted(raw_uncovered),
@@ -1446,18 +1898,231 @@ def main(args: argparse.Namespace) -> int:
     def validation(case_id: str, authority: str) -> tuple[int | None, Any, dict[str, Any]]:
         return request("GET", f"/api/cases/{case_id}/validation?authority={authority}")
 
+    needs_meddra_code_binding = any(
+        scenario.scenario_id in (
+            MEDDRA_CODE_SCENARIO_IDS | MEDDRA_CONTEXT_SCENARIO_IDS
+        )
+        for scenario in scenarios
+    )
+    needs_meddra_version_binding = any(
+        scenario.scenario_id in MEDDRA_VERSION_SCENARIO_PATHS for scenario in scenarios
+    )
+    needs_meddra_binding = needs_meddra_code_binding or needs_meddra_version_binding
+    needs_whodrug_binding = any(
+        scenario.scenario_id in WHODRUG_VERSION_SCENARIOS for scenario in scenarios
+    )
+    needs_ucum_frequency_binding = any(
+        scenario.scenario_id == UCUM_FREQUENCY_SCENARIO_ID
+        for scenario in scenarios
+    )
     runnable_scenarios = [scenario for scenario in scenarios if not scenario.reference_fixture]
+    if (
+        runnable_scenarios or needs_meddra_binding or needs_whodrug_binding
+        or needs_ucum_frequency_binding
+    ):
+        status, _, summary = request("POST", "/auth/v1/login", {"email": args.email, "pwd": args.password})
+        add("login", None, "PASS" if status == 200 else "FAIL", status, summary)
+        if status != 200:
+            interrupted = interrupted or "login_failed"
+    if needs_meddra_binding and not interrupted:
+        status, rows, summary = request(
+            "GET",
+            "/api/terminology/meddra?q=&limit=1&version=28.1&language=en&level=LLT",
+        )
+        absent_status, absent_rows, absent_summary = request(
+            "GET",
+            "/api/terminology/meddra?q=99999999&limit=100&version=28.1&level=LLT",
+        )
+        try:
+            if status != 200 or absent_status != 200:
+                raise ValueError("MedDRA terminology lookup failed")
+            version, valid_code, invalid_code = meddra_binding(rows, absent_rows)
+        except ValueError as error:
+            interrupted = interrupted or "meddra_binding_failed"
+            add("reference_binding", None, "FAIL", status, {
+                **summary,
+                "absence_lookup": absent_summary,
+                "absence_status": absent_status,
+                "reason": str(error),
+            })
+        else:
+            scenarios = bind_meddra_code_scenarios(
+                scenarios, version, valid_code, invalid_code,
+            )
+            runnable_scenarios = [
+                scenario for scenario in scenarios if not scenario.reference_fixture
+            ]
+            add("reference_binding", None, "PASS", status, {
+                **summary,
+                "absence_lookup": absent_summary,
+                "absence_status": absent_status,
+                "dictionary": "meddra",
+                "version": version,
+                "language": "en",
+                "level": "LLT",
+                "valid_code": valid_code,
+                "invalid_code": invalid_code,
+                "scenario_count": len({
+                    scenario.scenario_id for scenario in scenarios
+                    if scenario.scenario_id in (
+                        MEDDRA_CODE_SCENARIO_IDS | MEDDRA_CONTEXT_SCENARIO_IDS
+                    )
+                }),
+            })
+            if needs_meddra_version_binding:
+                release_status, releases, release_summary = request(
+                    "GET", "/api/terminology/releases?dictionary=meddra&language=en",
+                )
+                absent_version_status, absent_version_rows, absent_version_summary = request(
+                    "GET", "/api/terminology/meddra?q=&limit=1&version=27.1",
+                )
+                try:
+                    if release_status != 200 or absent_version_status != 200:
+                        raise ValueError("MedDRA version availability lookup failed")
+                    invalid_version = meddra_unavailable_version(
+                        releases, absent_version_rows, version,
+                    )
+                except ValueError as error:
+                    add("reference_binding", None, "FAIL", release_status, {
+                        **release_summary,
+                        "absence_lookup": absent_version_summary,
+                        "absence_status": absent_version_status,
+                        "reason": str(error),
+                        "scenario_family": "meddra_version_unavailable",
+                    })
+                else:
+                    scenarios = bind_meddra_version_scenarios(
+                        scenarios, version, invalid_version, valid_code,
+                    )
+                    runnable_scenarios = [
+                        scenario for scenario in scenarios if not scenario.reference_fixture
+                    ]
+                    add("reference_binding", None, "PASS", release_status, {
+                        **release_summary,
+                        "absence_lookup": absent_version_summary,
+                        "absence_status": absent_version_status,
+                        "dictionary": "meddra",
+                        "version": version,
+                        "invalid_version": invalid_version,
+                        "scenario_family": "meddra_version_unavailable",
+                        "scenario_count": len(MEDDRA_VERSION_SCENARIO_PATHS),
+                    })
+    if needs_ucum_frequency_binding and not interrupted:
+        release_status, releases, release_summary = request(
+            "GET",
+            "/api/terminology/releases?dictionary=ich_constrained_ucum&language=en",
+        )
+        active_releases = [
+            release for release in releases
+            if isinstance(release, dict)
+            and release.get("dictionary") == "ich_constrained_ucum"
+            and release.get("version") == "2.2"
+            and str(release.get("language", "")).lower() == "en"
+            and release.get("status") == "active"
+            and isinstance(
+                release.get("loaded_rows", release.get("loadedRows")), int,
+            )
+            and release.get("loaded_rows", release.get("loadedRows")) >= 9
+        ] if isinstance(releases, list) else []
+        if release_status != 200 or len(active_releases) != 1:
+            interrupted = interrupted or "ucum_frequency_binding_failed"
+            add("reference_binding", None, "FAIL", release_status, {
+                **release_summary,
+                "dictionary": "ich_constrained_ucum",
+                "version": "2.2",
+                "language": "en",
+                "scope": "frequency",
+                "reason": "one active loaded ICH constrained UCUM 2.2/en release is required",
+            })
+        else:
+            rebound_scenarios: list[Scenario] = []
+            for scenario in scenarios:
+                if scenario.scenario_id == UCUM_FREQUENCY_SCENARIO_ID:
+                    rebound = replace(scenario, reference_fixture=False)
+                    scenario = replace(
+                        rebound,
+                        generation_fingerprint=scenario_fingerprint(rebound),
+                    )
+                rebound_scenarios.append(scenario)
+            scenarios = rebound_scenarios
+            runnable_scenarios = [
+                scenario for scenario in scenarios if not scenario.reference_fixture
+            ]
+            add("reference_binding", None, "PASS", release_status, {
+                **release_summary,
+                "dictionary": "ich_constrained_ucum",
+                "version": "2.2",
+                "language": "en",
+                "scope": "frequency",
+                "loaded_rows": active_releases[0].get(
+                    "loaded_rows", active_releases[0].get("loadedRows"),
+                ),
+                "candidate_source": "controlled artifact required frequency contract",
+                "valid_candidate": "d",
+                "attempt_allowed_only": True,
+                "runtime_validity_verified": False,
+                "scenario_count": 1,
+            })
+    if needs_whodrug_binding and not interrupted:
+        release_status, releases, release_summary = request(
+            "GET", "/api/terminology/releases?dictionary=whodrug&language=en",
+        )
+        product_status, products, product_summary = request(
+            "GET", "/api/terminology/whodrug?q=&limit=1",
+        )
+        try:
+            if release_status != 200 or product_status != 200:
+                raise ValueError("WHODrug terminology lookup failed")
+            version, product_code = whodrug_binding(releases, products)
+        except ValueError as error:
+            interrupted = interrupted or "whodrug_binding_failed"
+            add("reference_binding", None, "FAIL", release_status, {
+                **release_summary,
+                "dictionary": "whodrug",
+                "product_lookup": product_summary,
+                "product_status": product_status,
+                "reason": str(error),
+            })
+        else:
+            scenarios = bind_whodrug_version_scenarios(
+                scenarios, version, product_code,
+            )
+            runnable_scenarios = [
+                scenario for scenario in scenarios if not scenario.reference_fixture
+            ]
+            add("reference_binding", None, "PASS", release_status, {
+                **release_summary,
+                "product_lookup": product_summary,
+                "product_status": product_status,
+                "dictionary": "whodrug",
+                "version": version,
+                "language": "en",
+                "product_code": product_code,
+                "scenario_count": len({
+                    scenario.scenario_id for scenario in scenarios
+                    if scenario.scenario_id in WHODRUG_VERSION_SCENARIOS
+                }),
+            })
     for scenario in scenarios:
         if scenario.reference_fixture:
             add("reference_data", scenario, "BLOCKED_REFERENCE_DATA", None, {
                 "expected_code": scenario.expected_code,
                 "reason": "authoritative reference-data binding is not implemented",
             })
+
     if runnable_scenarios:
-        status, _, summary = request("POST", "/auth/v1/login", {"email": args.email, "pwd": args.password})
-        add("login", None, "PASS" if status == 200 else "FAIL", status, summary)
-        if status != 200:
-            interrupted = interrupted or "login_failed"
+        if not args.message_sender_identifier or not args.message_sender_identifier.strip():
+            raise SystemExit(
+                "set E2BR3_DEFAULT_MESSAGE_SENDER or --message-sender-identifier"
+            )
+        if (
+            not args.ich_message_receiver_identifier
+            or not args.ich_message_receiver_identifier.strip()
+        ):
+            raise SystemExit(
+                "set E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH "
+                "or --ich-message-receiver-identifier"
+            )
 
     year = int(scenario_catalog(args.seed)[0].invalid_value[:4])
 
@@ -1602,6 +2267,8 @@ def main(args: argparse.Namespace) -> int:
             "meddraCode": "10000001",
             "causeText": "Business fuzz cause",
         }
+        for path, fixture_value in scenario.fixture_values:
+            set_path(payload, path, fixture_value)
         set_path(payload, scenario.field, value)
         return payload
 
@@ -1620,6 +2287,8 @@ def main(args: argparse.Namespace) -> int:
             "endDate": f"{year}0304",
             "continuing": True,
         }
+        for path, fixture_value in scenario.fixture_values:
+            set_path(payload, path, fixture_value)
         set_path(payload, scenario.field, value)
         return payload
 
@@ -1635,6 +2304,7 @@ def main(args: argparse.Namespace) -> int:
             "reactionMeddraVersion": "26.0",
             "reactionMeddraCode": "10000001",
         }
+        omit_whodrug_unrelated_meddra(payload, scenario)
         for path, fixture_value in scenario.fixture_values:
             set_path(payload, path, fixture_value)
         set_path(payload, scenario.field, value)
@@ -1652,6 +2322,7 @@ def main(args: argparse.Namespace) -> int:
             "reactionMeddraVersion": "26.0",
             "reactionMeddraCode": "10000001",
         }
+        omit_whodrug_unrelated_meddra(payload, scenario)
         for path, fixture_value in scenario.fixture_values:
             set_path(payload, path, fixture_value)
         set_path(payload, scenario.field, value)
@@ -1726,12 +2397,12 @@ def main(args: argparse.Namespace) -> int:
     def message_header_payload(case_id: str, scenario: Scenario, value: Any) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "case_id": case_id,
-            "batch_sender_identifier": "SENDER",
-            "batch_receiver_identifier": "RECEIVER",
+            "batch_sender_identifier": args.message_sender_identifier.strip(),
+            "batch_receiver_identifier": args.ich_message_receiver_identifier.strip(),
             "batch_transmission_date": [year, 65, 0, 0, 0, 0, 0, 0, 0],
             "message_number": f"BUSINESS-FUZZ-{case_id}",
-            "message_sender_identifier": "SENDER",
-            "message_receiver_identifier": "RECEIVER",
+            "message_sender_identifier": args.message_sender_identifier.strip(),
+            "message_receiver_identifier": args.ich_message_receiver_identifier.strip(),
             "message_date": f"{year}0305000000",
         }
         if scenario.page == "N":
@@ -1764,7 +2435,10 @@ def main(args: argparse.Namespace) -> int:
         status, current = page_current(case_id, "CI", "safetyReportIdentification")
         ci_id = object_id(current)
         ci = ci_payload(
-            scenario.field if scenario.owner == "safetyReportIdentification" else None,
+            scenario.field
+            if scenario.owner == "safetyReportIdentification"
+            and scenario.surface != "singleton"
+            else None,
             value,
             scenario,
         )
@@ -1782,7 +2456,14 @@ def main(args: argparse.Namespace) -> int:
             add(edge, scenario, "FAIL", status, {**save_summary, "reason": "ci_fixture_failed"})
             return
 
-        if scenario.page != "N" and scenario.header_values:
+        if (
+            scenario.page != "N"
+            and scenario.surface != "device"
+            and not (
+                scenario.surface == "topology"
+                and scenario.authority in {"fda", "mfds"}
+            )
+        ):
             status, _, header_summary = request(
                 "POST",
                 f"/api/cases/{case_id}/message-header",
@@ -1822,9 +2503,109 @@ def main(args: argparse.Namespace) -> int:
                 return
 
         if scenario.surface == "singleton":
-            _, before_value, _ = request("GET", f"/api/audit-logs/by-record/cases/{case_id}")
-            before_items = before_value if isinstance(before_value, list) else []
-            if scenario.expected_code == "ICH.D.1.REQUIRED" and value is not None:
+            before_status, before_value, before_summary = request(
+                "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+            )
+            if before_status != 200 or not isinstance(before_value, list):
+                add(edge, scenario, "FAIL", before_status, {
+                    **before_summary,
+                    "reason": "singleton_audit_before_failed",
+                    "audit_response_is_list": isinstance(before_value, list),
+                })
+                return
+            before_items = before_value
+            if scenario.expected_code in {"ICH.C.1.1.REQUIRED", "ICH.C.1.2.REQUIRED"}:
+                before_read_status, before_read, before_read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/CI",
+                )
+                before_rows = before_read.get("rows") if isinstance(before_read, dict) else None
+                before_owner = (
+                    before_rows.get("safetyReportIdentification")
+                    if isinstance(before_rows, dict) else None
+                )
+                if before_read_status != 200 or not isinstance(before_owner, dict):
+                    add(edge, scenario, "FAIL", before_read_status, {
+                        **before_read_summary,
+                        "reason": "singleton_ci_before_read_failed",
+                    })
+                    return
+                before_actual = get_path(before_owner, scenario.projection_field)
+                if values_equal(before_actual, value):
+                    add(edge, scenario, "FAIL", before_read_status, {
+                        **before_read_summary,
+                        "reason": "singleton_ci_baseline_matches_target",
+                        "baseline": redacted(before_actual),
+                        "target": redacted(value),
+                    })
+                    return
+                status, saved, save_summary = request(
+                    "PATCH",
+                    f"/api/cases/{case_id}/editor/pages/CI",
+                    {"authorities": ["ich"], "rows": {
+                        "safetyReportIdentification": {scenario.field: value},
+                    }},
+                )
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/CI",
+                )
+                read_rows = read_value.get("rows") if isinstance(read_value, dict) else None
+                current = (
+                    read_rows.get("safetyReportIdentification")
+                    if isinstance(read_rows, dict) else None
+                )
+                if read_status != 200 or not isinstance(current, dict):
+                    add(edge, scenario, "FAIL", read_status, {
+                        **read_summary,
+                        "reason": "singleton_ci_readback_failed",
+                    })
+                    return
+                actual = get_path(current, scenario.projection_field)
+                if scenario.expected_code == "ICH.C.1.1.REQUIRED" and value is None:
+                    error = saved.get("error") if isinstance(saved, dict) else None
+                    data = error.get("data") if isinstance(error, dict) else None
+                    detail = data.get("detail") if isinstance(data, dict) else None
+                    after_status, after_value, after_summary = request(
+                        "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                    )
+                    after_items = after_value if isinstance(after_value, list) else None
+                    expected_path = EXPECTED_SCENARIO_ISSUE_PATHS[scenario.scenario_id]
+                    unchanged = values_equal(before_actual, actual)
+                    expected_rejection = (
+                        status == 422
+                        and error.get("message") == "CONSTRAINT_VIOLATION"
+                        and isinstance(detail, dict)
+                        and detail.get("ruleCode") == scenario.expected_code
+                        and detail.get("path") == expected_path
+                        and unchanged
+                        and after_status == 200
+                        and isinstance(after_items, list)
+                        and len(after_items) == len(before_items)
+                    ) if isinstance(error, dict) else False
+                    add(
+                        edge, scenario,
+                        "PASS_INPUT_CONTRACT" if expected_rejection else "FAIL",
+                        status,
+                        {
+                            **save_summary,
+                            "expected_code": scenario.expected_code,
+                            "expected_path": expected_path,
+                            "actual_error": error.get("message") if isinstance(error, dict) else None,
+                            "actual_code": detail.get("ruleCode") if isinstance(detail, dict) else None,
+                            "actual_path": detail.get("path") if isinstance(detail, dict) else None,
+                            "before_read_status": before_read_status,
+                            "after_read_status": read_status,
+                            "before_readback": redacted(before_actual),
+                            "after_readback": redacted(actual),
+                            "rejected_write_unchanged": unchanged,
+                            "audit_status_after": after_status,
+                            "audit_rows_before": len(before_items),
+                            "audit_rows_after": len(after_items) if isinstance(after_items, list) else None,
+                            "audit_error": after_summary if after_status != 200 else None,
+                            "reason": "input_contract_rejected" if expected_rejection else "ci_input_contract_mismatch",
+                        },
+                    )
+                    return
+            elif scenario.expected_code == "ICH.D.1.REQUIRED" and value is not None:
                 status, _, save_summary = request(
                     "PATCH",
                     f"/api/cases/{case_id}/editor/pages/DM",
@@ -1840,28 +2621,206 @@ def main(args: argparse.Namespace) -> int:
                 )
                 read_status, current = page_current(case_id, "NR", "narrative")
                 actual = get_path(current, "caseNarrative")
+            elif scenario.expected_code == "ICH.C.2.r.REQUIRED" and value:
+                status, _, save_summary = request(
+                    "PATCH",
+                    f"/api/cases/{case_id}/editor/pages/RP",
+                    {"authorities": ["ich"], "rows": {"primarySources": [{
+                        "reporterOrganization": "Business Reporter",
+                        "reporterCountry": "KR",
+                        "qualification": "1",
+                        "primarySourceForRegulatoryPurposes": "1",
+                    }]}},
+                )
+                if status != 200:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary, "reason": "singleton_primary_source_fixture_failed",
+                    })
+                    return
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/RP",
+                )
+                read_rows = read_value.get("rows") if isinstance(read_value, dict) else None
+                collection = read_rows.get("primarySources") if isinstance(read_rows, dict) else None
+                if read_status != 200 or not isinstance(collection, list):
+                    add(edge, scenario, "FAIL", read_status, {
+                        **read_summary,
+                        "reason": "singleton_primary_source_readback_failed",
+                        "collection_is_list": isinstance(collection, list),
+                    })
+                    return
+                actual = bool(collection)
+            elif scenario.expected_code == "ICH.G.k.REQUIRED" and value:
+                status, created, save_summary = request(
+                    "POST",
+                    f"/api/cases/{case_id}/editor/pages/DG/rows",
+                    {"authorities": ["ich"], "rows": {"drug": {
+                        "drugCharacterization": "1",
+                        "medicinalProduct": "Business fuzz product",
+                    }}},
+                )
+                owner_id = created_row_id(created)
+                if status != 201 or not owner_id:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary, "reason": "singleton_drug_fixture_failed",
+                    })
+                    return
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/DG",
+                )
+                read_rows = read_value.get("rows") if isinstance(read_value, dict) else None
+                collection = read_rows.get("rows") if isinstance(read_rows, dict) else None
+                if read_status != 200 or not isinstance(collection, list):
+                    add(edge, scenario, "FAIL", read_status, {
+                        **read_summary,
+                        "reason": "singleton_drug_readback_failed",
+                        "collection_is_list": isinstance(collection, list),
+                    })
+                    return
+                actual = bool(collection)
+            elif scenario.expected_code == "ICH.E.i.REQUIRED" and value:
+                reaction = reaction_payload()
+                for path, fixture_value in scenario.fixture_values:
+                    set_path(reaction, path, fixture_value)
+                status, created, save_summary = request(
+                    "POST",
+                    f"/api/cases/{case_id}/editor/pages/AE/rows",
+                    {"authorities": ["ich"], "rows": {"reaction": reaction}},
+                )
+                owner_id = created_row_id(created)
+                if status != 201 or not owner_id:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary, "reason": "singleton_reaction_fixture_failed",
+                    })
+                    return
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/AE",
+                )
+                read_rows = read_value.get("rows") if isinstance(read_value, dict) else None
+                collection = read_rows.get("rows") if isinstance(read_rows, dict) else None
+                matching_rows = [
+                    row for row in collection
+                    if isinstance(row, dict) and object_id(row) == owner_id
+                ] if isinstance(collection, list) else []
+                if (
+                    read_status != 200
+                    or not isinstance(collection, list)
+                    or len(matching_rows) != 1
+                ):
+                    add(edge, scenario, "FAIL", read_status, {
+                        **read_summary,
+                        "reason": "singleton_reaction_readback_failed",
+                        "collection_is_list": isinstance(collection, list),
+                        "matching_row_count": len(matching_rows),
+                    })
+                    return
+                actual = bool(collection)
             else:
-                status, save_summary = 200, {"status": 200, "absence_fixture": True}
-                read_status, actual = 200, None
-            _, after_value, _ = request("GET", f"/api/audit-logs/by-record/cases/{case_id}")
-            after_items = after_value if isinstance(after_value, list) else []
+                page = {
+                    "ICH.D.1.REQUIRED": "DM",
+                    "ICH.H.1.REQUIRED": "NR",
+                    "ICH.C.2.r.REQUIRED": "RP",
+                    "ICH.G.k.REQUIRED": "DG",
+                    "ICH.E.i.REQUIRED": "AE",
+                }[scenario.expected_code]
+                status, read_value, save_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/{page}",
+                )
+                read_status = status
+                read_rows = read_value.get("rows") if isinstance(read_value, dict) else None
+                if scenario.expected_code == "ICH.D.1.REQUIRED":
+                    actual = (
+                        get_path(read_rows.get("patientInformation"), "patientInitials")
+                        if isinstance(read_rows, dict)
+                        and isinstance(read_rows.get("patientInformation"), dict)
+                        else None
+                    )
+                    shape_valid = (
+                        status == 200 and isinstance(read_rows, dict)
+                        and "patientInformation" in read_rows
+                        and (
+                            read_rows.get("patientInformation") is None
+                            or isinstance(read_rows.get("patientInformation"), dict)
+                        )
+                    )
+                elif scenario.expected_code == "ICH.H.1.REQUIRED":
+                    actual = (
+                        get_path(read_rows.get("narrative"), "caseNarrative")
+                        if isinstance(read_rows, dict)
+                        and isinstance(read_rows.get("narrative"), dict)
+                        else None
+                    )
+                    shape_valid = (
+                        status == 200 and isinstance(read_rows, dict)
+                        and "narrative" in read_rows
+                        and (
+                            read_rows.get("narrative") is None
+                            or isinstance(read_rows.get("narrative"), dict)
+                        )
+                    )
+                else:
+                    key = "primarySources" if scenario.expected_code == "ICH.C.2.r.REQUIRED" else "rows"
+                    collection = read_rows.get(key) if isinstance(read_rows, dict) else None
+                    shape_valid = status == 200 and isinstance(collection, list)
+                    actual = bool(collection) if shape_valid else None
+                if not shape_valid:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary,
+                        "reason": "singleton_absence_readback_failed",
+                        "page": page,
+                    })
+                    return
+            after_status, after_value, after_summary = request(
+                "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+            )
+            if after_status != 200 or not isinstance(after_value, list):
+                add(edge, scenario, "FAIL", after_status, {
+                    **after_summary,
+                    "reason": "singleton_audit_after_failed",
+                    "audit_response_is_list": isinstance(after_value, list),
+                })
+                return
+            after_items = after_value
             validation_status, report, validation_summary = validation(case_id, scenario.authority)
             present = scenario.expected_code in issue_codes(report)
             expected_present = edge == "invalid_edge"
+            expected_issue_path = EXPECTED_SCENARIO_ISSUE_PATHS.get(
+                scenario.scenario_id,
+            )
+            expected_path_issue_count = complete_issue_count(
+                report, scenario.expected_code, expected_issue_path,
+            ) if expected_issue_path else 0
             complete_logs = [
                 log for log in after_items
                 if isinstance(log, dict) and audit_log_complete(log)
             ]
+            expected_save_status = (
+                201
+                if scenario.expected_code in {
+                    "ICH.G.k.REQUIRED", "ICH.E.i.REQUIRED",
+                } and value
+                else 200
+            )
             passed = (
-                status == 200
+                status == expected_save_status
                 and read_status == 200
                 and values_equal(value, actual)
                 and validation_status == 200
                 and present == expected_present
                 and (not expected_present or issue_complete(report, scenario.expected_code))
                 and (
-                    len(after_items) == len(before_items)
-                    if expected_present else len(after_items) > len(before_items)
+                    expected_issue_path is None
+                    or (expected_present and expected_path_issue_count == 1)
+                    or (not expected_present and expected_path_issue_count == 0)
+                )
+                and (
+                    len(after_items) > len(before_items)
+                    if scenario.expected_code in {
+                        "ICH.C.1.1.REQUIRED", "ICH.C.1.2.REQUIRED",
+                    }
+                    else len(after_items) == len(before_items)
+                    if expected_present
+                    else len(after_items) > len(before_items)
                 )
                 and bool(complete_logs)
             )
@@ -1869,8 +2828,11 @@ def main(args: argparse.Namespace) -> int:
                 **save_summary,
                 "validation": validation_summary,
                 "expected_code": scenario.expected_code,
+                "expected_save_status": expected_save_status,
                 "expected_code_present": expected_present,
                 "actual_code_present": present,
+                "expected_issue_path": expected_issue_path,
+                "expected_path_issue_count": expected_path_issue_count,
                 "readback": redacted(actual),
                 "audit_rows_before": len(before_items),
                 "audit_rows_after": len(after_items),
@@ -1900,11 +2862,11 @@ def main(args: argparse.Namespace) -> int:
                 f"/api/cases/{case_id}/message-header",
                 {"data": {
                     "case_id": case_id,
-                    "batch_sender_identifier": "SENDER",
+                    "batch_sender_identifier": args.message_sender_identifier.strip(),
                     "batch_receiver_identifier": "ZZFDA",
                     "batch_transmission_date": [year, 65, 0, 0, 0, 0, 0, 0, 0],
                     "message_number": f"BUSINESS-DEVICE-{case_id}",
-                    "message_sender_identifier": "SENDER",
+                    "message_sender_identifier": args.message_sender_identifier.strip(),
                     "message_receiver_identifier": "CDER",
                     "message_date": f"{year}0305000000",
                 }},
@@ -1936,6 +2898,8 @@ def main(args: argparse.Namespace) -> int:
                     return
 
             drug = drug_payload(scenario, None)
+            if scenario.expected_code == "FDA.G.k.12.COLLECTION.REQUIRED":
+                drug.pop("collectionPresent", None)
             drug["drugCharacterization"] = (
                 "4" if scenario.expected_code == "FDA.R0072" else "1"
             )
@@ -1949,6 +2913,112 @@ def main(args: argparse.Namespace) -> int:
             drug_id = created_row_id(created)
             if status != 201 or not drug_id:
                 add(edge, scenario, "FAIL", status, {**save_summary, "reason": "device_drug_fixture_failed"})
+                return
+
+            if scenario.expected_code == "FDA.G.k.12.COLLECTION.REQUIRED":
+                before_audit_status, before_audit_value, before_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                before_audit = before_audit_value if isinstance(before_audit_value, list) else None
+                if before_audit_status != 200 or not isinstance(before_audit, list):
+                    add(edge, scenario, "FAIL", before_audit_status, {
+                        **before_audit_summary,
+                        "reason": "device_collection_audit_before_failed",
+                    })
+                    return
+                device_id = None
+                if value:
+                    status, created, save_summary = request(
+                        "POST",
+                        f"/api/cases/{case_id}/drugs/{drug_id}/devices",
+                        {"data": {
+                            "drug_id": drug_id,
+                            "sequence_number": 1,
+                            "malfunction": True,
+                            "device_brand_name": "Business Device",
+                        }},
+                    )
+                    device_id = object_id(created)
+                    if status != 201 or not device_id:
+                        add(edge, scenario, "FAIL", status, {
+                            **save_summary,
+                            "reason": "device_collection_fixture_failed",
+                        })
+                        return
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}",
+                )
+                current = (
+                    read_value.get("drug", read_value)
+                    if isinstance(read_value, dict) else read_value
+                )
+                if not value:
+                    status = read_status
+                    save_summary = {**read_summary, "collection_write": "omitted"}
+                devices = current.get("fdaDevices") if isinstance(current, dict) else None
+                matching_devices = [
+                    device for device in devices
+                    if isinstance(device, dict) and object_id(device) == device_id
+                ] if isinstance(devices, list) and device_id else []
+                collection_matches = (
+                    object_id(current) == drug_id
+                    and
+                    isinstance(devices, list)
+                    and (
+                        (not value and devices == [])
+                        or (value and len(matching_devices) == 1
+                            and matching_devices[0].get("malfunction") is True)
+                    )
+                )
+                after_audit_status, after_audit_value, after_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                after_audit = after_audit_value if isinstance(after_audit_value, list) else None
+                audit_matches = (
+                    after_audit_status == 200
+                    and isinstance(after_audit, list)
+                    and (
+                        (not value and after_audit == before_audit)
+                        or (value and len(after_audit) > len(before_audit))
+                    )
+                )
+                validation_status, report, validation_summary = validation(case_id, "fda")
+                present = scenario.expected_code in issue_codes(report)
+                expected_present = edge == "invalid_edge"
+                expected_path = EXPECTED_SCENARIO_ISSUE_PATHS[scenario.scenario_id]
+                path_count = complete_issue_count(
+                    report, scenario.expected_code, expected_path,
+                )
+                passed = (
+                    read_status == 200
+                    and collection_matches
+                    and audit_matches
+                    and validation_status == 200
+                    and present == expected_present
+                    and (not expected_present or issue_complete(report, scenario.expected_code))
+                    and path_count == (1 if expected_present else 0)
+                )
+                add(edge, scenario, "PASS" if passed else "FAIL", status, {
+                    **save_summary,
+                    "validation": validation_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_issue_path": expected_path,
+                    "expected_code_present": expected_present,
+                    "actual_code_present": present,
+                    "expected_path_issue_count": path_count,
+                    "drug_id": drug_id,
+                    "device_id": device_id,
+                    "device_count": len(devices) if isinstance(devices, list) else None,
+                    "matching_device_count": len(matching_devices),
+                    "collection_matches": collection_matches,
+                    "audit_status_before": before_audit_status,
+                    "audit_status_after": after_audit_status,
+                    "audit_rows_before": len(before_audit),
+                    "audit_rows_after": len(after_audit) if isinstance(after_audit, list) else None,
+                    "audit_matches_edge": audit_matches,
+                    "audit_error": after_audit_summary if after_audit_status != 200 else None,
+                    "surface": "device-collection",
+                })
                 return
 
             malfunction = (
@@ -2059,6 +3129,7 @@ def main(args: argparse.Namespace) -> int:
                 "MFDS.C.5.1.r.1.RECEIVER.REQUIRED",
                 "MFDS.C.5.1.r.1.NULLFLAVOR.FORBIDDEN",
                 "FDA.W0010",
+                "FDA.G.k.9.REQUIRED",
             }:
                 topology_ci["reportType"] = "2"
             linked_reports: list[dict[str, Any]] = []
@@ -2084,7 +3155,7 @@ def main(args: argparse.Namespace) -> int:
             if scenario.authority in {"mfds", "fda"}:
                 if scenario.authority == "mfds":
                     batch_receiver = message_receiver = "MFDS-O-CT"
-                elif scenario.expected_code == "FDA.W0010":
+                elif scenario.expected_code in {"FDA.W0010", "FDA.G.k.9.REQUIRED"}:
                     batch_receiver, message_receiver = "ZZFDA_PREMKT", "CDER_IND"
                 else:
                     batch_receiver, message_receiver = "ZZFDA", "CDER"
@@ -2093,11 +3164,11 @@ def main(args: argparse.Namespace) -> int:
                     f"/api/cases/{case_id}/message-header",
                     {"data": {
                         "case_id": case_id,
-                        "batch_sender_identifier": "SENDER",
+                        "batch_sender_identifier": args.message_sender_identifier.strip(),
                         "batch_receiver_identifier": batch_receiver,
                         "batch_transmission_date": [year, 65, 0, 0, 0, 0, 0, 0, 0],
                         "message_number": f"BUSINESS-TOPOLOGY-{case_id}",
-                        "message_sender_identifier": "SENDER",
+                        "message_sender_identifier": args.message_sender_identifier.strip(),
                         "message_receiver_identifier": message_receiver,
                         "message_date": f"{year}0305000000",
                     }},
@@ -2140,7 +3211,7 @@ def main(args: argparse.Namespace) -> int:
             registrations: list[dict[str, Any]] = []
             if scenario.expected_code == "FDA.W0002":
                 study["studyTypeReaction"] = value
-            elif scenario.expected_code == "FDA.W0010":
+            elif scenario.expected_code in {"FDA.W0010", "FDA.G.k.9.REQUIRED"}:
                 study["fdaIndNumberOccurred"] = "123456"
             elif scenario.expected_code == "MFDS.C.5.1.r.1.RECEIVER.REQUIRED" and value:
                 registrations = [{
@@ -2165,6 +3236,153 @@ def main(args: argparse.Namespace) -> int:
             )
             if status != 200:
                 add(edge, scenario, "FAIL", status, {**save_summary, "reason": "topology_study_fixture_failed"})
+                return
+
+            if scenario.expected_code == "FDA.G.k.9.REQUIRED":
+                status, reaction_created, save_summary = request(
+                    "POST", f"/api/cases/{case_id}/editor/pages/AE/rows",
+                    {"authorities": ["fda"], "rows": {"reaction": reaction_payload()}},
+                )
+                reaction_id = created_row_id(reaction_created)
+                if status != 201 or not reaction_id:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary, "reason": "topology_assessment_reaction_failed",
+                    })
+                    return
+                status, drug_created, save_summary = request(
+                    "POST", f"/api/cases/{case_id}/editor/pages/DG/rows",
+                    {"authorities": ["fda"], "rows": {"drug": {
+                        "drugCharacterization": "1",
+                        "medicinalProduct": "Business fuzz product",
+                    }}},
+                )
+                drug_id = created_row_id(drug_created)
+                if status != 201 or not drug_id:
+                    add(edge, scenario, "FAIL", status, {
+                        **save_summary, "reason": "topology_assessment_drug_failed",
+                    })
+                    return
+                before_audit_status, before_audit_value, before_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                before_audit = before_audit_value if isinstance(before_audit_value, list) else None
+                if before_audit_status != 200 or not isinstance(before_audit, list):
+                    add(edge, scenario, "FAIL", before_audit_status, {
+                        **before_audit_summary,
+                        "reason": "topology_assessment_audit_before_failed",
+                    })
+                    return
+                if value:
+                    status, _, save_summary = request(
+                        "PATCH", f"/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}",
+                        {"authorities": ["fda"], "rows": {"drug": {
+                            "drugReactionAssessments": [{
+                                "reactionId": reaction_id,
+                                "sourceOfAssessment": "Sponsor",
+                                "methodOfAssessment": "FDA",
+                                "resultOfAssessment": "Suspected",
+                            }],
+                        }}},
+                    )
+                    if status != 200:
+                        add(edge, scenario, "FAIL", status, {
+                            **save_summary,
+                            "reason": "topology_assessment_fixture_failed",
+                        })
+                        return
+                read_status, read_value, read_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}",
+                )
+                current = (
+                    read_value.get("drug", read_value)
+                    if isinstance(read_value, dict) else read_value
+                )
+                if not value:
+                    status = read_status
+                    save_summary = {**read_summary, "collection_write": "omitted"}
+                assessments = (
+                    current.get("drugReactionAssessments")
+                    if isinstance(current, dict) else None
+                )
+                matching_assessments = [
+                    assessment for assessment in assessments
+                    if isinstance(assessment, dict)
+                    and assessment.get("reactionId") == reaction_id
+                    and assessment.get("sourceOfAssessment") == "Sponsor"
+                    and assessment.get("methodOfAssessment") == "FDA"
+                    and assessment.get("resultOfAssessment") == "Suspected"
+                ] if isinstance(assessments, list) else []
+                assessment_identity = (
+                    object_identity(matching_assessments[0])
+                    if len(matching_assessments) == 1 else {}
+                )
+                assessment_identity_matches = (
+                    assessment_identity.get("reactionId") == reaction_id
+                    and "drugReactionAssessmentId" in assessment_identity
+                )
+                collection_matches = (
+                    object_id(current) == drug_id
+                    and
+                    isinstance(assessments, list)
+                    and (
+                        (not value and assessments == [])
+                        or (value and len(matching_assessments) == 1
+                            and assessment_identity_matches)
+                    )
+                )
+                after_audit_status, after_audit_value, after_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                after_audit = after_audit_value if isinstance(after_audit_value, list) else None
+                audit_matches = (
+                    after_audit_status == 200
+                    and isinstance(after_audit, list)
+                    and (
+                        (not value and after_audit == before_audit)
+                        or (value and len(after_audit) > len(before_audit))
+                    )
+                )
+                validation_status, report, validation_summary = validation(case_id, "fda")
+                present = scenario.expected_code in issue_codes(report)
+                expected_present = edge == "invalid_edge"
+                expected_path = EXPECTED_SCENARIO_ISSUE_PATHS[scenario.scenario_id]
+                path_count = complete_issue_count(
+                    report, scenario.expected_code, expected_path,
+                )
+                passed = (
+                    read_status == 200
+                    and collection_matches
+                    and audit_matches
+                    and validation_status == 200
+                    and present == expected_present
+                    and (not expected_present or issue_complete(report, scenario.expected_code))
+                    and path_count == (1 if expected_present else 0)
+                )
+                add(edge, scenario, "PASS" if passed else "FAIL", status, {
+                    **save_summary,
+                    "validation": validation_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_issue_path": expected_path,
+                    "expected_code_present": expected_present,
+                    "actual_code_present": present,
+                    "expected_path_issue_count": path_count,
+                    "reaction_id": reaction_id,
+                    "drug_id": drug_id,
+                    "assessment_count": len(assessments) if isinstance(assessments, list) else None,
+                    "matching_assessment_count": len(matching_assessments),
+                    "assessment_id": (
+                        assessment_identity.get("drugReactionAssessmentId")
+                    ),
+                    "assessment_identity_matches": assessment_identity_matches,
+                    "collection_matches": collection_matches,
+                    "audit_status_before": before_audit_status,
+                    "audit_status_after": after_audit_status,
+                    "audit_rows_before": len(before_audit),
+                    "audit_rows_after": len(after_audit) if isinstance(after_audit, list) else None,
+                    "audit_matches_edge": audit_matches,
+                    "audit_error": after_audit_summary if after_audit_status != 200 else None,
+                    "surface": "assessment-collection-topology",
+                })
                 return
 
             if scenario.expected_code == "FDA.W0001":
@@ -2222,6 +3440,55 @@ def main(args: argparse.Namespace) -> int:
                 "surface": "collection-topology",
             })
             return
+
+        contract_rejection_scenarios = {
+            "reaction-seriousness-null-flavor-ni-only": (
+                "AE", "ICH.E.i.3.2a.NULLFLAVOR.ALLOWED",
+                "reactions.0.seriousness.criteriaResultsInDeathNullFlavor",
+                "nullFlavor must be one of: NI",
+            ),
+            "mfds-test-date-null-flavor-vocabulary": (
+                "LB", "ICH.F.r.1.NULLFLAVOR.ALLOWED",
+                "testResults.0.testDateNullFlavor",
+                "nullFlavor must be one of: UNK",
+            ),
+        }
+        contract_before_rows: list[Any] | None = None
+        contract_before_audit: list[Any] | None = None
+        contract_page_status: int | None = None
+        contract_audit_status: int | None = None
+        if scenario.scenario_id in contract_rejection_scenarios:
+            contract_page = contract_rejection_scenarios[scenario.scenario_id][0]
+            contract_page_status, contract_page_value, contract_page_summary = request(
+                "GET", f"/api/cases/{case_id}/editor/pages/{contract_page}",
+            )
+            contract_rows = (
+                contract_page_value.get("rows")
+                if isinstance(contract_page_value, dict) else None
+            )
+            contract_before_rows = (
+                contract_rows.get("rows") if isinstance(contract_rows, dict) else None
+            )
+            if contract_page_status != 200 or not isinstance(contract_before_rows, list):
+                add(edge, scenario, "FAIL", contract_page_status, {
+                    **contract_page_summary,
+                    "reason": "input_contract_before_page_failed",
+                    "rows_are_list": isinstance(contract_before_rows, list),
+                })
+                return
+            contract_audit_status, contract_audit_value, contract_audit_summary = request(
+                "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+            )
+            contract_before_audit = (
+                contract_audit_value if isinstance(contract_audit_value, list) else None
+            )
+            if contract_audit_status != 200 or not isinstance(contract_before_audit, list):
+                add(edge, scenario, "FAIL", contract_audit_status, {
+                    **contract_audit_summary,
+                    "reason": "input_contract_before_audit_failed",
+                    "audit_is_list": isinstance(contract_before_audit, list),
+                })
+                return
 
         if scenario.scenario_id == "reaction-hcp-medical-confirmation-omit":
             status, _, save_summary = request("PATCH", f"/api/cases/{case_id}/editor/pages/RP", {
@@ -2346,10 +3613,59 @@ def main(args: argparse.Namespace) -> int:
             else:
                 rows["parentInfo"] = {"parentSex": "2"}
                 rows[scenario.owner] = [parent_past_drug_payload(scenario, value)]
-            status, _, save_summary = request("PATCH", f"/api/cases/{case_id}/editor/pages/DM", {
+            d6_before_status: int | None = None
+            d6_before: Any = None
+            if scenario.scenario_id == "d-lmp-null-flavor-allowed" and edge == "invalid_edge":
+                d6_before_status, d6_before = page_current(
+                    case_id, "DM", scenario.owner,
+                )
+            status, saved, save_summary = request("PATCH", f"/api/cases/{case_id}/editor/pages/DM", {
                 "authorities": [scenario.authority],
                 "rows": rows,
             })
+            if scenario.scenario_id == "d-lmp-null-flavor-allowed" and edge == "invalid_edge":
+                error = saved.get("error") if isinstance(saved, dict) else None
+                data = error.get("data") if isinstance(error, dict) else None
+                detail = data.get("detail") if isinstance(data, dict) else None
+                expected_path = EXPECTED_SCENARIO_ISSUE_PATHS[scenario.scenario_id]
+                d6_after_status, d6_after = page_current(
+                    case_id, "DM", scenario.owner,
+                )
+                before_value = get_path(d6_before, scenario.projection_field)
+                after_value = get_path(d6_after, scenario.projection_field)
+                before_owner_present = object_id(d6_before) is not None
+                after_owner_present = object_id(d6_after) is not None
+                unchanged = (
+                    d6_before_status == 200
+                    and d6_after_status == 200
+                    and values_equal(before_value, after_value)
+                    and before_owner_present == after_owner_present
+                )
+                expected_rejection = (
+                    status == 422
+                    and error.get("message") == "CONSTRAINT_VIOLATION"
+                    and isinstance(detail, dict)
+                    and detail.get("ruleCode") == scenario.expected_code
+                    and detail.get("path") == expected_path
+                    and unchanged
+                ) if isinstance(error, dict) else False
+                add(edge, scenario, "PASS_INPUT_CONTRACT" if expected_rejection else "FAIL", status, {
+                    **save_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_path": expected_path,
+                    "actual_error": error.get("message") if isinstance(error, dict) else None,
+                    "actual_code": detail.get("ruleCode") if isinstance(detail, dict) else None,
+                    "actual_path": detail.get("path") if isinstance(detail, dict) else None,
+                    "before_read_status": d6_before_status,
+                    "after_read_status": d6_after_status,
+                    "before_readback": redacted(before_value),
+                    "after_readback": redacted(after_value),
+                    "before_owner_present": before_owner_present,
+                    "after_owner_present": after_owner_present,
+                    "rejected_write_unchanged": unchanged,
+                    "reason": "input_contract_rejected" if expected_rejection else "dm_input_contract_mismatch",
+                })
+                return
             read_status, current = page_current(case_id, "DM", scenario.owner)
             owner_id = object_id(current)
             if status != 200 or not owner_id:
@@ -2413,6 +3729,71 @@ def main(args: argparse.Namespace) -> int:
                 "authorities": [scenario.authority],
                 "rows": {"reaction": reaction_payload(scenario, value)},
             })
+            if (
+                scenario.scenario_id == "reaction-seriousness-null-flavor-ni-only"
+                and edge == "invalid_edge"
+            ):
+                error = created.get("error") if isinstance(created, dict) else None
+                data = error.get("data") if isinstance(error, dict) else None
+                detail = data.get("detail") if isinstance(data, dict) else None
+                after_page_status, after_page_value, after_page_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/AE",
+                )
+                after_page_rows = (
+                    after_page_value.get("rows")
+                    if isinstance(after_page_value, dict) else None
+                )
+                after_rows = (
+                    after_page_rows.get("rows")
+                    if isinstance(after_page_rows, dict) else None
+                )
+                after_audit_status, after_audit_value, after_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                after_audit = after_audit_value if isinstance(after_audit_value, list) else None
+                _, contract_code, contract_path, contract_message = contract_rejection_scenarios[
+                    scenario.scenario_id
+                ]
+                unchanged = (
+                    after_page_status == 200
+                    and isinstance(after_rows, list)
+                    and after_rows == contract_before_rows
+                    and after_audit_status == 200
+                    and isinstance(after_audit, list)
+                    and after_audit == contract_before_audit
+                )
+                expected_rejection = (
+                    status == 422
+                    and isinstance(error, dict)
+                    and error.get("message") == "CONSTRAINT_VIOLATION"
+                    and isinstance(detail, dict)
+                    and detail.get("ruleCode") == contract_code
+                    and detail.get("path") == contract_path
+                    and detail.get("message") == contract_message
+                    and unchanged
+                )
+                add(edge, scenario, "PASS_INPUT_CONTRACT" if expected_rejection else "FAIL", status, {
+                    **save_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_contract_code": contract_code,
+                    "expected_contract_path": contract_path,
+                    "expected_contract_message": contract_message,
+                    "actual_error": error.get("message") if isinstance(error, dict) else None,
+                    "actual_code": detail.get("ruleCode") if isinstance(detail, dict) else None,
+                    "actual_path": detail.get("path") if isinstance(detail, dict) else None,
+                    "actual_message": detail.get("message") if isinstance(detail, dict) else None,
+                    "before_page_status": contract_page_status,
+                    "after_page_status": after_page_status,
+                    "before_row_count": len(contract_before_rows),
+                    "after_row_count": len(after_rows) if isinstance(after_rows, list) else None,
+                    "before_audit_status": contract_audit_status,
+                    "after_audit_status": after_audit_status,
+                    "rows_and_audit_unchanged": unchanged,
+                    "page_read_error": after_page_summary if after_page_status != 200 else None,
+                    "audit_read_error": after_audit_summary if after_audit_status != 200 else None,
+                    "reason": "input_contract_rejected" if expected_rejection else "ae_input_contract_mismatch",
+                })
+                return
             owner_id = created_row_id(created)
             if status != 201 or not owner_id:
                 add(edge, scenario, "FAIL", status, {**save_summary, "reason": "ae_fixture_failed"})
@@ -2423,6 +3804,27 @@ def main(args: argparse.Namespace) -> int:
                 "authorities": [scenario.authority],
                 "rows": {"literatureReference": literature_payload(scenario, value)},
             })
+            if scenario.scenario_id == "c4-literature-base64-format" and edge == "invalid_edge":
+                error = created.get("error") if isinstance(created, dict) else None
+                data = error.get("data") if isinstance(error, dict) else None
+                detail = data.get("detail") if isinstance(data, dict) else None
+                expected_rejection = (
+                    status == 422
+                    and error.get("message") == "CONSTRAINT_VIOLATION"
+                    and isinstance(detail, dict)
+                    and detail.get("ruleCode") == scenario.expected_code
+                    and detail.get("path") == "literatureReferences.0.documentBase64"
+                ) if isinstance(error, dict) else False
+                add(edge, scenario, "PASS_INPUT_CONTRACT" if expected_rejection else "FAIL", status, {
+                    **save_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_path": "literatureReferences.0.documentBase64",
+                    "actual_error": error.get("message") if isinstance(error, dict) else None,
+                    "actual_code": detail.get("ruleCode") if isinstance(detail, dict) else None,
+                    "actual_path": detail.get("path") if isinstance(detail, dict) else None,
+                    "reason": "input_contract_rejected" if expected_rejection else "lr_input_contract_mismatch",
+                })
+                return
             owner_id = created_row_id(created)
             if status != 201 or not owner_id:
                 add(edge, scenario, "FAIL", status, {**save_summary, "reason": "lr_fixture_failed"})
@@ -2433,6 +3835,71 @@ def main(args: argparse.Namespace) -> int:
                 "authorities": [scenario.authority],
                 "rows": {"testResult": test_result_payload(scenario, value)},
             })
+            if (
+                scenario.scenario_id == "mfds-test-date-null-flavor-vocabulary"
+                and edge == "invalid_edge"
+            ):
+                error = created.get("error") if isinstance(created, dict) else None
+                data = error.get("data") if isinstance(error, dict) else None
+                detail = data.get("detail") if isinstance(data, dict) else None
+                after_page_status, after_page_value, after_page_summary = request(
+                    "GET", f"/api/cases/{case_id}/editor/pages/LB",
+                )
+                after_page_rows = (
+                    after_page_value.get("rows")
+                    if isinstance(after_page_value, dict) else None
+                )
+                after_rows = (
+                    after_page_rows.get("rows")
+                    if isinstance(after_page_rows, dict) else None
+                )
+                after_audit_status, after_audit_value, after_audit_summary = request(
+                    "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+                )
+                after_audit = after_audit_value if isinstance(after_audit_value, list) else None
+                _, contract_code, contract_path, contract_message = contract_rejection_scenarios[
+                    scenario.scenario_id
+                ]
+                unchanged = (
+                    after_page_status == 200
+                    and isinstance(after_rows, list)
+                    and after_rows == contract_before_rows
+                    and after_audit_status == 200
+                    and isinstance(after_audit, list)
+                    and after_audit == contract_before_audit
+                )
+                expected_rejection = (
+                    status == 422
+                    and isinstance(error, dict)
+                    and error.get("message") == "CONSTRAINT_VIOLATION"
+                    and isinstance(detail, dict)
+                    and detail.get("ruleCode") == contract_code
+                    and detail.get("path") == contract_path
+                    and detail.get("message") == contract_message
+                    and unchanged
+                )
+                add(edge, scenario, "PASS_INPUT_CONTRACT" if expected_rejection else "FAIL", status, {
+                    **save_summary,
+                    "expected_code": scenario.expected_code,
+                    "expected_contract_code": contract_code,
+                    "expected_contract_path": contract_path,
+                    "expected_contract_message": contract_message,
+                    "actual_error": error.get("message") if isinstance(error, dict) else None,
+                    "actual_code": detail.get("ruleCode") if isinstance(detail, dict) else None,
+                    "actual_path": detail.get("path") if isinstance(detail, dict) else None,
+                    "actual_message": detail.get("message") if isinstance(detail, dict) else None,
+                    "before_page_status": contract_page_status,
+                    "after_page_status": after_page_status,
+                    "before_row_count": len(contract_before_rows),
+                    "after_row_count": len(after_rows) if isinstance(after_rows, list) else None,
+                    "before_audit_status": contract_audit_status,
+                    "after_audit_status": after_audit_status,
+                    "rows_and_audit_unchanged": unchanged,
+                    "page_read_error": after_page_summary if after_page_status != 200 else None,
+                    "audit_read_error": after_audit_summary if after_audit_status != 200 else None,
+                    "reason": "input_contract_rejected" if expected_rejection else "lb_input_contract_mismatch",
+                })
+                return
             owner_id = created_row_id(created)
             if status != 201 or not owner_id:
                 add(edge, scenario, "FAIL", status, {**save_summary, "reason": "lb_fixture_failed"})
@@ -2451,17 +3918,123 @@ def main(args: argparse.Namespace) -> int:
             audit_key_matches(log.get("changedFields", log.get("changed_fields", {})), scenario.projection_field)
             for log in complete_logs
         )
+        contract_audit_grew = True
+        contract_after_audit_status: int | None = None
+        contract_after_audit_count: int | None = None
+        if scenario.scenario_id in contract_rejection_scenarios:
+            contract_after_audit_status, contract_after_audit_value, _ = request(
+                "GET", f"/api/audit-logs/by-record/cases/{case_id}",
+            )
+            contract_after_audit = (
+                contract_after_audit_value
+                if isinstance(contract_after_audit_value, list) else None
+            )
+            contract_after_audit_count = (
+                len(contract_after_audit)
+                if isinstance(contract_after_audit, list) else None
+            )
+            contract_audit_grew = (
+                contract_after_audit_status == 200
+                and isinstance(contract_after_audit, list)
+                and isinstance(contract_before_audit, list)
+                and len(contract_after_audit) > len(contract_before_audit)
+            )
+        if scenario.scenario_id in XML_BOUNDARY_SCENARIO_IDS:
+            persisted = (
+                read_status == 200
+                and values_equal(expected_readback, actual)
+                and bool(complete_logs)
+                and (value is None or field_match)
+            )
+            add(
+                edge,
+                scenario,
+                "UNVERIFIED_XML_BOUNDARY" if persisted else "FAIL",
+                status,
+                {
+                    **save_summary,
+                    "expected_code": scenario.expected_code,
+                    "readback": redacted(actual),
+                    "audit_logs": len(logs),
+                    "audit_complete": bool(complete_logs),
+                    "audit_field_match": field_match,
+                    "case_validation_surface": False,
+                    "reason": (
+                        "xml_export_validation_not_executed"
+                        if persisted else "xml_boundary_persistence_mismatch"
+                    ),
+                },
+            )
+            return
         validation_status, report, validation_summary = validation(case_id, scenario.authority)
-        present = scenario.expected_code in issue_codes(report)
+        codes = issue_codes(report)
+        present = scenario.expected_code in codes
         expected_present = edge == "invalid_edge"
+        version_path = MEDDRA_VERSION_SCENARIO_PATHS.get(scenario.scenario_id)
+        expected_issue_path = EXPECTED_SCENARIO_ISSUE_PATHS.get(
+            scenario.scenario_id, version_path,
+        )
+        expected_issue_message = EXPECTED_SCENARIO_ISSUE_MESSAGES.get(
+            scenario.scenario_id,
+        )
+        expected_path_issue_count = (
+            complete_issue_count(
+                report, scenario.expected_code, expected_issue_path,
+                expected_issue_message,
+            )
+            if expected_issue_path else 0
+        )
+        version_issue_count = (
+            complete_issue_count(report, scenario.expected_code, version_path)
+            if version_path else 0
+        )
+        global_version_issue_count = sum(
+            isinstance(issue, dict)
+            and issue.get("code") == "ICH.MEDDRA.VERSION.UNAVAILABLE"
+            for issue in report.get("issues", [])
+        ) if isinstance(report, dict) else 0
+        investigational_study_only_present = (
+            "ICH.G.k.2.5.STUDY.ONLY" in codes
+        )
+        version_oracle_matches = version_path is None or (
+            (edge == "invalid_edge" and version_issue_count == 1
+             and global_version_issue_count == 1)
+            or (edge == "valid_edge" and global_version_issue_count == 0)
+        )
         passed = (
             read_status == 200
             and values_equal(expected_readback, actual)
             and bool(complete_logs)
             and (value is None or field_match)
+            and contract_audit_grew
             and validation_status == 200
             and present == expected_present
             and (not expected_present or issue_complete(report, scenario.expected_code))
+            and (
+                expected_issue_path is None
+                or (expected_present and expected_path_issue_count == 1)
+                or (not expected_present and expected_path_issue_count == 0)
+            )
+            and version_oracle_matches
+            and (
+                scenario.scenario_id != "g-investigational-product-allowed-value"
+                or not investigational_study_only_present
+            )
+            and (
+                scenario.scenario_id not in (
+                    MEDDRA_CODE_SCENARIO_IDS | MEDDRA_CONTEXT_SCENARIO_IDS
+                )
+                or "ICH.MEDDRA.VERSION.UNAVAILABLE" not in codes
+            )
+            and (
+                scenario.scenario_id not in WHODRUG_VERSION_SCENARIOS
+                or "ICH.MEDDRA.VERSION.UNAVAILABLE" not in codes
+            )
+            and (
+                edge != "valid_edge"
+                or scenario.scenario_id not in WHODRUG_VERSION_SCENARIOS
+                or WHODRUG_VERSION_SCENARIOS[scenario.scenario_id] not in codes
+            )
         )
         add(edge, scenario, "PASS" if passed else "FAIL", status, {
             **save_summary,
@@ -2469,11 +4042,32 @@ def main(args: argparse.Namespace) -> int:
             "expected_code": scenario.expected_code,
             "expected_code_present": expected_present,
             "actual_code_present": present,
+            "meddra_version_unavailable": "ICH.MEDDRA.VERSION.UNAVAILABLE" in codes,
+            "meddra_version_expected_path": version_path,
+            "meddra_version_expected_path_issue_count": version_issue_count,
+            "meddra_version_global_issue_count": global_version_issue_count,
+            "investigational_product_study_only_present": (
+                investigational_study_only_present
+            ),
+            "expected_issue_path": expected_issue_path,
+            "expected_issue_message": expected_issue_message,
+            "expected_path_issue_count": expected_path_issue_count,
+            "whodrug_companion_vocabulary_present": (
+                WHODRUG_VERSION_SCENARIOS.get(scenario.scenario_id) in codes
+                if scenario.scenario_id in WHODRUG_VERSION_SCENARIOS else False
+            ),
             "readback": redacted(actual),
             "expected_normalization": scenario.readback_values is not None,
             "audit_logs": len(logs),
             "audit_complete": bool(complete_logs),
             "audit_field_match": field_match,
+            "contract_audit_status": contract_after_audit_status,
+            "contract_audit_rows_before": (
+                len(contract_before_audit)
+                if isinstance(contract_before_audit, list) else None
+            ),
+            "contract_audit_rows_after": contract_after_audit_count,
+            "contract_audit_grew": contract_audit_grew,
         })
 
     ordered = runnable_scenarios[:]
@@ -2494,9 +4088,26 @@ def main(args: argparse.Namespace) -> int:
         })
 
     verified_rules = rules_with_both_edges_passed(scenarios, events)
+    passed_edges = {
+        (event.scenario_id, event.sample_ordinal, event.kind)
+        for event in events
+        if event.classification == "PASS"
+    }
+    verified_meddra_version_fields = sorted(
+        scenario_id
+        for scenario_id in MEDDRA_VERSION_SCENARIO_PATHS
+        if any(scenario.scenario_id == scenario_id for scenario in scenarios)
+        and all(
+            (scenario.scenario_id, scenario.sample_ordinal, edge) in passed_edges
+            for scenario in scenarios if scenario.scenario_id == scenario_id
+            for edge in ("invalid_edge", "valid_edge")
+        )
+    )
     unverified_planned = planned_rules - verified_rules
+    supplemental_verified_rules = supplemental_planned_rules & verified_rules
+    supplemental_unverified_rules = supplemental_planned_rules - verified_rules
     unverified_inventory = inventory - verified_rules
-    complete = bool(scenarios) and not interrupted and not unexplained and not unverified_planned and not unverified_inventory and all(
+    complete = bool(scenarios) and not interrupted and not unexplained and not unverified_planned and not supplemental_unverified_rules and not unverified_inventory and all(
         event.classification == "PASS" for event in events
     )
 
@@ -2523,9 +4134,19 @@ def main(args: argparse.Namespace) -> int:
             "catalog_rule_count": len(catalog_covered),
             "planned_rule_count": len(planned_rules),
             "planned_rules": sorted(planned_rules),
+            "supplemental_retained_planned_rule_count": len(supplemental_planned_rules),
+            "supplemental_retained_planned_rules": sorted(supplemental_planned_rules),
+            "supplemental_retained_verified_rules": sorted(supplemental_verified_rules),
+            "supplemental_retained_unverified_rules": sorted(supplemental_unverified_rules),
+            "xml_boundary_planned_rule_count": len(xml_boundary_planned_rules),
+            "xml_boundary_planned_rules": sorted(xml_boundary_planned_rules),
+            "unverified_xml_boundary_rule_count": len(xml_boundary_planned_rules),
+            "unverified_xml_boundary_rules": sorted(xml_boundary_planned_rules),
             "inventory_catalog_intersection_rule_count": len(inventory & catalog_covered),
             "inventory_catalog_intersection_rules": sorted(inventory & catalog_covered),
             "verified_both_edges_rules": sorted(verified_rules),
+            "verified_meddra_version_field_scenarios": verified_meddra_version_fields,
+            "verified_meddra_version_field_scenario_count": len(verified_meddra_version_fields),
             "unverified_planned_rules": sorted(unverified_planned),
             "unverified_inventory_rules": sorted(unverified_inventory),
             "inventory_rule_count": len(inventory),

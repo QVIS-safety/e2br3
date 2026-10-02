@@ -47,6 +47,7 @@ if [ "${running_backend}" != "${latest_backend}" ]; then
 	APP_DIR="${APP_DIR}" ENV_FILE="${APP_DIR}/.env.dev" \
 		COMPOSE_FILE="${APP_DIR}/deploy/ec2/docker-compose.prod.yml" \
 		IMAGE_REF="${BACKEND_IMAGE}" \
+		RESET_DB=0 INCLUDE_SEED=0 RELOAD_TERMINOLOGY=0 \
 		HEALTHCHECK_URL=http://127.0.0.1:8216/health \
 		"${APP_DIR}/deploy/ec2/deploy.sh"
 fi

@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
-use crate::import_sections::shared::{parse_bool_literal, parse_date};
+use crate::import_sections::shared::parse_bool_literal;
 use crate::mapping::fda::f_test_result::FTestResultPaths;
 use crate::Result;
 use lib_core::ctx::Ctx;
@@ -12,12 +12,11 @@ use lib_core::model::ModelManager;
 use libxml::parser::Parser;
 use libxml::tree::Node;
 use libxml::xpath::Context;
-use sqlx::types::time::Date;
 
 #[derive(Debug)]
 pub struct FTestResultImport {
 	pub test_name: String,
-	pub test_date: Option<Date>,
+	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,
@@ -132,15 +131,13 @@ pub(crate) async fn import_section_f(
 fn read_f_r_1(
 	xpath: &mut Context,
 	node: &Node,
-) -> Result<(Option<Date>, Option<String>)> {
-	let value =
-		first_attr(xpath, node, FTestResultPaths::TEST_DATE).and_then(parse_date);
+) -> Result<(Option<String>, Option<String>)> {
+	let value = first_attr(xpath, node, FTestResultPaths::TEST_DATE);
 	let null_flavor =
 		first_attr(xpath, node, FTestResultPaths::TEST_DATE_NULL_FLAVOR);
-	let raw = first_attr(xpath, node, FTestResultPaths::TEST_DATE);
 	import_constraint::string(
 		"testDate",
-		raw.as_deref(),
+		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::f::f_r_1,
 	)?;

@@ -1005,28 +1005,12 @@ fn g_k_4_r_10_1(
 	}
 }
 
-/// ICH.G.k.4.r.10.2a.REQUIRED
 /// ICH.G.k.4.r.10.2a.LENGTH.MAX
 fn g_k_4_r_10_2a(
-	_flat_idx: usize,
 	nested: Option<(usize, usize)>,
 	dosage: &DosageInformation,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let Some((drug_idx, idx)) = nested else {
-		return;
-	};
-	let required_path =
-		format!("drugs.{drug_idx}.dosageInformation.{idx}.routeTermIdVersion");
-	reject_when(
-		issues,
-		"ICH.G.k.4.r.10.2a.REQUIRED",
-		&required_path,
-		SECTION,
-		"[G.k.4.r.10.2a] Route of administration TermID version is required when [G.k.4.r.10.2b] is populated.",
-		has_text(dosage.route_of_administration.as_deref())
-			&& !has_text(dosage.route_termid_version.as_deref()),
-	);
 	if let Some(path) = dosage_path(nested, "routeTermIdVersion") {
 		length(
 			issues,
@@ -1619,7 +1603,7 @@ pub(crate) fn collect_ich_issues(
 		g_k_4_r_9_2a(flat_idx, nested, dosage, issues);
 		g_k_4_r_9_2b(nested, dosage, issues);
 		g_k_4_r_10_1(nested, dosage, issues);
-		g_k_4_r_10_2a(flat_idx, nested, dosage, issues);
+		g_k_4_r_10_2a(nested, dosage, issues);
 		g_k_4_r_10_2b(nested, dosage, issues);
 		g_k_4_r_11_1(nested, dosage, issues);
 		g_k_4_r_11_2a(flat_idx, nested, dosage, issues);
@@ -2361,26 +2345,6 @@ fn mfds_g_k_2_3_r_1_kr_1a(
 	);
 }
 
-/// MFDS.G.k.9.i.2.r.1.REQUIRED
-fn mfds_g_k_9_i_2_r_1(
-	drug_idx: usize,
-	idx: usize,
-	value: Option<&str>,
-	required: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
-	required_when(
-		issues,
-		"MFDS.G.k.9.i.2.r.1.REQUIRED",
-		&format!(
-			"drugs.{drug_idx}.drugReactionAssessments.{idx}.sourceOfAssessment"
-		),
-		"MFDS requires source of assessment when KR method/result values are provided.",
-		required,
-		has_text(value),
-	);
-}
-
 /// MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED
 #[allow(clippy::too_many_arguments)]
 fn mfds_g_k_9_i_2_r_2_kr_1(
@@ -2637,11 +2601,6 @@ pub(crate) fn collect_mfds_issues(
 		let child_index = base + *assessment_index;
 		*assessment_index += 1;
 		let has_source = has_text(r.source_of_assessment.as_deref());
-		let has_method = has_text(r.method_of_assessment_kr1.as_deref());
-		let has_result_kr1 = has_text(r.result_of_assessment_kr1.as_deref())
-			|| has_text(r.result_of_assessment_kr1_null_flavor.as_deref());
-		let has_result_kr2 = has_text(r.result_of_assessment_kr2.as_deref());
-		let has_any_result = has_result_kr1 || has_result_kr2;
 		let method_code = r.method_of_assessment_kr1.as_deref().map(str::trim);
 		let method_is_who_umc = method_code == Some("1");
 		let method_is_krct = method_code == Some("2");
@@ -2673,13 +2632,6 @@ pub(crate) fn collect_mfds_issues(
 			child_index,
 			r.result_of_assessment_kr2.as_deref(),
 			kr2_required_context,
-			issues,
-		);
-		mfds_g_k_9_i_2_r_1(
-			drug_index,
-			child_index,
-			r.source_of_assessment.as_deref(),
-			has_method || has_any_result,
 			issues,
 		);
 	}
@@ -2786,11 +2738,10 @@ mod field_rule_tests {
 	}
 
 	#[test]
-	fn relatedness_rules_cover_method_results_and_source_companion() {
+	fn relatedness_rules_cover_method_results_while_source_remains_optional() {
 		let mut issues = Vec::new();
 		for (
 			assessment_index,
-			source,
 			method,
 			result_kr1,
 			result_kr1_null_flavor,
@@ -2801,26 +2752,12 @@ mod field_rule_tests {
 			method_required,
 			kr1_required,
 			kr2_required,
-			source_required,
 		) in [
 			(
-				2,
-				Some("source"),
-				None,
-				None,
-				None,
-				None,
-				false,
-				false,
-				false,
-				true,
-				false,
-				false,
-				false,
+				2, None, None, None, None, false, false, false, true, false, false,
 			),
 			(
 				3,
-				Some("source"),
 				Some("1"),
 				None,
 				None,
@@ -2831,11 +2768,9 @@ mod field_rule_tests {
 				true,
 				true,
 				false,
-				false,
 			),
 			(
 				4,
-				Some("source"),
 				Some("2"),
 				None,
 				None,
@@ -2846,11 +2781,9 @@ mod field_rule_tests {
 				true,
 				false,
 				true,
-				false,
 			),
 			(
 				5,
-				None,
 				Some("1"),
 				None,
 				None,
@@ -2861,11 +2794,9 @@ mod field_rule_tests {
 				false,
 				false,
 				false,
-				true,
 			),
 			(
 				6,
-				Some("source"),
 				Some("1"),
 				None,
 				Some("NA"),
@@ -2875,7 +2806,6 @@ mod field_rule_tests {
 				false,
 				false,
 				true,
-				false,
 				false,
 			),
 		] {
@@ -2905,13 +2835,6 @@ mod field_rule_tests {
 				kr2_required,
 				&mut issues,
 			);
-			mfds_g_k_9_i_2_r_1(
-				1,
-				assessment_index,
-				source,
-				source_required,
-				&mut issues,
-			);
 		}
 
 		assert_eq!(
@@ -2923,7 +2846,6 @@ mod field_rule_tests {
 				"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
 				"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
 				"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
-				"MFDS.G.k.9.i.2.r.1.REQUIRED",
 			]
 		);
 	}
@@ -3251,6 +3173,38 @@ mod golden_g_required_tests {
 		}
 	}
 
+	#[test]
+	fn mfds_relatedness_source_is_optional_when_method_and_result_are_present() {
+		let mut ctx = empty_ctx();
+		ctx.drugs = vec![drug()];
+		ctx.drug_reaction_assessments = vec![assessment()];
+		let mfds = MfdsValidationContext {
+			senders: vec![],
+			studies: vec![],
+			active_substances: vec![],
+			past_drugs: vec![],
+			parent_past_drugs: vec![],
+			relatedness: vec![crate::mfds_context::RelatednessWithDrug {
+				drug_id: Uuid::nil(),
+				drug_reaction_assessment_id: Uuid::nil(),
+				relatedness_sequence_number: 1,
+				source_of_assessment: None,
+				method_of_assessment: None,
+				method_of_assessment_kr1: Some("1".to_string()),
+				result_of_assessment: None,
+				result_of_assessment_kr1: Some("1".to_string()),
+				result_of_assessment_kr1_null_flavor: None,
+				result_of_assessment_kr2: None,
+			}],
+		};
+		let mut issues = vec![];
+		collect_mfds_issues(&ctx, &mfds, &mut issues);
+
+		assert!(!issues
+			.iter()
+			.any(|issue| issue.code == "MFDS.G.k.9.i.2.r.1.REQUIRED"));
+	}
+
 	fn length_issues(ctx: &ValidationContext) -> Vec<(String, String)> {
 		let mut issues = Vec::new();
 		collect_ich_issues(ctx, &mut issues);
@@ -3387,21 +3341,22 @@ mod golden_g_required_tests {
 		dosage.dose_value = Some("1".parse().unwrap());
 		dosage.duration_unit = Some("d".to_string());
 		dosage.route_of_administration = Some("030".to_string());
+		dosage.route_termid = Some("ROA-20001000".to_string());
 		ctx.dosages.push(dosage);
 
-		assert_eq!(
-			codes_for(&ctx),
-			vec![
-				"ICH.G.k.1.REQUIRED".to_string(),
-				"ICH.G.k.1.AGGREGATE.REQUIRED".to_string(),
-				"ICH.G.k.2.2.REQUIRED".to_string(),
-				"ICH.G.k.2.3.r.2a.REQUIRED".to_string(),
-				"ICH.G.k.2.3.r.3b.REQUIRED".to_string(),
-				"ICH.G.k.4.r.1b.REQUIRED".to_string(),
-				"ICH.G.k.4.r.6a.REQUIRED".to_string(),
-				"ICH.G.k.4.r.10.2a.REQUIRED".to_string(),
-			]
-		);
+		let expected = vec![
+			"ICH.G.k.1.REQUIRED".to_string(),
+			"ICH.G.k.1.AGGREGATE.REQUIRED".to_string(),
+			"ICH.G.k.2.2.REQUIRED".to_string(),
+			"ICH.G.k.2.3.r.2a.REQUIRED".to_string(),
+			"ICH.G.k.2.3.r.3b.REQUIRED".to_string(),
+			"ICH.G.k.4.r.1b.REQUIRED".to_string(),
+			"ICH.G.k.4.r.6a.REQUIRED".to_string(),
+		];
+		assert_eq!(codes_for(&ctx), expected);
+
+		ctx.dosages[0].route_termid = None;
+		assert_eq!(codes_for(&ctx), expected);
 	}
 
 	#[test]

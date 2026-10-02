@@ -161,6 +161,24 @@ macro_rules! repeatable_page_row_create_handler {
 }
 
 macro_rules! repeatable_page_row_patch_handler {
+	(@restore [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {};
+	(@restore [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {
+		if $row.get("deleted").and_then(serde_json::Value::as_bool) == Some(false) {
+			let current = $bmc::get($ctx, $mm, $row_id).await?;
+			if current.deleted {
+				$bmc::restore($ctx, $mm, $row_id).await?;
+			}
+		}
+	};
+	(@restore_in_case [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {};
+	(@restore_in_case [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {
+		if $row.get("deleted").and_then(serde_json::Value::as_bool) == Some(false) {
+			let current = $bmc::get_in_case_with_deleted($ctx, $mm, $case_id, $row_id, true).await?;
+			if current.deleted {
+				$bmc::restore_in_case($ctx, $mm, $case_id, $row_id).await?;
+			}
+		}
+	};
 	(
 		$fn_name:ident,
 		section: $section:expr,
@@ -170,6 +188,7 @@ macro_rules! repeatable_page_row_patch_handler {
 		verify: $verify_fn:ident,
 		aliases: $aliases:expr,
 		base_patch: true,
+		$(restore_on_false: $restore_on_false:tt,)?
 		build_response: $build_response:ident $(,)?
 	) => {
 		pub async fn $fn_name(
@@ -203,6 +222,9 @@ macro_rules! repeatable_page_row_patch_handler {
 						&clear_fields,
 					)
 					.await?;
+					repeatable_page_row_patch_handler!(
+						@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+					);
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(
 						ctx, mm, case_id, requested_authorities.clone(),
 					)
@@ -224,6 +246,8 @@ macro_rules! repeatable_page_row_patch_handler {
 		model: $model:ty,
 		verify: $verify_fn:ident,
 		aliases: $aliases:expr,
+		$(restore_on_false: $restore_on_false:tt,)?
+		$(restore_in_case_on_false: $restore_in_case_on_false:tt,)?
 		build_response: $build_response:ident $(,)?
 	) => {
 		pub async fn $fn_name(
@@ -251,6 +275,12 @@ macro_rules! repeatable_page_row_patch_handler {
 					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
 					$bmc::update_patch(ctx, mm, row_id, update, &clear_fields)
 					.await?;
+					repeatable_page_row_patch_handler!(
+						@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+					);
+					repeatable_page_row_patch_handler!(
+						@restore_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
+					);
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(
 						ctx, mm, case_id, requested_authorities.clone(),
 					)
