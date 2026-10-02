@@ -317,10 +317,44 @@ pub(crate) async fn apply_c_d_h_sections(
 		&mut xpath,
 		&snapshot.case_summaries,
 	)?;
+	apply_mfds_foreign_code_systems(
+		&mut xpath,
+		authority,
+		&_outbound_message_header.message_receiver_identifier,
+	)?;
 	postprocess_export_doc(&mut doc, &mut xpath)?;
 	reorder_investigation_event_children(&mut xpath);
 
 	Ok(normalize_namespace_artifacts(doc.to_string()))
+}
+
+// Apply routing once after DG, patient history and parent history are assembled.
+// Only MFDS regional product/ingredient identifiers change; ICH/FDA codes stay intact.
+fn apply_mfds_foreign_code_systems(
+	xpath: &mut Context,
+	authority: lib_core::regulatory::RegulatoryAuthority,
+	receiver: &str,
+) -> Result<()> {
+	use lib_core::regulatory::{
+		is_mfds_foreign_postmarket_receiver, RegulatoryAuthority,
+	};
+	if authority != RegulatoryAuthority::Mfds
+		|| !is_mfds_foreign_postmarket_receiver(Some(receiver))
+	{
+		return Ok(());
+	}
+	let nodes = xpath.evaluate(
+        "//hl7:kindOfProduct/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.2.1'] | //hl7:kindOfProduct/hl7:ingredient/hl7:ingredientSubstance/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.2.2']",
+    ).map_err(|err| Error::InvalidXml { message: format!("MFDS foreign identifier selection failed: {err:?}"), line: None, column: None })?;
+	for mut node in nodes.get_nodes_as_vec() {
+		node.set_property("codeSystem", "2.16.840.1.113883.6.294")
+			.map_err(|err| Error::InvalidXml {
+				message: format!("MFDS foreign code system write failed: {err:?}"),
+				line: None,
+				column: None,
+			})?;
+	}
+	Ok(())
 }
 
 fn apply_section_d(
@@ -1705,6 +1739,49 @@ mod tests {
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
 	use std::collections::BTreeSet;
+
+	#[test]
+	fn mfds_foreign_routing_maps_all_product_histories_and_ingredients_only() {
+		use lib_core::regulatory::RegulatoryAuthority;
+		for (authority, receiver, foreign) in [
+			(RegulatoryAuthority::Mfds, "MFDS-O-FR", true),
+			(RegulatoryAuthority::Mfds, "MFDS-T-FR", true),
+			(RegulatoryAuthority::Mfds, "MFDS-O-KR", false),
+			(RegulatoryAuthority::Mfds, "MFDS-T-KR", false),
+			(RegulatoryAuthority::Mfds, "MFDS-O-CT", false),
+			(RegulatoryAuthority::Mfds, "MFDS-O-CF", false),
+			(RegulatoryAuthority::Fda, "MFDS-O-FR", false),
+			(RegulatoryAuthority::Ich, "MFDS-O-FR", false),
+		] {
+			let product = r#"<kindOfProduct><code codeSystem="2.16.840.1.113883.3.989.5.1.10.2.1" code="1003073" codeSystemVersion="GLOBALC3Mar26"/><ingredient><ingredientSubstance><code codeSystem="2.16.840.1.113883.3.989.5.1.10.2.2" code="0000103902" codeSystemVersion="GLOBALC3Mar26"/></ingredientSubstance></ingredient><asIdentifiedEntity><code codeSystem="2.16.840.1.113883.3.989.2.1.1.4" code="MPID"/></asIdentifiedEntity></kindOfProduct>"#;
+			let xml = format!(
+				r#"<root xmlns="urn:hl7-org:v3"><patientHistory>{product}</patientHistory><parentHistory>{product}</parentHistory><drug>{product}</drug><unrelated><code codeSystem="2.16.840.1.113883.3.989.5.1.10.2.1"/></unrelated></root>"#
+			);
+			let doc = Parser::default().parse_string(&xml).expect("fixture");
+			let mut xpath = Context::new(&doc).expect("xpath");
+			xpath
+				.register_namespace("hl7", "urn:hl7-org:v3")
+				.expect("namespace");
+			apply_mfds_foreign_code_systems(&mut xpath, authority, receiver)
+				.expect("routing");
+			let once = doc.to_string();
+			assert_eq!(
+				once.matches("2.16.840.1.113883.6.294").count(),
+				if foreign { 6 } else { 0 }
+			);
+			assert_eq!(
+				once.matches("2.16.840.1.113883.3.989.5.1.10.2.1").count(),
+				if foreign { 1 } else { 4 }
+			);
+			assert_eq!(once.matches("GLOBALC3Mar26").count(), 6);
+			assert_eq!(once.matches("1003073").count(), 3);
+			assert_eq!(once.matches("0000103902").count(), 3);
+			assert_eq!(once.matches("2.16.840.1.113883.3.989.2.1.1.4").count(), 3);
+			apply_mfds_foreign_code_systems(&mut xpath, authority, receiver)
+				.expect("idempotent");
+			assert_eq!(doc.to_string(), once);
+		}
+	}
 
 	#[test]
 	fn patient_number_writers_normalize_decimal_scale() {

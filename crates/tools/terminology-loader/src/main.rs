@@ -381,6 +381,12 @@ async fn load_meddra(
 	mm.dbx().begin_txn().await?;
 	let run_result = async {
 		set_loader_context(mm).await?;
+		mm.dbx()
+			.execute(
+				sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+					.bind(format!("terminology:meddra:{}", args.language)),
+			)
+			.await?;
 
 		upsert_release_header(
 			mm,
@@ -393,15 +399,6 @@ async fn load_meddra(
 			rows.len() as i64,
 		)
 		.await?;
-
-		mm.dbx()
-			.execute(
-				sqlx::query(
-					"UPDATE meddra_terms SET active = false WHERE language = $1 AND active = true",
-				)
-				.bind(&args.language),
-			)
-			.await?;
 
 		upsert_meddra_rows(mm, &rows, &args.version, &args.language).await?;
 
@@ -516,48 +513,11 @@ async fn load_whodrug(
 		.await?;
 	}
 
-	with_whodrug_row_audit_disabled(mm, || async {
+	with_loader_txn(mm, || async {
 		mm.dbx()
 			.execute(
-				sqlx::query(
-					"UPDATE whodrug_products SET active = false WHERE language = $1 AND active = true",
-				)
-				.bind(&args.language),
-			)
-			.await?;
-
-		mm.dbx()
-			.execute(
-				sqlx::query(
-					"UPDATE controlled_terminology_terms
-					 SET active = false
-					 WHERE dictionary = 'whodrug' AND scope = 'cas'
-					   AND language = $1 AND active = true",
-				)
-				.bind(&args.language),
-			)
-			.await?;
-
-		mm.dbx()
-			.execute(
-				sqlx::query(
-					"UPDATE controlled_terminology_terms
-					 SET active = true
-					 WHERE dictionary = 'whodrug' AND scope = 'cas'
-					   AND version = $1 AND language = $2",
-				)
-				.bind(&args.version)
-				.bind(&args.language),
-			)
-			.await?;
-
-		mm.dbx()
-			.execute(
-				sqlx::query(
-					"UPDATE whodrug_products SET active = true WHERE version = $1 AND language = $2",
-				)
-				.bind(&args.version)
-				.bind(&args.language),
+				sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+					.bind(format!("terminology:whodrug:{}", args.language)),
 			)
 			.await?;
 
@@ -1366,8 +1326,7 @@ mod tests {
 		std::env::set_var("SERVICE_WEB_FOLDER", "web-folder");
 		let mm = ModelManager::new().await.expect("model manager");
 		let tag = format!(
-			"t{}{}",
-			std::process::id(),
+			"t{}",
 			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
 		);
 		let language =
@@ -1423,11 +1382,10 @@ mod tests {
 			.dbx()
 			.fetch_all(
 				sqlx::query_as(
-					"SELECT version, active, COUNT(*)
-				 FROM meddra_terms
-				 WHERE language = $1 AND version IN ($2, $3)
-				 GROUP BY version, active
-				 ORDER BY version, active",
+					"SELECT m.version, (r.status='active') AS active, COUNT(*)
+                 FROM meddra_terms m JOIN terminology_releases r ON r.dictionary='meddra' AND r.version=m.version AND r.language=m.language
+                 WHERE m.language = $1 AND m.version IN ($2, $3)
+                 GROUP BY m.version, r.status ORDER BY m.version, active",
 				)
 				.bind(&language)
 				.bind(&version_v1)
@@ -1493,17 +1451,20 @@ mod tests {
 		let zip_path = write_zip(&[
 			(
 				"MP.csv",
-				"1,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\n",
+				"RID0000001,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\nRID2,,000001,01,001,0000000001,0000000001,N,Aldomet,,,,,USA,,6546,010,USA,68,001,19851231,20250930\n",
 			),
 			("ATC.csv", "C02AB,ANTIHYPERTENSIVES\n"),
 		]);
 
 		let rows = parse_whodrug(&zip_path).expect("official C3 zip should parse");
 
-		assert_eq!(rows.len(), 1);
-		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows.len(), 2);
+		assert_eq!(rows[0].code, "RID0000001");
 		assert_eq!(rows[0].drug_name, "Methyldopa");
 		assert_eq!(rows[0].atc_code, None);
+		assert_eq!(rows[1].code, "RID2");
+		assert_eq!(rows[1].drug_name, "Aldomet");
+		assert_eq!(rows[1].atc_code, None);
 		let _ = fs::remove_file(zip_path);
 	}
 

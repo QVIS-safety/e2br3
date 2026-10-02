@@ -179,9 +179,8 @@ impl DbBmc for MeddraTermBmc {
 
 impl MeddraTermBmc {
 	pub async fn active_versions(mm: &ModelManager) -> Result<Vec<String>> {
-		let sql = format!(
-			"SELECT DISTINCT version FROM {} WHERE active = true ORDER BY version",
-			Self::TABLE
+		let sql = String::from(
+			"SELECT DISTINCT version FROM terminology_releases WHERE dictionary = 'meddra' AND status = 'active' ORDER BY version"
 		);
 		let rows = mm
 			.dbx()
@@ -208,7 +207,7 @@ impl MeddraTermBmc {
 			 FROM meddra_terms terms \
 			 JOIN requested ON requested.version = terms.version \
 			 AND requested.code = terms.code \
-			 WHERE terms.active = true AND UPPER(terms.level) = 'LLT'",
+			 WHERE EXISTS (SELECT 1 FROM terminology_releases r WHERE r.dictionary='meddra' AND r.version=terms.version AND r.language=terms.language AND r.status='active') AND UPPER(terms.level) = 'LLT'",
 		);
 
 		Ok(mm
@@ -228,18 +227,18 @@ impl MeddraTermBmc {
 	) -> Result<Vec<MeddraTerm>> {
 		let search_pattern = format!("%{}%", query.trim());
 		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(format!(
-			"SELECT * FROM {} WHERE (term ILIKE ",
+			"SELECT terms.id,terms.code,terms.term,terms.level,terms.version,terms.language,(r.status='active') AS active,terms.created_at FROM {} terms JOIN terminology_releases r ON r.dictionary='meddra' AND r.version=terms.version AND r.language=terms.language WHERE (term ILIKE ",
 			Self::TABLE
 		));
 		qb.push_bind(search_pattern);
 		qb.push(" OR code ILIKE ")
 			.push_bind(format!("%{}%", query.trim()));
-		qb.push(") AND active = true");
+		qb.push(") AND r.status = 'active'");
 		if let Some(ver) = version {
-			qb.push(" AND version = ").push_bind(ver.trim());
+			qb.push(" AND terms.version = ").push_bind(ver.trim());
 		}
 		if let Some(lang) = language {
-			qb.push(" AND LOWER(language) = LOWER(")
+			qb.push(" AND LOWER(terms.language) = LOWER(")
 				.push_bind(lang.trim())
 				.push(")");
 		}
@@ -270,7 +269,7 @@ impl WhodrugProductBmc {
 		let rows = mm
 			.dbx()
 			.fetch_all(sqlx::query_as::<_, (String,)>(
-				"SELECT DISTINCT version FROM whodrug_products WHERE active = true",
+				"SELECT version FROM terminology_releases WHERE dictionary = 'whodrug' AND status = 'active'",
 			))
 			.await?;
 		Ok(rows.into_iter().map(|(version,)| version).collect())
@@ -294,7 +293,7 @@ impl WhodrugProductBmc {
 			 FROM whodrug_products products
 			 JOIN requested ON requested.version = products.version
 			  AND requested.code = products.code
-			 WHERE products.active = true",
+			 WHERE EXISTS (SELECT 1 FROM terminology_releases r WHERE r.dictionary = 'whodrug' AND r.status = 'active' AND r.version = products.version AND r.language = products.language)",
 		);
 
 		Ok(mm
@@ -314,8 +313,8 @@ impl WhodrugProductBmc {
 		}
 
 		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-			"SELECT DISTINCT code FROM whodrug_products \
-			 WHERE active = true AND code IN (",
+			"SELECT DISTINCT code FROM whodrug_products products \
+			 WHERE EXISTS (SELECT 1 FROM terminology_releases r WHERE r.dictionary = 'whodrug' AND r.status = 'active' AND r.version = products.version AND r.language = products.language) AND code IN (",
 		);
 		let mut separated = qb.separated(", ");
 		for code in codes {
@@ -334,7 +333,7 @@ impl WhodrugProductBmc {
 		limit: i64,
 	) -> Result<Vec<WhodrugProduct>> {
 		let sql = format!(
-			"SELECT * FROM {} WHERE drug_name ILIKE $1 AND active = true ORDER BY drug_name LIMIT $2",
+			"SELECT products.id, products.code, products.drug_name, products.atc_code, products.version, products.language, (r.status = 'active') AS active, products.created_at FROM {} products JOIN terminology_releases r ON r.dictionary = 'whodrug' AND r.version = products.version AND r.language = products.language WHERE r.status = 'active' AND products.drug_name ILIKE $1 ORDER BY products.drug_name, products.code LIMIT $2",
 			Self::TABLE
 		);
 
@@ -471,8 +470,8 @@ impl ControlledTermBmc {
 		}
 
 		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-			"SELECT DISTINCT code FROM controlled_terminology_terms \
-			 WHERE active = true AND dictionary = ",
+			"SELECT DISTINCT code FROM controlled_terminology_terms terms \
+			 WHERE ((dictionary <> 'whodrug' AND active = true) OR (dictionary = 'whodrug' AND EXISTS (SELECT 1 FROM terminology_releases r WHERE r.dictionary = terms.dictionary AND r.version = terms.version AND r.language = terms.language AND r.status = 'active'))) AND dictionary = ",
 		);
 		qb.push_bind(dictionary)
 			.push(" AND scope = ")
@@ -507,7 +506,7 @@ impl ControlledTermBmc {
 			 FROM controlled_terminology_terms terms
 			 JOIN requested ON requested.version = terms.version
 			  AND requested.code = terms.code
-			 WHERE terms.active = true AND terms.dictionary = ",
+			 WHERE ((terms.dictionary <> 'whodrug' AND terms.active = true) OR (terms.dictionary = 'whodrug' AND EXISTS (SELECT 1 FROM terminology_releases r WHERE r.dictionary = terms.dictionary AND r.version = terms.version AND r.language = terms.language AND r.status = 'active'))) AND terms.dictionary = ",
 		)
 		.push_bind(dictionary)
 		.push(" AND terms.scope = ")

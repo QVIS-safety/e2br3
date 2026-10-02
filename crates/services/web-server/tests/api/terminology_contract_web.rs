@@ -41,6 +41,8 @@ async fn seed_active_terminology_rows(
 	.execute(&mut *tx)
 	.await?;
 
+	sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='meddra' AND language='en' AND status='active' AND version <> '28.1'").execute(&mut *tx).await?;
+
 	sqlx::query(
 		"INSERT INTO terminology_releases
 		 (dictionary, version, language, status, loaded_rows, activated_at)
@@ -66,6 +68,9 @@ async fn seed_active_terminology_rows(
 	)
 	.execute(&mut *tx)
 	.await?;
+
+	sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='whodrug' AND language='en' AND status='active' AND version <> '2026.03'").execute(&mut *tx).await?;
+	sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows) VALUES ('whodrug','2026.03','en','active',1) ON CONFLICT(dictionary,version,language) DO UPDATE SET status='active'").execute(&mut *tx).await?;
 
 	sqlx::query(
 		"INSERT INTO whodrug_products (code, drug_name, atc_code, version, language, active)

@@ -28,7 +28,11 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/terminology/import/whodrug",
-			axum::routing::post(terminology_rest::import_whodrug),
+			axum::routing::post(terminology_rest::import_whodrug).layer(
+				axum::extract::DefaultBodyLimit::max(
+					terminology_rest::MAX_WHODRUG_REQUEST_BYTES,
+				),
+			),
 		)
 		.route(
 			"/terminology/releases",

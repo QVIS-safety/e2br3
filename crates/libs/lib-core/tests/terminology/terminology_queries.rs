@@ -72,6 +72,9 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 		.bind(&version),
 	)
 	.await?;
+	dbx.execute(sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='whodrug' AND language='en' AND status='active'")).await?;
+	dbx.execute(sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows) VALUES ('whodrug',$1,'en','active',1)").bind(&whodrug_version)).await?;
+
 	dbx.execute(
 		sqlx::query(
 			"INSERT INTO whodrug_products
@@ -185,6 +188,9 @@ async fn test_terminology_queries() -> Result<()> {
 	)
 	.await?;
 
+	dbx.execute(sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='meddra' AND language='en' AND status='active'")).await?;
+	dbx.execute(sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows) VALUES ('meddra',$1,'en','active',2)").bind(&meddra_version)).await?;
+
 	if let Err(err) = dbx
 		.execute(
 			sqlx::query(
@@ -213,6 +219,9 @@ async fn test_terminology_queries() -> Result<()> {
 		.bind(&meddra_version),
 	)
 	.await?;
+
+	dbx.execute(sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='whodrug' AND language='en' AND status='active'")).await?;
+	dbx.execute(sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows) VALUES ('whodrug',$1,'en','active',1)").bind(&meddra_version)).await?;
 
 	if let Err(err) = dbx
 		.execute(
@@ -357,5 +366,233 @@ async fn test_fda_hierarchical_code_list_search() -> Result<()> {
 	.await?;
 	assert!(no_match.is_empty());
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn whodrug_release_switch_preserves_rows_and_audits_transition() -> Result<()>
+{
+	use lib_core::model::terminology_import::activate_release_tx;
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+	let dbx = mm.dbx();
+	let suffix = unique_suffix();
+	let old = format!("old{}", &suffix[..8]);
+	let new = format!("new{}", &suffix[..8]);
+	let name = format!("ReleaseSwitch{suffix}");
+	dbx.begin_txn().await?;
+	set_full_context_dbx_or_rollback(
+		dbx,
+		system_user_id(),
+		ctx.organization_id(),
+		"system_admin",
+	)
+	.await?;
+	for (version, status) in [(&old, "active"), (&new, "approved")] {
+		dbx.execute(sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows,source_checksum,approved_by,approved_at) VALUES ('whodrug',$1,'zz',$2,1,'fixture-hash',$3,NOW())").bind(version).bind(status).bind(system_user_id())).await?;
+		dbx.execute(sqlx::query("INSERT INTO whodrug_products(code,drug_name,version,language,active) VALUES ('1234567',$1,$2,'zz',false)").bind(&name).bind(version)).await?;
+		dbx.execute(sqlx::query("INSERT INTO controlled_terminology_terms(dictionary,version,language,scope,code,active) VALUES ('whodrug',$1,'zz','cas','0000103902',false)").bind(version)).await?;
+	}
+	let before: (String,) = dbx.fetch_one(sqlx::query_as("SELECT json_agg(to_jsonb(p) ORDER BY version)::text FROM whodrug_products p WHERE language='zz' AND version IN ($1,$2)").bind(&old).bind(&new)).await?;
+	dbx.commit_txn().await?;
+	for (target, previous, rollback) in [(&new, &old, false), (&old, &new, true)] {
+		let release = activate_release_tx(
+			&mm,
+			system_user_id(),
+			"whodrug",
+			target,
+			"zz",
+			rollback,
+		)
+		.await?;
+		assert_eq!(release.status, "active");
+		if rollback {
+			assert_eq!(
+				release.rollback_from_version.as_deref(),
+				Some(previous.as_str())
+			);
+		}
+		dbx.begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			system_user_id(),
+			ctx.organization_id(),
+			"system_admin",
+		)
+		.await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+		dbx.execute(sqlx::query("SET LOCAL ROLE e2br3_app_role"))
+			.await?;
+		let visible: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM whodrug_products WHERE language='zz' AND version=$1").bind(previous)).await?;
+		assert_eq!(
+			visible.0, 0,
+			"retired release must stay invisible to reference readers"
+		);
+
+		let keys = vec![
+			(old.clone(), "1234567".to_string()),
+			(new.clone(), "1234567".to_string()),
+		];
+		assert_eq!(
+			WhodrugProductBmc::existing_active_keys(&mm, &keys).await?,
+			[(target.clone(), "1234567".to_string())]
+				.into_iter()
+				.collect()
+		);
+		let found = WhodrugProductBmc::search(&ctx, &mm, &name, 20).await?;
+		assert_eq!(found.len(), 1);
+		assert_eq!(&found[0].version, target);
+		assert!(found[0].active);
+		let cas = vec![
+			(old.clone(), "0000103902".to_string()),
+			(new.clone(), "0000103902".to_string()),
+		];
+		assert_eq!(
+			ControlledTermBmc::existing_active_keys(&mm, "whodrug", "cas", &cas)
+				.await?,
+			[(target.clone(), "0000103902".to_string())]
+				.into_iter()
+				.collect()
+		);
+		dbx.execute(sqlx::query("RESET ROLE")).await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			system_user_id(),
+			ctx.organization_id(),
+			"system_admin",
+		)
+		.await?;
+
+		let after: (String,) = dbx.fetch_one(sqlx::query_as("SELECT json_agg(to_jsonb(p) ORDER BY version)::text FROM whodrug_products p WHERE language='zz' AND version IN ($1,$2)").bind(&old).bind(&new)).await?;
+		assert_eq!(before, after);
+		let audit: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM audit_logs a JOIN terminology_releases r ON a.record_id=r.audit_id WHERE a.table_name='terminology_releases' AND r.version=$1 AND a.action='UPDATE' AND a.new_values->>'status'='active'").bind(target)).await?;
+		assert_eq!(audit.0, 1);
+		let updates: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM audit_logs WHERE table_name IN ('whodrug_products','controlled_terminology_terms') AND action='UPDATE' AND new_values->>'version' IN ($1,$2)").bind(&old).bind(&new)).await?;
+		assert_eq!(updates.0, 0);
+		dbx.commit_txn().await?;
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn meddra_release_switch_preserves_rows_and_audits_transition() -> Result<()> {
+	use lib_core::model::terminology_import::activate_release_tx;
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+	let dbx = mm.dbx();
+	let suffix = unique_suffix();
+	let old = format!("old{}", &suffix[..6]);
+	let new = format!("new{}", &suffix[..6]);
+	let name = format!("ReleaseSwitch{suffix}");
+	dbx.begin_txn().await?;
+	set_full_context_dbx_or_rollback(
+		dbx,
+		system_user_id(),
+		ctx.organization_id(),
+		"system_admin",
+	)
+	.await?;
+	for (version, status) in [(&old, "active"), (&new, "approved")] {
+		dbx.execute(sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows,source_checksum,approved_by,approved_at) VALUES ('meddra',$1,'zz',$2,1,'fixture-hash',$3,NOW())").bind(version).bind(status).bind(system_user_id())).await?;
+		dbx.execute(sqlx::query("INSERT INTO meddra_terms(code,term,level,version,language,active) VALUES ('1234567',$1,'LLT',$2,'zz',false)").bind(&name).bind(version)).await?;
+	}
+	let before: (String,) = dbx.fetch_one(sqlx::query_as("SELECT json_agg(to_jsonb(p) ORDER BY version)::text FROM meddra_terms p WHERE language='zz' AND version IN ($1,$2)").bind(&old).bind(&new)).await?;
+	dbx.commit_txn().await?;
+	for (target, previous, rollback) in [(&new, &old, false), (&old, &new, true)] {
+		let release = activate_release_tx(
+			&mm,
+			system_user_id(),
+			"meddra",
+			target,
+			"zz",
+			rollback,
+		)
+		.await?;
+		assert_eq!(release.status, "active");
+		if rollback {
+			assert_eq!(
+				release.rollback_from_version.as_deref(),
+				Some(previous.as_str())
+			);
+		}
+		dbx.begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			system_user_id(),
+			ctx.organization_id(),
+			"system_admin",
+		)
+		.await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+		dbx.execute(sqlx::query("SET LOCAL ROLE e2br3_app_role"))
+			.await?;
+		let visible: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM meddra_terms WHERE language='zz' AND version=$1").bind(previous)).await?;
+		assert_eq!(
+			visible.0, 0,
+			"retired release must stay invisible to reference readers"
+		);
+
+		let keys = vec![
+			MeddraTermKey {
+				version: old.clone(),
+				code: "1234567".into(),
+			},
+			MeddraTermKey {
+				version: new.clone(),
+				code: "1234567".into(),
+			},
+		];
+		assert_eq!(
+			MeddraTermBmc::existing_active_keys(&mm, &keys).await?,
+			vec![MeddraTermKey {
+				version: target.clone(),
+				code: "1234567".into()
+			}]
+		);
+
+		let found = MeddraTermBmc::search(
+			&ctx,
+			&mm,
+			&name,
+			Some(target),
+			Some("zz"),
+			Some("LLT"),
+			20,
+		)
+		.await?;
+		assert_eq!(found.len(), 1);
+		assert_eq!(&found[0].version, target);
+		assert!(found[0].active);
+		dbx.execute(sqlx::query("RESET ROLE")).await?;
+		set_full_context_dbx_or_rollback(
+			dbx,
+			system_user_id(),
+			ctx.organization_id(),
+			"system_admin",
+		)
+		.await?;
+
+		let after: (String,) = dbx.fetch_one(sqlx::query_as("SELECT json_agg(to_jsonb(p) ORDER BY version)::text FROM meddra_terms p WHERE language='zz' AND version IN ($1,$2)").bind(&old).bind(&new)).await?;
+		assert_eq!(before, after);
+		let audit: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM audit_logs a JOIN terminology_releases r ON a.record_id=r.audit_id WHERE a.table_name='terminology_releases' AND r.version=$1 AND a.action='UPDATE' AND a.new_values->>'status'='active'").bind(target)).await?;
+		assert_eq!(audit.0, 1);
+		let updates: (i64,) = dbx.fetch_one(sqlx::query_as("SELECT count(*) FROM audit_logs WHERE table_name IN ('meddra_terms','controlled_terminology_terms') AND action='UPDATE' AND new_values->>'version' IN ($1,$2)").bind(&old).bind(&new)).await?;
+		assert_eq!(updates.0, 0);
+		dbx.commit_txn().await?;
+	}
 	Ok(())
 }

@@ -233,6 +233,9 @@ pub async fn seed_active_test_meddra_term(mm: &ModelManager) -> Result<()> {
 	set_user_context(&mut tx, system_user_id).await?;
 	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
 
+	sqlx::query("UPDATE terminology_releases SET status='retired' WHERE dictionary='meddra' AND language='en' AND status='active' AND version <> '26.0'").execute(&mut *tx).await?;
+	sqlx::query("INSERT INTO terminology_releases(dictionary,version,language,status,loaded_rows) VALUES ('meddra','26.0','en','active',1) ON CONFLICT(dictionary,version,language) DO UPDATE SET status='active'").execute(&mut *tx).await?;
+
 	sqlx::query(
 		"INSERT INTO meddra_terms (code, term, level, version, language, active)
 		 VALUES ('10000001', 'Test reaction term', 'LLT', '26.0', 'en', true)
