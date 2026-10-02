@@ -256,7 +256,9 @@ async fn build_editor_ae_page_row_response(
 	row_id: Uuid,
 	authorities: Option<String>,
 ) -> Result<Value> {
-	let persisted = ReactionBmc::get_in_case(ctx, mm, case_id, row_id).await?;
+	let persisted =
+		ReactionBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true)
+			.await?;
 	let start_date = ci_ts(persisted.start_date.as_deref());
 	let end_date = ci_ts(persisted.end_date.as_deref());
 	let mut reaction = json!(persisted);
@@ -271,6 +273,16 @@ async fn build_editor_ae_page_row_response(
 		authorities,
 		json!({ "reaction": reaction }),
 	)
+}
+
+async fn verify_editor_ae_page_row(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+) -> Result<()> {
+	ReactionBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true).await?;
+	Ok(())
 }
 
 repeatable_page_row_create_handler!(
@@ -294,7 +306,9 @@ repeatable_page_row_patch_handler!(
 	row_key: "reaction",
 	bmc: ReactionBmc,
 	model: ReactionForUpdate,
+	verify: verify_editor_ae_page_row,
 	aliases: REACTION_ROW_ALIASES,
+	restore_in_case_on_false: true,
 	build_response: build_editor_ae_page_row_response,
 );
 

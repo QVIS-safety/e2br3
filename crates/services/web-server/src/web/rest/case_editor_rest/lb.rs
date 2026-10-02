@@ -144,7 +144,9 @@ async fn build_editor_lb_page_row_response(
 	row_id: Uuid,
 	authorities: Option<String>,
 ) -> Result<Value> {
-	let persisted = TestResultBmc::get_in_case(ctx, mm, case_id, row_id).await?;
+	let persisted =
+		TestResultBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true)
+			.await?;
 	editor_page_row_response(
 		case_id,
 		"LB",
@@ -152,6 +154,16 @@ async fn build_editor_lb_page_row_response(
 		authorities,
 		json!({ "testResult": persisted }),
 	)
+}
+
+async fn verify_editor_lb_page_row(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+) -> Result<()> {
+	TestResultBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true).await?;
+	Ok(())
 }
 
 repeatable_page_row_create_handler!(
@@ -178,7 +190,9 @@ repeatable_page_row_patch_handler!(
 	row_key: "testResult",
 	bmc: TestResultBmc,
 	model: TestResultForUpdate,
+	verify: verify_editor_lb_page_row,
 	aliases: TEST_RESULT_ROW_ALIASES,
+	restore_in_case_on_false: true,
 	build_response: build_editor_lb_page_row_response,
 );
 

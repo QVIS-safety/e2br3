@@ -61,7 +61,7 @@ async fn load_editor_dh_list_rows(
 		ctx,
 		mm,
 		Some(vec![filter]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
 	)
 	.await?
 	.into_iter()
@@ -280,6 +280,7 @@ repeatable_page_row_patch_handler!(
 	model: PastDrugHistoryForUpdate,
 	verify: verify_editor_dh_page_row,
 	aliases: PAST_DRUG_ROW_ALIASES,
+	restore_on_false: true,
 	build_response: build_editor_dh_page_row_response,
 );
 

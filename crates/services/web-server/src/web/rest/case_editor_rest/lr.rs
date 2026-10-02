@@ -34,7 +34,7 @@ async fn load_editor_lr_list_rows(
 			case_id: Some(uuid_eq(case_id)),
 			..Default::default()
 		}]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
 	)
 	.await?
 	.into_iter()
@@ -163,6 +163,7 @@ repeatable_page_row_patch_handler!(
 	verify: verify_editor_lr_page_row,
 	aliases: LITERATURE_REFERENCE_ROW_ALIASES,
 	base_patch: true,
+	restore_on_false: true,
 	build_response: build_editor_lr_page_row_response,
 );
 

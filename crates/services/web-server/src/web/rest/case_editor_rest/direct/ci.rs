@@ -365,6 +365,17 @@ struct CiSourceDocumentRowPatch {
 	sequence_number: Option<i32>,
 }
 
+fn non_nullable_text_patch(
+	row: &Map<String, Value>,
+	key: &str,
+	value: Option<String>,
+) -> Option<String> {
+	match row.get(key) {
+		Some(Value::Null) => Some(String::new()),
+		_ => value,
+	}
+}
+
 fn ci_row_error(owner: &str, err: serde_json::Error) -> Error {
 	Error::BadRequest {
 		message: format!("CI.{owner} has an invalid row payload: {err}"),
@@ -654,8 +665,17 @@ pub(super) async fn apply_ci_rows_patch(
 		let patches =
 			serde_json::from_value::<Vec<CiOtherIdentifierRowPatch>>(value.clone())
 				.map_err(|err| ci_row_error("otherCaseIdentifiers", err))?;
-		for patch in patches {
+		let raw_patches = value.as_array().ok_or_else(|| Error::BadRequest {
+			message: "CI.otherCaseIdentifiers must be an array".to_string(),
+		})?;
+		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
 			if let Some(id) = patch.id {
+				let raw_patch =
+					raw_patch.as_object().ok_or_else(|| Error::BadRequest {
+						message:
+							"CI.otherCaseIdentifiers has an invalid row payload"
+								.to_string(),
+					})?;
 				let current = OtherCaseIdentifierBmc::get(ctx, mm, id).await?;
 				if current.case_id != case_id {
 					return Err(Error::BadRequest {
@@ -674,8 +694,16 @@ pub(super) async fn apply_ci_rows_patch(
 					mm,
 					id,
 					OtherCaseIdentifierForUpdate {
-						source_of_identifier: patch.source,
-						case_identifier: patch.case_identifier,
+						source_of_identifier: non_nullable_text_patch(
+							raw_patch,
+							"source",
+							patch.source,
+						),
+						case_identifier: non_nullable_text_patch(
+							raw_patch,
+							"caseIdentifier",
+							patch.case_identifier,
+						),
 					},
 				)
 				.await?;
@@ -714,8 +742,16 @@ pub(super) async fn apply_ci_rows_patch(
 		let patches =
 			serde_json::from_value::<Vec<CiLinkedReportRowPatch>>(value.clone())
 				.map_err(|err| ci_row_error("linkedReports", err))?;
-		for patch in patches {
+		let raw_patches = value.as_array().ok_or_else(|| Error::BadRequest {
+			message: "CI.linkedReports must be an array".to_string(),
+		})?;
+		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
 			if let Some(id) = patch.id {
+				let raw_patch =
+					raw_patch.as_object().ok_or_else(|| Error::BadRequest {
+						message: "CI.linkedReports has an invalid row payload"
+							.to_string(),
+					})?;
 				let current = LinkedReportNumberBmc::get(ctx, mm, id).await?;
 				if current.case_id != case_id {
 					return Err(Error::BadRequest {
@@ -736,7 +772,11 @@ pub(super) async fn apply_ci_rows_patch(
 					mm,
 					id,
 					LinkedReportNumberForUpdate {
-						linked_report_number: patch.linked_report_number,
+						linked_report_number: non_nullable_text_patch(
+							raw_patch,
+							"linkedReportNumber",
+							patch.linked_report_number,
+						),
 					},
 				)
 				.await?;

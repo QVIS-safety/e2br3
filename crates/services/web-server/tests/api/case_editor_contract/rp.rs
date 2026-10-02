@@ -115,3 +115,99 @@ async fn reporter_title_can_be_cleared_without_changing_siblings(
 	assert_eq!(source["reporterGivenName"], "Sibling");
 	Ok(())
 }
+
+#[serial_test::serial]
+#[tokio::test]
+async fn reporters_remain_ordered_by_sequence_and_id_after_update(
+) -> crate::common::Result<()> {
+	use super::support::{create_case_for_editor, get_json, patch_json};
+	use crate::common::{cookie_header, init_test_mm, seed_org_with_users};
+	use axum::http::StatusCode;
+	use lib_auth::token::generate_web_token;
+	use serde_json::{json, Value};
+
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-RP-ORDER", &["ich"])
+			.await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/RP");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"primarySources": [
+			{"sequenceNumber": 3, "reporterGivenName": "Sequence three"},
+			{"sequenceNumber": 1, "reporterGivenName": "Sequence one"},
+			{"sequenceNumber": 2, "reporterGivenName": "Sequence two"}
+		]}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["primarySources"]
+		.as_array()
+		.ok_or("missing primarySources")?;
+	assert_eq!(rows.len(), 3, "{body}");
+	let sequence_one_id = rows
+		.iter()
+		.find(|row| row["reporterGivenName"] == "Sequence one")
+		.and_then(|row| row["id"].as_str())
+		.ok_or("missing sequence-one reporter id")?
+		.to_string();
+	let sibling_rows: Vec<Value> = rows
+		.iter()
+		.filter(|row| row["id"] != sequence_one_id)
+		.cloned()
+		.collect();
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"primarySources": [{
+			"id": sequence_one_id,
+			"sequenceNumber": 1,
+			"reporterPostcode": "04524"
+		}]}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let (status, body) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["primarySources"]
+		.as_array()
+		.ok_or("missing primarySources")?;
+	assert_eq!(rows.len(), 3, "{body}");
+	let order: Vec<_> = rows
+		.iter()
+		.map(|row| {
+			(
+				row["sequenceNumber"].as_i64(),
+				row["id"].as_str(),
+				row["reporterGivenName"].as_str(),
+			)
+		})
+		.collect();
+	assert_eq!(order[0].0, Some(1), "{body}");
+	assert_eq!(order[0].1, Some(sequence_one_id.as_str()), "{body}");
+	assert_eq!(order[0].2, Some("Sequence one"), "{body}");
+	assert_eq!(rows[0]["reporterPostcode"], "04524", "{body}");
+	assert_eq!(order[1].0, Some(2), "{body}");
+	assert_eq!(order[1].2, Some("Sequence two"), "{body}");
+	assert_eq!(order[2].0, Some(3), "{body}");
+	assert_eq!(order[2].2, Some("Sequence three"), "{body}");
+	for sibling in sibling_rows {
+		let sibling_id = sibling["id"].as_str().ok_or("missing sibling id")?;
+		let current = rows
+			.iter()
+			.find(|row| row["id"] == sibling_id)
+			.ok_or("missing sibling after update")?;
+		assert_eq!(current, &sibling, "sibling changed: {body}");
+	}
+	Ok(())
+}

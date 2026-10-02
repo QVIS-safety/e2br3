@@ -487,3 +487,184 @@ async fn relatedness_delete_preserves_sibling_and_parent_delete_removes_assessme
 		.all(|row| row["reactionId"] != json!(reaction_ids[1])));
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn deleted_drug_can_be_read_and_restored_with_children_and_guards(
+) -> Result<()> {
+	use axum::body::Body;
+	use axum::http::Request;
+	use tower::ServiceExt;
+
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &admin_cookie, "EDITOR-DG-RESTORE", &["ich"])
+			.await?;
+	let other_case_id = create_case_for_editor(
+		&app,
+		&admin_cookie,
+		"EDITOR-DG-RESTORE-OTHER",
+		&["ich"],
+	)
+	.await?;
+	let rows_uri = format!("/api/cases/{case_id}/editor/pages/DG/rows");
+	let (status, body) = post_json(
+		&app,
+		&admin_cookie,
+		&rows_uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"sequenceNumber": 1,
+			"drugCharacterization": "1",
+			"medicinalProduct": "Deleted drug"
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let row_id = body["rowId"].as_str().ok_or("missing DG row id")?;
+	let row_uri = format!("{rows_uri}/{row_id}");
+	let (status, body) = post_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/drugs/{row_id}/device-characteristics"),
+		json!({"data": {
+			"drug_id": row_id,
+			"sequence_number": 1,
+			"code": "KR_DVC_MFR",
+			"value_type": "ST",
+			"value_value": "Preserved child"
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let (status, body) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let expected_children = body["data"]["drug"]["deviceCharacteristics"].clone();
+	assert_eq!(
+		expected_children.as_array().map(Vec::len),
+		Some(1),
+		"{body}"
+	);
+
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("DELETE")
+				.uri(&row_uri)
+				.header("cookie", &admin_cookie)
+				.body(Body::empty())?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::NO_CONTENT);
+	let (status, body) = get_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert!(
+		body["rows"]["rows"]
+			.as_array()
+			.is_some_and(|rows| rows.iter().all(|row| row["id"] != row_id)),
+		"{body}"
+	);
+	let (status, body) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["drug"]["deleted"], true, "{body}");
+	assert_eq!(
+		body["data"]["drug"]["deviceCharacteristics"], expected_children,
+		"{body}"
+	);
+
+	let restore = json!({"authorities": ["ich"], "rows": {"drug": {
+		"id": row_id,
+		"deleted": false,
+		"medicinalProduct": "Restored drug"
+	}}});
+	let wrong_case_uri =
+		format!("/api/cases/{other_case_id}/editor/pages/DG/rows/{row_id}");
+	let (status, _) = get_json(&app, &admin_cookie, &wrong_case_uri).await?;
+	assert_eq!(status, StatusCode::NOT_FOUND);
+	let (status, _) =
+		patch_json(&app, &admin_cookie, &wrong_case_uri, restore.clone()).await?;
+	assert_eq!(status, StatusCode::NOT_FOUND);
+	let (status, _) =
+		patch_json(&app, &viewer_cookie, &row_uri, restore.clone()).await?;
+	assert_eq!(status, StatusCode::FORBIDDEN);
+
+	let invalid_value = "X".repeat(251);
+	let (status, body) = patch_json(
+		&app,
+		&admin_cookie,
+		&row_uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"id": row_id,
+			"deleted": false,
+			"medicinalProduct": invalid_value
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION", "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"], "ICH.G.k.2.2.LENGTH.MAX",
+		"{body}"
+	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"], "drugs.0.medicinalProduct",
+		"{body}"
+	);
+	let (status, body) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["drug"]["deleted"], true, "{body}");
+	assert_eq!(
+		body["data"]["drug"]["medicinal_product"], "Deleted drug",
+		"{body}"
+	);
+	assert_eq!(
+		body["data"]["drug"]["deviceCharacteristics"], expected_children,
+		"{body}"
+	);
+
+	let (status, body) = patch_json(&app, &admin_cookie, &row_uri, restore).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["drug"]["deleted"], false, "{body}");
+	assert_eq!(
+		body["data"]["drug"]["medicinal_product"], "Restored drug",
+		"{body}"
+	);
+	assert_eq!(
+		body["data"]["drug"]["deviceCharacteristics"], expected_children,
+		"{body}"
+	);
+	let (status, body) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["drug"]["deleted"], false, "{body}");
+	assert_eq!(
+		body["data"]["drug"]["deviceCharacteristics"], expected_children,
+		"{body}"
+	);
+	let (status, body) = get_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert!(
+		body["rows"]["rows"]
+			.as_array()
+			.is_some_and(|rows| rows.iter().any(|row| row["id"] == row_id
+				&& row["medicinalProduct"] == "Restored drug")),
+		"{body}"
+	);
+	Ok(())
+}

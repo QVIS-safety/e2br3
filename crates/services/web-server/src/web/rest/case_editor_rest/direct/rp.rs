@@ -307,7 +307,7 @@ pub(super) async fn load_editor_rp_data(
 			case_id: Some(uuid_eq(case_id)),
 			..Default::default()
 		}]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
 	)
 	.await?
 	.into_iter()
