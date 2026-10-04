@@ -2590,6 +2590,7 @@ async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	let p = &payloads[0];
 	assert_eq!(p["authority"], "mfds");
 	assert_eq!(p["caseId"], case_id.to_string());
+	assert_eq!(p["idempotencyKey"], case_id.to_string());
 	assert_eq!(
 		p["callbackUrl"],
 		"http://127.0.0.1:8080/internal/submissions/callbacks/ack"

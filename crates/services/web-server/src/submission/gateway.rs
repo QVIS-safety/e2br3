@@ -75,6 +75,7 @@ pub(super) async fn submit_to_gateway(
 		let resp = req
 			.json(&json!({
 				"caseId": case_id.to_string(),
+				"idempotencyKey": case_id.to_string(),
 				"authority": authority.as_str(),
 				"xmlPayload": xml,
 				"callbackUrl": callback_url,
