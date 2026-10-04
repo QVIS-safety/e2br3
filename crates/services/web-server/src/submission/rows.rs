@@ -5,7 +5,7 @@ pub(super) struct CaseSubmissionRow {
 	pub(super) id: Uuid,
 	pub(super) case_id: Uuid,
 	pub(super) gateway: String,
-	pub(super) remote_submission_id: String,
+	pub(super) remote_submission_id: Option<String>,
 	pub(super) status: String,
 	pub(super) xml_bytes: i32,
 	pub(super) submitted_by: Uuid,
@@ -70,7 +70,7 @@ pub(super) struct SubmissionHistoryRow {
 	pub(super) case_id: Uuid,
 	pub(super) case_number: String,
 	pub(super) gateway: String,
-	pub(super) remote_submission_id: String,
+	pub(super) remote_submission_id: Option<String>,
 	pub(super) status: String,
 	pub(super) xml_bytes: i32,
 	pub(super) submitted_by: Uuid,
@@ -144,6 +144,8 @@ pub(super) fn submission_history_export_authority(gateway: &str) -> &'static str
 
 pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {
 	match status {
+		SubmissionStatus::DispatchUnknown => "dispatch_unknown",
+		SubmissionStatus::SubmittedAck1Pending => "submitted_ack1_pending",
 		SubmissionStatus::Ack1Received => "ack1_received",
 		SubmissionStatus::Ack2Received => "ack2_received",
 		SubmissionStatus::Ack3Received => "ack3_received",
@@ -154,6 +156,8 @@ pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {
 
 pub(super) fn status_from_db(status: &str) -> Result<SubmissionStatus> {
 	match status.trim().to_ascii_lowercase().as_str() {
+		"dispatch_unknown" => Ok(SubmissionStatus::DispatchUnknown),
+		"submitted_ack1_pending" => Ok(SubmissionStatus::SubmittedAck1Pending),
 		"ack1_received" => Ok(SubmissionStatus::Ack1Received),
 		"ack2_received" => Ok(SubmissionStatus::Ack2Received),
 		"ack3_received" => Ok(SubmissionStatus::Ack3Received),

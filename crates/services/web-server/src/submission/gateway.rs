@@ -1,10 +1,11 @@
 use super::*;
 
 #[derive(Debug, Deserialize)]
-struct As2GatewaySubmitResponse {
+pub(super) struct As2GatewaySubmitResponse {
 	remote_submission_id: Option<String>,
-	submission_id: Option<String>,
 	ack: Option<EsgAckResponse>,
+	latest_ack: Option<EsgAckResponse>,
+	status: Option<String>,
 }
 
 fn require_ack1(
@@ -50,68 +51,8 @@ pub(super) async fn submit_to_gateway(
 	authority: SubmissionAuthority,
 ) -> Result<GatewaySubmissionOutcome> {
 	let now = OffsetDateTime::now_utc();
-	if let Some(base_url) = as2_submitter_url() {
-		let submit_url = format!("{}/submit", base_url.trim_end_matches('/'));
-		let timeout_secs = parse_timeout_secs("AS2_SUBMITTER_TIMEOUT_SECS", 30);
-		let client = reqwest::Client::builder()
-			.timeout(Duration::from_secs(timeout_secs))
-			.build()
-			.map_err(|err| Error::BadRequest {
-				message: format!("failed to initialize AS2 submitter client: {err}"),
-			})?;
-		let callback_url = std::env::var("AS2_ACK_CALLBACK_URL").ok();
-		let mut req = client.post(&submit_url);
-		if let Ok(token) = std::env::var("AS2_SUBMITTER_TOKEN")
-			.or_else(|_| std::env::var("AS2_CALLBACK_TOKEN"))
-		{
-			let token = token.trim();
-			if !token.is_empty() {
-				req = req
-					.header("x-api-token", token)
-					.header("x-callback-token", token)
-					.header(AUTHORIZATION, format!("Bearer {token}"));
-			}
-		}
-		let resp = req
-			.json(&json!({
-				"caseId": case_id.to_string(),
-				"idempotencyKey": case_id.to_string(),
-				"authority": authority.as_str(),
-				"xmlPayload": xml,
-				"callbackUrl": callback_url,
-			}))
-			.send()
-			.await
-			.map_err(|err| Error::BadRequest {
-				message: format!("AS2 submitter request failed: {err}"),
-			})?;
-		let status = resp.status();
-		if !status.is_success() {
-			return Err(Error::BadRequest {
-				message: format!("AS2 submitter rejected request ({status})"),
-			});
-		}
-		let body_text = resp.text().await.map_err(|err| Error::BadRequest {
-			message: format!("AS2 submitter response read failed: {err}"),
-		})?;
-		let parsed: As2GatewaySubmitResponse = serde_json::from_str(&body_text)
-			.map_err(|err| Error::BadRequest {
-				message: format!("AS2 submitter response is not valid JSON: {err}"),
-			})?;
-		let remote_submission_id = parsed
-			.remote_submission_id
-			.or(parsed.submission_id)
-			.ok_or(Error::BadRequest {
-				message:
-					"AS2 submitter response missing remote submission identifier"
-						.to_string(),
-			})?;
-		let ack1 = require_ack1(parsed.ack, "AS2", now)?;
-		return Ok(GatewaySubmissionOutcome {
-			gateway: "as2-submitter-http".to_string(),
-			remote_submission_id,
-			ack1,
-		});
+	if as2_submitter_url().is_some() {
+		return Err(Error::BadRequest { message: "AS2 requires durable reservation; automatic gateway resend is disabled".into() });
 	}
 
 	if !is_esg_enabled() {
@@ -391,4 +332,116 @@ pub(super) async fn submit_to_gateway_with_retry(
 		attempts: max_attempts,
 		next_retry_at: None,
 	})
+}
+
+// Dispatch exactly once; subsequent reconciliation uses the read-only status endpoint.
+pub(super) async fn request_as2_state(
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	xml: Option<&str>,
+) -> Result<As2GatewaySubmitResponse> {
+	let base = as2_submitter_url().ok_or(Error::BadRequest {
+		message: "AS2_SUBMITTER_URL is required".into(),
+	})?;
+	let token = as2_submitter_token()?;
+	let path = if xml.is_some() {
+		"submit"
+	} else {
+		"submissions/status"
+	};
+	let client = reqwest::Client::builder()
+		.timeout(Duration::from_secs(parse_timeout_secs(
+			"AS2_SUBMITTER_TIMEOUT_SECS",
+			30,
+		)))
+		.build()
+		.map_err(|e| Error::BadRequest {
+			message: e.to_string(),
+		})?;
+	let response = client
+		.post(format!("{}/{path}", base.trim_end_matches('/')))
+		.header("x-api-token", token.trim())
+		.json(
+			&json!({"caseId": case_id.to_string(), "authority": authority.as_str(),
+            "idempotencyKey": case_id.to_string(), "xmlPayload": xml,
+            "callbackUrl": std::env::var("AS2_ACK_CALLBACK_URL").ok()}),
+		)
+		.send()
+		.await
+		.map_err(|e| Error::BadRequest {
+			message: format!("AS2 outcome unavailable: {e}"),
+		})?;
+	let http_status = response.status();
+	let parsed = response
+		.json::<As2GatewaySubmitResponse>()
+		.await
+		.map_err(|e| Error::BadRequest {
+			message: format!("AS2 state unavailable ({http_status}): {e}"),
+		})?;
+	if !http_status.is_success() && !matches!(http_status.as_u16(), 409 | 502) {
+		return Err(Error::BadRequest {
+			message: format!("AS2 state unavailable ({http_status})"),
+		});
+	}
+	parsed.observed()?;
+	Ok(parsed)
+}
+
+impl As2GatewaySubmitResponse {
+	pub(super) fn observed(
+		&self,
+	) -> Result<(String, SubmissionStatus, Option<SubmissionAck>)> {
+		let remote = self
+			.remote_submission_id
+			.as_ref()
+			.filter(|v| !v.trim().is_empty())
+			.ok_or(Error::BadRequest {
+				message: "AS2 state missing remote message ID".into(),
+			})?
+			.clone();
+		let ack = self.latest_ack.as_ref().or(self.ack.as_ref());
+		if let Some(ack) = ack {
+			let level = ack.level.ok_or(Error::BadRequest {
+				message: "AS2 ACK level missing".into(),
+			})?;
+			let success = ack.success.ok_or(Error::BadRequest {
+				message: "AS2 ACK outcome missing".into(),
+			})?;
+			let status = status_from_ack(level, success)?;
+			return Ok((
+				remote,
+				status,
+				Some(SubmissionAck {
+					level,
+					success,
+					code: ack.code.clone(),
+					message: ack.message.clone(),
+					received_at: OffsetDateTime::now_utc(),
+				}),
+			));
+		}
+		let status = match self.status.as_deref() {
+			Some("dispatch_unknown") => SubmissionStatus::DispatchUnknown,
+			Some("submitted_ack1_pending") => SubmissionStatus::SubmittedAck1Pending,
+			_ => return Err(Error::BadRequest {
+				message:
+					"AS2 state has no verifiable acknowledgement or pending status"
+						.into(),
+			}),
+		};
+		Ok((remote, status, None))
+	}
+}
+
+pub(super) fn as2_submitter_token() -> Result<String> {
+	let token =
+		std::env::var("AS2_SUBMITTER_TOKEN").map_err(|_| Error::BadRequest {
+			message: "AS2_SUBMITTER_TOKEN is required".into(),
+		})?;
+	if token.trim().is_empty() {
+		return Err(Error::BadRequest {
+			message: "AS2_SUBMITTER_TOKEN is empty".into(),
+		});
+	}
+	Ok(token)
 }

@@ -41,6 +41,8 @@ impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubmissionStatus {
+	DispatchUnknown,
+	SubmittedAck1Pending,
 	Ack1Received,
 	Ack2Received,
 	Ack3Received,
@@ -74,7 +76,7 @@ pub struct SubmissionRecord {
 	pub id: Uuid,
 	pub case_id: Uuid,
 	pub gateway: String,
-	pub remote_submission_id: String,
+	pub remote_submission_id: Option<String>,
 	pub status: SubmissionStatus,
 	pub xml_bytes: usize,
 	pub submitted_by: Uuid,
@@ -92,7 +94,7 @@ pub struct SubmissionHistoryRecord {
 	pub case_id: Uuid,
 	pub case_number: String,
 	pub gateway: String,
-	pub remote_submission_id: String,
+	pub remote_submission_id: Option<String>,
 	pub status: SubmissionStatus,
 	pub batch_result: String,
 	pub message_result: Option<String>,
@@ -155,12 +157,7 @@ pub struct SubmissionReconcileRuntimeStatus {
 pub struct GatewayAckCallbackInput {
 	pub remote_submission_id: String,
 	pub ack_level: u8,
-	#[serde(default = "default_true")]
 	pub success: bool,
 	pub ack_code: Option<String>,
 	pub ack_message: Option<String>,
-}
-
-pub(super) fn default_true() -> bool {
-	true
 }

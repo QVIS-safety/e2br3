@@ -16,6 +16,9 @@ pub async fn create_submission(
 	let now = OffsetDateTime::now_utc();
 	let submission_id = Uuid::new_v4();
 	let gateway = select_gateway_name(authority)?;
+	if as2_submitter_url().is_some() {
+		return create_as2_submission(ctx, mm, case_id, authority, &xml).await;
+	}
 	let dispatch = submit_to_gateway_with_retry(case_id, &xml, authority).await;
 
 	let (gateway_outcome, attempt_count) = match dispatch {
@@ -421,4 +424,117 @@ pub async fn get_submission(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(Some(compose_submission_record(row, acks)?))
+}
+
+// Reserve the local lifecycle before I/O, including the exact XML. A restart only polls.
+async fn create_as2_submission(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	xml: &str,
+) -> Result<SubmissionRecord> {
+	as2_submitter_token()?;
+	let id = Uuid::new_v4();
+	let gateway = format!("as2-submitter-http-{}", authority.as_str());
+	let now = OffsetDateTime::now_utc();
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	let reserved = async {
+        set_full_context_dbx(mm.dbx(), ctx.user_id(), ctx.organization_id(), ctx.role()).await.map_err(lib_core::model::Error::from)?;
+        set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.change_category(), ctx.e_signature_id()).await.map_err(lib_core::model::Error::from)?;
+        let changed = mm.dbx().execute(sqlx::query(
+            "UPDATE cases SET status='submitted',submitted_by=$2,submitted_at=$3,raw_xml=$4,
+            dirty_c=false,dirty_d=false,dirty_e=false,dirty_f=false,dirty_g=false,dirty_h=false,updated_at=now()
+            WHERE id=$1 AND status <> 'submitted'").bind(case_id).bind(ctx.user_id()).bind(now).bind(xml.as_bytes())).await.map_err(lib_core::model::Error::from)?;
+        if changed != 1 { return Err(Error::BadRequest { message: "case has already been submitted".into() }); }
+        mm.dbx().execute(sqlx::query("INSERT INTO case_submissions
+            (id,case_id,gateway,remote_submission_id,status,xml_bytes,submitted_by,submitted_at)
+            VALUES ($1,$2,$3,NULL,'dispatch_unknown',$4,$5,$6)")
+            .bind(id).bind(case_id).bind(&gateway).bind(xml.len() as i32).bind(ctx.user_id()).bind(now)).await.map_err(lib_core::model::Error::from)?;
+        append_submission_event(mm,id,"submission_dispatch_started",Some(json!({"case_id":case_id,"gateway":gateway,"status":"dispatch_unknown"}))).await?;
+        upsert_dispatch_state_submit_failure(mm,id,now,0,"AS2 outcome not yet observed",Some(now + time::Duration::minutes(1))).await?;
+        Ok::<_,Error>(())
+    }.await;
+	if let Err(error) = reserved {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(error);
+	}
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	let outcome = request_as2_state(case_id, authority, Some(xml)).await;
+	persist_as2_observation(ctx, mm, id, outcome).await?;
+	get_submission(ctx, mm, id).await?.ok_or(Error::BadRequest {
+		message: "AS2 submission record missing".into(),
+	})
+}
+
+pub(super) async fn persist_as2_observation(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+	outcome: Result<As2GatewaySubmitResponse>,
+) -> Result<()> {
+	let now = OffsetDateTime::now_utc();
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	let result = async {
+        set_full_context_dbx(mm.dbx(),ctx.user_id(),ctx.organization_id(),ctx.role()).await.map_err(lib_core::model::Error::from)?;
+        set_compliance_context_dbx(mm.dbx(),ctx.change_reason(),ctx.change_category(),ctx.e_signature_id()).await.map_err(lib_core::model::Error::from)?;
+        let row = mm.dbx().fetch_one(sqlx::query_as::<_,CaseSubmissionRow>(
+            "SELECT id,case_id,gateway,remote_submission_id,status,xml_bytes,submitted_by,submitted_at
+            FROM case_submissions WHERE id=$1 FOR UPDATE").bind(id)).await.map_err(lib_core::model::Error::from)?;
+        let current = status_from_db(&row.status)?;
+        match outcome {
+            Ok(observed) => {
+                let (remote,incoming,ack) = observed.observed()?;
+                if let Some(existing) = &row.remote_submission_id {
+                    if existing != &remote { return Err(Error::BadRequest { message: "AS2 remote identity changed".into() }); }
+                }
+                let merged = if ack.as_ref().is_some_and(|a| a.level < submission_status_rank(&current)) {
+                    current.clone()
+                } else { merge_submission_status(&current,&incoming) };
+                mm.dbx().execute(sqlx::query("UPDATE case_submissions SET remote_submission_id=$2,status=$3,updated_at=now() WHERE id=$1")
+                    .bind(id).bind(&remote).bind(status_to_db(&merged))).await.map_err(lib_core::model::Error::from)?;
+                if let Some(a) = ack {
+                    if !ack_event_exists(mm,id,a.level as i16,a.success,a.code.as_deref(),a.message.as_deref()).await? {
+                        mm.dbx().execute(sqlx::query("INSERT INTO submission_acks(submission_id,ack_level,success,ack_code,ack_message,received_at,raw_payload) VALUES($1,$2,$3,$4,$5,$6,$7)")
+                            .bind(id).bind(a.level as i16).bind(a.success).bind(&a.code).bind(&a.message).bind(now)
+                            .bind(json!({"source":"as2_status","level":a.level,"success":a.success}))).await.map_err(lib_core::model::Error::from)?;
+                        append_submission_event(mm,id,"ack_recorded",Some(json!({"source":"as2_status","ack_level":a.level,"success":a.success,"ack_code":a.code,"ack_message":a.message}))).await?;
+                    }
+                }
+                if merged != current { append_submission_event(mm,id,"status_changed",Some(json!({"from":status_to_db(&current),"to":status_to_db(&merged)}))).await?; }
+                if is_submission_terminal(&merged) || (merged == SubmissionStatus::Ack3Received && row.gateway.ends_with("-fda")) {
+                    mark_dispatch_terminal(mm,id,now).await?;
+                } else {
+                    upsert_dispatch_state_submit_failure(mm,id,now,1,"awaiting AS2 acknowledgement; status lookup only",Some(now+time::Duration::minutes(1))).await?;
+                }
+            }
+            Err(error) => {
+                append_submission_event(mm,id,"submission_outcome_unavailable",Some(json!({"error":error.to_string(),"action":"status_lookup_only"}))).await?;
+                if !is_submission_terminal(&current) && !(current == SubmissionStatus::Ack3Received && row.gateway.ends_with("-fda")) {
+                    upsert_dispatch_state_submit_failure(mm,id,now,1,&error.to_string(),Some(now+time::Duration::minutes(1))).await?;
+                }
+            }
+        }
+        Ok::<_,Error>(())
+    }.await;
+	match result {
+		Ok(()) => mm
+			.dbx()
+			.commit_txn()
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e))),
+		Err(e) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(e)
+		}
+	}
 }

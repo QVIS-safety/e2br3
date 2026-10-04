@@ -34,6 +34,7 @@ fn clear_esg_env() {
 	std::env::remove_var("FDA_ESG_BEARER_TOKEN");
 	std::env::remove_var("FDA_ESG_API_KEY");
 	std::env::remove_var("AS2_SUBMITTER_URL");
+	std::env::remove_var("AS2_SUBMITTER_TOKEN");
 	std::env::remove_var("AS2_SUBMITTER_TIMEOUT_SECS");
 	std::env::remove_var("AS2_ACK_CALLBACK_URL");
 	std::env::remove_var("AS2_CALLBACK_TOKEN");
@@ -231,6 +232,7 @@ async fn configure_mock_esg_transport() -> Result<()> {
 async fn configure_mock_as2_transport() -> Result<()> {
 	let (submitter_url, _received) = start_mock_submitter().await?;
 	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
 	Ok(())
 }
 
@@ -589,7 +591,8 @@ async fn create_reaction(
 				"criteria_hospitalization_null_flavor": "NI",
 				"criteria_disabling_null_flavor": "NI",
 				"criteria_congenital_anomaly_null_flavor": "NI",
-				"criteria_other_medically_important_null_flavor": "NI"
+				"criteria_other_medically_important_null_flavor": "NI",
+				"required_intervention": false
 			}})
 			.to_string(),
 		))?;
@@ -1822,9 +1825,11 @@ async fn test_submission_uses_request_authority_not_case_appendices() -> Result<
 
 #[serial]
 #[tokio::test]
-async fn test_submission_rejects_when_as2_submitter_unreachable() -> Result<()> {
+async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
+) -> Result<()> {
 	clear_esg_env();
 	std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:9");
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
 	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 	let mm = init_test_mm().await?;
@@ -1844,11 +1849,13 @@ async fn test_submission_rejects_when_as2_submitter_unreachable() -> Result<()> 
 		valid_compliance_payload(),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(
-		body.to_string().contains("AS2 submitter request failed"),
-		"{body:?}"
-	);
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	assert_eq!(body["data"]["status"], "dispatch_unknown");
+	assert!(body["data"]["remote_submission_id"].is_null());
+	for level in 1..=4 {
+		assert!(body["data"][format!("ack{level}")].is_null());
+	}
+
 	let (list_status, list_body) =
 		get_json(&app, &cookie, &format!("/api/cases/{case_id}/submissions"))
 			.await?;
@@ -1856,13 +1863,10 @@ async fn test_submission_rejects_when_as2_submitter_unreachable() -> Result<()> 
 	let items = list_body["data"]["items"]
 		.as_array()
 		.ok_or("missing submissions items")?;
-	if !items.is_empty() {
-		assert_eq!(items[0]["status"], "rejected");
-		let remote = items[0]["remote_submission_id"]
-			.as_str()
-			.ok_or("missing remote_submission_id")?;
-		assert!(remote.starts_with("FAILED-"), "{list_body:?}");
-	}
+	assert_eq!(items.len(), 1);
+	assert_eq!(items[0]["status"], "dispatch_unknown");
+	assert!(items[0]["remote_submission_id"].is_null());
+
 	clear_esg_env();
 	Ok(())
 }
@@ -1946,7 +1950,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 			!dispatch_body["data"]["state"]["last_attempt_at"].is_null(),
 			"{dispatch_body:?}"
 		);
-		assert!(dispatch_body["data"]["state"]["terminal_at"].is_null());
+		assert!(!dispatch_body["data"]["state"]["terminal_at"].is_null());
 	}
 	let (events_status, events_body) = get_json(
 		&app,
@@ -2403,6 +2407,7 @@ async fn test_internal_reconcile_retries_failed_submission_and_keeps_rejected_on
 	mm.dbx().commit_txn().await?;
 
 	std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:9");
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
 	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
 	sleep(Duration::from_millis(100)).await;
 	let req = Request::builder()
@@ -2549,6 +2554,7 @@ async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	clear_esg_env();
 	let (submitter_url, received_payloads) = start_mock_submitter().await?;
 	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
 	std::env::set_var(
 		"AS2_ACK_CALLBACK_URL",
 		"http://127.0.0.1:8080/internal/submissions/callbacks/ack",
@@ -2775,6 +2781,7 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 		}
 	};
 	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
 	std::env::set_var(
 		"AS2_ACK_CALLBACK_URL",
 		"http://127.0.0.1:8080/internal/submissions/callbacks/ack",
@@ -2801,12 +2808,107 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{submit_body:?}");
-	assert_eq!(submit_body["data"]["gateway"], "as2-submitter-http");
+	assert_eq!(submit_body["data"]["gateway"], "as2-submitter-http-mfds");
 	let remote_submission_id = submit_body["data"]["remote_submission_id"]
 		.as_str()
 		.ok_or("missing remote_submission_id")?;
 	assert!(!remote_submission_id.trim().is_empty(), "{submit_body:?}");
 
+	clear_esg_env();
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
+) -> Result<()> {
+	use std::sync::atomic::{AtomicUsize, Ordering};
+	clear_esg_env();
+	let sends = Arc::new(AtomicUsize::new(0));
+	let polls = Arc::new(AtomicUsize::new(0));
+	let submit_count = sends.clone();
+	let poll_count = polls.clone();
+	// Deterministic protocol fixture, not regulator acceptance evidence.
+	let transport = Router::new()
+        .route("/submit", post(move || { let count = submit_count.clone(); async move {
+            count.fetch_add(1, Ordering::SeqCst);
+            Json(json!({"remote_submission_id":"pending-fixture", "status":"submitted_ack1_pending"}))
+        }}))
+        .route("/submissions/status", post(move || { let count = poll_count.clone(); async move {
+            count.fetch_add(1, Ordering::SeqCst);
+            Json(json!({"remote_submission_id":"pending-fixture", "status":"ack3_received",
+                "latest_ack":{"level":3,"success":true,"code":"ACK3"}}))
+        }}));
+	let listener = TcpListener::bind("127.0.0.1:0").await?;
+	let addr = listener.local_addr()?;
+	let server = tokio::spawn(async move { axum::serve(listener, transport).await });
+	std::env::set_var("AS2_SUBMITTER_URL", format!("http://{addr}"));
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "fixture-token");
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
+	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submissions/fda"),
+		valid_compliance_payload(),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	assert_eq!(body["data"]["status"], "submitted_ack1_pending");
+	for level in 1..=4 {
+		assert!(body["data"][format!("ack{level}")].is_null());
+	}
+
+	let id = Uuid::parse_str(body["data"]["id"].as_str().ok_or("id missing")?)?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx().execute(sqlx::query("UPDATE submission_dispatch_state SET next_retry_at=now()-interval '1 second' WHERE submission_id=$1").bind(id)).await?;
+	mm.dbx().commit_txn().await?;
+	web_server::submission::reconcile_due_submissions_with_runtime_status(&mm, 25)
+		.await?;
+	assert_eq!(sends.load(Ordering::SeqCst), 1);
+	assert_eq!(polls.load(Ordering::SeqCst), 1);
+	let (_, observed) =
+		get_json(&app, &cookie, &format!("/api/submissions/{id}")).await?;
+	assert_eq!(observed["data"]["status"], "ack3_received", "{observed}");
+	let ack = web_server::submission::GatewayAckCallbackInput {
+		remote_submission_id: "pending-fixture".into(),
+		ack_level: 1,
+		success: false,
+		ack_code: Some("late-negative".into()),
+		ack_message: Some("out of order fixture".into()),
+	};
+	let after =
+		web_server::submission::apply_gateway_ack_by_remote(&mm, ack).await?;
+	assert_eq!(
+		after.status,
+		web_server::submission::SubmissionStatus::Ack3Received
+	);
+	let (_, dispatch) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/submissions/{id}/dispatch-state"),
+	)
+	.await?;
+	assert!(
+		!dispatch["data"]["state"]["terminal_at"].is_null(),
+		"{dispatch}"
+	);
+	assert!(dispatch["data"]["state"]["next_retry_at"].is_null());
+	server.abort();
 	clear_esg_env();
 	Ok(())
 }

@@ -21,6 +21,8 @@ pub(super) fn status_from_ack(level: u8, success: bool) -> Result<SubmissionStat
 
 pub(super) fn submission_status_rank(status: &SubmissionStatus) -> u8 {
 	match status {
+		SubmissionStatus::DispatchUnknown
+		| SubmissionStatus::SubmittedAck1Pending => 0,
 		SubmissionStatus::Ack1Received => 1,
 		SubmissionStatus::Ack2Received => 2,
 		SubmissionStatus::Ack3Received => 3,
@@ -40,7 +42,10 @@ pub(super) fn merge_submission_status(
 	current: &SubmissionStatus,
 	incoming: &SubmissionStatus,
 ) -> SubmissionStatus {
-	if is_submission_terminal(current) {
+	if is_submission_terminal(current)
+		|| (*current == SubmissionStatus::SubmittedAck1Pending
+			&& *incoming == SubmissionStatus::DispatchUnknown)
+	{
 		return current.clone();
 	}
 	if matches!(incoming, SubmissionStatus::Rejected) {
@@ -102,7 +107,12 @@ pub async fn apply_gateway_ack_by_remote(
 			),
 		})?;
 	let current_status = status_from_db(&row.status)?;
-	let merged_status = merge_submission_status(&current_status, &incoming_status);
+	let merged_status = if input.ack_level < submission_status_rank(&current_status)
+	{
+		current_status.clone()
+	} else {
+		merge_submission_status(&current_status, &incoming_status)
+	};
 	let is_duplicate = ack_event_exists(
 		mm,
 		row.id,
@@ -192,7 +202,10 @@ pub async fn apply_gateway_ack_by_remote(
 		)
 		.await?;
 	}
-	if is_submission_terminal(&merged_status) {
+	if is_submission_terminal(&merged_status)
+		|| (merged_status == SubmissionStatus::Ack3Received
+			&& row.gateway.contains("fda"))
+	{
 		mark_dispatch_terminal(mm, row.id, now).await?;
 	}
 

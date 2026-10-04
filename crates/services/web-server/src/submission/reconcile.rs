@@ -256,6 +256,29 @@ async fn reconcile_one_submission_locked(
 			let Some(row) = row else {
 				return Ok(ReconcileOutcome::Skipped);
 			};
+			if row.gateway.starts_with("as2-submitter-http-") {
+				let authority = match row.gateway.as_str() {
+					"as2-submitter-http-fda" => SubmissionAuthority::Fda,
+					"as2-submitter-http-mfds" => SubmissionAuthority::Mfds,
+					_ => {
+						return Err(Error::BadRequest {
+							message: "unknown AS2 authority".into(),
+						})
+					}
+				};
+				let outcome = request_as2_state(row.case_id, authority, None).await;
+				let observed = outcome.is_ok();
+				persist_as2_observation(&system_ctx, mm, submission_id, outcome)
+					.await?;
+				return Ok(if observed {
+					ReconcileOutcome::Succeeded
+				} else {
+					ReconcileOutcome::Failed
+				});
+			}
+			if row.gateway == "as2-submitter-http" {
+				return Err(Error::BadRequest { message: "legacy AS2 submission requires authority reconciliation; automatic resend blocked".into() });
+			}
 			if !row.status.eq_ignore_ascii_case("rejected") {
 				return Ok(ReconcileOutcome::Skipped);
 			}
