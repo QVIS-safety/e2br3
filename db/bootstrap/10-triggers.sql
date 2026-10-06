@@ -764,6 +764,9 @@ CREATE TRIGGER audit_primary_sources AFTER INSERT OR UPDATE OR DELETE ON primary
 CREATE TRIGGER audit_documents_held_by_sender AFTER INSERT OR UPDATE OR DELETE ON documents_held_by_sender
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_source_documents AFTER INSERT OR UPDATE OR DELETE ON source_documents
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_medical_history_episodes AFTER INSERT OR UPDATE OR DELETE ON medical_history_episodes
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 

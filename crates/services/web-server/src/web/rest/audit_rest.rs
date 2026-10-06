@@ -68,6 +68,7 @@ fn audit_table_page(table_name: &str) -> Option<&'static str> {
 		"cases"
 		| "safety_report_identification"
 		| "documents_held_by_sender"
+		| "source_documents"
 		| "other_case_identifiers"
 		| "linked_report_numbers" => Some("CI (C.1)"),
 		"primary_sources" => Some("RP (C.2.r)"),
@@ -218,6 +219,11 @@ fn audit_business_field_label(
 		("documents_held_by_sender", "file_name") => "Document File Name",
 		("documents_held_by_sender", "media_type") => "Document Media Type",
 		("documents_held_by_sender", "representation") => "Document Representation",
+		("source_documents", "source_document_name") => "Source Document Name",
+		("source_documents", "source_document_base64") => "Source Document",
+		("source_documents", "source_document_media_type") => {
+			"Source Document Media Type"
+		}
 		("primary_sources", "reporter_title") => "Reporter's Title (C.2.r.1.1)",
 		("primary_sources", "reporter_given_name") => {
 			"Reporter's Given Name (C.2.r.1.2)"
@@ -1463,6 +1469,19 @@ mod tests {
 	#[test]
 	fn audit_field_label_maps_reference_ci_fields() {
 		assert_eq!(
+			audit_field_label("source_documents", "source_document_name").unwrap(),
+			("CI (C.1)", "Source Document Name".to_string())
+		);
+		assert_eq!(
+			audit_field_label("source_documents", "source_document_base64").unwrap(),
+			("CI (C.1)", "Source Document".to_string())
+		);
+		assert_eq!(
+			audit_field_label("source_documents", "source_document_media_type")
+				.unwrap(),
+			("CI (C.1)", "Source Document Media Type".to_string())
+		);
+		assert_eq!(
 			audit_field_label("cases", "report_type").unwrap(),
 			("CI (C.1)", "Type of Report (C.1.3)".to_string())
 		);
@@ -1533,6 +1552,39 @@ mod tests {
 				"MFDS Reporter Qualification (C.2.r.4.KR.1)".to_string()
 			)
 		);
+	}
+
+	#[test]
+	fn source_document_field_filter_covers_record_actions() {
+		let record_id = Uuid::new_v4();
+		for (action, old_values, new_values) in [
+			(
+				"CREATE",
+				None,
+				Some(json!({ "source_document_name": "a.pdf" })),
+			),
+			(
+				"UPDATE",
+				Some(json!({ "source_document_name": "a.pdf" })),
+				Some(json!({ "source_document_name": "b.pdf" })),
+			),
+			(
+				"DELETE",
+				Some(json!({ "source_document_name": "b.pdf" })),
+				None,
+			),
+		] {
+			let mut audit_log = log(
+				1,
+				"source_documents",
+				record_id,
+				action,
+				old_values,
+				new_values,
+			);
+			audit_log.changed_fields = Some(json!({ "source_document_name": {} }));
+			assert!(audit_log_touches_field(&audit_log, "source_document_name"));
+		}
 	}
 
 	#[tokio::test]
