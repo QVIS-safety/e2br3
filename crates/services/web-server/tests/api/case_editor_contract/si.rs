@@ -151,7 +151,8 @@ async fn registration_blank_values_can_be_replaced_by_null_flavors() -> Result<(
 	let (status, after_registration) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{after_registration}");
 	assert_eq!(
-		after_registration["rows"]["studyRegistrationNumbers"][0]["registration_number"],
+		after_registration["rows"]["studyRegistrationNumbers"][0]
+			["registration_number"],
 		serde_json::Value::Null
 	);
 	assert_eq!(
@@ -189,7 +190,10 @@ async fn registration_blank_values_can_be_replaced_by_null_flavors() -> Result<(
 			["country_code_null_flavor"],
 		"ASKU"
 	);
-	assert_eq!(after_country["rows"]["studyRegistrationNumbers"][1], sibling);
+	assert_eq!(
+		after_country["rows"]["studyRegistrationNumbers"][1],
+		sibling
+	);
 
 	let (status, body) = patch_json(
 		&app,

@@ -20,7 +20,8 @@ async fn page_projection_orders_past_drugs_by_sequence_then_id(
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-DH-ORDER", &["ich"]).await?;
 	let rows_uri = format!("/api/cases/{case_id}/editor/pages/DH/rows");
-	for (sequence, drug_name) in [(2, "Second prior drug"), (1, "First prior drug")] {
+	for (sequence, drug_name) in [(2, "Second prior drug"), (1, "First prior drug")]
+	{
 		let (status, body) = post_json(
 			&app,
 			&cookie,

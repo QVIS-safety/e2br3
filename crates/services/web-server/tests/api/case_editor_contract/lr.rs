@@ -45,7 +45,10 @@ async fn page_projection_orders_references_by_sequence_then_id(
 		.iter()
 		.map(|row| row["referenceText"].as_str())
 		.collect::<Vec<_>>();
-	assert_eq!(references, vec![Some("First citation"), Some("Second citation")]);
+	assert_eq!(
+		references,
+		vec![Some("First citation"), Some("Second citation")]
+	);
 	Ok(())
 }
 

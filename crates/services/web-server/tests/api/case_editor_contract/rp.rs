@@ -132,8 +132,7 @@ async fn reporters_remain_ordered_by_sequence_and_id_after_update(
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_for_editor(&app, &cookie, "EDITOR-RP-ORDER", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-RP-ORDER", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/RP");
 
 	let (status, body) = patch_json(

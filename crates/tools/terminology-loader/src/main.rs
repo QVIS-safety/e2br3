@@ -1325,10 +1325,7 @@ mod tests {
 			.expect("SERVICE_DB_URL must be set for terminology loader DB test");
 		std::env::set_var("SERVICE_WEB_FOLDER", "web-folder");
 		let mm = ModelManager::new().await.expect("model manager");
-		let tag = format!(
-			"t{}",
-			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
-		);
+		let tag = format!("t{}", ZIP_COUNTER.fetch_add(1, Ordering::Relaxed));
 		let language =
 			format!("x{}", ZIP_COUNTER.fetch_add(1, Ordering::Relaxed) % 10);
 		let version_v1 = format!("{}-v1", tag);
