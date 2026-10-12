@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import copy
+import json
 import random
 import sys
 import tempfile
@@ -284,6 +286,333 @@ class PresaveVerdictTests(unittest.TestCase):
 
 
 class CaseEditorInputFuzzerTests(unittest.TestCase):
+    def test_lifecycle_mode_does_not_fail_the_zero_mutation_admission_guard(self) -> None:
+        self.assertFalse(fuzzer.zero_mutation_admission_blocked(0, 18, True))
+        self.assertTrue(fuzzer.zero_mutation_admission_blocked(0, 18, False))
+        self.assertFalse(fuzzer.zero_mutation_admission_blocked(0, 0, False))
+
+    def test_direct_lifecycle_owner_overrides_are_explicit_and_use_safe_text_only(self) -> None:
+        self.assertEqual(fuzzer.DIRECT_LIFECYCLE_OWNER_OVERRIDES, {
+            "CI": {"documentsHeldBySender", "otherCaseIdentifiers", "sourceDocuments"},
+            "SI": {"fdaCrossReportedIndNumbers"},
+            "DM": {"reportedCauses", "autopsyCauses", "parentMedicalHistory", "parentPastDrugs"},
+            "NR": {"senderDiagnoses"},
+        })
+        args = fuzzer.parser().parse_args([
+            "--lifecycle-only", "--lifecycle-owner", "otherCaseIdentifiers", "--pages", "CI",
+        ])
+        self.assertTrue(args.lifecycle_only)
+        self.assertEqual(args.lifecycle_owner, "otherCaseIdentifiers")
+        self.assertEqual(
+            fuzzer.lifecycle_payload(
+                {"diagnosisMeddraVersion": "28.1", "diagnosisMeddraCode": "10019211"},
+                [{"payloadPath": "[].diagnosisMeddraCode", "roundTripValue": "10019211"}],
+                "senderDiagnoses", "B",
+            ),
+            {"diagnosisMeddraVersion": "28.1", "diagnosisMeddraCode": "10019211"},
+        )
+
+    def test_nested_dg_lifecycle_contract_is_explicit_and_snake_case(self) -> None:
+        self.assertEqual(fuzzer.DG_NESTED_LIFECYCLE_ENDPOINTS, {
+            "activeSubstances": "active-substances",
+            "indications": "indications",
+            "drugReactionAssessments": "reaction-assessments",
+            "fdaDevices": "devices",
+            "dosageInformation": "dosages",
+            "relatednessAssessments": "relatedness",
+            "fdaDeviceFollowUpTypes": "codes",
+            "fdaDeviceProblemCodes": "codes",
+            "fdaDeviceRemedialActions": "codes",
+        })
+        args = fuzzer.parser().parse_args([
+            "--lifecycle-only", "--nested-lifecycle-owner", "indications", "--pages", "DG",
+        ])
+        self.assertEqual(args.nested_lifecycle_owner, "indications")
+        self.assertEqual(
+            fuzzer.snake_keys({"drugId": "drug", "rows": [{"indicationText": "value"}]}),
+            {"drug_id": "drug", "rows": [{"indication_text": "value"}]},
+        )
+        detail = {"id": "drug", "activeSubstances": [{"id": "a"}],
+                  "indications": [{"id": "i"}]}
+        masked = fuzzer.without_nested_owner(detail, "indications")
+        self.assertEqual(masked["indications"], fuzzer.OWNER_TARGET_SENTINEL)
+        self.assertEqual(masked["activeSubstances"], [{"id": "a"}])
+        payload = {"sequence_number": 4, "indication_text": "expected"}
+        self.assertTrue(fuzzer.sent_fields_match(
+            {"id": "fresh", **payload, "updated_at": "server"}, payload
+        ))
+        self.assertFalse(fuzzer.sent_fields_match(
+            {"id": "fresh", "sequence_number": 4, "indication_text": "lost"}, payload
+        ))
+        survivor_before = {"old": {"id": "old", "indication_text": "same"}}
+        survivor_after = {"old": {"id": "old", "indication_text": "changed"}}
+        self.assertNotEqual(survivor_before, survivor_after)
+        device = {"fdaDevices": [
+            {"id": "device", "followUpTypes": [{"id": "code"}],
+             "deviceProblemCodes": [{"id": "problem"}], "deviceBrandName": "same"},
+        ]}
+        device_masked = fuzzer.without_nested_owner(
+            device, "fdaDeviceFollowUpTypes", "device"
+        )
+        self.assertEqual(device_masked["fdaDevices"][0]["followUpTypes"], fuzzer.OWNER_TARGET_SENTINEL)
+        self.assertEqual(device_masked["fdaDevices"][0]["deviceProblemCodes"], [{"id": "problem"}])
+        self.assertEqual(device_masked["fdaDevices"][0]["deviceBrandName"], "same")
+
+    def test_all_main_lifecycle_collections_have_structural_coverage(self) -> None:
+        self.assertEqual(fuzzer.lifecycle_preflight_gaps(), {})
+        # 27 main-runner UI collections plus the separately audited relatedness resource.
+        self.assertEqual(len(fuzzer.LIFECYCLE_REQUIRED_COLLECTIONS), 28)
+        self.assertEqual(fuzzer.audit_field_key("[].documentDescription"), "title")
+        self.assertEqual(fuzzer.audit_field_key("[].causeText"), "comments")
+
+    def test_lifecycle_payload_suffixes_remain_distinct_at_max_length(self) -> None:
+        fields = [{"payloadPath": "[].indNumber", "roundTripValue": "IND654321",
+                   "_maxLength": 10}]
+        created = fuzzer.lifecycle_payload({"indNumber": "IND654321"}, fields,
+                                           "fdaCrossReportedIndNumbers", "B")
+        edited = fuzzer.lifecycle_payload({"indNumber": "IND654321"}, fields,
+                                          "fdaCrossReportedIndNumbers", "EDIT")
+        self.assertEqual(len(created["indNumber"]), 10)
+        self.assertEqual(len(edited["indNumber"]), 10)
+        self.assertNotEqual(created, edited)
+
+    def test_fda_ind_direct_wrapper_and_projection_preserve_parent(self) -> None:
+        parent = "00000000-0000-0000-0000-000000000001"
+        row = {"id": "row", "indNumber": "IND1"}
+        self.assertEqual(
+            fuzzer.direct_lifecycle_patch("fdaCrossReportedIndNumbers", [row], parent),
+            {"studyInformation": {"id": parent, "fdaCrossReportedIndNumbers": [row]}},
+        )
+        projection = {"rows": {"studyInformation": {
+            "id": parent, "fdaCrossReportedIndNumbers": [row], "studyName": "kept",
+        }}}
+        self.assertEqual(fuzzer.direct_lifecycle_rows(
+            projection, "fdaCrossReportedIndNumbers"), [row])
+        masked = fuzzer.page_without_owner(projection, "fdaCrossReportedIndNumbers")
+        self.assertEqual(masked["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"],
+                         fuzzer.OWNER_TARGET_SENTINEL)
+        self.assertEqual(masked["rows"]["studyInformation"]["studyName"], "kept")
+
+    def test_device_code_create_contract_keeps_required_element(self) -> None:
+        for owner in ("fdaDeviceFollowUpTypes", "fdaDeviceProblemCodes",
+                      "fdaDeviceRemedialActions"):
+            self.assertIn("element", fuzzer.DG_NESTED_CREATE_FIELDS[owner])
+            self.assertIn("value_code", fuzzer.DG_NESTED_CREATE_FIELDS[owner])
+        self.assertEqual(
+            fuzzer.NESTED_AUDIT_TABLES["fdaDevices[].manufacturerName"],
+            ("fda_device_information", "id"),
+        )
+        self.assertEqual(
+            fuzzer.DG_NESTED_REQUIRED_EDIT_SEEDS["fdaDevices"],
+            ("manufacturer_name", "Fuzz device manufacturer"),
+        )
+        self.assertTrue(fuzzer.audit_transition_matches(
+            [], [{"id": 1, "old_values": {"manufacturer_name": "A"},
+                  "new_values": {"manufacturer_name": "B"}}],
+            {"manufacturer_name": "A"}, {"manufacturer_name": "B"},
+            {"manufacturer_name": "B"},
+        ))
+        self.assertFalse(fuzzer.audit_transition_matches(
+            [], [{"id": 1, "old_values": {"manufacturer_name": None},
+                  "new_values": {"manufacturer_name": None}}],
+            {"manufacturer_name": None}, {"manufacturer_name": None},
+            {"manufacturer_name": None},
+        ))
+
+    def test_none_that_leaves_a_nonempty_value_is_not_a_noop(self) -> None:
+        self.assertEqual(
+            fuzzer.mismatched_save_classification(None, "NONEMPTY", "NONEMPTY", False),
+            "CLEAR_NOT_APPLIED",
+        )
+        self.assertEqual(
+            fuzzer.collection_blank_classification("FDA.D.11.r.1", "   ", [], [], False),
+            "NOOP_ACCEPTED",
+        )
+        self.assertEqual(
+            fuzzer.collection_blank_classification("FDA.D.11.r.1", None, ["2106-3"], [], True),
+            "SAVE_NORMALIZED",
+        )
+        self.assertIsNone(
+            fuzzer.collection_blank_classification("D.7.2", "", "old", [], True)
+        )
+    def test_lifecycle_identity_check_rejects_duplicate_stale_reused_and_sibling_loss(self) -> None:
+        self.assertTrue(fuzzer.parser().parse_args(["--lifecycle-only"]).lifecycle_only)
+        self.assertEqual(
+            [row["id"] for row in fuzzer.projection_rows(
+                {"rows": {"linkedReports": [{"id": "a"}, {"id": "b"}]}},
+                "linkedReports",
+            )],
+            ["a", "b"],
+        )
+        details = {"a": {"value": "A"}, "b": {"value": "B"}, "c": {"value": "C"}}
+        self.assertTrue(fuzzer.lifecycle_identity_check(
+            ["a", "b", "c"], ["a", "c"], ["a", "c", "d"], "b", "d",
+            details, {"a": details["a"], "c": details["c"]},
+        ))
+        self.assertFalse(fuzzer.lifecycle_identity_check(
+            ["a", "a", "c"], ["a", "c"], ["a", "c", "d"], "a", "d", details,
+            {"a": details["a"], "c": details["c"]},
+        ))
+        lb_fields = [
+            {"payloadPath": "testDate", "roundTripValue": "20200102"},
+            {"payloadPath": "testName", "roundTripValue": "ALT", "_maxLength": 2000},
+        ]
+        self.assertEqual(
+            fuzzer.lifecycle_payload({"testDate": "20200102", "testName": "ALT"},
+                                     lb_fields, "testResult", "B"),
+            {"testDate": "20200102", "testName": "ALT-B"},
+        )
+        dg_fields = [
+            {"payloadPath": "fdaOtherCharacterization", "roundTripValue": "1"},
+            {"payloadPath": "medicinalProduct", "roundTripValue": "Product A"},
+        ]
+        self.assertEqual(
+            fuzzer.lifecycle_payload({"fdaOtherCharacterization": "1", "medicinalProduct": "Product A"},
+                                     dg_fields, "drug", "2")["fdaOtherCharacterization"],
+            "1",
+        )
+        self.assertEqual(
+            fuzzer.lifecycle_payload({"drugName": "Prior drug"}, [], "pastDrugHistory", "2"),
+            {"drugName": "Prior drug"},
+        )
+        sequence_fields = [{"payloadPath": "medicinalProduct", "roundTripValue": "Product A"}]
+        sequenced = fuzzer.lifecycle_payload(
+            {"medicinalProduct": "Product A", "drugCharacterization": "1"},
+            sequence_fields, "drug", "9",
+        )
+        sequenced["sequenceNumber"] = 9
+        self.assertEqual(sequenced["sequenceNumber"], 9)
+
+    def test_derived_nullflavor_keeps_exact_synthesized_partner_projection(self) -> None:
+        # The helper's explicit metadata is the authoritative path when the
+        # synthesized base field is intentionally absent from the contract.
+        field = {
+            "_nullFlavorPartnerPath": "[].identifierValue",
+            "_nullFlavorPartnerProjection": "identifier_value",
+        }
+        self.assertEqual(
+            fuzzer.nullflavor_partner_projection(field, "patientIdentifiers", []),
+            "identifier_value",
+        )
+        details = {"a": {"value": "A"}, "b": {"value": "B"}, "c": {"value": "C"}}
+        self.assertFalse(fuzzer.lifecycle_identity_check(
+            ["a", "b", "c"], ["a", "b", "c"], ["a", "c", "d"], "b", "d", details,
+            {"a": details["a"], "c": details["c"]},
+        ))
+        self.assertFalse(fuzzer.lifecycle_identity_check(
+            ["a", "b", "c"], ["a", "c"], ["a", "c", "b"], "b", "b", details,
+            {"a": details["a"], "c": details["c"]},
+        ))
+        self.assertFalse(fuzzer.lifecycle_identity_check(
+            ["a", "b", "c"], ["a", "c"], ["a", "c", "d"], "b", "d", details,
+            {"a": details["a"], "c": {"value": "LOST"}},
+        ))
+
+    def test_whole_owner_mask_keeps_sibling_rows_and_snake_case_fields_strict(self) -> None:
+        self.assertEqual(
+            fuzzer.AUDIT_TABLES["safetyReportIdentification"],
+            "safety_report_identification",
+        )
+        before = {
+            "updated_at": "old", "batch_lot_number": "A",
+            "dosage_information": [
+                {"id": "11111111-1111-1111-1111-111111111111", "batch_lot_number": "B"},
+                {"id": "22222222-2222-2222-2222-222222222222", "batch_lot_number": "KEEP"},
+            ],
+        }
+        after = copy.deepcopy(before)
+        after["updated_at"] = "new"
+        after["dosage_information"][0]["batch_lot_number"] = "C"
+        self.assertEqual(
+            fuzzer.owner_without_target(before, "dosageInformation[].batchLotNumber", {"id": "11111111-1111-1111-1111-111111111111"}),
+            fuzzer.owner_without_target(after, "dosageInformation[].batchLotNumber", {"id": "11111111-1111-1111-1111-111111111111"}),
+        )
+        after["dosage_information"][1]["batch_lot_number"] = "LOST"
+        self.assertNotEqual(
+            fuzzer.owner_without_target(before, "dosageInformation[].batchLotNumber", {"id": "11111111-1111-1111-1111-111111111111"}),
+            fuzzer.owner_without_target(after, "dosageInformation[].batchLotNumber", {"id": "11111111-1111-1111-1111-111111111111"}),
+        )
+        nf_before = {"email": "a@example.test", "email_null_flavor": None, "organization": "KEEP"}
+        nf_after = {"email": None, "email_null_flavor": "MSK", "organization": "KEEP"}
+        self.assertEqual(
+            fuzzer.owner_without_target(nf_before, "emailNullFlavor", companion_path="email"),
+            fuzzer.owner_without_target(nf_after, "emailNullFlavor", companion_path="email"),
+        )
+        nf_after["organization"] = "LOST"
+        self.assertNotEqual(
+            fuzzer.owner_without_target(nf_before, "emailNullFlavor", companion_path="email"),
+            fuzzer.owner_without_target(nf_after, "emailNullFlavor", companion_path="email"),
+        )
+        self.assertEqual(
+            fuzzer.ci_non_nullable_null_classification("C.1.10.r", "OLD", "", True),
+            "SAVE_NORMALIZED",
+        )
+        self.assertEqual(
+            fuzzer.ci_non_nullable_null_classification("C.1.10.r", "", "", False),
+            "NOOP_ACCEPTED",
+        )
+
+    def test_nullflavor_pair_clear_uses_declared_projection_and_requires_key(self) -> None:
+        field = {
+            "_nullFlavorPartnerPath": "[].reporterOrganization",
+            "payloadPath": "[].reporterOrganizationNullFlavor",
+        }
+        owner_fields = [{
+            "payloadPath": "[].reporterOrganization",
+            "projectionPath": "primarySources[].organization",
+        }]
+        partner = fuzzer.nullflavor_partner_projection(field, "primarySources", owner_fields)
+        self.assertEqual(partner, "organization")
+        before = {"organization": "Acme", "organizationNullFlavor": None, "keep": "same"}
+        after = {"organization": None, "organizationNullFlavor": "MSK", "keep": "same"}
+        self.assertEqual(fuzzer.owner_path_value(after, partner), (True, None))
+        self.assertEqual(
+            fuzzer.owner_without_target(
+                before, "organizationNullFlavor", companion_path=partner,
+            ),
+            fuzzer.owner_without_target(
+                after, "organizationNullFlavor", companion_path=partner,
+            ),
+        )
+        missing = {"organizationNullFlavor": "MSK", "keep": "same"}
+        self.assertEqual(fuzzer.owner_path_value(missing, partner), (False, None))
+        after["keep"] = "lost"
+        self.assertNotEqual(
+            fuzzer.owner_without_target(
+                before, "organizationNullFlavor", companion_path=partner,
+            ),
+            fuzzer.owner_without_target(
+                after, "organizationNullFlavor", companion_path=partner,
+            ),
+        )
+
+    def test_nullflavor_pair_clear_targets_exact_nested_uuid(self) -> None:
+        target_id = "11111111-1111-1111-1111-111111111111"
+        sibling_id = "22222222-2222-2222-2222-222222222222"
+        identity = {"id": target_id}
+        before = {"dosageInformation": [
+            {"id": target_id, "startDate": "20200101", "startDateNullFlavor": None},
+            {"id": sibling_id, "startDate": "20210101", "startDateNullFlavor": None},
+        ]}
+        after = copy.deepcopy(before)
+        after["dosageInformation"][0].update(
+            {"startDate": None, "startDateNullFlavor": "MSK"}
+        )
+        partner = "dosageInformation[].startDate"
+        target = "dosageInformation[].startDateNullFlavor"
+        self.assertEqual(
+            fuzzer.owner_path_value(after, partner, identity), (True, None),
+        )
+        self.assertEqual(
+            fuzzer.owner_without_target(before, target, identity, partner),
+            fuzzer.owner_without_target(after, target, identity, partner),
+        )
+        after["dosageInformation"][1]["startDate"] = "lost"
+        self.assertNotEqual(
+            fuzzer.owner_without_target(before, target, identity, partner),
+            fuzzer.owner_without_target(after, target, identity, partner),
+        )
+
     def test_nested_rows_and_list_readback(self) -> None:
         self.assertEqual(
             fuzzer.nested_root("fdaCrossReportedIndNumbers[].indNumber"),
@@ -514,7 +843,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(fuzzer.normalized_classification(None, None, False), "NOOP_ACCEPTED")
         self.assertEqual(
             fuzzer.mismatched_save_classification(None, "old", "old", False),
-            "NOOP_ACCEPTED",
+            "CLEAR_NOT_APPLIED",
         )
         self.assertEqual(
             fuzzer.mismatched_save_classification(None, "old", "different", False),
@@ -671,6 +1000,145 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             "SAVE_NORMALIZED",
         )
 
+    def test_audit_transition_matches_camel_dto_and_newest_first_log(self) -> None:
+        old_log = {"id": "old", "old_values": {"reporter_family_name": "X"},
+                   "new_values": {"reporter_family_name": "A"}}
+        new_log = {"id": "new", "old_values": {"reporter_family_name": "A"},
+                   "new_values": {"reporter_family_name": "B"}}
+        self.assertTrue(fuzzer.audit_transition_matches(
+            [old_log], [new_log, old_log],
+            {"reporterFamilyName": "A"}, {"reporterFamilyName": "B"},
+            {"reporterFamilyName": "B"},
+        ))
+        wrong = {"id": "wrong", "old_values": {"reporter_family_name": "A"},
+                 "new_values": {"reporter_family_name": "C"}}
+        self.assertFalse(fuzzer.audit_transition_matches(
+            [old_log], [wrong, old_log],
+            {"reporterFamilyName": "A"}, {"reporterFamilyName": "B"},
+            {"reporterFamilyName": "B"},
+        ))
+
+    def test_exact_audit_delta_rejects_extra_wrong_envelope_and_typed_json(self) -> None:
+        def log(log_id=2, old="A", new="B", action="UPDATE"):
+            return {
+                "id": log_id, "table_name": "rows", "record_id": "record",
+                "action": action, "user_id": "user", "organization_id": "org",
+                "changed_fields": {"value": {"old": old, "new": new}},
+                "old_values": {"value": old}, "new_values": {"value": new},
+                "created_at": "2026-10-07T00:00:00Z", "prev_hash": "p",
+                "entry_hash": "e",
+            }
+        before = [log(1, "0", "A")]
+        ok, _ = fuzzer.audit_delta_exact(
+            before, [log(), *before], table="rows", record_id="record",
+            action="UPDATE", user_id="user", organization_id="org",
+            expected_changes={"value": ("A", "B")},
+        )
+        self.assertTrue(ok)
+        for after in (
+            [log(), log(3), *before],
+            [{**log(), "table_name": "wrong"}, *before],
+            [{**log(), "user_id": "wrong"}, *before],
+            [{**log(), "organization_id": "wrong"}, *before],
+            [{**log(), "record_id": "wrong"}, *before],
+            [{**log(), "action": "DELETE"}, *before],
+            [{**log(), "changed_fields": {"value": {"old": [True], "new": [False]}},
+              "old_values": {"value": [True]}, "new_values": {"value": [False]}}, *before],
+            [{key: value for key, value in log().items() if key != "id"}, *before],
+            [{key: value for key, value in log().items() if key != "old_values"}, *before],
+            [{key: value for key, value in log().items() if key != "new_values"}, *before],
+            [{**log(), "old_values": []}, *before],
+            [{**log(), "changed_fields": {"value": {"old": "A"}}}, *before],
+            [{**log(), "old_values": {"value": "A", "other": "X"},
+              "new_values": {"value": "B", "other": "Y"}}, *before],
+            [{**log(), "old_values": {"value": "A", "nested": {"x": 1}},
+              "new_values": {"value": "B", "nested": {"x": 2}}}, *before],
+            [log(), {**before[0], "new_values": {"value": "mutated"}}],
+            [log(), {**before[0], "id": 2}],
+            [log()],
+        ):
+            matched, _ = fuzzer.audit_delta_exact(
+                before, after, table="rows", record_id="record", action="UPDATE",
+                user_id="user", organization_id="org",
+                expected_changes={"value": ("A", "B")},
+            )
+            self.assertFalse(matched)
+        typed, _ = fuzzer.audit_delta_exact(
+            [], [{**log(), "changed_fields": {"value": {"old": [1], "new": [0]}},
+                  "old_values": {"value": [1]}, "new_values": {"value": [0]}}],
+            table="rows", record_id="record", action="UPDATE", user_id="user",
+            organization_id="org", expected_changes={"value": ([True], [False])},
+        )
+        self.assertFalse(typed)
+        self.assertEqual(fuzzer.audit_expected_value("birth_date", "19900102"), "1990-01-02")
+        self.assertEqual(fuzzer.audit_expected_value("other_date", "19900102"), "19900102")
+        self.assertEqual(fuzzer.audit_expected_value("birth_date", "19901399"), "19901399")
+        self.assertEqual(fuzzer.audit_no_delta_exact(before, list(reversed(before)))[0], True)
+        for after in (
+            [log(), *before], [], [{**before[0], "new_values": {"value": "mutated"}}],
+            [{**before[0], "id": True}],
+        ):
+            self.assertFalse(fuzzer.audit_no_delta_exact(before, after)[0])
+
+        create = log(action="CREATE", old=None, new="B")
+        create["old_values"] = None
+        delete = log(action="DELETE", old="A", new=None)
+        delete["new_values"] = None
+        for entry, action, pair in ((create, "CREATE", (None, "B")),
+                                    (delete, "DELETE", ("A", None))):
+            matched, _ = fuzzer.audit_delta_exact(
+                [], [entry], table="rows", record_id="record", action=action,
+                user_id="user", organization_id="org",
+                expected_changes={"value": pair},
+            )
+            self.assertTrue(matched)
+        aliased = {"id": "alias", "old_values": {"title": "A"},
+                   "new_values": {"title": "B"}}
+        self.assertTrue(fuzzer.audit_transition_matches(
+            [], [aliased], {"documentDescription": "A"},
+            {"documentDescription": "B"}, {"documentDescription": "B"},
+        ))
+        cause = {"id": "cause", "old_values": {"comments": "A"},
+                 "new_values": {"comments": "B"}}
+        self.assertTrue(fuzzer.audit_transition_matches(
+            [], [cause], {"causeText": "A"}, {"causeText": "B"},
+            {"causeText": "B"},
+        ))
+
+    def test_other_case_identifier_lifecycle_uses_declared_sequence_order(self) -> None:
+        projection = {"rows": {"otherCaseIdentifiers": [
+            {"id": "new", "sequenceNumber": 3},
+            {"id": "old", "sequenceNumber": 1},
+            {"id": "middle", "sequenceNumber": 2},
+        ]}}
+        self.assertEqual(
+            [row["id"] for row in fuzzer.direct_lifecycle_rows(
+                projection, "otherCaseIdentifiers")],
+            ["old", "middle", "new"],
+        )
+        for owner in ("documentsHeldBySender", "sourceDocuments", "senderDiagnoses"):
+            rows = {"rows": {owner: [
+                {"id": "later", "sequence_number": 2, "value": "B"},
+                {"id": "first", "sequence_number": 1, "value": "A"},
+            ]}}
+            self.assertEqual(
+                [row["id"] for row in fuzzer.direct_lifecycle_rows(rows, owner)],
+                ["first", "later"],
+            )
+            reordered = {"rows": {owner: copy.deepcopy(list(reversed(rows["rows"][owner])))}}
+            self.assertTrue(fuzzer.direct_page_business_equal(rows, reordered, owner))
+            reordered["rows"][owner][0]["value"] = "lost"
+            self.assertFalse(fuzzer.direct_page_business_equal(rows, reordered, owner))
+            duplicate = copy.deepcopy(rows)
+            duplicate["rows"][owner][1]["id"] = "later"
+            self.assertFalse(fuzzer.direct_page_business_equal(rows, duplicate, owner))
+
+        deleted = fuzzer.deleted_audit_changes({
+            "id": "row", "value": "A", "created_at": "time", "created_by": "actor",
+            "updated_at": "time2", "updated_by": "actor2",
+        })
+        self.assertEqual(deleted, {"id": ("row", None), "value": ("A", None)})
+
     def test_setup_callers_forward_explicit_intake_inputs(self) -> None:
         expected = ["--product-key", "PRODUCT-1", "--meddra-version", "28.1",
                     "--meddra-code", "10019211", "--contract", "/tmp/contracts.json",
@@ -738,6 +1206,10 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             fuzzer.field_value(field, random.Random(1), 18)
         self.assertEqual(fuzzer.parser().parse_args([]).samples_per_category, 3)
         self.assertEqual(fuzzer.parser().parse_args(["--field", "H.1"]).field, ["H.1"])
+        self.assertTrue(fuzzer.parser().parse_args([]).verify_global_audit_chain)
+        self.assertFalse(
+            fuzzer.parser().parse_args(["--no-verify-global-audit-chain"]).verify_global_audit_chain
+        )
 
     def test_live_intake_requires_explicit_product_and_meddra_inputs(self) -> None:
         with mock.patch.dict(
@@ -773,6 +1245,8 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 calls.append((method, path, payload))
                 if path == "/auth/v1/login":
                     return 200, '{"data":{}}', None
+                if path == "/api/users/me/profile":
+                    return 200, '{"data":{"user":{"id":"user"},"activeOrganization":{"id":"org"}}}', None
                 if path == "/api/presaves/products":
                     return 200, '{"data":[{"product_id":"PRODUCT-1"}]}', None
                 if path == "/api/cases/from-intake":
@@ -788,12 +1262,16 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             ):
                 args = fuzzer.parser().parse_args([
                     "--pages", "CI", "--values-per-field", "0", "--no-run-gates",
-                    "--max-actions", "4",
+                    "--no-verify-global-audit-chain",
+                    "--max-actions", "5",
                     "--password", "fixture-password",
                     "--artifact-dir", artifact_dir, "--product-key", "PRODUCT-1",
                     "--meddra-version", "28.1", "--meddra-code", "10019211",
                 ])
                 self.assertEqual(fuzzer.main(args), 2)
+                run = json.loads(
+                    Path(artifact_dir, f"case-editor-{args.seed}.jsonl").read_text().splitlines()[-1]
+                )
 
         create = next(call for call in calls if call[1] == "/api/cases/from-intake")
         intake = create[2]["data"]
@@ -803,6 +1281,8 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertNotIn("allow_duplicate_override", intake)
         self.assertEqual(intake["date_first_received_from_source"], intake["date_of_most_recent_information"])
         self.assertIn(("GET", f"/api/cases/{case_id}/editor/shell", None), calls)
+        self.assertNotIn(("GET", "/api/audit-logs/verify-integrity", None), calls)
+        self.assertEqual(run["global_audit_chain"], "NOT_RUN")
 
     def test_case_bootstrap_rejects_inaccessible_product_before_create(self) -> None:
         calls = []
@@ -815,6 +1295,8 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 calls.append((method, path, payload))
                 if path == "/auth/v1/login":
                     return 200, '{"data":{}}', None
+                if path == "/api/users/me/profile":
+                    return 200, '{"data":{"user":{"id":"user"},"activeOrganization":{"id":"org"}}}', None
                 if path == "/api/presaves/products":
                     return 200, '{"data":[{"product_id":"PRODUCT-1"}]}', None
                 raise AssertionError(f"unexpected request: {method} {path}")
@@ -833,7 +1315,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 self.assertEqual(fuzzer.main(args), 2)
 
         self.assertEqual([path for _, path, _ in calls], [
-            "/auth/v1/login", "/api/presaves/products",
+            "/auth/v1/login", "/api/users/me/profile", "/api/presaves/products",
         ])
 
     def test_nullflavor_error_candidates_and_value_conflict(self) -> None:
@@ -874,6 +1356,103 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
             {"investigationalProductBlinded": False},
         )
         self.assertTrue(fuzzer.parser().parse_args(["--complete-baseline"]).complete_baseline)
+
+    def test_audit_all_inventory_includes_unverified_and_source_upload_fields(self) -> None:
+        contract = [{"pageId": "CI", "fields": [{
+            "authority": "ICH", "code": "C.local.reportYear",
+            "frontendPath": "case.reportYear", "payloadPath": "reportYear",
+            "projectionPath": "case.reportYear", "roundTripValue": "2026",
+            "constraint": {"status": "not_applicable"},
+            "patch": {"kind": "rows", "owner": "case"},
+        }]}]
+        inventory = {"fields": [
+            {"identity": "CI|ICH|C.local.reportYear|case.reportYear", "page": "CI",
+             "authority": "ICH", "code": "C.local.reportYear",
+             "frontendPath": "case.reportYear", "payloadPath": "reportYear",
+             "projectionPath": "case.reportYear", "owner": "case",
+             "verificationDescriptor": {"alternateA": "2026", "alternateB": "2025",
+                                        "clearPolicy": "empty_string_to_null",
+                                        "writeMechanism": "direct_control"}},
+            {"identity": "CI|APP|SRC_FILE_CONTENT|sourceDocuments[].sourceDocumentBase64",
+             "page": "CI", "authority": "APP", "code": "SRC_FILE_CONTENT",
+             "frontendPath": "sourceDocuments[].sourceDocumentBase64",
+             "payloadPath": "[].sourceDocumentBase64",
+             "projectionPath": "sourceDocuments[].sourceDocumentBase64",
+             "owner": "sourceDocuments",
+             "verificationDescriptor": {"alternateA": "QQ==", "alternateB": "Qg==",
+                                        "clearPolicy": "replace file or row deletion",
+                                        "writeMechanism": "file_picker_tuple"}},
+        ]}
+        self.assertEqual(fuzzer.contract_rows(contract, "CI"), [])
+        self.assertEqual(fuzzer.apply_audit_field_inventory(
+            contract, inventory, add_supplements=True), 1)
+        fields = fuzzer.contract_rows(contract, "CI", True)
+        self.assertEqual({field["code"] for field in fields},
+                         {"C.local.reportYear", "SRC_FILE_CONTENT"})
+        year = next(field for field in fields if field["code"] == "C.local.reportYear")
+        year["_auditAll"] = True
+        self.assertEqual([fuzzer.field_value(year, random.Random(1), ordinal)
+                          for ordinal in range(fuzzer.candidate_count(year, 99))],
+                         ["2026", "2025", ""])
+
+    def test_audit_inventory_rejects_missing_and_duplicate_identities(self) -> None:
+        good = {"counts": {"persistedFieldDenominator": 2},
+                "fields": [{"identity": "A"}, {"identity": "B"}]}
+        self.assertEqual(fuzzer.validate_persisted_inventory(good), (2, ["A", "B"]))
+        for fields in ([{"identity": "A"}], [{"identity": "A"}, {"identity": "A"}],
+                       [{"identity": "A"}, {}]):
+            with self.assertRaises(ValueError):
+                fuzzer.validate_persisted_inventory(
+                    {"counts": {"persistedFieldDenominator": 2}, "fields": fields})
+
+    def test_audit_null_flavor_never_invents_an_alternate(self) -> None:
+        single = {"_auditAll": True, "_derivedNullFlavor": True,
+                  "code": "NF.one", "payloadPath": "xNullFlavor",
+                  "roundTripValue": "NI", "_allowedNullFlavors": ["NI"],
+                  "constraint": {"status": "verified"}}
+        self.assertEqual(fuzzer.candidate_count(single, 99), 3)
+        self.assertEqual([fuzzer.field_value(single, random.Random(1), ordinal)
+                          for ordinal in range(3)], ["NI", "NI", None])
+        self.assertEqual(fuzzer.candidate_kind(single, 1), "audit_invariant")
+        multiple = {**single, "_allowedNullFlavors": ["NI", "UNK"]}
+        self.assertEqual(fuzzer.candidate_count(multiple, 99), 3)
+        self.assertEqual(fuzzer.field_value(multiple, random.Random(1), 1), "UNK")
+
+    def test_audit_decimal_adapter_is_field_specific(self) -> None:
+        self.assertEqual(fuzzer.audit_expected_value("age_at_time_of_onset", "41.00"), 41.0)
+        self.assertEqual(fuzzer.audit_expected_value("unrelated_text", "41.00"), "41.00")
+        self.assertEqual(
+            fuzzer.audit_expected_value("start_date", "20200102", "parentMedicalHistory"),
+            "2020-01-02",
+        )
+        self.assertEqual(
+            fuzzer.audit_expected_value("start_date", "20200102", "medicalHistoryEpisodes"),
+            "20200102",
+        )
+        self.assertEqual(
+            fuzzer.audit_expected_value("start_date", "20200102", "reaction"), "20200102")
+        self.assertEqual(fuzzer.dosage_raw_date_value(None), None)
+        self.assertEqual(fuzzer.dosage_raw_date_value("20200102"), "")
+        self.assertEqual(fuzzer.dosage_raw_date_value("202001"), "202001")
+
+    def test_persisted_field_report_never_promotes_missing_or_blocked(self) -> None:
+        inventory = {"fields": [
+            {"identity": "CI|ICH|A|case.a", "page": "CI", "code": "A"},
+            {"identity": "CI|ICH|B|case.b", "page": "CI", "code": "B"},
+            {"identity": "CI|ICH|C|case.c", "page": "CI", "code": "C"},
+        ]}
+        events = [fuzzer.Event("mutation", "A", "CI", "case", "value_0_sample_0",
+                               "SAVE_ACCEPTED", 200, {}),
+                  fuzzer.Event("noop_resave", "A", "CI", "case", "value_0_sample_0",
+                               "PASS", 200, {})]
+        report = fuzzer.persisted_field_report(
+            inventory, ["CI"], set(), ["CI|ICH|C|case.c"], events,
+            {("CI", "A"): 1, ("CI", "B"): 1},
+        )
+        self.assertEqual({item["identity"]: item["status"] for item in report}, {
+            "CI|ICH|A|case.a": "PASSED", "CI|ICH|B|case.b": "MISSING",
+            "CI|ICH|C|case.c": "BLOCKED_SOURCE_PREREQUISITE",
+        })
 
     def test_meddra_baseline_override_updates_only_meddra_fields(self) -> None:
         contract = [{"fields": [
@@ -933,6 +1512,56 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 return_value={"fieldCount": 0, "mutationCount": 0, "fields": []},
             ):
                 self.assertEqual(ui_fuzzer.main(args), 1)
+
+    def test_lifecycle_payload_match_ignores_only_unsent_nested_none_lists(self) -> None:
+        fields = [{"payloadPath": "drugReactionAssessments[].assessmentMethod"}]
+        self.assertTrue(fuzzer.payload_fields_match(
+            {"medicinalProduct": "Fuzz product"},
+            {"medicinalProduct": "Fuzz product",
+             "drugReactionAssessments": [{"reactionId": "reaction-id"}]},
+            [{"payloadPath": "medicinalProduct"}, *fields], "drug",
+        ))
+        self.assertFalse(fuzzer.payload_fields_match(
+            {"drugReactionAssessments": [{"assessmentMethod": "actual"}]},
+            {"drugReactionAssessments": [{"assessmentMethod": "expected"}]},
+            fields, "drug",
+        ))
+
+    def test_owner_business_removes_only_finite_update_metadata(self) -> None:
+        before = {"id": "row", "value": "same", "updated_at": "old", "updated_by": None}
+        after = {"id": "row", "value": "same", "updated_at": "new", "updated_by": "actor"}
+        self.assertEqual(fuzzer.owner_business(before), fuzzer.owner_business(after))
+        changed = {**after, "value": "lost"}
+        self.assertNotEqual(fuzzer.owner_business(before), fuzzer.owner_business(changed))
+
+    def test_page_without_owner_masks_only_verified_parent_collection_aliases(self) -> None:
+        row = {"id": "history", "parent_id": "parent", "comments": "same"}
+        page = {"rows": {
+            "parentMedicalHistory": [row],
+            "parents": [{"id": "parent", "medicalHistory": [row],
+                         "pastDrugHistory": [{"id": "drug"}], "sex": "1"}],
+        }}
+        masked = fuzzer.page_without_owner(page, "parentMedicalHistory")
+        self.assertEqual(masked["rows"]["parentMedicalHistory"], fuzzer.OWNER_TARGET_SENTINEL)
+        self.assertEqual(masked["rows"]["parents"][0]["medicalHistory"], fuzzer.OWNER_TARGET_SENTINEL)
+        self.assertEqual(masked["rows"]["parents"][0]["pastDrugHistory"], [{"id": "drug"}])
+        self.assertEqual(masked["rows"]["parents"][0]["sex"], "1")
+
+        sibling_loss = copy.deepcopy(page)
+        sibling_loss["rows"]["parents"][0]["sex"] = None
+        self.assertNotEqual(
+            fuzzer.page_without_owner(page, "parentMedicalHistory"),
+            fuzzer.page_without_owner(sibling_loss, "parentMedicalHistory"),
+        )
+        bad_alias = copy.deepcopy(page)
+        bad_alias["rows"]["parents"][0]["medicalHistory"] = copy.deepcopy(
+            bad_alias["rows"]["parentMedicalHistory"]
+        )
+        bad_alias["rows"]["parents"][0]["medicalHistory"][0]["comments"] = "lost"
+        self.assertNotEqual(
+            fuzzer.page_without_owner(page, "parentMedicalHistory"),
+            fuzzer.page_without_owner(bad_alias, "parentMedicalHistory"),
+        )
 
 
 if __name__ == "__main__":

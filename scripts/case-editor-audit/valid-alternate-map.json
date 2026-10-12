@@ -1,0 +1,4559 @@
+{
+  "counts": {
+    "byStrategy": {
+      "active_code_list_pair": 1,
+      "active_iso_country_pair": 6,
+      "active_meddra_lookup_pair": 12,
+      "active_mfds_substance_pair": 1,
+      "active_route_code_list_pair": 2,
+      "active_ucum_pair": 4,
+      "boolean_toggle": 18,
+      "compliance_gated_expected_rejection": 1,
+      "constrained_ucum_frequency_pair": 1,
+      "constrained_ucum_pair": 8,
+      "dictionary_null_flavor": 34,
+      "exact_numeric_alternate": 2,
+      "free_text_distinct_bounded": 109,
+      "frontend_finite_option": 2,
+      "generic_ich_identifier_pair": 6,
+      "ich_identifier_distinct_source_shape": 2,
+      "invariant_single_active_meddra_release": 12,
+      "invariant_single_allowed_code": 2,
+      "invariant_single_allowed_null_flavor": 17,
+      "iso_language_pair": 2,
+      "registry_code_set": 18,
+      "source_string_persistence_only_no_vocabulary_claim": 2,
+      "typed_numeric_alternate": 15,
+      "valid_base64_pair": 1,
+      "valid_compact_date_increment": 2,
+      "validated_date_increment": 19
+    },
+    "fields": 299,
+    "requiresExistingLookup": 0
+  },
+  "edqmTwoScope": {
+    "fields": [
+      "G.k.4.r.9.2a",
+      "G.k.4.r.9.2b"
+    ],
+    "persistenceAuditVerifiedByThisPlan": false,
+    "semanticVocabularyValidationVerified": false,
+    "statement": "This map supplies structural string inputs for persistence/audit verification only. It does not claim EDQM membership, regulatory semantic validity, or production terminology availability."
+  },
+  "fields": [
+    {
+      "alternateA": "CI-ROUNDTRIP-001",
+      "alternateB": "CI-ROUNDTRIP-00B",
+      "code": "C.1.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "safetyReportIdentification.safetyReportId",
+      "identity": "CI|ICH|C.1.1|safetyReportIdentification.safetyReportId",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "CI-LINK-001",
+      "alternateB": "CI-LINK-00B",
+      "code": "C.1.10.r",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "linkedReports[].linkedReportNumber",
+      "identity": "CI|ICH|C.1.10.r|linkedReports[].linkedReportNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "C.1.11.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      },
+      "constraintKind": "code_set",
+      "dedicatedApiMinimumPayload": {
+        "data": {
+          "nullification_code": "1",
+          "nullification_reason": "<nonblank>"
+        },
+        "e_signature": {
+          "meaning": "<nonblank>",
+          "password": "<actual actor password>"
+        },
+        "reason_for_change": "<nonblank>"
+      },
+      "firstAllFinding": "alternate 1 returned HTTP400 with unchanged audit; treat prerequisite failure until companion/state setup established",
+      "frontendPath": "safetyReportIdentification.nullificationAmendmentCode",
+      "identity": "CI|ICH|C.1.11.1|safetyReportIdentification.nullificationAmendmentCode",
+      "prerequisites": [
+        "Case Editor endpoint cannot supply compliance context",
+        "expect HTTP400 and exact unchanged audit/history"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "compliance_gated_expected_rejection"
+    },
+    {
+      "alternateA": "CI roundtrip reason",
+      "alternateB": "CI roundtrip reasoB",
+      "code": "C.1.11.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "safetyReportIdentification.nullificationReason",
+      "identity": "CI|ICH|C.1.11.2|safetyReportIdentification.nullificationReason",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "20260722120000+0900",
+      "alternateB": "20260723120000+0900",
+      "code": "C.1.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "safetyReportIdentification.transmissionDate",
+      "identity": "CI|ICH|C.1.2|safetyReportIdentification.transmissionDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "C.1.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "safetyReportIdentification.reportType",
+      "identity": "CI|ICH|C.1.3|safetyReportIdentification.reportType",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "20260721",
+      "alternateB": "20260722",
+      "code": "C.1.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "safetyReportIdentification.dateFirstReceivedFromSource",
+      "identity": "CI|ICH|C.1.4|safetyReportIdentification.dateFirstReceivedFromSource",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "20260722",
+      "alternateB": "20260723",
+      "code": "C.1.5",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "safetyReportIdentification.dateOfMostRecentInformation",
+      "identity": "CI|ICH|C.1.5|safetyReportIdentification.dateOfMostRecentInformation",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "C.1.6.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "safetyReportIdentification.additionalDocumentsAvailable",
+      "identity": "CI|ICH|C.1.6.1|safetyReportIdentification.additionalDocumentsAvailable",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "CI document",
+      "alternateB": "CI documenB",
+      "code": "C.1.6.1.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "documentsHeldBySender[].documentDescription",
+      "identity": "CI|ICH|C.1.6.1.r.1|documentsHeldBySender[].documentDescription",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "C.1.7",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "safetyReportIdentification.fulfilExpeditedCriteria",
+      "identity": "CI|ICH|C.1.7|safetyReportIdentification.fulfilExpeditedCriteria",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "US-QVIS-2026-0001",
+      "alternateB": "US-QVIS-2026-0001-B",
+      "code": "C.1.8.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "format_name": "ich_identifier",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "safetyReportIdentification.worldwideUniqueId",
+      "identity": "CI|ICH|C.1.8.1|safetyReportIdentification.worldwideUniqueId",
+      "requiresExistingLookup": false,
+      "strategy": "ich_identifier_distinct_source_shape"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "C.1.8.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "safetyReportIdentification.firstSenderType",
+      "identity": "CI|ICH|C.1.8.2|safetyReportIdentification.firstSenderType",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "C.1.9.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "safetyReportIdentification.otherCaseIdentifiersExist",
+      "identity": "CI|ICH|C.1.9.1|safetyReportIdentification.otherCaseIdentifiersExist",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "CI source",
+      "alternateB": "CI sourcB",
+      "code": "C.1.9.1.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "otherCaseIdentifiers[].source",
+      "identity": "CI|ICH|C.1.9.1.r.1|otherCaseIdentifiers[].source",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "CI-OTHER-001",
+      "alternateB": "CI-OTHER-001-B",
+      "code": "C.1.9.1.r.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "format_name": "ich_identifier",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "otherCaseIdentifiers[].caseIdentifier",
+      "identity": "CI|ICH|C.1.9.1.r.2|otherCaseIdentifiers[].caseIdentifier",
+      "requiresExistingLookup": false,
+      "strategy": "ich_identifier_distinct_source_shape"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NB",
+      "code": "C.1.local.combinationProductReportIndicatorNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
+      "identity": "CI|ICH|C.1.local.combinationProductReportIndicatorNullFlavor|safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NB",
+      "code": "C.1.local.otherCaseIdentifiersExistNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "safetyReportIdentification.otherCaseIdentifiersExistNullFlavor",
+      "identity": "CI|ICH|C.1.local.otherCaseIdentifiersExistNullFlavor|safetyReportIdentification.otherCaseIdentifiersExistNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "FDA.C.1.7.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "4",
+          "5",
+          "6"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "safetyReportIdentification.localCriteriaReportType",
+      "identity": "CI|FDA|FDA.C.1.7.1|safetyReportIdentification.localCriteriaReportType",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "Dr",
+      "alternateB": "DB",
+      "code": "C.2.r.1.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterTitle",
+      "identity": "RP|ICH|C.2.r.1.1|primarySources[].reporterTitle",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Mina",
+      "alternateB": "MinB",
+      "code": "C.2.r.1.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterGivenName",
+      "identity": "RP|ICH|C.2.r.1.2|primarySources[].reporterGivenName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "J",
+      "alternateB": "B",
+      "code": "C.2.r.1.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterMiddleName",
+      "identity": "RP|ICH|C.2.r.1.3|primarySources[].reporterMiddleName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Kim",
+      "alternateB": "KiB",
+      "code": "C.2.r.1.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterFamilyName",
+      "identity": "RP|ICH|C.2.r.1.4|primarySources[].reporterFamilyName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "QVIS Safety",
+      "alternateB": "QVIS SafetB",
+      "code": "C.2.r.2.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterOrganization",
+      "identity": "RP|ICH|C.2.r.2.1|primarySources[].reporterOrganization",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Pharmacovigilance",
+      "alternateB": "PharmacovigilancB",
+      "code": "C.2.r.2.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterDepartment",
+      "identity": "RP|ICH|C.2.r.2.2|primarySources[].reporterDepartment",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1 Main Street",
+      "alternateB": "1 Main StreeB",
+      "code": "C.2.r.2.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterStreet",
+      "identity": "RP|ICH|C.2.r.2.3|primarySources[].reporterStreet",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Seoul",
+      "alternateB": "SeouB",
+      "code": "C.2.r.2.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterCity",
+      "identity": "RP|ICH|C.2.r.2.4|primarySources[].reporterCity",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Seoul",
+      "alternateB": "SeouB",
+      "code": "C.2.r.2.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterState",
+      "identity": "RP|ICH|C.2.r.2.5|primarySources[].reporterState",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "04524",
+      "alternateB": "0452B",
+      "code": "C.2.r.2.6",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterPostcode",
+      "identity": "RP|ICH|C.2.r.2.6|primarySources[].reporterPostcode",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "+821012345678",
+      "alternateB": "+82101234567B",
+      "code": "C.2.r.2.7",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterTelephone",
+      "identity": "RP|ICH|C.2.r.2.7|primarySources[].reporterTelephone",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "C.2.r.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "primarySources[].reporterCountry",
+      "identity": "RP|ICH|C.2.r.3|primarySources[].reporterCountry",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "C.2.r.4",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "primarySources[].qualification",
+      "identity": "RP|ICH|C.2.r.4|primarySources[].qualification",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "_mutationFixedPayload": {
+        "qualification": "3",
+        "qualificationNullFlavor": null
+      },
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "C.2.r.4.KR.1",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].qualificationKr1",
+      "identity": "RP|MFDS|C.2.r.4.KR.1|primarySources[].qualificationKr1",
+      "prerequisites": [
+        "MFDS route",
+        "primarySources[].qualification = 3",
+        "qualification NullFlavor is not UNK"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "frontend_finite_option"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "1",
+      "code": "C.2.r.5",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "primarySources[].primarySourceForRegulatoryPurposes",
+      "identity": "RP|ICH|C.2.r.5|primarySources[].primarySourceForRegulatoryPurposes",
+      "prerequisites": [
+        "registry code_set has one legal value"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_code"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "UNB",
+      "code": "C.2.r.local.qualificationNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].qualificationNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.qualificationNullFlavor|primarySources[].qualificationNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterCityNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterCityNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterCityNullFlavor|primarySources[].reporterCityNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterDepartmentNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterDepartmentNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterDepartmentNullFlavor|primarySources[].reporterDepartmentNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NASK",
+      "alternateB": "NASB",
+      "code": "C.2.r.local.reporterEmailNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterEmailNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterEmailNullFlavor|primarySources[].reporterEmailNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterFamilyNameNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterFamilyNameNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterFamilyNameNullFlavor|primarySources[].reporterFamilyNameNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterGivenNameNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterGivenNameNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterGivenNameNullFlavor|primarySources[].reporterGivenNameNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterMiddleNameNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterMiddleNameNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterMiddleNameNullFlavor|primarySources[].reporterMiddleNameNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterOrganizationNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterOrganizationNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterOrganizationNullFlavor|primarySources[].reporterOrganizationNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterPostcodeNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterPostcodeNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterPostcodeNullFlavor|primarySources[].reporterPostcodeNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterStateNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterStateNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterStateNullFlavor|primarySources[].reporterStateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterStreetNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterStreetNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterStreetNullFlavor|primarySources[].reporterStreetNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NASK",
+      "alternateB": "NASB",
+      "code": "C.2.r.local.reporterTelephoneNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterTelephoneNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterTelephoneNullFlavor|primarySources[].reporterTelephoneNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSB",
+      "code": "C.2.r.local.reporterTitleNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "primarySources[].reporterTitleNullFlavor",
+      "identity": "RP|ICH|C.2.r.local.reporterTitleNullFlavor|primarySources[].reporterTitleNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "reporter@example.test",
+      "alternateB": "reporter@example.tesB",
+      "code": "FDA.C.2.r.2.8",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "primarySources[].reporterEmail",
+      "identity": "RP|FDA|FDA.C.2.r.2.8|primarySources[].reporterEmail",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "3",
+      "alternateB": "1",
+      "code": "C.3.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "senderInformation.senderType",
+      "identity": "SD|ICH|C.3.1|senderInformation.senderType",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "4",
+      "alternateB": "B",
+      "code": "C.3.1.KR.1",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "senderInformation.healthProfessionalTypeKr1",
+      "identity": "SD|MFDS|C.3.1.KR.1|senderInformation.healthProfessionalTypeKr1",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "QVIS Safety",
+      "alternateB": "QVIS SafetB",
+      "code": "C.3.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.organizationName",
+      "identity": "SD|ICH|C.3.2|senderInformation.organizationName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Pharmacovigilance",
+      "alternateB": "PharmacovigilancB",
+      "code": "C.3.3.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.department",
+      "identity": "SD|ICH|C.3.3.1|senderInformation.department",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Dr",
+      "alternateB": "DB",
+      "code": "C.3.3.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.personTitle",
+      "identity": "SD|ICH|C.3.3.2|senderInformation.personTitle",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Sora",
+      "alternateB": "SorB",
+      "code": "C.3.3.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.personGivenName",
+      "identity": "SD|ICH|C.3.3.3|senderInformation.personGivenName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "J",
+      "alternateB": "B",
+      "code": "C.3.3.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.personMiddleName",
+      "identity": "SD|ICH|C.3.3.4|senderInformation.personMiddleName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Kim",
+      "alternateB": "KiB",
+      "code": "C.3.3.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.personFamilyName",
+      "identity": "SD|ICH|C.3.3.5|senderInformation.personFamilyName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1 Test Road",
+      "alternateB": "1 Test RoaB",
+      "code": "C.3.4.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.streetAddress",
+      "identity": "SD|ICH|C.3.4.1|senderInformation.streetAddress",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Seoul",
+      "alternateB": "SeouB",
+      "code": "C.3.4.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.city",
+      "identity": "SD|ICH|C.3.4.2|senderInformation.city",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Seoul",
+      "alternateB": "SeouB",
+      "code": "C.3.4.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.state",
+      "identity": "SD|ICH|C.3.4.3|senderInformation.state",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "04524",
+      "alternateB": "0452B",
+      "code": "C.3.4.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.postcode",
+      "identity": "SD|ICH|C.3.4.4|senderInformation.postcode",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "C.3.4.5",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "senderInformation.countryCode",
+      "identity": "SD|ICH|C.3.4.5|senderInformation.countryCode",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": "+821012345678",
+      "alternateB": "+82101234567B",
+      "code": "C.3.4.6",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.telephone",
+      "identity": "SD|ICH|C.3.4.6|senderInformation.telephone",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "+8221234567",
+      "alternateB": "+822123456B",
+      "code": "C.3.4.7",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.fax",
+      "identity": "SD|ICH|C.3.4.7|senderInformation.fax",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "sender@example.test",
+      "alternateB": "sender@example.tesB",
+      "code": "C.3.4.8",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "senderInformation.email",
+      "identity": "SD|ICH|C.3.4.8|senderInformation.email",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Smith et al. Safety study, 2026",
+      "alternateB": "Smith et al. Safety study, 202B",
+      "code": "C.4.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "literatureReferences[].referenceText",
+      "identity": "LR|ICH|C.4.r.1|literatureReferences[].referenceText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "UEZERg==",
+      "alternateB": "UEZERjI=",
+      "code": "C.4.r.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "format_name": "base64",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "literatureReferences[].documentBase64",
+      "identity": "LR|ICH|C.4.r.2|literatureReferences[].documentBase64",
+      "requiresExistingLookup": false,
+      "strategy": "valid_base64_pair"
+    },
+    {
+      "alternateA": "ASKU",
+      "alternateB": "ASKB",
+      "code": "C.4.r.local.referenceTextNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "literatureReferences[].referenceTextNullFlavor",
+      "identity": "LR|ICH|C.4.r.local.referenceTextNullFlavor|literatureReferences[].referenceTextNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NCT-2026-001",
+      "alternateB": "NCT-2026-00B",
+      "code": "C.5.1.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumber",
+      "identity": "SI|ICH|C.5.1.r.1|studyInformation.studyRegistrationNumbers[].registrationNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "C.5.1.r.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCode",
+      "identity": "SI|ICH|C.5.1.r.2|studyInformation.studyRegistrationNumbers[].countryCode",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": "Study 001",
+      "alternateB": "Study 00B",
+      "code": "C.5.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "studyInformation.studyName",
+      "identity": "SI|ICH|C.5.2|studyInformation.studyName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "SP-2026-001",
+      "alternateB": "SP-2026-00B",
+      "code": "C.5.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "studyInformation.sponsorStudyNumber",
+      "identity": "SI|ICH|C.5.3|studyInformation.sponsorStudyNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "C.5.4",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "studyInformation.studyTypeReaction",
+      "identity": "SI|ICH|C.5.4|studyInformation.studyTypeReaction",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "_mutationFixedPayload": {
+        "studyTypeReaction": "3"
+      },
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "C.5.4.KR.1",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.studyTypeReactionKr1",
+      "identity": "SI|MFDS|C.5.4.KR.1|studyInformation.studyTypeReactionKr1",
+      "prerequisites": [
+        "MFDS route",
+        "studyInformation.studyTypeReaction = 3"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "frontend_finite_option"
+    },
+    {
+      "alternateA": "IND123456",
+      "alternateB": "IND12345B",
+      "code": "FDA.C.5.5a",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.fdaIndNumberOccurred",
+      "identity": "SI|FDA|FDA.C.5.5a|studyInformation.fdaIndNumberOccurred",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "ANDA123456",
+      "alternateB": "ANDA12345B",
+      "code": "FDA.C.5.5b",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.fdaPreAndaNumberOccurred",
+      "identity": "SI|FDA|FDA.C.5.5b|studyInformation.fdaPreAndaNumberOccurred",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "IND654321",
+      "alternateB": "IND65432B",
+      "code": "FDA.C.5.6.r",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.fdaCrossReportedIndNumbers[].indNumber",
+      "identity": "SI|FDA|FDA.C.5.6.r|studyInformation.fdaCrossReportedIndNumbers[].indNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NA",
+      "alternateB": "NB",
+      "code": "FDA.C.5.6.r.local.indNumberNullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.fdaCrossReportedIndNumbers[].indNumberNullFlavor",
+      "identity": "SI|FDA|FDA.C.5.6.r.local.indNumberNullFlavor|studyInformation.fdaCrossReportedIndNumbers[].indNumberNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "ASKU",
+      "alternateB": "NASK",
+      "code": "C.5.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.sponsorStudyNumberNullFlavor",
+      "identity": "SI|ICH|C.5.3.nullFlavor|studyInformation.sponsorStudyNumberNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "ASKU",
+      "alternateB": "NASK",
+      "code": "C.5.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.studyNameNullFlavor",
+      "identity": "SI|ICH|C.5.2.nullFlavor|studyInformation.studyNameNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "ASKU",
+      "alternateB": "NASK",
+      "code": "C.5.1.r.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCodeNullFlavor",
+      "identity": "SI|ICH|C.5.1.r.2.nullFlavor|studyInformation.studyRegistrationNumbers[].countryCodeNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "ASKU",
+      "alternateB": "NASK",
+      "code": "C.5.1.r.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumberNullFlavor",
+      "identity": "SI|ICH|C.5.1.r.1.nullFlavor|studyInformation.studyRegistrationNumbers[].registrationNumberNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "PT-001",
+      "alternateB": "PT-00B",
+      "code": "D.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.patientInitials",
+      "identity": "DM|ICH|D.1|patientInformation.patientInitials",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MOTHER-01",
+      "alternateB": "MOTHER-0B",
+      "code": "D.10.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.parentIdentification",
+      "identity": "DM|ICH|D.10.1|patientInformation.parentInformation.parentIdentification",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "19700102",
+      "alternateB": "19700103",
+      "code": "D.10.2.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.parentBirthDate",
+      "identity": "DM|ICH|D.10.2.1|patientInformation.parentInformation.parentBirthDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": 54,
+      "alternateB": 55,
+      "code": "D.10.2.2a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.parentAge.value",
+      "identity": "DM|ICH|D.10.2.2a|patientInformation.parentInformation.parentAge.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "a",
+      "alternateB": "mo",
+      "code": "D.10.2.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.parentInformation.parentAge.unit",
+      "identity": "DM|ICH|D.10.2.2b|patientInformation.parentInformation.parentAge.unit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "20230102",
+      "alternateB": "20230103",
+      "code": "D.10.3",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.parentLastMenstrualPeriodDate",
+      "identity": "DM|ICH|D.10.3|patientInformation.parentInformation.parentLastMenstrualPeriodDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": 64.5,
+      "alternateB": 65.5,
+      "code": "D.10.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.parentWeight.value",
+      "identity": "DM|ICH|D.10.4|patientInformation.parentInformation.parentWeight.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": 168,
+      "alternateB": 169,
+      "code": "D.10.5",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.parentHeight.value",
+      "identity": "DM|ICH|D.10.5|patientInformation.parentInformation.parentHeight.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "D.10.6",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "patientInformation.parentInformation.parentSex",
+      "identity": "DM|ICH|D.10.6|patientInformation.parentInformation.parentSex",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.10.7.1.r.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].meddraVersion",
+      "identity": "DM|ICH|D.10.7.1.r.1a|patientInformation.parentInformation.medicalHistoryEpisodes[].meddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.10.7.1.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].meddraCode",
+      "identity": "DM|ICH|D.10.7.1.r.1b|patientInformation.parentInformation.medicalHistoryEpisodes[].meddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "D.10.7.1.r.2",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].startDate",
+      "identity": "DM|ICH|D.10.7.1.r.2|patientInformation.parentInformation.medicalHistoryEpisodes[].startDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": false,
+      "alternateB": true,
+      "code": "D.10.7.1.r.3",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].continuing",
+      "identity": "DM|ICH|D.10.7.1.r.3|patientInformation.parentInformation.medicalHistoryEpisodes[].continuing",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "20210102",
+      "alternateB": "20210103",
+      "code": "D.10.7.1.r.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].endDate",
+      "identity": "DM|ICH|D.10.7.1.r.4|patientInformation.parentInformation.medicalHistoryEpisodes[].endDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "Resolved",
+      "alternateB": "ResolveB",
+      "code": "D.10.7.1.r.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].comments",
+      "identity": "DM|ICH|D.10.7.1.r.5|patientInformation.parentInformation.medicalHistoryEpisodes[].comments",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Parent history",
+      "alternateB": "Parent historB",
+      "code": "D.10.7.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryText",
+      "identity": "DM|ICH|D.10.7.2|patientInformation.parentInformation.medicalHistoryText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Parent drug",
+      "alternateB": "Parent druB",
+      "code": "D.10.8.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].drugName",
+      "identity": "DM|ICH|D.10.8.r.1|patientInformation.parentInformation.pastDrugHistory[].drugName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "2026",
+      "alternateB": "202B",
+      "code": "D.10.8.r.1.KR.1a",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
+      "identity": "DM|MFDS|D.10.8.r.1.KR.1a|patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MFDS-001",
+      "alternateB": "MFDS-00B",
+      "code": "D.10.8.r.1.KR.1b",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductId",
+      "identity": "DM|MFDS|D.10.8.r.1.KR.1b|patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductId",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "D.10.8.r.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mpidVersion",
+      "identity": "DM|ICH|D.10.8.r.2a|patientInformation.parentInformation.pastDrugHistory[].mpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MPID-001",
+      "alternateB": "MPID-002",
+      "code": "D.10.8.r.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mpid",
+      "identity": "DM|ICH|D.10.8.r.2b|patientInformation.parentInformation.pastDrugHistory[].mpid",
+      "prerequisites": [
+        "valid nonblank identifier <=1000 chars",
+        "do not populate paired PhPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "D.10.8.r.3a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].phpidVersion",
+      "identity": "DM|ICH|D.10.8.r.3a|patientInformation.parentInformation.pastDrugHistory[].phpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "PHPID-001",
+      "alternateB": "PHPID-002",
+      "code": "D.10.8.r.3b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].phpid",
+      "identity": "DM|ICH|D.10.8.r.3b|patientInformation.parentInformation.pastDrugHistory[].phpid",
+      "prerequisites": [
+        "valid nonblank identifier <=250 chars",
+        "do not populate paired MPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "D.10.8.r.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].startDate",
+      "identity": "DM|ICH|D.10.8.r.4|patientInformation.parentInformation.pastDrugHistory[].startDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "20210102",
+      "alternateB": "20210103",
+      "code": "D.10.8.r.5",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].endDate",
+      "identity": "DM|ICH|D.10.8.r.5|patientInformation.parentInformation.pastDrugHistory[].endDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.10.8.r.6a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].indicationMeddraVersion",
+      "identity": "DM|ICH|D.10.8.r.6a|patientInformation.parentInformation.pastDrugHistory[].indicationMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.10.8.r.6b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].indicationMeddraCode",
+      "identity": "DM|ICH|D.10.8.r.6b|patientInformation.parentInformation.pastDrugHistory[].indicationMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.10.8.r.7a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].reactionMeddraVersion",
+      "identity": "DM|ICH|D.10.8.r.7a|patientInformation.parentInformation.pastDrugHistory[].reactionMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.10.8.r.7b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].reactionMeddraCode",
+      "identity": "DM|ICH|D.10.8.r.7b|patientInformation.parentInformation.pastDrugHistory[].reactionMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "19900102",
+      "alternateB": "19900103",
+      "code": "D.2.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.patientBirthDate",
+      "identity": "DM|ICH|D.2.1|patientInformation.patientBirthDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": 22,
+      "alternateB": 23,
+      "code": "D.2.2.1a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.gestationPeriod.value",
+      "identity": "DM|ICH|D.2.2.1a|patientInformation.gestationPeriod.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "wk",
+      "alternateB": "mo",
+      "code": "D.2.2.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "gestation"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.gestationPeriod.unit",
+      "identity": "DM|ICH|D.2.2.1b|patientInformation.gestationPeriod.unit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": 36.5,
+      "alternateB": 37.5,
+      "code": "D.2.2a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientAge.value",
+      "identity": "DM|ICH|D.2.2a|patientInformation.patientAge.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "a",
+      "alternateB": "mo",
+      "code": "D.2.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.patientAge.unit",
+      "identity": "DM|ICH|D.2.2b|patientInformation.patientAge.unit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "5",
+      "alternateB": "0",
+      "code": "D.2.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "patientInformation.patientAgeGroup",
+      "identity": "DM|ICH|D.2.3|patientInformation.patientAgeGroup",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": 62.5,
+      "alternateB": 63.5,
+      "code": "D.3",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientWeight.value",
+      "identity": "DM|ICH|D.3|patientInformation.patientWeight.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": 171,
+      "alternateB": 172,
+      "code": "D.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientHeight.value",
+      "identity": "DM|ICH|D.4|patientInformation.patientHeight.value",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "2",
+      "alternateB": "1",
+      "code": "D.5",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "patientInformation.patientSex",
+      "identity": "DM|ICH|D.5|patientInformation.patientSex",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "20260102",
+      "alternateB": "20260103",
+      "code": "D.6",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.lastMenstrualPeriodDate",
+      "identity": "DM|ICH|D.6|patientInformation.lastMenstrualPeriodDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.7.1.r.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].meddraVersion",
+      "identity": "DM|ICH|D.7.1.r.1a|patientInformation.medicalHistoryEpisodes[].meddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.7.1.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].meddraCode",
+      "identity": "DM|ICH|D.7.1.r.1b|patientInformation.medicalHistoryEpisodes[].meddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "D.7.1.r.2",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].startDate",
+      "identity": "DM|ICH|D.7.1.r.2|patientInformation.medicalHistoryEpisodes[].startDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": false,
+      "alternateB": true,
+      "code": "D.7.1.r.3",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].continuing",
+      "identity": "DM|ICH|D.7.1.r.3|patientInformation.medicalHistoryEpisodes[].continuing",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "20210102",
+      "alternateB": "20210103",
+      "code": "D.7.1.r.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].endDate",
+      "identity": "DM|ICH|D.7.1.r.4|patientInformation.medicalHistoryEpisodes[].endDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "Resolved",
+      "alternateB": "ResolveB",
+      "code": "D.7.1.r.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].comments",
+      "identity": "DM|ICH|D.7.1.r.5|patientInformation.medicalHistoryEpisodes[].comments",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "D.7.1.r.6",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].familyHistory",
+      "identity": "DM|ICH|D.7.1.r.6|patientInformation.medicalHistoryEpisodes[].familyHistory",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "History text",
+      "alternateB": "History texB",
+      "code": "D.7.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.medicalHistoryText",
+      "identity": "DM|ICH|D.7.2|patientInformation.medicalHistoryText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "D.7.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "patientInformation.concomitantTherapies",
+      "identity": "DM|ICH|D.7.3|patientInformation.concomitantTherapies",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "20240102",
+      "alternateB": "20240103",
+      "code": "D.9.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.patientDeath.dateOfDeath",
+      "identity": "DM|ICH|D.9.1|patientInformation.patientDeath.dateOfDeath",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.9.2.r.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].meddraVersion",
+      "identity": "DM|ICH|D.9.2.r.1a|patientInformation.patientDeath.reportedCausesOfDeath[].meddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.9.2.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].meddraCode",
+      "identity": "DM|ICH|D.9.2.r.1b|patientInformation.patientDeath.reportedCausesOfDeath[].meddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "Reported cause",
+      "alternateB": "Reported causB",
+      "code": "D.9.2.r.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].causeText",
+      "identity": "DM|ICH|D.9.2.r.2|patientInformation.patientDeath.reportedCausesOfDeath[].causeText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "D.9.3",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "patientInformation.patientDeath.autopsyPerformed",
+      "identity": "DM|ICH|D.9.3|patientInformation.patientDeath.autopsyPerformed",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.9.4.r.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].meddraVersion",
+      "identity": "DM|ICH|D.9.4.r.1a|patientInformation.patientDeath.autopsyCausesOfDeath[].meddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.9.4.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].meddraCode",
+      "identity": "DM|ICH|D.9.4.r.1b|patientInformation.patientDeath.autopsyCausesOfDeath[].meddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "Autopsy cause",
+      "alternateB": "Autopsy causB",
+      "code": "D.9.4.r.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].causeText",
+      "identity": "DM|ICH|D.9.4.r.2|patientInformation.patientDeath.autopsyCausesOfDeath[].causeText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "C41260",
+      "alternateB": "C16352",
+      "code": "FDA.D.11.r.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "C16352",
+          "C41259",
+          "C41260",
+          "C41219",
+          "C41261"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "patientInformation.raceCodes[]",
+      "identity": "DM|FDA|FDA.D.11.r.1|patientInformation.raceCodes[]",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "C41222",
+      "alternateB": "C4122B",
+      "code": "FDA.D.12",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.ethnicityCode",
+      "identity": "DM|FDA|FDA.D.12|patientInformation.ethnicityCode",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "MSK",
+      "code": "FDA.D.12.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.ethnicityCodeNullFlavor",
+      "identity": "DM|FDA|FDA.D.12.nullFlavor|patientInformation.ethnicityCodeNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.1.1.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.gpMedicalRecordNumberNullFlavor",
+      "identity": "DM|ICH|D.1.1.1.nullFlavor|patientInformation.gpMedicalRecordNumberNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.1.1.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.hospitalRecordNumberNullFlavor",
+      "identity": "DM|ICH|D.1.1.3.nullFlavor|patientInformation.hospitalRecordNumberNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.1.1.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.investigationNumberNullFlavor",
+      "identity": "DM|ICH|D.1.1.4.nullFlavor|patientInformation.investigationNumberNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.6.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.lastMenstrualPeriodDateNullFlavor",
+      "identity": "DM|ICH|D.6.nullFlavor|patientInformation.lastMenstrualPeriodDateNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.7.1.r.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].continuingNullFlavor",
+      "identity": "DM|ICH|D.7.1.r.3.nullFlavor|patientInformation.medicalHistoryEpisodes[].continuingNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.7.1.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].endDateNullFlavor",
+      "identity": "DM|ICH|D.7.1.r.4.nullFlavor|patientInformation.medicalHistoryEpisodes[].endDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.7.1.r.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.medicalHistoryEpisodes[].startDateNullFlavor",
+      "identity": "DM|ICH|D.7.1.r.2.nullFlavor|patientInformation.medicalHistoryEpisodes[].startDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.7.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.medicalHistoryTextNullFlavor",
+      "identity": "DM|ICH|D.7.2.nullFlavor|patientInformation.medicalHistoryTextNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.10.7.1.r.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].continuingNullFlavor",
+      "identity": "DM|ICH|D.10.7.1.r.3.nullFlavor|patientInformation.parentInformation.medicalHistoryEpisodes[].continuingNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.7.1.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].endDateNullFlavor",
+      "identity": "DM|ICH|D.10.7.1.r.4.nullFlavor|patientInformation.parentInformation.medicalHistoryEpisodes[].endDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.7.1.r.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].startDateNullFlavor",
+      "identity": "DM|ICH|D.10.7.1.r.2.nullFlavor|patientInformation.parentInformation.medicalHistoryEpisodes[].startDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.2.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.parentBirthDateNullFlavor",
+      "identity": "DM|ICH|D.10.2.1.nullFlavor|patientInformation.parentInformation.parentBirthDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.10.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.parentIdentificationNullFlavor",
+      "identity": "DM|ICH|D.10.1.nullFlavor|patientInformation.parentInformation.parentIdentificationNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.parentLastMenstrualPeriodDateNullFlavor",
+      "identity": "DM|ICH|D.10.3.nullFlavor|patientInformation.parentInformation.parentLastMenstrualPeriodDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.10.6.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.parentSexNullFlavor",
+      "identity": "DM|ICH|D.10.6.nullFlavor|patientInformation.parentInformation.parentSexNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.8.r.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].endDateNullFlavor",
+      "identity": "DM|ICH|D.10.8.r.5.nullFlavor|patientInformation.parentInformation.pastDrugHistory[].endDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.10.8.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].startDateNullFlavor",
+      "identity": "DM|ICH|D.10.8.r.4.nullFlavor|patientInformation.parentInformation.pastDrugHistory[].startDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.2.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.patientBirthDateNullFlavor",
+      "identity": "DM|ICH|D.2.1.nullFlavor|patientInformation.patientBirthDateNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "ASKU",
+      "code": "D.9.3.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.patientDeath.autopsyPerformedNullFlavor",
+      "identity": "DM|ICH|D.9.3.nullFlavor|patientInformation.patientDeath.autopsyPerformedNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.9.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.patientDeath.dateOfDeathNullFlavor",
+      "identity": "DM|ICH|D.9.1.nullFlavor|patientInformation.patientDeath.dateOfDeathNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.patientInitialsNullFlavor",
+      "identity": "DM|ICH|D.1.nullFlavor|patientInformation.patientInitialsNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "D.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.patientSexNullFlavor",
+      "identity": "DM|ICH|D.5.nullFlavor|patientInformation.patientSexNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "UNK",
+      "code": "FDA.D.11.r.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.raceCodeNullFlavor",
+      "identity": "DM|FDA|FDA.D.11.r.1.nullFlavor|patientInformation.raceCodeNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "MSK",
+      "code": "D.1.1.2.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.specialistRecordNumberNullFlavor",
+      "identity": "DM|ICH|D.1.1.2.nullFlavor|patientInformation.specialistRecordNumberNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "Case narrative",
+      "alternateB": "Case narrativB",
+      "code": "H.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "narrative.caseNarrative",
+      "identity": "NR|ICH|H.1|narrative.caseNarrative",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Reporter comments",
+      "alternateB": "Reporter commentB",
+      "code": "H.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "narrative.reporterComments",
+      "identity": "NR|ICH|H.2|narrative.reporterComments",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "H.3.r.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "narrative.senderDiagnoses[].diagnosisMeddraVersion",
+      "identity": "NR|ICH|H.3.r.1a|narrative.senderDiagnoses[].diagnosisMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "H.3.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "narrative.senderDiagnoses[].diagnosisMeddraCode",
+      "identity": "NR|ICH|H.3.r.1b|narrative.senderDiagnoses[].diagnosisMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "Sender comments",
+      "alternateB": "Sender commentB",
+      "code": "H.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "narrative.senderComments",
+      "identity": "NR|ICH|H.4|narrative.senderComments",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Case summary",
+      "alternateB": "Case summarB",
+      "code": "H.5.r.1a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "caseSummaryInformation[].summaryText",
+      "identity": "NR|ICH|H.5.r.1a|caseSummaryInformation[].summaryText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "eng",
+      "alternateB": "kor",
+      "code": "H.5.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "caseSummaryInformation[].languageCode",
+      "identity": "NR|ICH|H.5.r.1b|caseSummaryInformation[].languageCode",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "iso_language_pair"
+    },
+    {
+      "alternateA": "Headache",
+      "alternateB": "HeadachB",
+      "code": "E.i.1.1a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "reactions[].primarySourceReaction",
+      "identity": "AE|ICH|E.i.1.1a|reactions[].primarySourceReaction",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "eng",
+      "alternateB": "kor",
+      "code": "E.i.1.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "reactions[].reactionLanguage",
+      "identity": "AE|ICH|E.i.1.1b|reactions[].reactionLanguage",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "iso_language_pair"
+    },
+    {
+      "alternateA": "Head pain",
+      "alternateB": "Head paiB",
+      "code": "E.i.1.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "reactions[].primarySourceReactionTranslation",
+      "identity": "AE|ICH|E.i.1.2|reactions[].primarySourceReactionTranslation",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "E.i.2.1a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "reactions[].reactionMeddraVersionLLT",
+      "identity": "AE|ICH|E.i.2.1a|reactions[].reactionMeddraVersionLLT",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "E.i.2.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "reactions[].reactionMeddraCodeLLT",
+      "identity": "AE|ICH|E.i.2.1b|reactions[].reactionMeddraCodeLLT",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "4",
+      "alternateB": "1",
+      "code": "E.i.3.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "reactions[].termHighlighted",
+      "identity": "AE|ICH|E.i.3.1|reactions[].termHighlighted",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaResultsInDeath",
+      "identity": "AE|ICH|E.i.3.2a|reactions[].seriousness.criteriaResultsInDeath",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaLifeThreatening",
+      "identity": "AE|ICH|E.i.3.2b|reactions[].seriousness.criteriaLifeThreatening",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2c",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaHospitalization",
+      "identity": "AE|ICH|E.i.3.2c|reactions[].seriousness.criteriaHospitalization",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2d",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaDisabling",
+      "identity": "AE|ICH|E.i.3.2d|reactions[].seriousness.criteriaDisabling",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2e",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaCongenitalAnomaly",
+      "identity": "AE|ICH|E.i.3.2e|reactions[].seriousness.criteriaCongenitalAnomaly",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.3.2f",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].seriousness.criteriaOtherMedicallyImportant",
+      "identity": "AE|ICH|E.i.3.2f|reactions[].seriousness.criteriaOtherMedicallyImportant",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "E.i.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "reactions[].reactionStartDate",
+      "identity": "AE|ICH|E.i.4|reactions[].reactionStartDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "20200103",
+      "alternateB": "20200104",
+      "code": "E.i.5",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "reactions[].reactionEndDate",
+      "identity": "AE|ICH|E.i.5|reactions[].reactionEndDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "E.i.6a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "reactions[].reactionDuration.value",
+      "identity": "AE|ICH|E.i.6a|reactions[].reactionDuration.value",
+      "requiresExistingLookup": false,
+      "strategy": "exact_numeric_alternate"
+    },
+    {
+      "alternateA": "d",
+      "alternateB": "wk",
+      "code": "E.i.6b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "reactions[].reactionDuration.unit",
+      "identity": "AE|ICH|E.i.6b|reactions[].reactionDuration.unit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "E.i.7",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "0"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "reactions[].reactionOutcome",
+      "identity": "AE|ICH|E.i.7|reactions[].reactionOutcome",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "E.i.8",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "reactions[].medicalConfirmation",
+      "identity": "AE|ICH|E.i.8|reactions[].medicalConfirmation",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "E.i.9",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "reactions[].reactionCountry",
+      "identity": "AE|ICH|E.i.9|reactions[].reactionCountry",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "FDA.E.i.3.2h",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "reactions[].requiredIntervention",
+      "identity": "AE|FDA|FDA.E.i.3.2h|reactions[].requiredIntervention",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "E.i.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].reactionEndDateNullFlavor",
+      "identity": "AE|ICH|E.i.5.nullFlavor|reactions[].reactionEndDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "E.i.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].reactionStartDateNullFlavor",
+      "identity": "AE|ICH|E.i.4.nullFlavor|reactions[].reactionStartDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "FDA.E.i.3.2h.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].requiredInterventionNullFlavor",
+      "identity": "AE|FDA|FDA.E.i.3.2h.nullFlavor|reactions[].requiredInterventionNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2e.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "identity": "AE|ICH|E.i.3.2e.nullFlavor|reactions[].seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2d.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaDisablingNullFlavor",
+      "identity": "AE|ICH|E.i.3.2d.nullFlavor|reactions[].seriousness.criteriaDisablingNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2c.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaHospitalizationNullFlavor",
+      "identity": "AE|ICH|E.i.3.2c.nullFlavor|reactions[].seriousness.criteriaHospitalizationNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2b.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaLifeThreateningNullFlavor",
+      "identity": "AE|ICH|E.i.3.2b.nullFlavor|reactions[].seriousness.criteriaLifeThreateningNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2f.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "identity": "AE|ICH|E.i.3.2f.nullFlavor|reactions[].seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "E.i.3.2a.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "reactions[].seriousness.criteriaResultsInDeathNullFlavor",
+      "identity": "AE|ICH|E.i.3.2a.nullFlavor|reactions[].seriousness.criteriaResultsInDeathNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "F.r.1",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "testResults[].testDate",
+      "identity": "LB|ICH|F.r.1|testResults[].testDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "ALT",
+      "alternateB": "ALB",
+      "code": "F.r.2.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "testResults[].testName",
+      "identity": "LB|ICH|F.r.2.1|testResults[].testName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "F.r.2.2a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "testResults[].testMeddraVersion",
+      "identity": "LB|ICH|F.r.2.2a|testResults[].testMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "F.r.2.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "testResults[].testMeddraCode",
+      "identity": "LB|ICH|F.r.2.2b|testResults[].testMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "F.r.3.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "testResults[].testResultCode",
+      "identity": "LB|ICH|F.r.3.1|testResults[].testResultCode",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "12.5",
+      "alternateB": "13.5",
+      "code": "F.r.3.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "testResults[].testResult",
+      "identity": "LB|ICH|F.r.3.2|testResults[].testResult",
+      "requiresExistingLookup": false,
+      "strategy": "exact_numeric_alternate"
+    },
+    {
+      "alternateA": "mg/dL",
+      "alternateB": "mg/L",
+      "code": "F.r.3.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "testResults[].testUnit",
+      "identity": "LB|ICH|F.r.3.3|testResults[].testUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_ucum_pair"
+    },
+    {
+      "alternateA": "Normal",
+      "alternateB": "NormaB",
+      "code": "F.r.3.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "testResults[].testResultUnstructured",
+      "identity": "LB|ICH|F.r.3.4|testResults[].testResultUnstructured",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "10",
+      "alternateB": "1B",
+      "code": "F.r.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "testResults[].lowRange",
+      "identity": "LB|ICH|F.r.4|testResults[].lowRange",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "20",
+      "alternateB": "2B",
+      "code": "F.r.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "testResults[].highRange",
+      "identity": "LB|ICH|F.r.5|testResults[].highRange",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Within range",
+      "alternateB": "Within rangB",
+      "code": "F.r.6",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "testResults[].comments",
+      "identity": "LB|ICH|F.r.6|testResults[].comments",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "F.r.7",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "boolean"
+      },
+      "constraintKind": "boolean",
+      "frontendPath": "testResults[].moreInformationAvailable",
+      "identity": "LB|ICH|F.r.7|testResults[].moreInformationAvailable",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "UNK",
+      "code": "F.r.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "testResults[].testDateNullFlavor",
+      "identity": "LB|ICH|F.r.1.nullFlavor|testResults[].testDateNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "1",
+      "code": "FDA.G.k.1.a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].fdaOtherCharacterization",
+      "identity": "DG|FDA|FDA.G.k.1.a|drugs[].fdaOtherCharacterization",
+      "prerequisites": [
+        "registry code_set has one legal value"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_code"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "FDA.G.k.10.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].fdaSpecializedProductCategory",
+      "identity": "DG|FDA|FDA.G.k.10.1|drugs[].fdaSpecializedProductCategory",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "FDA.G.k.10a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].fdaAdditionalInfoCoded",
+      "identity": "DG|FDA|FDA.G.k.10a|drugs[].fdaAdditionalInfoCoded",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": [
+        "1"
+      ],
+      "alternateB": [
+        "2"
+      ],
+      "code": "FDA.G.k.local.additionalInfoCodesJson",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].drugAdditionalInformationCodes",
+      "identity": "DG|FDA|FDA.G.k.local.additionalInfoCodesJson|drugs[].drugAdditionalInformationCodes",
+      "prerequisites": [
+        "GET code-list fda_g_k_10a_additional_info returned active 1 and 2"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_code_list_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "G.k.1",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].drugCharacterization",
+      "identity": "DG|ICH|G.k.1|drugs[].drugCharacterization",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "Additional information",
+      "alternateB": "Additional informatioB",
+      "code": "G.k.11",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugAdditionalInformation",
+      "identity": "DG|ICH|G.k.11|drugs[].drugAdditionalInformation",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "G.k.2.1.1a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].mpidVersion",
+      "identity": "DG|ICH|G.k.2.1.1a|drugs[].mpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MPID-001",
+      "alternateB": "MPID-002",
+      "code": "G.k.2.1.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].mpid",
+      "identity": "DG|ICH|G.k.2.1.1b|drugs[].mpid",
+      "prerequisites": [
+        "valid nonblank identifier <=1000 chars",
+        "do not populate paired PhPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "G.k.2.1.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].phpidVersion",
+      "identity": "DG|ICH|G.k.2.1.2a|drugs[].phpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "PHPID-001",
+      "alternateB": "PHPID-002",
+      "code": "G.k.2.1.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].phpid",
+      "identity": "DG|ICH|G.k.2.1.2b|drugs[].phpid",
+      "prerequisites": [
+        "valid nonblank identifier <=250 chars",
+        "do not populate paired MPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "2026",
+      "alternateB": "202B",
+      "code": "G.k.2.1.KR.1a",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].mfdsMpidVersion",
+      "identity": "DG|MFDS|G.k.2.1.KR.1a|drugs[].mfdsMpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MFDS-001",
+      "alternateB": "MFDS-00B",
+      "code": "G.k.2.1.KR.1b",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].mfdsMpid",
+      "identity": "DG|MFDS|G.k.2.1.KR.1b|drugs[].mfdsMpid",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Product A",
+      "alternateB": "Product B",
+      "code": "G.k.2.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].medicinalProduct",
+      "identity": "DG|ICH|G.k.2.2|drugs[].medicinalProduct",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Substance A",
+      "alternateB": "Substance B",
+      "code": "G.k.2.3.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].activeSubstances[].substanceName",
+      "identity": "DG|ICH|G.k.2.3.r.1|drugs[].activeSubstances[].substanceName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "2026",
+      "alternateB": "202B",
+      "code": "G.k.2.3.r.1.KR.1a",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].activeSubstances[].mfdsVersion",
+      "identity": "DG|MFDS|G.k.2.3.r.1.KR.1a|drugs[].activeSubstances[].mfdsVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "KR-SUB-1",
+      "alternateB": "KR-SUB-B",
+      "code": "G.k.2.3.r.1.KR.1b",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].activeSubstances[].mfdsId",
+      "identity": "DG|MFDS|G.k.2.3.r.1.KR.1b|drugs[].activeSubstances[].mfdsId",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "G.k.2.3.r.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].activeSubstances[].substanceTermIdVersion",
+      "identity": "DG|ICH|G.k.2.3.r.2a|drugs[].activeSubstances[].substanceTermIdVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "M040580",
+      "alternateB": "M040353",
+      "code": "G.k.2.3.r.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "substance_id",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].activeSubstances[].substanceTermId",
+      "identity": "DG|ICH|G.k.2.3.r.2b|drugs[].activeSubstances[].substanceTermId",
+      "prerequisites": [
+        "MFDS product 197200483 substances endpoint",
+        "matching version 2026-10-01"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_mfds_substance_pair"
+    },
+    {
+      "alternateA": 10.5,
+      "alternateB": 11.5,
+      "code": "G.k.2.3.r.3a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].activeSubstances[].substanceStrengthValue",
+      "identity": "DG|ICH|G.k.2.3.r.3a|drugs[].activeSubstances[].substanceStrengthValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "mg",
+      "alternateB": "g",
+      "code": "G.k.2.3.r.3b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].activeSubstances[].substanceStrengthUnit",
+      "identity": "DG|ICH|G.k.2.3.r.3b|drugs[].activeSubstances[].substanceStrengthUnit",
+      "prerequisites": [
+        "active constrained UCUM"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_ucum_pair"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "G.k.2.4",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].obtainDrugCountry",
+      "identity": "DG|ICH|G.k.2.4|drugs[].obtainDrugCountry",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": true,
+      "alternateB": false,
+      "code": "G.k.2.5",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "true_marker"
+      },
+      "constraintKind": "true_marker",
+      "frontendPath": "drugs[].investigationalProductBlinded",
+      "identity": "DG|ICH|G.k.2.5|drugs[].investigationalProductBlinded",
+      "requiresExistingLookup": false,
+      "strategy": "boolean_toggle"
+    },
+    {
+      "alternateA": "AUTH-001",
+      "alternateB": "AUTH-00B",
+      "code": "G.k.3.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugAuthorizationNumber",
+      "identity": "DG|ICH|G.k.3.1|drugs[].drugAuthorizationNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "KR",
+      "alternateB": "US",
+      "code": "G.k.3.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "all"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].drugAuthorizationCountry",
+      "identity": "DG|ICH|G.k.3.2|drugs[].drugAuthorizationCountry",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_iso_country_pair"
+    },
+    {
+      "alternateA": "Holder",
+      "alternateB": "HoldeB",
+      "code": "G.k.3.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugAuthorizationHolder",
+      "identity": "DG|ICH|G.k.3.3|drugs[].drugAuthorizationHolder",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "048",
+      "alternateB": "04B",
+      "code": "G.k.4.r.10.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].routeOfAdministration",
+      "identity": "DG|ICH|G.k.4.r.10.1|drugs[].dosageInformation[].routeOfAdministration",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "G.k.4.r.10.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].routeTermIdVersion",
+      "identity": "DG|ICH|G.k.4.r.10.2a|drugs[].dosageInformation[].routeTermIdVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "001",
+      "alternateB": "002",
+      "code": "G.k.4.r.10.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "route"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].routeTermId",
+      "identity": "DG|ICH|G.k.4.r.10.2b|drugs[].dosageInformation[].routeTermId",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_route_code_list_pair"
+    },
+    {
+      "alternateA": "Oral",
+      "alternateB": "OraB",
+      "code": "G.k.4.r.11.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].parentRouteOfAdministration",
+      "identity": "DG|ICH|G.k.4.r.11.1|drugs[].dosageInformation[].parentRouteOfAdministration",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "G.k.4.r.11.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].parentRouteTermIdVersion",
+      "identity": "DG|ICH|G.k.4.r.11.2a|drugs[].dosageInformation[].parentRouteTermIdVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "001",
+      "alternateB": "002",
+      "code": "G.k.4.r.11.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "route"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].parentRouteTermId",
+      "identity": "DG|ICH|G.k.4.r.11.2b|drugs[].dosageInformation[].parentRouteTermId",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_route_code_list_pair"
+    },
+    {
+      "alternateA": 2.5,
+      "alternateB": 3.5,
+      "code": "G.k.4.r.1a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].dosageInformation[].doseValue",
+      "identity": "DG|ICH|G.k.4.r.1a|drugs[].dosageInformation[].doseValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "mg",
+      "alternateB": "g",
+      "code": "G.k.4.r.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "dose"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].doseUnit",
+      "identity": "DG|ICH|G.k.4.r.1b|drugs[].dosageInformation[].doseUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_ucum_pair"
+    },
+    {
+      "alternateA": 1,
+      "alternateB": 2,
+      "code": "G.k.4.r.2",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].dosageInformation[].numberOfUnits",
+      "identity": "DG|ICH|G.k.4.r.2|drugs[].dosageInformation[].numberOfUnits",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "d",
+      "alternateB": "wk",
+      "code": "G.k.4.r.3",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "frequency"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].frequencyUnit",
+      "identity": "DG|ICH|G.k.4.r.3|drugs[].dosageInformation[].frequencyUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_frequency_pair"
+    },
+    {
+      "alternateA": "20200101",
+      "alternateB": "20200102",
+      "code": "G.k.4.r.4",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].firstAdministrationDate",
+      "identity": "DG|ICH|G.k.4.r.4|drugs[].dosageInformation[].firstAdministrationDate",
+      "requiresExistingLookup": false,
+      "strategy": "valid_compact_date_increment"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "G.k.4.r.5",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].lastAdministrationDate",
+      "identity": "DG|ICH|G.k.4.r.5|drugs[].dosageInformation[].lastAdministrationDate",
+      "requiresExistingLookup": false,
+      "strategy": "valid_compact_date_increment"
+    },
+    {
+      "alternateA": 2,
+      "alternateB": 3,
+      "code": "G.k.4.r.6a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].dosageInformation[].durationValue",
+      "identity": "DG|ICH|G.k.4.r.6a|drugs[].dosageInformation[].durationValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "d",
+      "alternateB": "wk",
+      "code": "G.k.4.r.6b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].durationUnit",
+      "identity": "DG|ICH|G.k.4.r.6b|drugs[].dosageInformation[].durationUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "LOT-1",
+      "alternateB": "LOT-B",
+      "code": "G.k.4.r.7",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].batchNumber",
+      "identity": "DG|ICH|G.k.4.r.7|drugs[].dosageInformation[].batchNumber",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "One tablet daily",
+      "alternateB": "One tablet dailB",
+      "code": "G.k.4.r.8",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].dosageText",
+      "identity": "DG|ICH|G.k.4.r.8|drugs[].dosageInformation[].dosageText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Tablet",
+      "alternateB": "TableB",
+      "code": "G.k.4.r.9.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].dosageInformation[].doseForm",
+      "identity": "DG|ICH|G.k.4.r.9.1|drugs[].dosageInformation[].doseForm",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "_mutationFixedPayload": {
+        "dosageInformation[].doseFormTermId": "DF-2"
+      },
+      "alternateA": "1",
+      "alternateB": "2",
+      "clearPrerequisite": "No runtime prerequisite asserted for draft persistence; pair semantics belong to separate case-validation coverage.",
+      "code": "G.k.4.r.9.2a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "dose_form"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].doseFormTermIdVersion",
+      "identity": "DG|ICH|G.k.4.r.9.2a|drugs[].dosageInformation[].doseFormTermIdVersion",
+      "requiresExistingLookup": false,
+      "semanticValidationExplanation": "Current Case Edit draft persistence accepts string shape/length. The paired-field rule is enforced by separate case validation and is outside this audit-persistence run. Values are structural audit test inputs, not authoritative EDQM terms or release versions. Local dosage_form and EDQM release lookups returned no candidates.",
+      "semanticValidationVerified": false,
+      "strategy": "source_string_persistence_only_no_vocabulary_claim"
+    },
+    {
+      "_mutationFixedPayload": {
+        "dosageInformation[].doseFormTermIdVersion": "2"
+      },
+      "alternateA": "DF-1",
+      "alternateB": "DF-2",
+      "clearPrerequisite": "No runtime prerequisite asserted for draft persistence; pair semantics belong to separate case-validation coverage.",
+      "code": "G.k.4.r.9.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "dose_form"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].dosageInformation[].doseFormTermId",
+      "identity": "DG|ICH|G.k.4.r.9.2b|drugs[].dosageInformation[].doseFormTermId",
+      "requiresExistingLookup": false,
+      "semanticValidationExplanation": "Current Case Edit draft persistence accepts string shape/length. The paired-field rule is enforced by separate case validation and is outside this audit-persistence run. Values are structural audit test inputs, not authoritative EDQM dose-form identifiers. Local dosage_form and EDQM release lookups returned no candidates.",
+      "semanticValidationVerified": false,
+      "strategy": "source_string_persistence_only_no_vocabulary_claim"
+    },
+    {
+      "alternateA": 12.5,
+      "alternateB": 13.5,
+      "code": "G.k.5a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].cumulativeDoseValue",
+      "identity": "DG|ICH|G.k.5a|drugs[].cumulativeDoseValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "mg",
+      "alternateB": "g",
+      "code": "G.k.5b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "dose"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].cumulativeDoseUnit",
+      "identity": "DG|ICH|G.k.5b|drugs[].cumulativeDoseUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_ucum_pair"
+    },
+    {
+      "alternateA": 4,
+      "alternateB": 5,
+      "code": "G.k.6a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].gestationPeriodExposureValue",
+      "identity": "DG|ICH|G.k.6a|drugs[].gestationPeriodExposureValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "wk",
+      "alternateB": "mo",
+      "code": "G.k.6b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "gestation"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].gestationPeriodExposureUnit",
+      "identity": "DG|ICH|G.k.6b|drugs[].gestationPeriodExposureUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "Pain",
+      "alternateB": "PaiB",
+      "code": "G.k.7.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].indications[].indicationText",
+      "identity": "DG|ICH|G.k.7.r.1|drugs[].indications[].indicationText",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "G.k.7.r.2a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].indications[].indicationMeddraVersion",
+      "identity": "DG|ICH|G.k.7.r.2a|drugs[].indications[].indicationMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "G.k.7.r.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].indications[].indicationMeddraCode",
+      "identity": "DG|ICH|G.k.7.r.2b|drugs[].indications[].indicationMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "G.k.8",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "0",
+          "9"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].drugActionTaken",
+      "identity": "DG|ICH|G.k.8|drugs[].drugActionTaken",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "Reporter",
+      "alternateB": "ReporteB",
+      "code": "G.k.9.i.2.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugReactionAssessments[].sourceOfAssessment",
+      "identity": "DG|ICH|G.k.9.i.2.r.1|drugs[].drugReactionAssessments[].sourceOfAssessment",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "WHO-UMC",
+      "alternateB": "WHO-UMB",
+      "code": "G.k.9.i.2.r.2",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugReactionAssessments[].methodOfAssessment",
+      "identity": "DG|ICH|G.k.9.i.2.r.2|drugs[].drugReactionAssessments[].methodOfAssessment",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "Possible",
+      "alternateB": "PossiblB",
+      "code": "G.k.9.i.2.r.3",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessment",
+      "identity": "DG|ICH|G.k.9.i.2.r.3|drugs[].drugReactionAssessments[].resultOfAssessment",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "G.k.9.i.2.r.3.KR.2",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr2",
+      "identity": "DG|MFDS|G.k.9.i.2.r.3.KR.2|drugs[].drugReactionAssessments[].resultOfAssessmentKr2",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": 2,
+      "alternateB": 3,
+      "code": "G.k.9.i.3.1a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].drugReactionAssessments[].administrationStartIntervalValue",
+      "identity": "DG|ICH|G.k.9.i.3.1a|drugs[].drugReactionAssessments[].administrationStartIntervalValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "d",
+      "alternateB": "wk",
+      "code": "G.k.9.i.3.1b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].drugReactionAssessments[].administrationStartIntervalUnit",
+      "identity": "DG|ICH|G.k.9.i.3.1b|drugs[].drugReactionAssessments[].administrationStartIntervalUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": 1,
+      "alternateB": 2,
+      "code": "G.k.9.i.3.2a",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "drugs[].drugReactionAssessments[].lastDoseIntervalValue",
+      "identity": "DG|ICH|G.k.9.i.3.2a|drugs[].drugReactionAssessments[].lastDoseIntervalValue",
+      "prerequisites": [
+        "JSON number input; DTO readback may be decimal string"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "typed_numeric_alternate"
+    },
+    {
+      "alternateA": "d",
+      "alternateB": "wk",
+      "code": "G.k.9.i.3.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "vocabulary",
+        "vocabulary_scope": "time"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "drugs[].drugReactionAssessments[].lastDoseIntervalUnit",
+      "identity": "DG|ICH|G.k.9.i.3.2b|drugs[].drugReactionAssessments[].lastDoseIntervalUnit",
+      "prerequisites": [
+        "values sourced from active local API or checked-in constrained vocabulary"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "constrained_ucum_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "2",
+      "code": "G.k.9.i.4",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "constraintKind": "code_set",
+      "frontendPath": "drugs[].drugReactionAssessments[].recurrenceAction",
+      "identity": "DG|ICH|G.k.9.i.4|drugs[].drugReactionAssessments[].recurrenceAction",
+      "requiresExistingLookup": false,
+      "strategy": "registry_code_set"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "FDA.G.k.12.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].fdaDevices[].deviceBrandNameNullFlavor",
+      "identity": "DG|FDA|FDA.G.k.12.r.4.nullFlavor|drugs[].fdaDevices[].deviceBrandNameNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "NI",
+      "alternateB": "NI",
+      "code": "FDA.G.k.12.r.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].fdaDevices[].commonDeviceNameNullFlavor",
+      "identity": "DG|FDA|FDA.G.k.12.r.5.nullFlavor|drugs[].fdaDevices[].commonDeviceNameNullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "ASKU",
+      "code": "G.k.4.r.9.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].dosageInformation[].doseFormNullFlavor",
+      "identity": "DG|ICH|G.k.4.r.9.1.nullFlavor|drugs[].dosageInformation[].doseFormNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "G.k.4.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].dosageInformation[].firstAdministrationDateNullFlavor",
+      "identity": "DG|ICH|G.k.4.r.4.nullFlavor|drugs[].dosageInformation[].firstAdministrationDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "G.k.4.r.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].dosageInformation[].lastAdministrationDateNullFlavor",
+      "identity": "DG|ICH|G.k.4.r.5.nullFlavor|drugs[].dosageInformation[].lastAdministrationDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "ASKU",
+      "code": "G.k.4.r.11.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].dosageInformation[].parentRouteOfAdministrationNullFlavor",
+      "identity": "DG|ICH|G.k.4.r.11.1.nullFlavor|drugs[].dosageInformation[].parentRouteOfAdministrationNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "ASKU",
+      "code": "G.k.4.r.10.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].dosageInformation[].routeOfAdministrationNullFlavor",
+      "identity": "DG|ICH|G.k.4.r.10.1.nullFlavor|drugs[].dosageInformation[].routeOfAdministrationNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "NA",
+      "alternateB": "NA",
+      "code": "G.k.9.i.2.r.3.KR.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "identity": "DG|MFDS|G.k.9.i.2.r.3.KR.1.nullFlavor|drugs[].drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "prerequisites": [
+        "dictionary exposes one allowed NullFlavor; verify A and no-op, not distinct B"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_allowed_null_flavor"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "ASKU",
+      "code": "G.k.7.r.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "drugs[].indications[].indicationTextNullFlavor",
+      "identity": "DG|ICH|G.k.7.r.1.nullFlavor|drugs[].indications[].indicationTextNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "Prior drug",
+      "alternateB": "Prior druB",
+      "code": "D.8.r.1",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.pastDrugHistory[].drugName",
+      "identity": "DH|ICH|D.8.r.1|patientInformation.pastDrugHistory[].drugName",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "2026",
+      "alternateB": "202B",
+      "code": "D.8.r.1.KR.1a",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
+      "identity": "DH|MFDS|D.8.r.1.KR.1a|patientInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MFDS-001",
+      "alternateB": "MFDS-00B",
+      "code": "D.8.r.1.KR.1b",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.pastDrugHistory[].mfdsMedicinalProductId",
+      "identity": "DH|MFDS|D.8.r.1.KR.1b|patientInformation.pastDrugHistory[].mfdsMedicinalProductId",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "D.8.r.2a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.pastDrugHistory[].mpidVersion",
+      "identity": "DH|ICH|D.8.r.2a|patientInformation.pastDrugHistory[].mpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "MPID-001",
+      "alternateB": "MPID-002",
+      "code": "D.8.r.2b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.pastDrugHistory[].mpid",
+      "identity": "DH|ICH|D.8.r.2b|patientInformation.pastDrugHistory[].mpid",
+      "prerequisites": [
+        "valid nonblank identifier <=1000 chars",
+        "do not populate paired PhPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "1",
+      "alternateB": "B",
+      "code": "D.8.r.3a",
+      "constraint": {
+        "kind": "descriptive"
+      },
+      "constraintKind": "descriptive",
+      "frontendPath": "patientInformation.pastDrugHistory[].phpidVersion",
+      "identity": "DH|ICH|D.8.r.3a|patientInformation.pastDrugHistory[].phpidVersion",
+      "requiresExistingLookup": false,
+      "strategy": "free_text_distinct_bounded"
+    },
+    {
+      "alternateA": "PHPID-001",
+      "alternateB": "PHPID-002",
+      "code": "D.8.r.3b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid",
+        "kind": "vocabulary"
+      },
+      "constraintKind": "vocabulary",
+      "frontendPath": "patientInformation.pastDrugHistory[].phpid",
+      "identity": "DH|ICH|D.8.r.3b|patientInformation.pastDrugHistory[].phpid",
+      "prerequisites": [
+        "valid nonblank identifier <=250 chars",
+        "do not populate paired MPID on same drug"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "generic_ich_identifier_pair"
+    },
+    {
+      "alternateA": "20200102",
+      "alternateB": "20200103",
+      "code": "D.8.r.4",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.pastDrugHistory[].startDate",
+      "identity": "DH|ICH|D.8.r.4|patientInformation.pastDrugHistory[].startDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "20210102",
+      "alternateB": "20210103",
+      "code": "D.8.r.5",
+      "constraint": {
+        "enforcement": "representation_enforced",
+        "format_name": "e2b_datetime",
+        "kind": "format"
+      },
+      "constraintKind": "format",
+      "frontendPath": "patientInformation.pastDrugHistory[].endDate",
+      "identity": "DH|ICH|D.8.r.5|patientInformation.pastDrugHistory[].endDate",
+      "requiresExistingLookup": false,
+      "strategy": "validated_date_increment"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.8.r.6a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.pastDrugHistory[].indicationMeddraVersion",
+      "identity": "DH|ICH|D.8.r.6a|patientInformation.pastDrugHistory[].indicationMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.8.r.6b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.pastDrugHistory[].indicationMeddraCode",
+      "identity": "DH|ICH|D.8.r.6b|patientInformation.pastDrugHistory[].indicationMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "28.1",
+      "alternateB": "28.1",
+      "code": "D.8.r.7a",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "dotted_version"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.pastDrugHistory[].reactionMeddraVersion",
+      "identity": "DH|ICH|D.8.r.7a|patientInformation.pastDrugHistory[].reactionMeddraVersion",
+      "prerequisites": [
+        "active MedDRA 28.1/en"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "invariant_single_active_meddra_release"
+    },
+    {
+      "alternateA": "10000002",
+      "alternateB": "10081511",
+      "code": "D.8.r.7b",
+      "constraint": {
+        "enforcement": "case_validate",
+        "kind": "numeric",
+        "numeric_shape": "decimal"
+      },
+      "constraintKind": "numeric",
+      "frontendPath": "patientInformation.pastDrugHistory[].reactionMeddraCode",
+      "identity": "DH|ICH|D.8.r.7b|patientInformation.pastDrugHistory[].reactionMeddraCode",
+      "prerequisites": [
+        "active MedDRA 28.1/en",
+        "use matching version 28.1"
+      ],
+      "requiresExistingLookup": false,
+      "strategy": "active_meddra_lookup_pair"
+    },
+    {
+      "alternateA": "UNK",
+      "alternateB": "NA",
+      "code": "D.8.r.1.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.pastDrugHistory[].drugNameNullFlavor",
+      "identity": "DH|ICH|D.8.r.1.nullFlavor|patientInformation.pastDrugHistory[].drugNameNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.8.r.5.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.pastDrugHistory[].endDateNullFlavor",
+      "identity": "DH|ICH|D.8.r.5.nullFlavor|patientInformation.pastDrugHistory[].endDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    },
+    {
+      "alternateA": "MSK",
+      "alternateB": "ASKU",
+      "code": "D.8.r.4.nullFlavor",
+      "constraint": null,
+      "constraintKind": null,
+      "frontendPath": "patientInformation.pastDrugHistory[].startDateNullFlavor",
+      "identity": "DH|ICH|D.8.r.4.nullFlavor|patientInformation.pastDrugHistory[].startDateNullFlavor",
+      "requiresExistingLookup": false,
+      "strategy": "dictionary_null_flavor"
+    }
+  ],
+  "firstAllCorrections": {
+    "artifact": "/home/opc/e2br3/case-ui-recheck-20261001/audit-all-fields-20261007/first-all/case-editor-2026104001.jsonl",
+    "conditionalField": [
+      "C.1.11.1"
+    ],
+    "dateFields": [
+      "G.k.4.r.4",
+      "G.k.4.r.5"
+    ],
+    "failEvents": 20,
+    "finiteOptionFields": [
+      "C.2.r.4.KR.1",
+      "C.5.4.KR.1"
+    ],
+    "typedNumericFields": [
+      "D.10.2.2a",
+      "D.10.4",
+      "D.10.5",
+      "D.2.2.1a",
+      "D.2.2a",
+      "D.3",
+      "D.4",
+      "G.k.2.3.r.3a",
+      "G.k.4.r.1a",
+      "G.k.4.r.2",
+      "G.k.4.r.6a",
+      "G.k.5a",
+      "G.k.6a",
+      "G.k.9.i.3.1a",
+      "G.k.9.i.3.2a"
+    ]
+  },
+  "generatedAt": "2026-10-10T06:27:05.770667+00:00",
+  "resolutionEvidence": {
+    "api": "http://127.0.0.1:18501 authenticated read-only GET",
+    "codeLists": {
+      "dosage_form": [],
+      "fda_g_k_10a_additional_info": [
+        "1",
+        "2"
+      ],
+      "route_of_administration": [
+        "001",
+        "002"
+      ]
+    },
+    "countries": [
+      "AF",
+      "AX",
+      "KR",
+      "US available active"
+    ],
+    "genericIdentifierCorrection": {
+      "mpid": [
+        "MPID-001",
+        "MPID-002"
+      ],
+      "phpid": [
+        "PHPID-001",
+        "PHPID-002"
+      ],
+      "source": "validator g.rs valid_identifier and context.rs case_whodrug_keys",
+      "whodrugAppliesOnlyTo": "mfds_mpid/mfds medicinal product identifiers"
+    },
+    "meddra": {
+      "codes": [
+        "10000002",
+        "10081511"
+      ],
+      "version": "28.1"
+    },
+    "mfdsProducts": [
+      "197200483",
+      "195900045"
+    ],
+    "mfdsSubstances": {
+      "codes": [
+        "M040580",
+        "M040353"
+      ],
+      "product": "197200483",
+      "version": "2026-10-01"
+    },
+    "ucumUnits": [
+      "mg/dL",
+      "mg/L",
+      "g/L",
+      "U/L"
+    ],
+    "whodrug": {
+      "codes": [
+        "000754-01-900",
+        "150506-02-002"
+      ],
+      "version": "2026-03"
+    }
+  },
+  "rules": [
+    "Never append text to code_set, boolean, date, numeric, NullFlavor, vocabulary, or identifier fields.",
+    "Vocabulary and coded identifier B must be selected from the active real lookup/release and differ from A; absence of a second result is a clear blocker.",
+    "NullFlavor B comes only from the existing per-code dictionary list.",
+    "Numeric B preserves the declared numeric representation; audit comparison separately maps declared decimal DTO strings to DB JSON numbers.",
+    "MedDRA code/version fields are paired: use two active codes under the same active 28.1 release; do not increment code or version numerically.",
+    "Generic ICH MPID/PhPID fields are format-validated identifiers and are not WHODrug membership fields. Only MFDS-specific mfds_mpid fields bind to active WHODrug products."
+  ],
+  "schemaVersion": 3,
+  "scope": "Source-derived valid alternate-B planning for the current 299 contract_rows fields; no live mutation. Values requiring terminology or identifier membership are deliberately unresolved."
+}

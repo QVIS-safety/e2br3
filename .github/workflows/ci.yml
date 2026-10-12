@@ -14,6 +14,57 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  case-editor-audit:
+    name: Case Editor Audit Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test audit runner
+        run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
+
+      - name: Checkout frontend contract source
+        uses: actions/checkout@v4
+        with:
+          repository: QVIS-safety/e2br3-frontend
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'dev' && 'dev' || 'main' }}
+          path: frontend/E2BR3-frontend
+          token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
+
+      - name: Validate complete audit plan
+        run: |
+          set -o pipefail
+          python3 scripts/case_editor_input_fuzzer.py \
+            --dry-run \
+            --audit-all-fields \
+            --contract frontend/E2BR3-frontend/lib/case-editor/generated/editorContracts.json \
+            --null-flavor-pairs frontend/E2BR3-frontend/lib/case-save/pages/null-flavor-pairs.ts \
+            --persisted-field-inventory scripts/case-editor-audit/case-edit-persisted-field-inventory.json \
+            --audit-alternate-map scripts/case-editor-audit/valid-alternate-map.json \
+            --seed 20261012 \
+            --values-per-field 3 \
+            --samples-per-category 1 \
+            --no-run-gates \
+            --no-verify-global-audit-chain | tee /tmp/case-editor-audit-plan.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          records = [
+              json.loads(line)
+              for line in Path("/tmp/case-editor-audit-plan.jsonl").read_text().splitlines()
+              if line.startswith("{")
+          ]
+          plan = records[-1]
+          assert plan["verdict"] == "NOT_RUN", plan
+          assert plan["persisted_field_denominator"] == 348, plan
+          assert plan["selected_persisted_fields"] == 348, plan
+          assert plan["executable_persisted_fields"] == 348, plan
+          assert plan["blocked_persisted_fields"] == [], plan
+          assert plan["audit_alternate_unresolved"] == [], plan
+          PY
+
   # ============================================
   # Job 0: Validate E2BR3 registry
   # ============================================
