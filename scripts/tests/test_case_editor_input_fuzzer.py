@@ -4,6 +4,7 @@ import builtins
 import copy
 import dis
 import json
+import os
 import random
 import sys
 import tempfile
@@ -20,6 +21,19 @@ import case_editor_ui_fuzzer as ui_fuzzer
 import rbac_rls_blackbox
 import presave_case_roundtrip_fuzzer as presave_fuzzer
 import rich_case_export_import_fuzzer as rich_fuzzer
+
+
+def frontend_contract_args() -> list[str]:
+    frontend_root = os.environ.get("E2BR3_FRONTEND_ROOT")
+    if not frontend_root:
+        raise RuntimeError("set E2BR3_FRONTEND_ROOT to the checked-out e2br3-frontend repository")
+    root = Path(frontend_root).resolve()
+    contract = root / "lib/case-editor/generated/editorContracts.json"
+    null_flavor_pairs = root / "lib/case-save/pages/null-flavor-pairs.ts"
+    missing = [str(path) for path in (contract, null_flavor_pairs) if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(f"missing frontend contract source: {', '.join(missing)}")
+    return ["--contract", str(contract), "--null-flavor-pairs", str(null_flavor_pairs)]
 
 
 class PresaveVerdictTests(unittest.TestCase):
@@ -1330,6 +1344,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                     "--password", "fixture-password",
                     "--artifact-dir", artifact_dir, "--product-key", "PRODUCT-1",
                     "--meddra-version", "28.1", "--meddra-code", "10019211",
+                    *frontend_contract_args(),
                 ])
                 self.assertEqual(fuzzer.main(args), 2)
                 run = json.loads(
@@ -1374,6 +1389,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                     "--password", "fixture-password", "--artifact-dir", artifact_dir,
                     "--product-key", "MISSING-PRODUCT", "--meddra-version", "28.1",
                     "--meddra-code", "10019211",
+                    *frontend_contract_args(),
                 ])
                 self.assertEqual(fuzzer.main(args), 2)
 
@@ -1529,7 +1545,9 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(contract[0]["fields"][2]["roundTripValue"], "eng")
 
     def test_ui_plan_covers_all_fields_and_seeded_candidates(self) -> None:
-        args = ui_fuzzer.parser().parse_args(["--seed", "2026081401", "--dry-run"])
+        args = ui_fuzzer.parser().parse_args([
+            "--seed", "2026081401", "--dry-run", *frontend_contract_args(),
+        ])
         plan = ui_fuzzer.build_plan(args)
         self.assertGreaterEqual(plan["fieldCount"], 297)
         self.assertGreaterEqual(plan["mutationCount"], 10_000)
@@ -1544,6 +1562,7 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         shards = [
             ui_fuzzer.build_plan(ui_fuzzer.parser().parse_args([
                 "--seed", "2026081401", "--shard-count", "3", "--shard-index", str(index), "--dry-run",
+                *frontend_contract_args(),
             ]))
             for index in range(3)
         ]

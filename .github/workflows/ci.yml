@@ -21,9 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test audit runner
-        run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
-
       - name: Checkout frontend contract source
         uses: actions/checkout@v4
         with:
@@ -31,6 +28,11 @@ jobs:
           ref: ${{ github.event_name == 'push' && github.ref_name == 'dev' && 'dev' || 'main' }}
           path: frontend/E2BR3-frontend
           token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
+
+      - name: Test audit runner
+        env:
+          E2BR3_FRONTEND_ROOT: ${{ github.workspace }}/frontend/E2BR3-frontend
+        run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
 
       - name: Validate complete audit plan
         run: |

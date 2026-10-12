@@ -16,7 +16,7 @@ async fn draft_save_ui_regressions() -> crate::common::Result<()> {
 		create_case_for_editor(&app, &cookie, "UI-REGRESSION", &["ich"]).await?;
 	let base = format!("/api/cases/{id}/editor/pages");
 	let (status, body) = post_json(&app, &cookie, &format!("{base}/DG/rows"), json!({"authorities":["ich"],"rows":{"drug":{
-        "drugCharacterization":"", "medicinalProduct":"",
+		"drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
         "mfdsDeviceInfo":{"serialNumber":"SN-1","udiManufacturingDate":"20260901","models":[{"value":"MODEL-1"}]},
         "fdaDevices":[{"deviceBrandName":"DEVICE-1","followUpTypes":[{"valueCode":"1"}]}]
     }}})).await?;
@@ -25,7 +25,7 @@ async fn draft_save_ui_regressions() -> crate::common::Result<()> {
 	let uri = format!("{base}/DG/rows/{drug_id}");
 	let (_, saved) = get_json(&app, &cookie, &uri).await?;
 	let drug = &saved["data"]["drug"];
-	assert_eq!(drug["drug_characterization"], "", "{saved}");
+	assert_eq!(drug["drug_characterization"], "1", "{saved}");
 	assert_eq!(
 		drug["fdaDevices"].as_array().map(Vec::len),
 		Some(1),
@@ -439,14 +439,26 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 			"{body}"
 		);
 	}
-	for (section, owner, field, column, initial) in [
-		("LB", "testResult", "testName", "test_name", "Before"),
+	for (section, owner, field, column, initial, row, rule_code, path) in [
+		(
+			"LB",
+			"testResult",
+			"testName",
+			"test_name",
+			"Before",
+			json!({"testName":"Before"}),
+			"ICH.F.r.2.1.REQUIRED",
+			"testResults.0.testName",
+		),
 		(
 			"DG",
 			"drug",
 			"medicinalProduct",
 			"medicinal_product",
 			"Before",
+			json!({"drugCharacterization":"1", "medicinalProduct":"Before"}),
+			"ICH.G.k.2.2.REQUIRED",
+			"drugs.0.medicinalProduct",
 		),
 		(
 			"DG",
@@ -454,12 +466,15 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 			"drugCharacterization",
 			"drug_characterization",
 			"1",
+			json!({"drugCharacterization":"1", "medicinalProduct":"Before"}),
+			"ICH.G.k.1.REQUIRED",
+			"drugs.0.drugCharacterization",
 		),
 	] {
 		let id =
 			create_case_for_editor(&app, &cookie, "CLEAR-NAME", &["ich"]).await?;
 		let uri = format!("/api/cases/{id}/editor/pages/{section}/rows");
-		let mut row = json!({field:initial});
+		let mut row = row;
 		if section == "DG" {
 			row["activeSubstances"] = json!([{}]);
 			row["dosageInformation"] = json!([{}]);
@@ -475,6 +490,7 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 		assert_eq!(status, StatusCode::CREATED, "{body}");
 		let row_id = body["rowId"].as_str().ok_or("missing row id")?;
 		let detail = format!("{uri}/{row_id}");
+		let (_, before) = get_json(&app, &cookie, &detail).await?;
 		let (status, body) = patch_json(
 			&app,
 			&cookie,
@@ -482,9 +498,13 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 			json!({"authorities":["ich"],"rows":{owner:{field:""}}}),
 		)
 		.await?;
-		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+		assert_eq!(body["error"]["data"]["detail"]["ruleCode"], rule_code);
+		assert_eq!(body["error"]["data"]["detail"]["path"], path);
+		assert_eq!(body["error"]["data"]["detail"]["message"], "cannot be null");
 		let (_, saved) = get_json(&app, &cookie, &detail).await?;
-		assert_eq!(saved["data"][owner][column], "", "{saved}");
+		assert_eq!(saved, before, "{body}");
+		assert_eq!(saved["data"][owner][column], initial, "{saved}");
 		if section == "DG" {
 			for child in ["activeSubstances", "dosageInformation", "indications"] {
 				assert_eq!(
@@ -497,21 +517,51 @@ async fn draft_save_empty_lists_rows_and_cleared_values() -> crate::common::Resu
 	}
 	let id = create_case_for_editor(&app, &cookie, "CLEAR-NR", &["ich"]).await?;
 	let uri = format!("/api/cases/{id}/editor/pages/NR");
-	for value in ["Before", ""] {
+	for (value, expected) in [
+		(json!("Before"), json!("Before")),
+		(json!(""), serde_json::Value::Null),
+	] {
 		let (status, body) = patch_json(
 			&app,
 			&cookie,
 			&uri,
-			json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":value}}}),
+			json!({"authorities":["ich"],"rows":{"narrative":{"senderComments":value}}}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
 		let (_, saved) = get_json(&app, &cookie, &uri).await?;
 		assert_eq!(
-			saved["rows"]["narrative"]["case_narrative"], value,
+			saved["rows"]["narrative"]["sender_comments"], expected,
 			"{saved}"
 		);
 	}
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":"Before"}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (_, before) = get_json(&app, &cookie, &uri).await?;
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":""}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"],
+		json!({
+			"message": "cannot be null",
+			"path": "narrative.caseNarrative",
+			"ruleCode": "ICH.H.1.REQUIRED"
+		})
+	);
+	let (_, after) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(after, before);
 	Ok(())
 }
 
@@ -527,6 +577,7 @@ async fn blank_safety_report_id_is_rejected() -> crate::common::Result<()> {
 		create_case_for_editor(&app, &cookie, "BLANK-SAFETY-REPORT-ID", &["ich"])
 			.await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/CI");
+	let (_, before) = get_json(&app, &cookie, &uri).await?;
 
 	let (status, body) = patch_json(
 		&app,
@@ -536,12 +587,17 @@ async fn blank_safety_report_id_is_rejected() -> crate::common::Result<()> {
 	)
 	.await?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
-	assert!(
-		body.to_string()
-			.contains("safetyReportId must not be blank"),
-		"{body}"
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"],
+		json!({
+			"message": "cannot be null",
+			"path": "safetyReportIdentification.safetyReportId",
+			"ruleCode": "ICH.C.1.1.REQUIRED"
+		})
 	);
+	let (_, after) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(after, before);
 	Ok(())
 }
 
@@ -704,20 +760,12 @@ async fn draft_save_creates_incomplete_rows_and_missing_parents(
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	for (section, owner, payload, column) in [
-		(
-			"LB",
-			"testResult",
-			json!({"testMeddraVersion": "28.1"}),
-			"test_name",
-		),
-		(
-			"DG",
-			"drug",
-			json!({"drugCharacterization": "1", "medicinalProduct": ""}),
-			"medicinal_product",
-		),
-	] {
+	for (section, owner, payload, column) in [(
+		"LB",
+		"testResult",
+		json!({"testMeddraVersion": "28.1"}),
+		"test_name",
+	)] {
 		let case_id =
 			create_case_for_editor(&app, &cookie, "DRAFT-SAVE", &["ich"]).await?;
 		let uri = format!("/api/cases/{case_id}/editor/pages/{section}/rows");
@@ -735,6 +783,31 @@ async fn draft_save_creates_incomplete_rows_and_missing_parents(
 		assert_eq!(status, StatusCode::OK, "{saved}");
 		assert_eq!(saved["data"][owner][column], "", "{saved}");
 	}
+
+	let case_id =
+		create_case_for_editor(&app, &cookie, "DRAFT-SAVE", &["ich"]).await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/DG");
+	let (_, before) = get_json(&app, &cookie, &uri).await?;
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("{uri}/rows"),
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"drugCharacterization": "1", "medicinalProduct": ""
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"],
+		json!({
+			"message": "cannot be null",
+			"path": "drugs.0.medicinalProduct",
+			"ruleCode": "ICH.G.k.2.2.REQUIRED"
+		})
+	);
+	let (_, after) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(after, before);
 
 	for rows in [
 		json!({"narrative": {"senderComments": "Persist this comment"}}),
