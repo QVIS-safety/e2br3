@@ -850,7 +850,7 @@ def candidate_expectation(
             return None
         return ("accept", None) if ordinal in {0, 1} else None
     if is_nullflavor_field(field):
-        if field.get("payloadPath") in DEVICE_NULL_FLAVOR_PATHS and ordinal == 4:
+        if ordinal == 4:
             return "accept", None
         return None
     constraint = field.get("constraint", {})
@@ -886,6 +886,16 @@ def candidate_expectation(
                 else ("accept", None)
             )
     return None
+
+
+def blank_nullflavor_requires_identity_refresh(
+    field: dict[str, Any], ordinal: int
+) -> bool:
+    return (
+        is_nullflavor_field(field)
+        and ordinal == 4
+        and field.get("payloadPath") in DEVICE_NULL_FLAVOR_PATHS
+    )
 
 
 def load_max_lengths(root: Path) -> tuple[dict[str, int], set[str]]:
@@ -4208,10 +4218,7 @@ def main(args: argparse.Namespace) -> int:
                             "surface": "raw_api",
                             "normalization_explanation": "UI save canonicalizes blank strings to null",
                         })
-                    if (
-                        payload_path in DEVICE_NULL_FLAVOR_PATHS
-                        and ordinal == 4
-                    ):
+                    if blank_nullflavor_requires_identity_refresh(field, ordinal):
                         normalized = (
                             read_status == 200
                             and readback_key_present

@@ -373,6 +373,25 @@ fn d_2_3(patient: &PatientInformation, issues: &mut Vec<ValidationIssue>) {
 	);
 }
 
+/// MFDS.D.2.3.ALLOWED.VALUE
+fn mfds_d_2_3(
+	patient: Option<&PatientInformation>,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	let Some(patient) = patient else {
+		return;
+	};
+	allowed(
+		issues,
+		"MFDS.D.2.3.ALLOWED.VALUE",
+		"patientInformation.patientAgeGroup",
+		valid_code(
+			patient.age_group.as_deref(),
+			&["1", "2", "3", "4", "5", "6"],
+		),
+	);
+}
+
 macro_rules! patient_decimal_length {
 	($name:ident, $code:literal, $path:literal, $field:ident, $max_length:literal) => {
 		#[doc = $code]
@@ -2288,6 +2307,7 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
+	mfds_d_2_3(validation_ctx.patient.as_ref(), issues);
 	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
@@ -3485,6 +3505,69 @@ mod golden_companion_tests {
 		assert!(issues
 			.iter()
 			.any(|issue| issue.code == "MFDS.D.1.1.4.REQUIRED"));
+	}
+
+	#[test]
+	fn mfds_age_group_excludes_foetus_without_narrowing_ich_or_fda() {
+		let mfds = MfdsValidationContext {
+			senders: Vec::new(),
+			studies: Vec::new(),
+			active_substances: Vec::new(),
+			relatedness: Vec::new(),
+			past_drugs: Vec::new(),
+			parent_past_drugs: Vec::new(),
+		};
+		let mut ctx = empty_ctx();
+		let mut value = patient();
+		value.age_group = Some("0".to_string());
+		ctx.patient = Some(value);
+
+		for authority in [RegulatoryAuthority::Ich, RegulatoryAuthority::Fda] {
+			let mut issues = Vec::new();
+			collect(&mut issues, authority, &ctx, None, None);
+			assert!(!issues.iter().any(|issue| {
+				issue.code == "ICH.D.2.3.ALLOWED.VALUE"
+					|| issue.code == "MFDS.D.2.3.ALLOWED.VALUE"
+			}));
+		}
+
+		let mut issues = Vec::new();
+		collect(
+			&mut issues,
+			RegulatoryAuthority::Mfds,
+			&ctx,
+			None,
+			Some(&mfds),
+		);
+		let matches = issues
+			.iter()
+			.filter(|issue| issue.code == "MFDS.D.2.3.ALLOWED.VALUE")
+			.collect::<Vec<_>>();
+		assert_eq!(matches.len(), 1);
+		assert_eq!(matches[0].path, "patientInformation.patientAgeGroup");
+		assert_eq!(
+			matches[0].field_path.as_deref(),
+			Some("patientInformation.patientAgeGroup")
+		);
+
+		for code in ["1", "6"] {
+			if let Some(patient) = ctx.patient.as_mut() {
+				patient.age_group = Some(code.to_string());
+			} else {
+				panic!("test patient is required");
+			}
+			let mut issues = Vec::new();
+			collect(
+				&mut issues,
+				RegulatoryAuthority::Mfds,
+				&ctx,
+				None,
+				Some(&mfds),
+			);
+			assert!(!issues
+				.iter()
+				.any(|issue| issue.code == "MFDS.D.2.3.ALLOWED.VALUE"));
+		}
 	}
 
 	#[test]

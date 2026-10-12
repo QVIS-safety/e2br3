@@ -209,6 +209,7 @@ INSERT INTO e2b_code_lists (list_name, code, display_name, sort_order) VALUES
 ('sex', '2', 'Female', 2),
 
 -- Age Group (D.2.3)
+('age_group', '0', 'Foetus', 0),
 ('age_group', '1', 'Neonate', 1),
 ('age_group', '2', 'Infant', 2),
 ('age_group', '3', 'Child', 3),

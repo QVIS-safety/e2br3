@@ -13,7 +13,7 @@ pub(super) async fn persist_devices(
 				message: "Invalid FDA device information".into(),
 			}
 		})?;
-		crate::web::rest::drug_sub_rest::persist_fda_devices(
+		crate::web::rest::drug_sub_rest::persist_editor_fda_devices(
 			ctx, mm, drug_id, devices,
 		)
 		.await?;

@@ -11,7 +11,7 @@ use crate::model::base::{
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
-use modql::field::{HasSeaFields, SeaField};
+use modql::field::{HasSeaFields, SeaField, SeaFields};
 use modql::SIden;
 use sea_query::{Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -251,15 +251,12 @@ where
 	let user_id = ctx.user_id();
 
 	// -- Extract fields and prep for update (adds updated_by, updated_at)
-	let mut fields = data.not_none_sea_fields();
-	for &field in clear_fields {
-		if !E::field_names().contains(&field) {
-			return Err(crate::model::Error::Validation {
-				message: format!("invalid clear field '{field}' for {}", MC::TABLE),
-			});
-		}
-		fields.push(SeaField::new(SIden(field), Expr::cust("NULL")));
-	}
+	let mut fields = apply_clear_fields(
+		data.not_none_sea_fields(),
+		E::field_names(),
+		clear_fields,
+		MC::TABLE,
+	)?;
 	prep_fields_for_update::<MC>(&mut fields, user_id);
 
 	// -- Build the SQL query
@@ -287,6 +284,88 @@ where
 	}
 
 	Ok(())
+}
+
+fn apply_clear_fields(
+	fields: SeaFields,
+	field_names: &[&str],
+	clear_fields: &[&'static str],
+	table: &'static str,
+) -> Result<SeaFields> {
+	for &field in clear_fields {
+		if !field_names.contains(&field) {
+			return Err(crate::model::Error::Validation {
+				message: format!("invalid clear field '{field}' for {table}"),
+			});
+		}
+	}
+
+	let retained = fields.into_vec().into_iter().filter(|field| {
+		let name = field.iden.to_string();
+		!clear_fields.iter().any(|clear| name == *clear)
+	});
+	let mut fields = SeaFields::new(retained.collect());
+	for (index, &field) in clear_fields.iter().enumerate() {
+		if !clear_fields[..index].contains(&field) {
+			fields.push(SeaField::new(SIden(field), Expr::cust("NULL")));
+		}
+	}
+	Ok(fields)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn clear_fields_replace_values_once_and_preserve_other_fields() {
+		let fields = SeaFields::new(vec![
+			SeaField::new(SIden("title"), "   "),
+			SeaField::new(SIden("ordinary"), "kept"),
+		]);
+		let fields = match apply_clear_fields(
+			fields,
+			&["title", "ordinary"],
+			&["title", "title"],
+			"test_rows",
+		) {
+			Ok(fields) => fields,
+			Err(error) => panic!("clear fields failed: {error:?}"),
+		};
+
+		let mut title_count = 0;
+		let mut ordinary_count = 0;
+		for field in fields.into_vec() {
+			match field.iden.to_string().as_str() {
+				"title" => {
+					title_count += 1;
+					assert_eq!(field.value, Expr::cust("NULL"));
+				}
+				"ordinary" => {
+					ordinary_count += 1;
+					assert_eq!(
+						field.value,
+						SeaField::new(SIden("ordinary"), "kept").value
+					);
+				}
+				name => panic!("unexpected field: {name}"),
+			}
+		}
+		assert_eq!(title_count, 1);
+		assert_eq!(ordinary_count, 1);
+	}
+
+	#[test]
+	fn clear_fields_reject_unknown_field() {
+		let fields = SeaFields::new(vec![SeaField::new(SIden("ordinary"), "kept")]);
+		match apply_clear_fields(fields, &["ordinary"], &["unknown"], "test_rows") {
+			Err(crate::model::Error::Validation { message }) => {
+				assert_eq!(message, "invalid clear field 'unknown' for test_rows")
+			}
+			Ok(_) => panic!("unknown clear field was accepted"),
+			Err(error) => panic!("unexpected error: {error:?}"),
+		}
+	}
 }
 
 // endregion: --- Update

@@ -57,6 +57,7 @@ fn retain_case_business_rules(issues: &mut Vec<ValidationIssue>) {
 		matches!(
 			issue.code.as_str(),
 			"ICH.C.1.6.1.r.2.ALLOWED.VALUE"
+				| "MFDS.D.2.3.ALLOWED.VALUE"
 				| "ICH.C.4.r.2.ALLOWED.VALUE"
 				| "ICH.D.7.1.r.6.ALLOWED.VALUE"
 				| "ICH.D.7.3.ALLOWED.VALUE"
@@ -468,6 +469,7 @@ mod tests {
 		let mut issues = Vec::new();
 		for code in [
 			"ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+			"MFDS.D.2.3.ALLOWED.VALUE",
 			"ICH.C.4.r.2.ALLOWED.VALUE",
 			"ICH.D.6.NULLFLAVOR.ALLOWED",
 			"ICH.D.7.1.r.6.ALLOWED.VALUE",
@@ -484,7 +486,7 @@ mod tests {
 			crate::push_field_issue(&mut issues, code, "field", "section", code);
 		}
 		retain_case_business_rules(&mut issues);
-		assert_eq!(issues.len(), 13);
+		assert_eq!(issues.len(), 14);
 	}
 
 	#[test]

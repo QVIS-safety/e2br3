@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+import builtins
 import copy
+import dis
 import json
 import random
 import sys
 import tempfile
+import types
 import unicodedata
 import unittest
 from pathlib import Path
@@ -286,6 +289,24 @@ class PresaveVerdictTests(unittest.TestCase):
 
 
 class CaseEditorInputFuzzerTests(unittest.TestCase):
+    def test_main_runtime_global_references_resolve(self) -> None:
+        missing = set()
+
+        def inspect(code: types.CodeType) -> None:
+            for instruction in dis.get_instructions(code):
+                if (
+                    instruction.opname == "LOAD_GLOBAL"
+                    and instruction.argval not in fuzzer.__dict__
+                    and not hasattr(builtins, instruction.argval)
+                ):
+                    missing.add(instruction.argval)
+            for value in code.co_consts:
+                if isinstance(value, types.CodeType):
+                    inspect(value)
+
+        inspect(fuzzer.main.__code__)
+        self.assertEqual(missing, set())
+
     def test_lifecycle_mode_does_not_fail_the_zero_mutation_admission_guard(self) -> None:
         self.assertFalse(fuzzer.zero_mutation_admission_blocked(0, 18, True))
         self.assertTrue(fuzzer.zero_mutation_admission_blocked(0, 18, False))
@@ -977,7 +998,9 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                 fuzzer.candidate_expectation(field, 4, ""),
                 ("accept", None),
             )
-            self.assertIn(field["payloadPath"], fuzzer.DEVICE_NULL_FLAVOR_PATHS)
+            self.assertTrue(
+                fuzzer.blank_nullflavor_requires_identity_refresh(field, 4)
+            )
 
         baseline = fuzzer.baseline_for(contract[0]["fields"], minimal=True)
         device = baseline["fdaDevices"][0]
@@ -998,6 +1021,46 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertEqual(
             fuzzer.normalized_classification(None, "NI", True),
             "SAVE_NORMALIZED",
+        )
+
+    def test_declared_null_flavor_blank_uses_optional_text_contract_only(self) -> None:
+        null_flavor = {
+            "code": "D.2.1.nullFlavor",
+            "payloadPath": "patientBirthDateNullFlavor",
+            "roundTripValue": "UNK",
+            "constraint": {
+                "status": "verified",
+                "ruleCode": "ICH.D.2.1.NULLFLAVOR.ALLOWED",
+                "invalidValue": "ZZZ",
+            },
+            "_allowedNullFlavors": ["UNK"],
+        }
+        self.assertEqual(
+            fuzzer.candidate_expectation(null_flavor, 4, "  "),
+            ("accept", None),
+        )
+        self.assertFalse(
+            fuzzer.blank_nullflavor_requires_identity_refresh(null_flavor, 4)
+        )
+        self.assertTrue(fuzzer.nullflavor_invalid_candidate(null_flavor, "ZZZ"))
+        self.assertIsNone(fuzzer.candidate_expectation(null_flavor, 5, "ZZZ"))
+
+        required_non_null_flavor = {
+            "code": "C.1.1",
+            "payloadPath": "safetyReportId",
+            "roundTripValue": "REPORT-1",
+            "constraint": {
+                "status": "verified",
+                "ruleCode": "ICH.C.1.1.REQUIRED",
+                "invalidValue": "",
+            },
+        }
+        self.assertEqual(
+            fuzzer.candidate_expectation(required_non_null_flavor, 0, ""),
+            ("reject", "ICH.C.1.1.REQUIRED"),
+        )
+        self.assertIsNone(
+            fuzzer.candidate_expectation(required_non_null_flavor, 4, "  ")
         )
 
     def test_audit_transition_matches_camel_dto_and_newest_first_log(self) -> None:

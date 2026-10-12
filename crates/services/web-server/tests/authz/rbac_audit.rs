@@ -1,11 +1,13 @@
 use crate::common::{
-	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
-	seed_org_with_users, seed_two_orgs_manager_cases, system_user_id, Result,
+	cookie_header, init_test_mm, insert_case_version, insert_user,
+	seed_org_with_all_roles, seed_org_with_users, seed_two_orgs_manager_cases,
+	system_user_id, Result,
 };
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN};
+use lib_core::model::store::set_full_context_dbx;
 use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
@@ -463,6 +465,123 @@ async fn test_case_audit_trail_paginates_projected_rows() -> Result<()> {
 		&time::format_description::well_known::Rfc3339,
 	)?;
 	assert!(first_time >= second_time);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_cross_org_case_audit_requires_case_scope_but_collection_keeps_descendants(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_two_orgs_manager_cases(&mm).await?;
+	insert_case_version(&mm, seed.case_org2, 1, system_user_id()).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org1_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let app = web_server::app(mm);
+
+	let system_admin_token =
+		generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{}/audit-trail", seed.case_org2))
+		.header("cookie", cookie_header(&system_admin_token.to_string()))
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(
+		res.status(),
+		StatusCode::FORBIDDEN,
+		"platform identity does not bypass the case parent-scope requirement"
+	);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!(
+			"/api/audit-logs/by-record/cases/{}",
+			seed.case_org2
+		))
+		.header("cookie", cookie_header(&system_admin_token.to_string()))
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let payload: serde_json::Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	let logs = payload["data"]
+		.as_array()
+		.ok_or("expected cross-organization audit collection rows")?;
+	assert!(
+		logs.iter().any(|log| log["table_name"] == "case_versions"),
+		"authorized collection audit should retain case-version descendants: {payload:?}"
+	);
+
+	let manager_token =
+		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{}/audit-trail", seed.case_org2))
+		.header("cookie", cookie_header(&manager_token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert!(
+		matches!(res.status(), StatusCode::FORBIDDEN | StatusCode::NOT_FOUND),
+		"ordinary manager must not read another organization's case audit"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_system_admin_can_read_hard_deleted_case_audit_by_record() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_two_orgs_manager_cases(&mm).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org1_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, system_admin.id, seed.org1_id, ROLE_SYSTEM_ADMIN)
+		.await?;
+	dbx.execute(sqlx::query("DELETE FROM cases WHERE id = $1").bind(seed.case_org1))
+		.await?;
+	dbx.commit_txn().await?;
+
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!(
+			"/api/audit-logs/by-record/cases/{}",
+			seed.case_org1
+		))
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let payload: serde_json::Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	let logs = payload["data"]
+		.as_array()
+		.ok_or("expected deleted case audit logs")?;
+	assert!(
+		logs.iter().any(|log| {
+			log["record_id"] == seed.case_org1.to_string()
+				&& log["action"] == "DELETE"
+		}),
+		"hard-deleted case history should include its delete event: {payload:?}"
+	);
 
 	Ok(())
 }

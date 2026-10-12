@@ -15,8 +15,9 @@ use lib_core::model::drug::{
 	FdaDeviceInformationFilter, FdaDeviceInformationForCreate,
 	FdaDeviceInformationForUpdate,
 };
-use lib_rest_core::Result;
+use lib_rest_core::{Error, Result};
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 fn ensure_drug_scope(
@@ -39,12 +40,14 @@ fn ensure_drug_scope(
 
 #[derive(Deserialize)]
 pub struct FdaDeviceCodeInput {
+	pub id: Option<Uuid>,
 	#[serde(alias = "valueCode")]
 	pub value_code: String,
 }
 
 #[derive(Deserialize)]
 pub struct FdaDeviceReplaceInput {
+	pub id: Option<Uuid>,
 	pub malfunction: Option<bool>,
 	#[serde(alias = "deviceBrandName")]
 	pub device_brand_name: Option<String>,
@@ -81,6 +84,326 @@ pub struct FdaDeviceReplaceInput {
 	#[serde(default)]
 	#[serde(alias = "remedialActions")]
 	pub remedial_actions: Vec<FdaDeviceCodeInput>,
+}
+
+fn normalized_null_flavor(value: Option<String>) -> Option<String> {
+	value
+		.map(|value| value.trim().to_owned())
+		.filter(|value| !value.is_empty())
+}
+
+async fn replace_device_codes(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	device_id: Uuid,
+	groups: [(&'static str, Vec<FdaDeviceCodeInput>); 3],
+) -> Result<()> {
+	let mut filter = FdaDeviceCodeFilter::default();
+	filter.device_id = Some(modql::filter::OpValsValue::from(vec![
+		modql::filter::OpValValue::Eq(serde_json::json!(device_id.to_string())),
+	]));
+	let existing = FdaDeviceCodeBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(modql::filter::ListOptions::default()),
+	)
+	.await?;
+	let existing_by_id = existing
+		.iter()
+		.map(|code| (code.id, code))
+		.collect::<HashMap<_, _>>();
+	let mut next_by_element = HashMap::new();
+	for element in ["follow_up_type", "device_problem", "remedial_action"] {
+		let maximum = existing
+			.iter()
+			.filter(|code| code.element == element)
+			.map(|code| code.sequence_number)
+			.max();
+		let next = match maximum {
+			Some(value) => {
+				value.checked_add(1).ok_or_else(|| Error::BadRequest {
+					message: format!(
+						"FDA device code sequence overflow for {element}"
+					),
+				})?
+			}
+			None => 1,
+		};
+		next_by_element.insert(element, next);
+	}
+	let mut retained = HashSet::new();
+	for (element, codes) in groups {
+		for (index, code) in codes.into_iter().enumerate() {
+			let sequence_number = i32::try_from(index)
+				.map_err(|_| Error::BadRequest {
+					message: "Too many FDA device codes".into(),
+				})?
+				.checked_add(1)
+				.ok_or_else(|| Error::BadRequest {
+					message: "FDA device code sequence overflow".into(),
+				})?;
+			if let Some(id) = code.id {
+				if !retained.insert(id) {
+					return Err(Error::BadRequest {
+						message: "Duplicate FDA device code id".into(),
+					});
+				}
+				let Some(persisted) = existing_by_id.get(&id).copied() else {
+					return Err(Error::BadRequest { message: "FDA device code id is not a live child of the current device".into() });
+				};
+				if persisted.device_id != device_id {
+					return Err(Error::BadRequest { message: "FDA device code id does not belong to the current device".into() });
+				}
+				if persisted.element != element
+					|| persisted.value_code != code.value_code
+				{
+					lib_core::model::update_uuid_patch::<
+						FdaDeviceCodeBmc,
+						FdaDeviceCodeForUpdate,
+					>(
+						ctx,
+						mm,
+						id,
+						FdaDeviceCodeForUpdate {
+							element: Some(element.to_owned()),
+							value_code: Some(code.value_code),
+						},
+						&[],
+					)
+					.await?;
+				}
+			} else if let Some(persisted) = existing.iter().find(|persisted| {
+				!retained.contains(&persisted.id)
+					&& persisted.element == element
+					&& persisted.sequence_number == sequence_number
+					&& persisted.value_code == code.value_code
+			}) {
+				retained.insert(persisted.id);
+			} else {
+				let next = next_by_element.get_mut(element).ok_or_else(|| {
+					Error::BadRequest {
+						message: format!(
+							"Unsupported FDA device code element {element}"
+						),
+					}
+				})?;
+				let new_sequence = *next;
+				*next = (*next).checked_add(1).ok_or_else(|| Error::BadRequest {
+					message: format!(
+						"FDA device code sequence overflow for {element}"
+					),
+				})?;
+				let id = FdaDeviceCodeBmc::create(
+					ctx,
+					mm,
+					FdaDeviceCodeForCreate {
+						device_id,
+						element: element.to_owned(),
+						sequence_number: new_sequence,
+						value_code: code.value_code,
+					},
+				)
+				.await?;
+				retained.insert(id);
+			}
+		}
+	}
+	for code in existing {
+		if !retained.contains(&code.id) {
+			FdaDeviceCodeBmc::delete(ctx, mm, code.id).await?;
+		}
+	}
+	Ok(())
+}
+
+pub(crate) async fn persist_editor_fda_devices(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	drug_id: Uuid,
+	devices: Vec<FdaDeviceReplaceInput>,
+) -> Result<()> {
+	let mut filter = FdaDeviceInformationFilter::default();
+	filter.drug_id = Some(modql::filter::OpValsValue::from(vec![
+		modql::filter::OpValValue::Eq(serde_json::json!(drug_id.to_string())),
+	]));
+	let existing = FdaDeviceInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(modql::filter::ListOptions::default()),
+	)
+	.await?;
+	let existing_by_id = existing
+		.iter()
+		.map(|device| (device.id, device))
+		.collect::<HashMap<_, _>>();
+	let mut retained = HashSet::new();
+	let maximum_sequence =
+		existing.iter().map(|device| device.sequence_number).max();
+	let mut next_sequence = match maximum_sequence {
+		Some(value) => value.checked_add(1).ok_or_else(|| Error::BadRequest {
+			message: "FDA device sequence overflow".into(),
+		})?,
+		None => 1,
+	};
+	for device in devices {
+		let FdaDeviceReplaceInput {
+			id,
+			malfunction,
+			device_brand_name,
+			device_brand_name_null_flavor,
+			common_device_name,
+			common_device_name_null_flavor,
+			device_product_code,
+			manufacturer_name,
+			manufacturer_address,
+			manufacturer_city,
+			manufacturer_state,
+			manufacturer_country,
+			device_usage,
+			device_lot_number,
+			operator_of_device,
+			follow_up_types,
+			device_problem_codes,
+			remedial_actions,
+		} = device;
+		let brand_nf = normalized_null_flavor(device_brand_name_null_flavor);
+		let common_nf = normalized_null_flavor(common_device_name_null_flavor);
+		let device_id = if let Some(id) = id {
+			if !retained.insert(id) {
+				return Err(Error::BadRequest {
+					message: "Duplicate FDA device id".into(),
+				});
+			}
+			if !existing_by_id.contains_key(&id) {
+				let found = FdaDeviceInformationBmc::get(ctx, mm, id).await?;
+				ensure_drug_scope(
+					drug_id,
+					found.drug_id,
+					id,
+					"fda_device_information",
+				)?;
+				return Err(model::Error::EntityUuidNotFound {
+					entity: "fda_device_information",
+					id,
+				}
+				.into());
+			}
+			let persisted = existing_by_id[&id];
+			let scalar_changed = persisted.malfunction != malfunction
+				|| persisted.device_brand_name != device_brand_name
+				|| persisted.device_brand_name_null_flavor != brand_nf
+				|| persisted.common_device_name != common_device_name
+				|| persisted.common_device_name_null_flavor != common_nf
+				|| persisted.device_product_code != device_product_code
+				|| persisted.manufacturer_name != manufacturer_name
+				|| persisted.manufacturer_address != manufacturer_address
+				|| persisted.manufacturer_city != manufacturer_city
+				|| persisted.manufacturer_state != manufacturer_state
+				|| persisted.manufacturer_country != manufacturer_country
+				|| persisted.device_usage != device_usage
+				|| persisted.device_lot_number != device_lot_number
+				|| persisted.operator_of_device != operator_of_device;
+			let clear_fields = [
+				("malfunction", malfunction.is_none()),
+				("device_brand_name", device_brand_name.is_none()),
+				("device_brand_name_null_flavor", brand_nf.is_none()),
+				("common_device_name", common_device_name.is_none()),
+				("common_device_name_null_flavor", common_nf.is_none()),
+				("device_product_code", device_product_code.is_none()),
+				("manufacturer_name", manufacturer_name.is_none()),
+				("manufacturer_address", manufacturer_address.is_none()),
+				("manufacturer_city", manufacturer_city.is_none()),
+				("manufacturer_state", manufacturer_state.is_none()),
+				("manufacturer_country", manufacturer_country.is_none()),
+				("device_usage", device_usage.is_none()),
+				("device_lot_number", device_lot_number.is_none()),
+				("operator_of_device", operator_of_device.is_none()),
+			]
+			.into_iter()
+			.filter_map(|(field, clear)| clear.then_some(field))
+			.collect::<Vec<_>>();
+			if scalar_changed {
+				lib_core::model::update_uuid_patch::<
+					FdaDeviceInformationBmc,
+					FdaDeviceInformationForUpdate,
+				>(
+					ctx,
+					mm,
+					id,
+					FdaDeviceInformationForUpdate {
+						malfunction,
+						device_brand_name,
+						device_brand_name_null_flavor: brand_nf,
+						common_device_name,
+						common_device_name_null_flavor: common_nf,
+						device_product_code,
+						manufacturer_name,
+						manufacturer_address,
+						manufacturer_city,
+						manufacturer_state,
+						manufacturer_country,
+						device_usage,
+						device_lot_number,
+						operator_of_device,
+					},
+					&clear_fields,
+				)
+				.await?;
+			}
+			id
+		} else {
+			let id = FdaDeviceInformationBmc::create(
+				ctx,
+				mm,
+				FdaDeviceInformationForCreate {
+					drug_id,
+					sequence_number: next_sequence,
+					malfunction,
+					device_brand_name,
+					device_brand_name_null_flavor: brand_nf,
+					common_device_name,
+					common_device_name_null_flavor: common_nf,
+					device_product_code,
+					manufacturer_name,
+					manufacturer_address,
+					manufacturer_city,
+					manufacturer_state,
+					manufacturer_country,
+					device_usage,
+					device_lot_number,
+					operator_of_device,
+				},
+			)
+			.await?;
+			next_sequence =
+				next_sequence
+					.checked_add(1)
+					.ok_or_else(|| Error::BadRequest {
+						message: "FDA device sequence overflow".into(),
+					})?;
+			retained.insert(id);
+			id
+		};
+		replace_device_codes(
+			ctx,
+			mm,
+			device_id,
+			[
+				("follow_up_type", follow_up_types),
+				("device_problem", device_problem_codes),
+				("remedial_action", remedial_actions),
+			],
+		)
+		.await?;
+	}
+	for device in existing {
+		if !retained.contains(&device.id) {
+			FdaDeviceInformationBmc::delete(ctx, mm, device.id).await?;
+		}
+	}
+	Ok(())
 }
 
 #[derive(Deserialize)]

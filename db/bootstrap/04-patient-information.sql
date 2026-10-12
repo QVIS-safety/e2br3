@@ -21,8 +21,8 @@ CREATE TABLE patient_information (
     gestation_period_unit VARCHAR(50),  -- E2B contract max; UCUM examples: mo, wk, d, {Trimester}
 
     -- D.2.3 - Patient Age Group (E2B(R3) codes)
-    age_group VARCHAR(1) CHECK (age_group IN ('1', '2', '3', '4', '5', '6')),
-    -- 1=Neonate, 2=Infant, 3=Child, 4=Adolescent, 5=Adult, 6=Elderly
+    age_group VARCHAR(1) CHECK (age_group IN ('0', '1', '2', '3', '4', '5', '6')),
+    -- 0=Foetus, 1=Neonate, 2=Infant, 3=Child, 4=Adolescent, 5=Adult, 6=Elderly
 
     -- D.3 - Body Weight (kg)
     weight_kg DECIMAL(6,2),
