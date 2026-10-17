@@ -1,14 +1,7 @@
 use super::*;
 
-fn user_target_organization(
-	ctx: &Ctx,
-	snapshot: &AuthorizationSnapshotW,
-) -> Option<Uuid> {
-	if snapshot.identity().is_platform_administrator() {
-		None
-	} else {
-		Some(ctx.organization_id())
-	}
+fn user_target_organization(ctx: &Ctx) -> Option<Uuid> {
+	Some(ctx.organization_id())
 }
 
 /// POST /api/users
@@ -154,7 +147,7 @@ pub async fn get_user(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	let target_organization_id = user_target_organization(&ctx, &snapshot);
+	let target_organization_id = user_target_organization(&ctx);
 	let action = policy_registry()
 		.context_action::<Existing<UserResource>>("user.read")
 		.expect("user.read policy");
@@ -166,6 +159,13 @@ pub async fn get_user(
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
 	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
+	if entity.organization_id != ctx.organization_id() {
+		return Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "users",
+			id,
+		}
+		.into());
+	}
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -226,7 +226,7 @@ pub async fn list_users(
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<UserView>>>)> {
 	let ctx = ctx_w.0;
-	let target_organization_id = user_target_organization(&ctx, &snapshot);
+	let target_organization_id = user_target_organization(&ctx);
 	let include_blinded = raw_query.as_deref().is_some_and(|query| {
 		query.split('&').any(|part| {
 			matches!(part, "include_blinded=true" | "includeBlinded=true")
@@ -234,11 +234,25 @@ pub async fn list_users(
 	});
 	let mut params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
-	if !include_blinded {
-		params.filters.get_or_insert_default().push(UserFilter {
-			access_blind_allowed: Some(OpValBool::Eq(false).into()),
-			..Default::default()
-		});
+	let filters = params.filters.get_or_insert_default();
+	if filters.is_empty() {
+		filters.push(UserFilter::default());
+	}
+	for filter in filters {
+		filter
+			.organization_id
+			.get_or_insert_with(|| modql::filter::OpValsValue(Vec::new()))
+			.0
+			.push(modql::filter::OpValValue::Eq(serde_json::json!(
+				ctx.organization_id()
+			)));
+		if !include_blinded {
+			filter
+				.access_blind_allowed
+				.get_or_insert_with(|| modql::filter::OpValsBool(Vec::new()))
+				.0
+				.push(OpValBool::Eq(false));
+		}
 	}
 	let action = policy_registry()
 		.context_action("user.list")

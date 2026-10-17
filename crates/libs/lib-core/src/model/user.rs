@@ -2,6 +2,7 @@ use crate::ctx::{canonical_role, Ctx, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID};
 use crate::model::authorization::RoleAssignmentRepository;
 use crate::model::base::base_uuid;
 use crate::model::base::{prep_fields_for_update, DbBmc};
+use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::organization::Organization;
 use crate::model::store::{
 	set_full_context_dbx_or_rollback, set_full_context_from_ctx_dbx,
@@ -155,6 +156,7 @@ pub struct UserForUpdate {
 
 #[derive(FilterNodes, Deserialize, Default)]
 pub struct UserFilter {
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub organization_id: Option<OpValsValue>,
 	pub email: Option<OpValsString>,
 	pub username: Option<OpValsString>,
