@@ -1383,7 +1383,7 @@ async fn test_submission_receiver_selection_updates_message_header_n_identifiers
 		assert_eq!(header_status, StatusCode::OK, "{header:?}");
 		assert_eq!(
 			header["data"]["message_number"].as_str(),
-			Some(safety_report_id.as_str())
+			Some(format!("MSG-{case_id}").as_str())
 		);
 		assert_eq!(
 			header["data"]["message_sender_identifier"].as_str(),

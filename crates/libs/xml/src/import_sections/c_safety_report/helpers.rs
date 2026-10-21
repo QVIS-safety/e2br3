@@ -5,7 +5,6 @@ use crate::import_sections::shared::{
 	normalize_iso2, telecom_first_in_node,
 };
 use crate::mapping::mfds::c_safety_report::CMfdsSafetyReportPaths;
-use crate::mfds::codes::KR_C_3_1_1;
 use crate::Result;
 use lib_core::model::receiver::ReceiverInformationForUpdate;
 use libxml::parser::Parser;
@@ -193,9 +192,7 @@ fn read_c_3_1_kr_1(
 		first_attr(
 			xpath,
 			node,
-			&format!(
-				"./hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value"
-			),
+			"./hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.1.2']",
 			"code",
 		)
 	});
@@ -596,8 +593,8 @@ fn read_c_2_r_2_1_2(
 	Option<String>,
 	Option<String>,
 )> {
-	let nested_path = ".//hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name";
-	let direct_path = ".//hl7:representedOrganization/hl7:name";
+	let nested_path = "hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name";
+	let direct_path = "hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:representedOrganization/hl7:name";
 	let (nested, nested_null_flavor) = read_reporter_text_with_null_flavor(
 		xpath,
 		node,
@@ -685,7 +682,7 @@ fn read_c_2_r_2_7(
 	let null_flavor = first_attr(
 		xpath,
 		node,
-		".//hl7:assignedEntity/hl7:telecom[not(starts-with(@value,'mailto:'))][1]",
+		".//hl7:assignedEntity/hl7:telecom[not(@value='mailto' or starts-with(@value,'mailto:'))][1]",
 		"nullFlavor",
 	);
 	import_constraint::string(
@@ -713,7 +710,7 @@ fn read_fda_c_2_r_2_8(
 	let null_flavor = first_attr(
 		xpath,
 		node,
-		".//hl7:assignedEntity/hl7:telecom[starts-with(@value,'mailto:')][1]",
+		".//hl7:assignedEntity/hl7:telecom[@value='mailto' or starts-with(@value,'mailto:')][1]",
 		"nullFlavor",
 	);
 	import_constraint::string(
@@ -985,6 +982,37 @@ mod tests {
   </PORR_IN049016UV>
 </MCCI_IN200100UV01>"#
 		)
+	}
+
+	#[test]
+	fn reporter_email_null_flavor_stays_separate_from_telephone() {
+		let xml = primary_source_xml(
+			r#"<telecom value="tel:+821012345678"/><telecom value="mailto" nullFlavor="NASK"/>"#,
+		);
+		let sources = parse_primary_sources(xml.as_bytes()).expect("parse");
+		assert_eq!(sources[0].email_null_flavor.as_deref(), Some("NASK"));
+		assert_eq!(sources[0].telephone_null_flavor, None);
+	}
+
+	#[test]
+	fn sender_import_reads_mfds_qualification_from_assigned_person() {
+		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><PORR_IN049016UV><controlActProcess><subject><investigationEvent><subjectOf1><controlActEvent><author><assignedEntity><code code="1" codeSystem="2.16.840.1.113883.3.989.2.1.1.7"/><assignedPerson><asQualifiedEntity classCode="QUAL"><code code="4" codeSystem="2.16.840.1.113883.3.989.5.1.10.1.2"/></asQualifiedEntity></assignedPerson></assignedEntity></author></controlActEvent></subjectOf1></investigationEvent></subject></controlActProcess></PORR_IN049016UV></MCCI_IN200100UV01>"#;
+		let sender = parse_sender_information(xml)
+			.expect("parse")
+			.expect("sender");
+		assert_eq!(sender.health_professional_type_kr1.as_deref(), Some("4"));
+	}
+
+	#[test]
+	fn reporter_department_null_flavor_does_not_read_nested_organization() {
+		let xml = primary_source_xml(
+			r#"<representedOrganization><name nullFlavor="ASKU"/><assignedEntity><representedOrganization><name>Organization</name></representedOrganization></assignedEntity></representedOrganization>"#,
+		);
+		let sources = parse_primary_sources(xml.as_bytes()).expect("parse reporter");
+		assert_eq!(sources[0].department, None);
+		assert_eq!(sources[0].department_null_flavor.as_deref(), Some("ASKU"));
+		assert_eq!(sources[0].organization.as_deref(), Some("Organization"));
+		assert_eq!(sources[0].organization_null_flavor, None);
 	}
 
 	#[test]

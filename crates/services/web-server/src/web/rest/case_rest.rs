@@ -14,10 +14,11 @@ use lib_core::model::case::{
 	is_allowed_case_status_transition, is_valid_case_status,
 	update_touches_non_status_fields, Case, CaseBmc, CaseFilter,
 	CaseForCreate as InternalCaseForCreate, CaseForUpdate as InternalCaseForUpdate,
-	CaseLinkOption, CaseListViewRow,
+	CaseLinkOption, CaseListViewRow, CaseStatusSummary,
 };
 use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
+use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::patch::{deserialize_patch_value, PatchValue};
 use lib_core::model::presave::{ReceiverPresave, ReceiverPresaveBmc};
 use lib_core::model::reaction::{Reaction, ReactionBmc};
@@ -805,6 +806,7 @@ pub struct CaseLinkOptionList {
 #[serde(rename_all = "camelCase")]
 pub struct CaseListViewResult {
 	pub items: Vec<CaseListViewRow>,
+	pub summary: CaseStatusSummary,
 }
 
 #[derive(Debug, Serialize)]
@@ -1057,6 +1059,8 @@ async fn create_follow_up_case_in_txn(
 	Json<DataRestResult<CaseFollowUpCreateResult>>,
 )> {
 	let source_case = CaseBmc::get(ctx, mm, source_case_id).await?;
+	let source_header =
+		MessageHeaderBmc::get_by_case(ctx, mm, source_case_id).await?;
 	let source_report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, source_case_id)
 			.await
@@ -1096,6 +1100,21 @@ async fn create_follow_up_case_in_txn(
 	let case_id = CaseBmc::create(ctx, mm, case_create).await?;
 	let transmission_date =
 		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
+	MessageHeaderBmc::create(
+		ctx,
+		mm,
+		MessageHeaderForCreate {
+			case_id,
+			batch_sender_identifier: source_header.batch_sender_identifier,
+			batch_receiver_identifier: source_header.batch_receiver_identifier,
+			batch_transmission_date: Some(OffsetDateTime::now_utc()),
+			message_number: format!("MSG-{case_id}"),
+			message_sender_identifier: source_header.message_sender_identifier,
+			message_receiver_identifier: source_header.message_receiver_identifier,
+			message_date: transmission_date.clone(),
+		},
+	)
+	.await?;
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,
@@ -1352,21 +1371,24 @@ async fn list_case_view_rows_authorized(
 	let list_options = params.list_options;
 	let (sender_ids, product_ids, study_ids) = case_scope_ids(ctx, scope);
 
-	let mut items = lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+	let (mut items, summary) = lib_rest_core::with_rls_read(mm, ctx, |dbx| {
 		let list_options = list_options.clone();
 		let sender_ids = sender_ids.clone();
 		let product_ids = product_ids.clone();
 		let study_ids = study_ids.clone();
 		Box::pin(async move {
-			CaseBmc::list_view_rows(
+			let summary =
+				CaseBmc::status_summary(dbx, &sender_ids, &product_ids, &study_ids)
+					.await?;
+			let items = CaseBmc::list_view_rows(
 				dbx,
 				list_options.as_ref(),
 				&sender_ids,
 				&product_ids,
 				&study_ids,
 			)
-			.await
-			.map_err(Error::from)
+			.await?;
+			Ok::<_, Error>((items, summary))
 		})
 	})
 	.await?;
@@ -1389,7 +1411,7 @@ async fn list_case_view_rows_authorized(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult {
-			data: CaseListViewResult { items },
+			data: CaseListViewResult { items, summary },
 		}),
 	))
 }

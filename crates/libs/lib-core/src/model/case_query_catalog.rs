@@ -198,8 +198,15 @@ const CI_ITEMS: &[CatalogItem] = &[
 		OneToOne("safety_report_identification"),
 	),
 	item(
-		"local_criteria_report_type",
+		"report_type",
 		"Report Type (C.1.3)",
+		Code,
+		"report_type",
+		OneToOne("safety_report_identification"),
+	),
+	item(
+		"local_criteria_report_type",
+		"FDA Local Criteria Report Type (FDA.C.1.7.1)",
 		Code,
 		"local_criteria_report_type",
 		OneToOne("safety_report_identification"),
@@ -724,6 +731,23 @@ mod tests {
 			found.source.join,
 			JoinKind::OneToMany("drug_information")
 		));
+	}
+
+	#[test]
+	fn report_type_and_fda_local_criteria_have_distinct_fields() {
+		let page = find_page("CI").expect("CI page");
+		let report = page
+			.items
+			.iter()
+			.find(|item| item.id == "report_type")
+			.expect("report type");
+		let local = page
+			.items
+			.iter()
+			.find(|item| item.id == "local_criteria_report_type")
+			.expect("local criteria");
+		assert_eq!(report.label, "Report Type (C.1.3)");
+		assert_eq!(local.label, "FDA Local Criteria Report Type (FDA.C.1.7.1)");
 	}
 
 	#[test]

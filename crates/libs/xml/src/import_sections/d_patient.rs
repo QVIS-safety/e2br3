@@ -414,6 +414,57 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn patient_fields_do_not_read_parent_values_or_null_flavors() {
+		for nf in [false, true] {
+			let history = if nf {
+				"<value nullFlavor=\"UNK\"/>"
+			} else {
+				"<value>Patient history</value>"
+			};
+			let date = if nf {
+				"<value nullFlavor=\"MSK\"/>"
+			} else {
+				"<value value=\"20260102\"/>"
+			};
+			let xml = format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole>
+<role><subjectOf2><observation><code code="22" codeSystem="2.16.840.1.113883.3.989.2.1.1.19"/><value value="20230102"/></observation></subjectOf2>
+<subjectOf2><organizer><code code="1" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><observation><code code="18" codeSystem="2.16.840.1.113883.3.989.2.1.1.19"/><value>Parent history</value></observation></component></organizer></subjectOf2></role>
+<subjectOf2><observation><code code="22" codeSystem="2.16.840.1.113883.3.989.2.1.1.19"/>{date}</observation></subjectOf2>
+<subjectOf2><organizer><code code="1" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><observation><code code="18" codeSystem="2.16.840.1.113883.3.989.2.1.1.19"/>{history}</observation></component></organizer></subjectOf2>
+</primaryRole></MCCI_IN200100UV01>"#
+			);
+			let patient = parse_d_patient(xml.as_bytes())
+				.expect("parse patient")
+				.expect("patient");
+			if nf {
+				assert_eq!(patient.medical_history_text, None);
+				assert_eq!(
+					patient.medical_history_text_null_flavor.as_deref(),
+					Some("UNK")
+				);
+				assert_eq!(patient.last_menstrual_period_date, None);
+				assert_eq!(
+					patient.last_menstrual_period_date_null_flavor.as_deref(),
+					Some("MSK")
+				);
+			} else {
+				assert_eq!(
+					patient.medical_history_text.as_deref(),
+					Some("Patient history")
+				);
+				assert_eq!(
+					patient
+						.last_menstrual_period_date
+						.expect("date")
+						.to_string(),
+					"2026-01-02"
+				);
+			}
+		}
+	}
+
+	#[test]
 	fn leaves_numeric_null_flavor_rules_to_business_validation() {
 		for code in ["3", "7", "17"] {
 			let xml = format!(

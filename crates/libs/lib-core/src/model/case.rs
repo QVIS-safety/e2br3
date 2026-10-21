@@ -473,6 +473,16 @@ pub struct CaseLinkOption {
 
 #[derive(Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
+pub struct CaseStatusSummary {
+	pub total: i64,
+	pub draft: i64,
+	pub qced: i64,
+	pub locked: i64,
+	pub submitted: i64,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct CaseListViewRow {
 	pub no: i64,
 	pub case_id: Uuid,
@@ -1003,6 +1013,30 @@ impl CaseBmc {
 			  ORDER BY c.created_at DESC
 			  LIMIT 200",
 		))
+		.await
+		.map_err(crate::model::Error::from)
+	}
+
+	/// Aggregate the same authorized scope as the grid, without pagination.
+	/// Must be called from inside an RLS-scoped read context.
+	pub async fn status_summary(
+		dbx: &Dbx,
+		sender_ids: &[String],
+		product_ids: &[String],
+		study_ids: &[String],
+	) -> Result<CaseStatusSummary> {
+		let sql = format!("SELECT count(*) AS total,
+   count(*) FILTER (WHERE lower(trim(c.status)) NOT IN ('reviewed', 'validated', 'locked', 'submitted', 'nullified', 'archived')) AS draft,
+   count(*) FILTER (WHERE lower(trim(c.status)) IN ('reviewed', 'validated')) AS qced,
+   count(*) FILTER (WHERE lower(trim(c.status)) = 'locked') AS locked,
+   count(*) FILTER (WHERE lower(trim(c.status)) = 'submitted') AS submitted
+   FROM cases c WHERE {}", case_scope_where(1));
+		dbx.fetch_one(
+			sqlx::query_as::<_, CaseStatusSummary>(&sql)
+				.bind(sender_ids)
+				.bind(product_ids)
+				.bind(study_ids),
+		)
 		.await
 		.map_err(crate::model::Error::from)
 	}

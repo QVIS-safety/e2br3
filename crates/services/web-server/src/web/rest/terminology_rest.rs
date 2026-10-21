@@ -7,8 +7,8 @@ use axum::Json;
 use lib_core::model::terminology::{
 	E2bCodeList, E2bCodeListBmc, FdaHierarchicalCodeList,
 	FdaHierarchicalCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
-	MeddraTermBmc, MfdsProduct, MfdsProductBmc, MfdsProductSubstance, UcumUnit,
-	UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
+	MeddraTermBmc, MfdsProduct, MfdsProductBmc, MfdsProductSubstance, MfdsSubstance,
+	UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
 };
 use lib_core::model::terminology_import::{self, TerminologyReleaseRow};
 use lib_core::model::ModelManager;
@@ -300,6 +300,31 @@ pub async fn search_mfds_products(
 			let products =
 				MfdsProductBmc::search(ctx, mm, &params.q, params.limit).await?;
 			Ok((StatusCode::OK, Json(DataRestResult { data: products })))
+		})
+	})
+	.await
+}
+
+/// GET /api/terminology/mfds-substances?q={term}&limit={count}
+pub async fn search_mfds_substances(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
+	Query(params): Query<TerminologySearchParams>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<MfdsSubstance>>>)> {
+	if params.q.trim().chars().count() < 2 {
+		return Err(Error::BadRequest {
+			message: "Enter at least two characters for MFDS substance search"
+				.into(),
+		});
+	}
+	let ctx = ctx_w.0;
+	with_authorized_terminology_read(&ctx, &snapshot, &mm, move |ctx, mm| {
+		Box::pin(async move {
+			let rows =
+				MfdsProductBmc::search_substances(ctx, mm, &params.q, params.limit)
+					.await?;
+			Ok((StatusCode::OK, Json(DataRestResult { data: rows })))
 		})
 	})
 	.await

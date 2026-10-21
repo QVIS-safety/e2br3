@@ -69,7 +69,7 @@ pub(crate) fn write_e_i_reaction(
 			out.push_str("<effectiveTime xsi:type=\"IVL_TS\">");
 		}
 		if has_duration && !has_low && has_high {
-			write_e_i_6_width(&mut out, reaction);
+			write_e_i_6_width(&mut out, reaction)?;
 		}
 		write_e_i_4(
 			&mut out,
@@ -78,7 +78,7 @@ pub(crate) fn write_e_i_reaction(
 			reaction.start_date_null_flavor.as_deref(),
 		);
 		if !use_sxpr && has_duration && has_low {
-			write_e_i_6_width(&mut out, reaction);
+			write_e_i_6_width(&mut out, reaction)?;
 		}
 		write_e_i_5(
 			&mut out,
@@ -88,10 +88,10 @@ pub(crate) fn write_e_i_reaction(
 		);
 		if use_sxpr {
 			out.push_str("</comp><comp xsi:type=\"IVL_TS\" operator=\"A\">");
-			write_e_i_6_width(&mut out, reaction);
+			write_e_i_6_width(&mut out, reaction)?;
 			out.push_str("</comp>");
 		} else if has_duration && !has_low && !has_high {
-			write_e_i_6_width(&mut out, reaction);
+			write_e_i_6_width(&mut out, reaction)?;
 		}
 		out.push_str("</effectiveTime>");
 	}
@@ -340,19 +340,26 @@ fn write_e_i_6b(value: &Reaction) -> Option<&'static str> {
 	crate::mapping::fda::e_reaction::reaction_duration_unit_to_ucum(unit)
 }
 
-fn write_e_i_6_width(out: &mut String, reaction: &Reaction) {
+fn write_e_i_6_width(out: &mut String, reaction: &Reaction) -> Result<()> {
 	let Some(width) = write_e_i_6a(reaction) else {
-		return;
+		return Ok(());
 	};
 	out.push_str("<width value=\"");
 	out.push_str(&xml_escape(width));
 	out.push('"');
-	if let Some(unit) = write_e_i_6b(reaction) {
-		out.push_str(" unit=\"");
-		out.push_str(&xml_escape(unit));
-		out.push('"');
-	}
+	let unit = write_e_i_6b(reaction).ok_or_else(|| Error::InvalidXml {
+		message: format!(
+			"E.i.6b: missing or unsupported reaction duration unit {:?}",
+			reaction.duration_unit
+		),
+		line: None,
+		column: None,
+	})?;
+	out.push_str(" unit=\"");
+	out.push_str(&xml_escape(unit));
+	out.push('"');
 	out.push_str("/>");
+	Ok(())
 }
 
 /// e2b:E.i.7
@@ -597,6 +604,19 @@ mod meddra_requirement_tests {
 	}
 
 	#[test]
+	fn duration_export_rejects_missing_or_unsupported_unit() {
+		for unit in [None, Some("bogus")] {
+			let mut r = reaction();
+			r.duration_value = Some("1".into());
+			r.duration_unit = unit.map(str::to_string);
+			assert!(export_e_reactions_xml(&[r])
+				.expect_err("invalid unit")
+				.to_string()
+				.contains("E.i.6b"));
+		}
+	}
+
+	#[test]
 	fn export_uses_ni_for_missing_or_blank_meddra_code() {
 		for code in [None, Some("  ".to_string())] {
 			let mut reaction = reaction();
@@ -701,10 +721,9 @@ mod meddra_requirement_tests {
 		}
 
 		reaction.duration_unit = Some("d".to_string());
-		let xml = export_e_reactions_xml(&[reaction])
-			.expect("semantic unit issue must not block export");
-		assert!(xml.contains("<width value=\"1\"/>"));
-		assert!(!xml.contains("unit=\"d\""));
+		let xml =
+			export_e_reactions_xml(&[reaction]).expect("UCUM alias is supported");
+		assert!(xml.contains("<width value=\"1\" unit=\"d\"/>"));
 	}
 
 	#[test]

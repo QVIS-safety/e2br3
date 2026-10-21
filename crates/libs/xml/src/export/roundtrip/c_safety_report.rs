@@ -1,6 +1,5 @@
 use super::*;
 use crate::export_utils::{fmt_date_lexeme, set_xsi_type_first};
-use crate::mfds::codes::KR_C_3_1_1;
 
 pub fn patch_c_safety_report(
 	raw_xml: &[u8],
@@ -75,39 +74,14 @@ pub fn patch_c_safety_report(
 	if let Some(v) = patch.sender_type {
 		write_c_3_1(&mut xpath, sender_base, v);
 	}
-	if let Some(v) = patch.sender_health_professional_type_kr1 {
-		let kr1_path = &format!(
-			"{sender_base}/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]"
-		);
-		if xpath
-			.findnodes(kr1_path, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
-			append_fragment_child(
-				&mut doc,
-				&parser,
-				&mut xpath,
-				sender_base,
-				&format!(
-					"<subjectOf2 typeCode=\"SUBJ\">\
-						<observation classCode=\"OBS\" moodCode=\"EVN\">\
-							<code code=\"{KR_C_3_1_1}\"/>\
-							<value xsi:type=\"CE\"/>\
-						</observation>\
-					</subjectOf2>"
-				),
-			)?;
-		}
-		write_c_3_1_kr_1(&mut xpath, sender_base, v);
-	} else {
-		remove_nodes(
-			&mut xpath,
-			&format!(
-				"{sender_base}/hl7:subjectOf2[hl7:observation/hl7:code[@code='{KR_C_3_1_1}']]"
-			),
-		);
-	}
+	write_c_3_1_kr_1(
+		&mut doc,
+		&parser,
+		&mut xpath,
+		sender_base,
+		patch.sender_health_professional_type_kr1,
+	)?;
+
 	if let Some(v) = patch.sender_street_address {
 		write_c_3_4_1(&mut xpath, sender_base, v);
 	}
@@ -270,6 +244,7 @@ fn ensure_c_3_nodes(
 	}
 
 	if [
+		patch.sender_health_professional_type_kr1,
 		patch.sender_person_title,
 		patch.sender_person_title_null_flavor,
 		patch.sender_person_given_name,
@@ -760,13 +735,21 @@ fn write_c_3_1(xpath: &mut Context, base: &str, value: &str) {
 }
 
 /// e2b:C.3.1.KR.1
-fn write_c_3_1_kr_1(xpath: &mut Context, base: &str, value: &str) {
-	set_attr_first(
+fn write_c_3_1_kr_1(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	base: &str,
+	value: Option<&str>,
+) -> Result<()> {
+	crate::export_utils::write_qualification_code(
+		doc,
+		parser,
 		xpath,
-		&format!("{base}/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value"),
-		"code",
+		base,
+		"2.16.840.1.113883.3.989.5.1.10.1.2",
 		value,
-	);
+	)
 }
 
 /// e2b:C.3.2

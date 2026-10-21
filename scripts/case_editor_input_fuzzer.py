@@ -1722,6 +1722,18 @@ def baseline_for(
             set_path(result, path, copy.deepcopy(value))
         value = field["roundTripValue"]
         set_path(result, field["payloadPath"], False if safe and value is True else copy.deepcopy(value))
+        if safe and "_richValue" in field:
+            set_path(result, field["payloadPath"], copy.deepcopy(field["_richValue"]))
+        if safe and "_richNullFlavor" in field:
+            pair = field["_richNullFlavor"]
+            set_path(result, field["payloadPath"], None)
+            set_path(result, pair["path"], pair["value"])
+
+    if safe:
+        for field in fields:
+            if "_richOmitRoot" in field and field["_richOmitRoot"] in result:
+                del result[field["_richOmitRoot"]]
+
     return result
 
 
@@ -3759,6 +3771,8 @@ def main(args: argparse.Namespace) -> int:
             continue
 
         nested_row_identities: dict[tuple[str, str], dict[str, str]] = {}
+        if args.values_per_field == 0:
+            continue
         for field in fields:
             if interrupted:
                 break

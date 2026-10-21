@@ -389,6 +389,11 @@ fn e_i_6b(idx: usize, reaction: &Reaction, issues: &mut Vec<ValidationIssue>) {
 		reaction.duration_value.is_some()
 			&& !has_text(reaction.duration_unit.as_deref()),
 	);
+	reject_when(issues, "ICH.E.i.6b.ALLOWED.VALUE", &path, SECTION,
+		"Reaction duration unit must be a supported time unit (800–805 or 10.a, a, mo, wk, d, h).",
+		reaction.duration_unit.as_deref().is_some_and(|unit| !matches!(unit, "800" | "801" | "802" | "803" | "804" | "805" | "10.a" | "a" | "mo" | "wk" | "d" | "h")),
+	);
+
 	max_length(
 		issues,
 		"ICH.E.i.6b.LENGTH.MAX",
@@ -853,6 +858,21 @@ mod tests {
 			.collect::<Vec<_>>();
 		out.sort();
 		out
+	}
+
+	#[test]
+	fn duration_unit_validation_matches_export_units() {
+		for unit in [
+			"800", "801", "802", "803", "804", "805", "10.a", "a", "mo", "wk", "d",
+			"h", "bogus",
+		] {
+			let mut r = reaction();
+			r.duration_value = Some("1".into());
+			r.duration_unit = Some(unit.into());
+			let mut issues = Vec::new();
+			e_i_6b(0, &r, &mut issues);
+			assert_eq!(issues.is_empty(), unit != "bogus", "{unit}");
+		}
 	}
 
 	#[test]
