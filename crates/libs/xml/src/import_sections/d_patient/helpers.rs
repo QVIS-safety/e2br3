@@ -326,7 +326,7 @@ pub(crate) fn parse_medical_history(
 
 	let nodes = xpath
 		.findnodes(
-			"//hl7:organizer[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:observation",
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:observation",
 			None,
 		)
 		.map_err(|_| Error::InvalidXml {
@@ -492,7 +492,7 @@ pub(crate) fn parse_past_drug_history(
 
 	let nodes = xpath
 		.findnodes(
-			"//hl7:organizer[hl7:code[@code='2' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:substanceAdministration",
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='2' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:substanceAdministration",
 			None,
 		)
 		.map_err(|_| Error::InvalidXml {
@@ -1453,6 +1453,29 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn patient_repeated_sections_exclude_parent_rows() {
+		let history = r#"<subjectOf2><organizer><code code="1" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><observation><code code="100" codeSystem="2.16.840.1.113883.6.163"/></observation></component></organizer></subjectOf2>"#;
+		let drug = r#"<subjectOf2><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><name>Past drug</name></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2>"#;
+		let xml = format!(
+			r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><role><code code="PRN"/>{history}{drug}</role></player1>{history}{drug}</primaryRole></root>"#
+		);
+		assert_eq!(
+			parse_medical_history(xml.as_bytes())
+				.expect("history")
+				.len(),
+			1
+		);
+		assert_eq!(
+			parse_past_drug_history(xml.as_bytes())
+				.expect("drugs")
+				.len(),
+			1
+		);
+		let parent = parse_parent_information(xml.as_bytes()).expect("parent");
+		assert!(parent.is_some());
+	}
+
+	#[test]
 	fn parse_parent_leaves_age_null_flavor_to_business_validation() {
 		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <primaryRole><player1><role><code code="PRN"/>
@@ -1547,7 +1570,7 @@ mod tests {
 
 	#[test]
 	fn parse_d_8_r_2_accepts_fda_ndc_code() {
-		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>CureAll</name></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></MCCI_IN200100UV01>"#;
+		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>CureAll</name></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></primaryRole></MCCI_IN200100UV01>"#;
 
 		let past_drugs = parse_past_drug_history(xml).expect("parse FDA D.8");
 		assert_eq!(past_drugs[0].mpid.as_deref(), Some("59762-2858"));

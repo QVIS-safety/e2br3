@@ -29,6 +29,7 @@ use lib_core::model::drug_reaction_assessment::{
 	RelatednessAssessmentBmc, RelatednessAssessmentFilter,
 	RelatednessAssessmentForCreate, RelatednessAssessmentForUpdate,
 };
+use lib_core::model::presave::ProductPresaveBmc;
 use std::collections::BTreeMap;
 
 #[path = "dg_devices.rs"]
@@ -1039,8 +1040,13 @@ async fn load_editor_dg_row_detail(
 			}
 		}
 	}
+	let source_product_id = match drug.source_product_presave_id {
+		Some(id) => ProductPresaveBmc::get(ctx, mm, id).await?.product_id,
+		None => None,
+	};
 	let mut drug = json!(drug);
 	if let Value::Object(ref mut map) = drug {
+		map.insert("sourceProductId".to_string(), json!(source_product_id));
 		insert_alias(map, "drugAuthorizationCountry", &["manufacturer_country"]);
 		map.insert("activeSubstances".to_string(), json!(active_substances));
 		map.insert("dosageInformation".to_string(), json!(dosage_information));

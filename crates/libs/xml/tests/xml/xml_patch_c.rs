@@ -705,7 +705,7 @@ fn patch_c_exports_sender_health_professional_type_kr1() {
 
 	let sender_kr1 = xpath
 		.findvalue(
-			"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:subjectOf2/hl7:observation[hl7:code[@code='C.3.1.KR.1']]/hl7:value/@code",
+			"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.1.2']/@code",
 			None,
 		)
 		.unwrap();

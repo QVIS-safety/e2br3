@@ -434,35 +434,14 @@ fn write_c_2_r_4_kr_1(
 	base: &str,
 	value: &PrimarySource,
 ) -> Result<()> {
-	const CODE_SYSTEM: &str = "2.16.840.1.113883.3.989.5.1.10.1.1";
-	let path = format!(
-		"{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='{CODE_SYSTEM}']"
-	);
-	if let Some(code) = value.qualification_kr1.as_deref() {
-		let nodes = xpath
-			.findnodes(&path, None)
-			.map_err(|_| Error::InvalidXml {
-				message: format!("Failed to find nodes for path {path}"),
-				line: None,
-				column: None,
-			})?;
-		if nodes.is_empty() {
-			append_fragment_child(
-				doc,
-				parser,
-				xpath,
-				&format!("{base}/hl7:assignedPerson"),
-				&format!("<asQualifiedEntity><code codeSystem=\"{CODE_SYSTEM}\" code=\"{}\"/></asQualifiedEntity>", xml_escape(code)),
-			)?;
-		} else {
-			set_attr_first(xpath, &path, "code", code);
-		}
-	} else {
-		remove_nodes(xpath, &format!(
-			"{base}/hl7:assignedPerson/hl7:asQualifiedEntity[hl7:code[@codeSystem='{CODE_SYSTEM}']]"
-		));
-	}
-	Ok(())
+	crate::export_utils::write_qualification_code(
+		doc,
+		parser,
+		xpath,
+		base,
+		"2.16.840.1.113883.3.989.5.1.10.1.1",
+		value.qualification_kr1.as_deref(),
+	)
 }
 
 /// e2b:C.2.r.5
@@ -1015,6 +994,11 @@ mod primary_source_null_flavor_tests {
 		let kr = "//hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.1.1']/@code";
 		assert_eq!(xpath.findvalue(common, None).unwrap(), "3");
 		assert_eq!(xpath.findvalue(kr, None).unwrap(), "1");
+		let invalid_order = "//hl7:assignedPerson/hl7:asLocatedEntity/following-sibling::hl7:asQualifiedEntity";
+		assert!(xpath
+			.findnodes(invalid_order, None)
+			.expect("query order")
+			.is_empty());
 	}
 
 	#[test]

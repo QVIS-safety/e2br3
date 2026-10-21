@@ -146,6 +146,14 @@ pub struct MfdsProduct {
 	pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct MfdsSubstance {
+	pub substance_code: String,
+	pub substance_name_kr: String,
+	pub substance_name_en: Option<String>,
+	pub version: String,
+}
+
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct MfdsProductSubstance {
 	pub item_seq: String,
@@ -596,6 +604,23 @@ impl MfdsProductBmc {
 
 		let rows = mm.dbx().fetch_all(qb.build_query_as::<(String,)>()).await?;
 		Ok(rows.into_iter().map(|(code,)| code).collect())
+	}
+
+	pub async fn search_substances(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+		query: &str,
+		limit: i64,
+	) -> Result<Vec<MfdsSubstance>> {
+		mm.dbx().fetch_all(sqlx::query_as::<_, MfdsSubstance>(
+   "SELECT substance_code, min(substance_name_kr) AS substance_name_kr,
+    min(substance_name_en) FILTER (WHERE substance_name_en NOT LIKE '%/%') AS substance_name_en, version
+    FROM mfds_product_substances WHERE active = true
+    AND (substance_code ILIKE $1 OR substance_name_kr ILIKE $1
+         OR (substance_name_en NOT LIKE '%/%' AND substance_name_en ILIKE $1))
+    GROUP BY substance_code, version
+    ORDER BY substance_code, version LIMIT $2"
+  ).bind(format!("%{}%", query.trim())).bind(limit.clamp(1, 100))).await.map_err(crate::model::Error::from)
 	}
 
 	pub async fn substances(

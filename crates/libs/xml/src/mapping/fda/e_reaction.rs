@@ -12,9 +12,9 @@ const REACTION_DURATION_UNITS: &[(&str, &str)] = &[
 ];
 
 pub(crate) fn reaction_duration_unit_to_ucum(code: &str) -> Option<&'static str> {
-	REACTION_DURATION_UNITS
-		.iter()
-		.find_map(|(stored, ucum)| (*stored == code).then_some(*ucum))
+	REACTION_DURATION_UNITS.iter().find_map(|(stored, ucum)| {
+		(*stored == code || *ucum == code).then_some(*ucum)
+	})
 }
 
 pub(crate) fn reaction_duration_unit_from_ucum(unit: &str) -> Option<&'static str> {

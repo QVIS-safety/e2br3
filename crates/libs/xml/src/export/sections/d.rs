@@ -90,9 +90,18 @@ pub fn export_d_patient_patch(
 	autopsy_causes: &[AutopsyCauseOfDeath],
 ) -> Result<String> {
 	let patient_name = write_d_1(patient);
-	let age_value = patient.age_at_time_of_onset.as_ref().map(|v| v.to_string());
-	let weight_kg = patient.weight_kg.as_ref().map(|v| v.to_string());
-	let height_cm = patient.height_cm.as_ref().map(|v| v.to_string());
+	let age_value = patient
+		.age_at_time_of_onset
+		.as_ref()
+		.map(|v| v.normalize().to_string());
+	let weight_kg = patient
+		.weight_kg
+		.as_ref()
+		.map(|v| v.normalize().to_string());
+	let height_cm = patient
+		.height_cm
+		.as_ref()
+		.map(|v| v.normalize().to_string());
 
 	let reported_cause_patches: Vec<DPatientDeathCausePatch<'_>> = reported_causes
 		.iter()

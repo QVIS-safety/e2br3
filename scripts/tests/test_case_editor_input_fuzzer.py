@@ -1221,6 +1221,10 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                     "--meddra-code", "10019211", "--contract", "/tmp/contracts.json",
                     "--null-flavor-pairs", "/tmp/null-flavor-pairs.ts"]
         with tempfile.TemporaryDirectory() as artifact_dir:
+            expected[7] = str(Path(artifact_dir) / "contract.json")
+            expected[9] = str(Path(artifact_dir) / "pairs.ts")
+            Path(expected[7]).write_text("[]")
+            Path(expected[9]).write_text("const PAIRS: Record<string, unknown> = {\n};")
             def completed(command, **_kwargs):
                 setup_dir = Path(command[command.index("--artifact-dir") + 1])
                 setup_dir.mkdir(parents=True, exist_ok=True)
@@ -1247,7 +1251,10 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
                                  ("PRODUCT-1", "28.1", "10019211"))
                 for option in expected[::2]:
                     index = command.index(option)
-                    self.assertEqual(command[index + 1], expected[expected.index(option) + 1])
+                    if module is rich_fuzzer and option == "--contract":
+                        self.assertEqual(json.loads(Path(command[index + 1]).read_text()), [])
+                    else:
+                        self.assertEqual(command[index + 1], expected[expected.index(option) + 1])
 
     def test_seeded_samples_are_reproducible_and_vary(self) -> None:
         field = {"authority": "ICH", "code": "H.1", "payloadPath": "caseNarrative", "roundTripValue": "base"}

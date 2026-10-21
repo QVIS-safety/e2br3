@@ -326,6 +326,14 @@ async fn test_follow_up_creation_preserves_scope_and_allocates_versions(
 			.ok_or("missing source case id")?,
 	)?;
 
+	let (status, header) = post_json(&app, &cookie, &format!("/api/cases/{source_case_id}/message-header"), json!({"data": {
+		"case_id": source_case_id, "message_number": format!("MSG-{source_case_id}"),
+		"message_sender_identifier": "FOLLOW-UP-SENDER", "message_receiver_identifier": "KR",
+		"batch_sender_identifier": "FOLLOW-UP-SENDER", "batch_receiver_identifier": "KR",
+		"message_date": "20261019000000"
+	}})).await?;
+	assert_eq!(status, StatusCode::CREATED, "{header:?}");
+
 	let mut invalid_pages = follow_up_pages("mfds");
 	invalid_pages["ae"] = json!([
 		{
@@ -396,6 +404,32 @@ async fn test_follow_up_creation_preserves_scope_and_allocates_versions(
 		.await?;
 		assert_eq!(status, StatusCode::CREATED, "{body:?}");
 		assert_eq!(body["data"]["safetyReportVersion"], expected_version);
+		let created_id = body["data"]["caseId"]
+			.as_str()
+			.ok_or("missing follow-up id")?;
+		let (shell_status, shell) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{created_id}/editor/shell"),
+		)
+		.await?;
+		assert_eq!(shell_status, StatusCode::OK, "{shell:?}");
+		let (header_status, header) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{created_id}/message-header"),
+		)
+		.await?;
+		assert_eq!(header_status, StatusCode::OK, "{header:?}");
+		assert_eq!(
+			header["data"]["message_sender_identifier"],
+			"FOLLOW-UP-SENDER"
+		);
+		assert_eq!(header["data"]["message_receiver_identifier"], "KR");
+		assert_eq!(
+			header["data"]["message_number"],
+			format!("MSG-{created_id}")
+		);
 		follow_up_ids.push(Uuid::parse_str(
 			body["data"]["caseId"]
 				.as_str()

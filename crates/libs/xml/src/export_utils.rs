@@ -202,7 +202,7 @@ pub(crate) fn remove_nodes(xpath: &mut Context, path: &str) {
 	}
 }
 
-fn node_from_fragment(
+pub(crate) fn node_from_fragment(
 	doc: &mut Document,
 	parser: &Parser,
 	fragment: &str,
@@ -453,4 +453,66 @@ mod tests {
 			1
 		);
 	}
+}
+
+pub(crate) fn write_qualification_code(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	base: &str,
+	code_system: &str,
+	code: Option<&str>,
+) -> Result<()> {
+	let path = format!(
+		"{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='{code_system}']"
+	);
+	if let Some(code) = code {
+		let nodes = xpath
+			.findnodes(&path, None)
+			.map_err(|_| Error::InvalidXml {
+				message: format!("Failed to find nodes for path {path}"),
+				line: None,
+				column: None,
+			})?;
+		if nodes.is_empty() {
+			let fragment = format!("<asQualifiedEntity classCode=\"QUAL\"><code codeSystem=\"{code_system}\" code=\"{}\"/></asQualifiedEntity>", xml_escape(code));
+			let before_path = format!("{base}/hl7:assignedPerson/*[self::hl7:asLocatedEntity or self::hl7:contactParty][1]");
+			let before = xpath
+				.findnodes(&before_path, None)
+				.map_err(|_| Error::InvalidXml {
+					message: format!("Failed to find nodes for path {before_path}"),
+					line: None,
+					column: None,
+				})?
+				.into_iter()
+				.next();
+			if let Some(mut before) = before {
+				let mut node = node_from_fragment(doc, parser, &fragment)?;
+				before.add_prev_sibling(&mut node).map_err(|error| {
+					Error::InvalidXml {
+						message: format!(
+							"Failed to insert MFDS qualification: {error}"
+						),
+						line: None,
+						column: None,
+					}
+				})?;
+			} else {
+				append_fragment_child(
+					doc,
+					parser,
+					xpath,
+					&format!("{base}/hl7:assignedPerson"),
+					&fragment,
+				)?;
+			}
+		} else {
+			set_attr_first(xpath, &path, "code", code);
+		}
+	} else {
+		remove_nodes(xpath, &format!(
+			"{base}/hl7:assignedPerson/hl7:asQualifiedEntity[hl7:code[@codeSystem='{code_system}']]"
+		));
+	}
+	Ok(())
 }

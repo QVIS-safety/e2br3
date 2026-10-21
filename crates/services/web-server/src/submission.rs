@@ -152,10 +152,12 @@ pub async fn prepare_outbound_message_header(
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
 	let report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await?;
-	let message_number = required_header_value(
+	required_header_value(
 		"C.1.1 Safety Report ID",
 		report.safety_report_id.as_deref(),
 	)?;
+	// Follow-ups share C.1.1 but each persisted version needs its own message ID.
+	let message_number = format!("MSG-{case_id}");
 	let message_date = required_header_value(
 		"C.1.2 Date of Creation",
 		report.transmission_date.as_deref(),

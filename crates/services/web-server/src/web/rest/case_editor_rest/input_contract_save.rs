@@ -1368,6 +1368,18 @@ where
 		let value = value_at_request_path(row, request_path, &indexes)
 			.map(|value| input_value(value, value_type))
 			.unwrap_or(InputValue::Missing);
+		if matches!(value, InputValue::InvalidType) {
+			let expected = match value_type {
+				InputType::String => "string",
+				InputType::Boolean => "boolean",
+				InputType::Number => "number",
+			};
+			return Err(violation(
+				"INPUT.TYPE",
+				&concrete_frontend_path(frontend_path, &concrete_indexes),
+				&format!("must be a JSON {expected}"),
+			));
+		}
 		let companion =
 			null_flavor.and_then(|(request_path, frontend_path, code)| {
 				value_at_request_path(row, request_path, &indexes)
@@ -1481,6 +1493,29 @@ mod input_contract_save_tests {
 	}
 
 	#[test]
+	fn decimal_string_reports_type_instead_of_length_error() {
+		let drug = Map::from_iter([(
+			"activeSubstances".to_string(),
+			json!([{ "substanceStrengthValue": "500.00000" }]),
+		)]);
+		let detail = constraint_violation(
+			validate_row_payload("DG", "drug", &drug, None)
+				.expect_err("string is not a numeric input"),
+		);
+		assert_eq!(detail.rule_code, "INPUT.TYPE");
+		assert_eq!(
+			detail.path,
+			"drugs.0.activeSubstances.0.substanceStrengthValue"
+		);
+		assert_eq!(detail.message, "must be a JSON number");
+		let valid = Map::from_iter([(
+			"activeSubstances".to_string(),
+			json!([{ "substanceStrengthValue": 500 }]),
+		)]);
+		validate_row_payload("DG", "drug", &valid, None).expect("numeric strength");
+	}
+
+	#[test]
 	fn input_contract_save_rejects_repeatable_row_values() {
 		let reaction = Map::from_iter([(
 			"primarySourceReaction".to_string(),
@@ -1513,7 +1548,8 @@ mod input_contract_save_tests {
 			validate_row_payload("AE", "reaction", &numeric_duration, None)
 				.unwrap_err(),
 		);
-		assert_eq!(detail.rule_code, "ICH.E.i.6a.LENGTH.MAX");
+		assert_eq!(detail.rule_code, "INPUT.TYPE");
+		assert_eq!(detail.message, "must be a JSON string");
 		assert_eq!(detail.path, "reactions.0.reactionDuration.value");
 	}
 

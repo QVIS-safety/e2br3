@@ -257,7 +257,19 @@ def preservation_signature(xml: bytes) -> dict[str, collections.Counter[Any]]:
 			except ValueError:
 				continue
 			attachments[(node.get("mediaType"), hashlib.sha256(decoded).hexdigest())] += 1
-	return {"null_flavors": null_flavors, "codes": codes, "dates": dates, "attachments": attachments}
+	fields: collections.Counter[Any] = collections.Counter()
+	def visit(node: ET.Element, path: tuple) -> None:
+		text = (node.text or "").strip()
+		attributes = tuple(sorted((key, value) for key, value in node.attrib.items()
+			if key in {"value", "unit", "nullFlavor", "code", "codeSystem", "codeSystemVersion", "extension", "language"}))
+		if text or attributes:
+			fields[(path, text, attributes)] += 1
+		positions: collections.Counter[str] = collections.Counter()
+		for child in node:
+			positions[child.tag] += 1
+			visit(child, path + ((child.tag, positions[child.tag]),))
+	visit(root, ((root.tag, 1),))
+	return {"null_flavors": null_flavors, "codes": codes, "dates": dates, "attachments": attachments, "fields": fields}
 
 
 def multipart(authority: str, product_id: str, filename: str, payload: bytes) -> tuple[bytes, str]:
