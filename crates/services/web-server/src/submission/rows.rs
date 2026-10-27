@@ -5,6 +5,7 @@ pub(super) struct CaseSubmissionRow {
 	pub(super) id: Uuid,
 	pub(super) case_id: Uuid,
 	pub(super) gateway: String,
+	pub(super) authority: Option<String>,
 	pub(super) remote_submission_id: Option<String>,
 	pub(super) status: String,
 	pub(super) xml_bytes: i32,
@@ -70,6 +71,7 @@ pub(super) struct SubmissionHistoryRow {
 	pub(super) case_id: Uuid,
 	pub(super) case_number: String,
 	pub(super) gateway: String,
+	pub(super) authority: Option<String>,
 	pub(super) remote_submission_id: Option<String>,
 	pub(super) status: String,
 	pub(super) xml_bytes: i32,
@@ -80,7 +82,6 @@ pub(super) struct SubmissionHistoryRow {
 
 #[derive(Debug)]
 pub(super) struct GatewaySubmissionOutcome {
-	pub(super) gateway: String,
 	pub(super) remote_submission_id: String,
 	pub(super) ack1: SubmissionAck,
 }
@@ -129,17 +130,6 @@ pub(super) fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
 		.and_then(|v| v.trim().parse::<u64>().ok())
 		.filter(|v| *v > 0)
 		.unwrap_or(default_secs)
-}
-
-pub(super) fn submission_history_export_authority(gateway: &str) -> &'static str {
-	let gateway = gateway.to_ascii_lowercase();
-	if gateway.contains("mfds") {
-		return SubmissionAuthority::Mfds.as_str();
-	}
-	if gateway.contains("fda") || gateway.contains("esg") {
-		return SubmissionAuthority::Fda.as_str();
-	}
-	SubmissionAuthority::Fda.as_str()
 }
 
 pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {

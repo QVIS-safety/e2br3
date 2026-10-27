@@ -20,8 +20,9 @@ use uuid::Uuid;
 
 use crate::submission::prepare_outbound_message_header;
 use crate::submission::{
-	apply_gateway_ack_by_remote, create_submission_idempotent, get_ack_download,
-	get_reconcile_runtime_status, get_submission, get_submission_dispatch_state,
+	apply_gateway_ack_by_remote, create_submission_idempotent,
+	dispatch_reserved_submission, get_ack_download, get_reconcile_runtime_status,
+	get_submission, get_submission_artifact, get_submission_dispatch_state,
 	list_by_case, list_submission_events, list_submission_history,
 	reconcile_due_submissions_with_runtime_status, GatewayAckCallbackInput,
 	SubmissionAuthority, SubmissionDispatchStateRecord, SubmissionEventRecord,
@@ -90,25 +91,32 @@ pub async fn submit_case_to_fda(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		"submission.execute",
-		CaseMutationKind::Submission,
-		move |ctx, mm| {
-			Box::pin(submit_case_authorized(
-				ctx,
-				mm,
-				case_id,
-				SubmissionAuthority::Fda,
-				headers,
-				payload,
-			))
-		},
-	)
-	.await
+	let (authorized_ctx, record, created) =
+		lib_rest_core::with_authorized_case_mutation(
+			&ctx,
+			&snapshot,
+			&mm,
+			case_id,
+			"submission.execute",
+			CaseMutationKind::Submission,
+			move |ctx, mm| {
+				Box::pin(submit_case_authorized(
+					ctx,
+					mm,
+					case_id,
+					SubmissionAuthority::Fda,
+					headers,
+					payload,
+				))
+			},
+		)
+		.await?;
+	let record = if created {
+		dispatch_reserved_submission(&authorized_ctx, &mm, record).await?
+	} else {
+		record
+	};
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: record })))
 }
 
 /// POST /api/cases/{id}/submissions/mfds
@@ -121,25 +129,32 @@ pub async fn submit_case_to_mfds(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		"submission.execute",
-		CaseMutationKind::Submission,
-		move |ctx, mm| {
-			Box::pin(submit_case_authorized(
-				ctx,
-				mm,
-				case_id,
-				SubmissionAuthority::Mfds,
-				headers,
-				payload,
-			))
-		},
-	)
-	.await
+	let (authorized_ctx, record, created) =
+		lib_rest_core::with_authorized_case_mutation(
+			&ctx,
+			&snapshot,
+			&mm,
+			case_id,
+			"submission.execute",
+			CaseMutationKind::Submission,
+			move |ctx, mm| {
+				Box::pin(submit_case_authorized(
+					ctx,
+					mm,
+					case_id,
+					SubmissionAuthority::Mfds,
+					headers,
+					payload,
+				))
+			},
+		)
+		.await?;
+	let record = if created {
+		dispatch_reserved_submission(&authorized_ctx, &mm, record).await?
+	} else {
+		record
+	};
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: record })))
 }
 
 async fn submit_case_authorized(
@@ -149,7 +164,7 @@ async fn submit_case_authorized(
 	authority: SubmissionAuthority,
 	headers: HeaderMap,
 	payload: Option<Json<ComplianceActionInput>>,
-) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
+) -> Result<(lib_core::ctx::Ctx, SubmissionRecord, bool)> {
 	let payload = payload.ok_or(Error::BadRequest {
 		message: "reason_for_change and e_signature are required for submission"
 			.to_string(),
@@ -163,8 +178,18 @@ async fn submit_case_authorized(
 		Some(compliance.reason_for_change.trim().to_string()),
 		Some(signature_id),
 	);
-	let idempotency_key = headers.get("x-idempotency-key").and_then(header_to_str);
-	let record = create_submission_idempotent(
+	let idempotency_key = headers
+		.get("x-idempotency-key")
+		.map(|value| {
+			value
+				.to_str()
+				.map(str::to_string)
+				.map_err(|_| Error::BadRequest {
+					message: "x-idempotency-key must be valid text".into(),
+				})
+		})
+		.transpose()?;
+	let (record, created) = create_submission_idempotent(
 		&ctx_with_compliance,
 		mm,
 		case_id,
@@ -172,7 +197,7 @@ async fn submit_case_authorized(
 		idempotency_key,
 	)
 	.await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: record })))
+	Ok((ctx_with_compliance, record, created))
 }
 
 /// GET /api/cases/{id}/submissions
@@ -579,4 +604,64 @@ fn tokens_equal(expected: &str, incoming: &str) -> bool {
 		difference |= usize::from(expected_byte ^ incoming_byte);
 	}
 	difference == 0
+}
+
+/// Download the immutable bytes captured for this attempt, never the current Case.
+pub async fn download_submission_xml(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
+	Path(id): Path<Uuid>,
+) -> Result<Response> {
+	let record = lib_rest_core::with_authorized_submission_read(
+		&ctx_w.0,
+		&snapshot,
+		&mm,
+		id,
+		move |ctx, mm| {
+			Box::pin(async move {
+				get_submission(ctx, mm, id).await?.ok_or(Error::BadRequest {
+					message: "submission not found".into(),
+				})
+			})
+		},
+	)
+	.await?;
+	lib_rest_core::with_authorized_case_export(
+		&ctx_w.0,
+		&snapshot,
+		&mm,
+		&[record.case_id],
+		move |ctx, mm| {
+			Box::pin(async move {
+				let (_, xml) = get_submission_artifact(ctx, mm, id).await?;
+				lib_core::model::xml_export_history::XmlExportHistoryBmc::record(
+					mm,
+					ctx,
+					record.case_id,
+					None,
+					&format!("submission-{id}.xml"),
+					"success",
+					None,
+				)
+				.await?;
+				let mut response = (StatusCode::OK, xml).into_response();
+				response.headers_mut().insert(
+					header::CONTENT_TYPE,
+					HeaderValue::from_static("application/xml"),
+				);
+				response.headers_mut().insert(
+					header::CONTENT_DISPOSITION,
+					HeaderValue::from_str(&format!(
+						"attachment; filename=\"submission-{id}.xml\""
+					))
+					.map_err(|e| Error::BadRequest {
+						message: e.to_string(),
+					})?,
+				);
+				Ok(response)
+			})
+		},
+	)
+	.await
 }

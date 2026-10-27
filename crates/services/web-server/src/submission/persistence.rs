@@ -23,36 +23,6 @@ pub(super) async fn append_submission_event(
 	Ok(())
 }
 
-pub(super) async fn upsert_dispatch_state_submit_success(
-	mm: &ModelManager,
-	submission_id: Uuid,
-	attempted_at: OffsetDateTime,
-	attempt_count: i32,
-) -> Result<()> {
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				"INSERT INTO submission_dispatch_state (
-					submission_id, attempt_count, last_attempt_at, last_error, next_retry_at, terminal_at, created_at, updated_at
-				)
-				VALUES ($1, $3, $2, NULL, NULL, NULL, now(), now())
-				ON CONFLICT (submission_id)
-				DO UPDATE SET
-					attempt_count = EXCLUDED.attempt_count,
-					last_attempt_at = EXCLUDED.last_attempt_at,
-					last_error = NULL,
-					next_retry_at = NULL,
-					updated_at = now()",
-			)
-			.bind(submission_id)
-			.bind(attempted_at)
-			.bind(attempt_count),
-		)
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(())
-}
-
 pub(super) async fn upsert_dispatch_state_submit_failure(
 	mm: &ModelManager,
 	submission_id: Uuid,
@@ -85,20 +55,6 @@ pub(super) async fn upsert_dispatch_state_submit_failure(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(())
-}
-
-pub(super) async fn get_dispatch_attempt_count(
-	mm: &ModelManager,
-	submission_id: Uuid,
-) -> Result<i32> {
-	let row = mm
-		.dbx()
-		.fetch_optional(sqlx::query_as::<_, (i32,)>(
-			"SELECT attempt_count FROM submission_dispatch_state WHERE submission_id = $1",
-		).bind(submission_id))
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(row.map(|r| r.0).unwrap_or(0))
 }
 
 pub(super) async fn find_submission_idempotency(
@@ -177,7 +133,7 @@ pub(super) async fn insert_submission_idempotency(
 					case_id, authority, idempotency_key, submission_id, created_by, created_at
 				)
 				VALUES ($1, $2, $3, $4, $5, now())
-				ON CONFLICT (case_id, authority, idempotency_key) DO NOTHING",
+				",
 			)
 			.bind(case_id)
 			.bind(authority.as_str())
@@ -245,6 +201,7 @@ pub(super) fn compose_submission_record(
 		id: row.id,
 		case_id: row.case_id,
 		gateway: row.gateway,
+		authority: row.authority,
 		remote_submission_id: row.remote_submission_id,
 		status: status_from_db(&row.status)?,
 		xml_bytes: row.xml_bytes as usize,
@@ -265,7 +222,7 @@ pub(super) async fn get_submission_row(
 		.dbx()
 		.fetch_optional(
 			sqlx::query_as::<_, CaseSubmissionRow>(
-				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				"SELECT id, case_id, gateway, authority, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
 				 FROM case_submissions
 				 WHERE id = $1",
 			)
@@ -276,42 +233,6 @@ pub(super) async fn get_submission_row(
 	Ok(row)
 }
 
-pub(super) async fn get_submission_row_for_ctx(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	submission_id: Uuid,
-) -> Result<Option<CaseSubmissionRow>> {
-	mm.dbx()
-		.begin_txn()
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	if let Err(err) = set_full_context_dbx_or_rollback(
-		mm.dbx(),
-		ctx.user_id(),
-		ctx.organization_id(),
-		ctx.role(),
-	)
-	.await
-	{
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err.into());
-	}
-	let row = get_submission_row(mm, submission_id).await;
-	match row {
-		Ok(row) => {
-			mm.dbx()
-				.commit_txn()
-				.await
-				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-			Ok(row)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
-}
-
 pub(super) async fn list_submission_rows_by_case(
 	mm: &ModelManager,
 	case_id: Uuid,
@@ -320,7 +241,7 @@ pub(super) async fn list_submission_rows_by_case(
 		.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, CaseSubmissionRow>(
-				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				"SELECT id, case_id, gateway, authority, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
 				 FROM case_submissions
 				 WHERE case_id = $1
 				 ORDER BY submitted_at DESC",
@@ -345,6 +266,7 @@ pub async fn list_submission_history(
 				        cs.case_id,
 				        sri.safety_report_id AS case_number,
 				        cs.gateway,
+                        cs.authority,
 				        cs.remote_submission_id,
 				        cs.status,
 				        cs.xml_bytes,
@@ -368,20 +290,15 @@ pub async fn list_submission_history(
 				.map(|ack| format_history_timestamp(ack.received_at))
 				.transpose()?;
 			let gateway = row.gateway;
-			let export_authority = submission_history_export_authority(&gateway);
-			let data_file_name = format!(
-				"{}-{}-{}.xml",
-				row.case_number, row.case_id, export_authority
-			);
-			let data_file_download_url = format!(
-				"/api/cases/{}/export/xml?authority={}",
-				row.case_id, export_authority
-			);
+			let data_file_name = format!("submission-{}.xml", row.submission_id);
+			let data_file_download_url =
+				format!("/api/submissions/{}/xml", row.submission_id);
 			Ok(SubmissionHistoryRecord {
 				submission_id: row.submission_id,
 				case_id: row.case_id,
 				case_number: row.case_number,
 				gateway,
+				authority: row.authority,
 				remote_submission_id: row.remote_submission_id,
 				status: status_from_db(&row.status)?,
 				batch_result: row.status,

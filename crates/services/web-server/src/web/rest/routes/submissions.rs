@@ -20,6 +20,10 @@ pub fn routes_submissions(mm: ModelManager) -> Router {
 			get(submission_rest::get_case_submission),
 		)
 		.route(
+			"/submissions/{id}/xml",
+			get(submission_rest::download_submission_xml),
+		)
+		.route(
 			"/submissions/{id}/events",
 			get(submission_rest::list_submission_event_history),
 		)

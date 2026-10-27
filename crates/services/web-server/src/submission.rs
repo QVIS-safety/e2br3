@@ -24,7 +24,6 @@ use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
-use tokio::time::sleep;
 use uuid::Uuid;
 use xml::validation::{validate_e2b_xml, XmlValidatorConfig};
 use xml::{export_case_xml_with_options, ExportXmlOptions, OutboundMessageHeader};
@@ -35,8 +34,6 @@ const SYSTEM_REASON_RECONCILE_SCAN: &str =
 	"system submission: reconcile due submissions scan";
 const SYSTEM_REASON_RECONCILE_RETRY: &str =
 	"system submission: reconcile retry dispatch";
-const SYSTEM_REASON_RECONCILE_EXPORT: &str =
-	"system submission: reconcile retry export";
 
 mod ack;
 mod create;
@@ -54,7 +51,10 @@ pub use ack::{
 	apply_gateway_ack_by_remote, get_ack_download, get_submission_dispatch_state,
 	list_submission_events,
 };
-pub use create::{create_submission_idempotent, get_submission, list_by_case};
+pub use create::{
+	create_submission_idempotent, dispatch_reserved_submission, get_submission,
+	get_submission_artifact, list_by_case,
+};
 pub use persistence::list_submission_history;
 pub use reconcile::reconcile_due_submissions_with_runtime_status;
 pub use reconcile_runtime::get_reconcile_runtime_status;
@@ -403,19 +403,18 @@ mod header_tests {
 	}
 }
 
-use gateway::{select_gateway_name, submit_to_gateway_with_retry};
+use gateway::select_gateway_name;
 use persistence::{
 	ack_event_exists, append_submission_event, compose_submission_record,
-	find_submission_idempotency, get_dispatch_attempt_count, get_submission_row,
-	get_submission_row_for_ctx, insert_submission_idempotency, list_ack_rows,
-	list_submission_rows_by_case, mark_dispatch_terminal,
-	upsert_dispatch_state_submit_failure, upsert_dispatch_state_submit_success,
+	find_submission_idempotency, get_submission_row, insert_submission_idempotency,
+	list_ack_rows, list_submission_rows_by_case, mark_dispatch_terminal,
+	upsert_dispatch_state_submit_failure,
 };
 use reconcile_runtime::{record_reconcile_error, record_reconcile_result};
 use rows::*;
 use rows::{status_from_db, status_to_db};
 
-use create::persist_as2_observation;
+use create::persist_submission_observation;
 use gateway::{as2_submitter_token, request_as2_state, As2GatewaySubmitResponse};
 
 use ack::{

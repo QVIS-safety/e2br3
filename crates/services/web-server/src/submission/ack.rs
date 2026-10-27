@@ -91,7 +91,7 @@ pub async fn apply_gateway_ack_by_remote(
 		.dbx()
 		.fetch_optional(
 			sqlx::query_as::<_, CaseSubmissionRow>(
-				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				"SELECT id, case_id, gateway, authority, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
 				 FROM case_submissions
 				 WHERE remote_submission_id = $1
 				 FOR UPDATE",
@@ -204,7 +204,7 @@ pub async fn apply_gateway_ack_by_remote(
 	}
 	if is_submission_terminal(&merged_status)
 		|| (merged_status == SubmissionStatus::Ack3Received
-			&& row.gateway.contains("fda"))
+			&& row.authority.as_deref() == Some("fda"))
 	{
 		mark_dispatch_terminal(mm, row.id, now).await?;
 	}

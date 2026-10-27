@@ -46,7 +46,6 @@ fn require_ack1(
 }
 
 pub(super) async fn submit_to_gateway(
-	case_id: Uuid,
 	xml: &str,
 	authority: SubmissionAuthority,
 ) -> Result<GatewaySubmissionOutcome> {
@@ -137,7 +136,6 @@ pub(super) async fn submit_to_gateway(
 		})?;
 	let ack1 = require_ack1(parsed.ack, "FDA ESG", now)?;
 	Ok(GatewaySubmissionOutcome {
-		gateway: "fda-esg-nextgen-api".to_string(),
 		remote_submission_id,
 		ack1,
 	})
@@ -145,7 +143,7 @@ pub(super) async fn submit_to_gateway(
 
 pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<String> {
 	if as2_submitter_url().is_some() {
-		return Ok("as2-submitter-http".to_string());
+		return Ok(format!("as2-submitter-http-{}", authority.as_str()));
 	}
 	if !is_esg_enabled() {
 		return Err(Error::BadRequest {
@@ -163,47 +161,6 @@ pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<Stri
 		message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
 	})?;
 	Ok("fda-esg-nextgen-api".to_string())
-}
-
-pub(super) fn submission_max_attempts() -> u32 {
-	std::env::var("SUBMISSION_MAX_ATTEMPTS")
-		.ok()
-		.and_then(|v| v.trim().parse::<u32>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(1)
-}
-
-pub(super) fn submission_retry_base_ms() -> u64 {
-	std::env::var("SUBMISSION_RETRY_BASE_MS")
-		.ok()
-		.and_then(|v| v.trim().parse::<u64>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(500)
-}
-
-pub(super) fn submission_retry_max_ms() -> u64 {
-	std::env::var("SUBMISSION_RETRY_MAX_MS")
-		.ok()
-		.and_then(|v| v.trim().parse::<u64>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(10_000)
-}
-
-pub(super) fn backoff_ms_for_attempt(attempt_number: u32) -> u64 {
-	let base = submission_retry_base_ms();
-	let max = submission_retry_max_ms();
-	let shift = attempt_number.saturating_sub(1).min(16);
-	let pow = 1u64 << shift;
-	base.saturating_mul(pow).min(max)
-}
-
-pub(super) fn is_retryable_submit_error(msg: &str) -> bool {
-	let lower = msg.to_ascii_lowercase();
-	!(lower.contains("missing remote submission identifier")
-		|| lower.contains("ack1")
-		|| lower.contains("response is not valid json")
-		|| lower.contains("rejected request (")
-		|| lower.contains("submit failed ("))
 }
 
 #[cfg(test)]
@@ -276,62 +233,6 @@ mod tests {
 			.to_string()
 			.contains("no submission transport configured"));
 	}
-
-	#[test]
-	fn missing_ack_is_not_retryable() {
-		assert!(!is_retryable_submit_error(
-			"FDA ESG submit response missing ACK1; remote submission remains pending acknowledgement"
-		));
-	}
-}
-
-pub(super) struct GatewayDispatchFailure {
-	pub(super) message: String,
-	pub(super) attempts: u32,
-	pub(super) next_retry_at: Option<OffsetDateTime>,
-}
-
-pub(super) async fn submit_to_gateway_with_retry(
-	case_id: Uuid,
-	xml: &str,
-	authority: SubmissionAuthority,
-) -> core::result::Result<(GatewaySubmissionOutcome, u32), GatewayDispatchFailure> {
-	let max_attempts = submission_max_attempts();
-	let mut last_error = "submission failed".to_string();
-
-	for attempt in 1..=max_attempts {
-		match submit_to_gateway(case_id, xml, authority).await {
-			Ok(outcome) => return Ok((outcome, attempt)),
-			Err(err) => {
-				last_error = err.to_string();
-				let retryable = is_retryable_submit_error(&last_error);
-				if attempt >= max_attempts || !retryable {
-					let next_retry_at = if retryable {
-						Some(
-							OffsetDateTime::now_utc()
-								+ time::Duration::milliseconds(
-									backoff_ms_for_attempt(attempt) as i64,
-								),
-						)
-					} else {
-						None
-					};
-					return Err(GatewayDispatchFailure {
-						message: last_error,
-						attempts: attempt,
-						next_retry_at,
-					});
-				}
-				sleep(Duration::from_millis(backoff_ms_for_attempt(attempt))).await;
-			}
-		}
-	}
-
-	Err(GatewayDispatchFailure {
-		message: last_error,
-		attempts: max_attempts,
-		next_retry_at: None,
-	})
 }
 
 // Dispatch exactly once; subsequent reconciliation uses the read-only status endpoint.
@@ -444,4 +345,20 @@ pub(super) fn as2_submitter_token() -> Result<String> {
 		});
 	}
 	Ok(token)
+}
+
+impl From<GatewaySubmissionOutcome> for As2GatewaySubmitResponse {
+	fn from(value: GatewaySubmissionOutcome) -> Self {
+		Self {
+			remote_submission_id: Some(value.remote_submission_id),
+			ack: Some(EsgAckResponse {
+				level: Some(value.ack1.level),
+				success: Some(value.ack1.success),
+				code: value.ack1.code,
+				message: value.ack1.message,
+			}),
+			latest_ack: None,
+			status: None,
+		}
+	}
 }

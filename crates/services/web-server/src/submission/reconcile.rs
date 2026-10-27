@@ -1,5 +1,4 @@
 use super::*;
-use lib_core::model::Error as ModelError;
 
 pub async fn reconcile_due_submissions(
 	mm: &ModelManager,
@@ -106,68 +105,6 @@ pub(super) async fn reconcile_one_submission(
 	}
 }
 
-async fn record_retry_preparation_failure(
-	mm: &ModelManager,
-	submission_id: Uuid,
-	error: &Error,
-) -> Result<()> {
-	let ctx = Ctx::root_ctx();
-	let now = OffsetDateTime::now_utc();
-	// Invalid case data/lifecycle needs user correction, not another dispatch attempt.
-	let next_retry_at = if matches!(
-		error,
-		Error::BadRequest { .. }
-			| Error::Model(ModelError::EntityUuidNotFound { .. })
-	) {
-		None
-	} else {
-		Some(now + time::Duration::minutes(5))
-	};
-	mm.dbx().begin_txn().await.map_err(ModelError::from)?;
-	let result = async {
-		set_full_context_dbx(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
-		let attempts = get_dispatch_attempt_count(mm, submission_id).await?;
-		upsert_dispatch_state_submit_failure(
-			mm,
-			submission_id,
-			now,
-			attempts,
-			&error.to_string(),
-			next_retry_at,
-		)
-		.await?;
-		append_submission_event(
-			mm,
-			submission_id,
-			"submission_retry_failed",
-			Some(json!({
-				"attempts": 0,
-				"error": error.to_string(),
-				"next_retry_at": next_retry_at,
-			})),
-		)
-		.await
-	}
-	.await;
-	match result {
-		Ok(()) => mm
-			.dbx()
-			.commit_txn()
-			.await
-			.map_err(|err| Error::from(ModelError::from(err))),
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
-}
-
 async fn try_acquire_reconcile_lock(
 	mm: &ModelManager,
 	submission_id: Uuid,
@@ -229,7 +166,7 @@ async fn reconcile_one_submission_locked(
 		mm.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, CaseSubmissionRow>(
-					"SELECT submission.id, submission.case_id, submission.gateway,
+					"SELECT submission.id, submission.case_id, submission.gateway, submission.authority,
 					        submission.remote_submission_id, submission.status,
 					        submission.xml_bytes, submission.submitted_by,
 					        submission.submitted_at
@@ -256,227 +193,38 @@ async fn reconcile_one_submission_locked(
 			let Some(row) = row else {
 				return Ok(ReconcileOutcome::Skipped);
 			};
-			if row.gateway.starts_with("as2-submitter-http-") {
-				let authority = match row.gateway.as_str() {
-					"as2-submitter-http-fda" => SubmissionAuthority::Fda,
-					"as2-submitter-http-mfds" => SubmissionAuthority::Mfds,
-					_ => {
-						return Err(Error::BadRequest {
-							message: "unknown AS2 authority".into(),
-						})
-					}
-				};
-				let outcome = request_as2_state(row.case_id, authority, None).await;
-				let observed = outcome.is_ok();
-				persist_as2_observation(&system_ctx, mm, submission_id, outcome)
-					.await?;
-				return Ok(if observed {
-					ReconcileOutcome::Succeeded
-				} else {
-					ReconcileOutcome::Failed
-				});
-			}
-			if row.gateway == "as2-submitter-http" {
-				return Err(Error::BadRequest { message: "legacy AS2 submission requires authority reconciliation; automatic resend blocked".into() });
-			}
-			if !row.status.eq_ignore_ascii_case("rejected") {
-				return Ok(ReconcileOutcome::Skipped);
-			}
-			let authority = if row.gateway.to_ascii_lowercase().contains("mfds") {
-				SubmissionAuthority::Mfds
-			} else {
-				SubmissionAuthority::Fda
-			};
-			let export_authority = match authority {
-				SubmissionAuthority::Fda => RegulatoryAuthority::Fda,
-				SubmissionAuthority::Mfds => RegulatoryAuthority::Mfds,
-			};
-			let export_ctx = system_ctx.with_compliance(
-				Some(SYSTEM_REASON_RECONCILE_EXPORT.to_string()),
-				None,
-			);
-			let xml = match prepare_submission_xml(
-				&export_ctx,
+			let (authority, _) = match get_submission_artifact(
+				&system_ctx,
 				mm,
-				row.case_id,
-				export_authority,
+				submission_id,
 			)
 			.await
 			{
-				Ok(xml) => xml,
-				Err(error) => {
-					let _ = mm.dbx().rollback_txn().await;
+				Ok(artifact) => artifact,
+				Err(error @ Error::BadRequest { .. }) => {
 					record_retry_preparation_failure(mm, submission_id, &error)
 						.await?;
 					return Ok(ReconcileOutcome::Failed);
 				}
+				Err(error) => return Err(error),
 			};
-
-			let now = OffsetDateTime::now_utc();
-			let prior_attempts =
-				get_dispatch_attempt_count(mm, submission_id).await?;
-
-			match submit_to_gateway_with_retry(row.case_id, &xml, authority).await {
-				Ok((outcome, attempts)) => {
-					mm.dbx()
-						.begin_txn()
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-					set_full_context_dbx_or_rollback(
-						mm.dbx(),
-						system_ctx.user_id(),
-						system_ctx.organization_id(),
-						system_ctx.role(),
-					)
-					.await?;
-					set_compliance_context_dbx(
-						mm.dbx(),
-						system_ctx.change_reason(),
-						system_ctx.change_category(),
-						system_ctx.e_signature_id(),
-					)
-					.await
-					.map_err(Error::from)?;
-
-					mm.dbx()
-						.execute(
-							sqlx::query(
-								"UPDATE cases
-								 SET status = 'submitted',
-								     submitted_by = $2,
-								     submitted_at = $3,
-								     raw_xml = $4,
-								     dirty_c = false,
-								     dirty_d = false,
-								     dirty_e = false,
-								     dirty_f = false,
-								     dirty_g = false,
-								     dirty_h = false,
-								     updated_at = now()
-								 WHERE id = $1",
-							)
-							.bind(row.case_id)
-							.bind(system_ctx.user_id())
-							.bind(now)
-							.bind(xml.as_bytes()),
-						)
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-
-					mm.dbx()
-						.execute(
-							sqlx::query(
-								"UPDATE case_submissions
-								 SET gateway = $2,
-								     remote_submission_id = $3,
-								     status = $4,
-								     updated_at = now()
-								 WHERE id = $1",
-							)
-							.bind(submission_id)
-							.bind(outcome.gateway)
-							.bind(outcome.remote_submission_id)
-							.bind(status_to_db(&SubmissionStatus::Ack1Received)),
-						)
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-
-					mm.dbx()
-						.execute(
-							sqlx::query(
-								"INSERT INTO submission_acks (
-									submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
-								)
-								VALUES ($1, $2, $3, $4, $5, $6, $7)",
-							)
-							.bind(submission_id)
-							.bind(outcome.ack1.level as i16)
-							.bind(outcome.ack1.success)
-							.bind(outcome.ack1.code.as_deref())
-							.bind(outcome.ack1.message.as_deref())
-							.bind(outcome.ack1.received_at)
-							.bind(json!({
-								"source": "reconcile_retry",
-								"level": outcome.ack1.level,
-								"success": outcome.ack1.success,
-								"code": outcome.ack1.code,
-								"message": outcome.ack1.message,
-							})),
-						)
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-
-					append_submission_event(
-						mm,
-						submission_id,
-						"submission_retried",
-						Some(json!({
-							"status": "ack1_received",
-							"attempts": attempts,
-						})),
-					)
-					.await?;
-					upsert_dispatch_state_submit_success(
-						mm,
-						submission_id,
-						now,
-						prior_attempts + attempts as i32,
-					)
-					.await?;
-
-					mm.dbx()
-						.commit_txn()
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-					Ok(ReconcileOutcome::Succeeded)
-				}
-				Err(failure) => {
-					mm.dbx()
-						.begin_txn()
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-					set_full_context_dbx_or_rollback(
-						mm.dbx(),
-						system_ctx.user_id(),
-						system_ctx.organization_id(),
-						system_ctx.role(),
-					)
-					.await?;
-					set_compliance_context_dbx(
-						mm.dbx(),
-						system_ctx.change_reason(),
-						system_ctx.change_category(),
-						system_ctx.e_signature_id(),
-					)
-					.await
-					.map_err(Error::from)?;
-					upsert_dispatch_state_submit_failure(
-						mm,
-						submission_id,
-						now,
-						prior_attempts + failure.attempts as i32,
-						&failure.message,
-						failure.next_retry_at,
-					)
-					.await?;
-					append_submission_event(
-						mm,
-						submission_id,
-						"submission_retry_failed",
-						Some(json!({
-							"attempts": failure.attempts,
-							"error": failure.message,
-							"next_retry_at": failure.next_retry_at,
-						})),
-					)
-					.await?;
-					mm.dbx()
-						.commit_txn()
-						.await
-						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-					Ok(ReconcileOutcome::Failed)
-				}
+			if !matches!(
+				row.gateway.as_str(),
+				"as2-submitter-http-fda" | "as2-submitter-http-mfds"
+			) {
+				let error = Error::BadRequest { message: "automatic resend blocked; transport requires outcome reconciliation".into() };
+				record_retry_preparation_failure(mm, submission_id, &error).await?;
+				return Ok(ReconcileOutcome::Failed);
 			}
+			let outcome = request_as2_state(row.case_id, authority, None).await;
+			let observed = outcome.is_ok();
+			persist_submission_observation(&system_ctx, mm, submission_id, outcome)
+				.await?;
+			Ok(if observed {
+				ReconcileOutcome::Succeeded
+			} else {
+				ReconcileOutcome::Failed
+			})
 		}
 		Err(err) => {
 			let _ = mm.dbx().rollback_txn().await;
@@ -524,5 +272,38 @@ mod lock_tests {
 			.unwrap()
 			.expect("lock should be available after transaction end");
 		next.dbx().rollback_txn().await.unwrap();
+	}
+}
+
+async fn record_retry_preparation_failure(
+	mm: &ModelManager,
+	id: Uuid,
+	error: &Error,
+) -> Result<()> {
+	let ctx = Ctx::root_ctx();
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	let result = async {
+        set_full_context_dbx(mm.dbx(), ctx.user_id(), ctx.organization_id(), ctx.role()).await?;
+        set_compliance_context_dbx(mm.dbx(), Some("system submission: stop unsafe retransmission"), None, None).await?;
+        mm.dbx().execute(sqlx::query("UPDATE submission_dispatch_state SET next_retry_at=NULL,last_error=$2 WHERE submission_id=$1")
+            .bind(id).bind(error.to_string())).await.map_err(lib_core::model::Error::from)?;
+        append_submission_event(mm,id,"submission_reconciliation_required",Some(json!({"error":error.to_string(),"action":"manual_reconciliation_no_resend"}))).await
+    }.await;
+	match result {
+		Ok(()) => mm
+			.dbx()
+			.commit_txn()
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e))),
+		Err(error) => {
+			mm.dbx()
+				.rollback_txn()
+				.await
+				.map_err(lib_core::model::Error::from)?;
+			Err(error)
+		}
 	}
 }

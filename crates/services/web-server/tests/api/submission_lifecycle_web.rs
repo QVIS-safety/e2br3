@@ -882,7 +882,8 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 
 #[serial]
 #[tokio::test]
-async fn test_reconcile_stops_invalid_cases_and_continues_the_batch() -> Result<()> {
+async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
+) -> Result<()> {
 	clear_esg_env();
 	let (base_url, received) = start_mock_esg(
 		StatusCode::CREATED,
@@ -943,9 +944,7 @@ async fn test_reconcile_stops_invalid_cases_and_continues_the_batch() -> Result<
 				.await?;
 		}
 		mm.dbx().commit_txn().await?;
-		if *status != "draft" {
-			blocked_ids.push(submission_id);
-		}
+		blocked_ids.push(submission_id);
 	}
 	let result =
 		web_server::submission::reconcile_due_submissions_with_runtime_status(
@@ -953,12 +952,12 @@ async fn test_reconcile_stops_invalid_cases_and_continues_the_batch() -> Result<
 		)
 		.await?;
 	assert_eq!(result.attempted, 5);
-	assert_eq!(result.failed, 4);
-	assert_eq!(result.succeeded, 1);
+	assert_eq!(result.failed, 5);
+	assert_eq!(result.succeeded, 0);
 	assert_eq!(
 		received.lock().await.len(),
-		1,
-		"only the valid case may reach the gateway"
+		0,
+		"legacy attempts must never re-export or resend even if the Case is valid"
 	);
 	for submission_id in blocked_ids {
 		let state = web_server::submission::get_submission_dispatch_state(
@@ -1143,19 +1142,12 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 	assert_eq!(item["acknowledgedDate"], item["latestAckReceivedAt"]);
 	assert_eq!(item["icsrCount"].as_i64(), Some(1));
 	assert_eq!(
-		item["dataFileName"].as_str(),
-		Some(
-			format!(
-				"{}-{}-fda.xml",
-				item["caseNumber"].as_str().unwrap(),
-				case_id
-			)
-			.as_str()
-		)
+		item["dataFileName"],
+		format!("submission-{submission_id}.xml")
 	);
 	assert_eq!(
-		item["dataFileDownloadUrl"].as_str(),
-		Some(format!("/api/cases/{case_id}/export/xml?authority=fda").as_str())
+		item["dataFileDownloadUrl"],
+		format!("/api/submissions/{submission_id}/xml")
 	);
 
 	Ok(())
@@ -1702,10 +1694,10 @@ async fn test_submission_esg_transport_sends_expected_headers_and_payload(
 
 #[serial]
 #[tokio::test]
-async fn test_submission_esg_non_success_response_returns_bad_request() -> Result<()>
-{
+async fn test_submission_esg_non_success_preserves_unknown_without_resend(
+) -> Result<()> {
 	clear_esg_env();
-	let (esg_url, _received) = start_mock_esg(
+	let (esg_url, received) = start_mock_esg(
 		StatusCode::BAD_GATEWAY,
 		json!({ "error": "gateway unavailable" }),
 	)
@@ -1732,11 +1724,23 @@ async fn test_submission_esg_non_success_response_returns_bad_request() -> Resul
 		valid_compliance_payload(),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(
-		body.to_string().contains("FDA ESG submit failed"),
-		"{body:?}"
-	);
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	assert_eq!(body["data"]["status"], "dispatch_unknown");
+	assert!(body["data"]["remote_submission_id"].is_null());
+	assert!(body["data"]["ack1"].is_null());
+	assert_eq!(received.lock().await.len(), 1);
+	let id = body["data"]["id"].as_str().ok_or("missing id")?;
+	let (_, dispatch) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/submissions/{id}/dispatch-state"),
+	)
+	.await?;
+	assert!(dispatch["data"]["state"]["next_retry_at"].is_null());
+	assert!(dispatch["data"]["state"]["last_error"]
+		.as_str()
+		.ok_or("missing dispatch error")?
+		.contains("FDA ESG submit failed"));
 
 	clear_esg_env();
 	Ok(())
@@ -1842,11 +1846,12 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
 	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
-	let (status, body) = post_json(
+	let (status, body) = post_json_with_headers(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
 		valid_compliance_payload(),
+		&[("x-idempotency-key", "unknown-key")],
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
@@ -1866,6 +1871,82 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 	assert_eq!(items.len(), 1);
 	assert_eq!(items[0]["status"], "dispatch_unknown");
 	assert!(items[0]["remote_submission_id"].is_null());
+
+	let id = Uuid::parse_str(body["data"]["id"].as_str().ok_or("missing id")?)?;
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let (_, original) =
+		web_server::submission::get_submission_artifact(&ctx, &mm, id).await?;
+	assert!(!original.is_empty());
+	let (repeated_status, repeated) = post_json_with_headers(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submissions/fda"),
+		valid_compliance_payload(),
+		&[("x-idempotency-key", "unknown-key")],
+	)
+	.await?;
+	assert_eq!(repeated_status, StatusCode::CREATED, "{repeated}");
+	assert_eq!(repeated["data"]["id"], body["data"]["id"]);
+	let req = Request::builder()
+		.uri(format!("/api/submissions/{id}/xml"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let downloaded = app.clone().oneshot(req).await?;
+	assert_eq!(downloaded.status(), StatusCode::OK);
+	assert_eq!(
+		to_bytes(downloaded.into_body(), usize::MAX).await?.as_ref(),
+		original.as_slice()
+	);
+	let req = Request::builder()
+		.uri(format!("/api/submissions/{id}/xml"))
+		.body(Body::empty())?;
+	assert!(!app.clone().oneshot(req).await?.status().is_success());
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let changed = mm
+		.dbx()
+		.execute(
+			sqlx::query("UPDATE case_submissions SET submitted_xml=$2 WHERE id=$1")
+				.bind(id)
+				.bind({
+					let mut bytes = original.clone();
+					bytes[0] ^= 1;
+					bytes
+				}),
+		)
+		.await;
+	let error = changed.expect_err("submitted bytes must be immutable");
+	assert!(
+		error
+			.to_string()
+			.contains("Submission identity and original XML are immutable"),
+		"{error}"
+	);
+	mm.dbx().rollback_txn().await?;
+	let (_, retained) =
+		web_server::submission::get_submission_artifact(&ctx, &mm, id).await?;
+	assert_eq!(retained, original);
+	let outsider = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let outsider_token =
+		generate_web_token(&outsider.admin.email, outsider.admin.token_salt)?;
+	let req = Request::builder()
+		.uri(format!("/api/submissions/{id}/xml"))
+		.header("cookie", cookie_header(&outsider_token.to_string()))
+		.body(Body::empty())?;
+	assert_eq!(
+		app.clone().oneshot(req).await?.status(),
+		StatusCode::NOT_FOUND
+	);
 
 	clear_esg_env();
 	Ok(())
@@ -2017,16 +2098,7 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 		&[("x-idempotency-key", idem_key)],
 	)
 	.await?;
-	if status2 == StatusCode::BAD_REQUEST {
-		assert!(
-			body2
-				.to_string()
-				.contains("case has already been submitted"),
-			"{body2:?}"
-		);
-		clear_esg_env();
-		return Ok(());
-	}
+
 	assert_eq!(status2, StatusCode::CREATED, "{body2:?}");
 	let id2 = body2["data"]["id"]
 		.as_str()
@@ -2039,9 +2111,8 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 	let items = list_body["data"]["items"]
 		.as_array()
 		.ok_or("missing submissions list")?;
-	if id1 == id2 {
-		assert_eq!(items.len(), 1, "{list_body:?}");
-	}
+	assert_eq!(id1, id2);
+	assert_eq!(items.len(), 1, "{list_body:?}");
 
 	clear_esg_env();
 	Ok(())
@@ -2209,8 +2280,7 @@ async fn test_internal_reconcile_status_accumulates_runtime_counters() -> Result
 
 #[serial]
 #[tokio::test]
-async fn test_internal_reconcile_retries_failed_submission_to_success() -> Result<()>
-{
+async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
@@ -2312,10 +2382,7 @@ async fn test_internal_reconcile_retries_failed_submission_to_success() -> Resul
 	let status_text = value["data"]["status"]
 		.as_str()
 		.ok_or("missing submission status")?;
-	assert!(
-		matches!(status_text, "ack1_received" | "rejected"),
-		"{value:?}"
-	);
+	assert_eq!(status_text, "rejected", "{value:?}");
 
 	let (dispatch_status, dispatch_body) = get_json(
 		&app,
@@ -2337,7 +2404,7 @@ async fn test_internal_reconcile_retries_failed_submission_to_success() -> Resul
 
 #[serial]
 #[tokio::test]
-async fn test_internal_reconcile_retries_failed_submission_and_keeps_rejected_on_failure(
+async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 ) -> Result<()> {
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
@@ -2769,24 +2836,18 @@ async fn test_internal_ack_callback_rejects_malformed_payload() -> Result<()> {
 #[ignore = "Requires real Java AS2 submitter running; set REAL_AS2_SUBMITTER_URL"]
 async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	clear_esg_env();
-	let submitter_url = match std::env::var("REAL_AS2_SUBMITTER_URL") {
-		Ok(v) if !v.trim().is_empty() => v,
-		Err(_) => {
-			eprintln!("skipping: REAL_AS2_SUBMITTER_URL is required");
-			return Ok(());
-		}
-		Ok(_) => {
-			eprintln!("skipping: REAL_AS2_SUBMITTER_URL is required");
-			return Ok(());
-		}
-	};
+	let submitter_url = std::env::var("REAL_AS2_SUBMITTER_URL")?;
+	let inbound_token = std::env::var("REAL_AS2_SUBMITTER_TOKEN")?;
+	let callback_token = std::env::var("REAL_AS2_CALLBACK_TOKEN")?;
+	if submitter_url.trim().is_empty()
+		|| inbound_token.trim().is_empty()
+		|| callback_token.trim().is_empty()
+	{
+		return Err("real AS2 endpoint and credentials must not be empty".into());
+	}
 	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
-	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
-	std::env::set_var(
-		"AS2_ACK_CALLBACK_URL",
-		"http://127.0.0.1:8080/internal/submissions/callbacks/ack",
-	);
-	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
+	std::env::set_var("AS2_SUBMITTER_TOKEN", inbound_token);
+	std::env::set_var("AS2_CALLBACK_TOKEN", callback_token);
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 
 	let mm = init_test_mm().await?;
@@ -2794,6 +2855,15 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm.clone());
+	let listener = TcpListener::bind("127.0.0.1:0").await?;
+	let callback_addr = listener.local_addr()?;
+	std::env::set_var(
+		"AS2_ACK_CALLBACK_URL",
+		format!("http://{callback_addr}/internal/submissions/callbacks/ack"),
+	);
+	let callback_app = app.clone();
+	let callback_server =
+		tokio::spawn(async move { axum::serve(listener, callback_app).await });
 
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "mfds").await?;
@@ -2814,6 +2884,31 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 		.ok_or("missing remote_submission_id")?;
 	assert!(!remote_submission_id.trim().is_empty(), "{submit_body:?}");
 
+	assert_eq!(
+		submit_body["data"]["status"], "ack1_received",
+		"{submit_body}"
+	);
+	assert_eq!(submit_body["data"]["ack1"]["success"], true);
+	assert!(submit_body["data"]["ack2"].is_null());
+	let id = submit_body["data"]["id"].as_str().ok_or("missing id")?;
+	tokio::time::timeout(Duration::from_secs(30), async {
+		loop {
+			let (_, events) =
+				get_json(&app, &cookie, &format!("/api/submissions/{id}/events"))
+					.await?;
+			let rows = events["data"]["items"].as_array().ok_or("missing events")?;
+			if rows.iter().any(|event| {
+				event["event_type"] == "ack_duplicate_ignored"
+					|| event["event_data"]["source"] == "gateway_callback"
+			}) {
+				return Ok::<_, Box<dyn std::error::Error + Send + Sync>>(());
+			}
+			sleep(Duration::from_millis(200)).await;
+		}
+	})
+	.await??;
+	callback_server.abort();
+
 	clear_esg_env();
 	Ok(())
 }
@@ -2824,13 +2919,31 @@ async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 ) -> Result<()> {
 	use std::sync::atomic::{AtomicUsize, Ordering};
 	clear_esg_env();
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let observer = mm.clone();
+	let observer_user = seed.admin.id;
+	let observer_org = seed.org_id;
 	let sends = Arc::new(AtomicUsize::new(0));
 	let polls = Arc::new(AtomicUsize::new(0));
 	let submit_count = sends.clone();
 	let poll_count = polls.clone();
 	// Deterministic protocol fixture, not regulator acceptance evidence.
 	let transport = Router::new()
-        .route("/submit", post(move || { let count = submit_count.clone(); async move {
+        .route("/submit", post(move |Json(payload): Json<Value>| { let count = submit_count.clone(); let db = observer.clone(); async move {
+            // A separate DB session must see the reservation before the first network send.
+            db.dbx().begin_txn().await.unwrap();
+            set_full_context_dbx(db.dbx(), observer_user, observer_org, ROLE_SPONSOR_ADMIN_CRO).await.unwrap();
+            let case_id = Uuid::parse_str(payload["caseId"].as_str().unwrap()).unwrap();
+            let durable = db.dbx().fetch_one(sqlx::query_as::<_, (i64,)>(
+                "SELECT count(*) FROM case_submissions s JOIN submission_idempotency i ON i.submission_id=s.id
+                 WHERE s.case_id=$1 AND s.authority='fda' AND s.submitted_xml=convert_to($2,'UTF8') AND i.idempotency_key='durable-key'")
+                .bind(case_id).bind(payload["xmlPayload"].as_str().unwrap())).await.unwrap().0;
+            assert_eq!(durable, 1, "reservation and key must be committed before I/O");
+            let unlocked = db.dbx().fetch_one(sqlx::query_as::<_, (bool,)>(
+                "SELECT pg_try_advisory_xact_lock(hashtextextended('e2br3.audit_logs.hash_chain',0))")).await.unwrap().0;
+            assert!(unlocked, "network I/O must not hold the audit chain lock");
+            db.dbx().commit_txn().await.unwrap();
             count.fetch_add(1, Ordering::SeqCst);
             Json(json!({"remote_submission_id":"pending-fixture", "status":"submitted_ack1_pending"}))
         }}))
@@ -2845,19 +2958,19 @@ async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 	std::env::set_var("AS2_SUBMITTER_URL", format!("http://{addr}"));
 	std::env::set_var("AS2_SUBMITTER_TOKEN", "fixture-token");
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm.clone());
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
 	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
-	let (status, body) = post_json(
+	let (status, body) = post_json_with_headers(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
 		valid_compliance_payload(),
+		&[("x-idempotency-key", "durable-key")],
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body}");
