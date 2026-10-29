@@ -222,12 +222,14 @@ GET /api/submissions/{id}
 GET /api/submissions/{id}/acks/{level}/download
 GET /api/submissions/{id}/dispatch-state
 GET /api/submissions/{id}/events
+GET /api/submissions/{id}/xml
 GET /api/terminology/code-lists
 GET /api/terminology/countries
 GET /api/terminology/fda-code-search
 GET /api/terminology/meddra
 GET /api/terminology/mfds-products
 GET /api/terminology/mfds-products/{item_seq}/substances
+GET /api/terminology/mfds-substances
 GET /api/terminology/releases
 GET /api/terminology/ucum-units
 GET /api/terminology/whodrug
