@@ -19,10 +19,12 @@ function walk(directory) {
 }
 walk(detailRoot);
 
-const roots = "case|caseSummaryInformation|documentsHeldBySender|drugReactionAssessments|drugs|linkedReports|literatureReferences|messageHeader|narrative|otherCaseIdentifiers|patientInformation|primarySources|receiverInformation|reactions|safetyReportIdentification|senderInformation|sourceDocuments|studyInformation|testResults";
+const roots = "case|caseSummaryInformation|documentsHeldBySender|drugReactionAssessments|drugs|linkedReports|literatureReferences|messageHeader|narrative|otherCaseIdentifiers|patientInformation|primarySources|receiverInformation|reactions|reviewReceivers|safetyReportIdentification|senderInformation|sourceDocuments|studyInformation|testResults";
 const rootPattern = new RegExp(`^(?:${roots})\\.`);
 const inventory = new Map();
 const containerPaths = new Set([
+  "drugs.activeSubstances", "drugs.drugReactionAssessments", "drugs.fdaDevices",
+  "drugs.fdaDevices.followUpTypes", "drugs.fdaDevices.deviceProblemCodes", "drugs.fdaDevices.remedialActions",
   "drugs.mfdsDeviceInfo", "narrative.senderDiagnoses",
   "patientInformation.medicalHistoryEpisodes",
   "patientInformation.parentInformation.medicalHistoryEpisodes",
@@ -38,6 +40,11 @@ const containerPaths = new Set([
   "studyInformation.fdaCrossReportedIndNumbers",
   "studyInformation.studyRegistrationNumbers",
 ]);
+// Registered for validation/error state, but ExpeditedCriteriaFields renders no
+// independently editable control for this companion.
+const nonInputPaths = new Set([
+  "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor",
+]);
 
 function normalize(raw) {
   return raw
@@ -49,7 +56,7 @@ function normalize(raw) {
 
 function add(raw, file) {
   const key = normalize(raw);
-  if (!rootPattern.test(key) || containerPaths.has(key) || /(?:^|\.)(?:id|deleted|_delete)$/.test(key)) return;
+  if (!rootPattern.test(key) || containerPaths.has(key) || nonInputPaths.has(key) || /(?:^|\.)(?:id|deleted|_delete)$/.test(key)) return;
   inventory.set(key, { key, file: path.relative(path.dirname(frontendRoot), file) });
 }
 
@@ -87,7 +94,10 @@ for (const file of files) {
   function visit(node) {
     if (ts.isJsxAttribute(node) && ["name", "fieldName", "valueName", "realValueName", "codeName", "productNameName", "nullFlavorName"].includes(node.name.text)) {
       const raw = expressionRaw(node.initializer);
-      if (raw && !raw.includes("${criterion.name}NullFlavor")) add(raw, file);
+      if (raw && !raw.includes("${criterion.name}NullFlavor")) {
+        const tag = node.parent?.parent?.tagName?.getText(ast) || "";
+        add(/RepeatableFdaCode(?:Select|Search)List/.test(tag) ? `${raw}.\${index}.valueCode` : raw, file);
+      }
     }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "register") {
       const raw = expressionRaw(node.arguments[0]);
@@ -108,6 +118,12 @@ for (const file of files) {
   for (const match of source.matchAll(new RegExp(`\\bname:\\s*[\"']((?:${roots})\\.[^\"']+)[\"']`, "g"))) {
     if (!match[1].startsWith("messageHeader.")) add(match[1], file);
   }
+  for (const match of source.matchAll(new RegExp(`((?:${roots})\\.[A-Za-z0-9_.$\\{\\}]+NullFlavor)`, "g"))) {
+    if (!match[1].includes("criterion.name") && !match[1].includes("fieldName") && !match[1].includes("${name}")) add(match[1], file);
+  }
+  if (source.includes("nullFlavorName={`${field.name}NullFlavor`}")) {
+    for (const match of source.matchAll(new RegExp(`\\bname:\\s*[\"']((?:${roots})\\.[^\"']+)[\"']`, "g"))) add(`${match[1]}NullFlavor`, file);
+  }
   for (const match of source.matchAll(/elementNullFlavor\([^,]+,\s*["']([A-Za-z][A-Za-z0-9]*NullFlavor)["']/g)) {
     add(`primarySources.${match[1]}`, file);
   }
@@ -115,7 +131,10 @@ for (const file of files) {
     if (match[1] !== "id") add(`patientInformation.parentInformation.pastDrugHistory.${match[1]}`, file);
   }
   if (source.includes("parentPastDrugPath(index, config.field)")) {
-    for (const match of source.matchAll(/\bfield:\s*["']([A-Za-z][A-Za-z0-9]+)["']/g)) add(`patientInformation.parentInformation.pastDrugHistory.${match[1]}`, file);
+    for (const match of source.matchAll(/\bfield:\s*["']([A-Za-z][A-Za-z0-9]+)["']/g)) {
+      add(`patientInformation.parentInformation.pastDrugHistory.${match[1]}`, file);
+      if (["startDate", "endDate"].includes(match[1])) add(`patientInformation.parentInformation.pastDrugHistory.${match[1]}NullFlavor`, file);
+    }
   }
   if (source.includes("parentPastDrugPath(index, config.")) {
     for (const match of source.matchAll(/\b(?:versionField|codeField|idField):\s*["']([A-Za-z][A-Za-z0-9]+)["']/g)) {
@@ -127,6 +146,7 @@ for (const file of files) {
 const modelFile = path.join(detailRoot, "AE/model/aeModel.ts");
 const modelSource = fs.readFileSync(modelFile, "utf8");
 for (const match of modelSource.matchAll(/\bname:\s*["'](criteria[A-Za-z]+)["']/g)) add(`reactions.seriousness.${match[1]}`, modelFile);
+for (const match of modelSource.matchAll(/\bname:\s*["'](criteria[A-Za-z]+)["']/g)) add(`reactions.seriousness.${match[1]}NullFlavor`, modelFile);
 for (const match of modelSource.matchAll(/^\s*\[\s*["']((?:cause|action)[A-Za-z]+)["']/gm)) add(`reactions.mfdsDeviceAe.${match[1]}`, modelFile);
 
 process.stdout.write(JSON.stringify([...inventory.values()].sort((a, b) => a.key.localeCompare(b.key))));

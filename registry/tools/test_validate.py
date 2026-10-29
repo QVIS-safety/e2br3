@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +14,15 @@ import editor_contract
 
 
 class RegistryValidatorTests(unittest.TestCase):
+    def test_cli_rejects_unknown_options(self):
+        script = Path(__file__).with_name("validate.py")
+        for option in ("--strict-frontend", "--editor-page"):
+            completed = subprocess.run(
+                [sys.executable, str(script), option], capture_output=True, text=True
+            )
+            self.assertEqual(2, completed.returncode)
+            self.assertIn(f"unknown option: {option}", completed.stderr)
+
     def test_active_editor_contract_fields_are_explicit_rows_payloads(self):
         repo = Path(__file__).resolve().parents[2]
         active_pages = {"CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH"}
@@ -180,6 +190,102 @@ class RegistryValidatorTests(unittest.TestCase):
         self.assertIn("FDA", literature_attachment["action"])
         self.assertIn("file name", literature_attachment["action"])
         self.assertIn("mediaType", literature_attachment["action"])
+
+    def test_dm_age_business_validation_uses_backend_issue_paths(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/dm.json").read_text(encoding="utf-8")
+        )
+        actual = {
+            field["code"]: (
+                field.get("businessValidation", {}).get("ruleCode"),
+                field.get("businessValidation", {}).get("issuePath"),
+            )
+            for field in contract["fields"]
+            if field["code"] in {"D.2.2a", "D.2.2b", "D.2.2.1a", "D.2.2.1b"}
+        }
+        self.assertEqual(
+            {
+                "D.2.2a": (
+                    "ICH.D.2.2a.REQUIRED",
+                    "patientInformation.ageAtTimeOfOnset",
+                ),
+                "D.2.2b": (
+                    "ICH.D.2.2b.REQUIRED",
+                    "patientInformation.ageUnit",
+                ),
+                "D.2.2.1a": (
+                    "ICH.D.2.2.1a.REQUIRED",
+                    "patientInformation.gestationPeriod",
+                ),
+                "D.2.2.1b": (
+                    "ICH.D.2.2.1b.REQUIRED",
+                    "patientInformation.gestationPeriodUnit",
+                ),
+            },
+            actual,
+        )
+
+    def test_dm_parent_age_unit_radix_options_match_frontend_source(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/dm.json").read_text(encoding="utf-8")
+        )
+        field = next(row for row in contract["fields"] if row["code"] == "D.10.2.2b")
+        self.assertEqual(
+            field["control"],
+            {
+                "kind": "radix_select",
+                "options": [
+                    {"value": "10.a", "label": "10.a = Decade"},
+                    {"value": "a", "label": "a = Year"},
+                ],
+            },
+        )
+        source = (repo.parent / "frontend-rich-push-20261021/lib/e2b/ucum.ts").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('option.value === "10.a" || option.value === "a"', source)
+
+    def test_si_business_validation_uses_backend_rules_and_issue_paths(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/si.json").read_text(encoding="utf-8")
+        )
+        actual = {
+            field["code"]: (
+                field.get("businessValidation", {}).get("ruleCode"),
+                field.get("businessValidation", {}).get("issuePath"),
+            )
+            for field in contract["fields"]
+            if field["code"] in {
+                "C.5.4",
+                "FDA.C.5.5a",
+                "FDA.C.5.5b",
+                "FDA.C.5.6.r",
+            }
+        }
+        self.assertEqual(
+            {
+                "C.5.4": (
+                    "ICH.C.5.4.REQUIRED",
+                    "studyInformation.0.studyTypeReaction",
+                ),
+                "FDA.C.5.5a": (
+                    "FDA.R0024",
+                    "studyInformation.0.fdaIndNumberOccurred",
+                ),
+                "FDA.C.5.5b": (
+                    "FDA.R0025",
+                    "studyInformation.0.fdaPreAndaNumberOccurred",
+                ),
+                "FDA.C.5.6.r": (
+                    "FDA.R0026",
+                    "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber",
+                ),
+            },
+            actual,
+        )
 
     def test_certified_editor_sections_track_regional_business_rule_gaps(self):
         repo = Path(__file__).resolve().parents[2]
@@ -367,9 +473,20 @@ class RegistryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "C.1.3 frontend path case.reportType does not match registry safetyReportIdentification.reportType",
+            "C.1.3 frontend path case.reportType does not match registry ['safetyReportIdentification.reportType']",
             result.errors,
         )
+
+    def test_editor_contract_accepts_one_of_multiple_registry_frontend_paths(self):
+        row = self.editor_row()
+        row["frontend"]["field"] = "reportType/reportTypeNullFlavor"
+        result = validate.ValidationResult()
+
+        editor_contract.validate_editor_contract(
+            [row], {"pageId": "CI", "fields": [self.editor_field()]}, result
+        )
+
+        self.assertEqual([], result.errors)
 
     def test_editor_contract_accepts_explicit_not_applicable_stage(self):
         field = self.editor_field()
@@ -384,6 +501,558 @@ class RegistryValidatorTests(unittest.TestCase):
         )
 
         self.assertEqual([], result.errors)
+
+    def test_editor_contract_blocked_stage_requires_reason(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_stage(
+            "C.1.local.fixture", "constraint", {"status": "blocked"}, result
+        )
+        self.assertEqual(
+            ["C.1.local.fixture constraint blocked requires reason"], result.errors
+        )
+
+    def test_radix_select_control_rejects_duplicate_values_and_empty_labels(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "D.2.2b",
+            {
+                "kind": "radix_select",
+                "options": [
+                    {"value": "a", "label": "a = Year"},
+                    {"value": "a", "label": ""},
+                ],
+            },
+            result,
+        )
+        self.assertEqual(
+            [
+                "D.2.2b radix_select option value 'a' is duplicated",
+                "D.2.2b radix_select option label is required",
+            ],
+            result.errors,
+        )
+
+    def test_radix_select_control_rejects_stale_round_trip_value(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "FDA.G.k.10.1",
+            {
+                "kind": "radix_select",
+                "options": [
+                    {"value": "C102834", "label": "C102834 = Type 1"},
+                ],
+            },
+            result,
+            "1",
+        )
+        self.assertEqual(
+            [
+                "FDA.G.k.10.1 roundTripValue '1' is not declared by its radix_select control"
+            ],
+            result.errors,
+        )
+
+    def test_radix_select_control_accepts_exact_dynamic_option_source(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "G.k.9.i.1",
+            {
+                "kind": "radix_select",
+                "dynamicOptions": {
+                    "source": "case.reactions",
+                    "valuePath": "id",
+                    "labelPath": "primarySourceReaction",
+                },
+            },
+            result,
+        )
+        self.assertEqual([], result.errors)
+
+    def test_radix_select_control_rejects_invalid_dynamic_option_source(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "G.k.9.i.1",
+            {
+                "kind": "radix_select",
+                "dynamicOptions": {
+                    "source": "",
+                    "valuePath": "id",
+                },
+            },
+            result,
+        )
+        self.assertEqual(
+            [
+                "G.k.9.i.1 radix_select dynamicOptions requires source",
+                "G.k.9.i.1 radix_select dynamicOptions requires labelPath",
+            ],
+            result.errors,
+        )
+
+    def test_radix_select_control_rejects_ambiguous_option_sources(self):
+        dynamic = {
+            "source": "case.reactions",
+            "valuePath": "id",
+            "labelPath": "primarySourceReaction",
+        }
+        for control in (
+            {"kind": "radix_select"},
+            {
+                "kind": "radix_select",
+                "options": [{"value": "one", "label": "One"}],
+                "dynamicOptions": dynamic,
+            },
+        ):
+            with self.subTest(control=control):
+                result = validate.ValidationResult()
+                editor_contract._validate_control(
+                    "G.k.9.i.1", control, result
+                )
+                self.assertEqual(
+                    [
+                        "G.k.9.i.1 radix_select control requires exactly one of options or dynamicOptions"
+                    ],
+                    result.errors,
+                )
+
+    def test_async_autocomplete_control_requires_query_and_option_values(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "C.2.r.3",
+            {"kind": "async_autocomplete", "queryValue": "", "optionValue": ""},
+            result,
+        )
+        self.assertEqual(
+            [
+                "C.2.r.3 async_autocomplete control requires queryValue",
+                "C.2.r.3 async_autocomplete control requires optionValue",
+                "C.2.r.3 async_autocomplete control requires optionDataValue",
+                "C.2.r.3 async_autocomplete control requires optionLabel",
+                "C.2.r.3 async_autocomplete control requires selectedLabel",
+            ],
+            result.errors,
+        )
+
+    def test_si_country_declares_the_reviewed_country_autocomplete_binding(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/si.json").read_text(encoding="utf-8")
+        )
+        country = next(field for field in contract["fields"] if field["code"] == "C.5.1.r.2")
+        self.assertEqual(
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "KR",
+                "optionValue": "KR",
+                "optionDataValue": "KR",
+                "optionLabel": "KR",
+                "selectedLabel": "KR",
+            },
+            country["control"],
+        )
+
+    def test_native_select_control_requires_exact_options(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "D.8.r.6a", {"kind": "native_select", "options": []}, result
+        )
+        self.assertEqual(
+            ["D.8.r.6a native_select control requires options"], result.errors
+        )
+
+    def test_radio_group_control_requires_exact_options(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "G.k.1", {"kind": "radio_group", "options": []}, result
+        )
+        self.assertEqual(
+            ["G.k.1 radio_group control requires options"], result.errors
+        )
+
+    def test_async_autocomplete_selection_effect_requires_exact_pair(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "D.8.r.6b",
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "Alarm clock headache",
+                "optionValue": "10088978",
+                "optionDataValue": "10088978",
+                "optionLabel": "Alarm clock headache (10088978)",
+                "selectedLabel": "10088978",
+                "selectionEffects": [],
+            },
+            result,
+        )
+        self.assertEqual(
+            ["D.8.r.6b async_autocomplete selectionEffects requires unique frontendPath/value pairs"],
+            result.errors,
+        )
+
+    def test_async_autocomplete_selection_effects_accept_distinct_pairs(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "G.k.2.1.KR.1b",
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "acet",
+                "optionValue": "1086735",
+                "optionDataValue": "1086735",
+                "optionLabel": "1-naphthaleneacetic acid (1086735)",
+                "selectedLabel": "1086735",
+                "selectionEffects": [
+                    {"frontendPath": "drugs[].mfdsMpidVersion", "value": "GLOBALC3Mar26"},
+                    {"frontendPath": "drugs[].medicinalProduct", "value": "1-naphthaleneacetic acid"},
+                ],
+            },
+            result,
+        )
+        self.assertEqual([], result.errors)
+
+    def test_dh_terminology_controls_match_reviewed_live_options(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/dh.json").read_text(encoding="utf-8")
+        )
+        fields = {field["code"]: field for field in contract["fields"]}
+        self.assertEqual(
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "Advanced Aspirin",
+                "optionValue": "Advanced Aspirin",
+                "optionDataValue": "Advanced Aspirin",
+                "optionLabel": "Advanced Aspirin (000027-01-917)",
+                "selectedLabel": "Advanced Aspirin",
+                "selectionRule": "exact_query_equal_first_source_order",
+                "sourceCode": "000027-01-917",
+                "sourceVersion": "2026-03",
+                "sourceLanguage": "en",
+            },
+            fields["D.8.r.1"]["control"],
+        )
+        for code in ("D.8.r.6a", "D.8.r.7a"):
+            self.assertEqual(
+                {"kind": "native_select", "options": [{"value": "28.1", "label": "28.1"}]},
+                fields[code]["control"],
+            )
+        for code in ("D.8.r.6b", "D.8.r.7b"):
+            self.assertEqual("10088978", fields[code]["roundTripValue"])
+            self.assertEqual("10088978", fields[code]["control"]["optionDataValue"])
+            self.assertEqual("28.1", fields[code]["control"]["sourceVersion"])
+            self.assertEqual("en", fields[code]["control"]["sourceLanguage"])
+        self.assertEqual(
+            [{"frontendPath": fields["D.8.r.6a"]["frontendPath"], "value": "28.1"}],
+            fields["D.8.r.6b"]["control"]["selectionEffects"],
+        )
+        self.assertEqual(
+            [{"frontendPath": fields["D.8.r.7a"]["frontendPath"], "value": "28.1"}],
+            fields["D.8.r.7b"]["control"]["selectionEffects"],
+        )
+
+    def test_dg_form_autocomplete_controls_match_production_options(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/dg.json").read_text(encoding="utf-8")
+        )
+        fields = {field["code"]: field for field in contract["fields"]}
+        expected = {
+            "FDA.G.k.10a": [
+                ("1", "Test"),
+                ("2", "Reference"),
+                ("3", "Bulk ingredient"),
+                ("4", "Bulk Ingredient For Human Prescription Compounding"),
+                (
+                    "5",
+                    "Unapproved Drug Product Manufactured Exclusively for Private Label Distributer",
+                ),
+            ],
+            "FDA.G.k.10.1": [
+                ("C102834", "Type 1: Convenience Kit of Co-Package"),
+                (
+                    "C102835",
+                    "Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.)",
+                ),
+                (
+                    "C102836",
+                    "Type 3: Prefilled Biologic Delivery Device/System (syringe, patch, etc.)",
+                ),
+                (
+                    "C102837",
+                    "Type 4: Device Coated/Impregnated/Otherwise Combined with Drug",
+                ),
+                (
+                    "C102838",
+                    "Type 5: Device Coated or Otherwise Combined with Biologic",
+                ),
+                ("C102839", "Type 6: Drug/Biologic Combination"),
+                ("C102840", "Type 7: Separate Products Requiring Cross Labeling"),
+                (
+                    "C102841",
+                    "Type 8: Possible Combination Based on Cross Labeling of Separate Products (Temporary Type)",
+                ),
+                (
+                    "C102842",
+                    "Type 9: Other Type of Part 3 Combination Product (e.g., Drug/Device/Biological Product)",
+                ),
+            ],
+            "FDA.G.k.12.r.2.r": [
+                ("1", "Correction"),
+                ("2", "Additional Information"),
+                ("3", "Response to FDA Request"),
+                ("4", "Device Evaluation"),
+            ],
+            "FDA.G.k.12.r.11.r": [
+                ("1", "Recall"),
+                ("2", "Repair"),
+                ("3", "Replacement"),
+                ("4", "Relabeling"),
+                ("5", "Notification"),
+                ("6", "Inspection"),
+                ("7", "Patient Monitoring"),
+                ("8", "Modification or Adjustment"),
+                ("9", "Other"),
+            ],
+        }
+        for code, pairs in expected.items():
+            field = fields[code]
+            self.assertEqual("radix_select", field["control"]["kind"])
+            self.assertEqual(
+                [
+                    {"value": value, "label": f"{value} = {display_name}"}
+                    for value, display_name in pairs
+                ],
+                field["control"]["options"],
+            )
+            self.assertIn(
+                field["roundTripValue"],
+                [option["value"] for option in field["control"]["options"]],
+            )
+        self.assertEqual("C102834", fields["FDA.G.k.10.1"]["roundTripValue"])
+        self.assertNotEqual("1", fields["FDA.G.k.10.1"]["roundTripValue"])
+        self.assertEqual(
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "US",
+                "optionValue": "US",
+                "optionDataValue": "US",
+                "optionLabel": "US",
+                "selectedLabel": "US",
+            },
+            fields["FDA.G.k.12.r.7.1e"]["control"],
+        )
+        self.assertEqual(
+            [
+                {"value": "1", "label": "1 = WHO-UMC"},
+                {"value": "2", "label": "2 = KRCT"},
+            ],
+            fields["G.k.9.i.2.r.2.KR.1"]["control"]["options"],
+        )
+        self.assertEqual(
+            [
+                {"value": "1", "label": "1 = 확실함 (Certain)"},
+                {"value": "2", "label": "2 = 상당히 확실함 (Probable)"},
+                {"value": "3", "label": "3 = 가능함 (Possible)"},
+                {"value": "4", "label": "4 = 가능성 적음 (Unlikely)"},
+                {"value": "5", "label": "5 = 평가곤란 (Conditional/unclassified)"},
+                {"value": "6", "label": "6 = 평가불가 (Unassessable/unclassifiable)"},
+            ],
+            fields["G.k.9.i.2.r.3.KR.1"]["control"]["options"],
+        )
+        self.assertEqual(
+            [
+                {"value": "1", "label": "1 = 관련성 있음"},
+                {"value": "2", "label": "2 = 관련성 없음"},
+            ],
+            fields["G.k.9.i.2.r.3.KR.2"]["control"]["options"],
+        )
+
+    def test_dg_pending_controls_match_production_sources(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/dg.json").read_text(encoding="utf-8")
+        )
+        fields = {field["code"]: field for field in contract["fields"]}
+
+        self.assertEqual(
+            {
+                "kind": "radio_group",
+                "options": [
+                    {"value": "1", "label": "1 = Suspect"},
+                    {"value": "2", "label": "2 = Concomitant"},
+                    {"value": "3", "label": "3 = Interacting"},
+                    {"value": "4", "label": "4 = Drug Not Administered"},
+                ],
+            },
+            fields["G.k.1"]["control"],
+        )
+        terminology_source = (repo / "db/bootstrap/09-terminology.sql").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "('drug_characterization', '4', 'Drug Not Administered', 4)",
+            terminology_source,
+        )
+
+        expected_radix_options = {
+            "G.k.4.r.1b": [
+                ("mg", "mg = milligram"),
+                ("g", "g = gram"),
+                ("ug", "ug = microgram"),
+                ("mL", "mL = milliliter"),
+                ("L", "L = liter"),
+                ("[IU]", "[IU] = international unit"),
+            ],
+            "G.k.4.r.3": [
+                ("a", "a:year"),
+                ("mo", "mo:month"),
+                ("wk", "wk:week"),
+                ("d", "d:day"),
+                ("h", "h:hour"),
+                ("min", "min:minute"),
+                ("{cyclical}", "{cyclical}:cyclical"),
+                ("{asnecessary}", "{asnecessary}:as necessary"),
+                ("{total}", "{total}:total"),
+            ],
+            "G.k.4.r.6b": [
+                ("s", "s = second"),
+                ("min", "min = minute"),
+                ("h", "h = hour"),
+                ("d", "d = day"),
+                ("wk", "wk = week"),
+                ("mo", "mo = month"),
+                ("a", "a = year"),
+            ],
+        }
+        for code, options in expected_radix_options.items():
+            self.assertEqual(
+                {
+                    "kind": "radix_select",
+                    "options": [
+                        {"value": value, "label": label}
+                        for value, label in options
+                    ],
+                },
+                fields[code]["control"],
+            )
+
+        self.assertEqual(
+            {
+                "kind": "native_select",
+                "options": [{"value": "28.1", "label": "28.1"}],
+            },
+            fields["G.k.7.r.2a"]["control"],
+        )
+        self.assertEqual("10004087", fields["G.k.7.r.2b"]["control"]["optionValue"])
+        self.assertEqual("28.1", fields["G.k.7.r.2b"]["control"]["sourceVersion"])
+        self.assertEqual(
+            [{"frontendPath": fields["G.k.7.r.2a"]["frontendPath"], "value": "28.1"}],
+            fields["G.k.7.r.2b"]["control"]["selectionEffects"],
+        )
+        self.assertEqual("1086735", fields["G.k.2.1.KR.1b"]["control"]["optionValue"])
+        self.assertEqual("GLOBALC3Mar26", fields["G.k.2.1.KR.1b"]["control"]["sourceVersion"])
+        self.assertEqual(
+            {
+                "mfds-g-product-required": {
+                    "kind": "mfds_product_direct_input",
+                    "productionReference": "mfdsProduct.item_seq",
+                }
+            },
+            fields["G.k.2.1.KR.1b"]["scenarioControls"],
+        )
+        self.assertEqual(
+            [
+                {"frontendPath": fields["G.k.2.1.KR.1a"]["frontendPath"], "value": "GLOBALC3Mar26"},
+                {"frontendPath": fields["G.k.2.2"]["frontendPath"], "value": "1-naphthaleneacetic acid"},
+            ],
+            fields["G.k.2.1.KR.1b"]["control"]["selectionEffects"],
+        )
+        self.assertEqual("M040353", fields["G.k.2.3.r.1.KR.1b"]["control"]["optionValue"])
+        self.assertEqual("2026-10-01", fields["G.k.2.3.r.1.KR.1b"]["control"]["sourceVersion"])
+        self.assertEqual(
+            [
+                {"frontendPath": fields["G.k.2.3.r.1.KR.1a"]["frontendPath"], "value": "2026-10-01"},
+                {"frontendPath": fields["G.k.2.3.r.1"]["frontendPath"], "value": "아세트아미노펜"},
+            ],
+            fields["G.k.2.3.r.1.KR.1b"]["control"]["selectionEffects"],
+        )
+        self.assertEqual(
+            {
+                "mfds-g-substance-version-required": {
+                    "kind": "mfds_foreign_substance_direct_input",
+                    "productionReference": "whoSubstance.code",
+                }
+            },
+            fields["G.k.2.3.r.1.KR.1b"]["scenarioControls"],
+        )
+        self.assertEqual(
+            [{
+                "code": "G.k.2.4",
+                "frontendPath": "drugs[].obtainDrugCountry",
+                "value": "KR",
+            }],
+            fields["G.k.2.3.r.1.KR.1b"]["renderPrerequisites"],
+        )
+
+        for code in (
+            "FDA.G.k.12.r.2.r",
+            "FDA.G.k.12.r.3.r",
+            "FDA.G.k.12.r.11.r",
+        ):
+            self.assertEqual("FDA Device Code Value", fields[code]["auditItem"])
+
+    def test_lb_terminology_controls_match_reviewed_live_options(self):
+        repo = Path(__file__).resolve().parents[2]
+        contract = json.loads(
+            (repo / "registry/editor-contracts/lb.json").read_text(encoding="utf-8")
+        )
+        fields = {field["code"]: field for field in contract["fields"]}
+        version = fields["F.r.2.2a"]
+        code = fields["F.r.2.2b"]
+        self.assertEqual("28.1", version["roundTripValue"])
+        self.assertEqual(
+            {"kind": "native_select", "options": [{"value": "28.1", "label": "28.1"}]},
+            version["control"],
+        )
+        self.assertEqual("10088978", code["roundTripValue"])
+        self.assertEqual("Alarm clock headache", code["control"]["queryValue"])
+        self.assertEqual("Alarm clock headache (10088978)", code["control"]["optionLabel"])
+        self.assertEqual("10088978", code["control"]["selectedLabel"])
+        self.assertEqual("28.1", code["control"]["sourceVersion"])
+        self.assertEqual("en", code["control"]["sourceLanguage"])
+        self.assertEqual(
+            [{"frontendPath": version["frontendPath"], "value": "28.1"}],
+            code["control"]["selectionEffects"],
+        )
+        self.assertEqual(
+            {
+                "kind": "async_autocomplete",
+                "queryValue": "mg/dL",
+                "optionValue": "mg/dL",
+                "optionDataValue": "mg/dL",
+                "optionLabel": "mg/dL = milligram per deciliter",
+                "selectedLabel": "mg/dL = milligram per deciliter",
+            },
+            fields["F.r.3.3"]["control"],
+        )
+        self.assertEqual(
+            "testResults[].testResultUnit",
+            fields["F.r.3.3"]["businessValidation"]["issuePath"],
+        )
+
+    def test_string_checkbox_control_requires_explicit_string_values(self):
+        result = validate.ValidationResult()
+        editor_contract._validate_control(
+            "C.2.r.5",
+            {"kind": "string_checkbox", "checkedValue": "", "uncheckedValue": False},
+            result,
+        )
+        self.assertEqual(
+            [
+                "C.2.r.5 string_checkbox control requires checkedValue",
+                "C.2.r.5 string_checkbox control requires uncheckedValue",
+            ],
+            result.errors,
+        )
 
     def test_incomplete_is_a_valid_registry_status(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1226,9 +1895,9 @@ pub struct Reaction {
 
     def test_repository_frontend_inputs_have_registry_rows(self):
         registry_root = Path(__file__).resolve().parents[1]
-        frontend_root = (
-            registry_root.parent / "../frontend/E2BR3-frontend/components/case-form/sections"
-        ).resolve()
+        frontend_root = validate.extract_frontend_fields.resolve_frontend_root(
+            registry_root.parent
+        )
         if not frontend_root.exists():
             self.skipTest("sibling frontend checkout is not available")
 
@@ -1808,7 +2477,7 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertIn("invalid profile conformance 'sometimes'", "\n".join(result.errors))
 
-    def test_strict_dictionary_reports_mandatory_elements_without_registry_rows(self):
+    def test_strict_dictionary_reports_elements_without_registry_rows(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.write_registry(root, self.sender_row())
@@ -1828,11 +2497,11 @@ class DictionaryValidatorTests(unittest.TestCase):
             )
 
         self.assertIn(
-            "missing registry row for mandatory ICH element C.1.1",
+            "missing registry row for ICH element C.1.1",
             "\n".join(result.errors),
         )
 
-    def test_strict_dictionary_does_not_require_rows_for_groups_or_optional_elements(self):
+    def test_strict_dictionary_requires_optional_elements_but_not_groups(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.write_registry(root, self.sender_row())
@@ -1852,7 +2521,9 @@ class DictionaryValidatorTests(unittest.TestCase):
                 validate_dictionary_membership=True,
             )
 
-        self.assertEqual([], result.errors)
+        self.assertEqual(
+            ["missing registry row for ICH element C.1.5"], result.errors
+        )
 
     def test_repository_all_presave_inventories_are_complete(self):
         result = validate.validate_registry(

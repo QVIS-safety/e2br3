@@ -68,7 +68,8 @@
         "ruleCode": "ICH.E.i.4.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "reactionStartDate"
+      "payloadPath": "reactionStartDate",
+      "nullFlavorPartnerCode": "E.i.4.local.reactionStartDateNullFlavor"
     },
     {
       "code": "E.i.7",
@@ -102,7 +103,57 @@
         "ruleCode": "ICH.E.i.1.1b.LENGTH.MAX",
         "invalidValue": "XXXX"
       },
-      "payloadPath": "reactionLanguage"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.1.1b.REQUIRED",
+        "issuePath": "reactions[].reactionLanguage"
+      },
+      "payloadPath": "reactionLanguage",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "eng",
+            "label": "eng: English"
+          },
+          {
+            "value": "kor",
+            "label": "kor: Korean"
+          },
+          {
+            "value": "jpn",
+            "label": "jpn: Japanese"
+          },
+          {
+            "value": "chi",
+            "label": "chi: Chinese"
+          },
+          {
+            "value": "fre",
+            "label": "fre: French"
+          },
+          {
+            "value": "ger",
+            "label": "ger: German"
+          },
+          {
+            "value": "ita",
+            "label": "ita: Italian"
+          },
+          {
+            "value": "por",
+            "label": "por: Portuguese"
+          },
+          {
+            "value": "spa",
+            "label": "spa: Spanish"
+          },
+          {
+            "value": "und",
+            "label": "und: Undetermined"
+          }
+        ]
+      }
     },
     {
       "code": "E.i.2.1a",
@@ -152,7 +203,8 @@
         "status": "not_applicable",
         "reason": "Derived local editor flag has no Input Contract."
       },
-      "payloadPath": "seriousness.serious"
+      "payloadPath": "seriousness.serious",
+      "auditItem": "Serious Reaction/Event"
     },
     {
       "code": "E.i.3.2a",
@@ -170,7 +222,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaResultsInDeath"
       },
-      "payloadPath": "seriousness.criteriaResultsInDeath"
+      "payloadPath": "seriousness.criteriaResultsInDeath",
+      "nullFlavorPartnerCode": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor"
     },
     {
       "code": "E.i.3.2b",
@@ -188,7 +241,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaLifeThreatening"
       },
-      "payloadPath": "seriousness.criteriaLifeThreatening"
+      "payloadPath": "seriousness.criteriaLifeThreatening",
+      "nullFlavorPartnerCode": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor"
     },
     {
       "code": "E.i.3.2c",
@@ -206,7 +260,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaHospitalization"
       },
-      "payloadPath": "seriousness.criteriaHospitalization"
+      "payloadPath": "seriousness.criteriaHospitalization",
+      "nullFlavorPartnerCode": "E.i.3.2c.local.criteriaHospitalizationNullFlavor"
     },
     {
       "code": "E.i.3.2d",
@@ -224,7 +279,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaDisabling"
       },
-      "payloadPath": "seriousness.criteriaDisabling"
+      "payloadPath": "seriousness.criteriaDisabling",
+      "nullFlavorPartnerCode": "E.i.3.2d.local.criteriaDisablingNullFlavor"
     },
     {
       "code": "E.i.3.2e",
@@ -242,7 +298,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaCongenitalAnomaly"
       },
-      "payloadPath": "seriousness.criteriaCongenitalAnomaly"
+      "payloadPath": "seriousness.criteriaCongenitalAnomaly",
+      "nullFlavorPartnerCode": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor"
     },
     {
       "code": "E.i.3.2f",
@@ -260,7 +317,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].seriousness.criteriaOtherMedicallyImportant"
       },
-      "payloadPath": "seriousness.criteriaOtherMedicallyImportant"
+      "payloadPath": "seriousness.criteriaOtherMedicallyImportant",
+      "nullFlavorPartnerCode": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor"
     },
     {
       "code": "FDA.E.i.3.2h",
@@ -279,7 +337,8 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].requiredIntervention"
       },
-      "payloadPath": "requiredIntervention"
+      "payloadPath": "requiredIntervention",
+      "nullFlavorPartnerCode": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor"
     },
     {
       "code": "E.local.expectedness",
@@ -295,7 +354,9 @@
         "status": "not_applicable",
         "reason": "Local expectedness field has no Input Contract."
       },
-      "payloadPath": "expectedness"
+      "payloadPath": "expectedness",
+      "domFieldNumber": "AE_EXPECTEDNESS",
+      "auditItem": "Expectedness"
     },
     {
       "code": "E.local.severity",
@@ -311,7 +372,9 @@
         "status": "not_applicable",
         "reason": "Local severity field has no Input Contract."
       },
-      "payloadPath": "severity"
+      "payloadPath": "severity",
+      "domFieldNumber": "AE_SEVERITY",
+      "auditItem": "Severity"
     },
     {
       "code": "E.i.5",
@@ -328,7 +391,8 @@
         "ruleCode": "ICH.E.i.5.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "reactionEndDate"
+      "payloadPath": "reactionEndDate",
+      "nullFlavorPartnerCode": "E.i.5.local.reactionEndDateNullFlavor"
     },
     {
       "code": "E.i.6a",
@@ -344,7 +408,12 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.E.i.6a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "invalidValue": "123456"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.6a.REQUIRED",
+        "issuePath": "reactions[].durationValue"
       },
       "payloadPath": "reactionDuration.value"
     },
@@ -363,7 +432,45 @@
         "ruleCode": "ICH.E.i.6b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "reactionDuration.unit"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.6b.REQUIRED",
+        "issuePath": "reactions[].durationUnit"
+      },
+      "payloadPath": "reactionDuration.unit",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "s",
+            "label": "s = Second"
+          },
+          {
+            "value": "min",
+            "label": "min = Minute"
+          },
+          {
+            "value": "h",
+            "label": "h = Hour"
+          },
+          {
+            "value": "d",
+            "label": "d = Day"
+          },
+          {
+            "value": "wk",
+            "label": "wk = Week"
+          },
+          {
+            "value": "mo",
+            "label": "mo = Month"
+          },
+          {
+            "value": "a",
+            "label": "a = Year"
+          }
+        ]
+      }
     },
     {
       "code": "E.i.8",
@@ -398,7 +505,15 @@
         "ruleCode": "ICH.E.i.9.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "payloadPath": "reactionCountry"
+      "payloadPath": "reactionCountry",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "E.i.KR.device.aeClassification",
@@ -414,7 +529,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.aeClassification"
+      "payloadPath": "mfdsDeviceAe.aeClassification",
+      "domFieldNumber": "KR_DVC_AECL"
     },
     {
       "code": "E.i.KR.device.aeOutcome",
@@ -430,7 +546,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.aeOutcome"
+      "payloadPath": "mfdsDeviceAe.aeOutcome",
+      "domFieldNumber": "KR_DVC_AEOUT"
     },
     {
       "code": "E.i.KR.device.causeMedicalDevice",
@@ -446,7 +563,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.causeMedicalDevice"
+      "payloadPath": "mfdsDeviceAe.causeMedicalDevice",
+      "domFieldNumber": "KR_DVC_CC_MD"
     },
     {
       "code": "E.i.KR.device.causeProcedureIssue",
@@ -462,7 +580,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.causeProcedureIssue"
+      "payloadPath": "mfdsDeviceAe.causeProcedureIssue",
+      "domFieldNumber": "KR_DVC_CC_PI"
     },
     {
       "code": "E.i.KR.device.causePatientCondition",
@@ -478,7 +597,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.causePatientCondition"
+      "payloadPath": "mfdsDeviceAe.causePatientCondition",
+      "domFieldNumber": "KR_DVC_CC_PC"
     },
     {
       "code": "E.i.KR.device.causeUnableToAssess",
@@ -494,7 +614,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.causeUnableToAssess"
+      "payloadPath": "mfdsDeviceAe.causeUnableToAssess",
+      "domFieldNumber": "KR_DVC_CC_UA"
     },
     {
       "code": "E.i.KR.device.causeOther",
@@ -510,7 +631,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.causeOther"
+      "payloadPath": "mfdsDeviceAe.causeOther",
+      "domFieldNumber": "KR_DVC_CC_OTH"
     },
     {
       "code": "E.i.KR.device.actionReason",
@@ -526,7 +648,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionReason"
+      "payloadPath": "mfdsDeviceAe.actionReason",
+      "domFieldNumber": "KR_DVC_ACT_RSN"
     },
     {
       "code": "E.i.KR.device.actionRecall",
@@ -542,7 +665,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionRecall"
+      "payloadPath": "mfdsDeviceAe.actionRecall",
+      "domFieldNumber": "KR_DVC_ACT_RC"
     },
     {
       "code": "E.i.KR.device.actionRepair",
@@ -558,7 +682,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionRepair"
+      "payloadPath": "mfdsDeviceAe.actionRepair",
+      "domFieldNumber": "KR_DVC_ACT_RP"
     },
     {
       "code": "E.i.KR.device.actionInspection",
@@ -574,7 +699,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionInspection"
+      "payloadPath": "mfdsDeviceAe.actionInspection",
+      "domFieldNumber": "KR_DVC_ACT_INSP"
     },
     {
       "code": "E.i.KR.device.actionReplacement",
@@ -590,7 +716,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionReplacement"
+      "payloadPath": "mfdsDeviceAe.actionReplacement",
+      "domFieldNumber": "KR_DVC_ACT_REPL"
     },
     {
       "code": "E.i.KR.device.actionImprovement",
@@ -606,7 +733,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionImprovement"
+      "payloadPath": "mfdsDeviceAe.actionImprovement",
+      "domFieldNumber": "KR_DVC_ACT_IMP"
     },
     {
       "code": "E.i.KR.device.actionMonitoring",
@@ -622,7 +750,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionMonitoring"
+      "payloadPath": "mfdsDeviceAe.actionMonitoring",
+      "domFieldNumber": "KR_DVC_ACT_MON"
     },
     {
       "code": "E.i.KR.device.actionNotification",
@@ -638,7 +767,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionNotification"
+      "payloadPath": "mfdsDeviceAe.actionNotification",
+      "domFieldNumber": "KR_DVC_ACT_NTF"
     },
     {
       "code": "E.i.KR.device.actionLabelChange",
@@ -654,7 +784,8 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionLabelChange"
+      "payloadPath": "mfdsDeviceAe.actionLabelChange",
+      "domFieldNumber": "KR_DVC_ACT_CAS"
     },
     {
       "code": "E.i.KR.device.actionOther",
@@ -670,7 +801,207 @@
         "status": "not_applicable",
         "reason": "This app-local MFDS device field has no Input Contract."
       },
-      "payloadPath": "mfdsDeviceAe.actionOther"
+      "payloadPath": "mfdsDeviceAe.actionOther",
+      "domFieldNumber": "KR_DVC_ACT_OTH"
+    },
+    {
+      "code": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaResultsInDeathNullFlavor",
+      "projectionPath": "reaction.criteria_death_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2a.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2a."
+      },
+      "payloadPath": "seriousness.criteriaResultsInDeathNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2a"
+    },
+    {
+      "code": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaLifeThreateningNullFlavor",
+      "projectionPath": "reaction.criteria_life_threatening_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2b.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2b."
+      },
+      "payloadPath": "seriousness.criteriaLifeThreateningNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2b"
+    },
+    {
+      "code": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaHospitalizationNullFlavor",
+      "projectionPath": "reaction.criteria_hospitalization_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2c.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2c."
+      },
+      "payloadPath": "seriousness.criteriaHospitalizationNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2c"
+    },
+    {
+      "code": "E.i.3.2d.local.criteriaDisablingNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaDisablingNullFlavor",
+      "projectionPath": "reaction.criteria_disabling_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2d.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2d."
+      },
+      "payloadPath": "seriousness.criteriaDisablingNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2d"
+    },
+    {
+      "code": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "projectionPath": "reaction.criteria_congenital_anomaly_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2e.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2e."
+      },
+      "payloadPath": "seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2e"
+    },
+    {
+      "code": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "projectionPath": "reaction.criteria_other_medically_important_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.3.2f.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2f."
+      },
+      "payloadPath": "seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "nullFlavorPartnerCode": "E.i.3.2f"
+    },
+    {
+      "code": "E.i.4.local.reactionStartDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionStartDateNullFlavor",
+      "projectionPath": "reaction.start_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.4.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.4."
+      },
+      "payloadPath": "reactionStartDateNullFlavor",
+      "nullFlavorPartnerCode": "E.i.4"
+    },
+    {
+      "code": "E.i.5.local.reactionEndDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionEndDateNullFlavor",
+      "projectionPath": "reaction.end_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.5.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.5."
+      },
+      "payloadPath": "reactionEndDateNullFlavor",
+      "nullFlavorPartnerCode": "E.i.5"
+    },
+    {
+      "code": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "reactions[].requiredInterventionNullFlavor",
+      "projectionPath": "reaction.required_intervention_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "reaction"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.E.i.3.2h.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.E.i.3.2h."
+      },
+      "payloadPath": "requiredInterventionNullFlavor",
+      "nullFlavorPartnerCode": "FDA.E.i.3.2h",
+      "domFieldNumber": "FDA.E.i.3.2h"
     }
   ]
 }

@@ -11,11 +11,32 @@
         "kind": "row",
         "owner": "drug"
       },
-      "roundTripValue": "1",
+      "roundTripValue": "2",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.1.ALLOWED.VALUE",
         "invalidValue": "0"
+      },
+      "control": {
+        "kind": "radio_group",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = Suspect"
+          },
+          {
+            "value": "2",
+            "label": "2 = Concomitant"
+          },
+          {
+            "value": "3",
+            "label": "3 = Interacting"
+          },
+          {
+            "value": "4",
+            "label": "4 = Drug Not Administered"
+          }
+        ]
       },
       "payloadPath": "drugCharacterization"
     },
@@ -100,6 +121,33 @@
         "status": "verified",
         "ruleCode": "MFDS.G.k.2.1.KR.1b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
+      },
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "acet",
+        "optionValue": "1086735",
+        "optionDataValue": "1086735",
+        "optionLabel": "1-naphthaleneacetic acid (1086735)",
+        "selectedLabel": "1086735",
+        "sourceCode": "1086735",
+        "sourceVersion": "GLOBALC3Mar26",
+        "sourceLanguage": "en",
+        "selectionEffects": [
+          {
+            "frontendPath": "drugs[].mfdsMpidVersion",
+            "value": "GLOBALC3Mar26"
+          },
+          {
+            "frontendPath": "drugs[].medicinalProduct",
+            "value": "1-naphthaleneacetic acid"
+          }
+        ]
+      },
+      "scenarioControls": {
+        "mfds-g-product-required": {
+          "kind": "mfds_product_direct_input",
+          "productionReference": "mfdsProduct.item_seq"
+        }
       },
       "payloadPath": "mfdsMpid"
     },
@@ -186,7 +234,15 @@
         "ruleCode": "ICH.G.k.2.4.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "payloadPath": "obtainDrugCountry"
+      "payloadPath": "obtainDrugCountry",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "G.k.2.5",
@@ -238,7 +294,20 @@
         "ruleCode": "ICH.G.k.3.2.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "payloadPath": "drugAuthorizationCountry"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.3.2.REQUIRED",
+        "issuePath": "drugs[].drugAuthorizationCountry"
+      },
+      "payloadPath": "drugAuthorizationCountry",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "G.k.3.3",
@@ -274,6 +343,11 @@
         "invalidValue": "not-a-number",
         "issuePath": "drugs[].cumulativeDoseValue"
       },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.5a.REQUIRED",
+        "issuePath": "drugs[].cumulativeDoseFirstReactionValue"
+      },
       "payloadPath": "cumulativeDoseValue"
     },
     {
@@ -291,7 +365,20 @@
         "ruleCode": "ICH.G.k.5b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "cumulativeDoseUnit"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.5b.REQUIRED",
+        "issuePath": "drugs[].cumulativeDoseFirstReactionUnit"
+      },
+      "payloadPath": "cumulativeDoseUnit",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "mg",
+        "optionValue": "mg",
+        "optionDataValue": "mg",
+        "optionLabel": "mg = milligram",
+        "selectedLabel": "mg = milligram"
+      }
     },
     {
       "code": "G.k.6a",
@@ -310,6 +397,11 @@
         "invalidValue": "not-a-number",
         "issuePath": "drugs[].gestationPeriodExposureValue"
       },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.6a.REQUIRED",
+        "issuePath": "drugs[].gestationPeriodExposureValue"
+      },
       "payloadPath": "gestationPeriodExposureValue"
     },
     {
@@ -326,6 +418,19 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.6b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.6b.REQUIRED",
+        "issuePath": "drugs[].gestationPeriodExposureUnit"
+      },
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "wk",
+        "optionValue": "wk",
+        "optionDataValue": "wk",
+        "optionLabel": "Week (wk)",
+        "selectedLabel": "Week (wk)"
       },
       "payloadPath": "gestationPeriodExposureUnit"
     },
@@ -361,7 +466,33 @@
         "ruleCode": "FDA.G.k.10a.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "payloadPath": "fdaAdditionalInfoCoded"
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = Test"
+          },
+          {
+            "value": "2",
+            "label": "2 = Reference"
+          },
+          {
+            "value": "3",
+            "label": "3 = Bulk ingredient"
+          },
+          {
+            "value": "4",
+            "label": "4 = Bulk Ingredient For Human Prescription Compounding"
+          },
+          {
+            "value": "5",
+            "label": "5 = Unapproved Drug Product Manufactured Exclusively for Private Label Distributer"
+          }
+        ]
+      },
+      "payloadPath": "fdaAdditionalInfoCoded",
+      "nullFlavorPartnerCode": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor"
     },
     {
       "code": "FDA.G.k.10.1",
@@ -372,34 +503,54 @@
         "kind": "row",
         "owner": "drug"
       },
-      "roundTripValue": "1",
+      "roundTripValue": "C102834",
       "constraint": {
         "status": "verified",
         "ruleCode": "FDA.G.k.10.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "fdaSpecializedProductCategory"
-    },
-    {
-      "code": "FDA.G.k.local.additionalInfoCodesJson",
-      "authority": "FDA",
-      "frontendPath": "drugs[].drugAdditionalInformationCodes",
-      "projectionPath": "drug.drug_additional_info_codes_json",
-      "patch": {
-        "kind": "row",
-        "owner": "drug"
-      },
-      "roundTripValue": [
-        "1"
-      ],
-      "constraint": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.10.r.ALLOWED.VALUE",
-        "invalidValue": [
-          "0"
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "C102834",
+            "label": "C102834 = Type 1: Convenience Kit of Co-Package"
+          },
+          {
+            "value": "C102835",
+            "label": "C102835 = Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.)"
+          },
+          {
+            "value": "C102836",
+            "label": "C102836 = Type 3: Prefilled Biologic Delivery Device/System (syringe, patch, etc.)"
+          },
+          {
+            "value": "C102837",
+            "label": "C102837 = Type 4: Device Coated/Impregnated/Otherwise Combined with Drug"
+          },
+          {
+            "value": "C102838",
+            "label": "C102838 = Type 5: Device Coated or Otherwise Combined with Biologic"
+          },
+          {
+            "value": "C102839",
+            "label": "C102839 = Type 6: Drug/Biologic Combination"
+          },
+          {
+            "value": "C102840",
+            "label": "C102840 = Type 7: Separate Products Requiring Cross Labeling"
+          },
+          {
+            "value": "C102841",
+            "label": "C102841 = Type 8: Possible Combination Based on Cross Labeling of Separate Products (Temporary Type)"
+          },
+          {
+            "value": "C102842",
+            "label": "C102842 = Type 9: Other Type of Part 3 Combination Product (e.g., Drug/Device/Biological Product)"
+          }
         ]
       },
-      "payloadPath": "drugAdditionalInformationCodes"
+      "payloadPath": "fdaSpecializedProductCategory"
     },
     {
       "code": "FDA.G.k.1.a",
@@ -501,7 +652,41 @@
         "ruleCode": "MFDS.G.k.2.3.r.1.KR.1b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "activeSubstances[].mfdsId"
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "아세",
+        "optionValue": "M040353",
+        "optionDataValue": "M040353",
+        "optionLabel": "M040353 — 아세트아미노펜",
+        "selectedLabel": "M040353",
+        "sourceCode": "M040353",
+        "sourceVersion": "2026-10-01",
+        "sourceLanguage": "ko",
+        "selectionEffects": [
+          {
+            "frontendPath": "drugs[].activeSubstances[].mfdsVersion",
+            "value": "2026-10-01"
+          },
+          {
+            "frontendPath": "drugs[].activeSubstances[].substanceName",
+            "value": "아세트아미노펜"
+          }
+        ]
+      },
+      "scenarioControls": {
+        "mfds-g-substance-version-required": {
+          "kind": "mfds_foreign_substance_direct_input",
+          "productionReference": "whoSubstance.code"
+        }
+      },
+      "payloadPath": "activeSubstances[].mfdsId",
+      "renderPrerequisites": [
+        {
+          "code": "G.k.2.4",
+          "frontendPath": "drugs[].obtainDrugCountry",
+          "value": "KR"
+        }
+      ]
     },
     {
       "code": "G.k.2.3.r.3a",
@@ -532,6 +717,15 @@
         "owner": "drug"
       },
       "roundTripValue": "mg",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "mg",
+            "label": "mg = milligram"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.2.3.r.3b.LENGTH.MAX",
@@ -568,6 +762,35 @@
         "owner": "drug"
       },
       "roundTripValue": "mg",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "mg",
+            "label": "mg = milligram"
+          },
+          {
+            "value": "g",
+            "label": "g = gram"
+          },
+          {
+            "value": "ug",
+            "label": "ug = microgram"
+          },
+          {
+            "value": "mL",
+            "label": "mL = milliliter"
+          },
+          {
+            "value": "L",
+            "label": "L = liter"
+          },
+          {
+            "value": "[IU]",
+            "label": "[IU] = international unit"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.1b.LENGTH.MAX",
@@ -604,6 +827,47 @@
         "owner": "drug"
       },
       "roundTripValue": "d",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "a",
+            "label": "a:year"
+          },
+          {
+            "value": "mo",
+            "label": "mo:month"
+          },
+          {
+            "value": "wk",
+            "label": "wk:week"
+          },
+          {
+            "value": "d",
+            "label": "d:day"
+          },
+          {
+            "value": "h",
+            "label": "h:hour"
+          },
+          {
+            "value": "min",
+            "label": "min:minute"
+          },
+          {
+            "value": "{cyclical}",
+            "label": "{cyclical}:cyclical"
+          },
+          {
+            "value": "{asnecessary}",
+            "label": "{asnecessary}:as necessary"
+          },
+          {
+            "value": "{total}",
+            "label": "{total}:total"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.3.LENGTH.MAX",
@@ -626,7 +890,8 @@
         "ruleCode": "ICH.G.k.4.r.4.DATE.FORMAT",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "dosageInformation[].firstAdministrationDate"
+      "payloadPath": "dosageInformation[].firstAdministrationDate",
+      "nullFlavorPartnerCode": "G.k.4.r.4.local.firstAdministrationDateNullFlavor"
     },
     {
       "code": "G.k.4.r.5",
@@ -643,7 +908,8 @@
         "ruleCode": "ICH.G.k.4.r.5.DATE.FORMAT",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "dosageInformation[].lastAdministrationDate"
+      "payloadPath": "dosageInformation[].lastAdministrationDate",
+      "nullFlavorPartnerCode": "G.k.4.r.5.local.lastAdministrationDateNullFlavor"
     },
     {
       "code": "G.k.4.r.6a",
@@ -674,6 +940,39 @@
         "owner": "drug"
       },
       "roundTripValue": "d",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "s",
+            "label": "s = second"
+          },
+          {
+            "value": "min",
+            "label": "min = minute"
+          },
+          {
+            "value": "h",
+            "label": "h = hour"
+          },
+          {
+            "value": "d",
+            "label": "d = day"
+          },
+          {
+            "value": "wk",
+            "label": "wk = week"
+          },
+          {
+            "value": "mo",
+            "label": "mo = month"
+          },
+          {
+            "value": "a",
+            "label": "a = year"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.6b.LENGTH.MAX",
@@ -695,7 +994,9 @@
         "status": "not_applicable",
         "reason": "Local continuing helper has no Input Contract."
       },
-      "payloadPath": "dosageInformation[].continuing"
+      "payloadPath": "dosageInformation[].continuing",
+      "domFieldNumber": "DG_CONT",
+      "auditItem": "Drug Administration Continuing"
     },
     {
       "code": "G.k.4.r.7",
@@ -746,7 +1047,8 @@
         "ruleCode": "ICH.G.k.4.r.9.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "dosageInformation[].doseForm"
+      "payloadPath": "dosageInformation[].doseForm",
+      "nullFlavorPartnerCode": "G.k.4.r.9.1.local.doseFormNullFlavor"
     },
     {
       "code": "G.k.4.r.9.2a",
@@ -792,12 +1094,28 @@
         "owner": "drug"
       },
       "roundTripValue": "048",
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "048",
+            "label": "048 = Oral"
+          }
+        ],
+        "selectionEffects": [
+          {
+            "frontendPath": "drugs[].dosageInformation[].routeTermId",
+            "value": "048"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.10.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "dosageInformation[].routeOfAdministration"
+      "payloadPath": "dosageInformation[].routeOfAdministration",
+      "nullFlavorPartnerCode": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor"
     },
     {
       "code": "G.k.4.r.10.2a",
@@ -848,7 +1166,8 @@
         "ruleCode": "ICH.G.k.4.r.11.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "dosageInformation[].parentRouteOfAdministration"
+      "payloadPath": "dosageInformation[].parentRouteOfAdministration",
+      "nullFlavorPartnerCode": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor"
     },
     {
       "code": "G.k.4.r.11.2a",
@@ -899,7 +1218,8 @@
         "ruleCode": "ICH.G.k.7.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "indications[].indicationText"
+      "payloadPath": "indications[].indicationText",
+      "nullFlavorPartnerCode": "G.k.7.r.1.local.indicationTextNullFlavor"
     },
     {
       "code": "G.k.7.r.2a",
@@ -910,7 +1230,16 @@
         "kind": "row",
         "owner": "drug"
       },
-      "roundTripValue": "26.0",
+      "roundTripValue": "28.1",
+      "control": {
+        "kind": "native_select",
+        "options": [
+          {
+            "value": "28.1",
+            "label": "28.1"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.7.r.2a.LENGTH.MAX",
@@ -927,7 +1256,24 @@
         "kind": "row",
         "owner": "drug"
       },
-      "roundTripValue": "10033371",
+      "roundTripValue": "10004087",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "Headache",
+        "optionValue": "10004087",
+        "optionDataValue": "10004087",
+        "optionLabel": "Band-like headache (10004087)",
+        "selectedLabel": "10004087",
+        "sourceCode": "10004087",
+        "sourceVersion": "28.1",
+        "sourceLanguage": "en",
+        "selectionEffects": [
+          {
+            "frontendPath": "drugs[].indications[].indicationMeddraVersion",
+            "value": "28.1"
+          }
+        ]
+      },
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.7.r.2b.LENGTH.MAX",
@@ -1017,6 +1363,7 @@
         "owner": "drug"
       },
       "roundTripValue": "1",
+      "auditItem": "Readministration Action",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.G.k.9.i.4.ALLOWED.VALUE",
@@ -1090,7 +1437,776 @@
         "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.2.LENGTH.MAX",
         "invalidValue": "XX"
       },
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = 관련성 있음"
+          },
+          {
+            "value": "2",
+            "label": "2 = 관련성 없음"
+          }
+        ]
+      },
       "payloadPath": "drugReactionAssessments[].resultOfAssessmentKr2"
+    },
+    {
+      "code": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaAdditionalInfoCodedNullFlavor",
+      "projectionPath": "drug.fda_additional_info_coded_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "NA",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.10a.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports issues on FDA.G.k.10a."
+      },
+      "payloadPath": "fdaAdditionalInfoCodedNullFlavor",
+      "nullFlavorPartnerCode": "FDA.G.k.10a"
+    },
+    {
+      "code": "FDA.G.k.12.r.1",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].malfunction",
+      "projectionPath": "drug.fdaDevices[].malfunction",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": true,
+      "constraint": {
+        "status": "not_applicable",
+        "reason": "No standalone input constraint exists for this boolean field."
+      },
+      "payloadPath": "fdaDevices[].malfunction"
+    },
+    {
+      "code": "FDA.G.k.12.r.10",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].operatorOfDevice",
+      "projectionPath": "drug.fdaDevices[].operator_of_device",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.10.ALLOWED.VALUE",
+        "invalidValue": "0"
+      },
+      "payloadPath": "fdaDevices[].operatorOfDevice"
+    },
+    {
+      "code": "FDA.G.k.12.r.11.r",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].remedialActions[].valueCode",
+      "projectionPath": "drug.fdaDevices[].remedialActions[].value_code",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "auditItem": "FDA Device Code Value",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.11.r.LENGTH.MAX",
+        "invalidValue": "00",
+        "issuePath": "drugs[].fdaDevices[].remedialActions[].valueCode"
+      },
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = Recall"
+          },
+          {
+            "value": "2",
+            "label": "2 = Repair"
+          },
+          {
+            "value": "3",
+            "label": "3 = Replacement"
+          },
+          {
+            "value": "4",
+            "label": "4 = Relabeling"
+          },
+          {
+            "value": "5",
+            "label": "5 = Notification"
+          },
+          {
+            "value": "6",
+            "label": "6 = Inspection"
+          },
+          {
+            "value": "7",
+            "label": "7 = Patient Monitoring"
+          },
+          {
+            "value": "8",
+            "label": "8 = Modification or Adjustment"
+          },
+          {
+            "value": "9",
+            "label": "9 = Other"
+          }
+        ]
+      },
+      "payloadPath": "fdaDevices[].remedialActions[].valueCode"
+    },
+    {
+      "code": "FDA.G.k.12.r.2.r",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].followUpTypes[].valueCode",
+      "projectionPath": "drug.fdaDevices[].followUpTypes[].value_code",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "auditItem": "FDA Device Code Value",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.2.r.ALLOWED.VALUE",
+        "invalidValue": "0"
+      },
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = Correction"
+          },
+          {
+            "value": "2",
+            "label": "2 = Additional Information"
+          },
+          {
+            "value": "3",
+            "label": "3 = Response to FDA Request"
+          },
+          {
+            "value": "4",
+            "label": "4 = Device Evaluation"
+          }
+        ]
+      },
+      "payloadPath": "fdaDevices[].followUpTypes[].valueCode"
+    },
+    {
+      "code": "FDA.G.k.12.r.3.r",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceProblemCodes[].valueCode",
+      "projectionPath": "drug.fdaDevices[].deviceProblemCodes[].value_code",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "C133496",
+      "auditItem": "FDA Device Code Value",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.3.r.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].deviceProblemCodes[].valueCode"
+    },
+    {
+      "code": "FDA.G.k.12.r.4",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceBrandName",
+      "projectionPath": "drug.fdaDevices[].device_brand_name",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "Device brand",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.4.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].deviceBrandName",
+      "nullFlavorPartnerCode": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor"
+    },
+    {
+      "code": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceBrandNameNullFlavor",
+      "projectionPath": "drug.fdaDevices[].device_brand_name_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.4.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.4."
+      },
+      "payloadPath": "fdaDevices[].deviceBrandNameNullFlavor",
+      "nullFlavorPartnerCode": "FDA.G.k.12.r.4"
+    },
+    {
+      "code": "FDA.G.k.12.r.5",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].commonDeviceName",
+      "projectionPath": "drug.fdaDevices[].common_device_name",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "Common device",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.5.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].commonDeviceName",
+      "nullFlavorPartnerCode": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor"
+    },
+    {
+      "code": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].commonDeviceNameNullFlavor",
+      "projectionPath": "drug.fdaDevices[].common_device_name_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.5.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.5."
+      },
+      "payloadPath": "fdaDevices[].commonDeviceNameNullFlavor",
+      "nullFlavorPartnerCode": "FDA.G.k.12.r.5"
+    },
+    {
+      "code": "FDA.G.k.12.r.6",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceProductCode",
+      "projectionPath": "drug.fdaDevices[].device_product_code",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "FMF",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.6.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].deviceProductCode"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1a",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].manufacturerName",
+      "projectionPath": "drug.fdaDevices[].manufacturer_name",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "Manufacturer",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.7.1a.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].manufacturerName"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1b",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].manufacturerAddress",
+      "projectionPath": "drug.fdaDevices[].manufacturer_address",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "Address",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.7.1b.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].manufacturerAddress"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1c",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].manufacturerCity",
+      "projectionPath": "drug.fdaDevices[].manufacturer_city",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "City",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.7.1c.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].manufacturerCity"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1d",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].manufacturerState",
+      "projectionPath": "drug.fdaDevices[].manufacturer_state",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "State",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.7.1d.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].manufacturerState"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1e",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].manufacturerCountry",
+      "projectionPath": "drug.fdaDevices[].manufacturer_country",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "US",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.7.1e.LENGTH.MAX",
+        "invalidValue": "XXX"
+      },
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "US",
+        "optionValue": "US",
+        "optionDataValue": "US",
+        "optionLabel": "US",
+        "selectedLabel": "US"
+      },
+      "payloadPath": "fdaDevices[].manufacturerCountry"
+    },
+    {
+      "code": "FDA.G.k.12.r.8",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceUsage",
+      "projectionPath": "drug.fdaDevices[].device_usage",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.8.ALLOWED.VALUE",
+        "invalidValue": "0"
+      },
+      "payloadPath": "fdaDevices[].deviceUsage"
+    },
+    {
+      "code": "FDA.G.k.12.r.9",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceLotNumber",
+      "projectionPath": "drug.fdaDevices[].device_lot_number",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "LOT-1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.G.k.12.r.9.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "payloadPath": "fdaDevices[].deviceLotNumber"
+    },
+    {
+      "code": "G.k.10.r",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugAdditionalInformationCodes",
+      "projectionPath": "drug.drug_additional_info_codes_json",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": [
+        "1"
+      ],
+      "auditItem": "Additional Information on Drug, Coded",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.10.r.ALLOWED.VALUE",
+        "invalidValue": [
+          "0"
+        ]
+      },
+      "payloadPath": "drugAdditionalInformationCodes"
+    },
+    {
+      "code": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].routeOfAdministrationNullFlavor",
+      "projectionPath": "drug.dosageInformation[].route_of_administration_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "UNK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.4.r.10.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.10.1."
+      },
+      "payloadPath": "dosageInformation[].routeOfAdministrationNullFlavor",
+      "nullFlavorPartnerCode": "G.k.4.r.10.1"
+    },
+    {
+      "code": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].parentRouteOfAdministrationNullFlavor",
+      "projectionPath": "drug.dosageInformation[].parent_route_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "UNK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.4.r.11.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.11.1."
+      },
+      "payloadPath": "dosageInformation[].parentRouteOfAdministrationNullFlavor",
+      "nullFlavorPartnerCode": "G.k.4.r.11.1"
+    },
+    {
+      "code": "G.k.4.r.4.local.firstAdministrationDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].firstAdministrationDateNullFlavor",
+      "projectionPath": "drug.dosageInformation[].first_administration_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.4.r.4.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.4."
+      },
+      "payloadPath": "dosageInformation[].firstAdministrationDateNullFlavor",
+      "nullFlavorPartnerCode": "G.k.4.r.4"
+    },
+    {
+      "code": "G.k.4.r.5.local.lastAdministrationDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].lastAdministrationDateNullFlavor",
+      "projectionPath": "drug.dosageInformation[].last_administration_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.4.r.5.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.5."
+      },
+      "payloadPath": "dosageInformation[].lastAdministrationDateNullFlavor",
+      "nullFlavorPartnerCode": "G.k.4.r.5"
+    },
+    {
+      "code": "G.k.4.r.9.1.local.doseFormNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].doseFormNullFlavor",
+      "projectionPath": "drug.dosageInformation[].dose_form_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "UNK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.4.r.9.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.9.1."
+      },
+      "payloadPath": "dosageInformation[].doseFormNullFlavor",
+      "nullFlavorPartnerCode": "G.k.4.r.9.1"
+    },
+    {
+      "code": "G.k.7.r.1.local.indicationTextNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].indications[].indicationTextNullFlavor",
+      "projectionPath": "drug.indications[].indication_text_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "UNK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.7.r.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.7.r.1."
+      },
+      "payloadPath": "indications[].indicationTextNullFlavor",
+      "nullFlavorPartnerCode": "G.k.7.r.1"
+    },
+    {
+      "code": "G.k.9.i.1",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugReactionAssessments[].reactionId",
+      "projectionPath": "drug.drugReactionAssessments[].reactionId",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": null,
+      "execution": {
+        "status": "blocked",
+        "reason": "The value must be the UUID of a saved AE Reaction; the generated harness creates that UUID at runtime and cannot use a static roundTripValue."
+      },
+      "control": {
+        "kind": "radix_select",
+        "dynamicOptions": {
+          "source": "case.reactions",
+          "valuePath": "id",
+          "labelPath": "primarySourceReaction"
+        }
+      },
+      "constraint": {
+        "status": "not_applicable",
+        "reason": "The value is a saved Reaction UUID selected from AE; execution requires rowPrerequisites.drugReactionAssessments."
+      },
+      "auditItem": "Record metadata: Reaction ID",
+      "payloadPath": "drugReactionAssessments[].reactionId"
+    },
+    {
+      "code": "G.k.9.i.2.r.2.KR.1",
+      "authority": "MFDS",
+      "frontendPath": "drugs[].drugReactionAssessments[].methodOfAssessmentKr1",
+      "projectionPath": "drug.drugReactionAssessments[].methodOfAssessmentKr1",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "MFDS.G.k.9.i.2.r.2.KR.1.ALLOWED.VALUE",
+        "invalidValue": "0"
+      },
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = WHO-UMC"
+          },
+          {
+            "value": "2",
+            "label": "2 = KRCT"
+          }
+        ]
+      },
+      "payloadPath": "drugReactionAssessments[].methodOfAssessmentKr1"
+    },
+    {
+      "code": "G.k.9.i.2.r.3.KR.1",
+      "authority": "MFDS",
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1",
+      "projectionPath": "drug.drugReactionAssessments[].resultOfAssessmentKr1",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.ALLOWED.VALUE",
+        "invalidValue": "0"
+      },
+      "control": {
+        "kind": "radix_select",
+        "options": [
+          {
+            "value": "1",
+            "label": "1 = 확실함 (Certain)"
+          },
+          {
+            "value": "2",
+            "label": "2 = 상당히 확실함 (Probable)"
+          },
+          {
+            "value": "3",
+            "label": "3 = 가능함 (Possible)"
+          },
+          {
+            "value": "4",
+            "label": "4 = 가능성 적음 (Unlikely)"
+          },
+          {
+            "value": "5",
+            "label": "5 = 평가곤란 (Conditional/unclassified)"
+          },
+          {
+            "value": "6",
+            "label": "6 = 평가불가 (Unassessable/unclassifiable)"
+          }
+        ]
+      },
+      "payloadPath": "drugReactionAssessments[].resultOfAssessmentKr1",
+      "nullFlavorPartnerCode": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor"
+    },
+    {
+      "code": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor",
+      "authority": "MFDS",
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "projectionPath": "drug.drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "NA",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.9.i.2.r.3.KR.1."
+      },
+      "payloadPath": "drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "nullFlavorPartnerCode": "G.k.9.i.2.r.3.KR.1"
+    },
+    {
+      "code": "G.k.local.dechallengeResult",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugReactionAssessments[].dechallengeResult",
+      "projectionPath": "drug.drugReactionAssessments[].dechallengeResult",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "CIOMS.ITEM20.ALLOWED.VALUE",
+        "invalidValue": "9"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
+      },
+      "payloadPath": "drugReactionAssessments[].dechallengeResult",
+      "domFieldNumber": "CIOMS Item 20",
+      "auditItem": "Reaction Abated After Stopping Drug (CIOMS Item 20)"
+    },
+    {
+      "code": "G.k.local.expectedness",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugReactionAssessments[].expectedness",
+      "projectionPath": "drug.drugReactionAssessments[].expectedness",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": "1",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "LOCAL.G.k.9.i.expectedness.ALLOWED.VALUE",
+        "invalidValue": "9"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
+      },
+      "payloadPath": "drugReactionAssessments[].expectedness",
+      "domFieldNumber": "Local assessment",
+      "auditItem": "Local Assessment Expectedness"
+    },
+    {
+      "code": "G.k.local.sourceProductPresaveId",
+      "authority": "ICH",
+      "frontendPath": "drugs[].sourceProductPresaveId",
+      "projectionPath": "drug.source_product_presave_id",
+      "patch": {
+        "kind": "row",
+        "owner": "drug"
+      },
+      "roundTripValue": null,
+      "auditItem": "Record metadata: Source Product Presave ID",
+      "control": {
+        "kind": "product_presave_picker",
+        "permissionActions": [
+          "InfoList",
+          "InfoRead"
+        ]
+      },
+      "execution": {
+        "status": "blocked",
+        "reason": "A valid value must be the UUID returned by a real readable INFO ProductPresave; no static UUID can be a truthful portable roundtrip vector.",
+        "prerequisites": [
+          "Authenticated user has INFO list and read permissions.",
+          "Create or select a real INFO ProductPresave and use its returned UUID."
+        ]
+      },
+    "constraint": {
+      "status": "not_applicable",
+      "reason": "The picker only permits organization-visible production ProductPresaves returned by INFO and exposes no independent invalid-value input surface."
+    },
+      "payloadPath": "sourceProductPresaveId"
     }
   ]
 }

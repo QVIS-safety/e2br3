@@ -144,6 +144,9 @@ pub async fn update_drug_reaction_assessment(
 				let entity = DrugReactionAssessmentBmc::get(ctx, mm, id).await?;
 				ensure_assessment_in_drug(drug_id, &entity)?;
 				let ParamsForUpdate { data } = params;
+				if let Some(reaction_id) = data.reaction_id {
+					ReactionBmc::get_in_case(ctx, mm, case_id, reaction_id).await?;
+				}
 				DrugReactionAssessmentBmc::update(ctx, mm, id, data).await?;
 				let entity = DrugReactionAssessmentBmc::get(ctx, mm, id).await?;
 				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

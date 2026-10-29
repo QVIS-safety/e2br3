@@ -54,6 +54,7 @@ ALLOWED_FIELD_ROOTS = {
     "primarySources",
     "receiverInformation",
     "reactions",
+    "reviewReceivers",
     "safetyReportIdentification",
     "senderInformation",
     "sourceDocuments",

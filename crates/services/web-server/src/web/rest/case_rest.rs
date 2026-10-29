@@ -658,7 +658,11 @@ fn to_internal_case_for_update(
 			&mut clear_fields,
 		),
 		status: data.status,
-		review_receivers_json: data.review_receivers_json,
+		review_receivers_json: optional_text_patch(
+			data.review_receivers_json,
+			"review_receivers_json",
+			&mut clear_fields,
+		),
 		workflow_routes_json: data.workflow_routes_json,
 		mfds_report_type: optional_text_patch(
 			data.mfds_report_type,
@@ -767,7 +771,8 @@ pub struct PublicCaseForUpdate {
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub dg_prd_key: PatchValue<String>,
 	pub status: Option<String>,
-	pub review_receivers_json: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub review_receivers_json: PatchValue<String>,
 	pub workflow_routes_json: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub mfds_report_type: PatchValue<String>,
@@ -1510,7 +1515,9 @@ async fn update_case_authorized(
 				&& current
 					.dg_prd_key
 					.as_deref()
-					.is_some_and(|value| !value.trim().is_empty()));
+					.is_some_and(|value| !value.trim().is_empty()))
+			|| (clear_fields.contains(&"review_receivers_json")
+				&& current.review_receivers_json.is_some());
 
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(

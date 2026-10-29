@@ -176,7 +176,6 @@ IGNORED_BACKEND_FIELDS = {
     "source_sender_presave_id",
     "source_reporter_presave_id",
     "source_study_presave_id",
-    "source_product_presave_id",
     "source_narrative_presave_id",
     "source_patient_presave_id",
     "version",
@@ -189,7 +188,6 @@ IGNORED_BACKEND_FIELDS_BY_MODEL = {
         "dg_prd_key",
         "status",
         "status_before_lock",
-        "review_receivers_json",
         "workflow_routes_json",
         "workflow_status",
         "workflow_assigned_role",
@@ -820,12 +818,8 @@ def validate_registry(
                 result.add(f"{row_id}: e2br3_code {code} is not defined in the {authority} dictionary")
         for authority, entries in sorted(dictionaries.items()):
             for code, entry in sorted(entries.items()):
-                if (
-                    entry.get("kind") == "element"
-                    and entry.get("conformance") == "mandatory"
-                    and code not in seen_codes
-                ):
-                    result.add(f"missing registry row for mandatory {authority} element {code}")
+                if entry.get("kind") == "element" and code not in seen_codes:
+                    result.add(f"missing registry row for {authority} element {code}")
 
     if validate_backend_inventory:
         try:
@@ -965,6 +959,22 @@ def validate_registry(
 
 def main() -> int:
     args = sys.argv[1:]
+    if "--help" in args:
+        print("usage: validate.py [--strict-backend-inventory] [--strict-frontend-inventory] [--strict-dictionary] [--strict-presave-registry] [--strict-presave-inventory] [--strict-editor-contract PAGE] [--report-rule-source-coverage PAGE]")
+        return 0
+    value_options = {"--strict-editor-contract", "--report-rule-source-coverage"}
+    allowed = {
+        "--strict-backend-inventory", "--strict-frontend-inventory",
+        "--strict-dictionary", "--strict-presave-registry",
+        "--strict-presave-inventory", *value_options,
+    }
+    index = 0
+    while index < len(args):
+        argument = args[index]
+        if argument not in allowed:
+            print(f"unknown option: {argument}", file=sys.stderr)
+            return 2
+        index += 2 if argument in value_options else 1
     if "--report-rule-source-coverage" in args:
         index = args.index("--report-rule-source-coverage")
         if index + 1 >= len(args):

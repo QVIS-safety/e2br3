@@ -340,18 +340,14 @@ impl WhodrugProductBmc {
 		query: &str,
 		limit: i64,
 	) -> Result<Vec<WhodrugProduct>> {
-		let sql = format!(
-			"SELECT products.id, products.code, products.drug_name, products.atc_code, products.version, products.language, (r.status = 'active') AS active, products.created_at FROM {} products JOIN terminology_releases r ON r.dictionary = 'whodrug' AND r.version = products.version AND r.language = products.language WHERE r.status = 'active' AND products.drug_name ILIKE $1 ORDER BY products.drug_name, products.code LIMIT $2",
-			Self::TABLE
-		);
-
-		let search_pattern = format!("%{query}%");
 		let products = mm
 			.dbx()
 			.fetch_all(
-				sqlx::query_as::<_, WhodrugProduct>(&sql)
-					.bind(&search_pattern)
-					.bind(limit),
+				sqlx::query_as::<_, WhodrugProduct>(
+					"SELECT id, code, drug_name, atc_code, version, language, active, created_at FROM public.search_active_whodrug_products($1, $2)",
+				)
+				.bind(query)
+				.bind(limit),
 			)
 			.await?;
 

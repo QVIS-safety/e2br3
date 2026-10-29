@@ -281,6 +281,10 @@ DEVICE_NULL_FLAVOR_PATHS = {
     "fdaDevices[].commonDeviceNameNullFlavor",
 }
 CI_NON_NULLABLE_TEXT_CODES = {"C.1.10.r", "C.1.9.1.r.1", "C.1.9.1.r.2"}
+NON_NULLABLE_STORAGE_CODES = {"C.1.1", "G.k.1", "G.k.2.2", "H.1"}
+NON_EMPTY_STORAGE_CODES = {
+    "FDA.G.k.12.r.2.r", "FDA.G.k.12.r.3.r", "FDA.G.k.12.r.11.r",
+}
 OWNER_METADATA_KEYS = {"updatedAt", "updatedBy", "updated_at", "updated_by"}
 OWNER_TARGET_SENTINEL = "__CASE_EDITOR_FUZZ_TARGET__"
 
@@ -853,6 +857,12 @@ def candidate_expectation(
         if ordinal == 4:
             return "accept", None
         return None
+    if (field.get("code") in NON_NULLABLE_STORAGE_CODES
+            and (candidate is None or is_blank_candidate(candidate))):
+        return "reject", "INPUT.NULL.REJECTED"
+    if (field.get("code") in NON_EMPTY_STORAGE_CODES
+            and (candidate is None or is_blank_candidate(candidate))):
+        return "reject", "INPUT.EMPTY.REJECTED"
     constraint = field.get("constraint", {})
     if ordinal == 0 and "invalidValue" in constraint:
         return "reject", constraint.get("ruleCode")

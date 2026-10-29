@@ -4,12 +4,15 @@
 field_contract_test!(d_8_r_1, "D.8.r.1");
 field_contract_test!(d_8_r_1_kr_1a, "D.8.r.1.KR.1a");
 field_contract_test!(d_8_r_1_kr_1b, "D.8.r.1.KR.1b");
+field_contract_test!(d_8_r_1_local_drugnamenullflavor, "D.8.r.1.local.drugNameNullFlavor");
 field_contract_test!(d_8_r_2a, "D.8.r.2a");
 field_contract_test!(d_8_r_2b, "D.8.r.2b");
 field_contract_test!(d_8_r_3a, "D.8.r.3a");
 field_contract_test!(d_8_r_3b, "D.8.r.3b");
 field_contract_test!(d_8_r_4, "D.8.r.4");
+field_contract_test!(d_8_r_4_local_startdatenullflavor, "D.8.r.4.local.startDateNullFlavor");
 field_contract_test!(d_8_r_5, "D.8.r.5");
+field_contract_test!(d_8_r_5_local_enddatenullflavor, "D.8.r.5.local.endDateNullFlavor");
 field_contract_test!(d_8_r_6a, "D.8.r.6a");
 field_contract_test!(d_8_r_6b, "D.8.r.6b");
 field_contract_test!(d_8_r_7a, "D.8.r.7a");

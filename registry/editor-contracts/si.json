@@ -31,7 +31,8 @@
         "status": "not_applicable",
         "reason": "No semantic business rule targets the registration identifier value."
       },
-      "payloadPath": "[].registrationNumber"
+      "payloadPath": "[].registrationNumber",
+      "nullFlavorPartnerCode": "C.5.1.r.1.local.registrationNumberNullFlavor"
     },
     {
       "code": "C.5.1.r.2",
@@ -62,7 +63,16 @@
         "status": "verified",
         "issuePath": "studyInformation.0.studyRegistrationNumbers.0.countryCode"
       },
-      "payloadPath": "[].countryCode"
+      "payloadPath": "[].countryCode",
+      "nullFlavorPartnerCode": "C.5.1.r.2.local.countryCodeNullFlavor",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "C.5.2",
@@ -83,7 +93,8 @@
         "status": "not_applicable",
         "reason": "No semantic business rule targets optional study name."
       },
-      "payloadPath": "studyName"
+      "payloadPath": "studyName",
+      "nullFlavorPartnerCode": "C.5.2.local.studyNameNullFlavor"
     },
     {
       "code": "C.5.3",
@@ -104,7 +115,8 @@
         "status": "verified",
         "issuePath": "studyInformation.0.sponsorStudyNumber"
       },
-      "payloadPath": "sponsorStudyNumber"
+      "payloadPath": "sponsorStudyNumber",
+      "nullFlavorPartnerCode": "C.5.3.local.sponsorStudyNumberNullFlavor"
     },
     {
       "code": "C.5.4",
@@ -123,6 +135,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "ICH.C.5.4.REQUIRED",
         "issuePath": "studyInformation.0.studyTypeReaction"
       },
       "payloadPath": "studyTypeReaction"
@@ -144,6 +157,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "MFDS.C.5.4.KR.1.REQUIRED",
         "issuePath": "studyInformation.0.studyTypeReactionKr1"
       },
       "payloadPath": "studyTypeReactionKr1"
@@ -157,7 +171,7 @@
         "kind": "rows",
         "owner": "studyInformation"
       },
-      "roundTripValue": "IND123456",
+      "roundTripValue": "123456",
       "constraint": {
         "status": "verified",
         "ruleCode": "FDA.C.5.5a.LENGTH.MAX",
@@ -165,6 +179,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "FDA.R0024",
         "issuePath": "studyInformation.0.fdaIndNumberOccurred"
       },
       "payloadPath": "fdaIndNumberOccurred"
@@ -178,7 +193,7 @@
         "kind": "rows",
         "owner": "studyInformation"
       },
-      "roundTripValue": "ANDA123456",
+      "roundTripValue": "123456",
       "constraint": {
         "status": "verified",
         "ruleCode": "FDA.C.5.5b.LENGTH.MAX",
@@ -186,6 +201,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "FDA.R0025",
         "issuePath": "studyInformation.0.fdaPreAndaNumberOccurred"
       },
       "payloadPath": "fdaPreAndaNumberOccurred"
@@ -199,7 +215,7 @@
         "kind": "rows",
         "owner": "studyInformation"
       },
-      "roundTripValue": "IND654321",
+      "roundTripValue": "123456",
       "constraint": {
         "status": "verified",
         "ruleCode": "FDA.C.5.6.r.LENGTH.MAX",
@@ -207,6 +223,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "FDA.R0026",
         "issuePath": "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber"
       },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumber",
@@ -233,6 +250,114 @@
       },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumberNullFlavor",
       "nullFlavorPartnerCode": "FDA.C.5.6.r"
+    },
+    {
+      "code": "C.5.1.r.1.local.registrationNumberNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumberNullFlavor",
+      "projectionPath": "studyRegistrationNumbers[].registration_number_null_flavor",
+      "patch": {
+        "kind": "rows",
+        "owner": "studyRegistrationNumbers"
+      },
+      "roundTripValue": "ASKU",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.C.5.1.r.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.1."
+      },
+      "payloadPath": "[].registrationNumberNullFlavor",
+      "nullFlavorPartnerCode": "C.5.1.r.1",
+      "fixture": [
+        {
+          "countryCode": "KR"
+        }
+      ],
+      "rowsFixture": {
+        "studyInformation": {
+          "studyName": "Study fixture"
+        }
+      }
+    },
+    {
+      "code": "C.5.1.r.2.local.countryCodeNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCodeNullFlavor",
+      "projectionPath": "studyRegistrationNumbers[].country_code_null_flavor",
+      "patch": {
+        "kind": "rows",
+        "owner": "studyRegistrationNumbers"
+      },
+      "roundTripValue": "ASKU",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.C.5.1.r.2.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.2."
+      },
+      "payloadPath": "[].countryCodeNullFlavor",
+      "nullFlavorPartnerCode": "C.5.1.r.2",
+      "fixture": [
+        {
+          "registrationNumber": "NCT-FIXTURE"
+        }
+      ],
+      "rowsFixture": {
+        "studyInformation": {
+          "studyName": "Study fixture"
+        }
+      }
+    },
+    {
+      "code": "C.5.2.local.studyNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyNameNullFlavor",
+      "projectionPath": "studyInformation.study_name_null_flavor",
+      "patch": {
+        "kind": "rows",
+        "owner": "studyInformation"
+      },
+      "roundTripValue": "ASKU",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.C.5.2.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.2."
+      },
+      "payloadPath": "studyNameNullFlavor",
+      "nullFlavorPartnerCode": "C.5.2"
+    },
+    {
+      "code": "C.5.3.local.sponsorStudyNumberNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.sponsorStudyNumberNullFlavor",
+      "projectionPath": "studyInformation.sponsor_study_number_null_flavor",
+      "patch": {
+        "kind": "rows",
+        "owner": "studyInformation"
+      },
+      "roundTripValue": "ASKU",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.C.5.3.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.3."
+      },
+      "payloadPath": "sponsorStudyNumberNullFlavor",
+      "nullFlavorPartnerCode": "C.5.3"
     }
   ]
 }

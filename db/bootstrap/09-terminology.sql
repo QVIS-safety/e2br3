@@ -237,6 +237,7 @@ INSERT INTO e2b_code_lists (list_name, code, display_name, sort_order) VALUES
 ('drug_characterization', '1', 'Suspect', 1),
 ('drug_characterization', '2', 'Concomitant', 2),
 ('drug_characterization', '3', 'Interacting', 3),
+('drug_characterization', '4', 'Drug Not Administered', 4),
 
 -- Drug Action Taken (G.k.7)
 ('drug_action', '1', 'Drug withdrawn', 1),

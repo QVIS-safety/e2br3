@@ -457,14 +457,14 @@
     "backend": {
       "status": "mapped",
       "model": "DosageInformation",
-      "field": "first_administration_date / first_administration_date_raw",
+      "field": "first_administration_date",
       "file": "crates/libs/lib-core/src/model/drug.rs",
       "evidence": "DosageInformation.first_administration_date is annotated as G.k.4.r.4."
     },
     "frontend": {
       "status": "mapped",
       "section": "drugs.dosageInformation",
-      "field": "firstAdministrationDate / firstAdministrationDateNullFlavor",
+      "field": "firstAdministrationDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.4.r.4 to drugs[index].dosageInformation[doseIndex].firstAdministrationDate."
     },
@@ -482,14 +482,14 @@
     "backend": {
       "status": "mapped",
       "model": "DosageInformation",
-      "field": "last_administration_date / last_administration_date_raw",
+      "field": "last_administration_date",
       "file": "crates/libs/lib-core/src/model/drug.rs",
       "evidence": "DosageInformation.last_administration_date is annotated as G.k.4.r.5."
     },
     "frontend": {
       "status": "mapped",
       "section": "drugs.dosageInformation",
-      "field": "lastAdministrationDate / lastAdministrationDateNullFlavor",
+      "field": "lastAdministrationDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.4.r.5 to drugs[index].dosageInformation[doseIndex].lastAdministrationDate."
     },
@@ -640,7 +640,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.dosageInformation",
-      "field": "doseForm / doseFormNullFlavor",
+      "field": "doseForm",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.4.r.9.1 to drugs[index].dosageInformation[doseIndex].doseForm."
     },
@@ -715,7 +715,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.dosageInformation",
-      "field": "routeOfAdministration / routeOfAdministrationNullFlavor",
+      "field": "routeOfAdministration",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.4.r.10.1 to drugs[index].dosageInformation[doseIndex].routeOfAdministration."
     },
@@ -812,7 +812,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.dosageInformation",
-      "field": "parentRouteOfAdministration / parentRouteOfAdministrationNullFlavor",
+      "field": "parentRouteOfAdministration",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.4.r.11.1 to drugs[index].dosageInformation[doseIndex].parentRouteOfAdministration."
     },
@@ -909,7 +909,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.indications",
-      "field": "indicationText / indicationTextNullFlavor",
+      "field": "indicationText",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber G.k.7.r.1 to drugs[index].indications[indicationIndex].indicationText."
     },
@@ -1579,7 +1579,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs",
-      "field": "fdaAdditionalInfoCoded / fdaAdditionalInfoCodedNullFlavor",
+      "field": "fdaAdditionalInfoCoded",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "SectionG binds fieldNumber FDA.G.k.10a to drugs[index].fdaAdditionalInfoCoded."
     },
@@ -1613,6 +1613,7 @@
   },
   {
     "id": "G.k.10.r",
+    "editor_status": "complete",
     "e2br3_code": "G.k.10.r",
     "label": "Additional Information on Drug Code List",
     "section": "G",
@@ -1781,7 +1782,9 @@
       "evidence": "DrugAssessmentFields binds the assessment expectedness input."
     },
     "action": "",
-    "notes": "Local expectedness field; excluded from E2B XML contracts."
+    "notes": "Local expectedness field; excluded from E2B XML contracts.",
+    "editor_page": "DG",
+    "editor_status": "complete"
   },
   {
     "id": "G.k.local.dechallengeResult",
@@ -1802,11 +1805,13 @@
       "status": "mapped",
       "section": "drugs.drugReactionAssessments",
       "field": "dechallengeResult",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds the local dechallenge result used by CIOMS export."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugAssessmentFields.tsx",
+      "evidence": "DrugAssessmentFields renders the CIOMS dechallengeResult radio options 1, 2, and 3."
     },
     "action": "",
-    "notes": "CIOMS-only field; excluded from E2B XML contracts."
+    "notes": "CIOMS-only field; excluded from E2B XML contracts.",
+    "editor_page": "DG",
+    "editor_status": "complete"
   },
   {
     "id": "G.k.9.i.4",
@@ -1835,6 +1840,7 @@
   },
   {
     "id": "G.k.9.i.1",
+    "editor_status": "complete",
     "e2br3_code": "G.k.9.i.1",
     "label": "Reaction or Event Assessed",
     "section": "G",
@@ -1910,6 +1916,7 @@
   },
   {
     "id": "G.k.9.i.2.r.2.KR.1",
+    "editor_status": "complete",
     "e2br3_code": "G.k.9.i.2.r.2.KR.1",
     "label": "MFDS Method of Assessment",
     "section": "G",
@@ -1960,6 +1967,7 @@
   },
   {
     "id": "G.k.9.i.2.r.3.KR.1",
+    "editor_status": "complete",
     "e2br3_code": "G.k.9.i.2.r.3.KR.1",
     "label": "WHO-UMC Result of Assessment",
     "section": "G",
@@ -1968,14 +1976,14 @@
     "backend": {
       "status": "mapped",
       "model": "RelatednessAssessment",
-      "field": "result_of_assessment_kr1 / result_of_assessment_kr1_null_flavor",
+      "field": "result_of_assessment_kr1",
       "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
       "evidence": "RelatednessAssessment stores the WHO-UMC code and its NA nullFlavor in separate columns."
     },
     "frontend": {
       "status": "mapped",
       "section": "drugs.drugReactionAssessments",
-      "field": "resultOfAssessmentKr1 / resultOfAssessmentKr1NullFlavor",
+      "field": "resultOfAssessmentKr1",
       "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugAssessmentFields.tsx",
       "evidence": "DrugAssessmentFields binds the WHO-UMC autocomplete and NA NullFlavor select as mutually exclusive fields."
     },
@@ -2010,6 +2018,8 @@
   },
   {
     "id": "FDA.G.k.12.r.5",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.5",
     "label": "FDA Device Info CommonDeviceName",
     "section": "G",
@@ -2025,7 +2035,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.fdaDevices",
-      "field": "commonDeviceName / commonDeviceNameNullFlavor",
+      "field": "commonDeviceName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "Strict frontend input inventory extracts drugs.fdaDevices[].commonDeviceName from the case-form section source."
     },
@@ -2034,6 +2044,8 @@
   },
   {
     "id": "FDA.G.k.12.r.4",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.4",
     "label": "FDA Device Info DeviceBrandName",
     "section": "G",
@@ -2049,7 +2061,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.fdaDevices",
-      "field": "deviceBrandName / deviceBrandNameNullFlavor",
+      "field": "deviceBrandName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "Strict frontend input inventory extracts drugs.fdaDevices[].deviceBrandName from the case-form section source."
     },
@@ -2058,6 +2070,8 @@
   },
   {
     "id": "FDA.G.k.12.r.9",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.9",
     "label": "FDA Device Info DeviceLotNumber",
     "section": "G",
@@ -2082,6 +2096,8 @@
   },
   {
     "id": "FDA.G.k.12.r.3.r",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.3.r",
     "label": "FDA Device Info DeviceProblemCodes",
     "section": "G",
@@ -2098,7 +2114,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.fdaDevices",
-      "field": "deviceProblemCodes",
+      "field": "deviceProblemCodes.valueCode",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "Strict frontend input inventory extracts drugs.fdaDevices[].deviceProblemCodes from the case-form section source."
     },
@@ -2107,6 +2123,8 @@
   },
   {
     "id": "FDA.G.k.12.r.6",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.6",
     "label": "FDA Device Info DeviceProductCode",
     "section": "G",
@@ -2131,6 +2149,8 @@
   },
   {
     "id": "FDA.G.k.12.r.8",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.8",
     "label": "FDA Device Info DeviceUsage",
     "section": "G",
@@ -2155,6 +2175,8 @@
   },
   {
     "id": "FDA.G.k.12.r.2.r",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.2.r",
     "label": "FDA Device Info FollowUpTypes",
     "section": "G",
@@ -2171,7 +2193,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.fdaDevices",
-      "field": "followUpTypes",
+      "field": "followUpTypes.valueCode",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "Strict frontend input inventory extracts drugs.fdaDevices[].followUpTypes from the case-form section source."
     },
@@ -2180,6 +2202,8 @@
   },
   {
     "id": "FDA.G.k.12.r.1",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.1",
     "label": "FDA Device Info Malfunction",
     "section": "G",
@@ -2204,6 +2228,8 @@
   },
   {
     "id": "FDA.G.k.12.r.7.1b",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.7.1b",
     "label": "FDA Device Info ManufacturerAddress",
     "section": "G",
@@ -2228,6 +2254,8 @@
   },
   {
     "id": "FDA.G.k.12.r.7.1c",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.7.1c",
     "label": "FDA Device Info ManufacturerCity",
     "section": "G",
@@ -2252,6 +2280,8 @@
   },
   {
     "id": "FDA.G.k.12.r.7.1e",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.7.1e",
     "label": "FDA Device Info ManufacturerCountry",
     "section": "G",
@@ -2276,6 +2306,8 @@
   },
   {
     "id": "FDA.G.k.12.r.7.1a",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.7.1a",
     "label": "FDA Device Info ManufacturerName",
     "section": "G",
@@ -2300,6 +2332,8 @@
   },
   {
     "id": "FDA.G.k.12.r.7.1d",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.7.1d",
     "label": "FDA Device Info ManufacturerState",
     "section": "G",
@@ -2324,6 +2358,8 @@
   },
   {
     "id": "FDA.G.k.12.r.10",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.10",
     "label": "FDA Device Info OperatorOfDevice",
     "section": "G",
@@ -2348,6 +2384,8 @@
   },
   {
     "id": "FDA.G.k.12.r.11.r",
+    "editor_page": "DG",
+    "editor_status": "complete",
     "e2br3_code": "FDA.G.k.12.r.11.r",
     "label": "FDA Device Info RemedialActions",
     "section": "G",
@@ -2364,7 +2402,7 @@
     "frontend": {
       "status": "mapped",
       "section": "drugs.fdaDevices",
-      "field": "remedialActions",
+      "field": "remedialActions.valueCode",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
       "evidence": "Strict frontend input inventory extracts drugs.fdaDevices[].remedialActions from the case-form section source."
     },
@@ -2377,7 +2415,7 @@
     "label": "MFDS Device Info CauseInvestigationAssessments",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2386,11 +2424,10 @@
       "field": "mfds_device_info_causeInvestigationAssessments"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.causeInvestigationAssessments",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationAssessments from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.causeInvestigationAssessments input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2401,7 +2438,7 @@
     "label": "MFDS Device Info CauseInvestigationConclusions",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2410,11 +2447,10 @@
       "field": "mfds_device_info_causeInvestigationConclusions"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.causeInvestigationConclusions",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationConclusions from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.causeInvestigationConclusions input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2425,7 +2461,7 @@
     "label": "MFDS Device Info CauseInvestigationTypes",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2434,11 +2470,10 @@
       "field": "mfds_device_info_causeInvestigationTypes"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.causeInvestigationTypes",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationTypes from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.causeInvestigationTypes input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2449,7 +2484,7 @@
     "label": "MFDS Device Info ComponentCodes",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2458,11 +2493,10 @@
       "field": "mfds_device_info_componentCodes"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.componentCodes",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.componentCodes from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.componentCodes input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2473,7 +2507,7 @@
     "label": "MFDS Device Info HealthImpactClinicalSigns",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2482,11 +2516,10 @@
       "field": "mfds_device_info_healthImpactClinicalSigns"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.healthImpactClinicalSigns",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.healthImpactClinicalSigns from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.healthImpactClinicalSigns input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2497,7 +2530,7 @@
     "label": "MFDS Device Info HealthImpactOutcomes",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2506,11 +2539,10 @@
       "field": "mfds_device_info_healthImpactOutcomes"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.healthImpactOutcomes",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.healthImpactOutcomes from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.healthImpactOutcomes input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2521,7 +2553,7 @@
     "label": "MFDS Device Info ImplantDates",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2530,11 +2562,10 @@
       "field": "mfds_device_info_implantDates"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.implantDates",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.implantDates from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.implantDates input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2545,7 +2576,7 @@
     "label": "MFDS Device Info Models",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2554,11 +2585,10 @@
       "field": "mfds_device_info_models"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.models",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.models from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.models input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2569,7 +2599,7 @@
     "label": "MFDS Device Info ProblemCodes",
     "section": "G",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "missing",
@@ -2578,11 +2608,10 @@
       "field": "mfds_device_info_problemCodes"
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "mfdsDeviceInfo.problemCodes",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.problemCodes from the case-form section source."
+      "evidence": "Current case-detail source has no drugs.mfdsDeviceInfo.problemCodes input."
     },
     "action": "Add a backend BMC field or relational device model for MFDS device information, then replace this backend_missing row with the concrete mapping.",
     "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
@@ -2593,21 +2622,26 @@
     "label": "Source Product Presave Identifier",
     "section": "G",
     "authority": "ICH",
-    "status": "not_applicable",
+    "status": "complete",
     "local_only": true,
     "backend": {
-      "status": "not_applicable",
-      "evidence": "sourceProductPresaveId is a frontend workflow/control field, not an E2BR3 BMC business field in the tracked backend inventory."
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "source_product_presave_id",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.source_product_presave_id persists the UUID selected from the INFO Product master picker."
     },
     "frontend": {
       "status": "mapped",
       "section": "drugs",
       "field": "sourceProductPresaveId",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Strict frontend input inventory extracts drugs.sourceProductPresaveId from the case-form section source."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugProductIdField.tsx",
+      "evidence": "DrugProductIdField renders a permission-gated Select Product master button named drugs[index].sourceProductPresaveId; useSectionGDrugs assigns the selected ProductPresave id."
     },
     "action": "",
-    "notes": "Classified explicitly so frontend inventory remains exhaustive without forcing a false backend BMC mapping. UI/technical control only; intentionally not an E2BR3 data element."
+    "notes": "Local Product master association persisted as a UUID; execution requires a real readable INFO ProductPresave selected through the picker.",
+    "editor_page": "DG",
+    "editor_status": "incomplete"
   },
   {
     "id": "FDA.G.k.1.a",
@@ -2633,5 +2667,275 @@
     },
     "action": "",
     "notes": "Implemented 2026-06: FDA Other Characterisation of Drug Role (post-market conditional-required when combination product + malfunction). Single coded value 1=Similar Device."
+  },
+  {
+    "id": "G.k.4.r.4.local.firstAdministrationDateNullFlavor",
+    "e2br3_code": "G.k.4.r.4.local.firstAdministrationDateNullFlavor",
+    "label": "Date of Start of Drug NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "first_administration_date_raw",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.first_administration_date_raw persists the G.k.4.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "firstAdministrationDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.4.r.4 editor control binds the explicit firstAdministrationDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.4.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.4.r.5.local.lastAdministrationDateNullFlavor",
+    "e2br3_code": "G.k.4.r.5.local.lastAdministrationDateNullFlavor",
+    "label": "Date of Last Administration NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "last_administration_date_raw",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.last_administration_date_raw persists the G.k.4.r.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "lastAdministrationDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.4.r.5 editor control binds the explicit lastAdministrationDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.4.r.5; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.4.r.9.1.local.doseFormNullFlavor",
+    "e2br3_code": "G.k.4.r.9.1.local.doseFormNullFlavor",
+    "label": "Pharmaceutical Dose Form NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_form_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_form_null_flavor persists the G.k.4.r.9.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseFormNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.4.r.9.1 editor control binds the explicit doseFormNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.4.r.9.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor",
+    "e2br3_code": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor",
+    "label": "Route of Administration NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "route_of_administration_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.route_of_administration_null_flavor persists the G.k.4.r.10.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "routeOfAdministrationNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.4.r.10.1 editor control binds the explicit routeOfAdministrationNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.4.r.10.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor",
+    "e2br3_code": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor",
+    "label": "Parent Route of Administration NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "parent_route_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.parent_route_null_flavor persists the G.k.4.r.11.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "parentRouteOfAdministrationNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.4.r.11.1 editor control binds the explicit parentRouteOfAdministrationNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.4.r.11.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.7.r.1.local.indicationTextNullFlavor",
+    "e2br3_code": "G.k.7.r.1.local.indicationTextNullFlavor",
+    "label": "Indication as Reported by the Primary Source NullFlavor companion",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugIndication",
+      "field": "indication_text_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugIndication.indication_text_null_flavor persists the G.k.7.r.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.indications",
+      "field": "indicationTextNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same G.k.7.r.1 editor control binds the explicit indicationTextNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.7.r.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor",
+    "e2br3_code": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor",
+    "label": "WHO-UMC Result of Assessment NullFlavor companion",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "RelatednessAssessment",
+      "field": "result_of_assessment_kr1_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "RelatednessAssessment.result_of_assessment_kr1_null_flavor persists the G.k.9.i.2.r.3.KR.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "resultOfAssessmentKr1NullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugAssessmentFields.tsx",
+      "evidence": "The same G.k.9.i.2.r.3.KR.1 editor control binds the explicit resultOfAssessmentKr1NullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element G.k.9.i.2.r.3.KR.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor",
+    "e2br3_code": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor",
+    "label": "FDA Device Info CommonDeviceName NullFlavor companion",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "FdaDeviceInformation",
+      "field": "common_device_name_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "FdaDeviceInformation.common_device_name_null_flavor persists the FDA.G.k.12.r.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.fdaDevices",
+      "field": "commonDeviceNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same FDA.G.k.12.r.5 editor control binds the explicit commonDeviceNameNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element FDA.G.k.12.r.5; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor",
+    "e2br3_code": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor",
+    "label": "FDA Device Info DeviceBrandName NullFlavor companion",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "FdaDeviceInformation",
+      "field": "device_brand_name_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "FdaDeviceInformation.device_brand_name_null_flavor persists the FDA.G.k.12.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.fdaDevices",
+      "field": "deviceBrandNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "The same FDA.G.k.12.r.4 editor control binds the explicit deviceBrandNameNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element FDA.G.k.12.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor",
+    "e2br3_code": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor",
+    "label": "Additional Information on Drug FDA Coded NullFlavor companion",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DG",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "fda_additional_info_coded_null_flavor",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_additional_info_coded_null_flavor persists the FDA.G.k.10a companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaAdditionalInfoCodedNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].fdaAdditionalInfoCodedNullFlavor."
+    },
+    "action": "",
+    "notes": "Local persistence companion for FDA.G.k.10a; the FDA dictionary allows NA."
   }
 ]

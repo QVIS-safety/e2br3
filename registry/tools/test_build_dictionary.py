@@ -297,6 +297,75 @@ class AllowedValueConstraintTests(unittest.TestCase):
         self.assertEqual(expected, actual)
 
 
+class DocumentedAmendmentTests(unittest.TestCase):
+    def test_restores_only_documented_amendments(self):
+        for name in ("ich-e2br3.json", "mfds-regional.json", "fda-regional.json"):
+            committed = json.loads(
+                (build_dictionary.DICTIONARY_DIR / name).read_text(encoding="utf-8")
+            )["entries"]
+            generated = json.loads(json.dumps(committed))
+            by_code = {entry["code"]: entry for entry in generated}
+
+            if name == "ich-e2br3.json":
+                for code in build_dictionary.ICH_CONDITION_TEXT_CODES:
+                    by_code[code].pop("condition_text")
+                for code in build_dictionary.ICH_OPTIONAL_CORRECTION_CODES:
+                    by_code[code]["conformance"] = "conditional_mandatory"
+                by_code["C.1.10.r"].update(
+                    {"fda_error_id": "W0001", "fda_severity": "warning", "profiles": {"mfds": "optional"}}
+                )
+            elif name == "mfds-regional.json":
+                for code in build_dictionary.MFDS_VOCABULARY_VARIANT_CODES:
+                    by_code[code].pop("vocabulary_variants")
+                    by_code[code]["vocabulary"] = "WHODrug"
+                for code in build_dictionary.MFDS_CODE_SET_CODES:
+                    by_code[code].pop("allowed_value_constraint")
+            else:
+                by_code["FDA.D.1"].pop("conformance")
+                by_code["FDA.D.11.r.1"]["allowed_value_constraint"] = {"kind": "descriptive"}
+                by_code["FDA.D.11.r.1"]["xpath"] = "/stale-source-path"
+
+            generated[0]["name"] = "A source-owned update"
+            build_dictionary.preserve_documented_amendments(name, generated)
+
+            self.assertEqual("A source-owned update", generated[0]["name"])
+            self.assertEqual(committed[1:], generated[1:])
+
+    def test_rejects_missing_amended_entry(self):
+        committed = json.loads(
+            (build_dictionary.DICTIONARY_DIR / "ich-e2br3.json").read_text(
+                encoding="utf-8"
+            )
+        )["entries"]
+        generated = [
+            entry for entry in committed if entry["code"] != "C.1.6.1.r.1"
+        ]
+
+        with self.assertRaisesRegex(ValueError, "missing amended.*C.1.6.1.r.1"):
+            build_dictionary.preserve_documented_amendments(
+                "ich-e2br3.json", generated
+            )
+
+    def test_rejects_changed_source_under_optional_correction(self):
+        committed = json.loads(
+            (build_dictionary.DICTIONARY_DIR / "ich-e2br3.json").read_text(
+                encoding="utf-8"
+            )
+        )["entries"]
+        generated = json.loads(json.dumps(committed))
+        for entry in generated:
+            if entry["code"] in build_dictionary.ICH_OPTIONAL_CORRECTION_CODES:
+                entry["conformance"] = "conditional_mandatory"
+        next(
+            entry for entry in generated if entry["code"] == "C.2.r.2.5"
+        )["conformance"] = "mandatory"
+
+        with self.assertRaisesRegex(ValueError, "source conformance changed.*C.2.r.2.5"):
+            build_dictionary.preserve_documented_amendments(
+                "ich-e2br3.json", generated
+            )
+
+
 class ParseMfdsTests(unittest.TestCase):
     SHEET1 = [
         ["연번", "Element ID", "항목명\n(영문)", "항목명\n(국문)", "필수\n여부", "OID", "항목검증룰", "관계\nElement ID", "최대길이", "데이터 \n유형", "허용치", "nullFlavor", "비고"],
@@ -586,8 +655,8 @@ class OfficialNullFlavorOverrideTests(unittest.TestCase):
         self.assertEqual(["UNK", "ASKU", "NASK"], ich[2]["null_flavors"])
         self.assertNotIn("null_flavors", ich[3])
         self.assertEqual(["NINF", "PINF"], ich[3]["interval_bound_null_flavors"])
-        self.assertEqual("FDA.D.1", fda[-1]["code"])
-        self.assertIn("NA", fda[-1]["null_flavors"])
+        self.assertEqual("FDA.D.1", fda[1]["code"])
+        self.assertIn("NA", fda[1]["null_flavors"])
 
 
 if __name__ == "__main__":

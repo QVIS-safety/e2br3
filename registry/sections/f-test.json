@@ -17,7 +17,7 @@
     "frontend": {
       "status": "mapped",
       "section": "testResults",
-      "field": "testDate / testDateNullFlavor",
+      "field": "testDate",
       "file": "../frontend/E2BR3-frontend/__tests__/case-save/tests.coordinator.test.ts",
       "evidence": "Frontend tests coordinator asserts testResults row testDate readback."
     },
@@ -85,16 +85,16 @@
     "backend": {
       "status": "mapped",
       "model": "TestResult",
-      "field": "test_result_value / test_result_qualifier",
+      "field": "test_result_value",
       "file": "crates/libs/lib-core/src/model/test_result.rs",
       "evidence": "TestResult.test_result_value is annotated as F.r.3.2."
     },
     "frontend": {
       "status": "mapped",
       "section": "testResults",
-      "field": "testResult / testResultQualifier",
-      "file": "../frontend/E2BR3-frontend/lib/validation/backendPathAliases.ts",
-      "evidence": "Frontend backend path aliases map testResultValue to testResult."
+      "field": "testResult",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/LB/components/TestResultEditorPanel.tsx",
+      "evidence": "TestResultEditorPanel binds the numeric testResults[index].testResult input."
     },
     "action": "",
     "notes": ""
@@ -118,8 +118,8 @@
       "status": "mapped",
       "section": "testResults",
       "field": "testUnit",
-      "file": "../frontend/E2BR3-frontend/lib/validation/backendPathAliases.ts",
-      "evidence": "Frontend backend path aliases map testResultUnit to testUnit."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/LB/components/TestResultEditorPanel.tsx",
+      "evidence": "TestResultEditorPanel renders the controlled UCUM autocomplete bound to testResults[index].testUnit."
     },
     "action": "",
     "notes": ""
@@ -298,5 +298,59 @@
     },
     "action": "",
     "notes": ""
+  },
+  {
+    "id": "F.r.1.local.testDateNullFlavor",
+    "e2br3_code": "F.r.1.local.testDateNullFlavor",
+    "label": "Test Date NullFlavor companion",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "LB",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_date_null_flavor persists the F.r.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/tests.coordinator.test.ts",
+      "evidence": "The same F.r.1 editor control binds the explicit testDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element F.r.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "F.r.local.testResultQualifier",
+    "e2br3_code": "F.r.local.testResultQualifier",
+    "label": "Test Result Qualifier",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "LB",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_result_qualifier",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_result_qualifier stores the optional comparison modifier."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testResultQualifier",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/LB/components/TestResultEditorPanel.tsx",
+      "evidence": "TestResultEditorPanel exposes None, EQ, LT, LE, GT, and GE qualifier options and clears the qualifier when the result is empty."
+    },
+    "action": "",
+    "notes": "Optional local serialization modifier for the composite F.r.3.2 value; it does not independently inherit the F.r.3.2 conditional requirement."
   }
 ]

@@ -146,7 +146,8 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "documentsHeldBySender.0.documentDescription"
+        "ruleCode": "ICH.C.1.6.1.r.1.REQUIRED",
+        "issuePath": "documentsHeldBySender[].documentDescription"
       },
       "payloadPath": "[].documentDescription"
     },
@@ -160,6 +161,10 @@
         "owner": "documentsHeldBySender"
       },
       "roundTripValue": "Q0ktZG9jdW1lbnQ=",
+      "constraint": {
+        "status": "not_applicable",
+        "reason": "The document payload is produced by the upload control and has no standalone typed input constraint."
+      },
       "businessValidation": {
         "status": "verified",
         "issuePath": "documentsHeldBySender.0.includedDocument"
@@ -186,7 +191,8 @@
         "status": "verified",
         "issuePath": "safetyReportIdentification.fulfilExpeditedCriteria"
       },
-      "payloadPath": "fulfilExpeditedCriteria"
+      "payloadPath": "fulfilExpeditedCriteria",
+      "nullFlavorPartnerCode": "C.1.local.fulfilExpeditedCriteriaNullFlavor"
     },
     {
       "code": "FDA.C.1.7.1",
@@ -218,7 +224,7 @@
         "kind": "row",
         "owner": "safetyReportIdentification"
       },
-      "roundTripValue": "1",
+      "roundTripValue": "true",
       "constraint": {
         "status": "not_applicable",
         "reason": "The catalog has no portable constraint binding for FDA.C.1.12."
@@ -228,7 +234,7 @@
         "issuePath": "safetyReportIdentification.combinationProductReportIndicator"
       },
       "payloadPath": "combinationProductReportIndicator",
-      "nullFlavorPartnerCode": "C.1.local.combinationProductReportIndicatorNullFlavor"
+      "nullFlavorPartnerCode": "FDA.C.1.12.local.nullFlavor"
     },
     {
       "code": "C.1.8.1",
@@ -317,7 +323,8 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "otherCaseIdentifiers.0.source"
+        "ruleCode": "ICH.C.1.9.1.r.1.REQUIRED",
+        "issuePath": "otherCaseIdentifiers[].source"
       },
       "payloadPath": "[].source"
     },
@@ -343,7 +350,8 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "otherCaseIdentifiers.0.caseIdentifier"
+        "ruleCode": "ICH.C.1.9.1.r.2.REQUIRED",
+        "issuePath": "otherCaseIdentifiers[].caseIdentifier"
       },
       "payloadPath": "[].caseIdentifier"
     },
@@ -406,6 +414,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "ICH.C.1.11.2.REQUIRED",
         "issuePath": "safetyReportIdentification.nullificationReason"
       },
       "payloadPath": "nullificationReason"
@@ -448,29 +457,8 @@
         "status": "not_applicable",
         "reason": "Source document name is app-local and has no business validation rule."
       },
+      "auditItem": "Source Document Name",
       "payloadPath": "[].sourceDocumentName"
-    },
-    {
-      "code": "C.1.local.combinationProductReportIndicatorNullFlavor",
-      "authority": "ICH",
-      "frontendPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
-      "projectionPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
-      "patch": {
-        "kind": "row",
-        "owner": "safetyReportIdentification"
-      },
-      "roundTripValue": "NI",
-      "constraint": {
-        "status": "verified",
-        "ruleCode": "FDA.C.1.12.NULLFLAVOR.ALLOWED",
-        "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation emits FDA.C.1.12 issues on combinationProductReportIndicator."
-      },
-      "payloadPath": "combinationProductReportIndicatorNullFlavor",
-      "nullFlavorPartnerCode": "FDA.C.1.12"
     },
     {
       "code": "C.1.local.otherCaseIdentifiersExistNullFlavor",
@@ -512,7 +500,8 @@
         "status": "not_applicable",
         "reason": "FDA report type is app-local and has no business validation rule."
       },
-      "payloadPath": "fdaReportType"
+      "payloadPath": "fdaReportType",
+      "domFieldNumber": "FDA_REPORT_TYPE"
     },
     {
       "code": "C.1.KR.mfdsReportType",
@@ -532,7 +521,51 @@
         "status": "not_applicable",
         "reason": "MFDS report type is app-local and has no business validation rule."
       },
-      "payloadPath": "mfdsReportType"
+      "payloadPath": "mfdsReportType",
+      "domFieldNumber": "MFDS_REPORT_TYPE"
+    },
+    {
+      "code": "C.1.local.fulfilExpeditedCriteriaNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor",
+      "projectionPath": "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor",
+      "patch": {
+        "kind": "row",
+        "owner": "safetyReportIdentification"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "blocked",
+        "reason": "The positive API roundtrip persists NI, but out-of-set tokens are rejected by a generic request-parser 400 with no target-specific rule or issue path, so exact negative-field verification is unsupported."
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports authority-specific issues on C.1.7."
+      },
+      "payloadPath": "fulfilExpeditedCriteriaNullFlavor",
+      "nullFlavorPartnerCode": "C.1.7"
+    },
+    {
+      "code": "FDA.C.1.12.local.nullFlavor",
+      "authority": "FDA",
+      "frontendPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
+      "projectionPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
+      "patch": {
+        "kind": "row",
+        "owner": "safetyReportIdentification"
+      },
+      "roundTripValue": "NI",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "FDA.C.1.12.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation emits FDA.C.1.12 issues on combinationProductReportIndicator."
+      },
+      "payloadPath": "combinationProductReportIndicatorNullFlavor",
+      "nullFlavorPartnerCode": "FDA.C.1.12"
     }
   ]
 }

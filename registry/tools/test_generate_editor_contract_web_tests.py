@@ -17,7 +17,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
                 contract = generator.load_contract(repo / "registry", page_id)
                 generated = outputs[page_id]
                 self.assertEqual(
-                    len(contract["fields"]),
+                    len([field for field in contract["fields"] if field.get("execution", {}).get("status") != "blocked"]),
                     generated.count("field_contract_test!("),
                 )
                 self.assertNotIn("payloadPath", generated)
@@ -33,6 +33,16 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
                 'field_contract_test!(d_10_6, "D.10.6");',
                 outputs["DM"],
             )
+            self.assertIn(
+                "// BLOCKED editor contract G.k.9.i.1:",
+                outputs["DG"],
+            )
+
+    def test_rejects_blocked_field_without_reason(self):
+        fields = [{"code": "G.k.9.i.1", "execution": {"status": "blocked"}}]
+
+        with self.assertRaisesRegex(ValueError, "blocked execution requires a reason"):
+            generator.render_page("DG", fields)
 
     def test_rejects_duplicate_normalized_test_names(self):
         fields = [{"code": "C.1-a"}, {"code": "C.1.a"}]
@@ -52,7 +62,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
             self.assertIn(f'mod {page_id.lower()};', root)
 
         registry_count = sum(
-            len(generator.load_contract(repo / "registry", page_id)["fields"])
+            len([field for field in generator.load_contract(repo / "registry", page_id)["fields"] if field.get("execution", {}).get("status") != "blocked"])
             for page_id in generator.ACTIVE_PAGES
         )
         generated_count = sum(

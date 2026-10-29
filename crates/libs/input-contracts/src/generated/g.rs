@@ -82,8 +82,8 @@ pub fn fda_g_k_12_r_11_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue>
 	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
 	{
 		issues.push(crate::InputIssue {
-			code: "FDA.G.k.12.r.11.r.REQUIRED",
-			message: "is required".to_string(),
+			code: "INPUT.EMPTY.REJECTED",
+			message: "cannot be empty".to_string(),
 		});
 	}
 	crate::helpers::max_length(
@@ -102,8 +102,8 @@ pub fn fda_g_k_12_r_2_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> 
 	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
 	{
 		issues.push(crate::InputIssue {
-			code: "FDA.G.k.12.r.2.r.REQUIRED",
-			message: "is required".to_string(),
+			code: "INPUT.EMPTY.REJECTED",
+			message: "cannot be empty".to_string(),
 		});
 	}
 	crate::helpers::max_length(
@@ -127,8 +127,8 @@ pub fn fda_g_k_12_r_3_r(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> 
 	if !matches!(input.value, crate::InputValue::String(value) if !value.trim().is_empty())
 	{
 		issues.push(crate::InputIssue {
-			code: "FDA.G.k.12.r.3.r.REQUIRED",
-			message: "is required".to_string(),
+			code: "INPUT.EMPTY.REJECTED",
+			message: "cannot be empty".to_string(),
 		});
 	}
 	crate::helpers::max_length(
@@ -285,7 +285,7 @@ pub fn fda_g_k_12_r_9(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 /// ICH.G.k.1.ALLOWED.VALUE
 pub fn g_k_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
-	crate::helpers::reject_null(&mut issues, "ICH.G.k.1.REQUIRED", input.value);
+	crate::helpers::reject_null(&mut issues, input.value);
 	crate::helpers::max_length(&mut issues, "ICH.G.k.1.LENGTH.MAX", input.value, 1);
 	crate::helpers::allowed_values(
 		&mut issues,
@@ -390,7 +390,7 @@ pub fn g_k_2_1_2b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 /// ICH.G.k.2.2.LENGTH.MAX
 pub fn g_k_2_2(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
-	crate::helpers::reject_null(&mut issues, "ICH.G.k.2.2.REQUIRED", input.value);
+	crate::helpers::reject_null(&mut issues, input.value);
 	crate::helpers::max_length(
 		&mut issues,
 		"ICH.G.k.2.2.LENGTH.MAX",

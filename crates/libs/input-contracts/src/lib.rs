@@ -46,6 +46,14 @@ mod tests {
 	use super::{generated, FieldInput, InputValue};
 
 	#[test]
+	fn f_r_2_1_blank_is_left_to_conditional_business_validator() {
+		assert!(
+			generated::f::f_r_2_1(FieldInput::new(InputValue::Null, None,))
+				.is_empty()
+		);
+	}
+
+	#[test]
 	fn migrated_business_rules_do_not_reject_input() {
 		assert!(generated::c::c_1_6_1_r_2(FieldInput::new(
 			InputValue::String("not-base64"),
@@ -115,24 +123,62 @@ mod tests {
 	}
 
 	#[test]
-	fn storage_required_fields_reject_explicit_null_only() {
+	fn non_nullable_storage_fields_reject_null_and_blank() {
+		for check in [
+			generated::c::c_1_1,
+			generated::g::g_k_1,
+			generated::g::g_k_2_2,
+			generated::h::h_1,
+		] {
+			let issues = check(FieldInput::new(InputValue::Null, None));
+			assert_eq!(issues.len(), 1);
+			assert_eq!(issues[0].code, "INPUT.NULL.REJECTED");
+			assert_eq!(
+				check(FieldInput::new(InputValue::String("  "), None))[0].code,
+				"INPUT.NULL.REJECTED"
+			);
+			assert!(check(FieldInput::new(InputValue::Missing, None)).is_empty());
+		}
+	}
+
+	#[test]
+	fn business_required_editor_fields_allow_draft_clear() {
+		for check in [
+			generated::c::c_1_6_1,
+			generated::c::c_1_8_1,
+			generated::c::c_1_8_2,
+		] {
+			assert!(check(FieldInput::new(InputValue::Null, None)).is_empty());
+			assert!(check(FieldInput::new(InputValue::Missing, None)).is_empty());
+		}
 		assert!(
-			!generated::c::c_1_1(FieldInput::new(InputValue::Null, None)).is_empty()
+			generated::d::d_1(FieldInput::new(InputValue::Null, None)).is_empty()
 		);
 		assert!(
-			generated::c::c_1_1(FieldInput::new(InputValue::Missing, None))
+			generated::d::d_1(FieldInput::new(InputValue::Null, Some("UNK"),))
+				.is_empty()
+		);
+		assert!(
+			generated::e::e_i_2_1a(FieldInput::new(InputValue::Null, None))
+				.is_empty()
+		);
+		assert!(
+			generated::e::e_i_2_1a(FieldInput::new(InputValue::Missing, None))
 				.is_empty()
 		);
 	}
 
 	#[test]
-	fn device_code_rows_require_values_and_mfds_device_text_matches_storage() {
+	fn device_code_rows_reject_empty_values_and_mfds_device_text_matches_storage() {
 		for check in [
 			generated::g::fda_g_k_12_r_2_r,
 			generated::g::fda_g_k_12_r_3_r,
 			generated::g::fda_g_k_12_r_11_r,
 		] {
-			assert!(!check(FieldInput::new(InputValue::String(""), None)).is_empty());
+			let issues = check(FieldInput::new(InputValue::String(""), None));
+			assert!(issues
+				.iter()
+				.any(|issue| issue.code == "INPUT.EMPTY.REJECTED"));
 		}
 		for check in [
 			generated::e::local_mfds_device_cause_other,

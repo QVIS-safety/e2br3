@@ -1059,22 +1059,27 @@ class CaseEditorInputFuzzerTests(unittest.TestCase):
         self.assertTrue(fuzzer.nullflavor_invalid_candidate(null_flavor, "ZZZ"))
         self.assertIsNone(fuzzer.candidate_expectation(null_flavor, 5, "ZZZ"))
 
-        required_non_null_flavor = {
+        non_nullable_storage = {
             "code": "C.1.1",
             "payloadPath": "safetyReportId",
             "roundTripValue": "REPORT-1",
             "constraint": {
                 "status": "verified",
-                "ruleCode": "ICH.C.1.1.REQUIRED",
-                "invalidValue": "",
+                "ruleCode": "ICH.C.1.1.LENGTH.MAX",
+                "invalidValue": "X" * 101,
             },
         }
         self.assertEqual(
-            fuzzer.candidate_expectation(required_non_null_flavor, 0, ""),
-            ("reject", "ICH.C.1.1.REQUIRED"),
+            fuzzer.candidate_expectation(non_nullable_storage, 1, None),
+            ("reject", "INPUT.NULL.REJECTED"),
         )
-        self.assertIsNone(
-            fuzzer.candidate_expectation(required_non_null_flavor, 4, "  ")
+        self.assertEqual(
+            fuzzer.candidate_expectation(non_nullable_storage, 4, "  "),
+            ("reject", "INPUT.NULL.REJECTED"),
+        )
+        self.assertEqual(
+            fuzzer.candidate_expectation({"code": "FDA.G.k.12.r.3.r"}, 1, None),
+            ("reject", "INPUT.EMPTY.REJECTED"),
         )
 
     def test_audit_transition_matches_camel_dto_and_newest_first_log(self) -> None:

@@ -17,7 +17,13 @@
         "ruleCode": "ICH.F.r.1.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "testDate"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.1.REQUIRED",
+        "issuePath": "testResults[].testDate"
+      },
+      "payloadPath": "testDate",
+      "nullFlavorPartnerCode": "F.r.1.local.testDateNullFlavor"
     },
     {
       "code": "F.r.2.1",
@@ -34,6 +40,13 @@
         "ruleCode": "ICH.F.r.2.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
+      "renderPrerequisites": [
+        {
+          "code": "F.r.1",
+          "frontendPath": "testResults[].testDate",
+          "value": "20200102"
+        }
+      ],
       "payloadPath": "testName"
     },
     {
@@ -50,6 +63,11 @@
         "status": "verified",
         "ruleCode": "ICH.F.r.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.1.REQUIRED",
+        "issuePath": "testResults[].testResultCode"
       },
       "payloadPath": "testResultCode"
     },
@@ -68,6 +86,11 @@
         "ruleCode": "ICH.F.r.3.2.ALLOWED.VALUE",
         "invalidValue": "not-a-number"
       },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.2.REQUIRED",
+        "issuePath": "testResults[].testResultValue"
+      },
       "payloadPath": "testResult"
     },
     {
@@ -85,6 +108,19 @@
         "ruleCode": "ICH.F.r.3.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.3.REQUIRED",
+        "issuePath": "testResults[].testResultUnit"
+      },
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "mg/dL",
+        "optionValue": "mg/dL",
+        "optionDataValue": "mg/dL",
+        "optionLabel": "mg/dL = milligram per deciliter",
+        "selectedLabel": "mg/dL = milligram per deciliter"
+      },
       "payloadPath": "testUnit"
     },
     {
@@ -96,13 +132,27 @@
         "kind": "row",
         "owner": "testResult"
       },
-      "roundTripValue": "26.0",
+      "roundTripValue": "28.1",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.F.r.2.2a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "payloadPath": "testMeddraVersion"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.2.2a.REQUIRED",
+        "issuePath": "testResults[].testMeddraVersion"
+      },
+      "payloadPath": "testMeddraVersion",
+      "control": {
+        "kind": "native_select",
+        "options": [
+          {
+            "value": "28.1",
+            "label": "28.1"
+          }
+        ]
+      }
     },
     {
       "code": "F.r.2.2b",
@@ -113,13 +163,35 @@
         "kind": "row",
         "owner": "testResult"
       },
-      "roundTripValue": "10000001",
+      "roundTripValue": "10088978",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.F.r.2.2b.LENGTH.MAX",
         "invalidValue": "111111111"
       },
-      "payloadPath": "testMeddraCode"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.2.2b.REQUIRED",
+        "issuePath": "testResults[].testMeddraCode"
+      },
+      "payloadPath": "testMeddraCode",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "Alarm clock headache",
+        "optionValue": "10088978",
+        "optionDataValue": "10088978",
+        "optionLabel": "Alarm clock headache (10088978)",
+        "sourceCode": "10088978",
+        "sourceVersion": "28.1",
+        "sourceLanguage": "en",
+        "selectedLabel": "10088978",
+        "selectionEffects": [
+          {
+            "frontendPath": "testResults[].testMeddraVersion",
+            "value": "28.1"
+          }
+        ]
+      }
     },
     {
       "code": "F.r.3.4",
@@ -135,6 +207,11 @@
         "status": "verified",
         "ruleCode": "ICH.F.r.3.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.4.REQUIRED",
+        "issuePath": "testResults[].resultUnstructured"
       },
       "payloadPath": "testResultUnstructured"
     },
@@ -206,6 +283,49 @@
         "issuePath": "testResults[].moreInformationAvailable"
       },
       "payloadPath": "moreInformationAvailable"
+    },
+    {
+      "code": "F.r.1.local.testDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testDateNullFlavor",
+      "projectionPath": "testResult.test_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "testResult"
+      },
+      "roundTripValue": "UNK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on F.r.1."
+      },
+      "payloadPath": "testDateNullFlavor",
+      "nullFlavorPartnerCode": "F.r.1"
+    },
+    {
+      "code": "F.r.local.testResultQualifier",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testResultQualifier",
+      "projectionPath": "testResult.test_result_qualifier",
+      "patch": {
+        "kind": "row",
+        "owner": "testResult"
+      },
+      "roundTripValue": "EQ",
+      "constraint": {
+        "status": "not_applicable",
+        "reason": "The UI select limits values to EQ/LT/LE/GT/GE, while the backend has no separate portable 422 input-contract rule for this optional serialization modifier."
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "F.r.3.2 requiredness applies to the numeric result value, not this optional qualifier."
+      },
+      "auditItem": "Test Result Qualifier",
+      "payloadPath": "testResultQualifier"
     }
   ]
 }

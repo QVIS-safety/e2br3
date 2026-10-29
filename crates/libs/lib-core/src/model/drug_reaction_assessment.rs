@@ -67,6 +67,7 @@ pub struct DrugReactionAssessmentForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct DrugReactionAssessmentForUpdate {
+	pub reaction_id: Option<Uuid>,
 	pub administration_start_interval_value: Option<Decimal>,
 	pub administration_start_interval_unit: Option<String>,
 	pub last_dose_interval_value: Option<Decimal>,
@@ -312,7 +313,8 @@ impl DrugReactionAssessmentBmc {
 
 		let sql = format!(
 			"UPDATE {}
-				 SET administration_start_interval_value = COALESCE($2, administration_start_interval_value),
+				 SET reaction_id = COALESCE($11, reaction_id),
+				     administration_start_interval_value = COALESCE($2, administration_start_interval_value),
 				     administration_start_interval_unit = COALESCE($3, administration_start_interval_unit),
 				     last_dose_interval_value = COALESCE($4, last_dose_interval_value),
 				     last_dose_interval_unit = COALESCE($5, last_dose_interval_unit),
@@ -338,7 +340,8 @@ impl DrugReactionAssessmentBmc {
 					.bind(data.dechallenge_result)
 					.bind(data.expectedness)
 					.bind(data.reaction_recurred)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(data.reaction_id),
 			)
 			.await?;
 
@@ -371,6 +374,7 @@ impl DrugReactionAssessmentBmc {
 		let clears: Vec<String> =
 			clear_fields.iter().map(|field| (*field).into()).collect();
 		let sql = format!("UPDATE {} SET
+			reaction_id = COALESCE($12, reaction_id),
 			administration_start_interval_value = CASE WHEN 'administration_start_interval_value' = ANY($11) THEN NULL ELSE COALESCE($2, administration_start_interval_value) END,
 			administration_start_interval_unit = CASE WHEN 'administration_start_interval_unit' = ANY($11) THEN NULL ELSE COALESCE($3, administration_start_interval_unit) END,
 			last_dose_interval_value = CASE WHEN 'last_dose_interval_value' = ANY($11) THEN NULL ELSE COALESCE($4, last_dose_interval_value) END,
@@ -394,7 +398,8 @@ impl DrugReactionAssessmentBmc {
 					.bind(data.expectedness)
 					.bind(data.reaction_recurred)
 					.bind(ctx.user_id())
-					.bind(clears),
+					.bind(clears)
+					.bind(data.reaction_id),
 			)
 			.await?;
 		if result == 0 {

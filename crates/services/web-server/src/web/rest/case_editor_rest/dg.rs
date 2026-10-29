@@ -171,6 +171,7 @@ const INDICATION_ALIASES: &[(&str, &[&str])] = &[
 ];
 
 const ASSESSMENT_ALIASES: &[(&str, &[&str])] = &[
+	("reaction_id", &["reactionId"]),
 	(
 		"administration_start_interval_value",
 		&["administrationStartIntervalValue"],
@@ -1304,3 +1305,28 @@ repeatable_page_row_delete_restore_handlers!(
 	bmc: DrugInformationBmc,
 	build_response: build_editor_dg_page_row_response,
 );
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn assessment_update_keeps_validated_reaction_id() {
+		let reaction_id = Uuid::new_v4();
+		let row = json!({"reactionId": reaction_id});
+		let model = row_model_value(
+			"DG",
+			"drugReactionAssessments[].",
+			row.as_object().expect("object fixture"),
+			ASSESSMENT_ALIASES,
+			&[],
+		);
+		let update = parse_row_model::<DrugReactionAssessmentForUpdate>(
+			"DG",
+			"drugReactionAssessments",
+			model,
+		)
+		.expect("valid assessment update");
+		assert_eq!(update.reaction_id, Some(reaction_id));
+	}
+}

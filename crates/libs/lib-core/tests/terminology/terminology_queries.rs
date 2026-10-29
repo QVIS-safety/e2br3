@@ -6,6 +6,42 @@ use lib_core::model::terminology::{
 };
 use serial_test::serial;
 
+#[test]
+fn whodrug_search_migration_keeps_the_rls_bypass_narrow() {
+	let migration =
+		include_str!("../../../../../db/migrations/20261027_whodrug_rls_search.sql");
+	for required in [
+		"requires a superuser migration credential",
+		"CREATE ROLE e2br3_whodrug_search_owner NOLOGIN NOINHERIT BYPASSRLS",
+		"search_owner_login",
+		"search_owner_inherit",
+		"search_owner_bypass OR search_owner_super",
+		"FROM pg_catalog.pg_auth_members",
+		"WHERE roleid = search_owner OR member = search_owner",
+		"REVOKE ALL ON SCHEMA public FROM e2br3_whodrug_search_owner",
+		"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM e2br3_whodrug_search_owner",
+		"GRANT USAGE ON SCHEMA public TO e2br3_whodrug_search_owner",
+		"GRANT SELECT ON TABLE public.whodrug_products, public.terminology_releases",
+		"STABLE",
+		"STRICT",
+		"SECURITY DEFINER",
+		"SET search_path = pg_catalog, pg_temp",
+		"FROM public.whodrug_products AS products",
+		"JOIN public.terminology_releases AS releases",
+		"releases.dictionary = 'whodrug'",
+		"releases.status = 'active'",
+		"products.drug_name ILIKE ('%' || p_query || '%')",
+		"ORDER BY products.drug_name, products.code",
+		"LIMIT LEAST(GREATEST(p_limit, 1), 100)",
+		"REVOKE ALL ON FUNCTION public.search_active_whodrug_products(TEXT, BIGINT)",
+		"GRANT EXECUTE ON FUNCTION public.search_active_whodrug_products(TEXT, BIGINT)",
+		"TO e2br3_app_role",
+		"OWNER TO e2br3_whodrug_search_owner",
+	] {
+		assert!(migration.contains(required), "missing security contract: {required}");
+	}
+}
+
 #[serial]
 #[tokio::test]
 async fn bootstrap_provides_active_iso_country_reference_data() -> Result<()> {
