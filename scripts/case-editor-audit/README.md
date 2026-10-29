@@ -1,10 +1,12 @@
 # Case Edit audit runner
 
-This directory packages the reviewed 348-field persisted-field inventory and
-valid alternate-value map used by `scripts/case_editor_input_fuzzer.py`.
-CI runs the isolated runner tests and validates that the current frontend
-contract still produces a 348-field plan with no blocked or unresolved fields.
-It does not send API requests.
+This directory retains the historical persisted-field execution descriptors and
+alternate-value map for `scripts/case_editor_input_fuzzer.py`. Their count is not
+a complete UI coverage claim. The canonical denominator comes from `registry/`.
+CI independently reconciles registry mappings, actual frontend bindings, editor
+contracts and these descriptors through `registry/tools/build_ui_inventory.py`;
+unmapped entries fail the gate instead of disappearing from the denominator.
+The generated output is an execution projection, not another maintained catalog.
 
 Run the same plan locally with a frontend checkout that matches the API version:
 
@@ -24,7 +26,8 @@ python3 scripts/case_editor_input_fuzzer.py \
 ```
 
 The final JSON object must report `persisted_field_denominator`,
-`selected_persisted_fields`, and `executable_persisted_fields` as 348, with
+`selected_persisted_fields`, and `executable_persisted_fields` equal to the
+actual descriptor count, with
 empty `blocked_persisted_fields` and `audit_alternate_unresolved` arrays.
 
 The live audit creates and mutates a Case. Use only a dedicated real API and

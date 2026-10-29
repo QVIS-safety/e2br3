@@ -11,13 +11,31 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "Prior drug",
+      "roundTripValue": "Advanced Aspirin",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "drugName"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.1.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].drugName"
+      },
+      "payloadPath": "drugName",
+      "nullFlavorPartnerCode": "D.8.r.1.local.drugNameNullFlavor",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "Advanced Aspirin",
+        "optionValue": "Advanced Aspirin",
+        "optionDataValue": "Advanced Aspirin",
+        "optionLabel": "Advanced Aspirin (000027-01-917)",
+        "selectionRule": "exact_query_equal_first_source_order",
+        "sourceCode": "000027-01-917",
+        "sourceVersion": "2026-03",
+        "sourceLanguage": "en",
+        "selectedLabel": "Advanced Aspirin"
+      }
     },
     {
       "code": "D.8.r.1.KR.1a",
@@ -130,13 +148,14 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "20200102",
+      "roundTripValue": "20200103",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.4.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "startDate"
+      "payloadPath": "startDate",
+      "nullFlavorPartnerCode": "D.8.r.4.local.startDateNullFlavor"
     },
     {
       "code": "D.8.r.5",
@@ -153,7 +172,8 @@
         "ruleCode": "ICH.D.8.r.5.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "payloadPath": "endDate"
+      "payloadPath": "endDate",
+      "nullFlavorPartnerCode": "D.8.r.5.local.endDateNullFlavor"
     },
     {
       "code": "D.8.r.6a",
@@ -164,13 +184,27 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "26.0",
+      "roundTripValue": "28.1",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.6a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "payloadPath": "indicationMeddraVersion"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.6a.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].indicationMeddraVersion"
+      },
+      "payloadPath": "indicationMeddraVersion",
+      "control": {
+        "kind": "native_select",
+        "options": [
+          {
+            "value": "28.1",
+            "label": "28.1"
+          }
+        ]
+      }
     },
     {
       "code": "D.8.r.6b",
@@ -181,13 +215,35 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "10000001",
+      "roundTripValue": "10088978",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.6b.LENGTH.MAX",
         "invalidValue": "111111111"
       },
-      "payloadPath": "indicationMeddraCode"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.6b.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].indicationMeddraCode"
+      },
+      "payloadPath": "indicationMeddraCode",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "Alarm clock headache",
+        "optionValue": "10088978",
+        "optionDataValue": "10088978",
+        "optionLabel": "Alarm clock headache (10088978)",
+        "sourceCode": "10088978",
+        "sourceVersion": "28.1",
+        "sourceLanguage": "en",
+        "selectedLabel": "10088978",
+        "selectionEffects": [
+          {
+            "frontendPath": "patientInformation.pastDrugHistory[].indicationMeddraVersion",
+            "value": "28.1"
+          }
+        ]
+      }
     },
     {
       "code": "D.8.r.7a",
@@ -198,13 +254,27 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "26.0",
+      "roundTripValue": "28.1",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.7a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "payloadPath": "reactionMeddraVersion"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.7a.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].reactionMeddraVersion"
+      },
+      "payloadPath": "reactionMeddraVersion",
+      "control": {
+        "kind": "native_select",
+        "options": [
+          {
+            "value": "28.1",
+            "label": "28.1"
+          }
+        ]
+      }
     },
     {
       "code": "D.8.r.7b",
@@ -215,13 +285,101 @@
         "kind": "row",
         "owner": "pastDrugHistory"
       },
-      "roundTripValue": "10000001",
+      "roundTripValue": "10088978",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.8.r.7b.LENGTH.MAX",
         "invalidValue": "111111111"
       },
-      "payloadPath": "reactionMeddraCode"
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.7b.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].reactionMeddraCode"
+      },
+      "payloadPath": "reactionMeddraCode",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "Alarm clock headache",
+        "optionValue": "10088978",
+        "optionDataValue": "10088978",
+        "optionLabel": "Alarm clock headache (10088978)",
+        "sourceCode": "10088978",
+        "sourceVersion": "28.1",
+        "sourceLanguage": "en",
+        "selectedLabel": "10088978",
+        "selectionEffects": [
+          {
+            "frontendPath": "patientInformation.pastDrugHistory[].reactionMeddraVersion",
+            "value": "28.1"
+          }
+        ]
+      }
+    },
+    {
+      "code": "D.8.r.1.local.drugNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].drugNameNullFlavor",
+      "projectionPath": "pastDrugHistory.drug_name_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "pastDrugHistory"
+      },
+      "roundTripValue": "NA",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.1.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.1."
+      },
+      "payloadPath": "drugNameNullFlavor",
+      "nullFlavorPartnerCode": "D.8.r.1"
+    },
+    {
+      "code": "D.8.r.4.local.startDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].startDateNullFlavor",
+      "projectionPath": "pastDrugHistory.start_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "pastDrugHistory"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.4.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.4."
+      },
+      "payloadPath": "startDateNullFlavor",
+      "nullFlavorPartnerCode": "D.8.r.4"
+    },
+    {
+      "code": "D.8.r.5.local.endDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].endDateNullFlavor",
+      "projectionPath": "pastDrugHistory.end_date_null_flavor",
+      "patch": {
+        "kind": "row",
+        "owner": "pastDrugHistory"
+      },
+      "roundTripValue": "MSK",
+      "constraint": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.5.NULLFLAVOR.ALLOWED",
+        "invalidValue": "ZZZ"
+      },
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.5."
+      },
+      "payloadPath": "endDateNullFlavor",
+      "nullFlavorPartnerCode": "D.8.r.5"
     }
   ]
 }

@@ -167,7 +167,7 @@
     "backend": {
       "status": "mapped",
       "model": "DocumentsHeldBySender",
-      "field": "document_base64/file_name",
+      "field": "document_base64",
       "file": "crates/libs/lib-core/src/model/safety_report.rs",
       "evidence": "Frontend save endpoint posts document_base64 for C.1.6.1.r.2 documents held by sender."
     },
@@ -198,13 +198,38 @@
     },
     "frontend": {
       "status": "missing",
-      "section": "safetyReportIdentification",
-      "field": "documentsHeldBySender.mediaType",
-      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "section": "documentsHeldBySender",
+      "field": "mediaType",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/CI/components/DocumentsHeldBySenderTable.tsx",
+      "evidence": "The upload control derives mediaType from the selected file; it is not independently editable."
     },
     "action": "Add a visible frontend input or keep this as backend-only derived ED metadata.",
     "notes": "Backend inventory is covered, but the case-form frontend source does not expose this ED component as an input. XML ED attribute of the C.1.6.1.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.1.6.1.r.2.local.fileName",
+    "e2br3_code": "C.1.6.1.r.2.local.fileName",
+    "label": "Included Document File Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "file_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "DocumentsHeldBySender.file_name stores the selected upload file name."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "documentsHeldBySender",
+      "field": "fileName",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/CI/components/DocumentsHeldBySenderTable.tsx",
+      "evidence": "The upload control derives fileName from the selected file; it is not independently editable."
+    },
+    "action": "",
+    "notes": "File-derived ED metadata, explicitly inventoried but not an independent UI control."
   },
   {
     "id": "C.1.6.1.r.2.local.representation",
@@ -223,8 +248,8 @@
     },
     "frontend": {
       "status": "missing",
-      "section": "safetyReportIdentification",
-      "field": "documentsHeldBySender.representation",
+      "section": "documentsHeldBySender",
+      "field": "representation",
       "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
       "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
     },
@@ -248,8 +273,8 @@
     },
     "frontend": {
       "status": "missing",
-      "section": "safetyReportIdentification",
-      "field": "documentsHeldBySender.compression",
+      "section": "documentsHeldBySender",
+      "field": "compression",
       "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
       "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
     },
@@ -1577,8 +1602,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
       "evidence": "SectionStudy binds fieldNumber C.5.4 to studyInformation.studyTypeReaction."
     },
-    "action": "Implement FDA aggregate/premarket value restrictions and MFDS CT/CU receiver-specific value restrictions for C.5.4.",
-    "notes": "ICH required/allowed-value validation exists; audited regional source requirements remain incomplete."
+    "action": "Implement the remaining FDA premarket value-1 restriction for C.5.4.",
+    "notes": "ICH required/allowed-value validation, FDA route/aggregate validation, and MFDS CT/CU receiver validation exist; the audited FDA premarket value restriction remains incomplete."
   },
   {
     "id": "C.5.4.KR.1",
@@ -1629,8 +1654,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
       "evidence": "SectionStudy binds fieldNumber FDA.C.5.5a to studyInformation.fdaIndNumberOccurred."
     },
-    "action": "Bind FDA.C.5.5a validation to fda_ind_number_occurred and implement aggregate Parent IND policy.",
-    "notes": "The catalog rule exists, but case evaluation currently reads sponsor_study_number instead of the canonical FDA field."
+    "action": "Implement the aggregate Parent IND policy.",
+    "notes": "Receiver-aware presence and six-digit validation use the canonical fda_ind_number_occurred field; aggregate Parent IND verification remains incomplete."
   },
   {
     "id": "FDA.C.5.5b",
@@ -1638,7 +1663,7 @@
     "label": "Pre-ANDA Number Where AE Occurred",
     "section": "C",
     "authority": "FDA",
-    "status": "incomplete",
+    "status": "complete",
     "editor_page": "SI",
     "editor_status": "complete",
     "backend": {
@@ -1655,8 +1680,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
       "evidence": "SectionStudy binds fieldNumber FDA.C.5.5b to studyInformation.fdaPreAndaNumberOccurred."
     },
-    "action": "Bind FDA.C.5.5b validation to fda_pre_anda_number_occurred.",
-    "notes": "The catalog rule exists, but case evaluation currently reads sponsor_study_number instead of the canonical FDA field."
+    "action": "",
+    "notes": "Receiver-aware presence and six-digit validation use the canonical fda_pre_anda_number_occurred field."
   },
   {
     "id": "FDA.C.5.6.r",
@@ -1664,7 +1689,7 @@
     "label": "IND Number of Cross Reported IND",
     "section": "C",
     "authority": "FDA",
-    "status": "incomplete",
+    "status": "complete",
     "editor_page": "SI",
     "editor_status": "complete",
     "backend": {
@@ -1681,8 +1706,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
       "evidence": "SectionStudy binds fieldNumber FDA.C.5.6.r to studyInformation.fdaCrossReportedIndNumbers[index].indNumber."
     },
-    "action": "Bind FDA.C.5.6.r validation to FDA IND/cross-reported IND fields and evaluate NA nullFlavor handling.",
-    "notes": "The catalog presence rule is currently evaluated through generic sponsor/registration fields rather than the canonical FDA fields."
+    "action": "",
+    "notes": "The presence rule uses the canonical FDA IND and cross-reported IND fields and accepts nullFlavor NA."
   },
   {
     "id": "FDA.C.5.6.r.local.indNumberNullFlavor",
@@ -1717,9 +1742,9 @@
     "label": "Receiver Organization",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "incomplete",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1732,11 +1757,11 @@
       "status": "mapped",
       "section": "receiverInformation",
       "field": "organizationName",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.organizationName."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/hooks/useReceiverPresaveImport.ts",
+      "evidence": "useReceiverPresaveImport derives receiverInformation.organizationName from the selected receiver presave; SDPage does not render an editable ReceiverFields control."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Import-derived receiver presave value; retained in the API/data contract but not mounted as an SD editor input."
   },
   {
     "id": "local.receiver.2",
@@ -1744,9 +1769,9 @@
     "label": "Receiver Type",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "incomplete",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1759,11 +1784,11 @@
       "status": "mapped",
       "section": "receiverInformation",
       "field": "receiverType",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.receiverType."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/hooks/useReceiverPresaveImport.ts",
+      "evidence": "useReceiverPresaveImport derives receiverInformation.receiverType from the selected receiver presave; SDPage does not render an editable ReceiverFields control."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Import-derived receiver presave value; retained in the API/data contract but not mounted as an SD editor input."
   },
   {
     "id": "local.receiver.3",
@@ -1771,9 +1796,9 @@
     "label": "Receiver Department",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1783,14 +1808,14 @@
       "evidence": "ReceiverInformation.department stores the receiver singleton value saved by C.3.receiver.3."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "department",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.department."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.department."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.4",
@@ -1798,9 +1823,9 @@
     "label": "Receiver Street Address",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1810,14 +1835,14 @@
       "evidence": "ReceiverInformation.street_address stores the receiver singleton value saved by C.3.receiver.4."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "streetAddress",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.streetAddress."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.streetAddress."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.5",
@@ -1825,9 +1850,9 @@
     "label": "Receiver City",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1837,14 +1862,14 @@
       "evidence": "ReceiverInformation.city stores the receiver singleton value saved by C.3.receiver.5."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "city",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.city."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.city."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.6",
@@ -1852,9 +1877,9 @@
     "label": "Receiver State/Province",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1864,14 +1889,14 @@
       "evidence": "ReceiverInformation.state_province stores the receiver singleton value saved by C.3.receiver.6."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "stateProvince",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.stateProvince."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.stateProvince."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.7",
@@ -1879,9 +1904,9 @@
     "label": "Receiver Postcode",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1891,14 +1916,14 @@
       "evidence": "ReceiverInformation.postcode stores the receiver singleton value saved by C.3.receiver.7."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "postcode",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.postcode."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.postcode."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.country",
@@ -1906,9 +1931,9 @@
     "label": "Receiver Country Code",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1918,14 +1943,14 @@
       "evidence": "ReceiverInformation.country_code stores the receiver singleton value saved by C.3.receiver.country."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "countryCode",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.countryCode."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.countryCode."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.8",
@@ -1933,9 +1958,9 @@
     "label": "Receiver Telephone",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1945,14 +1970,14 @@
       "evidence": "ReceiverInformation.telephone stores the receiver singleton value saved by C.3.receiver.8."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "telephone",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.telephone."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.telephone."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.9",
@@ -1960,9 +1985,9 @@
     "label": "Receiver Fax",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1972,14 +1997,14 @@
       "evidence": "ReceiverInformation.fax stores the receiver singleton value saved by C.3.receiver.9."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "fax",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.fax."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.fax."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "local.receiver.10",
@@ -1987,9 +2012,9 @@
     "label": "Receiver Email",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "SD",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1999,14 +2024,14 @@
       "evidence": "ReceiverInformation.email stores the receiver singleton value saved by C.3.receiver.10."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "receiverInformation",
       "field": "email",
-      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "ReceiverFields registers receiverInformation.email."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/SD/SDPage.tsx",
+      "evidence": "SDPage renders SenderFields only; no mounted control or import mapping writes receiverInformation.email."
     },
     "action": "",
-    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
+    "notes": "Backend/API field retained; the current SD page does not expose this receiver field."
   },
   {
     "id": "C.1.1",
@@ -2105,8 +2130,8 @@
     },
     "frontend": {
       "status": "missing",
-      "section": "safetyReportIdentification",
-      "field": "sourceDocuments.sourceDocumentBase64",
+      "section": "sourceDocuments",
+      "field": "sourceDocumentBase64",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionC1 derives it from the selected file via setValue."
     },
@@ -2130,8 +2155,8 @@
     },
     "frontend": {
       "status": "missing",
-      "section": "safetyReportIdentification",
-      "field": "sourceDocuments.sourceDocumentMediaType",
+      "section": "sourceDocuments",
+      "field": "sourceDocumentMediaType",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionC1 derives it from the selected file via setValue."
     },
@@ -2144,9 +2169,9 @@
     "label": "Fulfil Expedited Criteria NullFlavor",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "editor_page": "CI",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -2156,21 +2181,21 @@
       "evidence": "SafetyReportIdentification.fulfil_expedited_criteria_null_flavor is a dedicated column storing the C.1.7 fulfil expedited criteria nullFlavor."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "safetyReportIdentification",
       "field": "fulfilExpeditedCriteriaNullFlavor",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
-      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor from the case-form section source."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/CI/components/ExpeditedCriteriaFields.tsx",
+      "evidence": "ExpeditedCriteriaFields registers this path for error/read state but renders no independent NullFlavor input or button for it."
     },
     "action": "",
-    "notes": "nullFlavor companion for the C.1.7 fulfil expedited criteria element. Unlike the in-band majority — where the base field carries either a value or the flavor token and the frontend API layer splits them at save time — this element has its own frontend input and its own fulfil_expedited_criteria_null_flavor column, so both sides are mapped."
+    "notes": "Persisted API companion for C.1.7; current CI UI does not expose it as an independently editable control."
   },
   {
-    "id": "C.1.local.combinationProductReportIndicatorNullFlavor",
-    "e2br3_code": "C.1.local.combinationProductReportIndicatorNullFlavor",
+    "id": "FDA.C.1.12.local.nullFlavor",
+    "e2br3_code": "FDA.C.1.12.local.nullFlavor",
     "label": "Combination Product Report Indicator NullFlavor",
     "section": "C",
-    "authority": "ICH",
+    "authority": "FDA",
     "status": "complete",
     "editor_page": "CI",
     "editor_status": "complete",
@@ -2701,5 +2726,182 @@
     },
     "action": "",
     "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.7."
+  },
+  {
+    "id": "C.local.reviewReceiver",
+    "e2br3_code": "C.local.reviewReceiver",
+    "label": "Review Receiver",
+    "section": "C",
+    "authority": "ICH",
+    "status": "incomplete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Case",
+      "field": "review_receivers_json",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.review_receivers_json persists the reviewReceivers array; case_editor_dto.rs projects its receiver member into the editor payload."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reviewReceivers",
+      "field": "receiver",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RE/components/ReviewReceiversTable.tsx",
+      "evidence": "RE binds reviewReceivers[index].receiver to an editable input."
+    },
+    "action": "",
+    "notes": "App-local review workflow metadata; not an E2B XML element."
+  },
+  {
+    "id": "C.local.reviewReportDueDate",
+    "e2br3_code": "C.local.reviewReportDueDate",
+    "label": "Review Report Due Date",
+    "section": "C",
+    "authority": "ICH",
+    "status": "incomplete",
+    "local_only": true,
+    "backend": {
+      "status": "not_applicable",
+      "evidence": "reportDueDate is nested in the shared Case.review_receivers_json mapping recorded by C.local.reviewReceiver."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reviewReceivers",
+      "field": "reportDueDate",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RE/components/ReviewReceiversTable.tsx",
+      "evidence": "RE binds reviewReceivers[index].reportDueDate to an editable date input."
+    },
+    "action": "",
+    "notes": "App-local review workflow metadata; not an E2B XML element."
+  },
+  {
+    "id": "C.local.reviewReportedDate",
+    "e2br3_code": "C.local.reviewReportedDate",
+    "label": "Review Reported Date",
+    "section": "C",
+    "authority": "ICH",
+    "status": "incomplete",
+    "local_only": true,
+    "backend": {
+      "status": "not_applicable",
+      "evidence": "reportedDate is nested in the shared Case.review_receivers_json mapping recorded by C.local.reviewReceiver."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reviewReceivers",
+      "field": "reportedDate",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RE/components/ReviewReceiversTable.tsx",
+      "evidence": "RE binds reviewReceivers[index].reportedDate to an editable date input."
+    },
+    "action": "",
+    "notes": "App-local review workflow metadata; not an E2B XML element."
+  },
+  {
+    "id": "C.5.1.r.1.local.registrationNumberNullFlavor",
+    "e2br3_code": "C.5.1.r.1.local.registrationNumberNullFlavor",
+    "label": "Study Registration Number NullFlavor companion",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "SI",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyRegistrationNumber",
+      "field": "registration_number_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyRegistrationNumber.registration_number_null_flavor persists the C.5.1.r.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyRegistrationNumbers.registrationNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "The same C.5.1.r.1 editor control binds the explicit registrationNumberNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element C.5.1.r.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "C.5.1.r.2.local.countryCodeNullFlavor",
+    "e2br3_code": "C.5.1.r.2.local.countryCodeNullFlavor",
+    "label": "Study Registration Country NullFlavor companion",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "SI",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyRegistrationNumber",
+      "field": "country_code_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyRegistrationNumber.country_code_null_flavor persists the C.5.1.r.2 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyRegistrationNumbers.countryCodeNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "The same C.5.1.r.2 editor control binds the explicit countryCodeNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element C.5.1.r.2; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "C.5.2.local.studyNameNullFlavor",
+    "e2br3_code": "C.5.2.local.studyNameNullFlavor",
+    "label": "Study Name NullFlavor companion",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "SI",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "study_name_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyInformation.study_name_null_flavor persists the C.5.2 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "The same C.5.2 editor control binds the explicit studyNameNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element C.5.2; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "C.5.3.local.sponsorStudyNumberNullFlavor",
+    "e2br3_code": "C.5.3.local.sponsorStudyNumberNullFlavor",
+    "label": "Sponsor Study Number NullFlavor companion",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "SI",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "sponsor_study_number_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyInformation.sponsor_study_number_null_flavor persists the C.5.3 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "sponsorStudyNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "The same C.5.3 editor control binds the explicit sponsorStudyNumberNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element C.5.3; allowed codes come from registry/dictionary."
   }
 ]

@@ -2738,6 +2738,43 @@ mod field_rule_tests {
 	}
 
 	#[test]
+	fn substance_code_required_rules_keep_domestic_alias_distinct() {
+		let mut issues = Vec::new();
+		for (drug_index, domestic_required, report_required) in
+			[(0, true, false), (1, false, true), (2, false, false)]
+		{
+			mfds_g_k_2_3_r_1_kr_1b(
+				drug_index,
+				0,
+				None,
+				None,
+				None,
+				domestic_required,
+				report_required,
+				&crate::context::VocabularyContext::default(),
+				&mut issues,
+			);
+		}
+
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| (issue.code.as_str(), issue.field_path.as_deref()))
+				.collect::<Vec<_>>(),
+			[
+				(
+					"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+					Some("drugs.0.activeSubstances.0.mfdsId"),
+				),
+				(
+					"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+					Some("drugs.1.activeSubstances.0.mfdsId"),
+				),
+			]
+		);
+	}
+
+	#[test]
 	fn relatedness_rules_cover_method_results_while_source_remains_optional() {
 		let mut issues = Vec::new();
 		for (

@@ -76,6 +76,36 @@ ICH_VOCABULARY_SCOPES = {
     "H.5.r.1b": "all",
 }
 
+ICH_CONDITION_TEXT_CODES = (
+    "C.1.6.1.r.1", "C.1.9.1.r.1", "C.1.9.1.r.2", "C.1.11.2", "C.2.r.3",
+    "C.2.r.5", "C.3.2", "C.5.4", "D.2.2a", "D.2.2b", "D.2.2.1a",
+    "D.2.2.1b", "D.7.1.r.1a", "D.7.1.r.1b", "D.7.2", "D.8.r.1",
+    "D.8.r.6a", "D.8.r.6b", "D.8.r.7a", "D.8.r.7b", "D.9.2.r.1a",
+    "D.9.2.r.1b", "D.9.3", "D.9.4.r.1a", "D.9.4.r.1b", "D.9.4.r.2",
+    "D.10.2.2a", "D.10.2.2b", "D.10.7.1.r.1a", "D.10.7.1.r.1b",
+    "D.10.8.r.6a", "D.10.8.r.6b", "D.10.8.r.7a", "D.10.8.r.7b",
+    "E.i.1.1b", "E.i.6a", "E.i.6b", "F.r.1", "F.r.2.2a", "F.r.2.2b",
+    "F.r.3.1", "F.r.3.2", "F.r.3.3", "F.r.3.4", "G.k.3.2",
+    "G.k.4.r.1b", "G.k.4.r.3", "G.k.4.r.6a", "G.k.4.r.6b", "G.k.5a",
+    "G.k.5b", "G.k.6a", "G.k.6b", "G.k.7.r.2a", "G.k.7.r.2b",
+    "G.k.9.i.3.1a", "G.k.9.i.3.1b", "G.k.9.i.3.2a", "G.k.9.i.3.2b",
+    "H.3.r.1a", "H.3.r.1b", "H.5.r.1b",
+)
+ICH_OPTIONAL_CORRECTION_CODES = (
+    "C.2.r.2.5", "D.8.r.2a", "D.8.r.2b", "D.8.r.3a", "D.8.r.3b",
+    "G.k.2.1.1a", "G.k.2.1.1b", "G.k.2.1.2a", "G.k.2.1.2b", "G.k.4.r.2",
+)
+MFDS_VOCABULARY_VARIANT_CODES = (
+    "D.8.r.1.KR.1b", "D.10.8.r.1.KR.1b", "G.k.2.1.KR.1b",
+)
+MFDS_CODE_SET_CODES = (
+    "G.k.9.i.2.r.2.KR.1", "G.k.9.i.2.r.3.KR.1", "G.k.9.i.2.r.3.KR.2",
+)
+MFDS_RULE_SOURCE_TEXT = {
+    "N.1.4": "1. 필수값으로 항목값 여부 검증\n2. 입력값이 60자 이하인지 검증\n3. 허용된 입력값 검증",
+    "N.2.r.3": "1. 필수값으로 항목값 여부 검증\n2. 입력값이 60자 이하인지 검증\n3. 입력값은 \"MFDS\"만 허용",
+}
+
 
 def clean(value: Any) -> str:
     if value is None:
@@ -694,14 +724,23 @@ def apply_official_2025_null_flavor_overrides(
         ich["F.r.3.2"]["interval_bound_null_flavors"] = interval_flavors
 
     if fda_entries:
-        fda_entries.append({
+        patient_override = {
             "code": "FDA.D.1",
             "name": "Patient (Name or Initials) - FDA regional NullFlavor override",
             "section": "D",
             "kind": "element",
             "null_flavors": ["MSK", "UNK", "ASKU", "NASK", "NA"],
             "profiles": {"post_market": "mandatory", "pre_market": "mandatory"},
-        })
+        }
+        insert_at = next(
+            (
+                index
+                for index, entry in enumerate(fda_entries)
+                if entry["code"].startswith("FDA.D.")
+            ),
+            len(fda_entries),
+        )
+        fda_entries.insert(insert_at, patient_override)
 
 
 def refresh_allowed_value_constraints(
@@ -719,6 +758,73 @@ def refresh_allowed_value_constraints(
             continue
         entry.pop("allowed_value_constraint", None)
         entry["allowed_value_constraint"] = constraint
+
+
+def preserve_documented_amendments(
+    dictionary_name: str, entries: list[dict[str, Any]]
+) -> None:
+    """Reapply official amendments that are newer than the bundled source snapshots."""
+    committed = json.loads(
+        (DICTIONARY_DIR / dictionary_name).read_text(encoding="utf-8")
+    )["entries"]
+    committed_by_code = {entry["code"]: entry for entry in committed}
+    generated_by_code = {entry["code"]: entry for entry in entries}
+
+    fields_by_code: dict[str, tuple[str, ...]]
+    removed_by_code: dict[str, tuple[str, ...]] = {}
+    if dictionary_name == "ich-e2br3.json":
+        fields_by_code = {
+            **{code: ("condition_text",) for code in ICH_CONDITION_TEXT_CODES},
+            **{code: ("conformance",) for code in ICH_OPTIONAL_CORRECTION_CODES},
+        }
+        removed_by_code = {
+            "C.1.10.r": ("fda_error_id", "fda_severity", "profiles"),
+        }
+        missing_codes = (
+            set(fields_by_code) | set(removed_by_code)
+        ) - generated_by_code.keys()
+        if missing_codes:
+            code = sorted(missing_codes)[0]
+            raise ValueError(f"missing amended {dictionary_name} entry: {code}")
+        for code in ICH_OPTIONAL_CORRECTION_CODES:
+            if generated_by_code.get(code, {}).get("conformance") != "conditional_mandatory":
+                raise ValueError(
+                    f"source conformance changed for amended {dictionary_name} entry: {code}"
+                )
+    elif dictionary_name == "mfds-regional.json":
+        fields_by_code = {
+            **{code: ("vocabulary_variants",) for code in MFDS_VOCABULARY_VARIANT_CODES},
+            **{code: ("allowed_value_constraint",) for code in MFDS_CODE_SET_CODES},
+        }
+        removed_by_code = {
+            code: ("vocabulary",) for code in MFDS_VOCABULARY_VARIANT_CODES
+        }
+    elif dictionary_name == "fda-regional.json":
+        fields_by_code = {
+            "FDA.D.1": ("conformance",),
+            "FDA.D.11.r.1": ("allowed_value_constraint", "xpath"),
+        }
+    else:
+        raise ValueError(f"unsupported dictionary amendment set: {dictionary_name}")
+
+    for code, fields in fields_by_code.items():
+        if code not in committed_by_code or code not in generated_by_code:
+            raise ValueError(f"missing amended {dictionary_name} entry: {code}")
+        for field in fields:
+            if field not in committed_by_code[code]:
+                raise ValueError(
+                    f"missing amended {dictionary_name} metadata: {code}.{field}"
+                )
+            generated_by_code[code][field] = committed_by_code[code][field]
+    for code, fields in removed_by_code.items():
+        if code not in committed_by_code or code not in generated_by_code:
+            raise ValueError(f"missing amended {dictionary_name} entry: {code}")
+        for field in fields:
+            if field in committed_by_code[code]:
+                raise ValueError(
+                    f"expected amended {dictionary_name} metadata to be absent: {code}.{field}"
+                )
+            generated_by_code[code].pop(field, None)
 
 
 def extract_mfds_rules(sheet1_rows: list[list[Any]]) -> dict[str, str]:
@@ -820,6 +926,7 @@ def main() -> int:
     vocab_annotated = merge_vocabulary(ich_entries, vocabulary_usage)
     sev_annotated = merge_fda_severity(ich_entries, fda_severity)
     apply_official_2025_null_flavor_overrides(ich_entries, [])
+    preserve_documented_amendments("ich-e2br3.json", ich_entries)
     move_allowed_value_constraints_to_end(ich_entries)
     path = write_dictionary("ich-e2br3.json", "ICH", ICH_SOURCE, ich_entries)
     elements = sum(1 for entry in ich_entries if entry["kind"] == "element")
@@ -837,6 +944,7 @@ def main() -> int:
     xpath_annotated = merge_xpath(mfds_entries, xpath_map)
     merge_nullflavors(mfds_entries, nullflavor_usage)
     mfds_vocab = merge_vocabulary(mfds_entries, vocabulary_usage)
+    preserve_documented_amendments("mfds-regional.json", mfds_entries)
     path = write_dictionary("mfds-regional.json", "MFDS", MFDS_SOURCE, mfds_entries)
     print(
         f"wrote {path} ({len(mfds_entries)} KR extension elements,"
@@ -846,6 +954,7 @@ def main() -> int:
     fda_entries = parse_fda_csv(fda_text)
     apply_official_2025_null_flavor_overrides([], fda_entries)
     fda_sev_annotated = merge_fda_severity(fda_entries, fda_severity)
+    preserve_documented_amendments("fda-regional.json", fda_entries)
     path = write_dictionary("fda-regional.json", "FDA", FDA_SOURCE, fda_entries)
     elements = sum(1 for entry in fda_entries if entry["kind"] == "element")
     print(
@@ -858,6 +967,16 @@ def main() -> int:
         ("mfds.json", "MFDS", MFDS_SOURCE, extract_mfds_rules(mfds_sheet1)),
         ("fda.json", "FDA", FDA_SOURCE, extract_fda_rules(fda_text)),
     ):
+        if name == "mfds.json":
+            committed_rules = json.loads(
+                (DICTIONARY_DIR / "rules" / name).read_text(encoding="utf-8")
+            )["rules"]
+            for code, source_text in MFDS_RULE_SOURCE_TEXT.items():
+                if rules.get(code) != source_text:
+                    raise ValueError(f"source text changed for amended MFDS rule: {code}")
+                if code not in committed_rules:
+                    raise ValueError(f"missing amended MFDS rule: {code}")
+                rules[code] = committed_rules[code]
         path = write_rules(name, authority, source, rules)
         print(f"wrote {path} ({len(rules)} rules)")
     return 0

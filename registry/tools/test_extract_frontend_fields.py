@@ -36,6 +36,16 @@ class FrontendFieldExtractorTests(unittest.TestCase):
         )
         self.assertNotIn("patientInformation.gpMedicalRecordNumberId", keys)
         self.assertNotIn("reactions.id", keys)
+        self.assertNotIn(
+            "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor", keys
+        )
+        self.assertTrue(
+            {
+                "drugs.activeSubstances",
+                "drugs.drugReactionAssessments",
+                "drugs.fdaDevices",
+            }.isdisjoint(keys)
+        )
 
     def test_regex_extractor_remains_available_for_explicit_source_fixtures(self):
         source = '<Input name={`drugs.${drugIndex}.cumulativeDoseValue`} />'

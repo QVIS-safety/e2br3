@@ -17,7 +17,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "patientInitials / patientInitialsNullFlavor",
+      "field": "patientInitials",
       "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
       "evidence": "Frontend path ownership tests route patientInformation.patientInitials to patient-core."
     },
@@ -106,7 +106,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "patientBirthDate / patientBirthDateNullFlavor",
+      "field": "patientBirthDate",
       "file": "../frontend/E2BR3-frontend/__tests__/case-save/patientHistory.coordinator.test.ts",
       "evidence": "Frontend input inventory extracts patientInformation.patientBirthDate from the case-form section source."
     },
@@ -306,7 +306,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "patientSex / patientSexNullFlavor",
+      "field": "patientSex",
       "file": "../frontend/E2BR3-frontend/components/case-form/CaseFormWizardNew.tsx",
       "evidence": "CaseFormWizardNew reads patientInformation.patientSex for D.5 sex intake."
     },
@@ -331,7 +331,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "lastMenstrualPeriodDate / lastMenstrualPeriodDateNullFlavor",
+      "field": "lastMenstrualPeriodDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.6 to patientInformation.lastMenstrualPeriodDate."
     },
@@ -456,7 +456,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "medicalHistoryEpisodes.startDate / medicalHistoryEpisodes.startDateNullFlavor",
+      "field": "medicalHistoryEpisodes.startDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.7.1.r.2 to patientInformation.medicalHistoryEpisodes[index].startDate."
     },
@@ -506,7 +506,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "medicalHistoryEpisodes.endDate / medicalHistoryEpisodes.endDateNullFlavor",
+      "field": "medicalHistoryEpisodes.endDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.7.1.r.4 to patientInformation.medicalHistoryEpisodes[index].endDate."
     },
@@ -581,7 +581,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "pastDrugHistory.drugName / pastDrugHistory.drugNameNullFlavor",
+      "field": "pastDrugHistory.drugName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
       "evidence": "Frontend binds fieldNumber D.8.r.1 to patientInformation.pastDrugHistory.drugName."
     },
@@ -800,7 +800,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "pastDrugHistory.startDate / pastDrugHistory.startDateNullFlavor",
+      "field": "pastDrugHistory.startDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
       "evidence": "Frontend binds fieldNumber D.8.r.4 to patientInformation.pastDrugHistory.startDate."
     },
@@ -825,7 +825,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "pastDrugHistory.endDate / pastDrugHistory.endDateNullFlavor",
+      "field": "pastDrugHistory.endDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
       "evidence": "Frontend binds fieldNumber D.8.r.5 to patientInformation.pastDrugHistory.endDate."
     },
@@ -950,7 +950,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "patientDeath.dateOfDeath / patientDeath.dateOfDeathNullFlavor",
+      "field": "patientDeath.dateOfDeath",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.9.1 to patientInformation.patientDeath.dateOfDeath."
     },
@@ -1143,14 +1143,14 @@
     "backend": {
       "status": "mapped",
       "model": "ParentInformation",
-      "field": "parent_identification / parent_identification_null_flavor",
+      "field": "parent_identification",
       "file": "crates/libs/lib-core/src/model/patient.rs",
       "evidence": "ParentInformation stores D.10.1 as a mutually exclusive parent_identification / parent_identification_null_flavor pair."
     },
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.parentIdentification / parentInformation.parentIdentificationNullFlavor",
+      "field": "parentInformation.parentIdentification",
       "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DM/components/ParentBasicInformationFields.tsx",
       "evidence": "ParentBasicInformationFields binds D.10.1 value and NullFlavor to patientInformation.parentInformation.parentIdentification."
     },
@@ -1175,7 +1175,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.parentBirthDate / parentInformation.parentBirthDateNullFlavor",
+      "field": "parentInformation.parentBirthDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.10.2.1 to patientInformation.parentInformation.parentBirthDate."
     },
@@ -1250,7 +1250,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.parentLastMenstrualPeriodDate / parentInformation.parentLastMenstrualPeriodDateNullFlavor",
+      "field": "parentInformation.parentLastMenstrualPeriodDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.10.3 to patientInformation.parentInformation.parentLastMenstrualPeriodDate."
     },
@@ -1318,14 +1318,14 @@
     "backend": {
       "status": "mapped",
       "model": "ParentInformation",
-      "field": "sex / sex_null_flavor",
+      "field": "sex",
       "file": "crates/libs/lib-core/src/model/patient.rs",
       "evidence": "ParentInformation stores D.10.6 as a mutually exclusive sex / sex_null_flavor pair."
     },
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.parentSex / parentInformation.parentSexNullFlavor",
+      "field": "parentInformation.parentSex",
       "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DM/components/ParentBasicInformationFields.tsx",
       "evidence": "ParentBasicInformationFields binds D.10.6 value and NullFlavor to patientInformation.parentInformation.parentSex."
     },
@@ -1400,7 +1400,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.medicalHistoryEpisodes.startDate / parentInformation.medicalHistoryEpisodes.startDateNullFlavor",
+      "field": "parentInformation.medicalHistoryEpisodes.startDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.10.7.1.r.2 to patientInformation.parentInformation.medicalHistoryEpisodes[index].startDate."
     },
@@ -1425,7 +1425,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.medicalHistoryEpisodes.continuing / parentInformation.medicalHistoryEpisodes.continuingNullFlavor",
+      "field": "parentInformation.medicalHistoryEpisodes.continuing",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.10.7.1.r.3 to patientInformation.parentInformation.medicalHistoryEpisodes[index].continuing."
     },
@@ -1450,7 +1450,7 @@
     "frontend": {
       "status": "mapped",
       "section": "patientInformation",
-      "field": "parentInformation.medicalHistoryEpisodes.endDate / parentInformation.medicalHistoryEpisodes.endDateNullFlavor",
+      "field": "parentInformation.medicalHistoryEpisodes.endDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "SectionD binds fieldNumber D.10.7.1.r.4 to patientInformation.parentInformation.medicalHistoryEpisodes[index].endDate."
     },
@@ -1904,7 +1904,9 @@
       "evidence": "Strict frontend input inventory extracts patientInformation.gpMedicalRecordNumber from the case-form section source."
     },
     "action": "",
-    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned.",
+    "editor_page": "DM",
+    "editor_status": "incomplete"
   },
   {
     "id": "D.1.1.2",
@@ -1928,7 +1930,9 @@
       "evidence": "Strict frontend input inventory extracts patientInformation.specialistRecordNumber from the case-form section source."
     },
     "action": "",
-    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned.",
+    "editor_page": "DM",
+    "editor_status": "incomplete"
   },
   {
     "id": "D.1.1.3",
@@ -1952,7 +1956,9 @@
       "evidence": "Strict frontend input inventory extracts patientInformation.hospitalRecordNumber from the case-form section source."
     },
     "action": "",
-    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned.",
+    "editor_page": "DM",
+    "editor_status": "incomplete"
   },
   {
     "id": "D.1.1.4",
@@ -1976,6 +1982,764 @@
       "evidence": "Strict frontend input inventory extracts patientInformation.investigationNumber from the case-form section source."
     },
     "action": "",
-    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned.",
+    "editor_page": "DM",
+    "editor_status": "incomplete"
+  },
+  {
+    "id": "D.1.local.patientInitialsNullFlavor",
+    "e2br3_code": "D.1.local.patientInitialsNullFlavor",
+    "label": "Patient Identification NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "patient_initials_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.patient_initials_null_flavor persists the D.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientInitialsNullFlavor",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
+      "evidence": "The same D.1 editor control binds the explicit patientInitialsNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.2.1.local.patientBirthDateNullFlavor",
+    "e2br3_code": "D.2.1.local.patientBirthDateNullFlavor",
+    "label": "Date of Birth NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "birth_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.birth_date_null_flavor persists the D.2.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientBirthDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/patientHistory.coordinator.test.ts",
+      "evidence": "The same D.2.1 editor control binds the explicit patientBirthDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.2.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.5.local.patientSexNullFlavor",
+    "e2br3_code": "D.5.local.patientSexNullFlavor",
+    "label": "Sex NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "sex_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.sex_null_flavor persists the D.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientSexNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/CaseFormWizardNew.tsx",
+      "evidence": "The same D.5 editor control binds the explicit patientSexNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.5; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.6.local.lastMenstrualPeriodDateNullFlavor",
+    "e2br3_code": "D.6.local.lastMenstrualPeriodDateNullFlavor",
+    "label": "Last Menstrual Period Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "last_menstrual_period_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.last_menstrual_period_date_null_flavor persists the D.6 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "lastMenstrualPeriodDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.6 editor control binds the explicit lastMenstrualPeriodDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.6; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.7.2.local.medicalHistoryTextNullFlavor",
+    "e2br3_code": "D.7.2.local.medicalHistoryTextNullFlavor",
+    "label": "Relevant Medical History Text NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "medical_history_text_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.medical_history_text_null_flavor persists the D.7.2 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryTextNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.7.2 editor control binds the explicit medicalHistoryTextNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.7.2; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.7.1.r.2.local.startDateNullFlavor",
+    "e2br3_code": "D.7.1.r.2.local.startDateNullFlavor",
+    "label": "Relevant Medical History Start Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "start_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.start_date_null_flavor persists the D.7.1.r.2 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.startDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.7.1.r.2 editor control binds the explicit startDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.7.1.r.2; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.7.1.r.3.local.continuingNullFlavor",
+    "e2br3_code": "D.7.1.r.3.local.continuingNullFlavor",
+    "label": "Relevant Medical History Continuing NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "continuing_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.continuing_null_flavor persists the D.7.1.r.3 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.continuingNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.7.1.r.3 editor control binds the explicit continuingNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.7.1.r.3; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.7.1.r.4.local.endDateNullFlavor",
+    "e2br3_code": "D.7.1.r.4.local.endDateNullFlavor",
+    "label": "Relevant Medical History End Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "end_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.end_date_null_flavor persists the D.7.1.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.endDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.7.1.r.4 editor control binds the explicit endDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.7.1.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.8.r.1.local.drugNameNullFlavor",
+    "e2br3_code": "D.8.r.1.local.drugNameNullFlavor",
+    "label": "Past Drug History Name of Drug as Reported NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DH",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "drug_name_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.drug_name_null_flavor persists the D.8.r.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.drugNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "The same D.8.r.1 editor control binds the explicit drugNameNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.8.r.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.8.r.4.local.startDateNullFlavor",
+    "e2br3_code": "D.8.r.4.local.startDateNullFlavor",
+    "label": "Past Drug History Start Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DH",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "start_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.start_date_null_flavor persists the D.8.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.startDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "The same D.8.r.4 editor control binds the explicit startDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.8.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.8.r.5.local.endDateNullFlavor",
+    "e2br3_code": "D.8.r.5.local.endDateNullFlavor",
+    "label": "Past Drug History End Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DH",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "end_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.end_date_null_flavor persists the D.8.r.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.endDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "The same D.8.r.5 editor control binds the explicit endDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.8.r.5; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.9.1.local.dateOfDeathNullFlavor",
+    "e2br3_code": "D.9.1.local.dateOfDeathNullFlavor",
+    "label": "Date of Death NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientDeathInformation",
+      "field": "date_of_death_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientDeathInformation.date_of_death_null_flavor persists the D.9.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.dateOfDeathNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.9.1 editor control binds the explicit dateOfDeathNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.9.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.9.3.local.autopsyPerformedNullFlavor",
+    "e2br3_code": "D.9.3.local.autopsyPerformedNullFlavor",
+    "label": "Was Autopsy Done NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientDeathInformation",
+      "field": "autopsy_performed_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientDeathInformation.autopsy_performed_null_flavor persists the D.9.3 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.autopsyPerformedNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.9.3 editor control binds the explicit autopsyPerformedNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.9.3; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.1.local.parentIdentificationNullFlavor",
+    "e2br3_code": "D.10.1.local.parentIdentificationNullFlavor",
+    "label": "Parent Identification NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_identification_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_identification_null_flavor persists the D.10.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentIdentificationNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DM/components/ParentBasicInformationFields.tsx",
+      "evidence": "The same D.10.1 editor control binds the explicit parentIdentificationNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.2.1.local.parentBirthDateNullFlavor",
+    "e2br3_code": "D.10.2.1.local.parentBirthDateNullFlavor",
+    "label": "Parent Date of Birth NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_birth_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_birth_date_null_flavor persists the D.10.2.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentBirthDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.2.1 editor control binds the explicit parentBirthDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.2.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.3.local.parentLastMenstrualPeriodDateNullFlavor",
+    "e2br3_code": "D.10.3.local.parentLastMenstrualPeriodDateNullFlavor",
+    "label": "Parent Last Menstrual Period Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "last_menstrual_period_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.last_menstrual_period_date_null_flavor persists the D.10.3 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentLastMenstrualPeriodDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.3 editor control binds the explicit parentLastMenstrualPeriodDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.3; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.6.local.parentSexNullFlavor",
+    "e2br3_code": "D.10.6.local.parentSexNullFlavor",
+    "label": "Parent Sex NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "sex_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.sex_null_flavor persists the D.10.6 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentSexNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DM/components/ParentBasicInformationFields.tsx",
+      "evidence": "The same D.10.6 editor control binds the explicit parentSexNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.6; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.7.1.r.2.local.startDateNullFlavor",
+    "e2br3_code": "D.10.7.1.r.2.local.startDateNullFlavor",
+    "label": "Parent Relevant Medical History Start Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "start_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.start_date_null_flavor persists the D.10.7.1.r.2 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.startDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.7.1.r.2 editor control binds the explicit startDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.7.1.r.2; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.7.1.r.3.local.continuingNullFlavor",
+    "e2br3_code": "D.10.7.1.r.3.local.continuingNullFlavor",
+    "label": "Parent Relevant Medical History Continuing NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "continuing_null_flavor",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.continuing_null_flavor persists the D.10.7.1.r.3 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.continuingNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.7.1.r.3 editor control binds the explicit continuingNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.7.1.r.3; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.7.1.r.4.local.endDateNullFlavor",
+    "e2br3_code": "D.10.7.1.r.4.local.endDateNullFlavor",
+    "label": "Parent Relevant Medical History End Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "end_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.end_date_null_flavor persists the D.10.7.1.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.endDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.7.1.r.4 editor control binds the explicit endDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.7.1.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.8.r.4.local.startDateNullFlavor",
+    "e2br3_code": "D.10.8.r.4.local.startDateNullFlavor",
+    "label": "Parent Past Drug History Start Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "start_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.start_date_null_flavor persists the D.10.8.r.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.startDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.8.r.4 editor control binds the explicit startDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.8.r.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.10.8.r.5.local.endDateNullFlavor",
+    "e2br3_code": "D.10.8.r.5.local.endDateNullFlavor",
+    "label": "Parent Past Drug History End Date NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "end_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.end_date_null_flavor persists the D.10.8.r.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.endDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same D.10.8.r.5 editor control binds the explicit endDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.10.8.r.5; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.D.11.r.1.local.raceCodeNullFlavor",
+    "e2br3_code": "FDA.D.11.r.1.local.raceCodeNullFlavor",
+    "label": "Patient Race Code NullFlavor companion",
+    "section": "D",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "race_code_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.race_code_null_flavor persists the FDA.D.11.r.1 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "raceCodeNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same FDA.D.11.r.1 editor control binds the explicit raceCodeNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element FDA.D.11.r.1; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.D.12.local.ethnicityCodeNullFlavor",
+    "e2br3_code": "FDA.D.12.local.ethnicityCodeNullFlavor",
+    "label": "Patient Ethnicity Code NullFlavor companion",
+    "section": "D",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "ethnicity_code_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.ethnicity_code_null_flavor persists the FDA.D.12 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "ethnicityCodeNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "The same FDA.D.12 editor control binds the explicit ethnicityCodeNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element FDA.D.12; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "D.1.1.1.local.gpMedicalRecordNumberNullFlavor",
+    "e2br3_code": "D.1.1.1.local.gpMedicalRecordNumberNullFlavor",
+    "label": "GP Medical Record Number NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "incomplete",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value_null_flavor stores the D.1.1.1 companion on the row selected by identifier_type_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "gpMedicalRecordNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds patientInformation.gpMedicalRecordNumberNullFlavor for D.1.1.1."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.1.1.1; the dictionary allows only MSK."
+  },
+  {
+    "id": "D.1.1.2.local.specialistRecordNumberNullFlavor",
+    "e2br3_code": "D.1.1.2.local.specialistRecordNumberNullFlavor",
+    "label": "Specialist Record Number NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "incomplete",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value_null_flavor stores the D.1.1.2 companion on the row selected by identifier_type_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "specialistRecordNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds patientInformation.specialistRecordNumberNullFlavor for D.1.1.2."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.1.1.2; the dictionary allows only MSK."
+  },
+  {
+    "id": "D.1.1.3.local.hospitalRecordNumberNullFlavor",
+    "e2br3_code": "D.1.1.3.local.hospitalRecordNumberNullFlavor",
+    "label": "Hospital Record Number NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "incomplete",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value_null_flavor stores the D.1.1.3 companion on the row selected by identifier_type_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "hospitalRecordNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds patientInformation.hospitalRecordNumberNullFlavor for D.1.1.3."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.1.1.3; the dictionary allows only MSK."
+  },
+  {
+    "id": "D.1.1.4.local.investigationNumberNullFlavor",
+    "e2br3_code": "D.1.1.4.local.investigationNumberNullFlavor",
+    "label": "Investigation Number NullFlavor companion",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "editor_page": "DM",
+    "editor_status": "incomplete",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value_null_flavor",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value_null_flavor stores the D.1.1.4 companion on the row selected by identifier_type_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "investigationNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds patientInformation.investigationNumberNullFlavor for D.1.1.4."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element D.1.1.4; the dictionary allows only MSK."
   }
 ]

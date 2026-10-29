@@ -2,9 +2,13 @@
 // Do not edit by hand.
 
 field_contract_test!(c_5_1_r_1, "C.5.1.r.1");
+field_contract_test!(c_5_1_r_1_local_registrationnumbernullflavor, "C.5.1.r.1.local.registrationNumberNullFlavor");
 field_contract_test!(c_5_1_r_2, "C.5.1.r.2");
+field_contract_test!(c_5_1_r_2_local_countrycodenullflavor, "C.5.1.r.2.local.countryCodeNullFlavor");
 field_contract_test!(c_5_2, "C.5.2");
+field_contract_test!(c_5_2_local_studynamenullflavor, "C.5.2.local.studyNameNullFlavor");
 field_contract_test!(c_5_3, "C.5.3");
+field_contract_test!(c_5_3_local_sponsorstudynumbernullflavor, "C.5.3.local.sponsorStudyNumberNullFlavor");
 field_contract_test!(c_5_4, "C.5.4");
 field_contract_test!(c_5_4_kr_1, "C.5.4.KR.1");
 field_contract_test!(fda_c_5_5a, "FDA.C.5.5a");

@@ -396,8 +396,11 @@
         {
           "id": "pre-anda-number-regional-policy",
           "sourceExcerpt": "format must be \"234567\"",
-          "disposition": "deferred",
-          "reason": "The catalog has receiver-aware presence and six-digit value logic, but case evaluation reads sponsorStudyNumber instead of the canonical fdaPreAndaNumberOccurred field."
+          "disposition": "business_rule",
+          "ruleCodes": [
+            "FDA.R0025",
+            "FDA.R0025.FORMAT"
+          ]
         }
       ]
     },
@@ -409,8 +412,10 @@
         {
           "id": "cross-reported-ind-policy",
           "sourceExcerpt": "Use nullFlavor=NA if there are no other cross reported IND",
-          "disposition": "deferred",
-          "reason": "The presence rule is wired to generic study registrations and sponsorStudyNumber rather than the canonical FDA IND and cross-reported IND fields, and NA nullFlavor handling is not evaluated."
+          "disposition": "business_rule",
+          "ruleCodes": [
+            "FDA.R0026"
+          ]
         }
       ]
     }

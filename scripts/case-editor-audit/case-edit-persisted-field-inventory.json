@@ -6295,7 +6295,7 @@
       "verificationDescriptor": {
         "alternateA": "2026-10-14",
         "alternateB": "2026-10-15",
-        "clearPolicy": "nullable when receiver remains nonblank; expect accepted clear with exact audit delta",
+        "clearPolicy": "empty string represents a cleared optional date; expect accepted clear with exact audit delta",
         "mustVerify": [
           "save response",
           "detail readback",

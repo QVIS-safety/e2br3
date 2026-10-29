@@ -87,11 +87,22 @@
         "kind": "rows",
         "owner": "senderDiagnoses"
       },
-      "roundTripValue": "27.1",
+      "roundTripValue": "28.1",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.H.3.r.1a.LENGTH.MAX",
         "invalidValue": "not-a-number"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.3.r.1a.REQUIRED",
+        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraVersion"
+      },
+      "control": {
+        "kind": "native_select",
+        "options": [
+          {"value": "28.1", "label": "28.1"}
+        ]
       },
       "payloadPath": "[].diagnosisMeddraVersion",
       "rowsFixture": {
@@ -120,6 +131,28 @@
         "ruleCode": "ICH.H.3.r.1b.LENGTH.MAX",
         "invalidValue": "not-a-number"
       },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.3.r.1b.REQUIRED",
+        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraCode"
+      },
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "10019211",
+        "optionValue": "10019211",
+        "optionDataValue": "10019211",
+        "optionLabel": "Headache (10019211)",
+        "sourceCode": "10019211",
+        "sourceVersion": "28.1",
+        "sourceLanguage": "en",
+        "selectedLabel": "10019211",
+        "selectionEffects": [
+          {
+            "frontendPath": "narrative.senderDiagnoses[].diagnosisMeddraVersion",
+            "value": "28.1"
+          }
+        ]
+      },
       "payloadPath": "[].diagnosisMeddraCode",
       "rowsFixture": {
         "narrative": {
@@ -128,7 +161,7 @@
       },
       "fixture": [
         {
-          "diagnosisMeddraVersion": "27.1"
+          "diagnosisMeddraVersion": "28.1"
         }
       ]
     },
@@ -146,6 +179,11 @@
         "status": "verified",
         "ruleCode": "ICH.H.5.r.1b.LENGTH.MAX",
         "invalidValue": "XXXX"
+      },
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.5.r.1b.REQUIRED",
+        "issuePath": "narrative.caseSummaries[].languageCode"
       },
       "payloadPath": "[].languageCode",
       "rowsFixture": {

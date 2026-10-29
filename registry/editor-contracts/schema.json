@@ -34,7 +34,159 @@
           "fixture": {},
           "rowsFixture": { "type": "object" },
           "roundTripValue": {},
+          "control": {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["async_autocomplete", "native_select", "product_presave_picker", "radio_group", "radix_select", "string_checkbox"] },
+              "queryValue": { "type": "string", "minLength": 1 },
+              "optionValue": { "type": "string", "minLength": 1 },
+              "optionDataValue": { "type": "string", "minLength": 1 },
+              "optionLabel": { "type": "string", "minLength": 1 },
+              "selectedLabel": { "type": "string", "minLength": 1 },
+              "selectionRule": { "enum": ["exact_query_equal_first_source_order"] },
+              "sourceCode": { "type": "string", "minLength": 1 },
+              "sourceVersion": { "type": "string", "minLength": 1 },
+              "sourceLanguage": { "type": "string", "minLength": 1 },
+              "selectionEffects": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["frontendPath", "value"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "frontendPath": { "type": "string", "minLength": 1 },
+                    "value": { "type": "string", "minLength": 1 }
+                  }
+                }
+              },
+              "checkedValue": { "type": "string", "minLength": 1 },
+              "uncheckedValue": { "type": "string" },
+              "permissionActions": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "minItems": 1
+              },
+              "options": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["value", "label"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": { "type": "string", "minLength": 1 },
+                    "label": { "type": "string", "minLength": 1 }
+                  }
+                }
+              },
+              "dynamicOptions": {
+                "type": "object",
+                "required": ["source", "valuePath", "labelPath"],
+                "additionalProperties": false,
+                "properties": {
+                  "source": { "type": "string", "minLength": 1 },
+                  "valuePath": { "type": "string", "minLength": 1 },
+                  "labelPath": { "type": "string", "minLength": 1 }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "kind": { "const": "radix_select" } } },
+                "then": {
+                  "oneOf": [
+                    {
+                      "required": ["options"],
+                      "not": { "required": ["dynamicOptions"] }
+                    },
+                    {
+                      "required": ["dynamicOptions"],
+                      "not": { "required": ["options"] }
+                    }
+                  ]
+                }
+              },
+              {
+                "if": { "properties": { "kind": { "const": "native_select" } } },
+                "then": { "required": ["options"] }
+              },
+              {
+                "if": { "properties": { "kind": { "const": "radio_group" } } },
+                "then": { "required": ["options"] }
+              },
+              {
+                "if": { "properties": { "kind": { "const": "product_presave_picker" } } },
+                "then": { "required": ["permissionActions"] }
+              },
+              {
+                "if": { "properties": { "kind": { "const": "async_autocomplete" } } },
+                "then": { "required": ["queryValue", "optionValue", "optionDataValue", "optionLabel", "selectedLabel"] }
+              },
+              {
+                "if": { "properties": { "kind": { "const": "string_checkbox" } } },
+                "then": { "required": ["checkedValue", "uncheckedValue"] }
+              }
+            ]
+          },
+          "scenarioControls": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "mfds-g-product-required": {
+                "type": "object",
+                "required": ["kind", "productionReference"],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": { "const": "mfds_product_direct_input" },
+                  "productionReference": { "const": "mfdsProduct.item_seq" }
+                }
+              },
+              "mfds-g-substance-version-required": {
+                "type": "object",
+                "required": ["kind", "productionReference"],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": { "const": "mfds_foreign_substance_direct_input" },
+                  "productionReference": { "const": "whoSubstance.code" }
+                }
+              }
+            }
+          },
+          "execution": {
+            "type": "object",
+            "required": ["status", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "status": { "enum": ["blocked"] },
+              "reason": { "type": "string", "minLength": 1 },
+              "prerequisites": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "minItems": 1
+              }
+            }
+          },
           "projectionValue": {},
+          "domFieldNumber": { "type": "string", "minLength": 1 },
+          "auditItem": { "type": "string", "minLength": 1 },
+          "renderPrerequisites": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["code", "frontendPath", "value"],
+              "additionalProperties": false,
+              "properties": {
+                "code": { "type": "string", "minLength": 1 },
+                "frontendPath": { "type": "string", "minLength": 1 },
+                "value": { "type": ["string", "null"] }
+              }
+            }
+          },
           "nullFlavorPartnerCode": { "type": "string", "minLength": 1 },
           "constraint": { "$ref": "#/$defs/stage" },
           "businessValidation": { "$ref": "#/$defs/stage" }
@@ -47,7 +199,7 @@
       "type": "object",
       "required": ["status"],
       "properties": {
-        "status": { "enum": ["verified", "not_applicable"] },
+        "status": { "enum": ["verified", "not_applicable", "blocked"] },
         "ruleCode": { "type": "string" },
         "issuePath": { "type": "string" },
         "reason": { "type": "string" },

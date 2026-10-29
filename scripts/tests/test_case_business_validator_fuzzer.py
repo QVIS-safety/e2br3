@@ -62,6 +62,144 @@ class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
         scenarios = fuzzer.scenario_catalog(1)
         self.assertEqual(len({item.scenario_id for item in scenarios}), len(scenarios))
 
+    def test_mfds_krct_required_scenario_declares_clinical_context(self) -> None:
+        scenario = next(
+            item for item in fuzzer.scenario_catalog(1)
+            if item.scenario_id == "mfds-relatedness-krct-result-required"
+        )
+        self.assertEqual(scenario.ci_values, (("reportType", "2"),))
+        self.assertEqual(scenario.header_values, (
+            ("batch_receiver_identifier", "MFDS-O-CT"),
+            ("message_receiver_identifier", "MFDS-O-CT"),
+        ))
+
+    def test_conditional_pair_fixtures_match_validator_dependencies(self) -> None:
+        scenarios = {
+            item.scenario_id: item for item in fuzzer.scenario_catalog(1)
+        }
+        expected = {
+            "c1-document-description-required": (
+                "documentDescription", "documentDescription",
+                "ICH.C.1.6.1.r.1.REQUIRED", (("includedDocument", "SGVsbG8="),),
+            ),
+            "c1-other-identifier-source-required": (
+                "source", "source", "ICH.C.1.9.1.r.1.REQUIRED",
+                (("caseIdentifier", "KR-ORG-001"),),
+            ),
+            "c1-other-identifier-required": (
+                "caseIdentifier", "caseIdentifier", "ICH.C.1.9.1.r.2.REQUIRED",
+                (("source", "CI source"),),
+            ),
+            "h-case-summary-language-required": (
+                "languageCode", "language_code", "ICH.H.5.r.1b.REQUIRED",
+                (("summaryText", "Validation UI summary"),),
+            ),
+            "d-past-drug-name-required": (
+                "drugName", "drug_name", "ICH.D.8.r.1.REQUIRED",
+                (("startDate", "20200102"),),
+            ),
+            "g-gestation-value-required": (
+                "gestationPeriodExposureValue", "gestation_period_exposure_value",
+                "ICH.G.k.6a.REQUIRED", (("gestationPeriodExposureUnit", "wk"),),
+            ),
+            "g-gestation-unit-required": (
+                "gestationPeriodExposureUnit", "gestation_period_exposure_unit",
+                "ICH.G.k.6b.REQUIRED", (("gestationPeriodExposureValue", 2),),
+            ),
+            "g-cumulative-dose-value-required": (
+                "cumulativeDoseValue", "cumulative_dose_first_reaction_value",
+                "ICH.G.k.5a.REQUIRED", (("cumulativeDoseUnit", "mg"),),
+            ),
+            "g-cumulative-dose-unit-required": (
+                "cumulativeDoseUnit", "cumulative_dose_first_reaction_unit",
+                "ICH.G.k.5b.REQUIRED", (("cumulativeDoseValue", 12.5),),
+            ),
+            "f-test-date-required": (
+                "testDate", "test_date", "ICH.F.r.1.REQUIRED",
+                (("testName", "ALT"),),
+            ),
+            "f-test-meddra-version-required": (
+                "testMeddraVersion", "test_meddra_version",
+                "ICH.F.r.2.2a.REQUIRED", (("testMeddraCode", "10088978"),),
+            ),
+            "f-test-meddra-code-required": (
+                "testMeddraCode", "test_meddra_code",
+                "ICH.F.r.2.2b.REQUIRED", (("testDate", "20210303"), ("testName", None)),
+            ),
+            "f-test-result-unit-required": (
+                "testUnit", "test_result_unit", "ICH.F.r.3.3.REQUIRED",
+                (("testResult", "12.5"),),
+            ),
+            "f-coded-result-required": (
+                "testResultCode", "test_result_code", "ICH.F.r.3.1.REQUIRED",
+                (("testName", "ALT"), ("testResult", None),
+                 ("testResultUnstructured", None)),
+            ),
+            "f-value-result-required": (
+                "testResult", "test_result_value", "ICH.F.r.3.2.REQUIRED",
+                (("testName", "ALT"), ("testResultCode", None),
+                 ("testResultUnstructured", None)),
+            ),
+            "f-unstructured-result-required": (
+                "testResultUnstructured", "result_unstructured",
+                "ICH.F.r.3.4.REQUIRED",
+                (("testName", "ALT"), ("testResultCode", None),
+                 ("testResult", None)),
+            ),
+            "h-diagnosis-meddra-version-required": (
+                "diagnosisMeddraVersion", "diagnosis_meddra_version",
+                "ICH.H.3.r.1a.REQUIRED", (("diagnosisMeddraCode", "10000001"),),
+            ),
+            "h-diagnosis-meddra-code-required": (
+                "diagnosisMeddraCode", "diagnosis_meddra_code",
+                "ICH.H.3.r.1b.REQUIRED", (("diagnosisMeddraVersion", "26.0"),),
+            ),
+            "d-past-drug-indication-version-required": (
+                "indicationMeddraVersion", "indication_meddra_version",
+                "ICH.D.8.r.6a.REQUIRED", (("indicationMeddraCode", "10088978"),),
+            ),
+            "d-past-drug-indication-code-required": (
+                "indicationMeddraCode", "indication_meddra_code",
+                "ICH.D.8.r.6b.REQUIRED", (("indicationMeddraVersion", "28.1"),),
+            ),
+            "d-past-drug-reaction-version-required": (
+                "reactionMeddraVersion", "reaction_meddra_version",
+                "ICH.D.8.r.7a.REQUIRED", (("reactionMeddraCode", "10088978"),),
+            ),
+            "d-past-drug-reaction-code-required": (
+                "reactionMeddraCode", "reaction_meddra_code",
+                "ICH.D.8.r.7b.REQUIRED", (("reactionMeddraVersion", "28.1"),),
+            ),
+        }
+        for scenario_id, values in expected.items():
+            scenario = scenarios[scenario_id]
+            self.assertEqual(
+                (scenario.field, scenario.projection_field, scenario.expected_code,
+                 scenario.fixture_values),
+                values,
+            )
+        self.assertEqual(
+            scenarios["d-past-drug-name-required"].valid_value,
+            "Advanced Aspirin",
+        )
+        medical_history = scenarios["d-medical-history-text-required"]
+        self.assertEqual(medical_history.fixture_values, ())
+        self.assertEqual(medical_history.empty_collections, ("medicalHistoryEpisodes",))
+        self.assertEqual(
+            {scenario_id: scenarios[scenario_id].valid_value for scenario_id in (
+                "d-past-drug-indication-version-required",
+                "d-past-drug-indication-code-required",
+                "d-past-drug-reaction-version-required",
+                "d-past-drug-reaction-code-required",
+            )},
+            {
+                "d-past-drug-indication-version-required": "28.1",
+                "d-past-drug-indication-code-required": "10088978",
+                "d-past-drug-reaction-version-required": "28.1",
+                "d-past-drug-reaction-code-required": "10088978",
+            },
+        )
+
     def test_ucum_rules_distinguish_direct_parser_from_frequency_release_binding(self) -> None:
         scenarios = fuzzer.scenario_catalog(1)
         strength = next(
@@ -97,7 +235,7 @@ class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
             item.valid_value == "d" and len(item.invalid_value) <= 50
             for item in generated_frequency
         ))
-        self.assertEqual(sum(item.reference_fixture for item in scenarios), 42)
+        self.assertEqual(sum(item.reference_fixture for item in scenarios), 41)
 
     def test_meddra_binding_requires_exact_active_llt_and_proven_absence(self) -> None:
         row = [{
@@ -198,7 +336,8 @@ class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
         self.assertEqual(
             dict(context["f-test-meddra-code-required"].fixture_values),
             {
-                "testName": "",
+                "testDate": "20210921",
+                "testName": None,
                 "testMeddraVersion": "28.1",
                 "testMeddraCode": "10000002",
             },
@@ -689,7 +828,7 @@ class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
                 "ICH.E.i.REQUIRED", False, True, "reactions",
             ),
             "f-test-meddra-code-required": (
-                "ICH.F.r.2.2b.REQUIRED", None, "BOUND-MEDDRA-CODE",
+                "ICH.F.r.2.2b.REQUIRED", None, "10088978",
                 "testResults.0.testMeddraCode",
             ),
             "reaction-seriousness-null-flavor-ni-only": (

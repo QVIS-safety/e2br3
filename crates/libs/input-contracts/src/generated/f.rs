@@ -20,9 +20,9 @@ pub fn f_r_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 }
 
 /// ICH.F.r.2.1.LENGTH.MAX
+/// Conditional presence is checked by the Case business validator.
 pub fn f_r_2_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
-	crate::helpers::reject_null(&mut issues, "ICH.F.r.2.1.REQUIRED", input.value);
 	crate::helpers::max_length(
 		&mut issues,
 		"ICH.F.r.2.1.LENGTH.MAX",

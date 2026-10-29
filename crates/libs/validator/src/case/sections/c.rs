@@ -290,6 +290,18 @@ fn c_1_5(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>)
 	);
 }
 
+/// ICH.C.1.6.1.REQUIRED
+fn c_1_6_1(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>) {
+	required_field(
+		issues,
+		"ICH.C.1.6.1.REQUIRED",
+		"safetyReportIdentification.additionalDocumentsAvailable",
+		"case-identification",
+		"[C.1.6.1] is required.",
+		report.additional_documents_available.is_some(),
+	);
+}
+
 /// ICH.C.1.7.REQUIRED
 fn c_1_7(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>) {
 	required_field(
@@ -302,9 +314,18 @@ fn c_1_7(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>)
 	);
 }
 
+/// ICH.C.1.8.1.REQUIRED
 /// ICH.C.1.8.1.LENGTH.MAX
 fn c_1_8_1(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "safetyReportIdentification.worldwideUniqueId";
+	required_field(
+		issues,
+		"ICH.C.1.8.1.REQUIRED",
+		PATH,
+		"case-identification",
+		"[C.1.8.1] is required.",
+		has_text(report.worldwide_unique_id.as_deref()),
+	);
 	length(
 		issues,
 		"ICH.C.1.8.1.LENGTH.MAX",
@@ -314,10 +335,19 @@ fn c_1_8_1(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue
 	);
 }
 
+/// ICH.C.1.8.2.REQUIRED
 /// ICH.C.1.8.2.ALLOWED.VALUE
 /// ICH.C.1.8.2.LENGTH.MAX
 fn c_1_8_2(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "safetyReportIdentification.firstSenderType";
+	required_field(
+		issues,
+		"ICH.C.1.8.2.REQUIRED",
+		PATH,
+		"case-identification",
+		"[C.1.8.2] is required.",
+		has_text(report.first_sender_type.as_deref()),
+	);
 	allowed(
 		issues,
 		"ICH.C.1.8.2.ALLOWED.VALUE",
@@ -443,7 +473,10 @@ fn c_2_r_2_8(idx: usize, source: &PrimarySource, issues: &mut Vec<ValidationIssu
 		&path,
 		"reporter",
 		"FDA requires [C.2.r.2.8].",
-		has_text(source.email.as_deref()) || source.email_null_flavor.is_some(),
+		value_or_null_flavor(
+			source.email.as_deref(),
+			source.email_null_flavor.as_deref(),
+		),
 	);
 }
 
@@ -1265,6 +1298,7 @@ pub(crate) fn collect_ich_issues(
 		c_1_3(report, issues);
 		c_1_4(report, issues);
 		c_1_5(report, issues);
+		c_1_6_1(report, issues);
 		c_1_7(report, issues);
 		c_1_8_1(report, issues);
 		c_1_8_2(report, issues);
@@ -1589,7 +1623,6 @@ fn fda_primary_reporter_rules(
 		if !vaers {
 			continue;
 		}
-		c_2_r_2_8(idx, source, issues);
 		let us_case = trimmed(source.country_code.as_deref()) == Some("US");
 		for (field, value, null_flavor) in [
 			(
@@ -1651,6 +1684,12 @@ fn fda_primary_reporter_rules(
 			format!("primarySources.{idx}.reporterEmail"),
 			"FDA primary reporter email must not use nullFlavor MSK.",
 		);
+	}
+}
+
+fn fda_reporter_email_rules(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
+	for (idx, source) in sources.iter().enumerate() {
+		c_2_r_2_8(idx, source, issues);
 	}
 }
 
@@ -2001,6 +2040,7 @@ pub(crate) async fn collect_fda_issues(
 				"CBER_VAERS" | "CBER VAERS"
 			)
 		});
+	fda_reporter_email_rules(&validation_ctx.primary_sources, issues);
 	fda_primary_reporter_rules(&validation_ctx.primary_sources, vaers, issues);
 	fda_sender_rules(validation_ctx.sender.as_ref(), issues);
 	for (idx, document) in validation_ctx.documents_held_by_sender.iter().enumerate()
@@ -2193,29 +2233,6 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if let Some(report) = validation_ctx.safety_report.as_ref() {
-		push_business_violation(
-			issues,
-			report.additional_documents_available.is_none(),
-			"ICH.C.1.6.1.REQUIRED",
-			"safetyReportIdentification.additionalDocumentsAvailable",
-			"MFDS requires [C.1.6.1].",
-		);
-		push_business_violation(
-			issues,
-			!has_text(report.worldwide_unique_id.as_deref()),
-			"ICH.C.1.8.1.REQUIRED",
-			"safetyReportIdentification.worldwideUniqueId",
-			"MFDS requires [C.1.8.1].",
-		);
-		push_business_violation(
-			issues,
-			!has_text(report.first_sender_type.as_deref()),
-			"ICH.C.1.8.2.REQUIRED",
-			"safetyReportIdentification.firstSenderType",
-			"MFDS requires [C.1.8.2].",
-		);
-	}
 	mfds_receiver_rules(validation_ctx, issues);
 	let domestic = is_mfds_domestic_receiver(
 		validation_ctx
@@ -2916,7 +2933,6 @@ mod golden_c1_value_tests {
 		assert!(!issues.iter().any(|issue| {
 			issue.code == "FDA.C.2.PRIMARY.REQUIRED"
 				|| issue.code == "FDA.C.2.PRIMARY.MSK.FORBIDDEN"
-				|| issue.code == "FDA.C.2.r.2.8.REQUIRED"
 		}));
 
 		issues.clear();
@@ -3086,18 +3102,10 @@ mod golden_c1_value_tests {
 	}
 
 	#[test]
-	fn mfds_requires_core_c_fields() {
+	fn ich_requires_core_c_fields() {
 		let ctx = ctx_with(base_report());
-		let mfds_ctx = MfdsValidationContext {
-			senders: Vec::new(),
-			studies: Vec::new(),
-			active_substances: Vec::new(),
-			relatedness: Vec::new(),
-			past_drugs: Vec::new(),
-			parent_past_drugs: Vec::new(),
-		};
 		let mut issues = Vec::new();
-		collect_mfds_issues(&ctx, &mfds_ctx, &mut issues);
+		collect_ich_issues(&ctx, &mut issues);
 		for code in [
 			"ICH.C.1.6.1.REQUIRED",
 			"ICH.C.1.8.1.REQUIRED",
@@ -3399,11 +3407,12 @@ mod golden_c1_value_tests {
 	}
 
 	#[test]
-	fn fda_primary_source_email_rule_emits_once() {
+	fn fda_reporter_email_rule_applies_to_every_row_outside_vaers_rules() {
 		let mut issues = Vec::new();
-		let mut source = primary_source();
-		source.primary_source_regulatory = Some("1".to_string());
-		fda_primary_reporter_rules(&[source], true, &mut issues);
+		let primary = primary_source();
+		let mut secondary = primary_source();
+		secondary.primary_source_regulatory = Some("2".to_string());
+		fda_reporter_email_rules(&[primary, secondary], &mut issues);
 		let mut out = issues
 			.into_iter()
 			.filter(|issue| issue.code == "FDA.C.2.r.2.8.REQUIRED")
@@ -3413,6 +3422,27 @@ mod golden_c1_value_tests {
 
 		assert_eq!(
 			out,
+			vec![
+				issue("FDA.C.2.r.2.8.REQUIRED", "primarySources.0.reporterEmail"),
+				issue("FDA.C.2.r.2.8.REQUIRED", "primarySources.1.reporterEmail"),
+			]
+		);
+	}
+
+	#[test]
+	fn fda_reporter_email_requires_a_non_blank_value_or_null_flavor() {
+		let mut source = primary_source();
+		source.email_null_flavor = Some("   ".to_string());
+		let mut issues = Vec::new();
+
+		fda_reporter_email_rules(&[source], &mut issues);
+
+		assert_eq!(
+			issues
+				.into_iter()
+				.filter(|issue| issue.code == "FDA.C.2.r.2.8.REQUIRED")
+				.map(|issue| (issue.code, issue.path))
+				.collect::<Vec<_>>(),
 			vec![issue(
 				"FDA.C.2.r.2.8.REQUIRED",
 				"primarySources.0.reporterEmail",

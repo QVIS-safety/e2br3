@@ -1493,6 +1493,47 @@ mod input_contract_save_tests {
 	}
 
 	#[test]
+	fn business_required_fields_allow_draft_clear() {
+		for field in [
+			"additionalDocumentsAvailable",
+			"worldwideUniqueId",
+			"firstSenderType",
+		] {
+			let rows = BTreeMap::from([(
+				"safetyReportIdentification".to_string(),
+				json!({(field): null}),
+			)]);
+			validate_direct_rows("CI", &rows, false)
+				.expect("business validation must handle required fields");
+		}
+
+		let reaction = json!({"reactionMeddraVersionLLT": null});
+		validate_row_payload(
+			"AE",
+			"reaction",
+			reaction
+				.as_object()
+				.expect("reaction fixture must be an object"),
+			None,
+		)
+		.expect("business validation must handle conditional MedDRA presence");
+
+		let empty = BTreeMap::from([(
+			"patientInformation".to_string(),
+			json!({"patientInitials": null, "patientInitialsNullFlavor": null}),
+		)]);
+		validate_direct_rows("DM", &empty, false)
+			.expect("business validation must handle patient identity presence");
+
+		let null_flavor = BTreeMap::from([(
+			"patientInformation".to_string(),
+			json!({"patientInitials": null, "patientInitialsNullFlavor": "UNK"}),
+		)]);
+		validate_direct_rows("DM", &null_flavor, false)
+			.expect("allowed nullFlavor satisfies D.1");
+	}
+
+	#[test]
 	fn decimal_string_reports_type_instead_of_length_error() {
 		let drug = Map::from_iter([(
 			"activeSubstances".to_string(),
@@ -1695,7 +1736,7 @@ mod input_contract_save_tests {
 		let detail = constraint_violation(
 			validate_direct_rows("NR", &null_rows, false).unwrap_err(),
 		);
-		assert_eq!(detail.rule_code, "ICH.H.1.REQUIRED");
+		assert_eq!(detail.rule_code, "INPUT.NULL.REJECTED");
 		assert_eq!(detail.path, "narrative.caseNarrative");
 
 		let sender_rows = BTreeMap::from([(

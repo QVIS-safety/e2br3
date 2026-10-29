@@ -11,7 +11,7 @@
         "kind": "rows",
         "owner": "primarySources"
       },
-      "roundTripValue": "Dr",
+      "roundTripValue": "Prof",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.C.2.r.1.1.LENGTH.MAX",
@@ -261,9 +261,18 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "primarySources.0.reporterCountry"
+        "ruleCode": "ICH.C.2.r.3.REQUIRED",
+        "issuePath": "primarySources[].reporterCountry"
       },
-      "payloadPath": "[].reporterCountry"
+      "payloadPath": "[].reporterCountry",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "FDA.C.2.r.2.8",
@@ -282,7 +291,8 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "primarySources.0.reporterEmail"
+        "ruleCode": "FDA.C.2.r.2.8.REQUIRED",
+        "issuePath": "primarySources[].reporterEmail"
       },
       "payloadPath": "[].reporterEmail",
       "nullFlavorPartnerCode": "C.2.r.local.reporterEmailNullFlavor"
@@ -326,9 +336,22 @@
       },
       "businessValidation": {
         "status": "verified",
-        "issuePath": "primarySources.0.qualificationKr1"
+        "ruleCode": "MFDS.C.2.r.4.KR.1.REQUIRED",
+        "issuePath": "primarySources[].qualificationKr1"
       },
-      "payloadPath": "[].qualificationKr1"
+      "payloadPath": "[].qualificationKr1",
+      "renderPrerequisites": [
+        {
+          "code": "C.2.r.local.qualificationNullFlavor",
+          "frontendPath": "primarySources[].qualificationNullFlavor",
+          "value": null
+        },
+        {
+          "code": "C.2.r.4",
+          "frontendPath": "primarySources[].qualification",
+          "value": "3"
+        }
+      ]
     },
     {
       "code": "C.2.r.5",
@@ -347,9 +370,15 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "ICH.C.2.r.5.REQUIRED",
         "issuePath": "primarySources.0.primarySourceForRegulatoryPurposes"
       },
-      "payloadPath": "[].primarySourceForRegulatoryPurposes"
+      "payloadPath": "[].primarySourceForRegulatoryPurposes",
+      "control": {
+        "kind": "string_checkbox",
+        "checkedValue": "1",
+        "uncheckedValue": ""
+      }
     },
     {
       "code": "C.2.r.local.reporterTitleNullFlavor",

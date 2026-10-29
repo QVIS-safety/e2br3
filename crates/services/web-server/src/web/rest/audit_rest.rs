@@ -326,7 +326,7 @@ fn audit_business_field_label(
 			"Study Registration Country (C.5.1.r.2)"
 		}
 		("study_fda_cross_reported_inds", "ind_number") => {
-			"Cross-reported IND Number (FDA.C.5)"
+			"Cross-reported IND Number (FDA.C.5.6.r)"
 		}
 		("patient_information", "patient_initials") => "Patient Initials (D.1)",
 		("patient_information", "birth_date") => "Patient Birth Date (D.2.1)",
@@ -1499,6 +1499,14 @@ mod tests {
 		assert_eq!(
 			audit_field_label("study_information", "study_name").unwrap(),
 			("SI (C.5)", "Study Name (C.5.2)".to_string())
+		);
+		assert_eq!(
+			audit_field_label("study_fda_cross_reported_inds", "ind_number")
+				.unwrap(),
+			(
+				"SI (C.5)",
+				"Cross-reported IND Number (FDA.C.5.6.r)".to_string()
+			)
 		);
 		assert_eq!(
 			audit_field_label("drug_information", "action_taken").unwrap(),

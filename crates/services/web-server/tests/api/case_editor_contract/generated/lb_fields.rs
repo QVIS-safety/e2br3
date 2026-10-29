@@ -2,6 +2,7 @@
 // Do not edit by hand.
 
 field_contract_test!(f_r_1, "F.r.1");
+field_contract_test!(f_r_1_local_testdatenullflavor, "F.r.1.local.testDateNullFlavor");
 field_contract_test!(f_r_2_1, "F.r.2.1");
 field_contract_test!(f_r_2_2a, "F.r.2.2a");
 field_contract_test!(f_r_2_2b, "F.r.2.2b");
@@ -13,3 +14,4 @@ field_contract_test!(f_r_4, "F.r.4");
 field_contract_test!(f_r_5, "F.r.5");
 field_contract_test!(f_r_6, "F.r.6");
 field_contract_test!(f_r_7, "F.r.7");
+field_contract_test!(f_r_local_testresultqualifier, "F.r.local.testResultQualifier");

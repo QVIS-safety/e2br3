@@ -96,7 +96,7 @@
     "frontend": {
       "status": "mapped",
       "section": "reactions",
-      "field": "reactionStartDate / reactionStartDateNullFlavor",
+      "field": "reactionStartDate",
       "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/core/detail.reactions.ts",
       "evidence": "Frontend input inventory extracts reactions.reactionStartDate from the case-form section source."
     },
@@ -489,7 +489,7 @@
     "frontend": {
       "status": "mapped",
       "section": "reactions",
-      "field": "reactionEndDate / reactionEndDateNullFlavor",
+      "field": "reactionEndDate",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
       "evidence": "SectionE binds fieldNumber E.i.5 to reactions[index].reactionEndDate."
     },
@@ -1058,5 +1058,248 @@
     },
     "action": "",
     "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.4.local.reactionStartDateNullFlavor",
+    "e2br3_code": "E.i.4.local.reactionStartDateNullFlavor",
+    "label": "Date of Start of Reaction/Event NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "start_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.start_date_null_flavor persists the E.i.4 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionStartDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/core/detail.reactions.ts",
+      "evidence": "The same E.i.4 editor control binds the explicit reactionStartDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.4; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
+    "e2br3_code": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
+    "label": "Seriousness Results in Death NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_death_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_death_null_flavor persists the E.i.3.2a NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaResultsInDeathNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2a editor control binds the explicit criteriaResultsInDeathNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2a; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
+    "e2br3_code": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
+    "label": "Seriousness Life Threatening NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_life_threatening_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_life_threatening_null_flavor persists the E.i.3.2b NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaLifeThreateningNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2b editor control binds the explicit criteriaLifeThreateningNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2b; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
+    "e2br3_code": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
+    "label": "Seriousness Hospitalization NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_hospitalization_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_hospitalization_null_flavor persists the E.i.3.2c NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaHospitalizationNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2c editor control binds the explicit criteriaHospitalizationNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2c; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2d.local.criteriaDisablingNullFlavor",
+    "e2br3_code": "E.i.3.2d.local.criteriaDisablingNullFlavor",
+    "label": "Seriousness Disabling NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_disabling_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_disabling_null_flavor persists the E.i.3.2d NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaDisablingNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2d editor control binds the explicit criteriaDisablingNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2d; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
+    "e2br3_code": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
+    "label": "Seriousness Congenital Anomaly NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_congenital_anomaly_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_congenital_anomaly_null_flavor persists the E.i.3.2e NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2e editor control binds the explicit criteriaCongenitalAnomalyNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2e; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
+    "e2br3_code": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
+    "label": "Seriousness Other Medically Important NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_other_medically_important_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_other_medically_important_null_flavor persists the E.i.3.2f NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.3.2f editor control binds the explicit criteriaOtherMedicallyImportantNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.3.2f; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
+    "e2br3_code": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
+    "label": "Required Intervention NullFlavor companion",
+    "section": "E",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "required_intervention_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.required_intervention_null_flavor persists the FDA.E.i.3.2h NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "requiredInterventionNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same FDA.E.i.3.2h editor control binds the explicit requiredInterventionNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element FDA.E.i.3.2h; allowed codes come from registry/dictionary."
+  },
+  {
+    "id": "E.i.5.local.reactionEndDateNullFlavor",
+    "e2br3_code": "E.i.5.local.reactionEndDateNullFlavor",
+    "label": "Date of End of Reaction/Event NullFlavor companion",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "editor_page": "AE",
+    "editor_status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "end_date_null_flavor",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.end_date_null_flavor persists the E.i.5 NullFlavor companion."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionEndDateNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "The same E.i.5 editor control binds the explicit reactionEndDateNullFlavor companion."
+    },
+    "action": "",
+    "notes": "Local persistence companion for official element E.i.5; allowed codes come from registry/dictionary."
   }
 ]

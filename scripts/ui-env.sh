@@ -80,12 +80,14 @@ mkdir -p "$log_dir"
 ui_tsconfig="$log_dir/tsconfig.json"
 printf '{"extends":"%s","compilerOptions":{"baseUrl":"%s"}}\n' "$frontend_root/tsconfig.json" "$frontend_root" >"$ui_tsconfig"
 ui_tsconfig_path="$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[2], sys.argv[1]))' "$frontend_root" "$ui_tsconfig")"
+upgrade_reused_database=0
 
 if psql "$admin_url" -Atqc "SELECT 1 FROM pg_database WHERE datname = '$database_name'" | grep -q 1; then
 	psql "$admin_ui_url" -Atqc "SELECT to_regclass('public.ui_env_ready')" | grep -q ui_env_ready || {
 		printf 'Incomplete UI database %s; run: scripts/ui-env.sh reset %s\n' "$database_name" "$name" >&2
 		exit 2
 	}
+	upgrade_reused_database=1
 elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
 	validate_name "$UI_DB_TEMPLATE"
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" --template="$UI_DB_TEMPLATE" "$database_name"
@@ -93,6 +95,7 @@ elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
 		printf 'Template %s is not a ready UI database.\n' "$UI_DB_TEMPLATE" >&2
 		exit 2
 	}
+	upgrade_reused_database=1
 else
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" "$database_name"
 	: >"$log_dir/init.log"
@@ -106,6 +109,18 @@ GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO :"app_db_user";
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO :"app_db_user";
 SQL
 	psql "$admin_ui_url" -v ON_ERROR_STOP=1 -qc 'CREATE TABLE ui_env_ready (ready BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (ready)); INSERT INTO ui_env_ready DEFAULT VALUES;'
+fi
+
+if [[ "$upgrade_reused_database" -eq 1 ]]; then
+	for migration in \
+		db/migrations/20260920_preserve_test_date_precision.sql \
+		db/migrations/20260921_fda_device_audit_triggers.sql \
+		db/migrations/20261007_drug_not_administered_terminology.sql; do
+		if ! psql "$admin_ui_url" -v ON_ERROR_STOP=1 -f "$repo_root/$migration"; then
+			printf 'Failed to upgrade UI database %s with %s.\n' "$database_name" "$migration" >&2
+			exit 2
+		fi
+	done
 fi
 
 export SERVICE_DB_URL="$ui_url"

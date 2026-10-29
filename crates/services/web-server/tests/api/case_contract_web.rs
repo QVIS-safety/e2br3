@@ -363,6 +363,60 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn review_receiver_json_can_be_cleared_back_to_sql_null() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-CLEAR").await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"review_receivers_json": serde_json::to_string(&json!([{
+					"receiver": "E2BR3 review receiver",
+					"reportDueDate": "2026-09-10"
+				}]))?
+			},
+			"reason_for_change": "seed review receiver"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": { "review_receivers_json": null },
+			"reason_for_change": "restore review receiver baseline"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert!(body["data"]["review_receivers_json"].is_null(), "{body:?}");
+
+	let (status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert!(body["data"]["review_receivers_json"].is_null(), "{body:?}");
+
+	let (status, shell) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/shell"))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{shell:?}");
+	assert_eq!(shell["reviewReceivers"], json!([]));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn explicit_review_receiver_date_does_not_require_a_presave_in_mixed_rows(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

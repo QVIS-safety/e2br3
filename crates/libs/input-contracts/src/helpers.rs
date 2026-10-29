@@ -21,13 +21,11 @@ pub(crate) fn max_length(
 	}
 }
 
-pub(crate) fn reject_null(
-	issues: &mut Vec<InputIssue>,
-	code: &'static str,
-	value: InputValue<'_>,
-) {
-	if value == InputValue::Null {
-		push(issues, code, "cannot be null".to_string());
+pub(crate) fn reject_null(issues: &mut Vec<InputIssue>, value: InputValue<'_>) {
+	if value == InputValue::Null
+		|| matches!(value, InputValue::String(value) if value.trim().is_empty())
+	{
+		push(issues, "INPUT.NULL.REJECTED", "cannot be null".to_string());
 	}
 }
 

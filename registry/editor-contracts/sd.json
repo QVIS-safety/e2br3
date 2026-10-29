@@ -61,6 +61,7 @@
       },
       "businessValidation": {
         "status": "verified",
+        "ruleCode": "ICH.C.3.2.REQUIRED",
         "issuePath": "senderInformation.organizationName"
       },
       "payloadPath": "organizationName"
@@ -273,7 +274,15 @@
         "status": "verified",
         "issuePath": "senderInformation.countryCode"
       },
-      "payloadPath": "countryCode"
+      "payloadPath": "countryCode",
+      "control": {
+        "kind": "async_autocomplete",
+        "queryValue": "KR",
+        "optionValue": "KR",
+        "optionDataValue": "KR",
+        "optionLabel": "KR",
+        "selectedLabel": "KR"
+      }
     },
     {
       "code": "C.3.4.6",
