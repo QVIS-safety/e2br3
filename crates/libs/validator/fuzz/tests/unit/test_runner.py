@@ -4,12 +4,20 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-import case_business_validator_fuzzer as fuzzer
+import runner as fuzzer
 
 
 class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
+    def test_every_rule_has_one_scenario(self):
+        runner = fuzzer
+        inventory = runner.discover_business_rule_codes()
+        scenarios = [s.expected_code for s in runner.scenario_catalog(1)
+                     if s.expected_code in inventory]
+        self.assertEqual(len(scenarios), 298)
+        self.assertEqual(set(scenarios), inventory)
+
     def test_parser_accepts_explicit_message_header_bindings(self) -> None:
         args = fuzzer.parser().parse_args([
             "--message-sender-identifier", "LOCAL-SENDER",

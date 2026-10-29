@@ -1,0 +1,488 @@
+{
+  "pageId": "DG",
+  "fields": [
+    {
+      "fieldPath": "drugs",
+      "ruleCodes": [
+        "ICH.G.k.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].actionTaken",
+      "ruleCodes": [
+        "MFDS.G.k.8.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances",
+      "ruleCodes": [
+        "ICH.G.k.2.3.r.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].mfdsId",
+      "ruleCodes": [
+        "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+        "MFDS.G.k.2.3.r.1.KR.1b.VOCABULARY",
+        "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].mfdsVersion",
+      "ruleCodes": [
+        "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].strengthUnit",
+      "ruleCodes": [
+        "ICH.G.k.2.3.r.3b.REQUIRED",
+        "ICH.G.k.2.3.r.3b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].substanceName",
+      "ruleCodes": [
+        "ICH.G.k.2.3.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].substanceTermId",
+      "ruleCodes": [
+        "MFDS.G.k.2.3.r.2b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].activeSubstances[].substanceTermIdVersion",
+      "ruleCodes": [
+        "ICH.G.k.2.3.r.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].cumulativeDoseFirstReactionUnit",
+      "ruleCodes": [
+        "ICH.G.k.5b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].cumulativeDoseFirstReactionValue",
+      "ruleCodes": [
+        "ICH.G.k.5a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].doseFormTermIdVersion",
+      "ruleCodes": [
+        "ICH.G.k.4.r.9.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].doseUnit",
+      "ruleCodes": [
+        "ICH.G.k.4.r.1b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].durationUnit",
+      "ruleCodes": [
+        "ICH.G.k.4.r.6b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].durationValue",
+      "ruleCodes": [
+        "ICH.G.k.4.r.6a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].firstAdministrationDate",
+      "ruleCodes": [
+        "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].frequencyUnit",
+      "ruleCodes": [
+        "ICH.G.k.4.r.3.REQUIRED",
+        "ICH.G.k.4.r.3.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].dosageInformation[].parentRouteTermIdVersion",
+      "ruleCodes": [
+        "ICH.G.k.4.r.11.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugAuthorizationCountry",
+      "ruleCodes": [
+        "ICH.G.k.3.2.REQUIRED",
+        "ICH.G.k.3.2.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugCharacterization",
+      "ruleCodes": [
+        "FDA.G.k.1.ROUTE",
+        "FDA.R0069",
+        "FDA.R0070",
+        "FDA.R0071",
+        "ICH.G.k.1.AGGREGATE.REQUIRED",
+        "ICH.G.k.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments",
+      "ruleCodes": [
+        "FDA.G.k.9.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].administrationStartIntervalUnit",
+      "ruleCodes": [
+        "ICH.G.k.9.i.3.1b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].administrationStartIntervalValue",
+      "ruleCodes": [
+        "ICH.G.k.9.i.3.1a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].lastDoseIntervalUnit",
+      "ruleCodes": [
+        "ICH.G.k.9.i.3.2b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].lastDoseIntervalValue",
+      "ruleCodes": [
+        "ICH.G.k.9.i.3.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].methodOfAssessment",
+      "ruleCodes": [
+        "FDA.G.k.9.i.2.r.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].methodOfAssessmentKr1",
+      "ruleCodes": [
+        "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].resultOfAssessment",
+      "ruleCodes": [
+        "FDA.G.k.9.i.2.r.3.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1",
+      "ruleCodes": [
+        "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr2",
+      "ruleCodes": [
+        "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].drugReactionAssessments[].sourceOfAssessment",
+      "ruleCodes": [
+        "FDA.G.k.9.i.2.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaAdditionalInfoCoded",
+      "ruleCodes": [
+        "FDA.W0006"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices",
+      "ruleCodes": [
+        "FDA.G.k.12.COLLECTION.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices[].deviceBrandName",
+      "ruleCodes": [
+        "FDA.G.k.12.r.4-6.AT_LEAST_ONE"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices[].deviceProblemCodes",
+      "ruleCodes": [
+        "FDA.G.K.12.R.3.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices[].malfunction",
+      "ruleCodes": [
+        "FDA.G.K.12.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices[].remedialActions",
+      "ruleCodes": [
+        "FDA.W0007"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaOtherCharacterization",
+      "ruleCodes": [
+        "FDA.R0072"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].gestationPeriodExposureUnit",
+      "ruleCodes": [
+        "ICH.G.k.6b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].gestationPeriodExposureValue",
+      "ruleCodes": [
+        "ICH.G.k.6a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].indications[].indicationMeddraCode",
+      "ruleCodes": [
+        "ICH.G.k.7.r.2b.REQUIRED",
+        "ICH.G.k.7.r.2b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].indications[].indicationMeddraVersion",
+      "ruleCodes": [
+        "ICH.G.k.7.r.2a.ALLOWED.VALUE",
+        "ICH.G.k.7.r.2a.REQUIRED",
+        "ICH.G.k.7.r.2a.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].investigationalProductBlinded",
+      "ruleCodes": [
+        "ICH.G.k.2.5.STUDY.ONLY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].medicinalProduct",
+      "ruleCodes": [
+        "ICH.G.k.2.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].mfdsMpid",
+      "ruleCodes": [
+        "MFDS.G.k.2.1.KR.1b.REQUIRED",
+        "MFDS.G.k.2.1.KR.1b.VOCABULARY",
+        "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+        "MFDS.KR.FOREIGN.WHOMPID.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].mfdsMpidVersion",
+      "ruleCodes": [
+        "MFDS.G.k.2.1.KR.1a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].mpid",
+      "ruleCodes": [
+        "MFDS.G.k.2.1.1b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].mpidVersion",
+      "ruleCodes": [
+        "MFDS.G.k.2.1.1a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].obtainDrugCountry",
+      "ruleCodes": [
+        "ICH.G.k.2.4.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].phpid",
+      "ruleCodes": [
+        "ICH.G.k.2.1.MPID_PHPID.EXCLUSIVE",
+        "MFDS.G.k.2.1.2b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].phpidVersion",
+      "ruleCodes": [
+        "MFDS.G.k.2.1.2a.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "G.k.3.2",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugAuthorizationCountry",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.3.2.REQUIRED",
+        "issuePath": "drugs[].drugAuthorizationCountry"
+      }
+    },
+    {
+      "code": "G.k.5a",
+      "authority": "ICH",
+      "frontendPath": "drugs[].cumulativeDoseValue",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.5a.REQUIRED",
+        "issuePath": "drugs[].cumulativeDoseFirstReactionValue"
+      }
+    },
+    {
+      "code": "G.k.5b",
+      "authority": "ICH",
+      "frontendPath": "drugs[].cumulativeDoseUnit",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.5b.REQUIRED",
+        "issuePath": "drugs[].cumulativeDoseFirstReactionUnit"
+      }
+    },
+    {
+      "code": "G.k.6a",
+      "authority": "ICH",
+      "frontendPath": "drugs[].gestationPeriodExposureValue",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.6a.REQUIRED",
+        "issuePath": "drugs[].gestationPeriodExposureValue"
+      }
+    },
+    {
+      "code": "G.k.6b",
+      "authority": "ICH",
+      "frontendPath": "drugs[].gestationPeriodExposureUnit",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.G.k.6b.REQUIRED",
+        "issuePath": "drugs[].gestationPeriodExposureUnit"
+      }
+    },
+    {
+      "code": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaAdditionalInfoCodedNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports issues on FDA.G.k.10a."
+      }
+    },
+    {
+      "code": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].deviceBrandNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.4."
+      }
+    },
+    {
+      "code": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "drugs[].fdaDevices[].commonDeviceNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.5."
+      }
+    },
+    {
+      "code": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].routeOfAdministrationNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.10.1."
+      }
+    },
+    {
+      "code": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].parentRouteOfAdministrationNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.11.1."
+      }
+    },
+    {
+      "code": "G.k.4.r.4.local.firstAdministrationDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].firstAdministrationDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.4."
+      }
+    },
+    {
+      "code": "G.k.4.r.5.local.lastAdministrationDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].lastAdministrationDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.5."
+      }
+    },
+    {
+      "code": "G.k.4.r.9.1.local.doseFormNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].dosageInformation[].doseFormNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.9.1."
+      }
+    },
+    {
+      "code": "G.k.7.r.1.local.indicationTextNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "drugs[].indications[].indicationTextNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.7.r.1."
+      }
+    },
+    {
+      "code": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor",
+      "authority": "MFDS",
+      "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on G.k.9.i.2.r.3.KR.1."
+      }
+    },
+    {
+      "code": "G.k.local.dechallengeResult",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugReactionAssessments[].dechallengeResult",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
+      }
+    },
+    {
+      "code": "G.k.local.expectedness",
+      "authority": "ICH",
+      "frontendPath": "drugs[].drugReactionAssessments[].expectedness",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
+      }
+    }
+  ]
+}

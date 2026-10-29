@@ -1,0 +1,155 @@
+{
+  "pageId": "LB",
+  "fields": [
+    {
+      "fieldPath": "testResults[].resultUnstructured",
+      "ruleCodes": [
+        "ICH.F.r.3.4.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testDate",
+      "ruleCodes": [
+        "ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
+        "ICH.F.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testDateNullFlavor",
+      "ruleCodes": [
+        "MFDS.F.r.1.NULLFLAVOR.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testMeddraCode",
+      "ruleCodes": [
+        "ICH.F.r.2.2b.REQUIRED",
+        "ICH.F.r.2.2b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testMeddraVersion",
+      "ruleCodes": [
+        "ICH.F.r.2.2a.ALLOWED.VALUE",
+        "ICH.F.r.2.2a.REQUIRED",
+        "ICH.F.r.2.2a.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testName",
+      "ruleCodes": [
+        "ICH.F.r.2.1.REQUIRED",
+        "ICH.F.r.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testResultCode",
+      "ruleCodes": [
+        "ICH.F.r.3.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testResultUnit",
+      "ruleCodes": [
+        "ICH.F.r.3.3.REQUIRED",
+        "ICH.F.r.3.3.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "testResults[].testResultValue",
+      "ruleCodes": [
+        "ICH.F.r.3.2.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "F.r.1",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testDate",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.1.REQUIRED",
+        "issuePath": "testResults[].testDate"
+      }
+    },
+    {
+      "code": "F.r.3.1",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testResultCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.1.REQUIRED",
+        "issuePath": "testResults[].testResultCode"
+      }
+    },
+    {
+      "code": "F.r.3.2",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testResult",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.2.REQUIRED",
+        "issuePath": "testResults[].testResultValue"
+      }
+    },
+    {
+      "code": "F.r.3.3",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testUnit",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.3.REQUIRED",
+        "issuePath": "testResults[].testResultUnit"
+      }
+    },
+    {
+      "code": "F.r.2.2a",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testMeddraVersion",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.2.2a.REQUIRED",
+        "issuePath": "testResults[].testMeddraVersion"
+      }
+    },
+    {
+      "code": "F.r.2.2b",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testMeddraCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.2.2b.REQUIRED",
+        "issuePath": "testResults[].testMeddraCode"
+      }
+    },
+    {
+      "code": "F.r.3.4",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testResultUnstructured",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.F.r.3.4.REQUIRED",
+        "issuePath": "testResults[].resultUnstructured"
+      }
+    },
+    {
+      "code": "F.r.1.local.testDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on F.r.1."
+      }
+    },
+    {
+      "code": "F.r.local.testResultQualifier",
+      "authority": "ICH",
+      "frontendPath": "testResults[].testResultQualifier",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "F.r.3.2 requiredness applies to the numeric result value, not this optional qualifier."
+      }
+    }
+  ]
+}

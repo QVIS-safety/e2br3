@@ -17,11 +17,6 @@
         "ruleCode": "ICH.F.r.1.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.1.REQUIRED",
-        "issuePath": "testResults[].testDate"
-      },
       "payloadPath": "testDate",
       "nullFlavorPartnerCode": "F.r.1.local.testDateNullFlavor"
     },
@@ -64,11 +59,6 @@
         "ruleCode": "ICH.F.r.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.3.1.REQUIRED",
-        "issuePath": "testResults[].testResultCode"
-      },
       "payloadPath": "testResultCode"
     },
     {
@@ -86,11 +76,6 @@
         "ruleCode": "ICH.F.r.3.2.ALLOWED.VALUE",
         "invalidValue": "not-a-number"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.3.2.REQUIRED",
-        "issuePath": "testResults[].testResultValue"
-      },
       "payloadPath": "testResult"
     },
     {
@@ -107,11 +92,6 @@
         "status": "verified",
         "ruleCode": "ICH.F.r.3.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.3.3.REQUIRED",
-        "issuePath": "testResults[].testResultUnit"
       },
       "control": {
         "kind": "async_autocomplete",
@@ -138,11 +118,6 @@
         "ruleCode": "ICH.F.r.2.2a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.2.2a.REQUIRED",
-        "issuePath": "testResults[].testMeddraVersion"
-      },
       "payloadPath": "testMeddraVersion",
       "control": {
         "kind": "native_select",
@@ -168,11 +143,6 @@
         "status": "verified",
         "ruleCode": "ICH.F.r.2.2b.LENGTH.MAX",
         "invalidValue": "111111111"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.2.2b.REQUIRED",
-        "issuePath": "testResults[].testMeddraCode"
       },
       "payloadPath": "testMeddraCode",
       "control": {
@@ -207,11 +177,6 @@
         "status": "verified",
         "ruleCode": "ICH.F.r.3.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.F.r.3.4.REQUIRED",
-        "issuePath": "testResults[].resultUnstructured"
       },
       "payloadPath": "testResultUnstructured"
     },
@@ -299,10 +264,6 @@
         "ruleCode": "ICH.F.r.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on F.r.1."
-      },
       "payloadPath": "testDateNullFlavor",
       "nullFlavorPartnerCode": "F.r.1"
     },
@@ -319,10 +280,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The UI select limits values to EQ/LT/LE/GT/GE, while the backend has no separate portable 422 input-contract rule for this optional serialization modifier."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "F.r.3.2 requiredness applies to the numeric result value, not this optional qualifier."
       },
       "auditItem": "Test Result Qualifier",
       "payloadPath": "testResultQualifier"

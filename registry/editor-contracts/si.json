@@ -27,10 +27,6 @@
         "ruleCode": "ICH.C.5.1.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets the registration identifier value."
-      },
       "payloadPath": "[].registrationNumber",
       "nullFlavorPartnerCode": "C.5.1.r.1.local.registrationNumberNullFlavor"
     },
@@ -59,10 +55,6 @@
         "ruleCode": "ICH.C.5.1.r.2.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "studyInformation.0.studyRegistrationNumbers.0.countryCode"
-      },
       "payloadPath": "[].countryCode",
       "nullFlavorPartnerCode": "C.5.1.r.2.local.countryCodeNullFlavor",
       "control": {
@@ -89,10 +81,6 @@
         "ruleCode": "ICH.C.5.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets optional study name."
-      },
       "payloadPath": "studyName",
       "nullFlavorPartnerCode": "C.5.2.local.studyNameNullFlavor"
     },
@@ -110,10 +98,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.5.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "studyInformation.0.sponsorStudyNumber"
       },
       "payloadPath": "sponsorStudyNumber",
       "nullFlavorPartnerCode": "C.5.3.local.sponsorStudyNumberNullFlavor"
@@ -133,11 +117,6 @@
         "ruleCode": "ICH.C.5.4.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.5.4.REQUIRED",
-        "issuePath": "studyInformation.0.studyTypeReaction"
-      },
       "payloadPath": "studyTypeReaction"
     },
     {
@@ -154,11 +133,6 @@
         "status": "verified",
         "ruleCode": "MFDS.C.5.4.KR.1.ALLOWED.VALUE",
         "invalidValue": "0"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "MFDS.C.5.4.KR.1.REQUIRED",
-        "issuePath": "studyInformation.0.studyTypeReactionKr1"
       },
       "payloadPath": "studyTypeReactionKr1"
     },
@@ -177,11 +151,6 @@
         "ruleCode": "FDA.C.5.5a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "FDA.R0024",
-        "issuePath": "studyInformation.0.fdaIndNumberOccurred"
-      },
       "payloadPath": "fdaIndNumberOccurred"
     },
     {
@@ -199,11 +168,6 @@
         "ruleCode": "FDA.C.5.5b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "FDA.R0025",
-        "issuePath": "studyInformation.0.fdaPreAndaNumberOccurred"
-      },
       "payloadPath": "fdaPreAndaNumberOccurred"
     },
     {
@@ -220,11 +184,6 @@
         "status": "verified",
         "ruleCode": "FDA.C.5.6.r.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "FDA.R0026",
-        "issuePath": "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber"
       },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumber",
       "nullFlavorPartnerCode": "FDA.C.5.6.r.local.indNumberNullFlavor"
@@ -244,10 +203,6 @@
         "ruleCode": "FDA.C.5.6.r.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes the nullFlavor as the companion value and reports on indNumber."
-      },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumberNullFlavor",
       "nullFlavorPartnerCode": "FDA.C.5.6.r"
     },
@@ -265,10 +220,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.5.1.r.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.1."
       },
       "payloadPath": "[].registrationNumberNullFlavor",
       "nullFlavorPartnerCode": "C.5.1.r.1",
@@ -298,10 +249,6 @@
         "ruleCode": "ICH.C.5.1.r.2.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.2."
-      },
       "payloadPath": "[].countryCodeNullFlavor",
       "nullFlavorPartnerCode": "C.5.1.r.2",
       "fixture": [
@@ -330,10 +277,6 @@
         "ruleCode": "ICH.C.5.2.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on C.5.2."
-      },
       "payloadPath": "studyNameNullFlavor",
       "nullFlavorPartnerCode": "C.5.2"
     },
@@ -351,10 +294,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.5.3.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on C.5.3."
       },
       "payloadPath": "sponsorStudyNumberNullFlavor",
       "nullFlavorPartnerCode": "C.5.3"

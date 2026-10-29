@@ -30,7 +30,8 @@ Do not use combined values such as `ICH+FDA`. If a field is FDA-specific, set
 - `index.json`: section file registry.
 - `sections/*.json`: canonical editable field rows.
 - `editor-contracts/*.json`: field-level editor projection, PATCH, roundtrip,
-  constraint, and business-validation evidence used by strict page gates.
+  and constraint evidence used by strict page gates. Business-validation mappings
+  belong to `crates/libs/validator/field-rules/`.
 - `execution-ledger.json`: hash-pinned headed UI/Jev proof index for every
   canonical editor identity. CI rejects registry or frontend drift from it.
   Referenced result and lifecycle artifacts remain in private audit storage
@@ -117,8 +118,9 @@ python3 registry/tools/validate.py --strict-editor-contract RP
 ```
 
 All 26 CI fields and 30 RP fields are certified independently. A `complete`
-row must include projection, PATCH, roundtrip, constraint, and business-rule
-evidence, with an explicit reason when a stage is not applicable. The editor
+row must include projection, PATCH, roundtrip, and constraint evidence, with
+an explicit reason when a stage is not applicable. Business-rule tests and
+field mappings are owned by the validator crate. The editor
 contract gate does not infer section-level completion.
 
 Validate registry rows against extracted backend BMC fields:

@@ -14,7 +14,7 @@ use crate::{
 use lib_core::ctx::Ctx;
 use lib_core::model::drug::{
 	parse_drug_additional_info_codes_json, DosageInformation, DrugActiveSubstance,
-	DrugIndication, DrugInformation,
+	DrugIndication, DrugInformation, FdaDeviceCode, FdaDeviceInformation,
 };
 use lib_core::model::drug_reaction_assessment::{
 	DrugReactionAssessment, RelatednessAssessment,
@@ -1707,6 +1707,58 @@ fn fda_g_k_12_r_4_6(
 	);
 }
 
+fn fda_device_code_rules(
+	drug_idx: usize,
+	device_idx: usize,
+	device: &FdaDeviceInformation,
+	device_codes: &[FdaDeviceCode],
+	local_criteria: Option<&str>,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	if device.malfunction != Some(true) {
+		return;
+	}
+	let path = format!("drugs.{drug_idx}.fdaDevices.{device_idx}");
+	let has_problem = device_codes.iter().any(|code| {
+		code.device_id == device.id
+			&& code.element == "device_problem"
+			&& has_text(Some(&code.value_code))
+	});
+	if !has_problem {
+		crate::push_business_issue(
+			issues,
+			"FDA.G.K.12.R.3.REQUIRED",
+			if device_codes.iter().any(|code| {
+				code.device_id == device.id && code.element == "device_problem"
+			}) {
+				format!("{path}.deviceProblemCodes.0.valueCode")
+			} else {
+				format!("{path}.deviceProblemCodes")
+			},
+			"A device problem code is required for each malfunctioning device.",
+		);
+	}
+	let has_remedial = device_codes.iter().any(|code| {
+		code.device_id == device.id
+			&& code.element == "remedial_action"
+			&& has_text(Some(&code.value_code))
+	});
+	if local_criteria == Some("4") && !has_remedial {
+		crate::push_business_issue(
+			issues,
+			"FDA.W0007",
+			if device_codes.iter().any(|code| {
+				code.device_id == device.id && code.element == "remedial_action"
+			}) {
+				format!("{path}.remedialActions.0.valueCode")
+			} else {
+				format!("{path}.remedialActions")
+			},
+			"A remedial action should be provided for each malfunctioning device in a 5-day report.",
+		);
+	}
+}
+
 /// FDA.R0072
 fn fda_g_k_1_a(
 	drug_idx: usize,
@@ -2058,7 +2110,6 @@ pub(crate) async fn collect_fda_issues(
 				continue;
 			}
 			has_device = true;
-			let path = format!("drugs.{drug_idx}.fdaDevices.{device_idx}");
 			let malfunction = device.malfunction == Some(true);
 			fda_g_k_12_r_4_6(
 				drug_idx,
@@ -2074,36 +2125,14 @@ pub(crate) async fn collect_fda_issues(
 			if !malfunction {
 				continue;
 			}
-			let has_problem = device_codes.iter().any(|code| {
-				code.device_id == device.id
-					&& code.element == "device_problem"
-					&& has_text(Some(&code.value_code))
-			});
-			if !has_problem {
-				crate::push_business_issue(
-					issues,
-					"FDA.G.K.12.R.3.REQUIRED",
-					if device_codes.iter().any(|code| code.device_id == device.id && code.element == "device_problem") {
-						format!("{path}.deviceProblemCodes.0.valueCode")
-					} else { format!("{path}.deviceProblemCodes") },
-					"A device problem code is required for each malfunctioning device.",
-				);
-			}
-			let has_remedial = device_codes.iter().any(|code| {
-				code.device_id == device.id
-					&& code.element == "remedial_action"
-					&& has_text(Some(&code.value_code))
-			});
-			if local_criteria == Some("4") && !has_remedial {
-				crate::push_business_issue(
-					issues,
-					"FDA.W0007",
-					if device_codes.iter().any(|code| code.device_id == device.id && code.element == "remedial_action") {
-						format!("{path}.remedialActions.0.valueCode")
-					} else { format!("{path}.remedialActions") },
-					"A remedial action should be provided for each malfunctioning device in a 5-day report.",
-				);
-			}
+			fda_device_code_rules(
+				drug_idx,
+				device_idx,
+				device,
+				&device_codes,
+				local_criteria,
+				issues,
+			);
 		}
 		if malfunction_this_drug {
 			has_malfunction = true;
@@ -2939,7 +2968,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn empty_ctx() -> ValidationContext {
+	pub(super) fn empty_ctx() -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -2977,7 +3006,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn drug() -> DrugInformation {
+	pub(super) fn drug() -> DrugInformation {
 		DrugInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -3018,7 +3047,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn substance() -> DrugActiveSubstance {
+	pub(super) fn substance() -> DrugActiveSubstance {
 		DrugActiveSubstance {
 			id: Uuid::nil(),
 			drug_id: Uuid::nil(),
@@ -3039,7 +3068,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn dosage() -> DosageInformation {
+	pub(super) fn dosage() -> DosageInformation {
 		DosageInformation {
 			id: Uuid::nil(),
 			drug_id: Uuid::nil(),
@@ -3082,7 +3111,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn indication() -> DrugIndication {
+	pub(super) fn indication() -> DrugIndication {
 		DrugIndication {
 			id: Uuid::nil(),
 			drug_id: Uuid::nil(),
@@ -3099,7 +3128,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn assessment() -> DrugReactionAssessment {
+	pub(super) fn assessment() -> DrugReactionAssessment {
 		DrugReactionAssessment {
 			id: Uuid::nil(),
 			drug_id: Uuid::nil(),
@@ -3119,7 +3148,7 @@ mod golden_g_required_tests {
 		}
 	}
 
-	fn relatedness() -> RelatednessAssessment {
+	pub(super) fn relatedness() -> RelatednessAssessment {
 		RelatednessAssessment {
 			id: Uuid::nil(),
 			drug_reaction_assessment_id: Uuid::nil(),
@@ -3841,3 +3870,7 @@ mod golden_g_required_tests {
 		);
 	}
 }
+
+#[cfg(test)]
+#[path = "g/rule_tests.rs"]
+pub(crate) mod rule_tests;

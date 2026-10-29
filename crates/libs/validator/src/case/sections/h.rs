@@ -295,6 +295,10 @@ pub(crate) fn collect_ich_issues(
 }
 
 #[cfg(test)]
+#[path = "h/rule_tests.rs"]
+pub(crate) mod rule_tests;
+
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use lib_core::model::case::Case;
@@ -338,7 +342,7 @@ mod tests {
 		}
 	}
 
-	fn empty_ctx() -> ValidationContext {
+	pub(super) fn empty_ctx() -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -376,7 +380,7 @@ mod tests {
 		}
 	}
 
-	fn narrative() -> NarrativeInformation {
+	pub(super) fn narrative() -> NarrativeInformation {
 		NarrativeInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -392,7 +396,7 @@ mod tests {
 		}
 	}
 
-	fn sender_diagnosis() -> SenderDiagnosis {
+	pub(super) fn sender_diagnosis() -> SenderDiagnosis {
 		SenderDiagnosis {
 			id: Uuid::nil(),
 			narrative_id: Uuid::nil(),
@@ -407,7 +411,7 @@ mod tests {
 		}
 	}
 
-	fn case_summary() -> CaseSummaryInformation {
+	pub(super) fn case_summary() -> CaseSummaryInformation {
 		CaseSummaryInformation {
 			id: Uuid::nil(),
 			narrative_id: Uuid::nil(),

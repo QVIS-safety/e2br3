@@ -1905,26 +1905,29 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 		.uri(format!("/api/submissions/{id}/xml"))
 		.body(Body::empty())?;
 	assert!(!app.clone().oneshot(req).await?.status().is_success());
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	let changed = mm
-		.dbx()
-		.execute(
-			sqlx::query("UPDATE case_submissions SET submitted_xml=$2 WHERE id=$1")
-				.bind(id)
-				.bind({
-					let mut bytes = original.clone();
-					bytes[0] ^= 1;
-					bytes
-				}),
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query(
+		"WITH user_context AS MATERIALIZED (
+			SELECT set_current_user_context($1)
 		)
-		.await;
+		SELECT set_org_context($2, $3)
+		FROM user_context",
+	)
+	.bind(seed.admin.id)
+	.bind(seed.org_id)
+	.bind(ROLE_SPONSOR_ADMIN_CRO)
+	.execute(&mut *tx)
+	.await?;
+	let changed =
+		sqlx::query("UPDATE case_submissions SET submitted_xml=$2 WHERE id=$1")
+			.bind(id)
+			.bind({
+				let mut bytes = original.clone();
+				bytes[0] ^= 1;
+				bytes
+			})
+			.execute(&mut *tx)
+			.await;
 	let error = changed.expect_err("submitted bytes must be immutable");
 	assert!(
 		error
@@ -1932,7 +1935,7 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 			.contains("Submission identity and original XML are immutable"),
 		"{error}"
 	);
-	mm.dbx().rollback_txn().await?;
+	tx.rollback().await?;
 	let (_, retained) =
 		web_server::submission::get_submission_artifact(&ctx, &mm, id).await?;
 	assert_eq!(retained, original);

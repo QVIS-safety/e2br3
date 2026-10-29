@@ -294,11 +294,6 @@
         "ruleCode": "ICH.G.k.3.2.LENGTH.MAX",
         "invalidValue": "XXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.3.2.REQUIRED",
-        "issuePath": "drugs[].drugAuthorizationCountry"
-      },
       "payloadPath": "drugAuthorizationCountry",
       "control": {
         "kind": "async_autocomplete",
@@ -343,11 +338,6 @@
         "invalidValue": "not-a-number",
         "issuePath": "drugs[].cumulativeDoseValue"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.5a.REQUIRED",
-        "issuePath": "drugs[].cumulativeDoseFirstReactionValue"
-      },
       "payloadPath": "cumulativeDoseValue"
     },
     {
@@ -364,11 +354,6 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.5b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.5b.REQUIRED",
-        "issuePath": "drugs[].cumulativeDoseFirstReactionUnit"
       },
       "payloadPath": "cumulativeDoseUnit",
       "control": {
@@ -397,11 +382,6 @@
         "invalidValue": "not-a-number",
         "issuePath": "drugs[].gestationPeriodExposureValue"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.6a.REQUIRED",
-        "issuePath": "drugs[].gestationPeriodExposureValue"
-      },
       "payloadPath": "gestationPeriodExposureValue"
     },
     {
@@ -418,11 +398,6 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.6b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.G.k.6b.REQUIRED",
-        "issuePath": "drugs[].gestationPeriodExposureUnit"
       },
       "control": {
         "kind": "async_autocomplete",
@@ -1467,10 +1442,6 @@
         "ruleCode": "FDA.G.k.10a.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports issues on FDA.G.k.10a."
-      },
       "payloadPath": "fdaAdditionalInfoCodedNullFlavor",
       "nullFlavorPartnerCode": "FDA.G.k.10a"
     },
@@ -1657,10 +1628,6 @@
         "ruleCode": "FDA.G.k.12.r.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.4."
-      },
       "payloadPath": "fdaDevices[].deviceBrandNameNullFlavor",
       "nullFlavorPartnerCode": "FDA.G.k.12.r.4"
     },
@@ -1696,10 +1663,6 @@
         "status": "verified",
         "ruleCode": "FDA.G.k.12.r.5.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on FDA.G.k.12.r.5."
       },
       "payloadPath": "fdaDevices[].commonDeviceNameNullFlavor",
       "nullFlavorPartnerCode": "FDA.G.k.12.r.5"
@@ -1885,10 +1848,6 @@
         "ruleCode": "ICH.G.k.4.r.10.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.10.1."
-      },
       "payloadPath": "dosageInformation[].routeOfAdministrationNullFlavor",
       "nullFlavorPartnerCode": "G.k.4.r.10.1"
     },
@@ -1906,10 +1865,6 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.11.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.11.1."
       },
       "payloadPath": "dosageInformation[].parentRouteOfAdministrationNullFlavor",
       "nullFlavorPartnerCode": "G.k.4.r.11.1"
@@ -1929,10 +1884,6 @@
         "ruleCode": "ICH.G.k.4.r.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.4."
-      },
       "payloadPath": "dosageInformation[].firstAdministrationDateNullFlavor",
       "nullFlavorPartnerCode": "G.k.4.r.4"
     },
@@ -1950,10 +1901,6 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.4.r.5.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.5."
       },
       "payloadPath": "dosageInformation[].lastAdministrationDateNullFlavor",
       "nullFlavorPartnerCode": "G.k.4.r.5"
@@ -1973,10 +1920,6 @@
         "ruleCode": "ICH.G.k.4.r.9.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.4.r.9.1."
-      },
       "payloadPath": "dosageInformation[].doseFormNullFlavor",
       "nullFlavorPartnerCode": "G.k.4.r.9.1"
     },
@@ -1994,10 +1937,6 @@
         "status": "verified",
         "ruleCode": "ICH.G.k.7.r.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.7.r.1."
       },
       "payloadPath": "indications[].indicationTextNullFlavor",
       "nullFlavorPartnerCode": "G.k.7.r.1"
@@ -2123,10 +2062,6 @@
         "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.9.i.2.r.3.KR.1."
-      },
       "payloadPath": "drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
       "nullFlavorPartnerCode": "G.k.9.i.2.r.3.KR.1"
     },
@@ -2144,10 +2079,6 @@
         "status": "verified",
         "ruleCode": "CIOMS.ITEM20.ALLOWED.VALUE",
         "invalidValue": "9"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
       },
       "payloadPath": "drugReactionAssessments[].dechallengeResult",
       "domFieldNumber": "CIOMS Item 20",
@@ -2167,10 +2098,6 @@
         "status": "verified",
         "ruleCode": "LOCAL.G.k.9.i.expectedness.ALLOWED.VALUE",
         "invalidValue": "9"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "The committed input contract enforces this local/CIOMS allowed-value set; no E2B conformance rule applies."
       },
       "payloadPath": "drugReactionAssessments[].expectedness",
       "domFieldNumber": "Local assessment",
@@ -2202,10 +2129,10 @@
           "Create or select a real INFO ProductPresave and use its returned UUID."
         ]
       },
-    "constraint": {
-      "status": "not_applicable",
-      "reason": "The picker only permits organization-visible production ProductPresaves returned by INFO and exposes no independent invalid-value input surface."
-    },
+      "constraint": {
+        "status": "not_applicable",
+        "reason": "The picker only permits organization-visible production ProductPresaves returned by INFO and exposes no independent invalid-value input surface."
+      },
       "payloadPath": "sourceProductPresaveId"
     }
   ]

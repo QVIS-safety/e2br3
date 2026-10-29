@@ -2359,6 +2359,10 @@ pub(crate) fn collect_mfds_issues(
 	}
 }
 #[cfg(test)]
+#[path = "d/rule_tests.rs"]
+pub(crate) mod rule_tests;
+
+#[cfg(test)]
 mod golden_companion_tests {
 	//! Characterization tests for the MedDRA code⇔version companion rules in
 	//! `collect_ich_issues` (D.7.1.r.1a / D.7.1.r.1b on medical history). They
@@ -2415,7 +2419,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn empty_ctx() -> ValidationContext {
+	pub(super) fn empty_ctx() -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -2453,7 +2457,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn medhist(
+	pub(super) fn medhist(
 		meddra_code: Option<&str>,
 		meddra_version: Option<&str>,
 	) -> MedicalHistoryEpisode {
@@ -2479,7 +2483,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn parent(id: Uuid) -> ParentInformation {
+	pub(super) fn parent(id: Uuid) -> ParentInformation {
 		ParentInformation {
 			id,
 			patient_id: Uuid::nil(),
@@ -2504,7 +2508,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn patient() -> PatientInformation {
+	pub(super) fn patient() -> PatientInformation {
 		PatientInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2537,7 +2541,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn patient_identifier(
+	pub(super) fn patient_identifier(
 		identifier_type_code: &str,
 		identifier_value: &str,
 	) -> PatientIdentifier {
@@ -2556,7 +2560,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn past_drug() -> PastDrugHistory {
+	pub(super) fn past_drug() -> PastDrugHistory {
 		PastDrugHistory {
 			id: Uuid::nil(),
 			patient_id: Uuid::nil(),
@@ -2587,7 +2591,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn death_info() -> PatientDeathInformation {
+	pub(super) fn death_info() -> PatientDeathInformation {
 		PatientDeathInformation {
 			id: Uuid::nil(),
 			patient_id: Uuid::nil(),
@@ -2602,7 +2606,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn parent_medhist(
+	pub(super) fn parent_medhist(
 		parent_id: Uuid,
 		meddra_code: Option<&str>,
 		meddra_version: Option<&str>,
@@ -2628,7 +2632,7 @@ mod golden_companion_tests {
 		}
 	}
 
-	fn parent_past_drug(
+	pub(super) fn parent_past_drug(
 		parent_id: Uuid,
 		mpid: Option<&str>,
 		mpid_version: Option<&str>,
@@ -2771,7 +2775,7 @@ mod golden_companion_tests {
 		"ICH.D.9.2.r.2.REQUIRED",
 	];
 
-	fn reported_cause(
+	pub(super) fn reported_cause(
 		meddra_code: Option<&str>,
 		meddra_version: Option<&str>,
 		comments: Option<&str>,
@@ -2805,7 +2809,7 @@ mod golden_companion_tests {
 		out
 	}
 
-	fn autopsy_cause(
+	pub(super) fn autopsy_cause(
 		meddra_code: Option<&str>,
 		meddra_version: Option<&str>,
 		comments: Option<&str>,

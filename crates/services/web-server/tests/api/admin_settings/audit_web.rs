@@ -34,23 +34,21 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
 		.await?;
-	let create_audit = dbx
-		.fetch_optional(
-			sqlx::query_as::<
-				_,
-				(
-					Uuid,
-					String,
-					serde_json::Value,
-					Option<serde_json::Value>,
-					serde_json::Value,
-				),
-			>(
-				r#"
+	let create_audit = sqlx::query_as::<
+		_,
+		(
+			Uuid,
+			String,
+			serde_json::Value,
+			Option<serde_json::Value>,
+			serde_json::Value,
+		),
+	>(
+		r#"
 				SELECT user_id, action, changed_fields, old_values, new_values
 				FROM audit_logs
 				WHERE table_name = 'app_settings'
@@ -61,11 +59,11 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 				ORDER BY id DESC
 				LIMIT 1
 				"#,
-			)
-			.bind(seed.org_id),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
+	)
+	.bind(seed.org_id)
+	.fetch_optional(&mut *tx)
+	.await?;
+	tx.rollback().await?;
 
 	let (user_id, action, changed_fields, old_values, new_values) =
 		create_audit.ok_or("missing app_settings create audit row")?;
@@ -91,24 +89,22 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
 		.await?;
-	let audit = dbx
-		.fetch_optional(
-			sqlx::query_as::<
-				_,
-				(
-					Uuid,
-					String,
-					serde_json::Value,
-					serde_json::Value,
-					serde_json::Value,
-					String,
-				),
-			>(
-				r#"
+	let audit = sqlx::query_as::<
+		_,
+		(
+			Uuid,
+			String,
+			serde_json::Value,
+			serde_json::Value,
+			serde_json::Value,
+			String,
+		),
+	>(
+		r#"
 				SELECT user_id, action, changed_fields, old_values, new_values, created_at::TEXT
 				FROM audit_logs
 				WHERE table_name = 'app_settings'
@@ -119,11 +115,11 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 				ORDER BY id DESC
 				LIMIT 1
 				"#,
-			)
-			.bind(seed.org_id),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
+	)
+	.bind(seed.org_id)
+	.fetch_optional(&mut *tx)
+	.await?;
+	tx.rollback().await?;
 
 	let (user_id, action, changed_fields, old_values, new_values, created_at) =
 		audit.ok_or("missing app_settings audit row")?;
@@ -150,14 +146,12 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
 		.await?;
-	let (count,) = dbx
-		.fetch_one(
-			sqlx::query_as::<_, (i64,)>(
-				r#"
+	let (count,) = sqlx::query_as::<_, (i64,)>(
+		r#"
 				SELECT COUNT(*)
 				FROM audit_logs
 				WHERE table_name = 'app_settings'
@@ -166,11 +160,11 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 				  AND action = 'UPDATE'
 				  AND changed_fields ? 'timezone'
 				"#,
-			)
-			.bind(seed.org_id),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
+	)
+	.bind(seed.org_id)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.rollback().await?;
 	assert_eq!(count, 1);
 
 	Ok(())

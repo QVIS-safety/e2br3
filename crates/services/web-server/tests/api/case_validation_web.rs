@@ -51,6 +51,24 @@ async fn create_case(
 	Ok(Uuid::parse_str(id)?)
 }
 
+async fn editor_patch_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let request = Request::builder()
+		.method("PATCH")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let response = app.clone().oneshot(request).await?;
+	let status = response.status();
+	let body = to_bytes(response.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice(&body)?))
+}
+
 async fn create_case_with_payload(
 	app: &axum::Router,
 	cookie: &str,
@@ -218,31 +236,6 @@ async fn create_primary_source(
 		)
 		.into());
 	}
-	Ok(())
-}
-
-async fn force_all_primary_sources_non_primary(
-	mm: &lib_core::model::ModelManager,
-	user_id: Uuid,
-	org_id: Uuid,
-	case_id: Uuid,
-) -> Result<()> {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) =
-		set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await
-	{
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err.into());
-	}
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				"UPDATE primary_sources SET primary_source_regulatory = NULL WHERE case_id = $1",
-			)
-			.bind(case_id),
-		)
-		.await?;
-	mm.dbx().commit_txn().await?;
 	Ok(())
 }
 
@@ -420,77 +413,6 @@ async fn create_drug(app: &axum::Router, cookie: &str, case_id: Uuid) -> Result<
 	Ok(())
 }
 
-async fn create_domestic_kr_drug(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-) -> Result<Uuid> {
-	let body = json!({
-		"data": {
-			"case_id": case_id,
-			"sequence_number": 1,
-			"drug_characterization": "1",
-			"medicinal_product": "Drug A",
-			"obtain_drug_country": "KR"
-		}
-	});
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!("/api/cases/{case_id}/drugs"))
-		.header("cookie", cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(body.to_string()))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create domestic KR drug status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let drug_id = value["data"]["id"].as_str().ok_or("missing drug id")?;
-	Ok(Uuid::parse_str(drug_id)?)
-}
-
-async fn create_drug_active_substance(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-	drug_id: Uuid,
-) -> Result<()> {
-	let body = json!({
-		"data": {
-			"drug_id": drug_id,
-			"sequence_number": 1,
-			"substance_name": "Substance A"
-		}
-	});
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!(
-			"/api/cases/{case_id}/drugs/{drug_id}/active-substances"
-		))
-		.header("cookie", cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(body.to_string()))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create active substance status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	Ok(())
-}
-
 async fn create_narrative(
 	app: &axum::Router,
 	cookie: &str,
@@ -530,6 +452,25 @@ async fn seed_rule_clean_case(
 ) -> Result<()> {
 	seed_active_test_meddra_term(mm).await?;
 	create_safety_report(app, cookie, case_id).await?;
+	let (status, body) = update_safety_report(
+		app,
+		cookie,
+		case_id,
+		json!({
+			"data": {
+				"additional_documents_available": false,
+				"worldwide_unique_id": format!("US-{}", case_id.simple()),
+				"first_sender_type": "1"
+			}
+		}),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update clean safety report status {status} body {body}"
+		)
+		.into());
+	}
 	create_message_header(app, cookie, case_id).await?;
 	create_sender(app, cookie, case_id, "1").await?;
 	create_primary_source(app, cookie, case_id).await?;
@@ -653,96 +594,6 @@ async fn update_message_header_message_receiver(
 	if status != StatusCode::OK {
 		return Err(format!(
 			"update message header status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	Ok(())
-}
-
-async fn create_parent_information(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-) -> Result<Uuid> {
-	let req = Request::builder()
-		.method("GET")
-		.uri(format!("/api/cases/{case_id}/patient"))
-		.header("cookie", cookie)
-		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"get patient status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let patient_id = value["data"]["id"].as_str().ok_or("missing patient id")?;
-	let body = json!({
-		"data": {
-			"patient_id": patient_id,
-			"sex": "2"
-		}
-	});
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!("/api/cases/{case_id}/patient/parents"))
-		.header("cookie", cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(body.to_string()))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create parent status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let parent_id = value["data"]["id"].as_str().ok_or("missing parent id")?;
-	Ok(Uuid::parse_str(parent_id)?)
-}
-
-async fn create_parent_past_drug_history(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-	parent_id: Uuid,
-	mfds_medicinal_product_id: Option<&str>,
-	mfds_medicinal_product_version: Option<&str>,
-) -> Result<()> {
-	let body = json!({
-		"data": {
-			"parent_id": parent_id,
-			"sequence_number": 1,
-			"drug_name": "Parent Prior Drug",
-			"mfds_medicinal_product_id": mfds_medicinal_product_id,
-			"mfds_medicinal_product_version": mfds_medicinal_product_version
-		}
-	});
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!(
-			"/api/cases/{case_id}/patient/parent/{parent_id}/past-drugs"
-		))
-		.header("cookie", cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(body.to_string()))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create parent past drug status {} body {}",
 			status,
 			String::from_utf8_lossy(&body)
 		)
@@ -992,6 +843,122 @@ async fn validator_mark_validated(
 
 #[serial]
 #[tokio::test]
+async fn test_reporter_validation_switches_from_collection_to_existing_fields(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let validation_uri = format!("/api/cases/{case_id}/validation?authority=ich");
+	let (status, report) =
+		crate::validation_common::get_json(&app, &cookie, validation_uri.clone())
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{report}");
+	let paths: Vec<_> = report["data"]["issues"]
+		.as_array()
+		.ok_or("missing issues")?
+		.iter()
+		.filter_map(|issue| issue["path"].as_str())
+		.filter(|path| path.starts_with("primarySources"))
+		.collect();
+	assert_eq!(paths, vec!["primarySources"]);
+	assert_eq!(report["data"]["ok"], false);
+
+	let (status, saved) = editor_patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/RP"),
+		json!({"authorities": ["ich"], "rows": {"primarySources": [{
+			"reporterGivenName": "Reporter with missing qualification",
+			"primarySourceForRegulatoryPurposes": "1"
+		}]}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	assert_eq!(saved["rows"]["primarySources"].as_array().unwrap().len(), 1);
+	let (status, report) =
+		crate::validation_common::get_json(&app, &cookie, validation_uri.clone())
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{report}");
+	let paths: Vec<_> = report["data"]["issues"]
+		.as_array()
+		.ok_or("missing issues")?
+		.iter()
+		.filter_map(|issue| issue["path"].as_str())
+		.filter(|path| path.starts_with("primarySources"))
+		.collect();
+	assert!(!paths.contains(&"primarySources"), "{paths:?}");
+	assert!(
+		paths.contains(&"primarySources.0.qualification"),
+		"{paths:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_study_sequence_gaps_keep_validation_bound_to_editor_rows() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/SI");
+	let (status, body) = editor_patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({
+			"authorities": ["ich"], "rows": {
+				"studyInformation": {"studyName": "Sequence gaps"},
+				"studyRegistrationNumbers": [
+					{"registrationNumber": "LATER", "countryCode": "US", "sequenceNumber": 9},
+					{"registrationNumber": "FIRST", "countryCode": "ZX", "sequenceNumber": 4}
+				]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) =
+		crate::validation_common::get_json(&app, &cookie, uri.clone()).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["studyRegistrationNumbers"][0]["registration_number"],
+		"FIRST"
+	);
+	assert_eq!(
+		body["rows"]["studyRegistrationNumbers"][1]["registration_number"],
+		"LATER"
+	);
+	let (status, report) = crate::validation_common::get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{report}");
+	let paths: Vec<_> = report["data"]["issues"]
+		.as_array()
+		.ok_or("missing issues")?
+		.iter()
+		.filter(|issue| issue["code"] == "ICH.C.5.1.r.2.VOCABULARY")
+		.map(|issue| issue["path"].as_str().unwrap())
+		.collect();
+	assert_eq!(
+		paths,
+		vec!["studyInformation.0.registrations.0.registrationCountry"],
+		"{report}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_validation_defaults_to_ich_profile() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1006,301 +973,6 @@ async fn test_validation_defaults_to_ich_profile() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK);
 	assert_eq!(body["data"]["authority"], "ich");
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_mfds_sender_type_3_requires_kr1() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	create_safety_report(&app, &cookie, case_id).await?;
-	create_message_header(&app, &cookie, case_id).await?;
-	update_message_header_receiver(&app, &cookie, case_id, "MFDS-O-KR").await?;
-	update_message_header_message_receiver(&app, &cookie, case_id, "MFDS-O-KR")
-		.await?;
-	create_sender(&app, &cookie, case_id, "3").await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=mfds"),
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["authority"], "mfds");
-	assert!(
-		body["data"]["issues"]
-			.as_array()
-			.map(|items| {
-				items
-					.iter()
-					.any(|issue| issue["code"] == "MFDS.C.3.1.KR.1.REQUIRED")
-			})
-			.unwrap_or(false),
-		"expected MFDS sender KR issue, body={body}"
-	);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_mfds_sender_type_3_with_kr1_is_valid_for_sender_rule() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	create_safety_report(&app, &cookie, case_id).await?;
-	create_sender_with_kr1(&app, &cookie, case_id, "3", Some("2")).await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=mfds"),
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["authority"], "mfds");
-	assert!(
-		!body["data"]["issues"]
-			.as_array()
-			.map(|items| {
-				items
-					.iter()
-					.any(|issue| issue["code"] == "MFDS.C.3.1.KR.1.REQUIRED")
-			})
-			.unwrap_or(false),
-		"did not expect MFDS sender KR issue, body={body}"
-	);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_primary_source_without_regulatory_primary_emits_warning() -> Result<()>
-{
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	force_all_primary_sources_non_primary(&mm, seed.admin.id, seed.org_id, case_id)
-		.await?;
-
-	let (status, body) =
-		get_validation(&app, &cookie, &format!("/api/cases/{case_id}/validation"))
-			.await?;
-
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
-	assert!(
-		issues.iter().any(|issue| {
-			issue["code"] == "ICH.C.2.r.5.REQUIRED"
-				&& issue["path"]
-					== "primarySources.0.primarySourceForRegulatoryPurposes"
-				&& issue["field_path"]
-					== "primarySources.0.primarySourceForRegulatoryPurposes"
-		}),
-		"expected C.2.r.5 primary source issue, body={body}"
-	);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_mfds_parent_past_drug_rules_emit_mfds_field_paths() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let missing_id_case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&mm, &app, &cookie, missing_id_case_id).await?;
-	update_message_header_receiver(&app, &cookie, missing_id_case_id, "MFDS-O-FR")
-		.await?;
-	update_message_header_message_receiver(
-		&app,
-		&cookie,
-		missing_id_case_id,
-		"MFDS-O-FR",
-	)
-	.await?;
-	let parent_id =
-		create_parent_information(&app, &cookie, missing_id_case_id).await?;
-	create_parent_past_drug_history(
-		&app,
-		&cookie,
-		missing_id_case_id,
-		parent_id,
-		None,
-		None,
-	)
-	.await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{missing_id_case_id}/validation?authority=mfds"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
-	assert!(
-		issues.iter().any(|issue| {
-			issue["code"] == "MFDS.D.10.8.r.1.KR.1b.REQUIRED"
-				&& issue["path"]
-					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId"
-				&& issue["field_path"]
-					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId"
-		}),
-		"expected parent past-drug MFDS product ID path, body={body}"
-	);
-	assert!(
-		!issues.iter().any(|issue| {
-			issue["code"] == "MFDS.D.10.8.r.1.KR.1b.REQUIRED"
-				&& issue["path"]
-					.as_str()
-					.map(|path| path.ends_with(".mpid"))
-					.unwrap_or(false)
-		}),
-		"parent past-drug MFDS product ID rule should not emit .mpid, body={body}"
-	);
-
-	let missing_version_case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&mm, &app, &cookie, missing_version_case_id).await?;
-	update_message_header_message_receiver(
-		&app,
-		&cookie,
-		missing_version_case_id,
-		"MFDS-O-FR",
-	)
-	.await?;
-	update_message_header_receiver(
-		&app,
-		&cookie,
-		missing_version_case_id,
-		"MFDS-O-FR",
-	)
-	.await?;
-	let parent_id =
-		create_parent_information(&app, &cookie, missing_version_case_id).await?;
-	create_parent_past_drug_history(
-		&app,
-		&cookie,
-		missing_version_case_id,
-		parent_id,
-		Some("MFDS-ID"),
-		None,
-	)
-	.await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{missing_version_case_id}/validation?authority=mfds"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
-	assert!(
-		issues.iter().any(|issue| {
-			issue["code"] == "MFDS.D.10.8.r.1.KR.1a.REQUIRED"
-				&& issue["path"]
-					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductVersion"
-				&& issue["field_path"]
-					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductVersion"
-		}),
-		"expected parent past-drug MFDS product version path, body={body}"
-	);
-	assert!(
-		!issues.iter().any(|issue| {
-			issue["code"] == "MFDS.D.10.8.r.1.KR.1a.REQUIRED"
-				&& issue["path"]
-					.as_str()
-					.map(|path| path.ends_with(".mpidVersion"))
-					.unwrap_or(false)
-		}),
-		"parent past-drug MFDS product version rule should not emit .mpidVersion, body={body}"
-	);
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_mfds_domestic_product_ingredient_paths() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	create_safety_report(&app, &cookie, case_id).await?;
-	create_message_header(&app, &cookie, case_id).await?;
-	create_sender(&app, &cookie, case_id, "1").await?;
-	create_primary_source(&app, &cookie, case_id).await?;
-	create_patient(&app, &cookie, case_id).await?;
-	create_reaction(&app, &cookie, case_id).await?;
-	create_narrative(&app, &cookie, case_id).await?;
-	update_message_header_receiver(&app, &cookie, case_id, "MFDS-O-KR").await?;
-	update_message_header_message_receiver(&app, &cookie, case_id, "MFDS-O-KR")
-		.await?;
-	let drug_id = create_domestic_kr_drug(&app, &cookie, case_id).await?;
-	create_drug_active_substance(&app, &cookie, case_id, drug_id).await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=mfds"),
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
-	assert!(
-		issues.iter().any(|issue| {
-			issue["code"] == "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
-				&& issue["path"] == "drugs.0.mfdsMpid"
-		}),
-		"expected domestic MFDS product code path, body={body}"
-	);
-	assert!(
-		!issues.iter().any(|issue| {
-			issue["code"] == "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
-				&& issue["path"] == "drugs.0.mpid"
-		}),
-		"domestic MFDS product code rule should not emit generic MPID path, body={body}"
-	);
-	assert!(
-		issues.iter().any(|issue| {
-			issue["code"] == "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
-				&& issue["path"] == "drugs.0.activeSubstances.0.mfdsId"
-		}),
-		"expected domestic MFDS ingredient code path, body={body}"
-	);
-	assert!(
-		!issues.iter().any(|issue| {
-			issue["code"] == "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
-				&& issue["path"] == "drugs.0.activeSubstances.0.substanceTermId"
-		}),
-		"domestic MFDS ingredient code rule should not emit generic substance ID path, body={body}"
-	);
-
 	Ok(())
 }
 
@@ -1709,6 +1381,40 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
+
+	let (status, validation) = crate::validation_common::get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{validation:?}");
+	assert_eq!(validation["data"]["authority"], "ich", "{validation:?}");
+	assert_eq!(validation["data"]["ok"], true, "{validation:?}");
+	assert_eq!(validation["data"]["issue_count"], 0, "{validation:?}");
+	assert_eq!(
+		validation["data"]["issues"].as_array().map(Vec::len),
+		Some(0),
+		"{validation:?}"
+	);
+
+	let (status, list) = crate::validation_common::get_json(
+		&app,
+		&cookie,
+		"/api/cases/list-view?authorities=ich&list_options%5Blimit%5D=100"
+			.to_string(),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{list:?}");
+	let case_id_string = case_id.to_string();
+	let row = list["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?
+		.iter()
+		.find(|item| item["caseId"].as_str() == Some(case_id_string.as_str()))
+		.ok_or("missing clean validated case in list view")?;
+	assert_eq!(row["warn"].as_str(), Some("0"), "{row:?}");
+	assert_ne!(row["warn"].as_str(), Some("Not checked"), "{row:?}");
 
 	let (status, body) =
 		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
@@ -2148,63 +1854,6 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 		Some(second_case_number.as_str())
 	);
 	assert_eq!(safety_report["data"]["version"].as_i64(), Some(1));
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_c1_date_ordering_business_rules() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	create_safety_report(&app, &cookie, case_id).await?;
-
-	let (status, body) = update_safety_report(
-		&app,
-		&cookie,
-		case_id,
-		json!({
-			"data": {
-				"transmission_date": "20240102000000",
-				"date_first_received_from_source": "20240104",
-				"date_of_most_recent_information": "20240103"
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=ich"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-
-	let codes = body["data"]["issues"]
-		.as_array()
-		.ok_or("missing issues")?
-		.iter()
-		.filter_map(|issue| issue["code"].as_str())
-		.collect::<Vec<_>>();
-	assert!(
-		!codes.contains(&"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN"),
-		"{codes:?}"
-	);
-	assert!(
-		codes.contains(&"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN"),
-		"{codes:?}"
-	);
-	assert!(
-		!codes.contains(&"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN"),
-		"{codes:?}"
-	);
 
 	Ok(())
 }

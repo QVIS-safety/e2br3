@@ -163,68 +163,7 @@ class RegistryValidatorTests(unittest.TestCase):
                 row["frontend"]["file"],
             )
 
-    def test_lr_editor_contract_tracks_regional_business_validation_gap(self):
-        repo = Path(__file__).resolve().parents[2]
-        contract = json.loads(
-            (repo / "registry/editor-contracts/lr.json").read_text(encoding="utf-8")
-        )
-        registry = json.loads(
-            (repo / "registry/sections/c-safety-report.json").read_text(encoding="utf-8")
-        )
 
-        self.assertEqual(
-            {
-                field["code"]: field["businessValidation"]["status"]
-                for field in contract["fields"]
-            },
-            {
-                "C.4.r.1": "not_applicable",
-                "C.4.r.local.referenceTextNullFlavor": "not_applicable",
-                "C.4.r.2": "not_applicable",
-            },
-        )
-        literature_attachment = next(
-            row for row in registry if row["id"] == "C.4.r.2"
-        )
-        self.assertEqual("incomplete", literature_attachment["status"])
-        self.assertIn("FDA", literature_attachment["action"])
-        self.assertIn("file name", literature_attachment["action"])
-        self.assertIn("mediaType", literature_attachment["action"])
-
-    def test_dm_age_business_validation_uses_backend_issue_paths(self):
-        repo = Path(__file__).resolve().parents[2]
-        contract = json.loads(
-            (repo / "registry/editor-contracts/dm.json").read_text(encoding="utf-8")
-        )
-        actual = {
-            field["code"]: (
-                field.get("businessValidation", {}).get("ruleCode"),
-                field.get("businessValidation", {}).get("issuePath"),
-            )
-            for field in contract["fields"]
-            if field["code"] in {"D.2.2a", "D.2.2b", "D.2.2.1a", "D.2.2.1b"}
-        }
-        self.assertEqual(
-            {
-                "D.2.2a": (
-                    "ICH.D.2.2a.REQUIRED",
-                    "patientInformation.ageAtTimeOfOnset",
-                ),
-                "D.2.2b": (
-                    "ICH.D.2.2b.REQUIRED",
-                    "patientInformation.ageUnit",
-                ),
-                "D.2.2.1a": (
-                    "ICH.D.2.2.1a.REQUIRED",
-                    "patientInformation.gestationPeriod",
-                ),
-                "D.2.2.1b": (
-                    "ICH.D.2.2.1b.REQUIRED",
-                    "patientInformation.gestationPeriodUnit",
-                ),
-            },
-            actual,
-        )
 
     def test_dm_parent_age_unit_radix_options_match_frontend_source(self):
         repo = Path(__file__).resolve().parents[2]
@@ -242,50 +181,11 @@ class RegistryValidatorTests(unittest.TestCase):
                 ],
             },
         )
-        source = (repo.parent / "frontend-rich-push-20261021/lib/e2b/ucum.ts").read_text(
+        source = (validate.extract_frontend_fields.resolve_frontend_root(repo) / "lib/e2b/ucum.ts").read_text(
             encoding="utf-8"
         )
         self.assertIn('option.value === "10.a" || option.value === "a"', source)
 
-    def test_si_business_validation_uses_backend_rules_and_issue_paths(self):
-        repo = Path(__file__).resolve().parents[2]
-        contract = json.loads(
-            (repo / "registry/editor-contracts/si.json").read_text(encoding="utf-8")
-        )
-        actual = {
-            field["code"]: (
-                field.get("businessValidation", {}).get("ruleCode"),
-                field.get("businessValidation", {}).get("issuePath"),
-            )
-            for field in contract["fields"]
-            if field["code"] in {
-                "C.5.4",
-                "FDA.C.5.5a",
-                "FDA.C.5.5b",
-                "FDA.C.5.6.r",
-            }
-        }
-        self.assertEqual(
-            {
-                "C.5.4": (
-                    "ICH.C.5.4.REQUIRED",
-                    "studyInformation.0.studyTypeReaction",
-                ),
-                "FDA.C.5.5a": (
-                    "FDA.R0024",
-                    "studyInformation.0.fdaIndNumberOccurred",
-                ),
-                "FDA.C.5.5b": (
-                    "FDA.R0025",
-                    "studyInformation.0.fdaPreAndaNumberOccurred",
-                ),
-                "FDA.C.5.6.r": (
-                    "FDA.R0026",
-                    "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber",
-                ),
-            },
-            actual,
-        )
 
     def test_certified_editor_sections_track_regional_business_rule_gaps(self):
         repo = Path(__file__).resolve().parents[2]
@@ -396,15 +296,10 @@ class RegistryValidatorTests(unittest.TestCase):
                 "ruleCode": "ICH.C.1.3.ALLOWED.VALUE",
                 "invalidValue": "__INVALID__",
             },
-            "businessValidation": {
-                "status": "verified",
-                "issuePath": "safetyReportIdentification.reportType",
-            },
         }
 
     def test_complete_editor_field_does_not_require_business_validation_stage(self):
         field = self.editor_field()
-        del field["businessValidation"]
         result = validate.ValidationResult()
 
         editor_contract.validate_editor_contract(
@@ -488,7 +383,7 @@ class RegistryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
-    def test_editor_contract_accepts_explicit_not_applicable_stage(self):
+    def test_editor_contract_rejects_business_validation_ownership(self):
         field = self.editor_field()
         field["businessValidation"] = {
             "status": "not_applicable",
@@ -500,7 +395,7 @@ class RegistryValidatorTests(unittest.TestCase):
             [self.editor_row()], {"pageId": "CI", "fields": [field]}, result
         )
 
-        self.assertEqual([], result.errors)
+        self.assertEqual(["C.1.3 businessValidation belongs in the validator crate"], result.errors)
 
     def test_editor_contract_blocked_stage_requires_reason(self):
         result = validate.ValidationResult()
@@ -1036,7 +931,9 @@ class RegistryValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             "testResults[].testResultUnit",
-            fields["F.r.3.3"]["businessValidation"]["issuePath"],
+            next(field for field in json.loads(
+                (repo / "crates/libs/validator/field-rules/lb.json").read_text()
+            )["editorMappings"] if field["code"] == "F.r.3.3")["businessValidation"]["issuePath"],
         )
 
     def test_string_checkbox_control_requires_explicit_string_values(self):
@@ -2566,7 +2463,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "ref: ${{ github.event_name == 'push' && github.ref_name == 'dev' && 'dev' || 'main' }}",
+            "ref: ${{ (github.base_ref == 'dev' || github.ref_name == 'dev') && 'dev' || 'main' }}",
             workflow,
         )
 
@@ -2591,9 +2488,21 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "scripts/test-isolated-db.sh --workspace --exclude lib-core -- --test-threads=1",
+            "scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1",
             workflow,
         )
+
+    def test_ci_requires_api_tests_before_publishing_dev_image(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+        deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
+
+        self.assertIn(
+            "needs: [registry, fmt, clippy, validator, test]",
+            deploy_job,
+        )
+
 
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):

@@ -1,0 +1,177 @@
+{
+  "pageId": "DH",
+  "fields": [
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].indicationMeddraVersion",
+      "ruleCodes": [
+        "ICH.D.8.r.6a.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].mfdsMedicinalProductId",
+      "ruleCodes": [
+        "MFDS.D.8.r.1.KR.1b.REQUIRED",
+        "MFDS.D.8.r.1.KR.1b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
+      "ruleCodes": [
+        "MFDS.D.8.r.1.KR.1a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].mpid",
+      "ruleCodes": [
+        "MFDS.D.8.r.2b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].mpidVersion",
+      "ruleCodes": [
+        "MFDS.D.8.r.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].phpid",
+      "ruleCodes": [
+        "MFDS.D.8.r.3b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].phpidVersion",
+      "ruleCodes": [
+        "MFDS.D.8.r.3a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugHistory[].reactionMeddraVersion",
+      "ruleCodes": [
+        "ICH.D.8.r.7a.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].dateRange",
+      "ruleCodes": [
+        "ICH.D.8.r.FUTURE_DATE.FORBIDDEN"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].drugName",
+      "ruleCodes": [
+        "ICH.D.8.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].indicationMeddraCode",
+      "ruleCodes": [
+        "ICH.D.8.r.6b.REQUIRED",
+        "ICH.D.8.r.6b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].indicationMeddraVersion",
+      "ruleCodes": [
+        "ICH.D.8.r.6a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].mpid",
+      "ruleCodes": [
+        "ICH.D.8.MPID_PHPID.EXCLUSIVE"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].reactionMeddraCode",
+      "ruleCodes": [
+        "ICH.D.8.r.7b.REQUIRED",
+        "ICH.D.8.r.7b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.pastDrugs[].reactionMeddraVersion",
+      "ruleCodes": [
+        "ICH.D.8.r.7a.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "D.8.r.1",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].drugName",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.1.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].drugName"
+      }
+    },
+    {
+      "code": "D.8.r.6a",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].indicationMeddraVersion",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.6a.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].indicationMeddraVersion"
+      }
+    },
+    {
+      "code": "D.8.r.6b",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].indicationMeddraCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.6b.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].indicationMeddraCode"
+      }
+    },
+    {
+      "code": "D.8.r.7a",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].reactionMeddraVersion",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.7a.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].reactionMeddraVersion"
+      }
+    },
+    {
+      "code": "D.8.r.7b",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].reactionMeddraCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.D.8.r.7b.REQUIRED",
+        "issuePath": "patientInformation.pastDrugs[].reactionMeddraCode"
+      }
+    },
+    {
+      "code": "D.8.r.1.local.drugNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].drugNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.1."
+      }
+    },
+    {
+      "code": "D.8.r.4.local.startDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].startDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.4."
+      }
+    },
+    {
+      "code": "D.8.r.5.local.endDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "patientInformation.pastDrugHistory[].endDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on D.8.r.5."
+      }
+    }
+  ]
+}

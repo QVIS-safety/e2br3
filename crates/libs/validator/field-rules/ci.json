@@ -1,0 +1,390 @@
+{
+  "pageId": "CI",
+  "fields": [
+    {
+      "fieldPath": "documentsHeldBySender",
+      "ruleCodes": [
+        "FDA.R0009"
+      ]
+    },
+    {
+      "fieldPath": "documentsHeldBySender[].documentDescription",
+      "ruleCodes": [
+        "ICH.C.1.6.1.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "documentsHeldBySender[].includedDocument",
+      "ruleCodes": [
+        "ICH.C.1.6.1.r.2.ALLOWED.VALUE"
+      ]
+    },
+    {
+      "fieldPath": "linkedReports",
+      "ruleCodes": [
+        "FDA.W0001"
+      ]
+    },
+    {
+      "fieldPath": "otherCaseIdentifiers",
+      "ruleCodes": [
+        "FDA.R0017"
+      ]
+    },
+    {
+      "fieldPath": "otherCaseIdentifiers[].caseIdentifier",
+      "ruleCodes": [
+        "ICH.C.1.9.1.r.2.FORMAT",
+        "ICH.C.1.9.1.r.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "otherCaseIdentifiers[].source",
+      "ruleCodes": [
+        "ICH.C.1.9.1.r.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.additionalDocumentsAvailable",
+      "ruleCodes": [
+        "ICH.C.1.6.1.REQUIRED",
+        "MFDS.F.r.7.C.1.6.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.combinationProductReportIndicator",
+      "ruleCodes": [
+        "FDA.C.1.12.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.dateFirstReceivedFromSource",
+      "ruleCodes": [
+        "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
+        "ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
+        "ICH.C.1.4.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.dateOfMostRecentInformation",
+      "ruleCodes": [
+        "ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
+        "ICH.C.1.5.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.firstSenderType",
+      "ruleCodes": [
+        "ICH.C.1.8.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.fulfilExpeditedCriteria",
+      "ruleCodes": [
+        "FDA.R0011",
+        "ICH.C.1.7.REQUIRED",
+        "MFDS.C.1.7.NULLFLAVOR.R2.RETRANSMISSION.REQUIRED",
+        "MFDS.C.1.7.RECEIVER"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.localCriteriaReportType",
+      "ruleCodes": [
+        "FDA.C.1.7.1.REQUIRED",
+        "FDA.R0012",
+        "FDA.R0013",
+        "FDA.R0014",
+        "FDA.R0015",
+        "FDA.R0016"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.nullificationAmendmentCode",
+      "ruleCodes": [
+        "FDA.R0101"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.nullificationReason",
+      "ruleCodes": [
+        "ICH.C.1.11.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.otherCaseIdentifiersExist",
+      "ruleCodes": [
+        "ICH.C.1.9.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.reportType",
+      "ruleCodes": [
+        "FDA.R0008",
+        "FDA.R0110",
+        "FDA.R0111",
+        "FDA.R0112",
+        "ICH.C.1.3.REQUIRED",
+        "MFDS.C.1.3.RECEIVER"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.safetyReportId",
+      "ruleCodes": [
+        "ICH.C.1.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.transmissionDate",
+      "ruleCodes": [
+        "ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
+        "ICH.C.1.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "safetyReportIdentification.worldwideUniqueId",
+      "ruleCodes": [
+        "ICH.C.1.8.1.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "C.1.1",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.safetyReportId",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.safetyReportId"
+      }
+    },
+    {
+      "code": "C.1.2",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.transmissionDate",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.transmissionDate"
+      }
+    },
+    {
+      "code": "C.1.3",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.reportType",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.reportType"
+      }
+    },
+    {
+      "code": "C.1.4",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.dateFirstReceivedFromSource",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.dateFirstReceivedFromSource"
+      }
+    },
+    {
+      "code": "C.1.5",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.dateOfMostRecentInformation",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.dateOfMostRecentInformation"
+      }
+    },
+    {
+      "code": "C.1.6.1",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.additionalDocumentsAvailable",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.additionalDocumentsAvailable"
+      }
+    },
+    {
+      "code": "C.1.6.1.r.1",
+      "authority": "ICH",
+      "frontendPath": "documentsHeldBySender[].documentDescription",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.1.6.1.r.1.REQUIRED",
+        "issuePath": "documentsHeldBySender[].documentDescription"
+      }
+    },
+    {
+      "code": "C.1.6.1.r.2",
+      "authority": "ICH",
+      "frontendPath": "documentsHeldBySender[].includedDocument",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "documentsHeldBySender.0.includedDocument"
+      }
+    },
+    {
+      "code": "C.1.7",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.fulfilExpeditedCriteria",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.fulfilExpeditedCriteria"
+      }
+    },
+    {
+      "code": "FDA.C.1.7.1",
+      "authority": "FDA",
+      "frontendPath": "safetyReportIdentification.localCriteriaReportType",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.localCriteriaReportType"
+      }
+    },
+    {
+      "code": "FDA.C.1.12",
+      "authority": "FDA",
+      "frontendPath": "safetyReportIdentification.combinationProductReportIndicator",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.combinationProductReportIndicator"
+      }
+    },
+    {
+      "code": "C.1.8.1",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.worldwideUniqueId",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.worldwideUniqueId"
+      }
+    },
+    {
+      "code": "C.1.8.2",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.firstSenderType",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.firstSenderType"
+      }
+    },
+    {
+      "code": "C.1.9.1",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.otherCaseIdentifiersExist",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.otherCaseIdentifiersExist"
+      }
+    },
+    {
+      "code": "C.1.9.1.r.1",
+      "authority": "ICH",
+      "frontendPath": "otherCaseIdentifiers[].source",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.1.9.1.r.1.REQUIRED",
+        "issuePath": "otherCaseIdentifiers[].source"
+      }
+    },
+    {
+      "code": "C.1.9.1.r.2",
+      "authority": "ICH",
+      "frontendPath": "otherCaseIdentifiers[].caseIdentifier",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.1.9.1.r.2.REQUIRED",
+        "issuePath": "otherCaseIdentifiers[].caseIdentifier"
+      }
+    },
+    {
+      "code": "C.1.10.r",
+      "authority": "ICH",
+      "frontendPath": "linkedReports[].linkedReportNumber",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "linkedReports.0.linkedReportNumber"
+      }
+    },
+    {
+      "code": "C.1.11.1",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.nullificationAmendmentCode",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "safetyReportIdentification.nullificationAmendmentCode"
+      }
+    },
+    {
+      "code": "C.1.11.2",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.nullificationReason",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.1.11.2.REQUIRED",
+        "issuePath": "safetyReportIdentification.nullificationReason"
+      }
+    },
+    {
+      "code": "C.local.reportYear",
+      "authority": "ICH",
+      "frontendPath": "case.reportYear",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Report year is app-local and has no business validation rule."
+      }
+    },
+    {
+      "code": "C.local.sourceDocumentName",
+      "authority": "ICH",
+      "frontendPath": "sourceDocuments[].sourceDocumentName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Source document name is app-local and has no business validation rule."
+      }
+    },
+    {
+      "code": "C.1.local.otherCaseIdentifiersExistNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.otherCaseIdentifiersExistNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion value but emits issues on otherCaseIdentifiersExist."
+      }
+    },
+    {
+      "code": "FDA.C.1.local.fdaReportType",
+      "authority": "FDA",
+      "frontendPath": "case.fdaReportType",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "FDA report type is app-local and has no business validation rule."
+      }
+    },
+    {
+      "code": "C.1.KR.mfdsReportType",
+      "authority": "MFDS",
+      "frontendPath": "case.mfdsReportType",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "MFDS report type is app-local and has no business validation rule."
+      }
+    },
+    {
+      "code": "C.1.local.fulfilExpeditedCriteriaNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports authority-specific issues on C.1.7."
+      }
+    },
+    {
+      "code": "FDA.C.1.12.local.nullFlavor",
+      "authority": "FDA",
+      "frontendPath": "safetyReportIdentification.combinationProductReportIndicatorNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation emits FDA.C.1.12 issues on combinationProductReportIndicator."
+      }
+    }
+  ]
+}

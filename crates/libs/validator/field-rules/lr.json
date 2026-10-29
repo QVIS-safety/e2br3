@@ -1,0 +1,40 @@
+{
+  "pageId": "LR",
+  "fields": [
+    {
+      "fieldPath": "literatureReferences[].documentBase64",
+      "ruleCodes": [
+        "ICH.C.4.r.2.ALLOWED.VALUE"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "C.4.r.1",
+      "authority": "ICH",
+      "frontendPath": "literatureReferences[].referenceText",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets literature reference text; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.4.r.local.referenceTextNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "literatureReferences[].referenceTextNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes the companion value and reports the issue on referenceText."
+      }
+    },
+    {
+      "code": "C.4.r.2",
+      "authority": "ICH",
+      "frontendPath": "literatureReferences[].documentBase64",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets the attachment payload; representation format is enforced by the portable constraint."
+      }
+    }
+  ]
+}

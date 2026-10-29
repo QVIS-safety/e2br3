@@ -1687,7 +1687,10 @@ fn fda_primary_reporter_rules(
 	}
 }
 
-fn fda_reporter_email_rules(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
+fn fda_reporter_email_rules(
+	sources: &[PrimarySource],
+	issues: &mut Vec<ValidationIssue>,
+) {
 	for (idx, source) in sources.iter().enumerate() {
 		c_2_r_2_8(idx, source, issues);
 	}
@@ -2445,7 +2448,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn base_report() -> SafetyReportIdentification {
+	pub(super) fn base_report() -> SafetyReportIdentification {
 		SafetyReportIdentification {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2475,7 +2478,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn ctx_with(report: SafetyReportIdentification) -> ValidationContext {
+	pub(super) fn ctx_with(report: SafetyReportIdentification) -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -2546,7 +2549,7 @@ mod golden_c1_value_tests {
 		out
 	}
 
-	fn document(title: Option<&str>) -> DocumentsHeldBySender {
+	pub(super) fn document(title: Option<&str>) -> DocumentsHeldBySender {
 		DocumentsHeldBySender {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2565,7 +2568,10 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn other_identifier(source: &str, case_identifier: &str) -> OtherCaseIdentifier {
+	pub(super) fn other_identifier(
+		source: &str,
+		case_identifier: &str,
+	) -> OtherCaseIdentifier {
 		OtherCaseIdentifier {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2580,7 +2586,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn linked_report_number(value: String) -> LinkedReportNumber {
+	pub(super) fn linked_report_number(value: String) -> LinkedReportNumber {
 		LinkedReportNumber {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2594,7 +2600,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn primary_source() -> PrimarySource {
+	pub(super) fn primary_source() -> PrimarySource {
 		PrimarySource {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2637,7 +2643,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn sender() -> SenderInformation {
+	pub(super) fn sender() -> SenderInformation {
 		SenderInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2669,7 +2675,9 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn literature_reference(reference_text: String) -> LiteratureReference {
+	pub(super) fn literature_reference(
+		reference_text: String,
+	) -> LiteratureReference {
 		LiteratureReference {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2689,7 +2697,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn study_registration(
+	pub(super) fn study_registration(
 		study_information_id: Uuid,
 		registration_number: String,
 		country_code: Option<String>,
@@ -2711,7 +2719,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn study(
+	pub(super) fn study(
 		study_type_reaction: Option<&str>,
 		sponsor_study_number: Option<&str>,
 	) -> StudyInformation {
@@ -2740,7 +2748,7 @@ mod golden_c1_value_tests {
 		report
 	}
 
-	fn fda_context(
+	pub(super) fn fda_context(
 		cross_reported_inds: Vec<StudyFdaCrossReportedInd>,
 		has_prior_submission: bool,
 	) -> FdaValidationContext {
@@ -2751,7 +2759,9 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn cross_reported_ind(value: Option<&str>) -> StudyFdaCrossReportedInd {
+	pub(super) fn cross_reported_ind(
+		value: Option<&str>,
+	) -> StudyFdaCrossReportedInd {
 		StudyFdaCrossReportedInd {
 			id: Uuid::nil(),
 			study_information_id: Uuid::nil(),
@@ -2766,7 +2776,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn patient(initials: &str) -> PatientInformation {
+	pub(super) fn patient(initials: &str) -> PatientInformation {
 		PatientInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -2799,7 +2809,7 @@ mod golden_c1_value_tests {
 		}
 	}
 
-	fn message_header(batch: &str, receiver: &str) -> MessageHeader {
+	pub(super) fn message_header(batch: &str, receiver: &str) -> MessageHeader {
 		MessageHeader {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
@@ -3909,3 +3919,7 @@ mod golden_c1_value_tests {
 		assert_eq!(registration[0].path, "studyInformation.registrations");
 	}
 }
+
+#[cfg(test)]
+#[path = "c/rule_tests.rs"]
+pub(crate) mod rule_tests;

@@ -1,0 +1,71 @@
+{
+  "pageId": "NR",
+  "fields": [
+    {
+      "fieldPath": "narrative.caseNarrative",
+      "ruleCodes": [
+        "ICH.H.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "narrative.caseSummaries[].languageCode",
+      "ruleCodes": [
+        "ICH.H.5.r.1b.REQUIRED",
+        "ICH.H.5.r.1b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "narrative.senderComments",
+      "ruleCodes": [
+        "MFDS.H.4.KOREAN.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "narrative.senderDiagnoses[].diagnosisMeddraCode",
+      "ruleCodes": [
+        "ICH.H.3.r.1b.REQUIRED",
+        "ICH.H.3.r.1b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "narrative.senderDiagnoses[].diagnosisMeddraVersion",
+      "ruleCodes": [
+        "ICH.H.3.r.1a.ALLOWED.VALUE",
+        "ICH.H.3.r.1a.REQUIRED",
+        "ICH.H.3.r.1a.VOCABULARY"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "H.3.r.1a",
+      "authority": "ICH",
+      "frontendPath": "narrative.senderDiagnoses[].diagnosisMeddraVersion",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.3.r.1a.REQUIRED",
+        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraVersion"
+      }
+    },
+    {
+      "code": "H.3.r.1b",
+      "authority": "ICH",
+      "frontendPath": "narrative.senderDiagnoses[].diagnosisMeddraCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.3.r.1b.REQUIRED",
+        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraCode"
+      }
+    },
+    {
+      "code": "H.5.r.1b",
+      "authority": "ICH",
+      "frontendPath": "caseSummaryInformation[].languageCode",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.H.5.r.1b.REQUIRED",
+        "issuePath": "narrative.caseSummaries[].languageCode"
+      }
+    }
+  ]
+}

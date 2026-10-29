@@ -1,0 +1,208 @@
+{
+  "pageId": "SI",
+  "fields": [
+    {
+      "fieldPath": "studyInformation.fdaCrossReportedIndNumbers",
+      "ruleCodes": [
+        "FDA.R0026"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation.registrations",
+      "ruleCodes": [
+        "MFDS.C.5.1.r.1.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].fdaCrossReportedIndNumbers[].indNumber",
+      "ruleCodes": [
+        "FDA.R0109"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].fdaIndNumberOccurred",
+      "ruleCodes": [
+        "FDA.R0024",
+        "FDA.R0024.FORMAT",
+        "FDA.R0107"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].fdaPreAndaNumberOccurred",
+      "ruleCodes": [
+        "FDA.R0025",
+        "FDA.R0025.FORMAT",
+        "FDA.R0108"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].registrations[].registrationCountry",
+      "ruleCodes": [
+        "ICH.C.5.1.r.2.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].registrations[].registrationNumber",
+      "ruleCodes": [
+        "MFDS.C.5.1.r.1.NULLFLAVOR.FORBIDDEN"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].studyName",
+      "ruleCodes": [
+        "MFDS.C.5.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].studyTypeReaction",
+      "ruleCodes": [
+        "FDA.R0102",
+        "FDA.R0103",
+        "FDA.R0104",
+        "FDA.R0113",
+        "FDA.W0002",
+        "ICH.C.5.4.REQUIRED",
+        "MFDS.C.5.4.RECEIVER"
+      ]
+    },
+    {
+      "fieldPath": "studyInformation[].studyTypeReactionKr1",
+      "ruleCodes": [
+        "MFDS.C.5.4.KR.1.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "C.5.1.r.1",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumber",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets the registration identifier value."
+      }
+    },
+    {
+      "code": "C.5.1.r.2",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCode",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "studyInformation.0.studyRegistrationNumbers.0.countryCode"
+      }
+    },
+    {
+      "code": "C.5.2",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets optional study name."
+      }
+    },
+    {
+      "code": "C.5.3",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.sponsorStudyNumber",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "studyInformation.0.sponsorStudyNumber"
+      }
+    },
+    {
+      "code": "C.5.4",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyTypeReaction",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.5.4.REQUIRED",
+        "issuePath": "studyInformation.0.studyTypeReaction"
+      }
+    },
+    {
+      "code": "C.5.4.KR.1",
+      "authority": "MFDS",
+      "frontendPath": "studyInformation.studyTypeReactionKr1",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "MFDS.C.5.4.KR.1.REQUIRED",
+        "issuePath": "studyInformation.0.studyTypeReactionKr1"
+      }
+    },
+    {
+      "code": "FDA.C.5.5a",
+      "authority": "FDA",
+      "frontendPath": "studyInformation.fdaIndNumberOccurred",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "FDA.R0024",
+        "issuePath": "studyInformation.0.fdaIndNumberOccurred"
+      }
+    },
+    {
+      "code": "FDA.C.5.5b",
+      "authority": "FDA",
+      "frontendPath": "studyInformation.fdaPreAndaNumberOccurred",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "FDA.R0025",
+        "issuePath": "studyInformation.0.fdaPreAndaNumberOccurred"
+      }
+    },
+    {
+      "code": "FDA.C.5.6.r",
+      "authority": "FDA",
+      "frontendPath": "studyInformation.fdaCrossReportedIndNumbers[].indNumber",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "FDA.R0026",
+        "issuePath": "studyInformation.0.fdaCrossReportedIndNumbers.0.indNumber"
+      }
+    },
+    {
+      "code": "FDA.C.5.6.r.local.indNumberNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "studyInformation.fdaCrossReportedIndNumbers[].indNumberNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes the nullFlavor as the companion value and reports on indNumber."
+      }
+    },
+    {
+      "code": "C.5.1.r.1.local.registrationNumberNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumberNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.1."
+      }
+    },
+    {
+      "code": "C.5.1.r.2.local.countryCodeNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCodeNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.1.r.2."
+      }
+    },
+    {
+      "code": "C.5.2.local.studyNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.studyNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.2."
+      }
+    },
+    {
+      "code": "C.5.3.local.sponsorStudyNumberNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "studyInformation.sponsorStudyNumberNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on C.5.3."
+      }
+    }
+  ]
+}

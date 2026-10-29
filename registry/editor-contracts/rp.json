@@ -17,10 +17,6 @@
         "ruleCode": "ICH.C.2.r.1.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterTitle; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "[].reporterTitle",
       "nullFlavorPartnerCode": "C.2.r.local.reporterTitleNullFlavor"
     },
@@ -38,10 +34,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.1.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterGivenName; representation length is enforced by the portable constraint."
       },
       "payloadPath": "[].reporterGivenName",
       "nullFlavorPartnerCode": "C.2.r.local.reporterGivenNameNullFlavor"
@@ -61,10 +53,6 @@
         "ruleCode": "ICH.C.2.r.1.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterMiddleName; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "[].reporterMiddleName",
       "nullFlavorPartnerCode": "C.2.r.local.reporterMiddleNameNullFlavor"
     },
@@ -82,10 +70,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.1.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterFamilyName; representation length is enforced by the portable constraint."
       },
       "payloadPath": "[].reporterFamilyName",
       "nullFlavorPartnerCode": "C.2.r.local.reporterFamilyNameNullFlavor"
@@ -105,10 +89,6 @@
         "ruleCode": "ICH.C.2.r.2.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "primarySources.0.reporterOrganization"
-      },
       "payloadPath": "[].reporterOrganization",
       "nullFlavorPartnerCode": "C.2.r.local.reporterOrganizationNullFlavor"
     },
@@ -126,10 +106,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterDepartment; representation length is enforced by the portable constraint."
       },
       "payloadPath": "[].reporterDepartment",
       "nullFlavorPartnerCode": "C.2.r.local.reporterDepartmentNullFlavor"
@@ -149,10 +125,6 @@
         "ruleCode": "ICH.C.2.r.2.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterStreet; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "[].reporterStreet",
       "nullFlavorPartnerCode": "C.2.r.local.reporterStreetNullFlavor"
     },
@@ -170,10 +142,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterCity; representation length is enforced by the portable constraint."
       },
       "payloadPath": "[].reporterCity",
       "nullFlavorPartnerCode": "C.2.r.local.reporterCityNullFlavor"
@@ -193,10 +161,6 @@
         "ruleCode": "ICH.C.2.r.2.5.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterState; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "[].reporterState",
       "nullFlavorPartnerCode": "C.2.r.local.reporterStateNullFlavor"
     },
@@ -214,10 +178,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.6.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterPostcode; representation length is enforced by the portable constraint."
       },
       "payloadPath": "[].reporterPostcode",
       "nullFlavorPartnerCode": "C.2.r.local.reporterPostcodeNullFlavor"
@@ -237,10 +197,6 @@
         "ruleCode": "ICH.C.2.r.2.7.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets reporterTelephone; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "[].reporterTelephone",
       "nullFlavorPartnerCode": "C.2.r.local.reporterTelephoneNullFlavor"
     },
@@ -258,11 +214,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.3.LENGTH.MAX",
         "invalidValue": "XXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.2.r.3.REQUIRED",
-        "issuePath": "primarySources[].reporterCountry"
       },
       "payloadPath": "[].reporterCountry",
       "control": {
@@ -289,11 +240,6 @@
         "ruleCode": "FDA.C.2.r.2.8.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "FDA.C.2.r.2.8.REQUIRED",
-        "issuePath": "primarySources[].reporterEmail"
-      },
       "payloadPath": "[].reporterEmail",
       "nullFlavorPartnerCode": "C.2.r.local.reporterEmailNullFlavor"
     },
@@ -312,10 +258,6 @@
         "ruleCode": "ICH.C.2.r.4.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "primarySources.0.qualification"
-      },
       "payloadPath": "[].qualification",
       "nullFlavorPartnerCode": "C.2.r.local.qualificationNullFlavor"
     },
@@ -333,11 +275,6 @@
         "status": "verified",
         "ruleCode": "MFDS.C.2.r.4.KR.1.ALLOWED.VALUE",
         "invalidValue": "0"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "MFDS.C.2.r.4.KR.1.REQUIRED",
-        "issuePath": "primarySources[].qualificationKr1"
       },
       "payloadPath": "[].qualificationKr1",
       "renderPrerequisites": [
@@ -368,11 +305,6 @@
         "ruleCode": "ICH.C.2.r.5.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.2.r.5.REQUIRED",
-        "issuePath": "primarySources.0.primarySourceForRegulatoryPurposes"
-      },
       "payloadPath": "[].primarySourceForRegulatoryPurposes",
       "control": {
         "kind": "string_checkbox",
@@ -395,10 +327,6 @@
         "ruleCode": "ICH.C.2.r.1.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterTitle."
-      },
       "payloadPath": "[].reporterTitleNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.1.1"
     },
@@ -416,10 +344,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.1.2.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterGivenName."
       },
       "payloadPath": "[].reporterGivenNameNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.1.2"
@@ -439,10 +363,6 @@
         "ruleCode": "ICH.C.2.r.1.3.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterMiddleName."
-      },
       "payloadPath": "[].reporterMiddleNameNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.1.3"
     },
@@ -460,10 +380,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.1.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterFamilyName."
       },
       "payloadPath": "[].reporterFamilyNameNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.1.4"
@@ -483,10 +399,6 @@
         "ruleCode": "ICH.C.2.r.2.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterOrganization."
-      },
       "payloadPath": "[].reporterOrganizationNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.1"
     },
@@ -504,10 +416,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.2.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterDepartment."
       },
       "payloadPath": "[].reporterDepartmentNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.2"
@@ -527,10 +435,6 @@
         "ruleCode": "ICH.C.2.r.2.3.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterStreet."
-      },
       "payloadPath": "[].reporterStreetNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.3"
     },
@@ -548,10 +452,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterCity."
       },
       "payloadPath": "[].reporterCityNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.4"
@@ -571,10 +471,6 @@
         "ruleCode": "ICH.C.2.r.2.5.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterState."
-      },
       "payloadPath": "[].reporterStateNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.5"
     },
@@ -592,10 +488,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.2.6.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterPostcode."
       },
       "payloadPath": "[].reporterPostcodeNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.6"
@@ -615,10 +507,6 @@
         "ruleCode": "ICH.C.2.r.2.7.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterTelephone."
-      },
       "payloadPath": "[].reporterTelephoneNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.2.7"
     },
@@ -637,10 +525,6 @@
         "ruleCode": "FDA.C.2.r.2.8.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on reporterEmail."
-      },
       "payloadPath": "[].reporterEmailNullFlavor",
       "nullFlavorPartnerCode": "FDA.C.2.r.2.8"
     },
@@ -658,10 +542,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.2.r.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion but emits issues on qualification."
       },
       "payloadPath": "[].qualificationNullFlavor",
       "nullFlavorPartnerCode": "C.2.r.4"

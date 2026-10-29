@@ -17,11 +17,6 @@
         "ruleCode": "ICH.D.8.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.D.8.r.1.REQUIRED",
-        "issuePath": "patientInformation.pastDrugs[].drugName"
-      },
       "payloadPath": "drugName",
       "nullFlavorPartnerCode": "D.8.r.1.local.drugNameNullFlavor",
       "control": {
@@ -190,11 +185,6 @@
         "ruleCode": "ICH.D.8.r.6a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.D.8.r.6a.REQUIRED",
-        "issuePath": "patientInformation.pastDrugs[].indicationMeddraVersion"
-      },
       "payloadPath": "indicationMeddraVersion",
       "control": {
         "kind": "native_select",
@@ -220,11 +210,6 @@
         "status": "verified",
         "ruleCode": "ICH.D.8.r.6b.LENGTH.MAX",
         "invalidValue": "111111111"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.D.8.r.6b.REQUIRED",
-        "issuePath": "patientInformation.pastDrugs[].indicationMeddraCode"
       },
       "payloadPath": "indicationMeddraCode",
       "control": {
@@ -260,11 +245,6 @@
         "ruleCode": "ICH.D.8.r.7a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.D.8.r.7a.REQUIRED",
-        "issuePath": "patientInformation.pastDrugs[].reactionMeddraVersion"
-      },
       "payloadPath": "reactionMeddraVersion",
       "control": {
         "kind": "native_select",
@@ -290,11 +270,6 @@
         "status": "verified",
         "ruleCode": "ICH.D.8.r.7b.LENGTH.MAX",
         "invalidValue": "111111111"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.D.8.r.7b.REQUIRED",
-        "issuePath": "patientInformation.pastDrugs[].reactionMeddraCode"
       },
       "payloadPath": "reactionMeddraCode",
       "control": {
@@ -330,10 +305,6 @@
         "ruleCode": "ICH.D.8.r.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on D.8.r.1."
-      },
       "payloadPath": "drugNameNullFlavor",
       "nullFlavorPartnerCode": "D.8.r.1"
     },
@@ -352,10 +323,6 @@
         "ruleCode": "ICH.D.8.r.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on D.8.r.4."
-      },
       "payloadPath": "startDateNullFlavor",
       "nullFlavorPartnerCode": "D.8.r.4"
     },
@@ -373,10 +340,6 @@
         "status": "verified",
         "ruleCode": "ICH.D.8.r.5.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on D.8.r.5."
       },
       "payloadPath": "endDateNullFlavor",
       "nullFlavorPartnerCode": "D.8.r.5"

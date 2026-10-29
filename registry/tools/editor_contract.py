@@ -178,6 +178,8 @@ def validate_editor_contract(
             result.add(f"{page_id} editor contract duplicate code {code}")
             continue
         fields_by_code[code] = field
+        if "businessValidation" in field:
+            result.add(f"{code} businessValidation belongs in the validator crate")
         _validate_control(
             code, field.get("control"), result, field.get("roundTripValue")
         )
@@ -246,13 +248,6 @@ def validate_editor_contract(
                 if key not in field:
                     result.add(f"{code} missing {key} evidence")
             _validate_stage(code, "constraint", field.get("constraint"), result)
-            if "businessValidation" in field:
-                _validate_stage(
-                    code,
-                    "businessValidation",
-                    field.get("businessValidation"),
-                    result,
-                )
 
     for row in registry_rows:
         if (

@@ -178,3 +178,6 @@ mod direct_business_issue_tests {
 		assert!(json["issues"][0].get("blocking").is_none());
 	}
 }
+
+#[cfg(test)]
+mod field_tests;

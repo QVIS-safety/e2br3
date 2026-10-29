@@ -298,23 +298,11 @@ async fn create_re_validation_case(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	Ok(Uuid::parse_str(
-		body["data"]["id"].as_str().ok_or("missing case id")?,
-	)?)
-}
-
-#[serial]
-#[tokio::test]
-async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
+	let case_id =
+		Uuid::parse_str(body["data"]["id"].as_str().ok_or("missing case id")?)?;
 	let (status, body) = post_json(
-		&app,
-		&cookie,
+		app,
+		cookie,
 		&format!("/api/cases/{case_id}/message-header"),
 		json!({
 			"data": {
@@ -328,6 +316,18 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	Ok(case_id)
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
 	let receivers = json!({
 		"reviewReceivers": [{
 			"receiver": "MFDS",
@@ -1783,6 +1783,113 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 		.collect::<Vec<_>>();
 	assert_eq!(cached_appendices, vec!["fda", "mfds"]);
 
+	// A real editor save invalidates every authority, including those not refreshed next.
+	let request = Request::builder()
+		.method("PATCH")
+		.uri(format!("/api/cases/{case_id}/editor/pages/RP"))
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(json!({"authorities": ["fda", "mfds"], "rows": {
+			"primarySources": [{"reporterGivenName": "Cache integration reporter", "reporterEmail": "validation@example.com", "qualification": "1", "primarySourceForRegulatoryPurposes": "1", "reporterCountry": "US"}]
+		}}).to_string()))?;
+	let saved = app.clone().oneshot(request).await?;
+	let status = saved.status();
+	let saved = to_bytes(saved.into_body(), usize::MAX).await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&saved)
+	);
+
+	let mut refreshed = std::collections::HashMap::new();
+	for refresh in [None, Some("fda"), Some("mfds")] {
+		if let Some(authority) = refresh {
+			let (status, response) = get_json(
+				&app,
+				&cookie,
+				&format!("/api/cases/{case_id}/validation?authority={authority}"),
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{response:?}");
+			let report = &response["data"];
+			assert_eq!(report["authority"], authority);
+			let issues = report["issues"].as_array().ok_or("missing issues")?;
+			assert_eq!(report["issue_count"].as_u64(), Some(issues.len() as u64));
+			assert_eq!(report["ok"].as_bool(), Some(issues.is_empty()));
+			let sections = report["section_summaries"]
+				.as_array()
+				.ok_or("missing section summaries")?;
+			for section in sections {
+				let count = issues
+					.iter()
+					.filter(|issue| issue["section"] == section["section"])
+					.count();
+				assert_eq!(section["issue_count"].as_u64(), Some(count as u64));
+			}
+			assert_eq!(
+				sections
+					.iter()
+					.map(|section| section["issue_count"].as_u64().unwrap())
+					.sum::<u64>(),
+				issues.len() as u64
+			);
+			let keys = issues
+				.iter()
+				.map(|issue| (issue["code"].to_string(), issue["path"].to_string()))
+				.collect::<std::collections::HashSet<_>>();
+			assert_eq!(
+				keys.len(),
+				issues.len(),
+				"duplicate issue identity in {authority}"
+			);
+			refreshed.insert(authority, keys);
+		}
+
+		for authorities in ["fda", "mfds", "fda,mfds"] {
+			let selected = authorities.split(',').collect::<Vec<_>>();
+			let expected = if selected
+				.iter()
+				.all(|authority| refreshed.contains_key(authority))
+			{
+				selected
+					.iter()
+					.flat_map(|authority| refreshed[authority].iter().cloned())
+					.collect::<std::collections::HashSet<_>>()
+					.len()
+					.to_string()
+			} else {
+				"Not checked".to_string()
+			};
+			let (status, list) = get_json(
+				&app,
+				&cookie,
+				&format!("/api/cases/list-view?authorities={authorities}"),
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{list:?}");
+			let row = list["data"]["items"]
+				.as_array()
+				.ok_or("missing items")?
+				.iter()
+				.find(|item| item["caseId"].as_str() == Some(case_id))
+				.ok_or("missing case")?;
+			assert_eq!(
+				row["warn"].as_str(),
+				Some(expected.as_str()),
+				"refresh={refresh:?} authorities={authorities}"
+			);
+		}
+	}
+	assert!(
+		refreshed["fda"].len() < fda_count as usize,
+		"saved reporter must change the cached result"
+	);
+	assert!(
+		refreshed["mfds"].len() < mfds_count as usize,
+		"saved reporter must change both authorities"
+	);
+
 	Ok(())
 }
 
@@ -2590,14 +2697,12 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 		"{lifecycle_body:?}"
 	);
 
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
 		.await?;
-	let audit = dbx
-		.fetch_optional(
-			sqlx::query_as::<_, (Option<String>, Option<Uuid>)>(
-				r#"
+	let audit = sqlx::query_as::<_, (Option<String>, Option<Uuid>)>(
+		r#"
 				SELECT reason_for_change, e_signature_id
 				FROM audit_logs
 				WHERE table_name = 'cases'
@@ -2608,11 +2713,11 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 				ORDER BY id DESC
 				LIMIT 1
 				"#,
-			)
-			.bind(Uuid::parse_str(&case_id)?),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
+	)
+	.bind(Uuid::parse_str(&case_id)?)
+	.fetch_optional(&mut *tx)
+	.await?;
+	tx.rollback().await?;
 	assert_eq!(
 		audit.as_ref().and_then(|(reason, _)| reason.as_deref()),
 		Some("client requested soft delete")
@@ -2902,39 +3007,40 @@ async fn long_hangul_narrative_update_preserves_jsonb_and_audit_contracts(
 		Some(new_narrative.as_str())
 	);
 
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	let (dirty_h,) = mm
-		.dbx()
-		.fetch_one(
-			sqlx::query_as::<_, (bool,)>("SELECT dirty_h FROM cases WHERE id = $1")
-				.bind(case_id),
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query(
+		"WITH user_context AS MATERIALIZED (
+			SELECT set_current_user_context($1)
 		)
-		.await?;
+		SELECT set_org_context($2, $3)
+		FROM user_context",
+	)
+	.bind(seed.admin.id)
+	.bind(seed.org_id)
+	.bind(ROLE_SPONSOR_ADMIN_CRO)
+	.execute(&mut *tx)
+	.await?;
+	let (dirty_h,) =
+		sqlx::query_as::<_, (bool,)>("SELECT dirty_h FROM cases WHERE id = $1")
+			.bind(case_id)
+			.fetch_one(&mut *tx)
+			.await?;
 	assert!(dirty_h);
-	mm.dbx()
-		.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
 		.await?;
-	let (audit_count, first_audit_id, audit_old, audit_new, stored_new) = mm
-		.dbx()
-		.fetch_one(
-			sqlx::query_as::<
-				_,
-				(
-					i64,
-					Option<i64>,
-					Option<String>,
-					Option<String>,
-					Option<String>,
-				),
-			>(
-				r#"
+	let (audit_count, first_audit_id, audit_old, audit_new, stored_new) =
+		sqlx::query_as::<
+			_,
+			(
+				i64,
+				Option<i64>,
+				Option<String>,
+				Option<String>,
+				Option<String>,
+			),
+		>(
+			r#"
 				SELECT count(*)::bigint,
 				       min(id),
 				       max(changed_fields->'case_narrative'->>'old'),
@@ -2945,11 +3051,11 @@ async fn long_hangul_narrative_update_preserves_jsonb_and_audit_contracts(
 				  AND record_id = $1
 				  AND action = 'UPDATE'
 				"#,
-			)
-			.bind(narrative_id),
 		)
+		.bind(narrative_id)
+		.fetch_one(&mut *tx)
 		.await?;
-	mm.dbx().rollback_txn().await?;
+	tx.rollback().await?;
 	assert_eq!(audit_count, 1);
 	assert_eq!(audit_old.as_deref(), Some(old_narrative.as_str()));
 	assert_eq!(audit_new.as_deref(), Some(new_narrative.as_str()));

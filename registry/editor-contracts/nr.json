@@ -93,15 +93,13 @@
         "ruleCode": "ICH.H.3.r.1a.LENGTH.MAX",
         "invalidValue": "not-a-number"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.H.3.r.1a.REQUIRED",
-        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraVersion"
-      },
       "control": {
         "kind": "native_select",
         "options": [
-          {"value": "28.1", "label": "28.1"}
+          {
+            "value": "28.1",
+            "label": "28.1"
+          }
         ]
       },
       "payloadPath": "[].diagnosisMeddraVersion",
@@ -130,11 +128,6 @@
         "status": "verified",
         "ruleCode": "ICH.H.3.r.1b.LENGTH.MAX",
         "invalidValue": "not-a-number"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.H.3.r.1b.REQUIRED",
-        "issuePath": "narrative.senderDiagnoses[].diagnosisMeddraCode"
       },
       "control": {
         "kind": "async_autocomplete",
@@ -179,11 +172,6 @@
         "status": "verified",
         "ruleCode": "ICH.H.5.r.1b.LENGTH.MAX",
         "invalidValue": "XXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.H.5.r.1b.REQUIRED",
-        "issuePath": "narrative.caseSummaries[].languageCode"
       },
       "payloadPath": "[].languageCode",
       "rowsFixture": {

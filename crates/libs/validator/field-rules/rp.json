@@ -1,0 +1,366 @@
+{
+  "pageId": "RP",
+  "fields": [
+    {
+      "fieldPath": "primarySources",
+      "ruleCodes": [
+        "ICH.C.2.r.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].primarySourceForRegulatoryPurposes",
+      "ruleCodes": [
+        "ICH.C.2.r.5.EXACTLY_ONCE",
+        "ICH.C.2.r.5.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].qualification",
+      "ruleCodes": [
+        "FDA.R0020",
+        "ICH.C.2.r.4.REQUIRED",
+        "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU",
+        "MFDS.C.2.r.4.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].qualificationKr1",
+      "ruleCodes": [
+        "MFDS.C.2.r.4.KR.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterCity",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterCountry",
+      "ruleCodes": [
+        "ICH.C.2.r.3.REQUIRED",
+        "ICH.C.2.r.3.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterEmail",
+      "ruleCodes": [
+        "FDA.C.2.r.2.8.MSK.FORBIDDEN",
+        "FDA.C.2.r.2.8.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterFamilyName",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterGivenName",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.MSK.FORBIDDEN",
+        "FDA.C.2.PRIMARY.REQUIRED",
+        "MFDS.C.2.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterOrganization",
+      "ruleCodes": [
+        "ICH.C.2.r.2.1.REQUIRED",
+        "MFDS.C.2.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterPostcode",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterState",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterStreet",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED",
+        "MFDS.C.2.r.2.3-5.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "primarySources[].reporterTelephone",
+      "ruleCodes": [
+        "FDA.C.2.PRIMARY.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "C.2.r.1.1",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterTitle",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterTitle; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.1.2",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterGivenName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterGivenName; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.1.3",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterMiddleName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterMiddleName; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.1.4",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterFamilyName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterFamilyName; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.1",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterOrganization",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "primarySources.0.reporterOrganization"
+      }
+    },
+    {
+      "code": "C.2.r.2.2",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterDepartment",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterDepartment; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.3",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterStreet",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterStreet; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.4",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterCity",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterCity; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.5",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterState",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterState; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.6",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterPostcode",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterPostcode; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.2.7",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterTelephone",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No semantic business rule targets reporterTelephone; representation length is enforced by the portable constraint."
+      }
+    },
+    {
+      "code": "C.2.r.3",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterCountry",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.2.r.3.REQUIRED",
+        "issuePath": "primarySources[].reporterCountry"
+      }
+    },
+    {
+      "code": "FDA.C.2.r.2.8",
+      "authority": "FDA",
+      "frontendPath": "primarySources[].reporterEmail",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "FDA.C.2.r.2.8.REQUIRED",
+        "issuePath": "primarySources[].reporterEmail"
+      }
+    },
+    {
+      "code": "C.2.r.4",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].qualification",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "primarySources.0.qualification"
+      }
+    },
+    {
+      "code": "C.2.r.4.KR.1",
+      "authority": "MFDS",
+      "frontendPath": "primarySources[].qualificationKr1",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "MFDS.C.2.r.4.KR.1.REQUIRED",
+        "issuePath": "primarySources[].qualificationKr1"
+      }
+    },
+    {
+      "code": "C.2.r.5",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].primarySourceForRegulatoryPurposes",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.2.r.5.REQUIRED",
+        "issuePath": "primarySources.0.primarySourceForRegulatoryPurposes"
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterTitleNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterTitleNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterTitle."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterGivenNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterGivenNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterGivenName."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterMiddleNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterMiddleNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterMiddleName."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterFamilyNameNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterFamilyNameNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterFamilyName."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterOrganizationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterOrganizationNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterOrganization."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterDepartmentNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterDepartmentNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterDepartment."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterStreetNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterStreetNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterStreet."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterCityNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterCityNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterCity."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterStateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterStateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterState."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterPostcodeNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterPostcodeNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterPostcode."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterTelephoneNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterTelephoneNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterTelephone."
+      }
+    },
+    {
+      "code": "C.2.r.local.reporterEmailNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].reporterEmailNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on reporterEmail."
+      }
+    },
+    {
+      "code": "C.2.r.local.qualificationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "primarySources[].qualificationNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion but emits issues on qualification."
+      }
+    }
+  ]
+}

@@ -103,11 +103,6 @@
         "ruleCode": "ICH.E.i.1.1b.LENGTH.MAX",
         "invalidValue": "XXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.E.i.1.1b.REQUIRED",
-        "issuePath": "reactions[].reactionLanguage"
-      },
       "payloadPath": "reactionLanguage",
       "control": {
         "kind": "radix_select",
@@ -410,11 +405,6 @@
         "ruleCode": "ICH.E.i.6a.LENGTH.MAX",
         "invalidValue": "123456"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.E.i.6a.REQUIRED",
-        "issuePath": "reactions[].durationValue"
-      },
       "payloadPath": "reactionDuration.value"
     },
     {
@@ -431,11 +421,6 @@
         "status": "verified",
         "ruleCode": "ICH.E.i.6b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.E.i.6b.REQUIRED",
-        "issuePath": "reactions[].durationUnit"
       },
       "payloadPath": "reactionDuration.unit",
       "control": {
@@ -819,10 +804,6 @@
         "ruleCode": "ICH.E.i.3.2a.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2a."
-      },
       "payloadPath": "seriousness.criteriaResultsInDeathNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2a"
     },
@@ -840,10 +821,6 @@
         "status": "verified",
         "ruleCode": "ICH.E.i.3.2b.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2b."
       },
       "payloadPath": "seriousness.criteriaLifeThreateningNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2b"
@@ -863,10 +840,6 @@
         "ruleCode": "ICH.E.i.3.2c.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2c."
-      },
       "payloadPath": "seriousness.criteriaHospitalizationNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2c"
     },
@@ -884,10 +857,6 @@
         "status": "verified",
         "ruleCode": "ICH.E.i.3.2d.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2d."
       },
       "payloadPath": "seriousness.criteriaDisablingNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2d"
@@ -907,10 +876,6 @@
         "ruleCode": "ICH.E.i.3.2e.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2e."
-      },
       "payloadPath": "seriousness.criteriaCongenitalAnomalyNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2e"
     },
@@ -928,10 +893,6 @@
         "status": "verified",
         "ruleCode": "ICH.E.i.3.2f.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2f."
       },
       "payloadPath": "seriousness.criteriaOtherMedicallyImportantNullFlavor",
       "nullFlavorPartnerCode": "E.i.3.2f"
@@ -951,10 +912,6 @@
         "ruleCode": "ICH.E.i.4.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.4."
-      },
       "payloadPath": "reactionStartDateNullFlavor",
       "nullFlavorPartnerCode": "E.i.4"
     },
@@ -973,10 +930,6 @@
         "ruleCode": "ICH.E.i.5.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on E.i.5."
-      },
       "payloadPath": "reactionEndDateNullFlavor",
       "nullFlavorPartnerCode": "E.i.5"
     },
@@ -994,10 +947,6 @@
         "status": "verified",
         "ruleCode": "FDA.E.i.3.2h.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on FDA.E.i.3.2h."
       },
       "payloadPath": "requiredInterventionNullFlavor",
       "nullFlavorPartnerCode": "FDA.E.i.3.2h",

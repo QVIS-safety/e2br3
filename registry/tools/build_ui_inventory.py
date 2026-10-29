@@ -113,6 +113,19 @@ def build_inventory(registry_root: Path, frontend_root: Path,
             if code in dictionaries:
                 raise ValueError(f'duplicate dictionary code: {code}')
             dictionaries[code] = dict(entry, authority=document['authority'])
+    # Business-rule metadata is owned by validator; retain the inventory's
+    # combined view for existing UI verification consumers.
+    business_fields = {}
+    mapping_root = registry_root.parent / 'crates/libs/validator/field-rules'
+    for mapping_path in sorted(mapping_root.glob('*.json')):
+        mapping = read(mapping_path)
+        for field in mapping['editorMappings']:
+            identity = (mapping['pageId'], field['authority'], field['code'], field['frontendPath'])
+            if identity in business_fields:
+                raise ValueError(f'duplicate validator field identity: {identity}')
+            business_fields[identity] = field['businessValidation']
+    if not mapping_root.is_dir():
+        raise ValueError(f'missing validator field mappings: {mapping_root}')
     contracts = {}
     for path in sorted((registry_root / 'editor-contracts').glob('*.json')):
         if path.name == 'schema.json':
@@ -122,7 +135,13 @@ def build_inventory(registry_root: Path, frontend_root: Path,
             key = normalized(field['frontendPath'])
             if key in contracts:
                 raise ValueError(f'duplicate contract path: {key}')
-            contracts[key] = dict(field, page=contract['pageId'])
+            metadata = dict(field, page=contract['pageId'])
+            identity = (contract['pageId'], field['authority'], field['code'], field['frontendPath'])
+            if identity in business_fields:
+                metadata['businessValidation'] = business_fields.pop(identity)
+            contracts[key] = metadata
+    if business_fields:
+        raise ValueError(f'validator mappings without editor fields: {sorted(business_fields)}')
     hints = {}
     if execution_hints_path is not None:
         for field in read(Path(execution_hints_path))['fields']:

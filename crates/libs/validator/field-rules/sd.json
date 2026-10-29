@@ -1,0 +1,343 @@
+{
+  "pageId": "SD",
+  "fields": [
+    {
+      "fieldPath": "senderInformation.city",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.countryCode",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED",
+        "ICH.C.3.4.5.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.department",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.email",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.fax",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.organizationName",
+      "ruleCodes": [
+        "ICH.C.3.2.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.personFamilyName",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.personGivenName",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED",
+        "MFDS.C.3.3.3.RECEIVER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.personTitle",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.postcode",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.senderType",
+      "ruleCodes": [
+        "ICH.C.3.1.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.state",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.streetAddress",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation.telephone",
+      "ruleCodes": [
+        "FDA.C.3.SENDER.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "senderInformation[].healthProfessionalTypeKr1",
+      "ruleCodes": [
+        "MFDS.C.3.1.KR.1.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "C.3.1",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.senderType",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.senderType"
+      }
+    },
+    {
+      "code": "C.3.1.KR.1",
+      "authority": "MFDS",
+      "frontendPath": "senderInformation.healthProfessionalTypeKr1",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.0.healthProfessionalTypeKr1"
+      }
+    },
+    {
+      "code": "C.3.2",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.organizationName",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.C.3.2.REQUIRED",
+        "issuePath": "senderInformation.organizationName"
+      }
+    },
+    {
+      "code": "C.3.3.1",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.department",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.department"
+      }
+    },
+    {
+      "code": "C.3.3.2",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.personTitle",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.personTitle"
+      }
+    },
+    {
+      "code": "C.3.3.3",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.personGivenName",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.personGivenName"
+      }
+    },
+    {
+      "code": "C.3.3.4",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.personMiddleName",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.personMiddleName"
+      }
+    },
+    {
+      "code": "C.3.3.5",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.personFamilyName",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.personFamilyName"
+      }
+    },
+    {
+      "code": "C.3.4.1",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.streetAddress",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.streetAddress"
+      }
+    },
+    {
+      "code": "C.3.4.2",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.city",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.city"
+      }
+    },
+    {
+      "code": "C.3.4.3",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.state",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.state"
+      }
+    },
+    {
+      "code": "C.3.4.4",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.postcode",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.postcode"
+      }
+    },
+    {
+      "code": "C.3.4.5",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.countryCode",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.countryCode"
+      }
+    },
+    {
+      "code": "C.3.4.6",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.telephone",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.telephone"
+      }
+    },
+    {
+      "code": "C.3.4.7",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.fax",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.fax"
+      }
+    },
+    {
+      "code": "C.3.4.8",
+      "authority": "ICH",
+      "frontendPath": "senderInformation.email",
+      "businessValidation": {
+        "status": "verified",
+        "issuePath": "senderInformation.email"
+      }
+    },
+    {
+      "code": "local.receiver.1",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.organizationName",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.2",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.receiverType",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.3",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.department",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.4",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.streetAddress",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.5",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.city",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.6",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.stateProvince",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.7",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.postcode",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.country",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.countryCode",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.8",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.telephone",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.9",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.fax",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    },
+    {
+      "code": "local.receiver.10",
+      "authority": "ICH",
+      "frontendPath": "receiverInformation.email",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "No business validation rule targets this local receiver field."
+      }
+    }
+  ]
+}

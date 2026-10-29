@@ -409,6 +409,10 @@ pub(crate) fn collect_ich_issues(
 }
 
 #[cfg(test)]
+#[path = "f/rule_tests.rs"]
+pub(crate) mod rule_tests;
+
+#[cfg(test)]
 mod golden_f_required_tests {
 	use super::*;
 	use lib_core::model::case::Case;
@@ -450,7 +454,7 @@ mod golden_f_required_tests {
 		}
 	}
 
-	fn empty_ctx() -> ValidationContext {
+	pub(super) fn empty_ctx() -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -488,7 +492,7 @@ mod golden_f_required_tests {
 		}
 	}
 
-	fn test_result() -> TestResult {
+	pub(super) fn test_result() -> TestResult {
 		TestResult {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),

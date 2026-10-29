@@ -688,6 +688,10 @@ pub(crate) fn collect_mfds_issues(
 }
 
 #[cfg(test)]
+#[path = "e/rule_tests.rs"]
+pub(crate) mod rule_tests;
+
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use lib_core::model::case::Case;
@@ -729,7 +733,7 @@ mod tests {
 		}
 	}
 
-	fn empty_ctx() -> ValidationContext {
+	pub(super) fn empty_ctx() -> ValidationContext {
 		ValidationContext {
 			vocabulary: Default::default(),
 			case: dummy_case(),
@@ -780,7 +784,7 @@ mod tests {
 			.any(|issue| issue.code == "MFDS.E.i.9.EU.FORBIDDEN"));
 	}
 
-	fn reaction() -> Reaction {
+	pub(super) fn reaction() -> Reaction {
 		Reaction {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),

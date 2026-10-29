@@ -188,8 +188,7 @@
             }
           },
           "nullFlavorPartnerCode": { "type": "string", "minLength": 1 },
-          "constraint": { "$ref": "#/$defs/stage" },
-          "businessValidation": { "$ref": "#/$defs/stage" }
+          "constraint": { "$ref": "#/$defs/stage" }
         }
       }
     }

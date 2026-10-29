@@ -1,0 +1,251 @@
+{
+  "pageId": "AE",
+  "fields": [
+    {
+      "fieldPath": "reactions",
+      "ruleCodes": [
+        "ICH.E.i.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaCongenitalAnomaly",
+      "ruleCodes": [
+        "ICH.E.i.3.2e.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaDeath",
+      "ruleCodes": [
+        "ICH.E.i.3.2a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaDisabling",
+      "ruleCodes": [
+        "ICH.E.i.3.2d.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaHospitalization",
+      "ruleCodes": [
+        "ICH.E.i.3.2c.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaLifeThreatening",
+      "ruleCodes": [
+        "ICH.E.i.3.2b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].criteriaOtherMedicallyImportant",
+      "ruleCodes": [
+        "ICH.E.i.3.2f.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].durationUnit",
+      "ruleCodes": [
+        "ICH.E.i.6b.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].durationValue",
+      "ruleCodes": [
+        "ICH.E.i.6a.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].endDate",
+      "ruleCodes": [
+        "MFDS.E.i.5.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].medicalConfirmation",
+      "ruleCodes": [
+        "ICH.E.i.8.HCP.OMIT"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionCountry",
+      "ruleCodes": [
+        "ICH.E.i.9.VOCABULARY",
+        "MFDS.E.i.9.EU.FORBIDDEN"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionDateRange",
+      "ruleCodes": [
+        "ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionLanguage",
+      "ruleCodes": [
+        "ICH.E.i.1.1b.REQUIRED",
+        "ICH.E.i.1.1b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionMeddraCode",
+      "ruleCodes": [
+        "ICH.E.i.2.1b.REQUIRED",
+        "ICH.E.i.2.1b.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionMeddraVersion",
+      "ruleCodes": [
+        "ICH.E.i.2.1a.ALLOWED.VALUE",
+        "ICH.E.i.2.1a.REQUIRED",
+        "ICH.E.i.2.1a.VOCABULARY"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].reactionOutcome",
+      "ruleCodes": [
+        "ICH.E.i.7.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].requiredIntervention",
+      "ruleCodes": [
+        "FDA.E.i.3.2h.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].requiredInterventionNullFlavor",
+      "ruleCodes": [
+        "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].seriousnessCriteria",
+      "ruleCodes": [
+        "ICH.E.i.3.2.CRITERIA.REQUIRED",
+        "ICH.E.i.3.2.NI.ONLY"
+      ]
+    },
+    {
+      "fieldPath": "reactions[].startDate",
+      "ruleCodes": [
+        "FDA.E.i.4-6.REQUIRED",
+        "MFDS.E.i.4.REQUIRED"
+      ]
+    }
+  ],
+  "editorMappings": [
+    {
+      "code": "E.i.1.1b",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionLanguage",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.1.1b.REQUIRED",
+        "issuePath": "reactions[].reactionLanguage"
+      }
+    },
+    {
+      "code": "E.i.6a",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionDuration.value",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.6a.REQUIRED",
+        "issuePath": "reactions[].durationValue"
+      }
+    },
+    {
+      "code": "E.i.6b",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionDuration.unit",
+      "businessValidation": {
+        "status": "verified",
+        "ruleCode": "ICH.E.i.6b.REQUIRED",
+        "issuePath": "reactions[].durationUnit"
+      }
+    },
+    {
+      "code": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaResultsInDeathNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2a."
+      }
+    },
+    {
+      "code": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaLifeThreateningNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2b."
+      }
+    },
+    {
+      "code": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaHospitalizationNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2c."
+      }
+    },
+    {
+      "code": "E.i.3.2d.local.criteriaDisablingNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaDisablingNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2d."
+      }
+    },
+    {
+      "code": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaCongenitalAnomalyNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2e."
+      }
+    },
+    {
+      "code": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].seriousness.criteriaOtherMedicallyImportantNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.3.2f."
+      }
+    },
+    {
+      "code": "E.i.4.local.reactionStartDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionStartDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.4."
+      }
+    },
+    {
+      "code": "E.i.5.local.reactionEndDateNullFlavor",
+      "authority": "ICH",
+      "frontendPath": "reactions[].reactionEndDateNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on E.i.5."
+      }
+    },
+    {
+      "code": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
+      "authority": "FDA",
+      "frontendPath": "reactions[].requiredInterventionNullFlavor",
+      "businessValidation": {
+        "status": "not_applicable",
+        "reason": "Business validation consumes this companion and reports the issue on FDA.E.i.3.2h."
+      }
+    }
+  ]
+}

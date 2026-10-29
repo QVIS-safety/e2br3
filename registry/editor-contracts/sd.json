@@ -17,10 +17,6 @@
         "ruleCode": "ICH.C.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.senderType"
-      },
       "payloadPath": "senderType"
     },
     {
@@ -37,10 +33,6 @@
         "status": "verified",
         "ruleCode": "MFDS.C.3.1.KR.1.LENGTH.MAX",
         "invalidValue": "XX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.0.healthProfessionalTypeKr1"
       },
       "payloadPath": "healthProfessionalTypeKr1"
     },
@@ -59,11 +51,6 @@
         "ruleCode": "ICH.C.3.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.3.2.REQUIRED",
-        "issuePath": "senderInformation.organizationName"
-      },
       "payloadPath": "organizationName"
     },
     {
@@ -80,10 +67,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.3.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.department"
       },
       "payloadPath": "department"
     },
@@ -102,10 +85,6 @@
         "ruleCode": "ICH.C.3.3.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.personTitle"
-      },
       "payloadPath": "personTitle"
     },
     {
@@ -122,10 +101,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.3.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.personGivenName"
       },
       "payloadPath": "personGivenName"
     },
@@ -144,10 +119,6 @@
         "ruleCode": "ICH.C.3.3.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.personMiddleName"
-      },
       "payloadPath": "personMiddleName"
     },
     {
@@ -164,10 +135,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.3.5.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.personFamilyName"
       },
       "payloadPath": "personFamilyName"
     },
@@ -186,10 +153,6 @@
         "ruleCode": "ICH.C.3.4.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.streetAddress"
-      },
       "payloadPath": "streetAddress"
     },
     {
@@ -206,10 +169,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.4.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.city"
       },
       "payloadPath": "city"
     },
@@ -228,10 +187,6 @@
         "ruleCode": "ICH.C.3.4.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.state"
-      },
       "payloadPath": "state"
     },
     {
@@ -249,10 +204,6 @@
         "ruleCode": "ICH.C.3.4.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.postcode"
-      },
       "payloadPath": "postcode"
     },
     {
@@ -269,10 +220,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.4.5.LENGTH.MAX",
         "invalidValue": "XXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.countryCode"
       },
       "payloadPath": "countryCode",
       "control": {
@@ -299,10 +246,6 @@
         "ruleCode": "ICH.C.3.4.6.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.telephone"
-      },
       "payloadPath": "telephone"
     },
     {
@@ -319,10 +262,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.3.4.7.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.fax"
       },
       "payloadPath": "fax"
     },
@@ -341,10 +280,6 @@
         "ruleCode": "ICH.C.3.4.8.LENGTH.MAX",
         "invalidValue": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.test"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "senderInformation.email"
-      },
       "payloadPath": "email"
     },
     {
@@ -360,10 +295,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "organizationName"
     },
@@ -381,10 +312,6 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
-      },
       "payloadPath": "receiverType"
     },
     {
@@ -400,10 +327,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "department"
     },
@@ -421,10 +344,6 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
-      },
       "payloadPath": "streetAddress"
     },
     {
@@ -440,10 +359,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "city"
     },
@@ -461,10 +376,6 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
-      },
       "payloadPath": "stateProvince"
     },
     {
@@ -480,10 +391,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "postcode"
     },
@@ -501,10 +408,6 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
-      },
       "payloadPath": "countryCode"
     },
     {
@@ -520,10 +423,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "telephone"
     },
@@ -541,10 +440,6 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
-      },
       "payloadPath": "fax"
     },
     {
@@ -560,10 +455,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No business validation rule targets this local receiver field."
       },
       "payloadPath": "email"
     }

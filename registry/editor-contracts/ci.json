@@ -17,10 +17,6 @@
         "ruleCode": "ICH.C.1.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.safetyReportId"
-      },
       "payloadPath": "safetyReportId"
     },
     {
@@ -37,10 +33,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.1.2.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.transmissionDate"
       },
       "payloadPath": "transmissionDate"
     },
@@ -59,10 +51,6 @@
         "ruleCode": "ICH.C.1.3.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.reportType"
-      },
       "payloadPath": "reportType"
     },
     {
@@ -80,10 +68,6 @@
         "ruleCode": "ICH.C.1.4.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.dateFirstReceivedFromSource"
-      },
       "payloadPath": "dateFirstReceivedFromSource"
     },
     {
@@ -100,10 +84,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.1.5.ALLOWED.VALUE",
         "invalidValue": "not-a-date"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.dateOfMostRecentInformation"
       },
       "payloadPath": "dateOfMostRecentInformation"
     },
@@ -123,10 +103,6 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "safetyReportIdentification.additionalDocumentsAvailable"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.additionalDocumentsAvailable"
-      },
       "payloadPath": "additionalDocumentsAvailable"
     },
     {
@@ -144,11 +120,6 @@
         "ruleCode": "ICH.C.1.6.1.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.1.6.1.r.1.REQUIRED",
-        "issuePath": "documentsHeldBySender[].documentDescription"
-      },
       "payloadPath": "[].documentDescription"
     },
     {
@@ -164,10 +135,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The document payload is produced by the upload control and has no standalone typed input constraint."
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "documentsHeldBySender.0.includedDocument"
       },
       "payloadPath": "[].includedDocument"
     },
@@ -185,10 +152,6 @@
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
         "invalidValue": "not-a-boolean",
-        "issuePath": "safetyReportIdentification.fulfilExpeditedCriteria"
-      },
-      "businessValidation": {
-        "status": "verified",
         "issuePath": "safetyReportIdentification.fulfilExpeditedCriteria"
       },
       "payloadPath": "fulfilExpeditedCriteria",
@@ -209,10 +172,6 @@
         "ruleCode": "FDA.C.1.7.1.LENGTH.MAX",
         "invalidValue": "XX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.localCriteriaReportType"
-      },
       "payloadPath": "localCriteriaReportType"
     },
     {
@@ -228,10 +187,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "The catalog has no portable constraint binding for FDA.C.1.12."
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.combinationProductReportIndicator"
       },
       "payloadPath": "combinationProductReportIndicator",
       "nullFlavorPartnerCode": "FDA.C.1.12.local.nullFlavor"
@@ -251,10 +206,6 @@
         "ruleCode": "ICH.C.1.8.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.worldwideUniqueId"
-      },
       "payloadPath": "worldwideUniqueId"
     },
     {
@@ -272,10 +223,6 @@
         "ruleCode": "ICH.C.1.8.2.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.firstSenderType"
-      },
       "payloadPath": "firstSenderType"
     },
     {
@@ -292,10 +239,6 @@
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
         "invalidValue": "not-a-boolean",
-        "issuePath": "safetyReportIdentification.otherCaseIdentifiersExist"
-      },
-      "businessValidation": {
-        "status": "verified",
         "issuePath": "safetyReportIdentification.otherCaseIdentifiersExist"
       },
       "payloadPath": "otherCaseIdentifiersExist",
@@ -321,11 +264,6 @@
         "ruleCode": "ICH.C.1.9.1.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.1.9.1.r.1.REQUIRED",
-        "issuePath": "otherCaseIdentifiers[].source"
-      },
       "payloadPath": "[].source"
     },
     {
@@ -348,11 +286,6 @@
         "ruleCode": "ICH.C.1.9.1.r.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.1.9.1.r.2.REQUIRED",
-        "issuePath": "otherCaseIdentifiers[].caseIdentifier"
-      },
       "payloadPath": "[].caseIdentifier"
     },
     {
@@ -369,10 +302,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.1.10.r.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-      },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "linkedReports.0.linkedReportNumber"
       },
       "payloadPath": "[].linkedReportNumber"
     },
@@ -391,10 +320,6 @@
         "ruleCode": "ICH.C.1.11.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "businessValidation": {
-        "status": "verified",
-        "issuePath": "safetyReportIdentification.nullificationAmendmentCode"
-      },
       "payloadPath": "nullificationAmendmentCode"
     },
     {
@@ -412,11 +337,6 @@
         "ruleCode": "ICH.C.1.11.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "verified",
-        "ruleCode": "ICH.C.1.11.2.REQUIRED",
-        "issuePath": "safetyReportIdentification.nullificationReason"
-      },
       "payloadPath": "nullificationReason"
     },
     {
@@ -433,10 +353,6 @@
         "status": "not_applicable",
         "reason": "Report year is app-local and has no catalog portable constraint."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Report year is app-local and has no business validation rule."
-      },
       "payloadPath": "reportYear"
     },
     {
@@ -452,10 +368,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "Source document name is app-local and has no catalog portable constraint."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Source document name is app-local and has no business validation rule."
       },
       "auditItem": "Source Document Name",
       "payloadPath": "[].sourceDocumentName"
@@ -475,10 +387,6 @@
         "ruleCode": "ICH.C.1.9.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "MSK"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion value but emits issues on otherCaseIdentifiersExist."
-      },
       "payloadPath": "otherCaseIdentifiersExistNullFlavor",
       "nullFlavorPartnerCode": "C.1.9.1"
     },
@@ -495,10 +403,6 @@
       "constraint": {
         "status": "not_applicable",
         "reason": "FDA report type is app-local and has no catalog portable constraint."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "FDA report type is app-local and has no business validation rule."
       },
       "payloadPath": "fdaReportType",
       "domFieldNumber": "FDA_REPORT_TYPE"
@@ -517,10 +421,6 @@
         "status": "not_applicable",
         "reason": "MFDS report type is app-local and has no catalog portable constraint."
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "MFDS report type is app-local and has no business validation rule."
-      },
       "payloadPath": "mfdsReportType",
       "domFieldNumber": "MFDS_REPORT_TYPE"
     },
@@ -537,10 +437,6 @@
       "constraint": {
         "status": "blocked",
         "reason": "The positive API roundtrip persists NI, but out-of-set tokens are rejected by a generic request-parser 400 with no target-specific rule or issue path, so exact negative-field verification is unsupported."
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports authority-specific issues on C.1.7."
       },
       "payloadPath": "fulfilExpeditedCriteriaNullFlavor",
       "nullFlavorPartnerCode": "C.1.7"
@@ -559,10 +455,6 @@
         "status": "verified",
         "ruleCode": "FDA.C.1.12.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation emits FDA.C.1.12 issues on combinationProductReportIndicator."
       },
       "payloadPath": "combinationProductReportIndicatorNullFlavor",
       "nullFlavorPartnerCode": "FDA.C.1.12"

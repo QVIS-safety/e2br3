@@ -17,10 +17,6 @@
         "ruleCode": "ICH.C.4.r.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets literature reference text; representation length is enforced by the portable constraint."
-      },
       "payloadPath": "referenceText",
       "nullFlavorPartnerCode": "C.4.r.local.referenceTextNullFlavor"
     },
@@ -39,10 +35,6 @@
         "ruleCode": "ICH.C.4.r.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "NI"
       },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "Business validation consumes the companion value and reports the issue on referenceText."
-      },
       "payloadPath": "referenceTextNullFlavor",
       "nullFlavorPartnerCode": "C.4.r.1"
     },
@@ -60,10 +52,6 @@
         "status": "verified",
         "ruleCode": "ICH.C.4.r.2.ALLOWED.VALUE",
         "invalidValue": "***"
-      },
-      "businessValidation": {
-        "status": "not_applicable",
-        "reason": "No semantic business rule targets the attachment payload; representation format is enforced by the portable constraint."
       },
       "payloadPath": "documentBase64"
     }
