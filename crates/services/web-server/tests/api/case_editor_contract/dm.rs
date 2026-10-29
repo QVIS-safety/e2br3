@@ -20,7 +20,8 @@ async fn d_10_6_value_nullflavor_value() -> crate::common::Result<()> {
 
 #[serial_test::serial]
 #[tokio::test]
-async fn patient_requires_value_or_null_flavor() -> crate::common::Result<()> {
+async fn patient_identity_can_be_cleared_and_set_to_null_flavor(
+) -> crate::common::Result<()> {
 	use super::support::{create_case_for_editor, get_json, patch_json};
 	use crate::common::{cookie_header, init_test_mm, seed_org_with_users};
 	use axum::http::StatusCode;
@@ -57,14 +58,17 @@ async fn patient_requires_value_or_null_flavor() -> crate::common::Result<()> {
 		}}}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let (status, body) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(
-		body["error"]["data"]["detail"],
-		json!({
-			"message": "a value or nullFlavor is required",
-			"path": "patientInformation.patientInitials",
-			"ruleCode": "ICH.D.1.REQUIRED"
-		})
+		body["rows"]["patientInformation"]["patient_initials"],
+		Value::Null
+	);
+	assert_eq!(
+		body["rows"]["patientInformation"]["patient_initials_null_flavor"],
+		Value::Null
 	);
 
 	let (status, body) = patch_json(
