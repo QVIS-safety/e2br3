@@ -34,6 +34,64 @@ def normalized(path: str) -> str:
     return re.sub(r'\.\d+(?=\.|$)', '', path.replace('[]', ''))
 
 
+def validate_execution_ledger(ledger: dict, inventory: dict) -> None:
+    if ledger.get('schemaVersion') != 1:
+        raise ValueError('execution ledger schemaVersion must be 1')
+    if ledger.get('status') != 'COMPLETE' or ledger.get('wholeCanonicalComplete') is not True:
+        raise ValueError('execution ledger must record complete canonical coverage')
+
+    fields = inventory.get('fields')
+    records = ledger.get('records')
+    proofs = ledger.get('proofs')
+    if not isinstance(fields, list) or not isinstance(records, list) or not isinstance(proofs, list):
+        raise ValueError('execution ledger and canonical inventory rows must be arrays')
+
+    canonical = {field.get('identity'): field for field in fields}
+    recorded = {record.get('identity'): record for record in records}
+    proven = {proof.get('identity'): proof for proof in proofs}
+    if None in canonical or len(canonical) != len(fields):
+        raise ValueError('canonical inventory identities must be present and unique')
+    if None in recorded or len(recorded) != len(records):
+        raise ValueError('execution ledger record identities must be present and unique')
+    if None in proven or len(proven) != len(proofs):
+        raise ValueError('execution ledger proof identities must be present and unique')
+    if recorded.keys() != canonical.keys() or proven.keys() != canonical.keys():
+        raise ValueError('execution ledger identities do not match the canonical inventory')
+
+    static_blockers = 0
+    sha256 = re.compile(r'^[0-9a-f]{64}$')
+    for identity, field in canonical.items():
+        blocked = bool(field.get('executionBlockers'))
+        static_blockers += blocked
+        record = recorded[identity]
+        proof = proven[identity]
+        if (record.get('state') != 'VERIFIED'
+                or record.get('proofRecorded') is not True
+                or record.get('staticBlocker') is not blocked):
+            raise ValueError(f'{identity}: execution record is incomplete or stale')
+        result = proof.get('result')
+        if (proof.get('outcome') not in {'VERIFIED', 'VERIFIED_ROUNDTRIP'}
+                or not isinstance(result, dict)
+                or not isinstance(result.get('path'), str)
+                or not sha256.fullmatch(str(result.get('sha256', '')))
+                or not sha256.fullmatch(str(proof.get('proofContractSha256', '')))):
+            raise ValueError(f'{identity}: execution proof is incomplete or unpinned')
+
+    expected_counts = {
+        'canonicalFieldCount': len(canonical),
+        'staticBlockerCount': static_blockers,
+        'verifiedProofCount': len(canonical),
+        'verifiedStaticBlockerCount': static_blockers,
+        'evidenceAdjustedUnprovedCount': 0,
+        'connectedFieldCount': len(canonical),
+        'unprovedFieldCount': 0,
+        'readyEvidenceRequiredCount': 0,
+        'pendingStaticBlockerCount': 0,
+    }
+    if ledger.get('counts') != expected_counts:
+        raise ValueError('execution ledger counts do not match the canonical inventory')
+
+
 def build_inventory(registry_root: Path, frontend_root: Path,
                     execution_hints_path: Path | None = None) -> dict:
     registry_root = Path(registry_root).resolve()
@@ -227,10 +285,13 @@ def main() -> int:
     parser.add_argument('--registry-root', type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument('--frontend-root', type=Path, required=True)
     parser.add_argument('--execution-hints', type=Path)
+    parser.add_argument('--execution-ledger', type=Path)
     parser.add_argument('--out', type=Path)
     parser.add_argument('--check', action='store_true', help='fail on unmapped source/contract/hint paths')
     args = parser.parse_args()
     result = build_inventory(args.registry_root, args.frontend_root, args.execution_hints)
+    if args.execution_ledger is not None:
+        validate_execution_ledger(json.loads(args.execution_ledger.read_text()), result)
     encoded = json.dumps(result, ensure_ascii=False, indent=2) + '\n'
     if args.out is not None:
         args.out.write_text(encoded)

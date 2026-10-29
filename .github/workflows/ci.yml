@@ -94,6 +94,7 @@ jobs:
           python3 registry/tools/build_ui_inventory.py \
             --frontend-root "$E2BR3_FRONTEND_ROOT" \
             --execution-hints scripts/case-editor-audit/case-edit-persisted-field-inventory.json \
+            --execution-ledger registry/execution-ledger.json \
             --out /tmp/canonical-ui-inventory.json --check
 
   # ============================================

@@ -6,7 +6,12 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_ui_inventory import REPEATABLE_PAGE_ROUTES, build_inventory, normalized
+from build_ui_inventory import (
+    REPEATABLE_PAGE_ROUTES,
+    build_inventory,
+    normalized,
+    validate_execution_ledger,
+)
 
 
 class CanonicalUiInventoryTests(unittest.TestCase):
@@ -20,6 +25,20 @@ class CanonicalUiInventoryTests(unittest.TestCase):
         self.assertEqual([], self.document['coverage']['missingDictionaryElements'])
         self.assertEqual('NOT_RUN', self.document['status'])
         self.assertFalse(self.document['coverage']['executionComplete'])
+
+    def test_versioned_execution_ledger_matches_canonical_inventory(self):
+        ledger = json.loads((self.registry / 'execution-ledger.json').read_text())
+        hints = self.registry.parent / 'scripts/case-editor-audit/case-edit-persisted-field-inventory.json'
+        inventory = build_inventory(self.registry, self.frontend, hints)
+        validate_execution_ledger(ledger, inventory)
+
+    def test_execution_ledger_rejects_missing_canonical_identity(self):
+        ledger = json.loads((self.registry / 'execution-ledger.json').read_text())
+        ledger['records'].pop()
+        hints = self.registry.parent / 'scripts/case-editor-audit/case-edit-persisted-field-inventory.json'
+        inventory = build_inventory(self.registry, self.frontend, hints)
+        with self.assertRaisesRegex(ValueError, 'identities do not match'):
+            validate_execution_ledger(ledger, inventory)
 
     def test_known_omissions_come_from_registry_without_census(self):
         paths = {normalized(f['frontendPath']) for f in self.document['fields']}

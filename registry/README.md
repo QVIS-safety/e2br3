@@ -31,6 +31,10 @@ Do not use combined values such as `ICH+FDA`. If a field is FDA-specific, set
 - `sections/*.json`: canonical editable field rows.
 - `editor-contracts/*.json`: field-level editor projection, PATCH, roundtrip,
   constraint, and business-validation evidence used by strict page gates.
+- `execution-ledger.json`: hash-pinned headed UI/Jev proof index for every
+  canonical editor identity. CI rejects registry or frontend drift from it.
+  Referenced result and lifecycle artifacts remain in private audit storage
+  because they can contain Case values; the committed ledger pins their hashes.
 - `dictionary/*.json`: canonical E2BR3 data-element dictionaries (generated, committed).
 - `dictionary/rules/*.json`: per-authority business-rule prose, keyed by element code
   (generated, committed). Kept out of the entries so the dictionaries stay lean.
@@ -93,6 +97,16 @@ Validate the registry:
 
 ```sh
 python3 registry/tools/validate.py
+```
+
+Validate the versioned execution ledger while building the current canonical
+UI inventory:
+
+```sh
+python3 registry/tools/build_ui_inventory.py \
+  --frontend-root ../e2br3-frontend \
+  --execution-hints scripts/case-editor-audit/case-edit-persisted-field-inventory.json \
+  --execution-ledger registry/execution-ledger.json --check
 ```
 
 Validate a certified editor contract field by field:
