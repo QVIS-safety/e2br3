@@ -198,6 +198,7 @@ pub(super) fn direct_section_response(
 pub struct CaseEditorPageProjectionQuery {
 	pub(super) authorities: Option<String>,
 	pub(super) include_deleted: Option<bool>,
+	pub(super) include_rows: Option<bool>,
 }
 
 pub(super) fn query_authorities_csv(
@@ -581,6 +582,29 @@ pub(super) async fn direct_page_projection_response(
 		rows: rows_from_direct_section(data),
 		section_summaries: Vec::new(),
 	})
+}
+
+// Reuse canonical row readers inside the existing authorized page transaction.
+pub(super) async fn repeatable_rows_with_details<F, Fut>(
+	rows: Value,
+	load_row: F,
+) -> Result<Value>
+where
+	F: Fn(Uuid) -> Fut,
+	Fut: std::future::Future<Output = Result<Value>>,
+{
+	let summaries = rows.as_array().ok_or_else(|| Error::BadRequest {
+		message: "repeatable page rows must be an array".to_string(),
+	})?;
+	let mut details = Map::new();
+	for row in summaries {
+		let id = row.get("id").ok_or_else(|| Error::BadRequest {
+			message: "repeatable page row is missing id".to_string(),
+		})?;
+		let id: Uuid = serde_json::from_value(id.clone())?;
+		details.insert(id.to_string(), load_row(id).await?);
+	}
+	Ok(json!({ "rows": rows, "rowDetails": details }))
 }
 
 pub(super) fn repeatable_page_projection_response(

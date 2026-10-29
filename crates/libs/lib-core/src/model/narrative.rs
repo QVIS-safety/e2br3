@@ -229,7 +229,7 @@ impl NarrativeInformationBmc {
 				Ok(narrative)
 			}
 			None => {
-				mm.dbx().rollback_txn().await?;
+				mm.dbx().commit_txn().await?;
 				Err(crate::model::Error::EntityUuidNotFound {
 					entity: Self::TABLE,
 					id: case_id,

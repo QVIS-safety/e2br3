@@ -166,8 +166,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2a.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaResultsInDeath"
       },
       "payloadPath": "seriousness.criteriaResultsInDeath"
     },
@@ -183,8 +184,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2b.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaLifeThreatening"
       },
       "payloadPath": "seriousness.criteriaLifeThreatening"
     },
@@ -200,8 +202,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2c.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaHospitalization"
       },
       "payloadPath": "seriousness.criteriaHospitalization"
     },
@@ -217,8 +220,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2d.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaDisabling"
       },
       "payloadPath": "seriousness.criteriaDisabling"
     },
@@ -234,8 +238,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2e.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaCongenitalAnomaly"
       },
       "payloadPath": "seriousness.criteriaCongenitalAnomaly"
     },
@@ -251,8 +256,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.3.2f.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].seriousness.criteriaOtherMedicallyImportant"
       },
       "payloadPath": "seriousness.criteriaOtherMedicallyImportant"
     },
@@ -269,8 +275,9 @@
       "projectionValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "FDA.E.i.3.2h.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].requiredIntervention"
       },
       "payloadPath": "requiredIntervention"
     },
@@ -370,8 +377,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.E.i.8.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "reactions[].medicalConfirmation"
       },
       "payloadPath": "medicalConfirmation"
     },

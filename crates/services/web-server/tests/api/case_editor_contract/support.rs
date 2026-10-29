@@ -561,6 +561,12 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 			body["error"]["data"]["detail"]["ruleCode"],
 			field["constraint"]["ruleCode"]
 		);
+		if let Some(issue_path) = field["constraint"]["issuePath"].as_str() {
+			assert_eq!(
+				body["error"]["data"]["detail"]["path"],
+				issue_path.replace("[]", ".0")
+			);
+		}
 	}
 	Ok(())
 }
@@ -787,3 +793,33 @@ macro_rules! field_contract_test {
 }
 
 pub(crate) use field_contract_test;
+
+/// Compare the batched page with canonical row routes using real persisted rows.
+pub(super) async fn assert_batched_rows(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+	section: &str,
+) -> Result<()> {
+	let uri = format!("/api/cases/{case_id}/editor/pages/{section}");
+	let (status, page) = get_json(app, cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{page}");
+	assert!(page["rows"].get("rowDetails").is_none());
+	let (status, expanded) =
+		get_json(app, cookie, &format!("{uri}?include_rows=true")).await?;
+	assert_eq!(status, StatusCode::OK, "{expanded}");
+	assert_eq!(expanded["rows"]["rows"], page["rows"]["rows"]);
+	let rows = page["rows"]["rows"].as_array().ok_or("missing rows")?;
+	let details = expanded["rows"]["rowDetails"]
+		.as_object()
+		.ok_or("missing batched details")?;
+	assert_eq!(details.len(), rows.len());
+	for row in rows {
+		let id = row["id"].as_str().ok_or("missing row id")?;
+		let (status, individual) =
+			get_json(app, cookie, &format!("{uri}/rows/{id}")).await?;
+		assert_eq!(status, StatusCode::OK, "{individual}");
+		assert_eq!(details.get(id).ok_or("missing canonical row")?, &individual);
+	}
+	Ok(())
+}

@@ -149,16 +149,16 @@ impl PermissionProfileBmc {
 			return Err(err);
 		}
 		let row = match dbx
-			.fetch_one(
+			.fetch_optional(
 				sqlx::query_as::<_, DbPermissionProfileRow>(&sql)
 					.bind(id)
 					.bind(ctx.organization_id()),
 			)
 			.await
 		{
-			Ok(row) => row,
-			Err(crate::model::store::dbx::Error::Sqlx(sqlx::Error::RowNotFound)) => {
-				dbx.rollback_txn().await?;
+			Ok(Some(row)) => row,
+			Ok(None) => {
+				dbx.commit_txn().await?;
 				return Err(crate::model::Error::EntityUuidNotFound {
 					entity: "permission_profile",
 					id,

@@ -757,7 +757,7 @@ impl SafetyReportIdentificationBmc {
 				Ok(report)
 			}
 			Ok(None) => {
-				let _ = mm.dbx().rollback_txn().await;
+				mm.dbx().commit_txn().await?;
 				Err(crate::model::Error::EntityUuidNotFound {
 					entity: Self::TABLE,
 					id: case_id,
@@ -828,7 +828,7 @@ impl SafetyReportIdentificationBmc {
 			let (current_status,) = match row {
 				Some(row) => row,
 				None => {
-					mm.dbx().rollback_txn().await?;
+					mm.dbx().commit_txn().await?;
 					return Err(crate::model::Error::EntityUuidNotFound {
 						entity: "cases",
 						id: case_id,

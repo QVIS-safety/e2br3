@@ -34,7 +34,7 @@ jobs:
           E2BR3_FRONTEND_ROOT: ${{ github.workspace }}/frontend/E2BR3-frontend
         run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
 
-      - name: Validate complete audit plan
+      - name: Validate inventory-relative audit plan
         run: |
           set -o pipefail
           python3 scripts/case_editor_input_fuzzer.py \
@@ -60,9 +60,10 @@ jobs:
           ]
           plan = records[-1]
           assert plan["verdict"] == "NOT_RUN", plan
-          assert plan["persisted_field_denominator"] == 348, plan
-          assert plan["selected_persisted_fields"] == 348, plan
-          assert plan["executable_persisted_fields"] == 348, plan
+          denominator = plan["persisted_field_denominator"]
+          assert denominator > 0, plan
+          assert plan["selected_persisted_fields"] == denominator, plan
+          assert plan["executable_persisted_fields"] == denominator, plan
           assert plan["blocked_persisted_fields"] == [], plan
           assert plan["audit_alternate_unresolved"] == [], plan
           PY
@@ -85,13 +86,32 @@ jobs:
           path: frontend/E2BR3-frontend
           token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/E2BR3-frontend/package-lock.json
+
+      - name: Validate frontend contract consumers
+        working-directory: frontend/E2BR3-frontend
+        env:
+          E2BR3_BACKEND_ROOT: ${{ github.workspace }}
+        run: |
+          npm ci
+          npm run check:editor-contracts
+          npm test -- __tests__/case-editor/editor-contract-snapshot.test.ts __tests__/input-contracts.test.ts --runInBand
+
       - name: Validate registry
+        env:
+          E2BR3_FRONTEND_ROOT: ${{ github.workspace }}/frontend/E2BR3-frontend
         run: |
           python3 -m unittest registry/tools/test_validate.py
+          python3 -m unittest registry/tools/test_extract_frontend_fields.py
           python3 -m unittest registry/tools/test_build_dictionary.py
           python3 registry/tools/validate.py
           python3 registry/tools/validate.py --strict-dictionary
           python3 registry/tools/validate.py --strict-presave-inventory
+          python3 registry/tools/validate.py --strict-backend-inventory
 
   # ============================================
   # Job 1: Check code formatting

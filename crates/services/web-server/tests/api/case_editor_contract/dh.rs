@@ -50,6 +50,7 @@ async fn page_projection_orders_past_drugs_by_sequence_then_id(
 		drug_names,
 		vec![Some("First prior drug"), Some("Second prior drug")]
 	);
+	super::support::assert_batched_rows(&app, &cookie, &case_id, "DH").await?;
 	Ok(())
 }
 

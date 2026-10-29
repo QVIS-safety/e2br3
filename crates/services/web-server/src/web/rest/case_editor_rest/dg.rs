@@ -2,8 +2,9 @@ use super::common::{
 	bool_field, child_row_has_content, ci_date, editor_page_row_response,
 	explicit_null_model_fields, i32_field, insert_alias, json,
 	mark_editor_validation_summary_stale, next_child_sequence, parse_row_model,
-	query_authorities_csv, repeatable_page_projection_response, required_row_object,
-	row_model_value, string_field, uuid_eq, validate_request_projection_context,
+	query_authorities_csv, repeatable_page_projection_response,
+	repeatable_rows_with_details, required_row_object, row_model_value,
+	string_field, uuid_eq, validate_request_projection_context,
 	validate_row_payload, CaseEditorDgListRowDto, CaseEditorPagePatchRequest,
 	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse,
 	CaseEditorRowDetailResponse, CtxW, DosageInformationBmc,
@@ -737,11 +738,26 @@ pub async fn get_editor_dg_page_projection(
 					query.include_deleted.unwrap_or(false),
 				)
 				.await?;
+				let authorities = query_authorities_csv(&query)?;
+				let rows = if query.include_rows == Some(true) {
+					repeatable_rows_with_details(json!(rows), |row_id| {
+						build_editor_dg_page_row_response(
+							ctx,
+							mm,
+							case_id,
+							row_id,
+							authorities.clone(),
+						)
+					})
+					.await?
+				} else {
+					json!({ "rows": rows })
+				};
 				let projection = repeatable_page_projection_response(
 					case_id,
 					"DG",
-					query_authorities_csv(&query)?,
-					json!({ "rows": rows }),
+					authorities,
+					rows,
 				)?;
 				Ok((axum::http::StatusCode::OK, Json(projection)))
 			})

@@ -1,10 +1,10 @@
 use super::common::{
 	editor_page_row_response, i32_field, json, query_authorities_csv,
-	repeatable_page_projection_response, uuid_eq, CaseEditorPageProjectionQuery,
-	CaseEditorPageProjectionResponse, CtxW, Error, Json, ListOptions,
-	LiteratureReferenceBmc, LiteratureReferenceFilter, LiteratureReferenceForCreate,
-	LiteratureReferenceForUpdate, ModelManager, Path, Query, Result, State, Uuid,
-	Value,
+	repeatable_page_projection_response, repeatable_rows_with_details, uuid_eq,
+	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse, CtxW, Error,
+	Json, ListOptions, LiteratureReferenceBmc, LiteratureReferenceFilter,
+	LiteratureReferenceForCreate, LiteratureReferenceForUpdate, ModelManager, Path,
+	Query, Result, State, Uuid, Value,
 };
 use super::handler_macros::{
 	repeatable_page_row_create_handler, repeatable_page_row_delete_handler,
@@ -75,11 +75,26 @@ pub async fn get_editor_lr_page_projection(
 		move |ctx, mm| {
 			Box::pin(async move {
 				let rows = load_editor_lr_list_rows(ctx, mm, case_id).await?;
+				let authorities = query_authorities_csv(&query)?;
+				let rows = if query.include_rows == Some(true) {
+					repeatable_rows_with_details(json!(rows), |row_id| {
+						build_editor_lr_page_row_response(
+							ctx,
+							mm,
+							case_id,
+							row_id,
+							authorities.clone(),
+						)
+					})
+					.await?
+				} else {
+					json!({ "rows": rows })
+				};
 				let projection = repeatable_page_projection_response(
 					case_id,
 					"LR",
-					query_authorities_csv(&query)?,
-					json!({ "rows": rows }),
+					authorities,
+					rows,
 				)?;
 				Ok((axum::http::StatusCode::OK, Json(projection)))
 			})

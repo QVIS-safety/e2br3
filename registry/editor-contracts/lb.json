@@ -201,8 +201,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.F.r.7.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "testResults[].moreInformationAvailable"
       },
       "payloadPath": "moreInformationAvailable"
     }

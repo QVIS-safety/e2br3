@@ -19,6 +19,19 @@ async fn page_projection_orders_references_by_sequence_then_id(
 	let app = web_server::app(mm);
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-LR-ORDER", &["ich"]).await?;
+	for section in ["AE", "LB", "DG", "DH", "LR"] {
+		super::support::assert_batched_rows(&app, &cookie, &case_id, section)
+			.await?;
+		let (status, _) = get_json(
+			&app,
+			"",
+			&format!(
+				"/api/cases/{case_id}/editor/pages/{section}?include_rows=true"
+			),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::FORBIDDEN);
+	}
 	let rows_uri = format!("/api/cases/{case_id}/editor/pages/LR/rows");
 	for (sequence, reference) in [(2, "Second citation"), (1, "First citation")] {
 		let (status, body) = post_json(
@@ -49,6 +62,31 @@ async fn page_projection_orders_references_by_sequence_then_id(
 		references,
 		vec![Some("First citation"), Some("Second citation")]
 	);
+
+	assert!(body["rows"].get("rowDetails").is_none());
+	let (status, expanded) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LR?include_rows=true"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{expanded}");
+	assert_eq!(expanded["rows"]["rows"], body["rows"]["rows"]);
+	let details = expanded["rows"]["rowDetails"]
+		.as_object()
+		.ok_or("missing batched row details")?;
+	assert_eq!(details.len(), rows.len());
+	for row in rows {
+		let id = row["id"].as_str().ok_or("missing row id")?;
+		let (status, individual) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/LR/rows/{id}"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{individual}");
+		assert_eq!(details.get(id).ok_or("missing canonical row")?, &individual);
+	}
 	Ok(())
 }
 

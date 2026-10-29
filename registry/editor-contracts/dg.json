@@ -200,8 +200,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.2.5.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "drugs[].investigationalProductBlinded"
       },
       "payloadPath": "investigationalProductBlinded"
     },
@@ -269,8 +270,9 @@
       "projectionValue": "12.50000",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.5a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].cumulativeDoseValue"
       },
       "payloadPath": "cumulativeDoseValue"
     },
@@ -304,8 +306,9 @@
       "projectionValue": "4.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.6a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].gestationPeriodExposureValue"
       },
       "payloadPath": "gestationPeriodExposureValue"
     },
@@ -513,8 +516,9 @@
       "projectionValue": "10.50000",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.2.3.r.3a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].activeSubstances[].substanceStrengthValue"
       },
       "payloadPath": "activeSubstances[].substanceStrengthValue"
     },
@@ -548,8 +552,9 @@
       "projectionValue": "2.50000",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.4.r.1a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].dosageInformation[].doseValue"
       },
       "payloadPath": "dosageInformation[].doseValue"
     },
@@ -583,8 +588,9 @@
       "projectionValue": "1.00000",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.4.r.2.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].dosageInformation[].numberOfUnits"
       },
       "payloadPath": "dosageInformation[].numberOfUnits"
     },
@@ -652,8 +658,9 @@
       "projectionValue": "2.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.4.r.6a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].dosageInformation[].durationValue"
       },
       "payloadPath": "dosageInformation[].durationValue"
     },
@@ -941,8 +948,9 @@
       "projectionValue": "2.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.9.i.3.1a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].drugReactionAssessments[].administrationStartIntervalValue"
       },
       "payloadPath": "drugReactionAssessments[].administrationStartIntervalValue"
     },
@@ -976,8 +984,9 @@
       "projectionValue": "1.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.G.k.9.i.3.2a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "drugs[].drugReactionAssessments[].lastDoseIntervalValue"
       },
       "payloadPath": "drugReactionAssessments[].lastDoseIntervalValue"
     },

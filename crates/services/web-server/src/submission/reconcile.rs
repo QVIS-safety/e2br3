@@ -4,6 +4,8 @@ pub async fn reconcile_due_submissions(
 	mm: &ModelManager,
 	limit: i64,
 ) -> Result<SubmissionReconcileResult> {
+	let scan_mm = mm.clone();
+	let mm = &scan_mm;
 	let safe_limit = limit.clamp(1, 100);
 	let system_ctx = Ctx::root_ctx()
 		.with_compliance(Some(SYSTEM_REASON_RECONCILE_SCAN.to_string()), None);
@@ -55,9 +57,10 @@ pub async fn reconcile_due_submissions(
 
 			for row in due_rows {
 				let submission_id = row.0;
+				let submission_mm = mm.clone();
 				result.attempted += 1;
 				result.processed_submission_ids.push(submission_id);
-				match reconcile_one_submission(mm, submission_id).await {
+				match reconcile_one_submission(&submission_mm, submission_id).await {
 					Ok(ReconcileOutcome::Succeeded) => result.succeeded += 1,
 					Ok(ReconcileOutcome::Failed) => result.failed += 1,
 					Ok(ReconcileOutcome::Skipped) => result.skipped += 1,

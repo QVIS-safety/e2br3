@@ -287,6 +287,7 @@ async fn device_subresources_survive_dg_row_reload() -> Result<()> {
 		body["data"]["drug"]["deviceCharacteristics"][0]["value_value"],
 		json!("Imported Maker")
 	);
+	super::support::assert_batched_rows(&app, &cookie, &case_id, "DG").await?;
 	Ok(())
 }
 

@@ -180,7 +180,7 @@ impl ReceiverInformationBmc {
 		{
 			Ok(Some(entity)) => entity,
 			Ok(None) => {
-				mm.dbx().rollback_txn().await?;
+				mm.dbx().commit_txn().await?;
 				return Err(crate::model::Error::EntityUuidNotFound {
 					entity: Self::TABLE,
 					id: case_id,

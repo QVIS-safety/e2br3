@@ -250,7 +250,17 @@ impl UserBmc {
 		mm: &ModelManager,
 		user_c: UserForCreate,
 	) -> Result<Uuid> {
+		let nested = mm.dbx().transaction_depth().await.map_err(Error::Dbx)? > 0;
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let scoped_mm = if nested {
+				None
+			} else {
+				Some(mm.new_with_txn()?)
+			};
+			let mm = match &scoped_mm {
+				Some(scoped_mm) => scoped_mm,
+				None => mm,
+			};
 			let UserForCreate {
 				organization_id,
 				email,
@@ -320,7 +330,8 @@ impl UserBmc {
 					Ok(user_id) => user_id,
 					Err(err) => {
 						let _ = mm.dbx().rollback_txn().await;
-						if Self::is_retryable_write_error(&err)
+						if !nested
+							&& Self::is_retryable_write_error(&err)
 							&& attempt < USER_WRITE_MAX_ATTEMPTS
 						{
 							Self::backoff_after_retryable_error(attempt).await;
@@ -334,7 +345,8 @@ impl UserBmc {
 				Self::update_pwd_in_transaction(ctx, mm, user_id, &pwd_clear).await
 			{
 				let _ = mm.dbx().rollback_txn().await;
-				if Self::is_retryable_write_error(&err)
+				if !nested
+					&& Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS
 				{
 					Self::backoff_after_retryable_error(attempt).await;
@@ -352,7 +364,8 @@ impl UserBmc {
 			.await
 			{
 				let _ = mm.dbx().rollback_txn().await;
-				if Self::is_retryable_write_error(&err)
+				if !nested
+					&& Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS
 				{
 					Self::backoff_after_retryable_error(attempt).await;
@@ -378,7 +391,8 @@ impl UserBmc {
 			};
 			if let Err(err) = assignment_result {
 				let _ = mm.dbx().rollback_txn().await;
-				if Self::is_retryable_write_error(&err)
+				if !nested
+					&& Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS
 				{
 					Self::backoff_after_retryable_error(attempt).await;
@@ -392,7 +406,8 @@ impl UserBmc {
 				Err(err) => {
 					let err = Error::Dbx(err);
 					let _ = mm.dbx().rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -595,7 +610,17 @@ impl UserBmc {
 		clear_access_start_at: bool,
 		clear_access_end_at: bool,
 	) -> Result<()> {
+		let nested = mm.dbx().transaction_depth().await.map_err(Error::Dbx)? > 0;
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let scoped_mm = if nested {
+				None
+			} else {
+				Some(mm.new_with_txn()?)
+			};
+			let mm = match &scoped_mm {
+				Some(scoped_mm) => scoped_mm,
+				None => mm,
+			};
 			let mut user_u = user_u.clone();
 			// A membership owns its role assignment. Selecting another active
 			// organization must use that membership's existing assignment instead
@@ -662,7 +687,8 @@ impl UserBmc {
 					Err(error) => {
 						let err = Error::Dbx(error);
 						let _ = dbx.rollback_txn().await;
-						if Self::is_retryable_write_error(&err)
+						if !nested
+							&& Self::is_retryable_write_error(&err)
 							&& attempt < USER_WRITE_MAX_ATTEMPTS
 						{
 							Self::backoff_after_retryable_error(attempt).await;
@@ -673,7 +699,8 @@ impl UserBmc {
 				},
 				Err(err) => {
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -773,7 +800,17 @@ impl UserBmc {
 		id: Uuid,
 		pwd_clear: &str,
 	) -> Result<()> {
+		let nested = mm.dbx().transaction_depth().await.map_err(Error::Dbx)? > 0;
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let scoped_mm = if nested {
+				None
+			} else {
+				Some(mm.new_with_txn()?)
+			};
+			let mm = match &scoped_mm {
+				Some(scoped_mm) => scoped_mm,
+				None => mm,
+			};
 			let dbx = mm.dbx();
 			dbx.begin_txn().await.map_err(Error::Dbx)?;
 			if let Err(err) = set_full_context_dbx_or_rollback(
@@ -785,7 +822,8 @@ impl UserBmc {
 			.await
 			{
 				let _ = dbx.rollback_txn().await;
-				if Self::is_retryable_write_error(&err)
+				if !nested
+					&& Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS
 				{
 					Self::backoff_after_retryable_error(attempt).await;
@@ -798,7 +836,8 @@ impl UserBmc {
 				Ok(user) => user,
 				Err(err) => {
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -830,7 +869,8 @@ impl UserBmc {
 				Err(err) => {
 					let err: Error = err.into();
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -852,7 +892,8 @@ impl UserBmc {
 				Err(err) => {
 					let err = Error::Dbx(err);
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -910,7 +951,17 @@ impl UserBmc {
 		current_password: Option<&str>,
 		new_password: &str,
 	) -> Result<bool> {
+		let nested = mm.dbx().transaction_depth().await.map_err(Error::Dbx)? > 0;
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let scoped_mm = if nested {
+				None
+			} else {
+				Some(mm.new_with_txn()?)
+			};
+			let mm = match &scoped_mm {
+				Some(scoped_mm) => scoped_mm,
+				None => mm,
+			};
 			let dbx = mm.dbx();
 			dbx.begin_txn().await.map_err(Error::Dbx)?;
 			if let Err(err) = set_full_context_dbx_or_rollback(
@@ -922,7 +973,8 @@ impl UserBmc {
 			.await
 			{
 				let _ = dbx.rollback_txn().await;
-				if Self::is_retryable_write_error(&err)
+				if !nested
+					&& Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS
 				{
 					Self::backoff_after_retryable_error(attempt).await;
@@ -944,7 +996,8 @@ impl UserBmc {
 				Err(err) => {
 					let err: Error = err.into();
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -1009,7 +1062,8 @@ impl UserBmc {
 				Err(err) => {
 					let err: Error = err.into();
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -1031,7 +1085,8 @@ impl UserBmc {
 				Err(err) => {
 					let err = Error::Dbx(err);
 					let _ = dbx.rollback_txn().await;
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS
 					{
 						Self::backoff_after_retryable_error(attempt).await;
@@ -1075,14 +1130,25 @@ impl UserBmc {
 		struct UserPasswordPolicyForUpdate {
 			must_change_password: Option<bool>,
 		}
+		let nested = mm.dbx().transaction_depth().await.map_err(Error::Dbx)? > 0;
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let scoped_mm = if nested {
+				None
+			} else {
+				Some(mm.new_with_txn()?)
+			};
+			let mm = match &scoped_mm {
+				Some(scoped_mm) => scoped_mm,
+				None => mm,
+			};
 			let user_u = UserPasswordPolicyForUpdate {
 				must_change_password: Some(must_change_password),
 			};
 			match base_uuid::update::<Self, _>(ctx, mm, id, user_u).await {
 				Ok(()) => return Ok(()),
 				Err(err)
-					if Self::is_retryable_write_error(&err)
+					if !nested
+						&& Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS =>
 				{
 					Self::backoff_after_retryable_error(attempt).await;

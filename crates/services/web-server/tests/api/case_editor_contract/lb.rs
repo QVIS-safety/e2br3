@@ -45,6 +45,7 @@ async fn comments_can_be_cleared_and_reloaded() -> crate::common::Result<()> {
 	let (status, body) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["data"]["testResult"]["comments"], Value::Null);
+	super::support::assert_batched_rows(&app, &cookie, &case_id, "LB").await?;
 	Ok(())
 }
 

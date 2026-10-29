@@ -651,7 +651,7 @@ impl CaseBmc {
 				Ok(entity)
 			}
 			None => {
-				dbx.rollback_txn().await?;
+				dbx.commit_txn().await?;
 				Err(crate::model::Error::EntityUuidNotFound {
 					entity: Self::TABLE,
 					id,

@@ -53,6 +53,28 @@ class RegistryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], violations)
 
+    def test_input_type_editor_contracts_declare_primitive_boundary_evidence(self):
+        repo = Path(__file__).resolve().parents[2]
+        violations = []
+        for path in sorted((repo / "registry/editor-contracts").glob("*.json")):
+            if path.name == "schema.json":
+                continue
+            contract = json.loads(path.read_text(encoding="utf-8"))
+            for field in contract["fields"]:
+                constraint = field.get("constraint", {})
+                if constraint.get("ruleCode") != "INPUT.TYPE":
+                    continue
+                expected_type = type(field.get("roundTripValue"))
+                invalid_type = type(constraint.get("invalidValue"))
+                if expected_type not in {bool, int, float}:
+                    violations.append(f"{field['code']}: unsupported roundtrip type")
+                if invalid_type is expected_type:
+                    violations.append(f"{field['code']}: invalid value has expected type")
+                if constraint.get("issuePath") != field.get("frontendPath"):
+                    violations.append(f"{field['code']}: issuePath does not match frontendPath")
+
+        self.assertEqual([], violations)
+
     def test_separate_null_flavor_fields_declare_symmetric_partners(self):
         repo = Path(__file__).resolve().parents[2]
         violations = []

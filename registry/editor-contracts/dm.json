@@ -90,8 +90,9 @@
       "projectionValue": "36.50",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.2.2a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.patientAge.value"
       },
       "payloadPath": "patientAge.value"
     },
@@ -125,8 +126,9 @@
       "projectionValue": "22.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.2.2.1a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.gestationPeriod.value"
       },
       "payloadPath": "gestationPeriod.value"
     },
@@ -177,8 +179,9 @@
       "projectionValue": "62.50",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.3.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.patientWeight.value"
       },
       "payloadPath": "patientWeight.value"
     },
@@ -195,8 +198,9 @@
       "projectionValue": "171.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.4.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.patientHeight.value"
       },
       "payloadPath": "patientHeight.value"
     },
@@ -263,8 +267,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.7.3.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "patientInformation.concomitantTherapies"
       },
       "payloadPath": "concomitantTherapies"
     },
@@ -331,8 +336,9 @@
       "roundTripValue": false,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.7.1.r.3.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "patientInformation.medicalHistoryEpisodes[].continuing"
       },
       "payloadPath": "[].continuing"
     },
@@ -382,8 +388,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.7.1.r.6.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "patientInformation.medicalHistoryEpisodes[].familyHistory"
       },
       "payloadPath": "[].familyHistory"
     },
@@ -467,8 +474,9 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.9.3.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "patientInformation.patientDeath.autopsyPerformed"
       },
       "payloadPath": "autopsyPerformed"
     },
@@ -570,8 +578,9 @@
       "projectionValue": "54.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.10.2.2a.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.parentInformation.parentAge.value"
       },
       "payloadPath": "parentAge.value"
     },
@@ -622,8 +631,9 @@
       "projectionValue": "64.50",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.10.4.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.parentInformation.parentWeight.value"
       },
       "payloadPath": "parentWeight.value"
     },
@@ -640,8 +650,9 @@
       "projectionValue": "168.00",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.10.5.LENGTH.MAX",
-        "invalidValue": "not-a-number"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-number",
+        "issuePath": "patientInformation.parentInformation.parentHeight.value"
       },
       "payloadPath": "parentHeight.value"
     },
@@ -742,8 +753,9 @@
       "roundTripValue": false,
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.10.7.1.r.3.ALLOWED.VALUE",
-        "invalidValue": "not-a-boolean"
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean",
+        "issuePath": "patientInformation.parentInformation.medicalHistoryEpisodes[].continuing"
       },
       "payloadPath": "[].continuing"
     },

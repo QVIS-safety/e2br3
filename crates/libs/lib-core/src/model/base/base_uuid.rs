@@ -133,7 +133,7 @@ where
 	let entity = match dbx.fetch_optional(sqlx_query).await {
 		Ok(Some(entity)) => entity,
 		Ok(None) => {
-			dbx.rollback_txn().await?;
+			dbx.commit_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
 				entity: MC::TABLE,
 				id,
