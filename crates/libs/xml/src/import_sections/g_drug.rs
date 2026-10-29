@@ -1749,8 +1749,13 @@ mod tests {
 			let missing_value =
 				xml.replace(&format!("<value code=\"{value}\"/>"), "<value/>");
 			let error = parse_g_drugs(with_drug_role(&missing_value).as_bytes())
-				.expect_err("matching device-code element requires its value code");
-			assert!(error.to_string().contains("REQUIRED"), "{error}");
+				.expect_err(
+					"matching device-code element rejects an empty value code",
+				);
+			assert!(
+				error.to_string().contains("INPUT.EMPTY.REJECTED"),
+				"{error}"
+			);
 		}
 	}
 
