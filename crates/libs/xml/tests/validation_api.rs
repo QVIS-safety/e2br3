@@ -23,16 +23,14 @@ fn generic_validation_api_is_owned_by_xml() {
 
 #[test]
 fn import_normalization_treats_empty_c_1_8_1_extension_as_absent() {
-	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
-		"../../../docs/exporter/mfds/1-1_ExampleCase_literature_KR_initial_v1_0_샘플.xml",
-	);
-	let Ok(source) = std::fs::read_to_string(path) else {
-		return;
-	};
+	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml");
+	let source = std::fs::read_to_string(path).expect("prepared FDA XML fixture");
 	let xml = source.replace(
-		"<id extension=\"KIDS-81200923025560\" root=\"2.16.840.1.113883.3.989.2.1.3.2\"/>",
+		"<id extension=\"US-APHARMA-8744554B\" root=\"2.16.840.1.113883.3.989.2.1.3.2\"/>",
 		"<id extension=\"\" root=\"2.16.840.1.113883.3.989.2.1.3.2\"/>",
 	);
+	assert_ne!(xml, source, "fixture must contain the attribute to clear");
 	let schema = default_xsd_path().expect("official ICH schema");
 	let before = validate_e2b_xml_xsd(xml.as_bytes(), &schema).expect("validate");
 	assert!(before
@@ -106,14 +104,12 @@ fn xml_validation_does_not_run_case_business_rules() {
 
 #[test]
 fn import_normalization_treats_empty_code_system_version_as_absent() {
-	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
-		"../../../docs/exporter/mfds/1-1_ExampleCase_literature_KR_initial_v1_0_샘플.xml",
-	);
-	let Ok(source) = std::fs::read_to_string(path) else {
-		return;
-	};
+	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml");
+	let source = std::fs::read_to_string(path).expect("prepared FDA XML fixture");
 	let xml =
-		source.replacen("codeSystemVersion=\"22.1\"", "codeSystemVersion=\"\"", 1);
+		source.replacen("codeSystemVersion=\"12.0\"", "codeSystemVersion=\"\"", 1);
+	assert_ne!(xml, source, "fixture must contain the attribute to clear");
 	let schema = default_xsd_path().expect("official ICH schema");
 	let before = validate_e2b_xml_xsd(xml.as_bytes(), &schema).expect("validate");
 	assert!(before
@@ -124,7 +120,7 @@ fn import_normalization_treats_empty_code_system_version_as_absent() {
 		normalize_e2b_xml_for_import(xml.as_bytes()).expect("normalize");
 	let normalized = String::from_utf8(normalized).expect("UTF-8 XML");
 	assert!(!normalized.contains("codeSystemVersion=\"\""));
-	assert!(normalized.contains("codeSystemVersion=\"22.1\""));
+	assert!(normalized.contains("codeSystemVersion=\"12.0\""));
 	assert!(validate_e2b_xml_xsd(normalized.as_bytes(), &schema)
 		.expect("validate normalized XML")
 		.is_empty());

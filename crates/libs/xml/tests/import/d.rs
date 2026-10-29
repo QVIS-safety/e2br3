@@ -15,13 +15,14 @@ fn import_d_section_all_fields_from_scenario6() {
 	assert_eq!(patient.birth_date_null_flavor, None);
 	assert_eq!(patient.sex.as_deref(), Some("1"));
 	assert_eq!(patient.sex_null_flavor, None);
-	assert_eq!(patient.age_at_time_of_onset, Some(decimal("33")));
+	// The fixture's parent age is 33; the patient's D.2.2a age is 10.
+	assert_eq!(patient.age_at_time_of_onset, Some(decimal("10")));
 	assert_eq!(patient.age_unit.as_deref(), Some("a"));
 	assert_eq!(patient.gestation_period, Some(decimal("10")));
 	assert_eq!(patient.gestation_period_unit.as_deref(), Some("wk"));
 	assert_eq!(patient.age_group, None);
-	assert_eq!(patient.weight_kg, Some(decimal("50")));
-	assert_eq!(patient.height_cm, Some(decimal("160")));
+	assert_eq!(patient.weight_kg, Some(decimal("48.2")));
+	assert_eq!(patient.height_cm, Some(decimal("152")));
 	assert_eq!(
 		patient.race_codes,
 		["C16352", "C41259", "C41260", "C41219", "C41261"]
@@ -33,7 +34,7 @@ fn import_d_section_all_fields_from_scenario6() {
 	assert_eq!(patient.last_menstrual_period_date_null_flavor, None);
 	assert_eq!(
 		patient.medical_history_text.as_deref(),
-		Some("Systems Review.")
+		Some("The patient's medical history does not show anything very out of the ordinary.")
 	);
 	assert_eq!(patient.concomitant_therapy, Some(true));
 }
