@@ -158,6 +158,39 @@ Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
 helpers stay in `support.rs`; feature-specific setup stays with its tests.
 
+CI runs the full workspace and canonical backend execution check on every
+`dev`/`main` push, before publishing the backend image. PRs that change only
+known integration-test files run their complete Cargo test targets. Any API
+target run still requires all canonical field tests, including explicit RE/DG
+references. Documentation-only PRs skip the database test job; production,
+shared helpers, schema, registry, CI configuration and unknown paths require
+the full suite. Other jobs, including frontend contract checks, remain enabled.
+The selected scope appears in the Test Scope job summary. A targeted PR result
+does not stand for a full release validation. Test-only `authorization_kernel`
+changes include its compile-fail fixtures; the full push always runs it too.
+
+For a local preview (the base revision must exist):
+
+```sh
+python3 scripts/ci_test_plan.py plan --event pull_request --base origin/dev --head HEAD
+```
+
+Implementation-layout tests (file placement, import spelling and line limits)
+and decorative-copy/order checks were retired where they did not verify an
+independent functional requirement. Field contracts, runtime authorization,
+audit behavior, NullFlavor and data-preservation tests remain. The minimal
+cache-response test was absorbed by the profile-cache persistence/invalidation
+suite. Retired test definitions remain in Git history; this cleanup does not
+replace the product's approved validation plan or its retained execution records.
+
+| Retired checks | Retained requirement coverage |
+| --- | --- |
+| Frontend decorative subtitles and CI field display order (2 cases) | Canonical field inventory, payload mapping and input constraints remain; presentation preferences are outside the mandatory regression gate. |
+| Frontend admin, DM, LR, NR and utility file-layout checks (14 cases) | Runtime role permissions, section save/readback and audit-access tests remain. Folder names and import spelling are not acceptance criteria. |
+| Frontend shared-audit implementation and DG layout checks (11 net cases) | Readonly audit access guard, field audit actions, DG receiver selection, NullFlavor and soft-delete wiring remain. LB/SI functional checks were retained when their layout assertions were removed. |
+| Backend minimal FDA validation response (1 case) | `case_contract_web::validation_cache::test_single_profile_validation_caches_each_profile` verifies FDA/MFDS responses, DB cache rows, list aggregation and invalidation after saves. |
+| Backend legacy authorization migration/source-shape checks (22 cases) | Runtime `authorization_snapshot`, `authorization_isolation`, `authorization_storage`, `rbac_*`, `rls_web`, role metadata/effective-access and compile-fail suites remain; permit/snapshot/organization binding and restore-action guards are retained. |
+
 Validate registry rows against extracted backend BMC fields:
 
 ```sh

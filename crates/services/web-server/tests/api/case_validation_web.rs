@@ -1575,49 +1575,6 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_single_profile_validation_caches_summary() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let case_id = create_case_with_payload(
-		&app,
-		&cookie,
-		json!({
-			"data": {
-				"safetyReportIdentification": {
-					"safetyReportId": format!("SR-{}", Uuid::new_v4())
-				},
-				"status": "draft"
-			}
-		}),
-	)
-	.await?
-	.1["data"]["id"]
-		.as_str()
-		.map(Uuid::parse_str)
-		.ok_or("missing data.id")??;
-
-	create_safety_report(&app, &cookie, case_id).await?;
-	create_sender(&app, &cookie, case_id, "3").await?;
-
-	let (status, body) = get_validation(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=fda"),
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["authority"], json!("fda"));
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

@@ -14,6 +14,33 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  test-plan:
+    name: Test Scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      targets: ${{ steps.plan.outputs.targets }}
+      backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify test selection
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py
+      - name: Select tests from the complete PR diff
+        id: plan
+        shell: bash
+        env:
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -o pipefail
+          python3 scripts/ci_test_plan.py plan --event "$CI_EVENT_NAME" \
+            --base "$CI_BASE_SHA" --head "$GITHUB_SHA" --github-output "$GITHUB_OUTPUT" \
+            | tee "$RUNNER_TEMP/test-plan.json"
+          cat "$RUNNER_TEMP/test-plan.json" >> "$GITHUB_STEP_SUMMARY"
+
   validator:
     name: Validator Field and Rule Tests
     runs-on: ubuntu-latest
@@ -201,7 +228,8 @@ jobs:
   # ============================================
   test:
     name: Test
-    needs: [registry]
+    needs: [registry, test-plan]
+    if: ${{ needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -272,6 +300,7 @@ jobs:
           done
 
       - name: Run lib-core tests
+        if: ${{ needs.test-plan.outputs.mode == 'full' }}
         env:
           # Skip local dev DB bootstrap; CI already initializes the schema
           SKIP_DEV_INIT: "1"
@@ -285,6 +314,7 @@ jobs:
         run: scripts/test-isolated-db.sh -p lib-core -j1 -- --test-threads=1
 
       - name: Run remaining workspace tests
+        if: ${{ needs.test-plan.outputs.mode == 'full' }}
         env:
           SKIP_DEV_INIT: "1"
           SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
@@ -296,6 +326,24 @@ jobs:
         run: |
           set -o pipefail
           scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1 --color never 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+
+      - name: Run changed integration targets
+        if: ${{ needs.test-plan.outputs.mode == 'targeted' }}
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.targets }}
+          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
+          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
+          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
+          SERVICE_TOKEN_DURATION_SEC: "1800"
+          SERVICE_WEB_FOLDER: "web-folder/"
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/ci_test_plan.py run --targets "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+
+      - name: Require complete backend contract execution
+        if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
+        run: |
           python3 registry/tools/check_contract_test_results.py \
             --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
             --backend-log "$RUNNER_TEMP/workspace-tests.log"
