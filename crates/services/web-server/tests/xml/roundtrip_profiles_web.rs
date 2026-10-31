@@ -2,6 +2,10 @@ use crate::common::{
 	cookie_header, create_test_import_product, init_test_mm, seed_org_with_users,
 	unique_safety_report_id_xml, Result,
 };
+use crate::xml_support::{
+	default_xsd_path as xsd_path, ensure_batch_transmission_date,
+	ensure_reaction_language, workspace_root,
+};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
@@ -18,23 +22,10 @@ use xml::validation::{validate_e2b_xml, validate_export_rules, XmlValidatorConfi
 struct RoundtripFixture {
 	filename: &'static str,
 	authority: &'static str,
-	require_ok: bool,
-}
-
-fn workspace_root() -> PathBuf {
-	PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-		.join("../../..")
-		.canonicalize()
-		.expect("workspace root")
 }
 
 fn examples_dir() -> PathBuf {
 	workspace_root().join("docs/exporter/fda")
-}
-
-fn xsd_path() -> PathBuf {
-	workspace_root()
-		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
 }
 
 fn build_multipart(
@@ -101,290 +92,6 @@ async fn request_raw(
 	Ok((status, bytes.to_vec()))
 }
 
-async fn ensure_reaction_language(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: &str,
-) -> Result<()> {
-	let (status, body) = request_json(
-		app,
-		cookie,
-		"GET",
-		&format!("/api/cases/{case_id}/reactions"),
-		None,
-		Body::empty(),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!("list reactions status {} body {}", status, body).into());
-	}
-	let Some(reactions) = body.get("data").and_then(Value::as_array) else {
-		return Ok(());
-	};
-	for reaction in reactions {
-		let Some(reaction_id) = reaction.get("id").and_then(Value::as_str) else {
-			continue;
-		};
-		let has_text = reaction
-			.get("primary_source_reaction")
-			.and_then(Value::as_str)
-			.map(|v| !v.trim().is_empty())
-			.unwrap_or(false);
-		let has_language = reaction
-			.get("reaction_language")
-			.and_then(Value::as_str)
-			.map(|v| !v.trim().is_empty())
-			.unwrap_or(false);
-		if has_text && !has_language {
-			let mut last_failure = None;
-			for _attempt in 0..3 {
-				let (status, body) = request_json(
-					app,
-					cookie,
-					"PUT",
-					&format!("/api/cases/{case_id}/reactions/{reaction_id}"),
-					Some("application/json"),
-					Body::from(
-						serde_json::json!({
-							"data": { "reaction_language": "eng" }
-						})
-						.to_string(),
-					),
-				)
-				.await?;
-				if status == StatusCode::OK {
-					last_failure = None;
-					break;
-				}
-				let body_text = body.to_string();
-				if !body_text.contains("Audit trail logging failed")
-					&& !body_text.contains("deadlock detected")
-				{
-					return Err(format!(
-						"update reaction language status {} body {}",
-						status, body_text
-					)
-					.into());
-				}
-				last_failure = Some((status, body_text));
-			}
-			if let Some((status, body)) = last_failure {
-				return Err(format!(
-					"update reaction language status {} body {}",
-					status, body
-				)
-				.into());
-			}
-		}
-	}
-	Ok(())
-}
-
-async fn ensure_batch_transmission_date(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: &str,
-) -> Result<()> {
-	let (status, body) = request_json(
-		app,
-		cookie,
-		"GET",
-		&format!("/api/cases/{case_id}/message-header"),
-		None,
-		Body::empty(),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(
-			format!("get message-header status {} body {}", status, body).into(),
-		);
-	}
-	let has_batch_transmission_date = body
-		.get("data")
-		.and_then(|v| v.get("batch_transmission_date"))
-		.and_then(Value::as_array)
-		.map(|v| !v.is_empty())
-		.unwrap_or(false);
-	if has_batch_transmission_date {
-		return Ok(());
-	}
-	let (status, body) = request_json(
-		app,
-		cookie,
-		"PUT",
-		&format!("/api/cases/{case_id}/message-header"),
-		Some("application/json"),
-		Body::from(
-			serde_json::json!({
-				"data": {
-					"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
-				}
-			})
-			.to_string(),
-		),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update batch_transmission_date status {} body {}",
-			status, body
-		)
-		.into());
-	}
-	Ok(())
-}
-
-async fn ensure_fda_device_characteristics(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: &str,
-) -> Result<()> {
-	let (status, body) = request_json(
-		app,
-		cookie,
-		"GET",
-		&format!("/api/cases/{case_id}/validation?authority=fda"),
-		None,
-		Body::empty(),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(
-			format!("validation precheck status {} body {}", status, body).into(),
-		);
-	}
-	let target_drug_indexes: std::collections::BTreeSet<usize> = body
-		.get("data")
-		.and_then(|v| v.get("issues"))
-		.and_then(Value::as_array)
-		.map(|issues| {
-			issues
-				.iter()
-				.filter(|issue| {
-					issue.get("code").and_then(Value::as_str)
-						== Some("FDA.G.K.12.R.3.REQUIRED")
-				})
-				.filter_map(|issue| issue.get("path").and_then(Value::as_str))
-				.filter_map(|path| {
-					let index = path.strip_prefix("drugs.")?.split('.').next()?;
-					index.parse::<usize>().ok()
-				})
-				.collect()
-		})
-		.unwrap_or_default();
-	if target_drug_indexes.is_empty() {
-		return Ok(());
-	}
-
-	let (status, body) = request_json(
-		app,
-		cookie,
-		"GET",
-		&format!("/api/cases/{case_id}/drugs"),
-		None,
-		Body::empty(),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!("list drugs status {} body {}", status, body).into());
-	}
-	let Some(drugs) = body.get("data").and_then(Value::as_array) else {
-		return Ok(());
-	};
-	for (drug_index, drug) in drugs.iter().enumerate() {
-		if !target_drug_indexes.contains(&drug_index) {
-			continue;
-		}
-		let Some(drug_id) = drug.get("id").and_then(Value::as_str) else {
-			continue;
-		};
-		let (status, body) = request_json(
-			app,
-			cookie,
-			"GET",
-			&format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
-			None,
-			Body::empty(),
-		)
-		.await?;
-		if status != StatusCode::OK {
-			return Err(format!(
-				"list device characteristics status {} body {}",
-				status, body
-			)
-			.into());
-		}
-		let Some(chars) = body.get("data").and_then(Value::as_array) else {
-			continue;
-		};
-		let has_gk12r3 = chars.iter().any(|ch| {
-			ch.get("code")
-				.and_then(Value::as_str)
-				.map(|code| code.eq_ignore_ascii_case("FDA.G.k.12.r.3"))
-				.unwrap_or(false)
-		});
-		if !has_gk12r3 {
-			let next_sequence_number = chars
-				.iter()
-				.filter_map(|ch| ch.get("sequence_number").and_then(Value::as_i64))
-				.max()
-				.unwrap_or(0)
-				+ 1;
-			let (status, body) = request_json(
-				app,
-				cookie,
-				"POST",
-				&format!(
-					"/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"
-				),
-				Some("application/json"),
-				Body::from(
-					serde_json::json!({
-						"data": {
-							"drug_id": drug_id,
-							"sequence_number": next_sequence_number,
-							"code": "FDA.G.k.12.r.3",
-							"value_code": "1"
-						}
-					})
-					.to_string(),
-				),
-			)
-			.await?;
-			if status != StatusCode::CREATED {
-				return Err(format!(
-					"create gk12r3 status {} body {}",
-					status, body
-				)
-				.into());
-			}
-		}
-	}
-	Ok(())
-}
-
-async fn mark_case_validated(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: &str,
-) -> Result<()> {
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!("/api/cases/{case_id}/validator/mark-validated"))
-		.header("cookie", cookie)
-		.header("x-validator-token", "validator-secret")
-		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let bytes = to_bytes(res.into_body(), usize::MAX).await?;
-	let body = serde_json::from_slice::<Value>(&bytes)?;
-	if status != StatusCode::OK {
-		return Err(format!("mark validated status {} body {}", status, body).into());
-	}
-	Ok(())
-}
-
 #[serial]
 #[tokio::test]
 async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<()> {
@@ -394,17 +101,14 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		RoundtripFixture {
 			filename: "FAERS2022Scenario1.xml",
 			authority: "ich",
-			require_ok: false,
 		},
 		RoundtripFixture {
 			filename: "FAERS2022Scenario2.xml",
 			authority: "fda",
-			require_ok: false,
 		},
 		RoundtripFixture {
 			filename: "FAERS2022Scenario3.xml",
 			authority: "mfds",
-			require_ok: false,
 		},
 	];
 
@@ -419,7 +123,15 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 
 	for fixture in fixtures {
 		let fixture_path = examples_dir().join(fixture.filename);
-		let xml = unique_safety_report_id_xml(fs::read_to_string(&fixture_path)?);
+		let original_xml = fs::read_to_string(&fixture_path)?;
+		let xml = unique_safety_report_id_xml(original_xml.clone());
+		if xml == original_xml {
+			return Err(format!(
+				"fixture has no safety report ID to make unique: {}",
+				fixture.filename
+			)
+			.into());
+		}
 		let (boundary, multipart) = build_multipart(
 			xml.as_bytes(),
 			fixture.filename,
@@ -445,7 +157,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		}
 		let Some(case_id) = import_body
 			.get("data")
-			.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
+			.and_then(|v| v.get("caseId"))
 			.and_then(Value::as_str)
 		else {
 			failures.push(format!(
@@ -463,14 +175,6 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		{
 			failures.push(format!("{}: {err}", fixture.filename));
 			continue;
-		}
-		if fixture.authority == "fda" {
-			if let Err(err) =
-				ensure_fda_device_characteristics(&app, &cookie, case_id).await
-			{
-				failures.push(format!("{}: {err}", fixture.filename));
-				continue;
-			}
 		}
 		let (validation_status, validation_body) = request_json(
 			&app,
@@ -491,31 +195,28 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			));
 			continue;
 		}
-		let ok = validation_body
+		if validation_body
 			.get("data")
 			.and_then(|v| v.get("ok"))
 			.and_then(Value::as_bool)
-			.unwrap_or(false);
-		if fixture.require_ok && !ok {
+			.is_none()
+		{
 			failures.push(format!(
-				"{}: expected ok=true for authority {}, body={}",
-				fixture.filename, fixture.authority, validation_body
+				"{}: validation response missing data.ok boolean: {}",
+				fixture.filename, validation_body
 			));
 			continue;
 		}
-		if !ok {
-			continue;
-		}
-		if let Err(err) = mark_case_validated(&app, &cookie, case_id).await {
-			failures.push(format!("{}: {err}", fixture.filename));
-			continue;
-		}
+		// Manual export is independent of workflow/business-validation status.
 
 		let (export_status, export_bytes) = request_raw(
 			&app,
 			&cookie,
 			"GET",
-			&format!("/api/cases/{case_id}/export/xml"),
+			&format!(
+				"/api/cases/{case_id}/export/xml?authority={}",
+				fixture.authority
+			),
 			None,
 			Body::empty(),
 		)

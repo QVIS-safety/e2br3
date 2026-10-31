@@ -3,13 +3,7 @@ use super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_roundtrip_dg_remaining_14_fields() -> Result<()> {
-	let (app, cookie, case_id, _mm, _ctx) = match setup_imported_case().await {
-		Ok(v) => v,
-		Err(err) => {
-			eprintln!("skipping DG remaining test: {err}");
-			return Ok(());
-		}
-	};
+	let (app, cookie, case_id, _mm, _ctx) = setup_imported_case().await?;
 
 	let (status, body) = request_json(
 		&app,
@@ -187,7 +181,6 @@ async fn test_roundtrip_dg_remaining_14_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
 	let req = Request::builder()
 		.method("GET")
 		.uri(format!("/api/cases/{case_id}/export/xml?authority=fda"))
@@ -197,9 +190,6 @@ async fn test_roundtrip_dg_remaining_14_fields() -> Result<()> {
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	if status != StatusCode::OK {
-		if String::from_utf8_lossy(&body).contains("Only validated cases") {
-			return Ok(());
-		}
 		return Err(format!(
 			"export status {} body {}",
 			status,
@@ -207,7 +197,7 @@ async fn test_roundtrip_dg_remaining_14_fields() -> Result<()> {
 		)
 		.into());
 	}
-	let xml = String::from_utf8_lossy(&body);
+	let xml = String::from_utf8(body.to_vec())?;
 	for expected in [
 		sentinel_indication_text.as_str(),
 		"26.1",

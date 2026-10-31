@@ -121,13 +121,7 @@ async fn parent_null_flavor_xml_roundtrip() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn test_roundtrip_dm_dh_remaining_fields() -> Result<()> {
-	let (app, cookie, case_id, _mm, _ctx) = match setup_imported_case().await {
-		Ok(v) => v,
-		Err(err) => {
-			eprintln!("skipping DM/DH remaining test: {err}");
-			return Ok(());
-		}
-	};
+	let (app, cookie, case_id, _mm, _ctx) = setup_imported_case().await?;
 
 	// DM.D.6
 	let (status, body) = request_json(
@@ -299,14 +293,7 @@ async fn test_roundtrip_dm_dh_remaining_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in ["20240203", "37.7", "19881123", "20240304", "20240305"] {
 		assert!(
 			xml.contains(expected),

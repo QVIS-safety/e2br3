@@ -32,7 +32,7 @@
 | `GET /api/submissions/history` | 200 `data.items` | 최신 ACK 시간·이벤트, 결과, ICSR 수, 원본 파일 URL; 사용자 scope 필터 |
 | `GET /api/submissions/{id}` | 200 `data` submission | callback 후 `ack3_received` 재조회 |
 | `GET /api/submissions/{id}/events` | 200 `data.items` | 생성·ACK·상태변경 이벤트, 중복 callback의 `ack_duplicate_ignored` |
-| `GET /api/submissions/{id}/dispatch-state` | 200 `data.state` | 불명 전송의 retry 없음·오류 메시지. callback 검사 하나는 `if status == 200` 안에서만 추가 항목을 검사하므로 그 분기 자체가 성공 응답을 보장하지 않음 |
+| `GET /api/submissions/{id}/dispatch-state` | 200 `data.state` | 불명 전송의 retry 없음·오류 메시지. callback 후 HTTP 200을 요구하고 attempt_count=1, last_attempt_at·terminal_at 존재를 확인 |
 | `GET /api/submissions/{id}/acks/{level}/download` | 200 `text/plain` | ACK2 텍스트의 submission/level/code/message. 모든 level과 없는 ACK의 오류는 별도 공백 |
 | `GET /api/submissions/{id}/xml` | 200 저장된 원본 XML bytes | 저장 원본과 byte 동등, 무인증 비성공·타 조직 404; DB 원본 변경 시도 거절. 현재 Case를 다시 export한 결과와 혼동하지 않음 |
 
@@ -52,7 +52,7 @@
 | `PUT /api/cases/{case_id}/message-header` | `data` 변경 필드; 200 `data` | XML 전제조건을 수정하는 경로 및 intake 회귀의 일부 assertion; 모든 헤더 필드 clear/감사 계약은 아님 |
 | `DELETE /api/cases/{case_id}/message-header` | 구현상 204 | 등록 확인 외 직접 삭제 assertion은 찾지 못함. 자동으로 다른 singleton DELETE 검사에 포함하지 않음 |
 
-근거: [headers](../api_submission/headers.rs)의 `test_submission_receiver_options_list_defaults_by_authority`, `test_submission_receiver_selection_updates_message_header_n_identifiers`; [singleton](../api_cases/subresources/singleton.rs)의 `test_singleton_post_endpoints_are_idempotent`; [XML gate](../xml/xml_import_export.rs)의 `test_fda_export_always_validates_even_when_env_unset`; [transfer permissions](../api_administration/role_admin/effective_access/transfer_web.rs)의 제출 수신처 변경 검사.
+근거: [headers](../api_submission/headers.rs)의 `test_submission_receiver_options_list_defaults_by_authority`, `test_submission_receiver_selection_updates_message_header_n_identifiers`; [singleton](../api_cases/subresources/singleton.rs)의 `test_singleton_post_endpoints_are_idempotent`; [XML gate](../xml/import_export/rejections.rs)의 `test_manual_export_rejects_missing_headers_and_records_errors`; [transfer permissions](../api_administration/role_admin/effective_access/transfer_web.rs)의 제출 수신처 변경 검사.
 
 `concurrent_authority_header_preparation_returns_request_scoped_values`는 같은 Case에 FDA/MFDS HTTP PUT을 `tokio::join!`으로 보내고, 두 응답의 200과 기관별 sender/receiver를 각각 확인한다. 응답이 다른 요청의 기관 값으로 섞이지 않는 검사이며, 모든 동시 변경 조합이나 최종 저장 순서까지 보장하지 않는다.
 
@@ -69,4 +69,4 @@
 
 근거: [callbacks](../api_submission/callbacks.rs)의 `test_internal_submission_endpoints_require_valid_callback_token`, `test_internal_ack_callback_rejects_malformed_payload`, 앞의 update/duplicate 검사; [reconcile](../api_submission/reconcile.rs)의 `test_internal_reconcile_endpoint_auth_and_empty_result`, `test_internal_reconcile_status_accumulates_runtime_counters`, `test_internal_reconcile_does_not_resend_esg_attempt`, `test_internal_reconcile_transport_change_does_not_resend_esg_attempt`, `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`.
 
-공백: 토큰 미설정·비UTF8·빈 문자열 모든 조합, 모든 ACK 전이/역순/기관별 signature/MIC 검증은 이 HTTP 명세의 통과 증거가 없다. `test_reconcile_blocks_legacy_attempts_without_reexport_or_resend`는 직접 service 함수 검사다. `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`도 reconcile과 late ACK는 직접 service 함수를 호출하고 GET 결과만 HTTP로 관찰한다. 이를 reconcile/callback POST의 해당 분기 검증으로 계산하지 않는다. 실패 상태를 성공으로 표시하지 않으며 여기서는 기존 테스트를 수정하거나 실행하지 않았다.
+공백: 토큰 미설정·비UTF8·빈 문자열 모든 조합, 모든 ACK 전이/역순/기관별 signature/MIC 검증은 이 HTTP 명세의 통과 증거가 없다. `test_reconcile_blocks_legacy_attempts_without_reexport_or_resend`는 직접 service 함수 검사다. `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`도 reconcile과 late ACK는 직접 service 함수를 호출하고 GET 결과만 HTTP로 관찰한다. 이를 reconcile/callback POST의 해당 분기 검증으로 계산하지 않는다. callback의 dispatch-state 비200 성공 처리 분기를 제거했다. 실행 결과는 NOT_RUN이다.

@@ -4,3 +4,7 @@ mod common;
 mod import_contract_web;
 #[path = "api_import/import_history_web.rs"]
 mod import_history_web;
+#[path = "api_import/import_settings_web.rs"]
+mod import_settings_web;
+#[path = "api_import/support.rs"]
+mod support;

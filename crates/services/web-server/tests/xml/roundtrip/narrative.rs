@@ -105,14 +105,7 @@ async fn test_roundtrip_nr_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in [
 		sentinel_h1.as_str(),
 		sentinel_h2.as_str(),

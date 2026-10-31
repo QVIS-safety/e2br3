@@ -73,14 +73,13 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 		&format!("/api/submissions/{submission_id}/dispatch-state"),
 	)
 	.await?;
-	if dispatch_status == StatusCode::OK {
-		assert_eq!(dispatch_body["data"]["state"]["attempt_count"], 1);
-		assert!(
-			!dispatch_body["data"]["state"]["last_attempt_at"].is_null(),
-			"{dispatch_body:?}"
-		);
-		assert!(!dispatch_body["data"]["state"]["terminal_at"].is_null());
-	}
+	assert_eq!(dispatch_status, StatusCode::OK, "{dispatch_body:?}");
+	assert_eq!(dispatch_body["data"]["state"]["attempt_count"], 1);
+	assert!(
+		!dispatch_body["data"]["state"]["last_attempt_at"].is_null(),
+		"{dispatch_body:?}"
+	);
+	assert!(!dispatch_body["data"]["state"]["terminal_at"].is_null());
 	let (events_status, events_body) = get_json(
 		&app,
 		&cookie,

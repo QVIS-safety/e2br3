@@ -3,13 +3,7 @@ use super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_roundtrip_ae_remaining_fields() -> Result<()> {
-	let (app, cookie, case_id, _mm, _ctx) = match setup_imported_case().await {
-		Ok(v) => v,
-		Err(err) => {
-			eprintln!("skipping AE remaining test: {err}");
-			return Ok(());
-		}
-	};
+	let (app, cookie, case_id, _mm, _ctx) = setup_imported_case().await?;
 
 	let (status, body) = request_json(
 		&app,
@@ -89,14 +83,7 @@ async fn test_roundtrip_ae_remaining_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in [
 		sentinel_text.as_str(),
 		"10012345",
@@ -125,13 +112,7 @@ async fn test_roundtrip_ae_remaining_fields() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn test_api_persistence_ae_sd_all_fields() -> Result<()> {
-	let (app, cookie, case_id, _mm, _ctx) = match setup_imported_case().await {
-		Ok(v) => v,
-		Err(err) => {
-			eprintln!("skipping AE/SD API persistence test: {err}");
-			return Ok(());
-		}
-	};
+	let (app, cookie, case_id, _mm, _ctx) = setup_imported_case().await?;
 
 	// AE: ensure there is a reaction, then update all AE fields via API.
 	let (status, body) = request_json(
@@ -626,14 +607,7 @@ async fn test_api_persistence_ae_sd_all_fields() -> Result<()> {
 	}
 
 	// Also verify API-persisted AE/SD values are reflected in exported XML.
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in [
 		ae_primary.as_str(),
 		ae_translation.as_str(),

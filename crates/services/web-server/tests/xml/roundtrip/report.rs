@@ -142,14 +142,7 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in [
 		sentinel_wuid.as_str(),
 		sentinel_null_reason.as_str(),
@@ -164,6 +157,16 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 			"expected CI/SI export XML to contain `{expected}`"
 		);
 	}
+	// N.2.r.1/N.2.r.4 derive from C.1.1/C.1.2, not legacy message-header values.
+	assert!(!xml.contains(&sentinel_msg_number));
+	assert!(!xml.contains("20240601112233"));
+	let expected_study_type = format!(
+		"<code code=\"{sentinel_study_type_reaction}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>"
+	);
+	assert!(
+		xml.contains(&expected_study_type),
+		"expected CI/SI export XML to contain `{expected_study_type}`"
+	);
 	Ok(())
 }
 
@@ -291,14 +294,7 @@ async fn test_roundtrip_rp_sd_fields() -> Result<()> {
 		.into());
 	}
 
-	set_validated(&app, &cookie, &case_id).await?;
-	let xml = match export_xml(&app, &cookie, &case_id).await {
-		Ok(xml) => xml,
-		Err(err) if err.to_string().contains("Only validated cases") => {
-			return Ok(())
-		}
-		Err(err) => return Err(err),
-	};
+	let xml = export_xml(&app, &cookie, &case_id).await?;
 	for expected in [
 		sentinel_rp_given.as_str(),
 		sentinel_rp_family.as_str(),
