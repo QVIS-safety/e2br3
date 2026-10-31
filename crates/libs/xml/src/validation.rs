@@ -7,7 +7,7 @@ use quick_xml::Reader;
 use std::path::{Path, PathBuf};
 
 mod export_rules;
-pub use export_rules::validate_export_rules;
+pub use export_rules::{validate_export_message_header, validate_export_rules};
 
 #[derive(Debug, Clone)]
 pub struct XmlValidatorConfig {

@@ -208,6 +208,13 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			continue;
 		}
 		// Manual export is independent of workflow/business-validation status.
+		crate::xml_support::set_export_receivers(
+			&app,
+			&cookie,
+			case_id,
+			fixture.authority,
+		)
+		.await?;
 
 		let (export_status, export_bytes) = request_raw(
 			&app,

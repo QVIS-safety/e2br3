@@ -163,6 +163,9 @@ class TestPlanTests(unittest.TestCase):
                                             self.workspace), family.name, str(source))
 
     def test_editor_scope_tracks_page_and_responsibility_without_duplicate_runs(self):
+        header = self.plan('registry/editor-contracts/n.json')
+        self.assertEqual(header['selections'], {'web-server': ['api_editor']})
+        self.assertEqual(header['editor_filters'], ['case_editor_contract_web::n::'])
         page = 'crates/services/web-server/tests/api_editor/pages/dg.generated.rs'
         plan = self.plan(page, 'registry/editor-contracts/dg.json')
         self.assertEqual(plan['editor_filters'], ['case_editor_contract_web::dg::'])
@@ -182,6 +185,8 @@ class TestPlanTests(unittest.TestCase):
 
     def test_editor_leaf_changes_select_consumers_and_unmapped_leaves_widen(self):
         root = 'crates/services/web-server/tests/api_editor/'
+        self.assertEqual(self.plan(root + 'fields/message_header.rs')['editor_filters'],
+                         ['case_editor_contract_web::n::'])
         # A full-target selection cannot cover a file missing from Rust module registration.
         for category in ('fields', 'rows', 'relations', 'audit'):
             parent = ROOT / root / (category + '.rs')

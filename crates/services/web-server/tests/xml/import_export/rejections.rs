@@ -2,6 +2,178 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
+async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let (status, bytes) = request_json(&app, &cookie, "POST", "/api/cases".into(), Some(serde_json::json!({"data": {
+        "safetyReportIdentification": {"safetyReportId": format!("N-EXPORT-{}", Uuid::new_v4())}, "status":"draft"
+    }}))).await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&bytes)
+	);
+	let created: Value = serde_json::from_slice(&bytes)?;
+	let id = created["data"]["id"].as_str().ok_or("missing case id")?;
+	for (method, path, data, expected) in [
+		(
+			"PATCH",
+			format!("/api/cases/{id}/editor/pages/CI"),
+			serde_json::json!({"authorities":["ich"], "rows":{"safetyReportIdentification":{"reportType":"1","transmissionDate":"20240101000000"}}}),
+			StatusCode::OK,
+		),
+		(
+			"POST",
+			format!("/api/cases/{id}/patient"),
+			serde_json::json!({"data":{"case_id":id,"patient_initials":"N"}}),
+			StatusCode::CREATED,
+		),
+		(
+			"POST",
+			format!("/api/cases/{id}/message-header"),
+			serde_json::json!({"data":{
+				"case_id":id,"message_number":format!("MSG-{id}"),"message_date":"20240101000000",
+				"batch_sender_identifier":"SENDER","message_sender_identifier":"SENDER",
+				"batch_receiver_identifier":"ZZFDA","message_receiver_identifier":"CDER"
+			}}),
+			StatusCode::CREATED,
+		),
+	] {
+		let (status, bytes) =
+			request_json(&app, &cookie, method, path, Some(data)).await?;
+		assert_eq!(status, expected, "{}", String::from_utf8_lossy(&bytes));
+	}
+	let (status, bytes) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{id}/validation?authority=ich"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	assert_eq!(
+		serde_json::from_slice::<Value>(&bytes)?["data"]["ok"],
+		false,
+		"must exercise a draft with Case business errors"
+	);
+
+	for (authority, batch, message) in [
+		("ich", "ICHTEST", "ICHTEST"),
+		("fda", "ZZFDA", "CDER"),
+		("mfds", "MFDS-O-KR", "MFDS-O-KR"),
+	] {
+		for valid in [false, true] {
+			if authority == "ich" && !valid {
+				continue;
+			}
+			let batch = if valid { batch } else { "INVALID-ROUTE" };
+			let message = if valid { message } else { "INVALID-ROUTE" };
+			let (status, bytes) = request_json(
+				&app,
+				&cookie,
+				"PUT",
+				format!("/api/cases/{id}/message-header"),
+				Some(serde_json::json!({"data":{
+					"batch_receiver_identifier":batch,"message_receiver_identifier":message
+				}})),
+			)
+			.await?;
+			assert_eq!(
+				status,
+				StatusCode::OK,
+				"{}",
+				String::from_utf8_lossy(&bytes)
+			);
+			for (method, path, body) in [
+				(
+					"GET",
+					format!("/api/cases/{id}/export/xml?authority={authority}"),
+					None,
+				),
+				(
+					"POST",
+					"/api/cases/export/xml".to_string(),
+					Some(serde_json::json!({"case_ids":[id],"authority":authority})),
+				),
+			] {
+				let (status, bytes) =
+					request_json(&app, &cookie, method, path, body).await?;
+				if valid {
+					assert_eq!(
+						status,
+						StatusCode::OK,
+						"{authority} {method}: {}",
+						String::from_utf8_lossy(&bytes)
+					);
+					if method == "GET" {
+						assert!(std::str::from_utf8(&bytes)?.contains(batch));
+					} else {
+						let mut zip = zip::ZipArchive::new(Cursor::new(bytes))?;
+						assert_eq!(zip.len(), 1);
+						let mut xml = String::new();
+						zip.by_index(0)?.read_to_string(&mut xml)?;
+						assert!(xml.contains(batch));
+					}
+				} else {
+					assert_eq!(
+						status,
+						StatusCode::BAD_REQUEST,
+						"{authority} {method}: {}",
+						String::from_utf8_lossy(&bytes)
+					);
+					let error: Value = serde_json::from_slice(&bytes)?;
+					let message = error["error"]["data"]["detail"]
+						.as_str()
+						.ok_or("missing export error")?;
+					assert!(
+						message.contains("export header validation failed"),
+						"{error}"
+					);
+					assert!(
+						message.contains("N.1.4") && message.contains("N.2.r.3"),
+						"{error}"
+					);
+				}
+			}
+		}
+	}
+	let (status, bytes) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{id}/exports/history"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let history: Value = serde_json::from_slice(&bytes)?;
+	let items = history["data"]["items"]
+		.as_array()
+		.ok_or("missing export history")?;
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "error")
+			.count(),
+		4
+	);
+	assert!(items
+		.iter()
+		.filter(|item| item["status"] == "error")
+		.all(|item| item["errorMessage"].as_str().is_some_and(
+			|message| message.contains("export header validation failed")
+		)));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Result<()>
 {
 	let original = std::env::var("E2BR3_EXPORT_VALIDATE").ok();

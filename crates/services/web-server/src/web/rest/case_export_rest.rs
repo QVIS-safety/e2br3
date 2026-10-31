@@ -136,11 +136,29 @@ async fn generate_case_xml_for_authority(
 		authority,
 		outbound_message_header,
 	};
-	export_case_xml_with_options(ctx, mm, id, options)
+	let xml = export_case_xml_with_options(ctx, mm, id, options)
 		.await
 		.map_err(|err| Error::BadRequest {
 			message: format!("export task failed: {err}"),
-		})
+		})?;
+	let errors =
+		xml::validation::validate_export_message_header(xml.as_bytes(), authority)
+			.map_err(|err| Error::BadRequest {
+			message: format!("export header validation failed: {err}"),
+		})?;
+	if !errors.is_empty() {
+		return Err(Error::BadRequest {
+			message: format!(
+				"export header validation failed: {}",
+				errors
+					.iter()
+					.map(|error| error.message.as_str())
+					.collect::<Vec<_>>()
+					.join("; ")
+			),
+		});
+	}
+	Ok(xml)
 }
 
 // -- Handlers

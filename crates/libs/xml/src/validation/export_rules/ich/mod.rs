@@ -4,7 +4,7 @@ use libxml::xpath::Context;
 mod e;
 mod g;
 mod h;
-mod n;
+pub(super) mod n;
 
 pub(super) fn run(
 	xpath: &mut Context,

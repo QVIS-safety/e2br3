@@ -49,7 +49,7 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | DG | `drug` | 92 | 13 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
 
-위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 scalar 등록 365개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
+위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor scalar 등록 365개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
 
 ## 필드 저장 계약
 
@@ -99,6 +99,8 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 7. [감사 조회 API 검사](../api_editor/audit/projection.rs)는 FDA device usage/lot의 `item`, `value`, `reason`, `rowNo1/2/3`를 검증한다. DB 감사 검사 전체를 화면 표시 항목 전체의 검증으로 확대 해석하지 않는다.
 
 ## 테스트 연결 및 실행 증거
+
+N header의 8개 항목도 [N registry](../../../../../registry/editor-contracts/n.json)에서 [실행 등록](../api_editor/pages/n.generated.rs)을 생성한다. [N 검사](../api_editor/fields/message_header.rs)는 `/editor/pages/N`을 만들지 않고 실제 `POST/PUT/GET /api/cases/{id}/message-header`를 사용한다. 정상 저장·GET·감사 변경과 잘못된 값 거절 후 header·감사 불변을 확인한다. N.1.2는 POST에서 파생되어 PUT 거절만 검사하고, N.1.5는 REST 날짜 DTO의 배열 표현으로 저장하며 잘못된 문자열은 역직렬화 단계의422로 검사한다. N에는 일반 editor clear/blank/omission 검사를 적용했다고 주장하지 않는다.
 
 `pages/<page>.generated.rs`는 페이지 계약에서 만든 테스트 등록 파일이다. 필드 기대값과 HTTP 동작을 복제하지 않는다. Cargo target은 `api_editor` 하나이며 이름은 `case_editor_contract_web::<page>::fields|rows|relations|audit::<검사 ID>`다. 필드별 실행 단위 안에서 저장·clear·누락·거절·감사를 함께 확인한다.
 

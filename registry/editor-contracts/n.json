@@ -1,6 +1,11 @@
 {
   "pageId": "N",
   "registryFile": "sections/n-message-header.json",
+  "rowIdentities": {},
+  "fieldChecks": [],
+  "collections": [],
+  "relations": [],
+  "auditChecks": [],
   "fields": [
     {
       "code": "N.1.2",

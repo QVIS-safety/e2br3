@@ -231,3 +231,29 @@ pub(crate) async fn ensure_batch_transmission_date(
 	}
 	Ok(())
 }
+
+pub(crate) async fn set_export_receivers(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+	authority: &str,
+) -> Result<()> {
+	let (batch, message) = match authority {
+		"ich" => ("ICHTEST", "ICHTEST"),
+		"fda" => ("ZZFDA", "CDER"),
+		"mfds" => ("MFDS-O-KR", "MFDS-O-KR"),
+		_ => return Err(format!("unsupported export authority: {authority}").into()),
+	};
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/message-header"),
+		Some(serde_json::json!({"data": {
+			"batch_receiver_identifier":batch, "message_receiver_identifier":message
+		}})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	Ok(())
+}

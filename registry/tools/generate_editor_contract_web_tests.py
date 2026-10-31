@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 
-ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH")
+ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH", "N")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = (
     REPO_ROOT

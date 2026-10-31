@@ -2,25 +2,25 @@
 
 **검토일: 2026-10-31 / 실행: NOT_RUN.** 현재 소스의 등록과 책임을 전수 대조했다. 테스트·빌드·API·DB를 실행한 결과가 아니다. [API 동작 커버리지](coverage.tsv)와 [API 계약 명세](README.md)는 별도이며, 파일 배치만으로 모든 동작이 검증됐다고 판단하지 않는다.
 
-9개 API 관련 target의 하위 Rust 파일 183개와 target root 9개를 모두 포함한다. 공유 helper·격리 guard 3개, lib-core database root/하위 파일 8개까지 총 **203개 파일**이다. [동일 목록 TSV](file-structure.tsv)는 경로별 역색인에 사용할 수 있다.
+9개 API 관련 target의 하위 Rust 파일 185개와 target root 9개를 모두 포함한다. 공유 helper·격리 guard 3개, lib-core database root/하위 파일 8개까지 총 **205개 파일**이다. [동일 목록 TSV](file-structure.tsv)는 경로별 역색인에 사용할 수 있다.
 
 `직접 선언`은 소스의 `#[test]`/`#[tokio::test]` 함수 수이며 ignored도 포함한다. `scalar 등록`은 생성 파일의 field macro 호출 수다. Editor의 일반 async assertion 함수는 generated 파일이 호출하므로 선언 0이어도 실행 경로가 있다. 이 표는 실행된 테스트 수나 통과 수가 아니다.
 
-Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공통 patch 생성기 자체 검사 2개는 별개다. UI canonical 필드 360개, API operation 436개와도 다른 집계다.
+Editor는 scalar 373(N 8개 포함) + behavior 50 = 423개 계약 실행을 등록한다. 공통 patch 생성기 자체 검사 2개는 별개다. UI canonical 필드 360개, API operation 436개와도 다른 집계다.
 
 ## 실행 단위 요약
 
 | Target | 하위 Rust 파일 | 직접 선언 | scalar 등록 | ignored 선언 |
 |---|---:|---:|---:|---:|
 | `api_cases` | 43 | 136 | 0 | 0 |
-| `api_editor` | 34 | 52 | 365 | 0 |
+| `api_editor` | 36 | 52 | 373 | 0 |
 | `api_presave` | 11 | 37 | 0 | 0 |
 | `api_import` | 4 | 7 | 0 | 0 |
 | `api_submission` | 12 | 29 | 0 | 1 |
 | `api_terminology` | 6 | 23 | 0 | 0 |
 | `api_administration` | 31 | 64 | 0 | 0 |
 | `authz` | 24 | 84 | 0 | 1 |
-| `xml` | 18 | 19 | 0 | 0 |
+| `xml` | 18 | 20 | 0 | 0 |
 
 ## web-server::api_cases
 
@@ -43,7 +43,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_cases/intake/duplicates.rs](../api_cases/intake/duplicates.rs) | Intake 중복 기준·활성 필드·override·누락/NullFlavor 입력 | HTTP 계약 | 490 | 8 | 0 |
 | [api_cases/intake/input.rs](../api_cases/intake/input.rs) | Intake 필수 product·실패 시 rollback·follow-up 복제와 버전 | HTTP 계약 | 262 | 3 | 0 |
 | [api_cases/intake/mod.rs](../api_cases/intake/mod.rs) | api_cases/intake 하위 책임 모듈 등록 | 모듈 등록 | 5 | 0 | 0 |
-| [api_cases/intake/persistence.rs](../api_cases/intake/persistence.rs) | Intake로 생성한 C.1 날짜·batch 번호와 downstream XML export | HTTP 계약 | 143 | 3 | 0 |
+| [api_cases/intake/persistence.rs](../api_cases/intake/persistence.rs) | Intake로 생성한 C.1 날짜·batch 번호와 downstream XML export | HTTP 계약 | 146 | 3 | 0 |
 | [api_cases/intake/support.rs](../api_cases/intake/support.rs) | Intake 입력·follow-up 페이지 및 HTTP fixture helper | helper | 314 | 0 | 0 |
 | [api_cases/lifecycle.rs](../api_cases/lifecycle.rs) | Case 상태 입력·보호 상태·전이 금지·검토 상태와 저장 분리 | HTTP 계약 | 142 | 5 | 0 |
 | [api_cases/locking.rs](../api_cases/locking.rs) | Lock/QC 축·상태별 수정 차단·stale 화면 충돌 | HTTP 계약 | 325 | 7 | 0 |
@@ -80,10 +80,11 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_editor/audit/projection.rs](../api_editor/audit/projection.rs) | FDA device scalar 저장의 감사 API projection | HTTP 계약 | 105 | 0 | 0 |
 | [api_editor/audit.rs](../api_editor/audit.rs) | Editor 전후 값·감사 snapshot 비교와 거절 후 불변 공통 assertion | helper | 188 | 0 | 0 |
 | [api_editor/fields/coupled_clear.rs](../api_editor/fields/coupled_clear.rs) | 연결 필드 clear·생략 구분·sibling 유지·행 재조회 | HTTP 계약 | 614 | 0 | 0 |
+| [api_editor/fields/message_header.rs](../api_editor/fields/message_header.rs) | N registry 항목의 전용 message-header POST/PUT/GET 저장·거절·감사 불변 검사 | HTTP 계약 | 181 | 0 | 0 |
 | [api_editor/fields/null_flavor.rs](../api_editor/fields/null_flavor.rs) | 값↔NullFlavor 전이·동시 값 거절·부모/등록번호 관계 | HTTP 계약 | 566 | 0 | 0 |
 | [api_editor/fields/required_values.rs](../api_editor/fields/required_values.rs) | 필수 값 blank/잘못된 report year 거절과 저장 값·자식 보존 | HTTP 계약 | 209 | 0 | 0 |
-| [api_editor/fields.rs](../api_editor/fields.rs) | Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사 | HTTP 계약 | 621 | 2 | 0 |
-| [api_editor/mod.rs](../api_editor/mod.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 39 | 0 | 0 |
+| [api_editor/fields.rs](../api_editor/fields.rs) | Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사 | HTTP 계약 | 625 | 2 | 0 |
+| [api_editor/mod.rs](../api_editor/mod.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 42 | 0 | 0 |
 | [api_editor/pages/ae.generated.rs](../api_editor/pages/ae.generated.rs) | AE registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 77 | 3 | 49 |
 | [api_editor/pages/ci.generated.rs](../api_editor/pages/ci.generated.rs) | CI registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 59 | 4 | 26 |
 | [api_editor/pages/dg.generated.rs](../api_editor/pages/dg.generated.rs) | DG registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 172 | 13 | 92 |
@@ -91,6 +92,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_editor/pages/dm.generated.rs](../api_editor/pages/dm.generated.rs) | DM registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 130 | 6 | 87 |
 | [api_editor/pages/lb.generated.rs](../api_editor/pages/lb.generated.rs) | LB registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 57 | 6 | 14 |
 | [api_editor/pages/lr.generated.rs](../api_editor/pages/lr.generated.rs) | LR registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 31 | 3 | 3 |
+| [api_editor/pages/n.generated.rs](../api_editor/pages/n.generated.rs) | N registry의 8개 header 필드 검사 실행 등록; 전용 REST API 사용 | 생성된 실행 등록 | 21 | 0 | 8 |
 | [api_editor/pages/nr.generated.rs](../api_editor/pages/nr.generated.rs) | NR registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 41 | 4 | 8 |
 | [api_editor/pages/rp.generated.rs](../api_editor/pages/rp.generated.rs) | RP registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 52 | 2 | 29 |
 | [api_editor/pages/sd.generated.rs](../api_editor/pages/sd.generated.rs) | SD registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 40 | 0 | 27 |
@@ -154,7 +156,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_submission/reconcile/service.rs](../api_submission/reconcile/service.rs) | 직접 reconcile worker를 호출해 legacy attempt 차단, AS2 pending poll, 무재전송과 늦은 ACK 순서 보존을 검증한다. | worker 계약 | 221 | 2 | 0 |
 | [api_submission/reconcile/web.rs](../api_submission/reconcile/web.rs) | 내부 reconcile endpoint의 token 인증·빈 결과·runtime counter와 ESG attempt 무재전송을 HTTP로 검증한다. | HTTP 계약 | 342 | 4 | 0 |
 | [api_submission/support.rs](../api_submission/support.rs) | 제출 테스트의 case/report seed, HTTP client, idempotency·compliance payload와 로컬 ESG/AS2 transport harness를 제공한다. | fixture/helper | 707 | 0 | 0 |
-| [api_submission/validation.rs](../api_submission/validation.rs) | case workflow/규칙/MedDRA 상태가 제출을 막는 조건과 manual XML export의 독립성을 검증한다. | HTTP 계약 | 233 | 4 | 0 |
+| [api_submission/validation.rs](../api_submission/validation.rs) | case workflow/규칙/MedDRA 상태가 제출을 막는 조건과 manual XML export의 독립성을 검증한다. | HTTP 계약 | 257 | 4 | 0 |
 
 ## web-server::api_terminology
 
@@ -240,11 +242,11 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
 | [xml.rs](../xml.rs) | xml Cargo integration target과 하위 모듈 연결 | target 등록 | 16 | 0 | 0 |
-| [xml/import_export/downloads.rs](../xml/import_export/downloads.rs) | XML import 후 단건·bulk export, zip 파일명·내용, export history와 다운로드 XML을 HTTP와 XML 검증으로 확인한다. | HTTP/XML 통합 | 344 | 1 | 0 |
+| [xml/import_export/downloads.rs](../xml/import_export/downloads.rs) | XML import 후 단건·bulk export, zip 파일명·내용, export history와 다운로드 XML을 HTTP와 XML 검증으로 확인한다. | HTTP/XML 통합 | 348 | 1 | 0 |
 | [xml/import_export/drug_updates.rs](../xml/import_export/drug_updates.rs) | XML import 뒤 D/G drug 하위 자원을 HTTP로 수정하고 재export XML에 갱신값이 반영되는지 검증한다. | HTTP/XML 통합 | 307 | 1 | 0 |
 | [xml/import_export/mod.rs](../xml/import_export/mod.rs) | XML import/export의 download·drug update·nullFlavor·rejection 모듈을 등록한다. | 모듈 등록 | 5 | 0 | 0 |
 | [xml/import_export/nullflavor.rs](../xml/import_export/nullflavor.rs) | XML F/E nullFlavor를 import한 뒤 test-result와 reaction API readback에 보존되는지 검증한다. | HTTP/XML 통합 | 103 | 2 | 0 |
-| [xml/import_export/rejections.rs](../xml/import_export/rejections.rs) | 필수 header 없는 manual XML export 거부와 case/global history 및 error.txt 복구 계약을 검증한다. | HTTP/XML 통합 | 209 | 1 | 0 |
+| [xml/import_export/rejections.rs](../xml/import_export/rejections.rs) | 필수 header·기관별 N 수신처 위반의 단건/ZIP 거절과 정상 draft 다운로드·오류 이력 계약을 검증한다. | HTTP/XML 통합 | 381 | 2 | 0 |
 | [xml/import_export/support.rs](../xml/import_export/support.rs) | XML fixture 변형·고유 report ID 생성과 multipart import/case-id 추출 helper를 제공한다. | helper | 98 | 0 | 0 |
 | [xml/mfds_import_samples_web.rs](../xml/mfds_import_samples_web.rs) | MFDS example XML들을 HTTP import하고 case 각 section·validation·재export 및 XML schema 결과를 검증한다. | HTTP/XML 통합 | 398 | 1 | 0 |
 | [xml/roundtrip/drug.rs](../xml/roundtrip/drug.rs) | D/G drug·active substance·dosage·indication 잔여 필드를 HTTP 편집 후 XML export round-trip으로 검증한다. | HTTP/XML 통합 | 219 | 1 | 0 |
@@ -255,8 +257,8 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [xml/roundtrip/report.rs](../xml/roundtrip/report.rs) | C/I report identification·message header 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다. | HTTP/XML 통합 | 312 | 2 | 0 |
 | [xml/roundtrip/schema.rs](../xml/roundtrip/schema.rs) | persisted section의 RLS export, authority별 full-build schema/rule 검증과 빈 autopsy parent 출력 구조를 검증한다. | HTTP/XML 통합 | 538 | 3 | 0 |
 | [xml/roundtrip/support.rs](../xml/roundtrip/support.rs) | roundtrip fixture import, FDA device 보정, authority header와 HTTP XML export helper를 제공한다. | helper | 239 | 0 | 0 |
-| [xml/roundtrip_profiles_web.rs](../xml/roundtrip_profiles_web.rs) | ICH/FDA/MFDS fixture를 HTTP import·validate·export하고 원본/재export XML을 schema 재검증한다. | HTTP/XML 통합 | 269 | 1 | 0 |
-| [xml/support.rs](../xml/support.rs) | workspace/XSD 경로 해석, Axum JSON 요청과 reaction language·batch date 준비 helper를 제공한다. | helper | 233 | 0 | 0 |
+| [xml/roundtrip_profiles_web.rs](../xml/roundtrip_profiles_web.rs) | ICH/FDA/MFDS fixture를 HTTP import·validate·export하고 원본/재export XML을 schema 재검증한다. | HTTP/XML 통합 | 276 | 1 | 0 |
+| [xml/support.rs](../xml/support.rs) | workspace/XSD 경로 해석, Axum JSON 요청과 reaction language·batch date 준비 helper를 제공한다. | helper | 259 | 0 | 0 |
 | [xml/targeted_device_export.rs](../xml/targeted_device_export.rs) | 같은 조직의 1,001개 장치와 교차 조직 행에서 대상 case 장치·code만 production serializer가 내보내는지 검증한다. | XML 변환 | 203 | 1 | 0 |
 
 ## web-server::shared

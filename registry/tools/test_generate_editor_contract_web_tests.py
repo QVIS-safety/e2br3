@@ -37,6 +37,8 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
                 "// BLOCKED editor contract G.k.9.i.1:",
                 outputs["DG"],
             )
+            self.assertIn('field_contract_test!(n_1_5, "N.1.5");', outputs["N"])
+            self.assertEqual(8, outputs["N"].count("field_contract_test!("))
 
     def test_rejects_blocked_field_without_reason(self):
         fields = [{"code": "G.k.9.i.1", "execution": {"status": "blocked"}}]

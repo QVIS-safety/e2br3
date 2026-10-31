@@ -127,6 +127,13 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{saved:?}");
 	for authority in ["ich", "fda", "mfds"] {
+		if authority == "mfds" {
+			// The fixture is a US report, so use the foreign-report receiver.
+			let (status, body) = put_json(&app, &cookie, &format!("/api/cases/{case_id}/message-header"), json!({"data": {
+				"batch_receiver_identifier":"MFDS-O-FR", "message_receiver_identifier":"MFDS-O-FR"
+			}})).await?;
+			assert_eq!(status, StatusCode::OK, "{body:?}");
+		}
 		let (status, report) = get_json(
 			&app,
 			&cookie,
@@ -142,7 +149,24 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 			.ok_or("missing dictionary issue")?;
 		assert!(issue.get("blocking").is_none());
 		assert_eq!(issue["message"], "MedDRA 12.0 is not loaded");
-		assert_eq!(report["data"]["issue_count"], 1, "{report:?}");
+		let mut codes = report["data"]["issues"]
+			.as_array()
+			.ok_or("missing issues")?
+			.iter()
+			.map(|issue| issue["code"].as_str().ok_or("missing issue code"))
+			.collect::<std::result::Result<Vec<_>, _>>()?;
+		codes.sort_unstable();
+		let expected = if authority == "mfds" {
+			// A valid FR receiver also requires the fixture's absent product/substance code.
+			vec![
+				"ICH.MEDDRA.VERSION.UNAVAILABLE",
+				"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+			]
+		} else {
+			vec!["ICH.MEDDRA.VERSION.UNAVAILABLE"]
+		};
+		assert_eq!(codes, expected, "{report:?}");
+		assert_eq!(report["data"]["issue_count"], expected.len(), "{report:?}");
 		let response = app
 			.clone()
 			.oneshot(

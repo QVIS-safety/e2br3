@@ -7,7 +7,7 @@ use lib_core::regulatory::{
 };
 use libxml::xpath::Context;
 
-pub(super) fn run(
+pub(in crate::validation::export_rules) fn run(
 	xpath: &mut Context,
 	authority: RegulatoryAuthority,
 	errors: &mut Vec<XmlValidationError>,
@@ -112,6 +112,24 @@ fn fda(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
 			)
 		})
 	};
+	// FDA regional data elements N.1.4/N.2.r.3 also constrain each receiver.
+	push_if(
+		errors,
+		batch.as_deref().is_some_and(|value| {
+			!matches!(
+				value,
+				FDA_BATCH_RECEIVER_POSTMARKET | FDA_BATCH_RECEIVER_PREMARKET
+			) && !vaers(Some(value))
+		}),
+		"FDA.N.1.4.ROUTE",
+		"FDA N.1.4 must be ZZFDA, ZZFDA_PREMKT, CBER VAERS, or CBER_VAERS.",
+	);
+	push_if(
+		errors,
+		message.is_some() && message.as_deref() != Some(FDA_MSG_RECEIVER_CDER) && !premarket && !vaers(message.as_deref()),
+		"FDA.N.2.r.3.ROUTE",
+		"FDA N.2.r.3 must be CDER, CDER_IND, CBER_IND, CDER_IND_EXEMPT_BA_BE, CBER VAERS, or CBER_VAERS.",
+	);
 
 	push_if(
 		errors,

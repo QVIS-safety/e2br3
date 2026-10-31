@@ -70,7 +70,10 @@ async fn test_case_from_intake_creates_batch_number_for_export() -> Result<()> {
 
 	let update_body = json!({
 		"data": {
-			"batch_receiver_identifier": "FDA"
+			"batch_receiver_identifier": "ZZFDA",
+			"message_receiver_identifier": "CDER",
+			"batch_sender_identifier": "TEST-SENDER",
+			"message_sender_identifier": "TEST-SENDER"
 		}
 	});
 	let (status, update_response) = put_json(

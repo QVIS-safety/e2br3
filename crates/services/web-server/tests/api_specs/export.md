@@ -9,11 +9,12 @@
 
 | Method / path | 요청 | 구현 응답·입력 경계 |
 |---|---|---|
-| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 200 XML attachment. 실제 저장값·message header를 읽어 생성. authority 누락/오류 및 필수 header/serialization 실패는 BadRequest |
+| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 200 XML attachment. 실제 저장값·message header를 읽어 생성. authority 누락/오류 및 필수 header/serialization 실패와 생성된 N envelope의 기관별 수신처·송신처·일치 규칙 위반은 BadRequest |
 | `POST /api/cases/export/xml` | `{"case_ids":["UUID"],"authority":"fda"}` (최상위 필드, `data` 없음) | 200 ZIP attachment. 구현은 중복 ID를 합치고 최대 100 Case·전체 XML 100 MiB, 빈 목록을 거절. 권한은 선택한 Case 집합 전체에 적용 |
 
 기존 테스트가 직접 확인하는 조건:
 
+- [N 다운로드 검사](../xml/import_export/rejections.rs)의 `test_manual_export_checks_n_routes_without_blocking_draft_cases`: 잘못된 FDA/MFDS 수신처는 단건·ZIP 모두400, 실패 이력4건을 보존한다. 정상 ICH/FDA/MFDS header는 Case business 오류가 있는 draft도 다운로드하며 ZIP 내용도 확인한다. N 검사만 공유하며 전체 제출용 Case/XSD 검사를 다운로드에 강제하지 않는다. FDA 수신처 허용값은 `registry/sources/fda-core-regional-data-elements-v1.csv`의 N.1.4/N.2.r.3, 조합은 rejection rules의 R0004~R0007과 대조한다.
 - [XML gate](../xml/import_export/rejections.rs)의 `test_manual_export_rejects_missing_headers_and_records_errors`: 단건 GET·bulk POST 모두 batch receiver 누락을 400으로 거절하고 오류 문구를 보존한다. 해당 값을 수정해도 불완전한 FDA XML은 400 `export task failed`; 실패 이력도 보존한다. 모든 FDA XSD 경계를 검사한다고 주장하지 않는다.
 - [submission validation](../api_submission/validation.rs)의 `test_manual_export_is_not_blocked_by_workflow_status`: draft/reviewed/locked에서 단건 수동 export 200. `test_unavailable_meddra_allows_save_and_export_but_blocks_submission`: ICH/FDA/MFDS export에 저장된 미적재 MedDRA version 문자열이 남고 제출만 거절된다.
 - [roundtrip profiles](../xml/roundtrip_profiles_web.rs)의 `test_roundtrip_fixtures_import_validate_export_revalidate`: FDA 원본 fixture 3개를 ICH/FDA/MFDS profile로 import→API export→XSD·export-rule 재검증한다. 업무 validation의 ok=false만으로 export를 생략하지 않는다. 이것을 MFDS 공식 원본 샘플이나 기관 수용 검증으로 간주하지 않는다.

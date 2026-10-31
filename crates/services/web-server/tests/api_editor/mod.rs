@@ -37,3 +37,6 @@ mod sd;
 #[rustfmt::skip]
 #[path = "pages/si.generated.rs"]
 mod si;
+#[rustfmt::skip]
+#[path = "pages/n.generated.rs"]
+mod n;

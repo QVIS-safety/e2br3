@@ -347,8 +347,8 @@ pub(super) async fn create_message_header(
 			json!({
 				"data": {
 					"batch_number": format!("BATCH-{case_id}"),
-					"batch_sender_identifier": "BATCH-SENDER",
-					"batch_receiver_identifier": "BATCH-RECEIVER",
+					"batch_sender_identifier": "SENDER01",
+					"batch_receiver_identifier": "ZZFDA",
 					"batch_transmission_date": [2024, 10, 1, 0, 0, 0, 0, 0, 0]
 				}
 			})

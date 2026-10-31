@@ -165,6 +165,10 @@ async fn test_import_then_export_xml() -> Result<()> {
 	ensure_reaction_language(&app, &cookie, second_id).await?;
 	ensure_batch_transmission_date(&app, &cookie, second_id).await?;
 	for authority in ["fda", "mfds"] {
+		for id in [case_id, second_id] {
+			crate::xml_support::set_export_receivers(&app, &cookie, id, authority)
+				.await?;
+		}
 		for notation in [true, false] {
 			let (status, body) = request_json(
 				&app,

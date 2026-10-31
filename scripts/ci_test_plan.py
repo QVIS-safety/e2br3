@@ -128,6 +128,8 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
                     parts = Path(relative).parts
                     if len(parts) == 4 and parts[2] == 'pages' and parts[3].endswith('.generated.rs') and parts[3].split('.')[0].upper() in ACTIVE_PAGES:
                         editor_filters.append(f'case_editor_contract_web::{parts[3].split(".")[0]}::')
+                    elif parts[2:] == ('fields', 'message_header.rs'):
+                        editor_filters.append('case_editor_contract_web::n::')
                     elif len(parts) == 4 and parts[2] in EDITOR_GROUPS:
                         # shortcut: leaf verifiers have no cross-leaf helpers; widen selection if such dependencies are added.
                         category = parts[2]
