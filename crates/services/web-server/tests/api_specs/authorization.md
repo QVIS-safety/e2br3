@@ -16,7 +16,7 @@
 5. handler는 `AuthorizationSnapshotW`와 정책 registry의 contextual action으로 read/mutation permit을 만든다. 저장 접근에는 그 permit에서 만든 RLS context를 넘긴다.
 6. [`mw_response_map`](../../../../libs/lib-web/src/middleware/mw_res_map.rs)은 오류 envelope, `x-request-id`, snapshot이 있는 경우 `x-rbac-policy-version`을 붙인다. `PERMISSION_DENIED` detail에는 policy version도 넣는다.
 
-활성 HTTP 근거: token 사용자 해석과 요청 간 context 분리는 [`middleware_ctx.rs`](../api_administration/middleware_ctx.rs), 인증 누락 `403`은 [`test_middleware_requires_auth`](../authz/auth_mw_audit.rs), 첫 암호 변경 제한은 [`test_new_user_temp_password_and_first_login_reset_flow`](../authz/rbac_users/create_validation_web.rs)에서 단언한다. 반면 [`authorization_snapshot.rs`](../authz/authorization_snapshot.rs)는 extractor에 직접 extension을 넣는 단위 테스트여서 전체 middleware 순서나 경로 허용의 HTTP 증거가 아니다.
+활성 HTTP 근거: token 사용자 해석과 요청 간 context 분리는 [`middleware_ctx.rs`](../api_administration/middleware_ctx.rs), 인증 누락 `403`은 [`test_middleware_requires_auth`](../authz/authentication_web.rs), 첫 암호 변경 제한은 [`test_new_user_temp_password_and_first_login_reset_flow`](../api_administration/users/access_web.rs)에서 단언한다. 반면 [`authorization_snapshot.rs`](../authz/authorization_snapshot.rs)는 extractor에 직접 extension을 넣는 단위 테스트여서 전체 middleware 순서나 경로 허용의 HTTP 증거가 아니다.
 
 <a id="authentication-cookie-lifecycle"></a>
 ## 인증 cookie 수명
@@ -26,7 +26,7 @@
 - logoff는 body의 `logoff=true`일 때 cookie 제거를 요청한다. 서버측 revocation 저장을 호출하지 않는다.
 - 암호 변경은 token salt가 바뀌는 모델 동작과 기존 cookie 제거를 거쳐 이전 session을 거부하게 한다. 이 흐름은 활성 HTTP 테스트가 이전 session/암호 `403`, 새 암호 login `200`을 직접 단언한다.
 
-[`test_auth_login_refresh_logoff`](../authz/auth_mw_audit.rs)는 login, refresh, logoff 각각 `200`을 확인하지만 refresh/logoff에는 login 응답 cookie 대신 별도로 생성한 token을 사용한다. 따라서 이 함수는 login-cookie→refresh→logoff와 logoff 뒤 재사용 거부를 end-to-end로 증명하지 않는다. refresh의 `expiresAt`, 갱신 cookie 속성, token rotation 관계도 미단언이다.
+[`test_auth_login_refresh_logoff`](../authz/authentication_web.rs)는 login, refresh, logoff 각각 `200`을 확인하지만 refresh/logoff에는 login 응답 cookie 대신 별도로 생성한 token을 사용한다. 따라서 이 함수는 login-cookie→refresh→logoff와 logoff 뒤 재사용 거부를 end-to-end로 증명하지 않는다. refresh의 `expiresAt`, 갱신 cookie 속성, token rotation 관계도 미단언이다.
 
 <a id="authorization-snapshot"></a>
 ## request authorization snapshot
@@ -53,7 +53,7 @@ snapshot은 principal, active organization, identity/grants, 조직 policy revis
 - 감사: sponsor admin의 자기 조직 목록, system admin의 cross-org collection, case audit는 system admin도 부모 case scope를 우회하지 못함. by-record collection은 권한이 있으면 cross-org와 hard-deleted record도 조회한다. [`rbac_audit.rs`](../authz/rbac_audit.rs).
 - 일반 case RLS의 조직 필터와 item 은닉은 [`test_rls_list_cases_filters_org`](../authz/rls_web.rs)가 단언하지만, 이것만으로 모든 보호 route의 tenant 격리를 일반화할 수 없다.
 
-[`authorization_legacy_gate.rs`](../authz/authorization_legacy_gate.rs), [`platform_admin_policy.rs`](../authz/platform_admin_policy.rs), [`authorization_startup.rs`](../authz/authorization_startup.rs)는 소스 문자열 또는 startup 구조를 검사한다. 회귀 gate로는 의미가 있지만 HTTP 허용·DB RLS 결과를 직접 단언하지 않는다.
+[`authorization_legacy_gate.rs`](../authz/source_gates/authorization_legacy_gate.rs), [`platform_admin_policy.rs`](../authz/source_gates/platform_admin_policy.rs), [`authorization_startup.rs`](../authz/source_gates/authorization_startup.rs)는 소스 문자열 또는 startup 구조를 검사한다. 회귀 gate로는 의미가 있지만 HTTP 허용·DB RLS 결과를 직접 단언하지 않는다.
 
 <a id="csrf-origin"></a>
 ## CSRF origin 경계

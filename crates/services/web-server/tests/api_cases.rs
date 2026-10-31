@@ -24,8 +24,6 @@ mod settings;
 mod subresources_web;
 #[path = "api_cases/validation.rs"]
 mod validation;
-#[path = "api_cases/validation_contract_web.rs"]
-mod validation_contract_web;
 #[path = "api_cases/workflow.rs"]
 mod workflow;
 

@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
 
-use super::helpers::*;
 use crate::common::{
 	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
 	seed_org_with_users, seed_two_orgs_users_cases, system_user_id, Result,
@@ -265,5 +264,25 @@ async fn test_non_admin_cannot_update_user() -> Result<()> {
 		);
 	}
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_permission_denied_for_viewer() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let app = web_server::app(mm);
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(
+			r#"{"data":{"organization_id":"00000000-0000-0000-0000-000000000001","email":"x@y.com","username":"x","pwd_clear":"x","role":"user"}}"#,
+		))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
 	Ok(())
 }

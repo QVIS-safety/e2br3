@@ -1,9 +1,9 @@
 #![allow(unused_imports)]
 
-use super::helpers::*;
+use crate::administration_support::request_json;
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::{to_bytes, Body};
-use axum::http::{Method, Request, StatusCode};
+use axum::http::{Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
 use serde_json::{json, Value};
@@ -33,8 +33,8 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	let app = web_server::app(mm.clone());
 	let (_, runtime) = request_json(
 		&app,
+		"GET",
 		&sponsor_admin_cookie,
-		Method::GET,
 		"/api/settings/runtime",
 		None,
 	)
@@ -46,8 +46,8 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&sponsor_admin_cookie,
-		Method::PUT,
 		"/api/admin/notices",
 		Some(json!({
 			"data": {
@@ -73,8 +73,8 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&sponsor_admin_cookie,
-		Method::PUT,
 		"/api/admin/notices",
 		Some(json!({
 			"data": {
@@ -93,21 +93,16 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["notices"][0]["title"], "Updated maintenance");
 
-	let (status, value) = request_json(
-		&app,
-		&viewer_cookie,
-		Method::GET,
-		"/api/settings/runtime",
-		None,
-	)
-	.await?;
+	let (status, value) =
+		request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+			.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["notices"], json!([]));
 
 	let (status, value) = request_json(
 		&app,
+		"GET",
 		&other_viewer_cookie,
-		Method::GET,
 		"/api/settings/runtime",
 		None,
 	)
@@ -117,8 +112,8 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"GET",
 		&other_admin_cookie,
-		Method::GET,
 		"/api/settings/runtime",
 		None,
 	)
@@ -192,14 +187,9 @@ async fn test_dashboard_notices_hidden_without_notice_read() -> Result<()> {
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let app = web_server::app(mm.clone());
-	let (_, runtime) = request_json(
-		&app,
-		&admin_cookie,
-		Method::GET,
-		"/api/settings/runtime",
-		None,
-	)
-	.await?;
+	let (_, runtime) =
+		request_json(&app, "GET", &admin_cookie, "/api/settings/runtime", None)
+			.await?;
 	let revision = runtime["notices_revision"]
 		.as_str()
 		.ok_or("missing notice revision")?;
@@ -207,8 +197,8 @@ async fn test_dashboard_notices_hidden_without_notice_read() -> Result<()> {
 	// Admin publishes a notice.
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&admin_cookie,
-		Method::PUT,
 		"/api/admin/notices",
 		Some(json!({
 			"data": {
@@ -227,14 +217,9 @@ async fn test_dashboard_notices_hidden_without_notice_read() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
 	// A viewer without HOME Notice Read receives a redacted collection.
-	let (status, value) = request_json(
-		&app,
-		&viewer_cookie,
-		Method::GET,
-		"/api/settings/runtime",
-		None,
-	)
-	.await?;
+	let (status, value) =
+		request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+			.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["notices"], json!([]));
 

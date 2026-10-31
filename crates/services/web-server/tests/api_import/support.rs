@@ -135,3 +135,74 @@ pub(super) async fn create_product_presave(
 		.map(str::to_string)
 		.ok_or_else(|| format!("missing product id in body {body:?}").into())
 }
+
+fn workspace_root() -> std::path::PathBuf {
+	std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.join("../../..")
+		.canonicalize()
+		.expect("workspace root")
+}
+
+pub(super) fn fixture_xml(filename: &str) -> Result<String> {
+	Ok(std::fs::read_to_string(
+		workspace_root().join("docs/exporter/fda").join(filename),
+	)?)
+}
+
+pub(super) async fn import_xml_string(
+	app: &axum::Router,
+	cookie: &str,
+	filename: &str,
+	xml: &str,
+	product_presave_id: &str,
+) -> Result<()> {
+	let boundary = "X-BOUNDARY-IMPORT-HISTORY";
+	let body = format!(
+		"--{boundary}\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\nfda\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"productPresaveId\"\r\n\r\n{product_presave_id}\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/xml\r\n\r\n{xml}\r\n--{boundary}--\r\n"
+	);
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml")
+		.header(
+			"content-type",
+			format!("multipart/form-data; boundary={boundary}"),
+		)
+		.header("cookie", cookie)
+		.body(Body::from(body))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"import status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
+pub(super) async fn get_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+) -> Result<(StatusCode, Value)> {
+	let res = get_response(app, cookie, uri).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
+pub(super) async fn get_response(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+) -> Result<axum::response::Response> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(uri)
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	Ok(app.clone().oneshot(req).await?)
+}

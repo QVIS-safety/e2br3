@@ -22,7 +22,7 @@
 
 - 쿼리: `filters[...]`, `list_options.limit|offset|order_bys`; `include_blinded=true` 또는 `includeBlinded=true`가 없으면 `access_blind_allowed=false` 필터를 강제로 더하고 현재 조직 필터도 강제한다.
 - 응답: `200 {"data":[UserView,...]}`. `user.list` 정책과 permit 기반 RLS가 선행한다.
-- 직접 단언: 현재 조직만 보이는 목록과 교차 조직 필터 무력화, blinded 포함 옵션, 비관리자 `403`, 사용자 생성·비활성화 뒤 목록 동작. [`test_user_reads_are_scoped_to_current_org_for_system_and_sponsor_admins`](../authz/rbac_users/rls_scope_web.rs), [`test_non_admin_cannot_list_users`](../authz/rbac_users/non_admin_forbidden_web.rs), [`test_sponsor_admin_can_hide_and_restore_blind_user`](../authz/rbac_users/update_delete_web.rs).
+- 직접 단언: 현재 조직만 보이는 목록과 교차 조직 필터 무력화, blinded 포함 옵션, 비관리자 `403`, 사용자 생성·비활성화 뒤 목록 동작. [`test_user_reads_are_scoped_to_current_org_for_system_and_sponsor_admins`](../authz/rbac_users/rls_scope_web.rs), [`test_non_admin_cannot_list_users`](../authz/rbac_users/non_admin_forbidden_web.rs), [`test_sponsor_admin_can_hide_and_restore_blind_user`](../authz/rbac_users/role_update_web.rs).
 - 미단언: 모든 `ParamsList` 정렬/페이지 조합과 잘못된 쿼리의 상세 오류 본문.
 
 <a id="post-api-users"></a>
@@ -31,7 +31,7 @@
 - 요청: `{"data":{"organization_id":"uuid","email":"...","username":"...","pwd_clear":"...","role":"role-id","comments":null,"other_information":null,"access_start_at":"RFC3339","access_end_at":"RFC3339","active_sender_identifier":"uuid","access_sender_ids":["uuid"],"access_product_ids":["uuid"],"access_study_ids":["uuid"],"access_blind_allowed":false}}`. 플랫폼 관리자는 `organization_id`가 필수이고 sponsor 관리자는 현재 조직으로 고정된다.
 - 처리: 이메일·사용자명, UUID scope와 sender/product/study 계층, 역할 소속과 sponsor 관리자 수를 검증한다. 역할·사용자명이 없으면 일반 사용자 역할과 이메일 local-part를 사용하고, 초기 암호가 없으면 백엔드 초기 암호를 사용한다. 생성 뒤 `must_change_password=true`가 된다.
 - 응답: `201 {"data":UserView}`. 중복 이메일 `409`, 잘못된 역할·길이·scope `400`, 권한 부족 `403`이 직접 단언된다.
-- 직접 단언: 생성/기본값/기간/중복/길이/역할 제한/첫 로그인 흐름은 [`create_validation_web.rs`](../authz/rbac_users/create_validation_web.rs), 감사 `CREATE` 조회는 [`test_admin_can_see_user_create_in_audit_logs`](../authz/rbac_audit.rs).
+- 직접 단언: 생성·기본값·중복·길이는 [users/create_web.rs](../api_administration/users/create_web.rs), 기간·첫 로그인은 [users/access_web.rs](../api_administration/users/access_web.rs), 역할 제한은 [role_create_web.rs](../authz/rbac_users/role_create_web.rs), 감사 `CREATE` 조회는 [`test_admin_can_see_user_create_in_audit_logs`](../authz/rbac_audit.rs).
 - 미단언: 모든 선택 필드 조합과 모든 scope 위반 메시지.
 
 <a id="get-api-users-id"></a>
@@ -46,13 +46,13 @@
 - 요청: `email`, `username`, `role`, `active`, `comments`, `other_information`, access 기간·scope·blind·active sender, `last_login_at`의 patch다. `access_start_at`/`access_end_at`의 명시적 `null`은 값을 지운다. `organization_id`와 `pwd_clear`는 update DTO에 없으므로 이 경로에서 바꿀 수 없다.
 - 처리: 역할 변경 여부에 따라 `user.update`, `user.update.role_assignment`, `user.update.built_in_role_assignment` 정책을 선택한다. 사용자·역할·scope 검증 후 patch하고 최신 `UserView`를 반환한다.
 - 응답: 성공 `200`; 빈 사용자명, 과도한 길이, 조직 유형과 맞지 않는 관리자 역할, scope 불일치 `400`; 권한 부족 `403`.
-- 직접 단언: [`update_delete_web.rs`](../authz/rbac_users/update_delete_web.rs), scope 변경은 [`assignments.rs`](../api_cases/scope/assignments.rs), 감사 field 필터 연결은 [`test_admin_can_filter_user_audit_logs_by_field`](../authz/rbac_audit.rs).
+- 직접 단언: 일반 값·날짜 clear·길이는 [users/update_web.rs](../api_administration/users/update_web.rs), 역할 할당·blind 정책은 [role_update_web.rs](../authz/rbac_users/role_update_web.rs), scope 변경은 [`assignments.rs`](../api_cases/scope/assignments.rs), 감사 field 필터 연결은 [`test_admin_can_filter_user_audit_logs_by_field`](../authz/rbac_audit.rs).
 
 <a id="get-api-users-me"></a>
 ### `GET /api/users/me` — asserted
 
 - 인증 컨텍스트의 사용자만 `200 {"data":UserView}`로 반환한다.
-- 직접 단언: 토큰 사용자 ID와 요청 간 컨텍스트 비누출은 [`middleware_ctx.rs`](../api_administration/middleware_ctx.rs). 암호 변경 뒤 이전 세션 `403`은 [`test_new_user_temp_password_and_first_login_reset_flow`](../authz/rbac_users/create_validation_web.rs).
+- 직접 단언: 토큰 사용자 ID와 요청 간 컨텍스트 비누출은 [`middleware_ctx.rs`](../api_administration/middleware_ctx.rs). 암호 변경 뒤 이전 세션 `403`은 [`test_new_user_temp_password_and_first_login_reset_flow`](../api_administration/users/access_web.rs).
 
 <a id="get-api-users-me-profile"></a>
 ### `GET /api/users/me/profile` — asserted
@@ -73,7 +73,7 @@
 
 - 요청: `{"data":{"current_password":"...","new_password":"..."}}`. 최초 변경에서는 `current_password`를 생략할 수 있고, 일반 변경에서는 필수다.
 - 새 암호 검증 뒤 암호와 `must_change_password`를 갱신하고 기존 auth cookie를 제거하며 `204`를 반환한다. 약한 암호/현재 암호 누락·불일치는 `400`이다.
-- 직접 단언: 최초 변경의 약한 암호 `400`, 성공 `204`, 이전 세션과 이전 암호 `403`, 새 암호 로그인 `200`. [`test_new_user_temp_password_and_first_login_reset_flow`](../authz/rbac_users/create_validation_web.rs).
+- 직접 단언: 최초 변경의 약한 암호 `400`, 성공 `204`, 이전 세션과 이전 암호 `403`, 새 암호 로그인 `200`. [`test_new_user_temp_password_and_first_login_reset_flow`](../api_administration/users/access_web.rs).
 - 미단언: 일반 세션에서 올바른/틀린 `current_password` 분기와 cookie 제거 속성.
 
 <a id="get-api-users-me-routing"></a>
@@ -184,7 +184,7 @@
 
 - 요청: `{"data":{AdminSettingsUpdateBody의 부분집합}}`; 기존 JSON과 merge하고 검증한 후 upsert한다. 성공은 최신 전체 설정 객체 `200`.
 - 직접 단언: appendices 정규화와 빈 배열 `400`, 존재하지 않는 MedDRA release `400` 및 원값 유지, 조직별 idle/warning 시간과 최소·상대값 검증, timezone 변경 감사와 동일 값 재저장 시 중복 감사 없음. [`appendices_web.rs`](../api_administration/admin_settings/appendices_web.rs), [`settings_web.rs`](../api_administration/admin_settings/settings_web.rs), [`audit_web.rs`](../api_administration/admin_settings/audit_web.rs).
-- alignment 필드 전체 round-trip, 지원/비지원 `import_date_update`, case-number 설정이 생성 case의 C.1.1/C.1.8.1 값과 순번에 미치는 영향도 직접 단언된다. workflow는 음수 `due_days`, 알 수 없는 역할과 `system_admin`을 `400`으로 거부하고 빈 `allowed_roles`를 제한 없음으로 보존하는 분기가 단언된다. [`test_admin_settings_round_trips_alignment_fields`](../api_cases/settings.rs), [`test_case_number_settings_generate_c11_and_c181`](../api_cases/settings.rs), [`test_workflow_settings_reject_negative_due_days`](../api_cases/settings.rs), [`test_workflow_settings_reject_unknown_role`](../api_cases/settings.rs), [`test_workflow_settings_reject_system_admin_role`](../api_cases/settings.rs), [`test_workflow_settings_allow_empty_roles_as_unrestricted`](../api_cases/settings.rs).
+- alignment 필드 전체 round-trip, 지원/비지원 `import_date_update`, case-number 설정이 생성 case의 C.1.1/C.1.8.1 값과 순번에 미치는 영향도 직접 단언된다. workflow는 음수 `due_days`, 알 수 없는 역할과 `system_admin`을 `400`으로 거부하고 빈 `allowed_roles`를 제한 없음으로 보존하는 분기가 단언된다. [`test_admin_settings_round_trips_alignment_fields`](../api_administration/admin_settings/settings_web.rs), [`test_case_number_settings_generate_c11_and_c181`](../api_cases/settings.rs), [`test_workflow_settings_reject_negative_due_days`](../api_administration/admin_settings/workflow_web.rs), [`test_workflow_settings_reject_unknown_role`](../api_administration/admin_settings/workflow_web.rs), [`test_workflow_settings_reject_system_admin_role`](../api_administration/admin_settings/workflow_web.rs), [`test_workflow_settings_allow_empty_roles_as_unrestricted`](../api_administration/admin_settings/workflow_web.rs).
 - 소스 전용으로 남는 대표 분기는 잘못된 IANA timezone/orientation, case-number 필수 필드와 중복 format field, workflow status 누락·중복·editable/Saved 필수 검증이다.
 
 <a id="get-api-settings-runtime"></a>
@@ -252,20 +252,20 @@
 
 - 요청: `{"email":"...","pwd":"..."}`. 이메일로 사용자를 찾고 조직·역할 컨텍스트를 만들며 암호 hash를 검증한다. 구 scheme이면 로그인 사용자 귀속으로 hash를 업그레이드한다.
 - 성공: `200 {"result":{"success":true,"must_change_password":bool}}`와 auth cookie. 잘못된 암호/없는 이메일은 `403`과 `LOGIN_INVALID_CREDENTIALS`; nil/system 조직 계정은 `403`이다.
-- 직접 단언: 성공 상태, 잘못된 자격 증명 오류 envelope, 이메일 대소문자, 지정 초기 암호, legacy hash 업그레이드, 최초 암호 변경 flag/후속 흐름. [`auth_mw_audit.rs`](../authz/auth_mw_audit.rs), [`test_new_user_temp_password_and_first_login_reset_flow`](../authz/rbac_users/create_validation_web.rs).
+- 직접 단언: 성공 상태, 잘못된 자격 증명 오류 envelope, 이메일 대소문자, 지정 초기 암호, legacy hash 업그레이드, 최초 암호 변경 flag/후속 흐름. [`authentication_web.rs`](../authz/authentication_web.rs), [`test_new_user_temp_password_and_first_login_reset_flow`](../api_administration/users/access_web.rs).
 - 성공 테스트 일부는 cookie 존재/속성을 단언하지 않는다. 최초 암호 흐름만 실제 login 응답 cookie를 후속 요청에 사용한다.
 
 <a id="post-auth-v1-logoff"></a>
 ### `POST /auth/v1/logoff` — asserted
 
 - 공개 라우트이며 요청은 `{"logoff":true|false}`. true이면 auth cookie 제거를 요청하고 `200 {"result":{"logged_off":true}}`, false이면 제거하지 않고 false를 반환한다.
-- [`test_auth_login_refresh_logoff`](../authz/auth_mw_audit.rs)는 별도로 만든 token을 cookie로 보내 true 요청의 `200`만 확인한다. login 응답 cookie의 연속 사용, 응답 body, `Set-Cookie` 제거 속성, 이후 token 무효화는 단언하지 않는다.
+- [`test_auth_login_refresh_logoff`](../authz/authentication_web.rs)는 별도로 만든 token을 cookie로 보내 true 요청의 `200`만 확인한다. login 응답 cookie의 연속 사용, 응답 body, `Set-Cookie` 제거 속성, 이후 token 무효화는 단언하지 않는다.
 
 <a id="post-auth-v1-refresh"></a>
 ### `POST /auth/v1/refresh` — asserted
 
 - 인증 middleware를 거치는 빈-body POST다. 현재 사용자를 다시 읽고 새 auth cookie를 설정하며 `200 {"data":{"expiresAt":"RFC3339"}}`를 반환한다.
-- 별도로 생성한 유효 token의 `200`, 변조 token과 누락 token의 `403`이 직접 단언된다. [`auth_mw_audit.rs`](../authz/auth_mw_audit.rs).
+- 별도로 생성한 유효 token의 `200`, 변조 token과 누락 token의 `403`이 직접 단언된다. [`authentication_web.rs`](../authz/authentication_web.rs).
 - login cookie를 그대로 refresh에 전달하는 end-to-end 연결, 새 cookie/만료 값, 이전 token의 효력은 미단언이다.
 
 <a id="get-health"></a>

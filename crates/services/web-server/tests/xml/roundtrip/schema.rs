@@ -474,3 +474,65 @@ async fn fresh_full_build_validates_for_all_authorities() -> Result<()> {
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test(flavor = "multi_thread")]
+async fn empty_autopsy_cause_exports_without_parent_answer_for_all_authorities(
+) -> Result<()> {
+	let (_app, _cookie, case_id, mm, ctx) = setup_imported_case().await?;
+	let case_id = Uuid::parse_str(&case_id)?;
+	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let death_info_id = PatientDeathInformationBmc::create(
+		&ctx,
+		&mm,
+		PatientDeathInformationForCreate {
+			patient_id: patient.id,
+			date_of_death: None,
+			date_of_death_null_flavor: None,
+			autopsy_performed: None,
+			autopsy_performed_null_flavor: None,
+		},
+	)
+	.await?;
+	AutopsyCauseOfDeathBmc::create(
+		&ctx,
+		&mm,
+		AutopsyCauseOfDeathForCreate {
+			death_info_id,
+			sequence_number: 1,
+			meddra_version: None,
+			meddra_code: None,
+			comments: None,
+		},
+	)
+	.await?;
+
+	for authority in [
+		lib_core::regulatory::RegulatoryAuthority::Ich,
+		lib_core::regulatory::RegulatoryAuthority::Fda,
+		lib_core::regulatory::RegulatoryAuthority::Mfds,
+	] {
+		let exported = xml::export::serialize_case_xml_for_authority(
+			&ctx,
+			&mm,
+			case_id,
+			authority,
+			&outbound_header(authority),
+		)
+		.await?;
+		assert_eq!(
+			exported
+				.matches("displayName=\"autopsy\"/><value xsi:type=\"BL\"/>")
+				.count(),
+			1,
+			"{authority:?}"
+		);
+		assert_eq!(
+			exported.matches("displayName=\"causeOfDeath\"").count(),
+			1,
+			"{authority:?}"
+		);
+	}
+
+	Ok(())
+}

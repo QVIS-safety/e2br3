@@ -1,9 +1,9 @@
 #![allow(unused_imports)]
 
-use super::helpers::*;
+use crate::administration_support::request_json;
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::{to_bytes, Body};
-use axum::http::{Method, Request, StatusCode};
+use axum::http::{Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
 use serde_json::{json, Value};
@@ -21,8 +21,8 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&admin_cookie,
-		Method::PUT,
 		"/api/admin/settings",
 		Some(json!({
 			"data": {
@@ -76,8 +76,8 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&admin_cookie,
-		Method::PUT,
 		"/api/admin/settings",
 		Some(json!({
 			"data": {
@@ -133,8 +133,8 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 
 	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&admin_cookie,
-		Method::PUT,
 		"/api/admin/settings",
 		Some(json!({
 			"data": {

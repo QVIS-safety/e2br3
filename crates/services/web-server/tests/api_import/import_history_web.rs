@@ -1,8 +1,9 @@
+use super::support::{fixture_xml, get_json, get_response, import_xml_string};
 use crate::common::{
 	cookie_header, init_test_env, init_test_mm, seed_org_with_users, Result,
 };
-use axum::body::{to_bytes, Body};
-use axum::http::{Request, StatusCode};
+use axum::body::to_bytes;
+use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::{set_org_context, set_user_context};
@@ -10,83 +11,6 @@ use serde_json::{json, Value};
 use serial_test::serial;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use tower::ServiceExt;
-
-fn workspace_root() -> std::path::PathBuf {
-	std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-		.join("../../..")
-		.canonicalize()
-		.expect("workspace root")
-}
-
-fn fixture_xml(filename: &str) -> Result<String> {
-	Ok(std::fs::read_to_string(
-		workspace_root().join("docs/exporter/fda").join(filename),
-	)?)
-}
-
-async fn import_xml_string(
-	app: &axum::Router,
-	cookie: &str,
-	filename: &str,
-	xml: &str,
-	product_presave_id: &str,
-) -> Result<()> {
-	let boundary = "X-BOUNDARY-IMPORT-HISTORY";
-	let body = format!(
-		"--{boundary}\r\nContent-Disposition: form-data; name=\"format\"\r\n\r\nfda\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"productPresaveId\"\r\n\r\n{product_presave_id}\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/xml\r\n\r\n{xml}\r\n--{boundary}--\r\n"
-	);
-	let req = Request::builder()
-		.method("POST")
-		.uri("/api/import/xml")
-		.header(
-			"content-type",
-			format!("multipart/form-data; boundary={boundary}"),
-		)
-		.header("cookie", cookie)
-		.body(Body::from(body))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"import status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	Ok(())
-}
-
-async fn get_json(
-	app: &axum::Router,
-	cookie: &str,
-	uri: &str,
-) -> Result<(StatusCode, Value)> {
-	let req = Request::builder()
-		.method("GET")
-		.uri(uri)
-		.header("cookie", cookie)
-		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
-}
-
-async fn get_response(
-	app: &axum::Router,
-	cookie: &str,
-	uri: &str,
-) -> Result<axum::response::Response> {
-	let req = Request::builder()
-		.method("GET")
-		.uri(uri)
-		.header("cookie", cookie)
-		.body(Body::empty())?;
-	Ok(app.clone().oneshot(req).await?)
-}
 
 #[serial]
 #[tokio::test]

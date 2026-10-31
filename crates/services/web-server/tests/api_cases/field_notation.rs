@@ -65,6 +65,33 @@ async fn create_drug_record(
 	Ok(Uuid::parse_str(id)?)
 }
 
+async fn create_dosage_record(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	drug_id: Uuid,
+) -> Result<Uuid> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"POST",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages"),
+		Some(json!({"data": {
+			"drug_id": drug_id,
+			"sequence_number": 1,
+			"dosage_text": "Notation dosage row"
+		}})),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!("create dosage status {status} body {body}").into());
+	}
+	let id = body["data"]["id"]
+		.as_str()
+		.ok_or_else(|| format!("create dosage response missing data.id: {body}"))?;
+	Ok(Uuid::parse_str(id)?)
+}
+
 async fn notation_audit_actions(
 	mm: &lib_core::model::ModelManager,
 	notation_id: Uuid,
@@ -83,6 +110,26 @@ async fn notation_audit_actions(
 	.await?;
 	tx.rollback().await?;
 	Ok(actions)
+}
+
+async fn notation_audit_count(
+	mm: &lib_core::model::ModelManager,
+	organization_id: Uuid,
+) -> Result<i64> {
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
+		.await?;
+	let count = sqlx::query_scalar::<_, i64>(
+		"SELECT count(*) FROM audit_logs
+		 WHERE organization_id = $1
+		   AND table_name = 'case_e2b_field_notations'",
+	)
+	.bind(organization_id)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.rollback().await?;
+	Ok(count)
 }
 
 #[serial]
@@ -238,6 +285,203 @@ async fn field_notation_keeps_scalar_and_actual_record_subjects_isolated(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{record_read}");
 	assert_eq!(record_read, record);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn field_notation_accepts_nested_soft_deleted_rows_and_rejects_unknown_ids(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let drug_id = create_drug_record(&app, &cookie, case_id).await?;
+	let dosage_id = create_dosage_record(&app, &cookie, case_id, drug_id).await?;
+	let endpoint = format!("/api/cases/{case_id}/field-notation");
+	let dosage_query = format!("{endpoint}?e2bCode=G.k.4.r.8&recordId={dosage_id}");
+
+	let (status, baseline) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		endpoint.clone(),
+		Some(json!({
+			"e2bCode": "G.k.4.r.8",
+			"recordId": dosage_id,
+			"notation": "nested dosage notation"
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{baseline}");
+	assert_eq!(baseline["recordId"], dosage_id.to_string());
+
+	let delete_dosage = Request::builder()
+		.method("DELETE")
+		.uri(format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/dosages/{dosage_id}"
+		))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let response = app.clone().oneshot(delete_dosage).await?;
+	assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+	let (status, after_soft_delete) =
+		request_json(&app, &cookie, "GET", dosage_query, None).await?;
+	assert_eq!(status, StatusCode::OK, "{after_soft_delete}");
+	assert_eq!(after_soft_delete, baseline);
+
+	let audit_before = notation_audit_count(&mm, seed.org_id).await?;
+	let unknown_id = Uuid::new_v4();
+	let unknown_query =
+		format!("{endpoint}?e2bCode=G.k.4.r.8&recordId={unknown_id}");
+	let (status, body) =
+		request_json(&app, &cookie, "GET", unknown_query.clone(), None).await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		endpoint,
+		Some(json!({
+			"e2bCode": "G.k.4.r.8",
+			"recordId": unknown_id,
+			"notation": "must not persist"
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let (status, body) =
+		request_json(&app, &cookie, "DELETE", unknown_query, None).await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+
+	let (status, after_denials) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!(
+			"/api/cases/{case_id}/field-notation?e2bCode=G.k.4.r.8&recordId={dosage_id}"
+		),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{after_denials}");
+	assert_eq!(after_denials, baseline);
+	assert_eq!(notation_audit_count(&mm, seed.org_id).await?, audit_before);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn field_notation_rejects_cross_case_and_cross_organization_record_ids(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let owner = seed_org_with_users(&mm, "ownerpwd", "ownerviewpwd").await?;
+	let other = seed_org_with_users(&mm, "otherpwd", "otherviewpwd").await?;
+	let owner_token =
+		generate_web_token(&owner.admin.email, owner.admin.token_salt)?;
+	let other_token =
+		generate_web_token(&other.admin.email, other.admin.token_salt)?;
+	let owner_cookie = cookie_header(&owner_token.to_string());
+	let other_cookie = cookie_header(&other_token.to_string());
+	let app = web_server::app(mm.clone());
+	let owner_case = create_case(&app, &owner_cookie, owner.org_id).await?;
+	let same_org_case = create_case(&app, &owner_cookie, owner.org_id).await?;
+	let other_org_case = create_case(&app, &other_cookie, other.org_id).await?;
+	let owner_drug = create_drug_record(&app, &owner_cookie, owner_case).await?;
+	let same_org_drug =
+		create_drug_record(&app, &owner_cookie, same_org_case).await?;
+	let other_org_drug =
+		create_drug_record(&app, &other_cookie, other_org_case).await?;
+
+	let cases = [
+		(owner_case, owner_drug, &owner_cookie, "owner notation"),
+		(
+			same_org_case,
+			same_org_drug,
+			&owner_cookie,
+			"same-org notation",
+		),
+		(
+			other_org_case,
+			other_org_drug,
+			&other_cookie,
+			"other-org notation",
+		),
+	];
+	let mut baselines = Vec::new();
+	for (case_id, record_id, cookie, notation) in cases {
+		let (status, body) = request_json(
+			&app,
+			cookie,
+			"PUT",
+			format!("/api/cases/{case_id}/field-notation"),
+			Some(json!({
+				"e2bCode": "G.k.2.2",
+				"recordId": record_id,
+				"notation": notation
+			})),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		baselines.push(body);
+	}
+
+	let owner_audit_before = notation_audit_count(&mm, owner.org_id).await?;
+	let other_audit_before = notation_audit_count(&mm, other.org_id).await?;
+	let owner_endpoint = format!("/api/cases/{owner_case}/field-notation");
+	for foreign_id in [same_org_drug, other_org_drug] {
+		let query =
+			format!("{owner_endpoint}?e2bCode=G.k.2.2&recordId={foreign_id}");
+		let (status, body) =
+			request_json(&app, &owner_cookie, "GET", query.clone(), None).await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+		let (status, body) = request_json(
+			&app,
+			&owner_cookie,
+			"PUT",
+			owner_endpoint.clone(),
+			Some(json!({
+				"e2bCode": "G.k.2.2",
+				"recordId": foreign_id,
+				"notation": "must not persist"
+			})),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+		let (status, body) =
+			request_json(&app, &owner_cookie, "DELETE", query, None).await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	}
+
+	for ((case_id, record_id, cookie, _), baseline) in
+		cases.into_iter().zip(baselines)
+	{
+		let (status, after) = request_json(
+			&app,
+			cookie,
+			"GET",
+			format!(
+				"/api/cases/{case_id}/field-notation?e2bCode=G.k.2.2&recordId={record_id}"
+			),
+			None,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{after}");
+		assert_eq!(after, baseline);
+	}
+	assert_eq!(
+		notation_audit_count(&mm, owner.org_id).await?,
+		owner_audit_before
+	);
+	assert_eq!(
+		notation_audit_count(&mm, other.org_id).await?,
+		other_audit_before
+	);
 
 	Ok(())
 }

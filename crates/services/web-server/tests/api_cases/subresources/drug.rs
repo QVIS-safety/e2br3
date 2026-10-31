@@ -1,4 +1,5 @@
 use super::support::*;
+use crate::validation_common::{get_json as get_value, post_json as post_value};
 
 #[serial]
 #[tokio::test]
@@ -587,6 +588,164 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	assert_eq!(value["data"]["value_type"], "CE");
 	assert_eq!(value["data"]["value_code"], "1");
 	assert_eq!(value["data"]["value_code_system"], "FDA");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	let case_no = format!("KR-DVC-{suffix}");
+
+	let (status, raw_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases".to_string(),
+		json!({
+			"data": {
+				"safetyReportIdentification": {"safetyReportId": case_no},
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?;
+
+	let (status, body) = post_value(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "KR Device Product"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let drug_id = body["data"]["id"].as_str().ok_or("missing drug id")?;
+
+	let (status, body) = post_value(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+		json!({
+			"data": {
+				"drug_id": drug_id,
+				"sequence_number": 1,
+				"code": "KR_DVC_PROBC",
+				"value_code": "PROB-1"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = post_value(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+		json!({
+			"data": {
+				"drug_id": drug_id,
+				"sequence_number": 2,
+				"code": "KR_DVC_MFR",
+				"value_value": "KR Maker"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = get_value(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let rows = body["data"].as_array().ok_or("missing rows")?;
+	assert_eq!(rows.len(), 2, "{rows:?}");
+	assert!(
+		rows.iter().any(|row| {
+			row["code"].as_str() == Some("KR_DVC_PROBC")
+				&& row["value_code"].as_str() == Some("PROB-1")
+		}),
+		"{rows:?}"
+	);
+	assert!(
+		rows.iter().any(|row| {
+			row["code"].as_str() == Some("KR_DVC_MFR")
+				&& row["value_value"].as_str() == Some("KR Maker")
+		}),
+		"{rows:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_relatedness_assessment_endpoints_ok() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let drug_id = create_drug(&app, &cookie, case_id).await?;
+	let reaction_id = create_reaction(&app, &cookie, case_id).await?;
+	let assessment_id =
+		create_reaction_assessment(&app, &cookie, case_id, drug_id, reaction_id)
+			.await?;
+
+	let body = json!({"data": {
+		"drug_reaction_assessment_id": assessment_id,
+		"sequence_number": 1,
+		"source_of_assessment": "Sponsor",
+		"method_of_assessment": "Algorithm",
+		"result_of_assessment": "1",
+		"result_of_assessment_kr2": "KR result"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness"
+		),
+		body,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(
+		value["data"]["drug_reaction_assessment_id"],
+		assessment_id.to_string()
+	);
+	assert_eq!(value["data"]["source_of_assessment"], "Sponsor");
+	assert_eq!(value["data"]["method_of_assessment"], "Algorithm");
+	assert_eq!(value["data"]["result_of_assessment"], "1");
+	assert_eq!(value["data"]["result_of_assessment_kr2"], "KR result");
 
 	Ok(())
 }

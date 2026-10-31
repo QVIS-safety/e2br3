@@ -1,8 +1,8 @@
 # API 계약 명세와 테스트 커버리지
 
-이 디렉터리는 등록된 API의 **요청 → 응답·저장 상태·감사·권한 계약 → 실제 테스트 assertion → 남은 공백**을 연결한다. [coverage.tsv](coverage.tsv)가 method/path별 색인이고, 아래 문서가 API군별 명세다. 테스트 이동 경로나 중복 제거 이력은 명세에 포함하지 않는다.
+이 디렉터리는 등록된 API의 **요청 → 응답·저장 상태·감사·권한 계약 → 실제 테스트 assertion → 남은 공백**을 연결한다. [coverage.tsv](coverage.tsv)가 method/path별 색인이고, 아래 문서가 API군별 명세다. 파일별 배치·책임·실행 단위는 [파일 구조 목록](file-structure.md)에서 별도로 확인한다.
 
-**검토 기준:** 2026-10-31, backend `develop`의 구현 commit `abee1ce396433ecc01f972e2a418b33e585ca278`. **실행 상태: NOT_RUN.** 사용자 지시에 따라 이번 작업에서는 테스트·빌드·운영 API·DB를 실행하지 않았다. 본문의 성공 status와 상태 변화는 소스상 계약이며, 통과 결과가 아니다. 예시 JSON은 구조 설명이며 운영 응답이나 실행 결과가 아니다.
+**검토 기준:** 2026-10-31, backend `develop`의 기준 commit `b61367744d235acd9fc238ce864bfcb1809dd897` 이후 이 변경에 포함된 구현. **실행 상태: NOT_RUN.** 사용자 지시에 따라 이번 작업에서는 테스트·빌드·운영 API·DB를 실행하지 않았다. 본문의 성공 status와 상태 변화는 소스상 계약이며, 통과 결과가 아니다. 예시 JSON은 구조 설명이며 운영 응답이나 실행 결과가 아니다.
 
 ## 전체 색인
 
@@ -77,7 +77,7 @@ frontend `d4eee87e55cf955058fc70e09ea1559cc90b9419`의 endpoint 정의와 app/co
 
 | 우선 대상 | 실제 소비자 | 남은 검사 |
 |---|---|---|
-| field-notation GET/PUT/DELETE | `E2BFormField.tsx`, `field-notations.ts` | 정상 lifecycle·ID·감사 action·viewer 거절 후 불변 추가. recordId 존재·case/org 소속 검증과 입력 경계는 남음 |
+| field-notation GET/PUT/DELETE | `E2BFormField.tsx`, `field-notations.ts` | 정상 lifecycle·ID·감사 action·viewer 거절·recordId 존재/case/org 소속과 거절 후 불변을 검사. 입력 길이/형식 경계는 남음 |
 | CIOMS PDF GET | submission 화면과 Editor action, `xml.ts` | HTTP 권한·content type·파일명·PDF byte 구조·case 번호 추가. 전체 필드·한글·잘림·notation 옵션은 남음 |
 | Case query catalog·link-options | submission 화면, `useCaseLinkOptions.ts` | 응답 필드·사용자 scope·검색 필터 |
 | Presave study 조회·삭제 | `usePresaveTemplates.ts`, `useCanonicalPresaveBase.ts`, `InfoPresaveListRoute.tsx` | 실제 DELETE와 하위 관계·권한·감사 |
@@ -85,21 +85,20 @@ frontend `d4eee87e55cf955058fc70e09ea1559cc90b9419`의 endpoint 정의와 app/co
 
 import error download는 import 화면에서 사용하므로 비활성 검사를 이번에 복구했다. 반면 `/api/import/xml/validate`, atomic restore, 상당수 legacy item mutation은 현재 frontend에서 실행 소비자를 확인하지 못했다. 외부 client나 동적 경로가 없다는 증거는 아니므로 삭제하지 않는다. 감사 무결성 API는 frontend 호출 여부와 별개로 정상 report와 viewer 403 검사를 추가했다. 손상된 chain의 HTTP 보고 분기는 남는다.
 
-구조 검토에서는 import의 요청/이력/설정, XML의 다운로드/재조회/수정/오류 책임을 분리하고 복제 준비 함수를 공용화했다. Presave의 aggregate CRUD, Case validation helper, XML의 reaction 검사는 줄 수만으로 쪼개지 않았다. `api_cases/contract/query.rs`는 검색 결과 계약, `list_view.rs`는 목록 투영·페이지 처리를 담당한다. 기존 `case_query_web.rs`라는 별도 파일은 없다. 감사 chain의 순수 SQL 동시성 검사는 `lib-core/tests/database/audit_chain.rs`, 감사 HTTP 검사는 `api_administration/audit_web.rs`에 둔다. authz 5개 파일의 동일 Case 생성 helper는 `authz/support.rs` 하나로 모았다. 호출되지 않는 validation helper 30개와 scope helper 5개, 죽은 context 필드 2개 및 이를 숨기던 dead_code 허용을 제거했다. 실제 테스트 선언은 삭제하지 않았다.
+## 파일별 책임과 실행 경계
 
-## 파일 구조 전수 검토에서 남은 항목
+[파일 구조 전수 목록](file-structure.md)은 9개 API 관련 target의 모든 Rust 파일과 root, 공유 helper, 연결된 lib-core database 파일을 한 파일씩 설명한다. 같은 목록의 [TSV](file-structure.tsv)는 경로·target·책임·선언/등록 수를 제공한다. 전체 API의 동작 증거는 계속 [coverage.tsv](coverage.tsv)에서 관리한다.
 
-9개 실행 단위(`api_cases`, `api_editor`, `api_presave`, `api_import`, `api_submission`, `api_terminology`, `api_administration`, `authz`, `xml`)의 모든 하위 Rust 파일과 root 모듈 연결을 확인했다. 미등록 파일은 없지만 **책임 분리가 전부 끝난 상태는 아니다.** 다음은 검사 부재와 구별되는 배치 문제다.
+- 일반 사용자 생성/수정/접속 기간은 `api_administration/users`, 역할·조직 권한 경계는 `authz/rbac_users`다.
+- 사용자 만료 비활성화·device BMC tenant RLS·JSONB 비교·감사 chain 동시성은 `lib-core/tests/database`다. Device targeted XML export는 `xml/targeted_device_export.rs`다.
+- 관리자 설정 자체는 `api_administration/admin_settings`, 설정이 Case에 반영되는 계약은 `api_cases/settings.rs`다.
+- 인증 middleware는 `authz/authentication_web.rs`, Case 감사는 `api_cases/contract/audit.rs`, 관리자 감사 API는 `api_administration/audit_web.rs`다. 소스 문자열 gate는 `authz/source_gates`에 모았다.
+- Case 하위 API는 `subresources` 아래 drug/patient/narrative/safety_report/primary_source/sender/study/reaction/test_result로 구분한다. Singleton 멱등성은 공통 계약으로 유지한다.
+- `contract/query.rs`는 검색 결과, `list_view.rs`는 목록 투영·페이지, `save.rs`는 Case 공개 필드 저장, `review_receivers.rs`는 RE JSON 저장 책임이다.
 
-| 파일 | 확인한 문제 | 다음 정리 위치 |
-|---|---|---|
-| [rbac_users/create_validation_web.rs](../authz/rbac_users/create_validation_web.rs), [update_delete_web.rs](../authz/rbac_users/update_delete_web.rs) | 권한 거부와 일반 사용자 생성·입력·날짜·비밀번호 계약이 혼재 | 권한 정책은 authz, 일반 사용자 API는 api_administration |
-| [update_delete_web.rs](../authz/rbac_users/update_delete_web.rs)의 `test_expired_user_is_soft_deactivated` | HTTP 없이 UserBmc update/deactivate/get만 검사 | lib-core 사용자 모델/DB 실행 단위; web 전용 seed 의존을 먼저 대체 |
-| [rls_web.rs](../authz/rls_web.rs)의 `device_rows_are_tenant_scoped_and_targeted_export_ignores_org_volume` | 직접 BMC tenant scope와 XML targeted export를 한 검사에서 단언 | lib-core RLS와 XML export 계약 분리; 기존 양쪽 assertion 보존 필요 |
-| [api_cases/settings.rs](../api_cases/settings.rs) | admin/settings만 검사하는 5개가 Case target에 남음 | api_administration/admin_settings; Case workflow/config와 case-number downstream 검사는 유지 |
-| [auth_mw_audit.rs](../authz/auth_mw_audit.rs) | 로그인·middleware와 Case CRUD 감사 검사가 같은 파일 | Case 감사 검사를 해당 계약 파일로 이동; viewer 거절 단순 검사는 기존 권한 matrix와 대조 |
+기존 구조 목록의 미해결 5개 항목은 위 배치로 정리했다. 사용자 생성의 같은 무역할 요청/201 assertion 한 개는 더 강한 기본 역할 생성 검사와 통합했고, 다른 검사는 이동하거나 DB/XML 책임으로 분리했다. 이는 행동 검사의 공백을 해소했다는 뜻이 아니다.
 
-제출 재처리는 `reconcile/web.rs`의 내부 HTTP 계약과 `reconcile/service.rs`의 worker 계약으로 나눴다. worker 구현은 web-server 소유이므로 lib-core로 옮기지 않는다. HTTP 준비 호출만 존재하는 service 검사는 API 직접 근거로 올리지 않는다. Editor의 generated 등록과 수기 검사 구현, scope 정책의 여러 endpoint 비교, Presave aggregate CRUD, XML parser/serializer 검사는 책임이 이어져 있어 줄 수만으로 나누지 않는다.
+제출 재처리는 `reconcile/web.rs`의 내부 HTTP 계약과 `reconcile/service.rs`의 worker 계약으로 나뉜다. Worker는 web-server 구현이므로 lib-core로 옮기지 않는다. 인증 extractor는 middleware component integration으로 authz에 둔다. Editor generated 등록과 수기 assertion 구현은 중복 테스트가 아니며, scope의 여러 endpoint 비교·Presave aggregate graph·Intake 후 XML readback은 같은 계약을 입증하므로 함께 유지한다.
 
 ## 변경 시 유지할 기준
 

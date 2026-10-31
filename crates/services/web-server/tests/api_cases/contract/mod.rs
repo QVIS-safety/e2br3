@@ -1,3 +1,4 @@
+mod audit;
 #[path = "delete.rs"]
 mod delete;
 #[path = "list_view.rs"]

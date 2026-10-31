@@ -1,3 +1,5 @@
+#[path = "database/device_rls.rs"]
+mod device_rls;
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[path = "database/audit_chain.rs"]
@@ -10,6 +12,8 @@ mod reaction_term_highlight_migration;
 mod submission_schema;
 #[path = "database/transactions.rs"]
 mod transactions;
+#[path = "database/user_expiration.rs"]
+mod user_expiration;
 
 async fn init_test_mm() -> Result<lib_core::model::ModelManager> {
 	let expected = std::env::var("E2BR3_TEST_DATABASE_NAME")?;

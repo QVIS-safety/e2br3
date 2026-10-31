@@ -753,22 +753,6 @@ pub(super) async fn get_workflow_config(
 	Ok((status, value))
 }
 
-pub(super) async fn get_admin_settings(
-	app: &axum::Router,
-	cookie: &str,
-) -> Result<(StatusCode, Value)> {
-	let req = Request::builder()
-		.method("GET")
-		.uri("/api/admin/settings")
-		.header("cookie", cookie)
-		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
-	Ok((status, value))
-}
-
 pub(super) async fn transition_case_workflow(
 	app: &axum::Router,
 	cookie: &str,

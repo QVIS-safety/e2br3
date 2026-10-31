@@ -1,6 +1,6 @@
 #[test]
 fn authorization_storage_is_initialized_before_admin_bootstrap() {
-	let source = include_str!("../../src/main.rs");
+	let source = include_str!("../../../src/main.rs");
 	let initialize = source
 		.find("initialize_authorization_storage()")
 		.expect("main must initialize authorization storage");
@@ -15,7 +15,7 @@ fn authorization_storage_is_initialized_before_admin_bootstrap() {
 
 #[test]
 fn existing_bootstrap_user_membership_precedes_role_update() {
-	let source = include_str!("../../src/bootstrap.rs");
+	let source = include_str!("../../../src/bootstrap.rs");
 	let existing_branch = source
 		.split("Some(user_id) => {")
 		.nth(1)
@@ -37,7 +37,7 @@ fn existing_bootstrap_user_membership_precedes_role_update() {
 
 #[test]
 fn system_organization_is_not_treated_as_missing_membership() {
-	let source = include_str!("../../../../libs/lib-core/src/model/user.rs");
+	let source = include_str!("../../../../../libs/lib-core/src/model/user.rs");
 	let function = source
 		.split("pub async fn ensure_organization_membership(")
 		.nth(1)

@@ -11,3 +11,6 @@ mod xml_roundtrip_remaining;
 
 #[path = "xml/support.rs"]
 mod xml_support;
+
+#[path = "xml/targeted_device_export.rs"]
+mod targeted_device_export;

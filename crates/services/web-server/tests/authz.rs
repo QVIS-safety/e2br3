@@ -1,19 +1,13 @@
 mod common;
 
-#[path = "authz/auth_mw_audit.rs"]
-mod auth_mw_audit;
-#[path = "authz/authorization_legacy_gate.rs"]
-mod authorization_legacy_gate;
+#[path = "authz/authentication_web.rs"]
+mod authentication_web;
 #[path = "authz/authorization_snapshot.rs"]
 mod authorization_snapshot;
-#[path = "authz/authorization_startup.rs"]
-mod authorization_startup;
-#[path = "authz/platform_admin_policy.rs"]
-mod platform_admin_policy;
-#[path = "authz/policy_kernel_characterization.rs"]
-mod policy_kernel_characterization;
 #[path = "authz/protected_route_inventory.rs"]
 mod protected_route_inventory;
+#[path = "authz/protected_route_parser.rs"]
+mod protected_route_parser;
 #[path = "authz/rbac_audit.rs"]
 mod rbac_audit;
 #[path = "authz/rbac_cases.rs"]
@@ -37,3 +31,6 @@ mod rls_web;
 
 #[path = "authz/support.rs"]
 mod authz_support;
+
+#[path = "authz/source_gates/mod.rs"]
+mod source_gates;

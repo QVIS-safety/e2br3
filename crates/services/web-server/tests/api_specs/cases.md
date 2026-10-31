@@ -121,12 +121,28 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 |---|---|
 | `GET`, `PUT`, `DELETE` | `/api/cases/{case_id}/field-notation` |
 
-- `GET`, `DELETE`: query `e2bCode` 필수, `recordId` 선택. `PUT`: body `{e2bCode,recordId?,notation}`, unknown field 거절. e2bCode는 1–64자의 ASCII 영숫자/점/밑줄/하이픈, notation은 최대 10,000자다.
-- GET은 저장 행이 없어도 `200 {id:null,e2bCode,recordId,notation:""}`; PUT upsert와 DELETE는 `200 FieldNotationResponse`.
+- `GET`, `DELETE`: query `e2bCode` 필수, `recordId` 선택. `PUT`: body `{e2bCode,recordId?,notation}`, unknown field 거절. e2bCode는 1–64 byte의 ASCII 영숫자/점/밑줄/하이픈, notation은 최대 10,000 UTF-8 byte다.
+- recordId를 생략한 scalar 또는 같은 Case의 유효한 행이면, GET은 notation 저장 행이 없어도 `200 {id:null,e2bCode,recordId,notation:""}`다. PUT upsert와 DELETE는 `200 FieldNotationResponse`이며, 유효한 행의 없는 notation 삭제도 멱등적 200이다.
 - 세 operation 모두 asserted다. [field_notation.rs](../api_cases/field_notation.rs)는 scalar 저장→조회→수정 시 ID 유지→공백 PUT(trim 후 빈 문자열, 행 유지)→DELETE→없는 행 조회를 검사한다. 감사 action 순서 CREATE/UPDATE/UPDATE/DELETE도 확인한다.
 - 실제 Drug 행 UUID로 같은 e2bCode의 scalar/record notation을 따로 저장·조회하고 ID/값 격리를 검사한다. viewer GET은 200, PUT/DELETE는 403이며 거절 후 저장 값과 해당 notation 감사 action이 불변인지 확인한다.
-- **구현 공백:** `recordId`는 nullable UUID이며 FK/행 존재/case·조직 소속 검사가 없다. 요청 case의 권한 검사와 recordId 소유권 검사는 별개다. 현재 테스트는 다른 case의 행을 거절한다고 주장하지 않는다.
-- 미단언: 잘못된 e2bCode·notation 길이·unknown field 경계, 타 case 접근 조합, 감사 old/new payload, 반복행 삭제 시 notation 정리. 입력 길이 제한은 구현의 UTF-8 byte 길이 기준이다.
+- `recordId`를 주면 GET/PUT/DELETE 공통으로 실제 행의 FK chain이 요청 Case로 이어지는지 확인한다. 존재하지 않는 UUID, 같은 조직의 다른 Case 행, 다른 조직의 행은 `404 ENTITY_UUID_NOT_FOUND`다. 요청 Case의 권한 검사 뒤, notation 조회/변경과 같은 DB transaction에서 검사한다. 거절하면 notation을 변경하기 전에 rollback한다.
+- Soft-deleted 행은 복원 가능한 기존 identity이므로 허용한다. `recordId=None`인 scalar 계약은 유지한다. `e2bCode`와 record table 사이의 필드 의미 일치까지 검사하는 계약은 아니다.
+- 신규 [존재·nested/soft-delete 검사](../api_cases/field_notation.rs)와 [case/org 소속 검사](../api_cases/field_notation.rs)는 실제 Drug/Dosage 행을 사용한다. 임의 UUID와 교차 소속의 GET/PUT/DELETE 404, 정상 notation 재조회 값·ID, 해당 조직의 notation 감사 건수 불변을 단언한다. 37종 각각의 runtime 성공을 검사한 것은 아니다.
+
+행 주체의 범위는 registry Editor audit subject 36종과 실제 frontend device-characteristic subject 1종이다. 같은 모델의 [membership query](../../../../libs/lib-core/src/model/e2b_field_notation.rs)가 아래 FK 경로를 사용한다.
+
+| 분야 | 허용 record table | Case 연결 |
+|---|---|---|
+| CI | cases, safety_report_identification, documents_held_by_sender, source_documents, other_case_identifiers, linked_report_numbers | cases.id 또는 직접 case_id |
+| RP/SD/LR | primary_sources, sender_information, receiver_information, literature_references | 직접 case_id |
+| SI | study_information, study_registration_numbers, study_fda_cross_reported_inds | 직접 case_id 또는 study_information 경유 |
+| DM/DH | patient_information, patient_identifiers, medical_history_episodes, past_drug_history, patient_death_information, reported_causes_of_death, autopsy_causes_of_death, parent_information, parent_medical_history, parent_past_drug_history | patient 또는 death/parent→patient 경유 |
+| AE/LB | reactions, test_results | 직접 case_id |
+| DG | drug_information, drug_active_substances, dosage_information, drug_indications, drug_device_characteristics, fda_device_information, fda_device_codes, drug_reaction_assessments, relatedness_assessments | drug 또는 device/assessment→drug 경유; assessment는 reaction도 같은 Case 필요 |
+| NR | narrative_information, sender_diagnoses, case_summary_information | 직접 case_id 또는 narrative 경유 |
+
+기존 데이터에 이미 들어간 잘못된 recordId를 삭제·수정하는 migration은 없다. 이 행의 개별 GET/PUT/DELETE는 404가 되며, CIOMS에서 사용하는 `list_by_case`는 기존 행을 그대로 읽는다. 기존 데이터 정리와 export에서의 처리 여부는 별도 확인 대상이다.
+- 미단언: 잘못된 e2bCode·notation 길이·unknown field 경계, 모든 행 종류/권한 조합, 감사 old/new payload, hard-delete 시 notation 정리. 입력 길이 제한은 구현의 UTF-8 byte 길이 기준이다.
 
 <a id="drug"></a>
 ## Drug와 하위 리소스
@@ -179,8 +195,8 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 - [tests/api_editor/pages/dg.generated.rs::device_subresources_survive_dg_row_reload](../api_editor/pages/dg.generated.rs)
 
-- [tests/api_cases/contract/save.rs::test_kr_device_characteristics_round_trip_via_api](../api_cases/contract/save.rs)
-- [tests/api_cases/subresources/clinical.rs::test_relatedness_assessment_endpoints_ok](../api_cases/subresources/clinical.rs)
+- [tests/api_cases/subresources/drug.rs::test_kr_device_characteristics_round_trip_via_api](../api_cases/subresources/drug.rs)
+- [tests/api_cases/subresources/drug.rs::test_relatedness_assessment_endpoints_ok](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::dg_kr_product_fields_create_read_and_update_independently](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::dg_kr_substance_fields_create_read_and_update_independently](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::drug_child_id_is_hidden_under_a_different_drug](../api_cases/subresources/drug.rs)
@@ -209,8 +225,8 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 근거:
 
-- [tests/api_cases/subresources/clinical.rs::test_reaction_supports_ae_common_and_mfds_device_fields](../api_cases/subresources/clinical.rs)
-- [tests/api_cases/subresources/clinical.rs::test_test_results_support_50_character_normal_ranges](../api_cases/subresources/clinical.rs)
+- [tests/api_cases/subresources/reaction.rs::test_reaction_supports_ae_common_and_mfds_device_fields](../api_cases/subresources/reaction.rs)
+- [tests/api_cases/subresources/test_result.rs::test_test_results_support_50_character_normal_ranges](../api_cases/subresources/test_result.rs)
 - [tests/api_editor/pages/lb.generated.rs::list_projection_includes_displayed_result_columns](../api_editor/pages/lb.generated.rs)
 - [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_and_export_but_blocks_submission](../api_submission/validation.rs)
 
@@ -287,11 +303,11 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 근거:
 
-- [tests/api_cases/contract/save.rs::long_hangul_narrative_update_preserves_jsonb_and_audit_contracts](../api_cases/contract/save.rs)
+- [tests/api_cases/contract/audit.rs::long_hangul_narrative_update_preserves_jsonb_and_audit_contracts](../api_cases/contract/audit.rs)
 - [tests/api_cases/subresources/narrative.rs::test_narrative_child_lists_return_empty_when_parent_narrative_missing](../api_cases/subresources/narrative.rs)
 - [tests/api_cases/subresources/narrative.rs::test_narrative_subresources_endpoints_ok](../api_cases/subresources/narrative.rs)
 - [tests/api_cases/subresources/narrative.rs::test_sender_diagnosis_soft_delete_restore](../api_cases/subresources/narrative.rs)
-- [tests/api_cases/subresources/patient.rs::test_narrative_preview_resolves_patient_tokens](../api_cases/subresources/patient.rs)
+- [tests/api_cases/subresources/narrative.rs::test_narrative_preview_resolves_patient_tokens](../api_cases/subresources/narrative.rs)
 - [tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent](../api_cases/subresources/singleton.rs)
 
 <a id="safety-report"></a>
@@ -331,10 +347,10 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 근거:
 
 - [tests/api_cases/subresources/safety_report.rs::safety_report_preserves_c1_boolean_null_flavors](../api_cases/subresources/safety_report.rs)
-- [tests/api_cases/subresources/safety_report.rs::test_primary_source_supports_regional_rp_fields](../api_cases/subresources/safety_report.rs)
+- [tests/api_cases/subresources/primary_source.rs::test_primary_source_supports_regional_rp_fields](../api_cases/subresources/primary_source.rs)
 - [tests/api_cases/subresources/safety_report.rs::test_safety_report_subresources_endpoints_ok](../api_cases/subresources/safety_report.rs)
-- [tests/api_cases/subresources/safety_report.rs::test_sender_information_supports_mfds_health_professional_type_kr1](../api_cases/subresources/safety_report.rs)
-- [tests/api_cases/subresources/safety_report.rs::test_study_create_accepts_study_type_reaction](../api_cases/subresources/safety_report.rs)
+- [tests/api_cases/subresources/sender.rs::test_sender_information_supports_mfds_health_professional_type_kr1](../api_cases/subresources/sender.rs)
+- [tests/api_cases/subresources/study.rs::test_study_create_accepts_study_type_reaction](../api_cases/subresources/study.rs)
 - [tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent](../api_cases/subresources/singleton.rs)
 
 <a id="identifiers-source-documents"></a>

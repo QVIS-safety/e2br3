@@ -1,20 +1,11 @@
-#![allow(unused_imports)]
-
-use super::helpers::*;
-use crate::common::{
-	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
-	seed_org_with_users, seed_two_orgs_users_cases, system_user_id, Result,
-};
+use crate::common::create_empty_permission_profile;
+use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::{
-	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
-};
-use lib_core::model::user::{User, UserBmc, UserForUpdate};
+use lib_core::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER};
 use serde_json::json;
 use serial_test::serial;
-use time::{Duration, OffsetDateTime};
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -137,8 +128,9 @@ async fn test_sponsor_admin_can_hide_and_restore_blind_user() -> Result<()> {
 	Ok(())
 }
 
+#[serial]
 #[tokio::test]
-async fn test_admin_can_update_user() -> Result<()> {
+async fn test_admin_update_user_allows_plain_user_role() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -146,7 +138,7 @@ async fn test_admin_can_update_user() -> Result<()> {
 	let app = web_server::app(mm);
 	let body = json!({
 		"data": {
-			"active": false
+			"role": ROLE_USER
 		}
 	});
 	let req = Request::builder()
@@ -156,62 +148,11 @@ async fn test_admin_can_update_user() -> Result<()> {
 		.header("content-type", "application/json")
 		.body(Body::from(body.to_string()))?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::OK);
-	Ok(())
-}
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-#[tokio::test]
-async fn test_admin_user_update_rejects_blank_name_and_clears_start_date(
-) -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let blank_name = Request::builder()
-		.method("PUT")
-		.uri(format!("/api/users/{}", seed.viewer.id))
-		.header("cookie", cookie.as_str())
-		.header("content-type", "application/json")
-		.body(Body::from(
-			json!({ "data": { "username": "   " } }).to_string(),
-		))?;
-	assert_eq!(
-		app.clone().oneshot(blank_name).await?.status(),
-		StatusCode::BAD_REQUEST
-	);
-
-	let set_date = Request::builder()
-		.method("PUT")
-		.uri(format!("/api/users/{}", seed.viewer.id))
-		.header("cookie", cookie.as_str())
-		.header("content-type", "application/json")
-		.body(Body::from(
-			json!({ "data": { "access_start_at": "2026-03-02T00:00:00Z" } })
-				.to_string(),
-		))?;
-	assert_eq!(
-		app.clone().oneshot(set_date).await?.status(),
-		StatusCode::OK
-	);
-
-	let clear_date = Request::builder()
-		.method("PUT")
-		.uri(format!("/api/users/{}", seed.viewer.id))
-		.header("cookie", cookie.as_str())
-		.header("content-type", "application/json")
-		.body(Body::from(
-			json!({ "data": { "access_start_at": null } }).to_string(),
-		))?;
-	let response = app.oneshot(clear_date).await?;
-	assert_eq!(response.status(), StatusCode::OK);
-	let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
-	let value: serde_json::Value = serde_json::from_slice(&body)?;
-	assert!(
-		value["data"]["scope"]["accessStartAt"].is_null(),
-		"{value:?}"
-	);
+	assert_eq!(status, StatusCode::OK, "{json:?}");
 	Ok(())
 }
 
@@ -329,79 +270,5 @@ async fn test_update_user_rejects_sponsor_admin_role_for_wrong_org_type(
 		.body(Body::from(body.to_string()))?;
 	let res = app.oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::FORBIDDEN);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_update_user_rejects_overlong_username_and_email() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-
-	for (payload, expected_detail) in [
-		(
-			json!({ "data": { "username": "U".repeat(129) } }),
-			"username must be 128 characters or fewer",
-		),
-		(
-			json!({ "data": { "email": format!("{}@example.com", "e".repeat(244)) } }),
-			"email must be 255 characters or fewer",
-		),
-	] {
-		let req = Request::builder()
-			.method("PUT")
-			.uri(format!("/api/users/{}", seed.viewer.id))
-			.header("cookie", cookie_header(&token.to_string()))
-			.header("content-type", "application/json")
-			.body(Body::from(payload.to_string()))?;
-		let res = app.clone().oneshot(req).await?;
-		assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-		let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
-		let value: serde_json::Value = serde_json::from_slice(&bytes)?;
-		assert_eq!(value["error"]["data"]["detail"], expected_detail);
-	}
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_expired_user_is_soft_deactivated() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_ctx = Ctx::new(
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO.to_string(),
-	)?;
-	UserBmc::update(
-		&admin_ctx,
-		&mm,
-		seed.viewer.id,
-		UserForUpdate {
-			organization_id: None,
-			email: None,
-			username: None,
-			role: None,
-			comments: None,
-			other_information: None,
-			access_start_at: None,
-			access_end_at: Some(OffsetDateTime::now_utc() - Duration::seconds(1)),
-			access_sender_ids: None,
-			access_product_ids: None,
-			access_study_ids: None,
-			access_blind_allowed: None,
-			active_sender_identifier: None,
-			active: Some(true),
-			last_login_at: None,
-		},
-	)
-	.await?;
-
-	assert!(UserBmc::deactivate_expired(&Ctx::root_ctx(), &mm).await? >= 1);
-	let user: User = UserBmc::get(&admin_ctx, &mm, seed.viewer.id).await?;
-	assert!(!user.active);
 	Ok(())
 }

@@ -65,3 +65,36 @@ async fn test_audit_chain_preserves_id_order_with_waiting_writer() -> Result<()>
 	);
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn audit_jsonb_comparison_preserves_native_semantics() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let (semantics_match,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT bool_and(actual IS NOT DISTINCT FROM expected)
+				FROM (VALUES
+					(audit_jsonb_is_distinct(NULL::jsonb, NULL::jsonb), false),
+					(audit_jsonb_is_distinct(NULL::jsonb, 'null'::jsonb), true),
+					(audit_jsonb_is_distinct('null'::jsonb, 'null'::jsonb), false),
+					(audit_jsonb_is_distinct('1'::jsonb, '1.0'::jsonb), false),
+					(audit_jsonb_is_distinct('{"a":1,"b":2}'::jsonb, '{"b":2,"a":1}'::jsonb), false),
+					(audit_jsonb_is_distinct('[1,2]'::jsonb, '[2,1]'::jsonb), true),
+					(audit_jsonb_is_distinct('[1,1]'::jsonb, '[1]'::jsonb), true),
+					(audit_jsonb_is_distinct('{}'::jsonb -> 'missing', 'null'::jsonb), true),
+					(audit_jsonb_is_distinct('{"a":{"b":"가"}}'::jsonb, '{"a":{"b":"나"}}'::jsonb), true),
+					(audit_jsonb_is_distinct('{}'::jsonb, '[]'::jsonb), true),
+					(pg_catalog.jsonb_hash_extended('{}'::jsonb, 0) =
+					 pg_catalog.jsonb_hash_extended('[]'::jsonb, 0), true)
+				) AS checks(actual, expected)
+				"#,
+			),
+		)
+		.await?;
+	assert!(semantics_match, "guard changed native JSONB semantics");
+
+	Ok(())
+}
