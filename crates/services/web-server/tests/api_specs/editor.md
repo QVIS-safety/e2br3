@@ -102,7 +102,7 @@ N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 
 | RP·DM·SI·NR·DG soft 자식 16종 | 기존 16종 명시 복원에 CI 3종을 더해 19종의 삭제 필드 감사 확인. parentInfo는 배열이 아닌 singleton | [공통 관계 검사](../api_editor/relations.rs)와 페이지별 `_rows.rs`: 삭제 old/new·actor·org·사유·UPDATE action·changed_fields, no-op 거짓 전환 없음 |
 | CI sourceDocuments | 물리 DELETE, 동일 ID 삭제/수정/false 복원 재호출 404 | [documents](../api_editor/relations/documents.rs): 정상 DELETE 감사 old record·actor/org/reason, 거절 후 감사 불변 |
 | DG relatedness와 assessment | relatedness는 soft 삭제·명시 복원, assessment `_deleteAssessment`는 물리 삭제 및 자식 연결 제거 | [relatedness](../api_editor/relations/relatedness.rs): 반복 삭제·일반 재저장·복원 감사와 별도 부모 DELETE 감사, 권한/조직/잠금 거절 |
-| DG FDA device와 code 3종 | device 배열은 전체 replacement; 포함된 code 그룹의 생략도 빈 목록으로 해석. 제거된 code ID 재사용은 400, 제거된 device ID 재사용은 404. 해당 Editor 요청은 자동 복원하지 않음 | [device_children](../api_editor/relations/device_children.rs): 그룹별 삭제·재전송·상세 GET·형제 보존·삭제 감사·stale ID 거절 후 불변 |
+| DG FDA device와 code 3종 | device 배열은 전체 replacement; 포함된 code 그룹의 생략도 빈 목록으로 해석. 제외된 행은 DB soft delete로 ID가 남음. 제거된 code ID 재사용은 400, 제거된 device ID 재사용은 404. Editor replacement는 복원하지 않으며, 별도 Legacy restore는 활성 부모·소속 조건 아래 같은 ID 복원 | [device_children](../api_editor/relations/device_children.rs): 그룹별 삭제·재전송·상세 GET·형제 보존·`deleted` 전환 UPDATE 감사·stale ID 거절 후 불변 |
 | DM deathInfo·raceCodes | deathInfo는 저장/clear용 singleton이고 Editor에서 `deleted` lifecycle이 없다. raceCodes는 값 배열 교체 | [dm_rows](../api_editor/relations/dm_rows.rs)의 자원별 변경 거절; 정상 필드 저장/clear/감사는 scalar 계약 |
 | LR·DH·AE·LB·DG 바깥 행 | PATCH 복원과 별도 POST restore 유무, 반복 DELETE status를 구분 | [공통 관계 검사](../api_editor/relations.rs): 저장/삭제/복원/생성 요청별 viewer·조직·잠금, fresh GET·감사 불변 |
 

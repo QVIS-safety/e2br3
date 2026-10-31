@@ -16,6 +16,8 @@ Case·Presave 범위의 등록 DELETE 51개와 관련 mutation 184개를 색인�
 
 ## 요청 종류별 상태 계약
 
+삭제 분류는 최종 DB 동작을 기준으로 한다. [soft delete](../../../../libs/lib-core/src/model/base/base_uuid.rs)는 `UPDATE deleted=true`로 행과 ID를 남기고 UPDATE 감사를 기록한다. 같은 파일의 hard delete는 SQL DELETE로 행을 제거하고 DELETE 감사를 기록한다. HTTP DELETE라는 method나 Editor에서 복원을 지원하지 않는다는 사실만으로 hard delete로 분류하지 않는다.
+
 | 대상 | 삭제 요청 | 재저장·반복 요청 | 복원 |
 |---|---|---|---|
 | LR·DH 바깥 행 | `DELETE /editor/pages/{page}/rows/{id}` → 204 | 두 번째 DELETE도 204. 상세 GET은 `deleted:true`, 목록은 제외. ID가 있는 일반 PATCH는 숨김 유지 | PATCH의 해당 owner에 `id, deleted:false` → 200. 같은 ID·개수 유지 |
@@ -24,13 +26,15 @@ Case·Presave 범위의 등록 DELETE 51개와 관련 mutation 184개를 색인�
 | DM parentInfo | singleton owner의 `id, deleted:true` → 200 | 부모 projection에서 제외 | 같은 ID로 복원하고 병력·과거약물 자식의 ID·개수 보존 |
 | CI sourceDocuments | 기존 ID와 `deleted:true` PATCH → 200, 실제 행 제거 | 같은 ID 삭제·일반 수정·`deleted:false` 재전송 → 404, 재생성 없음 | hard delete이므로 복원 계약 없음 |
 | DG assessment | `_deleteAssessment`로 부모와 연결 제거 | 삭제된 assessment ID 또는 하위 relatedness ID 재사용은 거절 | assessment는 hard delete. relatedness 자체 soft delete/복원과 구분 |
-| DG fdaDevices 및 code 배열 | `fdaDevices` 전체 배열에서 항목 제외 또는 `[]` | 전체 치환 계약. 세 code 배열 각각 clear×2, device clear×2와 생략, 같은 ID·형제 보존·삭제 감사/no-op 확인 | Editor의 제거된 code ID 재사용 400, device ID 재사용 404. Legacy의 명시 restore API와 구분 |
+| DG fdaDevices 및 code 배열 | `fdaDevices` 전체 배열에서 항목 제외 또는 `[]` → **DB soft delete** | 전체 치환 계약이며 행과 ID는 DB에 남음. 세 code 배열 각각 clear×2, device clear×2와 생략, 같은 ID·형제 보존·`deleted` 전환 UPDATE 감사/no-op 확인 | Editor의 제거된 code ID 재사용 400, device ID 재사용 404. Editor replacement는 복원을 지원하지 않지만 Legacy의 명시 restore API는 활성 부모·소속 조건 아래 같은 ID를 복원 |
 | RE reviewReceivers | Case PUT의 `review_receivers_json` 배열에서 항목 제외 또는 `[]` | 2행→1행→같은 1행→0행→같은 0행 후 Case GET·shell GET의 배열 완전 일치, JSON old/new 감사와 no-op | UUID 행 복원 개념 없음 |
 | Presave 부모 6종 | sender/product/receiver/reporter/study/narrative DELETE → 204 | 두 번째 DELETE도 204, GET에서 같은 ID·deleted 확인 | 각 endpoint의 DTO 형태로 PATCH `deleted:false` → 200, 반복 PATCH·GET/list의 ID·개수 확인 |
 | Presave hard 자식 | product substance·receiver consignee DELETE 또는 receiver route graph 삭제 | 이전 ID의 GET/DELETE 또는 graph 재사용 거절. 실패 graph의 다른 변경도 rollback | 새 생성은 새 ID. soft restore로 취급하지 않음 |
 | Presave study 자식 4종 | registration/product/reporter/FDA IND의 graph PUT `id, deleted:true` | graph GET에 삭제 상태를 포함. 삭제 flag 생략 저장은 삭제 상태 유지 | `deleted:false` 복원 2회 후 매회 GET·같은 ID/count 확인, 이후 재삭제 |
 
 표에서 합친 자원도 개별 evidence 범위는 행렬을 따른다. CI soft 3종의 삭제/복원/재호출과 자원별 viewer·조직·잠금 거절 검사를 보강했다. 부모 전체 삭제/복원·cascade·동시성까지 한 번에 결합한 축은 일부 검사 상태를 유지한다. 일반 POST에 ID가 없으면 신규 행 생성이므로 같은 POST의 멱등성을 약속하지 않는다. HTTP 응답 유실 후 신규 POST 재전송, 동시 저장 충돌은 이번 소스 검사의 범위 밖이다.
+
+Legacy Case 38자원은 soft 27개·hard 10개·query-keyed notation 물리 clear 1개로 구분한다. Presave HTTP 15자원은 soft 12개(부모6·자식6)·hard 자식3개다. Presave 부모 HTTP DELETE는 lifecycle `archive`를 호출하며, 내부 BMC의 별도 `delete`/`hard_delete` 물리 삭제 경로와 다르다. RE 수신자·raceCodes 같은 값 배열의 clear는 별도 자식 행 DELETE/복원으로 계산하지 않는다.
 
 ## 기준 소스에 반영된 저장 계약
 

@@ -14,6 +14,8 @@ parent 단일 행과 graph 생성 본문은 `{"data":{"rows":{...}}}`다. PATCH�
 
 성공 응답은 `{"data":...}`다. 생성은 201, 조회·수정은 200, DELETE는 본문 없는 204다. parent list는 배열이며 sender list만 details graph를 반환한다. receiver/product/study list는 parent row, reporter/narrative는 `rows` wrapper를 반환한다. details graph는 camelCase row를 반환한다.
 
+부모6종의 HTTP DELETE는 `PresaveLifecycleService::archive`를 호출해 `UPDATE deleted=true`를 수행한다. 내부 BMC의 `delete`와 lifecycle `hard_delete`는 SQL DELETE 경로이므로 HTTP 계약의 근거로 혼용하지 않는다. 자식은 soft 6종(sender gateway/responsible person·study product/registration/reporter/FDA IND), hard 3종(product active substance·receiver consignee/route)으로 구분한다.
+
 <a id="sender"></a>
 
 ## Sender
