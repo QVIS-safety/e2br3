@@ -16,7 +16,7 @@ class ContractTestResultsTests(unittest.TestCase):
             {'identity': 'RE|ICH|receiver|reviewReceivers[].receiver', 'page': 'RE',
              'code': 'receiver', 'authority': 'ICH', 'frontendPath': 'reviewReceivers[].receiver',
              'contractMetadata': None, 'automatedTests': {
-                 'backend': [{'file': 'tests/api/re.rs', 'test': 'case_contract_web::saves_receiver'}],
+                 'backend': [{'file': 'tests/api_cases/re.rs', 'test': 'case_contract_web::saves_receiver'}],
                  'frontend': [{'file': '__tests__/review.test.tsx', 'test': 'saves receiver'}]}},
         ]}
         self.log = ('running 2 tests\n'
@@ -86,7 +86,7 @@ class ContractTestResultsTests(unittest.TestCase):
         for fields in [[], self.inventory['fields'] * 2]:
             with self.assertRaises(ValueError):
                 expected_tests({'fields': fields}, 'backend')
-        for references in [[], [{'file': 'tests/api/re.rs', 'test': 'saves_receiver'}]]:
+        for references in [[], [{'file': 'tests/api_cases/re.rs', 'test': 'saves_receiver'}]]:
             inventory = copy.deepcopy(self.inventory)
             inventory['fields'][1]['automatedTests']['backend'] = references
             with self.assertRaises(ValueError):
@@ -98,6 +98,30 @@ class ContractTestResultsTests(unittest.TestCase):
         self.inventory['fields'].append(field)
         self.assertEqual(2, check_backend_results(self.inventory, self.log))
         self.assertEqual(3, check_frontend_results(self.inventory, self.report, self.frontend_root))
+
+    def test_selected_targets_require_all_of_their_contracts_without_unrelated_tests(self):
+        for targets, expected_name in [({'api_editor'}, 'case_editor_contract_web::ci::c_1_3'),
+                                       ({'api_cases'}, 'case_contract_web::saves_receiver')]:
+            expected = expected_tests(self.inventory, 'backend', targets)
+            self.assertEqual(expected, {expected_name})
+            log = f'test {expected_name} ... ok\ntest result: ok. 1 passed; 0 failed\n'
+            self.assertEqual(1, check_backend_results(self.inventory, log, targets))
+            for invalid in ('', log.replace('... ok', '... ignored'), log + log):
+                with self.assertRaises(ValueError):
+                    check_backend_results(self.inventory, invalid, targets)
+        self.assertEqual(2, check_backend_results(self.inventory, self.log, {'api_editor', 'api_cases'}))
+        with self.assertRaises(ValueError):
+            check_backend_results(self.inventory, self.log, {'api_presave'})
+
+    def test_selected_targets_keep_each_explicit_reference_in_its_own_target(self):
+        inventory = copy.deepcopy(self.inventory)
+        inventory['fields'][1]['automatedTests']['backend'].append({
+            'file': 'crates/services/web-server/tests/api_import/import_contract_web.rs',
+            'test': 'import_contract_web::persists_product',
+        })
+        self.assertEqual({'import_contract_web::persists_product'},
+                         expected_tests(inventory, 'backend', {'api_import'}))
+        self.assertEqual(3, len(expected_tests(inventory, 'backend')))
 
 
 if __name__ == '__main__':

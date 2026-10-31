@@ -1866,7 +1866,7 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api/case_editor_contract/dg.rs",
+          "file": "crates/services/web-server/tests/api_editor/dg.rs",
           "test": "case_editor_contract_web::dg::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment"
         }
       ]
@@ -2653,11 +2653,11 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api/scope_visibility_web.rs",
-          "test": "scope_visibility_web::test_case_editor_can_create_assigned_dg_but_denies_unassigned_product"
+          "file": "crates/services/web-server/tests/api_cases/scope/editor.rs",
+          "test": "scope_visibility_web::editor::test_case_editor_can_create_assigned_dg_but_denies_unassigned_product"
         },
         {
-          "file": "crates/services/web-server/tests/api/import_contract_web.rs",
+          "file": "crates/services/web-server/tests/api_import/import_contract_web.rs",
           "test": "import_contract_web::test_import_selected_product_links_sender_without_overwriting_xml_sender"
         }
       ]

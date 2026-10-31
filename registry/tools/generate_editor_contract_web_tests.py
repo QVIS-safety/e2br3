@@ -11,7 +11,7 @@ ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = (
     REPO_ROOT
-    / "crates/services/web-server/tests/api/case_editor_contract/generated"
+    / "crates/services/web-server/tests/api_editor/generated"
 )
 
 

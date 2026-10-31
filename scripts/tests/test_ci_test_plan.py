@@ -61,16 +61,19 @@ class TestPlanTests(unittest.TestCase):
             for paths in ([root + 'tests/common/mod.rs'],
                           [root + 'tests/common/mod.rs', root + 'tests/unknown.rs']):
                 self.assertEqual(self.plan(*paths)['selections'], {package: []})
-        self.assertEqual(self.plan('crates/services/web-server/tests/validation/validation_common.rs')['selections'],
-                         {'web-server': ['api']})
+        self.assertEqual(self.plan('crates/services/web-server/tests/api_cases/validation_common.rs')['selections'],
+                         {'web-server': ['api_cases']})
 
     def test_every_cargo_target_and_nested_family_resolves(self):
         for package, data in self.workspace.items():
             for target, path in data['targets'].items():
                 self.assertEqual(target_for(package, path, self.workspace), target)
         cases = {
-            'web-server': {'api/case_contract/support.rs': 'api', 'authz/rbac_users/helpers.rs': 'authz',
-                           'api/terminology_web.rs': 'smoke', 'xml/roundtrip_profiles_web.rs': 'smoke'},
+            'web-server': {'api_cases/contract/support.rs': 'api_cases', 'authz/rbac_users/helpers.rs': 'authz',
+                           'api_terminology/search.rs': 'api_terminology', 'xml/roundtrip_profiles_web.rs': 'xml',
+                           'api_editor/support.rs': 'api_editor', 'api_presave/helpers.rs': 'api_presave',
+                           'api_submission/dispatch.rs': 'api_submission', 'api_import/import_history_web.rs': 'api_import',
+                           'api_administration/role_admin/helpers.rs': 'api_administration'},
             'lib-core': {'authorization/snapshot.rs': 'authorization', 'presave/audit.rs': 'section_presave',
                          'ui/authorization/permit_cannot_escape_transaction.stderr': 'authorization_kernel',
                          'snapshots/authorization_catalog.sha256': 'authorization_contract_snapshot',
@@ -82,9 +85,9 @@ class TestPlanTests(unittest.TestCase):
                 self.assertEqual(target_for(package, 'tests/' + path, self.workspace), target)
 
     def test_api_execution_retains_contract_and_registry_gates(self):
-        for path in ('api.rs', 'api/case_contract/save.rs'):
+        for path in ('api_cases.rs', 'api_cases/contract/save.rs'):
             plan = self.plan('crates/services/web-server/tests/' + path)
-            self.assertEqual(plan['selections'], {'web-server': ['api']})
+            self.assertEqual(plan['selections'], {'web-server': ['api_cases']})
             self.assertTrue(plan['registry'])
             self.assertTrue(plan['backend_contracts'])
         plan = self.plan('crates/services/web-server/tests/authz/authorization_snapshot.rs')
@@ -98,6 +101,27 @@ class TestPlanTests(unittest.TestCase):
             plan = self.plan(*ordered)
             self.assertEqual(plan['selections']['lib-core'], [])
             self.assertIn('web-server', plan['selections'])
+
+    def test_api_families_are_independent_and_only_contract_owners_require_inventory(self):
+        for target in ('api_cases', 'api_editor', 'api_import', 'api_presave',
+                       'api_submission', 'api_administration', 'api_terminology', 'xml'):
+            plan = self.plan(f'crates/services/web-server/tests/{target}/support.rs')
+            self.assertEqual(plan['selections'], {'web-server': [target]})
+            required = target in ('api_cases', 'api_editor', 'api_import')
+            self.assertEqual(plan['backend_contracts'], required)
+            self.assertEqual(plan['registry'], required)
+        plan = self.plan('crates/libs/lib-core/tests/database/editor_storage.rs')
+        self.assertEqual(plan['selections'], {'lib-core': ['database']})
+        self.assertFalse(plan['registry'])
+
+    def test_every_api_and_xml_file_has_an_execution_owner(self):
+        tests = ROOT / 'crates/services/web-server/tests'
+        for family in (*tests.glob('api_*'), tests / 'xml'):
+            if not family.is_dir():
+                continue
+            for source in family.rglob('*.rs'):
+                self.assertEqual(target_for('web-server', 'tests/' + source.relative_to(tests).as_posix(),
+                                            self.workspace), family.name, str(source))
 
     def test_removed_target_runs_remaining_crate_tests(self):
         workspace = {name: {**data, 'targets': dict(data['targets'])} for name, data in self.workspace.items()}
@@ -135,11 +159,11 @@ class TestPlanTests(unittest.TestCase):
             self.assertEqual(plan['full_reasons'], [path])
 
     def test_commands_are_per_crate_locked_and_serial_with_separate_rule_gate(self):
-        selection = {'web-server': ['api', 'authz'], 'lib-core': ['authorization'], 'validator': []}
+        selection = {'web-server': ['api_cases', 'authz'], 'lib-core': ['authorization'], 'validator': []}
         self.assertEqual(commands_for(selection, self.workspace), [
             ['scripts/test-isolated-db.sh', '--locked', '-p', 'lib-core', '-j1', '--test', 'authorization',
              '--', '--test-threads=1', '--color', 'never'],
-            ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--test', 'api', '--test', 'authz',
+            ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--test', 'api_cases', '--test', 'authz',
              '--', '--test-threads=1', '--color', 'never'],
         ])
         for kind in ('fmt', 'clippy'):
@@ -148,7 +172,7 @@ class TestPlanTests(unittest.TestCase):
             self.assertNotIn('--workspace', command)
             self.assertNotIn('--all', command)
         for invalid in ({}, [], {'$(touch bad)': []}, {'web-server': ['missing']},
-                        {'web-server': ['api', 'api']}, {'web-server': [None]}, {'web-server': 'api'}):
+                        {'web-server': ['api_cases', 'api_cases']}, {'web-server': [None]}, {'web-server': 'api_cases'}):
             with self.assertRaises(ValueError):
                 commands_for(invalid, self.workspace)
 

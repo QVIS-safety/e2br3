@@ -54,7 +54,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         repo = Path(__file__).resolve().parents[2]
         root = (
             repo
-            / "crates/services/web-server/tests/api/case_editor_contract_web.rs"
+            / "crates/services/web-server/tests/api_editor/mod.rs"
         ).read_text(encoding="utf-8")
         self.assertNotIn("async fn", root)
         self.assertNotIn("#[tokio::test]", root)
@@ -68,7 +68,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         generated_count = sum(
             (
                 repo
-                / "crates/services/web-server/tests/api/case_editor_contract/generated"
+                / "crates/services/web-server/tests/api_editor/generated"
                 / f"{page_id.lower()}_fields.rs"
             )
             .read_text(encoding="utf-8")

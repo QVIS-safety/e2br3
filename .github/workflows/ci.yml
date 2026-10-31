@@ -290,12 +290,15 @@ jobs:
           set -o pipefail
           python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
 
-      - name: Require complete backend contract execution
+      - name: Require selected backend contract execution
         if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
         run: |
           python3 registry/tools/check_contract_test_results.py \
             --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
-            --backend-log "$RUNNER_TEMP/workspace-tests.log"
+            --backend-log "$RUNNER_TEMP/workspace-tests.log" \
+            --backend-selections "$SELECTED_TESTS"
 
   deploy-dev:
     name: Publish Dev Backend Image

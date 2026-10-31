@@ -137,7 +137,7 @@ payload/explicit tests plus each verified invalid-input case. Missing, skipped,
 failed, duplicate, or interrupted results fail the gate. Shared explicit tests
 are required once. The frontend registry job shares its checked canonical
 inventory with the API job, so both gates use the same field set. Dev image
-publication requires the API job to pass. These checks do not turn a blocked
+publication requires the selected test jobs to pass. These checks do not turn a blocked
 generic contract or historical UI proof into a new UI passing result.
 
 ```sh
@@ -148,13 +148,13 @@ python3 registry/tools/check_contract_test_results.py \
   --frontend-results /tmp/editor-contract-tests.json
 ```
 
-Backend page tests live in `tests/api/case_editor_contract/{page}.rs`, with
+Backend page tests live in `tests/api_editor/{page}.rs`, with
 generated field declarations under `generated/`. `support.rs` owns shared
 fixtures and generic contract verification; DM/AE-specific checks stay with
 their page tests. Frontend payload cases share one `it.each` harness, and
 invalid-input cases also report individually by page, authority, code and path.
 
-Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
+Case API tests live in `tests/api_cases/contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
 helpers stay in `support.rs`; feature-specific setup stays with its tests.
 
@@ -170,9 +170,39 @@ contracts, validator and their consumers. Unknown shared inputs select every
 crate and are listed as `full_reasons` in the Test Scope job summary.
 Formatting and Clippy use the selected crates. Validator retains its dedicated
 rule-binding gate. Each other selected crate runs sequentially against its own
-isolated PostgreSQL database. When web-server's API target is selected, the
-registry/frontend checks and complete canonical backend execution gate remain
-mandatory before publishing. A targeted run is not a full workspace validation.
+isolated PostgreSQL database. `api_editor`, `api_cases`, and `api_import` own
+canonical backend assertions. Selecting any of them requires registry/frontend
+inventory checks and passing results for every canonical assertion in the
+selected targets. A whole-crate run requires every canonical assertion. The
+execution checker receives the same target selection as the test runner; a
+missing, ignored, failed, or duplicate required result still fails publication.
+A targeted run is not a full workspace validation.
+
+Web integration targets follow their directory names:
+
+| Cargo target | Responsibility |
+| --- | --- |
+| `api_cases` | Case lifecycle, validation, workflow, scopes, intake and child resources |
+| `api_editor` | Editor page save/readback, clear, identity and audit contracts |
+| `api_presave` | Presave HTTP CRUD and parent/child graph contracts |
+| `api_submission` | Dispatch, headers, history, idempotency, callbacks and reconcile |
+| `api_terminology` | Dictionary search/import/release and permission contracts |
+| `api_administration` | Settings, roles, memberships, branding and audit HTTP behavior |
+| `api_import` | XML upload settings, product linkage and import history HTTP behavior |
+| `xml` | XML import/export, schema validation and section roundtrips |
+| `authz` | Authentication, authorization and RLS through HTTP |
+
+Each target has `tests/<target>.rs` and a matching `tests/<target>/` directory.
+Its `support.rs` files contain shared fixtures/helpers, not test cases.
+Test-only changes under a directory select that target, including its helpers.
+`tests/common/` is shared by targets and selects the whole web crate. Keep
+canonical test references in the registry in sync when moving an assertion.
+
+Pure SQL schema/migration and transaction tests live in
+`lib-core/tests/database/` and run with `--test database`; they do not require
+web-server. The core `--lib` target no longer contains the PostgreSQL transaction
+tests. Web-private reconcile-lock and bootstrap checks remain with their owning
+implementation; web `--lib`/`--bin` execution still requires the isolated DB runner.
 
 Model authorization storage, revisions, isolation, audit and snapshot tests live
 in `lib-core/tests/authorization/`, under the `authorization` Cargo target.

@@ -11,12 +11,12 @@ from ci_test_scope import changed_paths, event_revisions
 
 # Nested modules whose directory name differs from their Cargo integration target.
 FAMILIES = {
-    'web-server': {'api/terminology_web.rs': 'smoke', 'api/': 'api', 'authz/': 'authz',
-                   'xml/': 'smoke', 'validation/': 'api'},
     'lib-core': {'ui/authorization/': 'authorization_kernel',
                  'snapshots/authorization_catalog.sha256': 'authorization_contract_snapshot',
                  'presave/': 'section_presave'},
 }
+
+CONTRACT_TARGETS = {'api_cases', 'api_editor', 'api_import'}
 
 
 def load_workspace(root: Path) -> dict:
@@ -94,7 +94,8 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     affected = set(workspace) if full_reasons else consumers(production, workspace)
     selected.update({name: [] for name in affected})
     selected = {name: sorted(targets) for name, targets in sorted(selected.items())}
-    backend_contracts = 'web-server' in selected and (not selected['web-server'] or 'api' in selected['web-server'])
+    backend_contracts = 'web-server' in selected and (
+        not selected['web-server'] or bool(CONTRACT_TARGETS.intersection(selected['web-server'])))
     return {
         'selections': selected,
         'validator': 'validator' in selected,

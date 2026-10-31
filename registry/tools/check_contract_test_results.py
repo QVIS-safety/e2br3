@@ -10,7 +10,7 @@ import re
 from generate_editor_contract_web_tests import test_name
 
 
-def expected_tests(inventory: dict, side: str) -> set:
+def expected_tests(inventory: dict, side: str, backend_targets: set[str] | None = None) -> set:
     fields = inventory['fields']
     identities = [field['identity'] for field in fields]
     if not fields or len(identities) != len(set(identities)):
@@ -25,11 +25,18 @@ def expected_tests(inventory: dict, side: str) -> set:
                 if side == 'backend':
                     if not re.fullmatch(r'\w+(?:::\w+)+', reference['test']):
                         raise ValueError('backend test references require the full Rust module path')
+                    if backend_targets is not None:
+                        parts = Path(reference['file']).parts
+                        if 'tests' not in parts or parts.index('tests') + 1 >= len(parts):
+                            raise ValueError('backend test references require a tests/<target>/ path')
+                        if parts[parts.index('tests') + 1] not in backend_targets:
+                            continue
                     expected.add(reference['test'])
                 else:
                     expected.add((reference['file'], reference['test']))
         elif side == 'backend':
-            expected.add(f'case_editor_contract_web::{field["page"].lower()}::{test_name(field["code"])}')
+            if backend_targets is None or 'api_editor' in backend_targets:
+                expected.add(f'case_editor_contract_web::{field["page"].lower()}::{test_name(field["code"])}')
         else:
             expected.add(('__tests__/case-save/editor-field-contract.generated.test.ts',
                           f'{field["page"]} {field["code"]} emits canonical rows payload'))
@@ -38,6 +45,8 @@ def expected_tests(inventory: dict, side: str) -> set:
             expected.add(('__tests__/case-editor/editor-contract-snapshot.test.ts',
                           f'{field["page"]} {field["authority"]} {field["code"]} '
                           f'{field["frontendPath"]} rejects invalid input'))
+    if side == 'backend' and not expected:
+        raise ValueError('selected backend targets contain no canonical contract tests')
     return expected
 
 
@@ -50,8 +59,8 @@ def require_passed(expected: set, results: dict, passed: str) -> None:
                          f'failed/skipped/duplicate={invalid}')
 
 
-def check_backend_results(inventory: dict, log: str) -> int:
-    expected = expected_tests(inventory, 'backend')
+def check_backend_results(inventory: dict, log: str, backend_targets: set[str] | None = None) -> int:
+    expected = expected_tests(inventory, 'backend', backend_targets)
     results, pending = {}, {}
     for line in log.splitlines():
         match = re.match(r'^test (\S+) \.\.\. (\S+)', line)
@@ -89,6 +98,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inventory', type=Path, required=True)
     parser.add_argument('--backend-log', type=Path)
+    parser.add_argument('--backend-selections', help='CI package-to-targets JSON; an empty target list means the whole crate')
     parser.add_argument('--frontend-results', type=Path)
     parser.add_argument('--frontend-root', type=Path)
     args = parser.parse_args()
@@ -96,10 +106,24 @@ def main() -> None:
         parser.error('provide --backend-log or --frontend-results')
     if args.frontend_results is not None and args.frontend_root is None:
         parser.error('--frontend-results requires --frontend-root')
+    if args.backend_selections is not None and args.backend_log is None:
+        parser.error('--backend-selections requires --backend-log')
+    backend_targets = None
+    if args.backend_selections is not None:
+        selections = json.loads(args.backend_selections)
+        if not isinstance(selections, dict) or 'web-server' not in selections:
+            raise ValueError('backend selections must include web-server')
+        targets = selections['web-server']
+        if (not isinstance(targets, list) or
+                any(not isinstance(target, str) or not re.fullmatch(r'\w+', target) for target in targets) or
+                len(targets) != len(set(targets))):
+            raise ValueError('backend selections must contain unique Cargo target names')
+        backend_targets = set(targets) if targets else None
     inventory = json.loads(args.inventory.read_text())
     result = {'canonicalFields': len(inventory['fields'])}
     if args.backend_log is not None:
-        result['backendTestsPassed'] = check_backend_results(inventory, args.backend_log.read_text())
+        result['backendTestsPassed'] = check_backend_results(inventory, args.backend_log.read_text(), backend_targets)
+        result['backendTargets'] = sorted(backend_targets) if backend_targets is not None else 'all'
     if args.frontend_results is not None:
         result['frontendTestsPassed'] = check_frontend_results(
             inventory, json.loads(args.frontend_results.read_text()), args.frontend_root)
