@@ -2,7 +2,7 @@ use crate::authorization_test_support::{
 	init_authorization_test_db, init_clean_bootstrap_authorization_test_db,
 	scalar_i64, scalar_string,
 };
-use crate::common::Result;
+use crate::Result;
 use lib_core::authorization::{
 	export_contract, policy_registry, AUTHORIZATION_CONTRACT_SCHEMA_VERSION,
 };

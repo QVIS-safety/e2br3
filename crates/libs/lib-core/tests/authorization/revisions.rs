@@ -2,7 +2,7 @@ use crate::authorization_test_support::{
 	apply_authorization_revision_migration, init_authorization_test_db,
 	init_clean_bootstrap_authorization_test_db, scalar_i64, AuthorizationTestDb,
 };
-use crate::common::Result;
+use crate::Result;
 use lib_core::authorization::policy_registry;
 use lib_core::model::authorization::{
 	AuthorizationMigrationService, RevisionRepository,

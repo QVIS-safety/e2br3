@@ -2,22 +2,12 @@ mod common;
 
 #[path = "authz/auth_mw_audit.rs"]
 mod auth_mw_audit;
-#[path = "authz/authorization_audit.rs"]
-mod authorization_audit;
-#[path = "authz/authorization_isolation.rs"]
-mod authorization_isolation;
 #[path = "authz/authorization_legacy_gate.rs"]
 mod authorization_legacy_gate;
-#[path = "authz/authorization_revisions.rs"]
-mod authorization_revisions;
 #[path = "authz/authorization_snapshot.rs"]
 mod authorization_snapshot;
 #[path = "authz/authorization_startup.rs"]
 mod authorization_startup;
-#[path = "authz/authorization_storage.rs"]
-mod authorization_storage;
-#[path = "authz/authorization_test_support.rs"]
-mod authorization_test_support;
 #[path = "authz/platform_admin_policy.rs"]
 mod platform_admin_policy;
 #[path = "authz/policy_kernel_characterization.rs"]

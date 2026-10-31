@@ -158,20 +158,28 @@ Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
 helpers stay in `support.rs`; feature-specific setup stays with its tests.
 
-CI first separates validator tests from the other backend suites by changed
-paths. Validator-only changes skip the registry/audit/database jobs; unrelated
-changes skip validator tests. Shared validator inputs run both. Formatting and
-workspace Clippy remain enabled. When backend suites are selected, `dev`/`main`
-pushes run the full remaining workspace and canonical backend execution check
-before publishing the backend image. PRs that change only
-known integration-test files run their complete Cargo test targets. Any API
-target run still requires all canonical field tests, including explicit RE/DG
-references. Documentation-only PRs skip the database test job; production,
-shared helpers, schema, registry, CI configuration and unknown paths require
-the full backend suite. Selected registry jobs include frontend contract checks.
-The selected scope appears in the Test Scope job summary. A targeted PR result
-does not stand for a full release validation. Test-only `authorization_kernel`
-changes include its compile-fail fixtures; full backend pushes run it too.
+CI uses the same complete diff selection for PRs and `dev`/`main` pushes.
+Production changes run the owning crate and its transitive consumers, using
+Cargo's workspace dependency metadata. For example, a web-server change runs
+web-server; a lib-core change also runs its consumers. Test-only edits run the
+owning integration target; shared test helpers run all tests in that crate.
+Renames include both old and new paths. Deleted targets select the remaining
+crate tests. Documentation-only changes skip Rust tests and lint jobs.
+DB changes select lib-core and its consumers; registry changes select input
+contracts, validator and their consumers. Unknown shared inputs select every
+crate and are listed as `full_reasons` in the Test Scope job summary.
+Formatting and Clippy use the selected crates. Validator retains its dedicated
+rule-binding gate. Each other selected crate runs sequentially against its own
+isolated PostgreSQL database. When web-server's API target is selected, the
+registry/frontend checks and complete canonical backend execution gate remain
+mandatory before publishing. A targeted run is not a full workspace validation.
+
+Model authorization storage, revisions, isolation, audit and snapshot tests live
+in `lib-core/tests/authorization/`, under the `authorization` Cargo target.
+HTTP authorization extraction and route behavior stay in web-server's `authz`
+target. Presave model tests live in `lib-core/tests/presave/`, grouped by schema,
+access, CRUD, validation, lifecycle, child rows and audit. They retain one
+`section_presave` target and share fixtures in its entrypoint.
 
 For a local preview (the base revision must exist):
 

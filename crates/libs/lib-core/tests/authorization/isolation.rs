@@ -2,7 +2,7 @@ use crate::authorization_test_support::{
 	apply_authorization_isolation_migration, init_authorization_test_db,
 	init_clean_bootstrap_authorization_test_db,
 };
-use crate::common::Result;
+use crate::Result;
 use serial_test::serial;
 use uuid::Uuid;
 

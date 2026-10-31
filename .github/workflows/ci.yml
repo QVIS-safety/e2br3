@@ -19,10 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      validator: ${{ steps.scope.outputs.validator }}
-      backend: ${{ steps.scope.outputs.backend }}
-      mode: ${{ steps.plan.outputs.mode }}
-      targets: ${{ steps.plan.outputs.targets }}
+      validator: ${{ steps.plan.outputs.validator }}
+      backend: ${{ steps.plan.outputs.backend }}
+      registry: ${{ steps.plan.outputs.registry }}
+      selections: ${{ steps.plan.outputs.selections }}
+      rust: ${{ steps.plan.outputs.rust }}
+      xml_assets: ${{ steps.plan.outputs.xml_assets }}
       backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
     steps:
       - uses: actions/checkout@v4
@@ -30,23 +32,12 @@ jobs:
           fetch-depth: 0
       - name: Verify test selection
         run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py
-      - name: Select validator and backend suites
-        id: scope
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/ci_test_scope.py | tee "$RUNNER_TEMP/test-scope.json"
-          cat "$RUNNER_TEMP/test-scope.json" >> "$GITHUB_STEP_SUMMARY"
-      - name: Select tests from the complete PR diff
+      - name: Select affected crates and test targets
         id: plan
         shell: bash
-        env:
-          CI_EVENT_NAME: ${{ github.event_name }}
-          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -o pipefail
-          python3 scripts/ci_test_plan.py plan --event "$CI_EVENT_NAME" \
-            --base "$CI_BASE_SHA" --head "$GITHUB_SHA" --github-output "$GITHUB_OUTPUT" \
+          python3 scripts/ci_test_plan.py plan --github-output "$GITHUB_OUTPUT" \
             | tee "$RUNNER_TEMP/test-plan.json"
           cat "$RUNNER_TEMP/test-plan.json" >> "$GITHUB_STEP_SUMMARY"
 
@@ -81,7 +72,7 @@ jobs:
   registry:
     name: E2BR3 Registry
     needs: [test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' }}
+    if: ${{ needs.test-plan.outputs.registry == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -158,6 +149,8 @@ jobs:
   # ============================================
   fmt:
     name: Rustfmt
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -169,13 +162,17 @@ jobs:
           components: rustfmt
 
       - name: Check formatting
-        run: cargo fmt --all --check
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+        run: python3 scripts/ci_test_plan.py run --kind fmt --selections "$SELECTED_TESTS"
 
   # ============================================
   # Job 2: Run Clippy linter
   # ============================================
   clippy:
     name: Clippy
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -183,6 +180,7 @@ jobs:
 
       # XML fixture-backed tests are compiled by --all-targets.
       - name: Checkout XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
@@ -192,6 +190,7 @@ jobs:
             docs/refs/instances
 
       - name: Prepare XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         run: |
           mkdir -p docs/exporter
           cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
@@ -209,7 +208,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxml2-dev pkg-config
 
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+        run: python3 scripts/ci_test_plan.py run --kind clippy --selections "$SELECTED_TESTS"
 
   # ============================================
   # Job 3: Run tests with PostgreSQL
@@ -217,7 +218,7 @@ jobs:
   test:
     name: Test
     needs: [registry, test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}
+    if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -242,6 +243,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download verified canonical inventory
+        if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
         uses: actions/download-artifact@v8
         with:
           name: canonical-editor-inventory
@@ -250,6 +252,7 @@ jobs:
       # XML fixtures and schemas were intentionally removed from the release
       # tree, but the validation suites still exercise those canonical assets.
       - name: Checkout XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
@@ -259,6 +262,7 @@ jobs:
             docs/refs/instances
 
       - name: Prepare XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         run: |
           mkdir -p docs/exporter
           cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
@@ -273,38 +277,9 @@ jobs:
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client libxml2-dev pkg-config
 
-      - name: Initialize database schema
+      - name: Run selected crate tests
         env:
-          PGPASSWORD: dev_only_pwd
-          APP_DB_USER: app_user
-        run: |
-          psql -h localhost -U "${APP_DB_USER}" -d app_db -v ON_ERROR_STOP=1 \
-            -v "app_db_user=${APP_DB_USER}" \
-            -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-          sh scripts/db/list_init_sql.sh db 1 |
-          while IFS= read -r f; do
-            psql -h localhost -U "${APP_DB_USER}" -d app_db -v ON_ERROR_STOP=1 \
-              -v "app_db_user=${APP_DB_USER}" -f "db/$f"
-          done
-
-      - name: Run lib-core tests
-        if: ${{ needs.test-plan.outputs.mode == 'full' }}
-        env:
-          # Skip local dev DB bootstrap; CI already initializes the schema
-          SKIP_DEV_INIT: "1"
-          # Database connection (matches the service above)
-          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
-          # Test-only keys (NOT for production)
-          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
-          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
-          SERVICE_TOKEN_DURATION_SEC: "1800"
-          SERVICE_WEB_FOLDER: "web-folder/"
-        run: scripts/test-isolated-db.sh -p lib-core -j1 -- --test-threads=1
-
-      - name: Run remaining workspace tests
-        if: ${{ needs.test-plan.outputs.mode == 'full' }}
-        env:
-          SKIP_DEV_INIT: "1"
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
           SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
           SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
@@ -313,21 +288,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1 --color never 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
-
-      - name: Run changed integration targets
-        if: ${{ needs.test-plan.outputs.mode == 'targeted' }}
-        env:
-          SELECTED_TESTS: ${{ needs.test-plan.outputs.targets }}
-          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
-          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
-          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
-          SERVICE_TOKEN_DURATION_SEC: "1800"
-          SERVICE_WEB_FOLDER: "web-folder/"
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/ci_test_plan.py run --targets "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
 
       - name: Require complete backend contract execution
         if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
@@ -341,12 +302,13 @@ jobs:
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && github.ref_name == 'dev' &&
           needs.test-plan.result == 'success' &&
-          (needs.test-plan.outputs.backend == 'false' || needs.test-plan.outputs.mode == 'full') &&
           needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
           ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
            (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
-          ((needs.test-plan.outputs.backend == 'true' && needs.registry.result == 'success' && needs.test.result == 'success') ||
-           (needs.test-plan.outputs.backend == 'false' && needs.registry.result == 'skipped' && needs.test.result == 'skipped')) }}
+          ((needs.test-plan.outputs.registry == 'true' && needs.registry.result == 'success') ||
+           (needs.test-plan.outputs.registry == 'false' && needs.registry.result == 'skipped')) &&
+          ((needs.test-plan.outputs.backend == 'true' && needs.test.result == 'success') ||
+           (needs.test-plan.outputs.backend == 'false' && needs.test.result == 'skipped')) }}
     needs: [test-plan, registry, fmt, clippy, validator, test]
     runs-on: ubuntu-latest
     timeout-minutes: 30

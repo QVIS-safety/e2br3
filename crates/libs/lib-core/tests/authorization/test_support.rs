@@ -1,4 +1,4 @@
-use crate::common::{init_test_env, Result};
+use crate::Result;
 use lib_core::authorization::policy_registry;
 use lib_core::model::authorization::AuthorizationMigrationService;
 use sqlx::postgres::PgPoolOptions;
@@ -159,9 +159,12 @@ pub async fn init_clean_bootstrap_authorization_test_db(
 }
 
 async fn new_isolated_database() -> Result<AuthorizationTestDb> {
-	init_test_env().await?;
-	let database_url = std::env::var("SERVICE_TEST_MIGRATION_DB_URL")
-		.or_else(|_| std::env::var("SERVICE_DB_URL"))?;
+	if std::env::var("E2BR3_TEST_DATABASE_NAME").is_err() {
+		return Err(
+			"authorization storage tests require scripts/test-isolated-db.sh".into(),
+		);
+	}
+	let database_url = std::env::var("SERVICE_MIGRATION_DB_URL")?;
 	let schema = format!("rbac_test_{}", Uuid::new_v4().simple());
 	let admin = PgPoolOptions::new()
 		.max_connections(1)

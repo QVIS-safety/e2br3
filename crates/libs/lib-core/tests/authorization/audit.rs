@@ -2,7 +2,7 @@ use crate::authorization_test_support::{
 	apply_authorization_isolation_migration, apply_authorization_revision_migration,
 	init_authorization_test_db,
 };
-use crate::common::Result;
+use crate::Result;
 use lib_core::authorization::{policy_registry, ActionId, DenialReason};
 use lib_core::model::authorization::{
 	AuthorizationAuditEvent, AuthorizationAuditRepository, SnapshotRepository,

@@ -2479,7 +2479,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: Prepare XML validation assets", workflow)
         self.assertLess(
             workflow.index("name: Prepare XML validation assets"),
-            workflow.index("name: Run remaining workspace tests"),
+            workflow.index("name: Run selected crate tests"),
         )
 
     def test_ci_serializes_workspace_tests_that_share_the_database(self):
@@ -2488,8 +2488,8 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1",
-            workflow,
+            "--test-threads=1",
+            (validate.ROOT.parent / "scripts/ci_test_plan.py").read_text(),
         )
 
     def test_ci_requires_api_tests_before_publishing_dev_image(self):
@@ -2515,7 +2515,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: canonical-editor-inventory", registry_job)
         self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
         self.assertIn("needs: [registry, test-plan]", test_job)
-        self.assertIn("if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}", test_job)
+        self.assertIn("if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}", test_job)
         self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
         self.assertIn("uses: actions/download-artifact@v8", test_job)
         self.assertIn("name: canonical-editor-inventory", test_job)
