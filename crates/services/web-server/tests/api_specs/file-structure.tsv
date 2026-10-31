@@ -127,7 +127,7 @@ crates/services/web-server/tests/api_presave/study_children_create_web.rs	web-se
 crates/services/web-server/tests/api_presave/study_web.rs	web-server::api_presave	HTTP 계약	Study registration/product/reporter graph 저장·삭제·잘못된 child 거절	751	5	0	0
 crates/services/web-server/tests/api_import.rs	web-server::api_import	target 등록	api_import Cargo integration target과 하위 모듈 연결	12	0	0	0
 crates/services/web-server/tests/api_import/import_contract_web.rs	web-server::api_import	HTTP 계약	XML upload filename·선택 product/sender 연결과 XML 값 보존	232	2	0	0
-crates/services/web-server/tests/api_import/import_history_web.rs	web-server::api_import	HTTP 계약	Import 이력 시각 형식과 오류 상세 text 다운로드	154	2	0	0
+crates/services/web-server/tests/api_import/import_history_web.rs	web-server::api_import	HTTP 계약	Import 이력 시각 형식과 오류 상세 text 다운로드	155	2	0	0
 crates/services/web-server/tests/api_import/import_settings_web.rs	web-server::api_import	HTTP 계약	Import C.1 날짜·default sender·product-linked sender 설정 적용	386	3	0	0
 crates/services/web-server/tests/api_import/support.rs	web-server::api_import	helper	실제 XML fixture 탐색·import multipart와 JSON/raw HTTP 준비	236	0	0	0
 crates/services/web-server/tests/api_import/validation_web.rs	web-server::api_import	HTTP 계약	XML validate의 valid/malformed/XSD-invalid report와 무저장	77	1	0	0
