@@ -53,6 +53,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 		&mm,
 		&[case_id],
 		&[RegulatoryAuthority::Fda],
+		validator::VALIDATOR_REVISION,
 	)
 	.await?;
 	assert!(cached.contains_key(&case_id));
@@ -69,6 +70,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 		&mm,
 		&[case_id],
 		&[RegulatoryAuthority::Fda],
+		validator::VALIDATOR_REVISION,
 	)
 	.await?;
 	assert!(

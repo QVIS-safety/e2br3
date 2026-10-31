@@ -1404,6 +1404,7 @@ async fn list_case_view_rows_authorized(
 		mm,
 		&case_ids,
 		&authorities,
+		validator::VALIDATOR_REVISION,
 	)
 	.await?;
 	for item in &mut items {

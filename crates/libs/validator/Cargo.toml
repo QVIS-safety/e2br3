@@ -23,3 +23,6 @@ uuid = { version = "1", features = ["v4", "fast-rng", "serde"] }
 
 [dev-dependencies]
 serial_test = "3"
+
+[build-dependencies]
+sha2 = "0.10"

@@ -106,7 +106,7 @@ jobs:
           npm run test:editor-contracts -- \
             __tests__/input-contracts.test.ts __tests__/ui-binding/review-section.test.tsx \
             --json --outputFile="$RUNNER_TEMP/editor-contract-tests.json"
-          npm test -- __tests__/case-editor/validation-state.test.ts __tests__/case-editor/loadValidationForAuthorities.test.ts __tests__/case-editor/CaseValidationProvider.test.tsx __tests__/case-form/case-editor-route-loading.test.tsx __tests__/validation/backendFieldBanners.test.ts __tests__/validation/collection-field-error.test.tsx __tests__/api/case-list-validation.test.ts --runInBand
+          npm test -- __tests__/case-editor/validation-state.test.ts __tests__/case-editor/loadValidationForAuthorities.test.ts __tests__/case-editor/CaseValidationProvider.test.tsx __tests__/case-form/case-editor-route-loading.test.tsx __tests__/validation/backendFieldBanners.test.ts __tests__/validation/backend-field-path-contract.test.ts __tests__/case-form/input-error-persistence.test.tsx __tests__/validation/collection-field-error.test.tsx __tests__/api/case-list-validation.test.ts --runInBand
 
       - name: Validate registry
         env:

@@ -229,6 +229,48 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 		"list-view should use cached validation summary after validation; row={row:?}"
 	);
 
+	// Legacy caches and results from a different validator must never look current.
+	for revision in [None, Some("previous-validator-revision")] {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx(
+			mm.dbx(),
+			seed.admin.id,
+			seed.org_id,
+			ROLE_SPONSOR_ADMIN_CRO,
+		)
+		.await?;
+		mm.dbx().execute(sqlx::query("UPDATE case_validation_summaries SET validation_revision = $2 WHERE case_id = $1")
+			.bind(case_uuid).bind(revision)).await?;
+		mm.dbx().commit_txn().await?;
+		let (status, list) =
+			get_json(&app, &cookie, "/api/cases/list-view?authorities=ich").await?;
+		assert_eq!(status, StatusCode::OK, "{list:?}");
+		let row = list["data"]["items"]
+			.as_array()
+			.ok_or("missing items")?
+			.iter()
+			.find(|row| row["caseId"].as_str() == Some(case_id.as_str()))
+			.ok_or("missing case")?;
+		assert_eq!(row["warn"], "Not checked", "revision={revision:?}");
+		let (status, report) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/validation?authority=ich"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{report:?}");
+		let (status, list) =
+			get_json(&app, &cookie, "/api/cases/list-view?authorities=ich").await?;
+		assert_eq!(status, StatusCode::OK, "{list:?}");
+		let row = list["data"]["items"]
+			.as_array()
+			.ok_or("missing refreshed items")?
+			.iter()
+			.find(|row| row["caseId"].as_str() == Some(case_id.as_str()))
+			.ok_or("missing refreshed case")?;
+		assert_eq!(row["warn"], expected_warn);
+	}
+
 	let (status, update_body) = put_json(
 		&app,
 		&cookie,

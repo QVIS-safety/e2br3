@@ -1,4 +1,5 @@
 use super::support::*;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 
 #[serial]
 #[tokio::test]
@@ -44,6 +45,11 @@ async fn test_mfds_product_activation_and_rollback_change_visible_search_release
 	tx.commit().await?;
 
 	let app = web_server::app(mm.clone());
+	let revision_v1 = CaseValidationSummaryBmc::validation_revision(
+		&mm,
+		validator::VALIDATOR_REVISION,
+	)
+	.await?;
 	for uri in [
 		format!(
 			"/api/terminology/releases/mfds_product/{version_v2}/approve?language=ko"
@@ -62,6 +68,15 @@ async fn test_mfds_product_activation_and_rollback_change_visible_search_release
 	}
 	assert_mfds_search_count(&app, &cookie, &item_v2, 1).await?;
 	assert_mfds_search_count(&app, &cookie, &item_v1, 0).await?;
+	let revision_v2 = CaseValidationSummaryBmc::validation_revision(
+		&mm,
+		validator::VALIDATOR_REVISION,
+	)
+	.await?;
+	assert_ne!(
+		revision_v1, revision_v2,
+		"activation must invalidate validation summaries"
+	);
 
 	let req = Request::builder()
 		.method("POST")
@@ -74,6 +89,16 @@ async fn test_mfds_product_activation_and_rollback_change_visible_search_release
 	assert_eq!(res.status(), StatusCode::OK);
 	assert_mfds_search_count(&app, &cookie, &item_v1, 1).await?;
 	assert_mfds_search_count(&app, &cookie, &item_v2, 0).await?;
+	let rollback_revision = CaseValidationSummaryBmc::validation_revision(
+		&mm,
+		validator::VALIDATOR_REVISION,
+	)
+	.await?;
+	assert_ne!(rollback_revision, revision_v2);
+	assert_ne!(
+		rollback_revision, revision_v1,
+		"rollback must not revive a pre-transition cache"
+	);
 
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, system_user_id).await?;

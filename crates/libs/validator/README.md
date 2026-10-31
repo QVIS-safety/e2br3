@@ -83,6 +83,16 @@ rule fixtures. Editor persistence tests remain separate from validation tests;
 the RP collection/row and SI sequence-gap checks live in `crates/services/web-server/tests/api_cases/validation.rs`.
 Frontend integration tests cover scoped banners/dots, per-authority aggregation
 and stale validation responses, and run in the registry CI job.
+The frontend issue-path test reads this crate's `rules.json` directly; set
+`E2BR3_BACKEND_ROOT` to the backend checkout when running that test locally.
+It checks UI path resolution, not business-rule behavior.
+
+`build.rs` fingerprints validator implementation, shared context/model code,
+locked dependencies and embedded vocabularies. Validation summary caches also
+record the active terminology releases and their update timestamps. A mismatch
+or a legacy cache without a revision returns `Not checked` until revalidation.
+Apply `db/migrations/20261031_validation_revision.sql` before deploying this
+cache reader/writer. No background full-case validation is added.
 
 CI selects tests on `dev`/`main` pushes and PRs targeting either branch:
 

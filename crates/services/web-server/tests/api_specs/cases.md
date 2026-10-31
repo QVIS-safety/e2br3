@@ -89,6 +89,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 | `GET` | `/api/cases/workflow/config` |
 
 - `GET /validation?authority=ich|fda|mfds`; 생략 시 receiver 설정에서 추론하고 없으면 ICH다. `CaseValidationReport`를 `200 Data`로 반환하며 중복/알 수 없는 authority는 400.
+- 목록 `warn`은 선택 기관들의 `(code,path)` 중복을 제거한 캐시 집계다. Case 변경, validator 구현 변경, 활성 사전 변경·롤백 후의 구버전 캐시 및 판정 버전이 없는 기존 캐시는 `Not checked`로 표시한다. 재검증이 새 버전의 집계를 저장한다. 검증 도중 사전 기준이 바뀌면 결과를 캐시하지 않고 재시도를 요구하는 400 응답을 반환한다.
 - `POST /validator/mark-validated`는 `x-validator-token`과 validation issue 0개를 요구하고 Case를 validated로 갱신한다. 성공/실패와 system audit reason이 assertion 되어 있다.
 - `POST /lock/toggle`, `POST /review/toggle`: `{"data":{"expected_status":"..."}}`; stale 화면 상태는 409. Case read shape를 `200`으로 반환한다.
 - `POST /restore`: `reason_for_change`가 필수이고 deleted Case를 draft로 복원한다. `GET /lifecycle`은 동일 safety-report 계열의 `{safety_report_id,current_case_id,items[]}`.
