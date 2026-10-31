@@ -2499,7 +2499,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [registry, fmt, clippy, validator, test]",
+            "needs: [test-plan, registry, fmt, clippy, validator, test]",
             deploy_job,
         )
 
@@ -2515,7 +2515,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: canonical-editor-inventory", registry_job)
         self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
         self.assertIn("needs: [registry, test-plan]", test_job)
-        self.assertIn("if: ${{ needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted' }}", test_job)
+        self.assertIn("if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}", test_job)
         self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
         self.assertIn("uses: actions/download-artifact@v8", test_job)
         self.assertIn("name: canonical-editor-inventory", test_job)

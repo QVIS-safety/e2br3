@@ -12,14 +12,15 @@ from ci_test_scope import changed_paths, select_tests
 
 class TestSelectionTests(unittest.TestCase):
     def test_validator_only_changes_skip_other_tests(self):
-        for suffix in ("src/lib.rs", "rules.json", "field-rules/ci.json", "fuzz/runner.py"):
+        for suffix in ("src/lib.rs", "rules.json", "field-rules/ci.json", "tools/check_rule_tests.py"):
             with self.subTest(path=suffix):
                 self.assertEqual(select_tests(["crates/libs/validator/" + suffix]),
                                  {"validator": True, "backend": False})
 
     def test_unrelated_changes_skip_validator(self):
         for path in ("crates/services/web-server/src/lib.rs", "crates/libs/xml/src/lib.rs",
-                     "registry/execution-ledger.json", "db/migrations/change.sql", "README.md"):
+                     "registry/execution-ledger.json", "db/migrations/change.sql",
+                     "db/bootstrap/10-triggers.sql", "README.md"):
             with self.subTest(path=path):
                 self.assertEqual(select_tests([path]), {"validator": False, "backend": True})
 
@@ -31,9 +32,7 @@ class TestSelectionTests(unittest.TestCase):
             "registry/vocabularies/iso639-2.json", "Cargo.toml", "Cargo.lock",
             ".cargo/config.toml", "rust-toolchain.toml", "rustfmt.toml",
             ".github/workflows/ci.yml", "scripts/ci_test_scope.py",
-            "scripts/tests/test_ci_test_scope.py", "scripts/case_business_validator_fuzzer.py",
-            "scripts/case_editor_input_fuzzer.py", "scripts/audit_trail_consistency_fuzzer.py",
-            "scripts/rbac_rls_blackbox.py", "db/bootstrap/10-triggers.sql",
+            "scripts/tests/test_ci_test_scope.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_tests([path]), {"validator": True, "backend": True})

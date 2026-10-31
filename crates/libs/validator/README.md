@@ -28,7 +28,6 @@ tests/allowed_value_representation.rs  # Public API integration test
 rules.json                         # Rule-to-test and expected-issue bindings
 field-rules/                       # Field-to-rule JSON metadata
 tools/                             # Catalog and execution checks
-fuzz/                              # Separate persisted API fuzzer
 ```
 
 C, D and G include their test setup and validation calls from
@@ -44,14 +43,9 @@ Rust test names and do not expose production APIs.
   **editorMappings** preserves UI metadata for canonical inventory consumers;
   its historical statuses are not test results.
 - `tools/rule_inventory.py` discovers the agreed production-source baseline.
-  The fuzzer may import that inventory; rule tests do not depend on the fuzzer.
-- `fuzz/runner.py` separately owns real API save/readback/validation/audit checks.
-  The old script command forwards to it. Its inputs do not define rule-test
-  bindings or stand in for rule-test execution.
 
 ```sh
 python3 -m unittest discover crates/libs/validator/tools/tests
-python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
 # All named business-rule tests:
 cargo test -p validator '::rule_tests::rule_'
 # One business rule:
@@ -80,16 +74,16 @@ and stale validation responses, and run in the registry CI job.
 
 CI selects tests on `dev`/`main` pushes and PRs targeting either branch:
 
-| Changed files | Validator tests | Other backend/registry/audit tests |
+| Changed files | Validator tests | Other backend/registry tests |
 | --- | --- | --- |
 | Only `crates/libs/validator/**` | Run | Skip |
 | Unrelated backend files | Skip | Run |
 | Both areas or shared validator inputs | Run | Run |
 
 `scripts/ci_test_scope.py` lists shared inputs: transitive Rust dependencies,
-Cargo/toolchain configuration, the CI workflow/selector, registry metadata and
-the fuzzer's external helper files. Pushes compare the complete before/after
-range; PRs compare from the merge base. Deletions and both sides of renames are
+Cargo/toolchain configuration, the CI workflow/selector and registry metadata.
+Pushes compare the complete before/after range; PRs compare from the merge base.
+Deletions and both sides of renames are
 included. A new branch checks its complete tree; missing Git history fails the
 selection job instead of skipping tests. No changed files selects no test suite.
 

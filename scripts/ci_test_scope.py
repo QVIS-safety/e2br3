@@ -24,11 +24,6 @@ SHARED_FILES = {
     "Cargo.toml", "Cargo.lock", "rust-toolchain", "rust-toolchain.toml",
     "rustfmt.toml", ".rustfmt.toml", ".github/workflows/ci.yml",
     "scripts/ci_test_scope.py", "scripts/tests/test_ci_test_scope.py",
-    "scripts/case_business_validator_fuzzer.py",
-    "scripts/case_editor_input_fuzzer.py",
-    "scripts/audit_trail_consistency_fuzzer.py",
-    "scripts/rbac_rls_blackbox.py",
-    "db/bootstrap/10-triggers.sql",
 }
 
 

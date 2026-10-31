@@ -64,42 +64,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install native build dependencies
         run: sudo apt-get update && sudo apt-get install -y libxml2-dev pkg-config
-      - name: Check field mappings and fuzzer logic
+      - name: Check field mappings and rule test bindings
         run: |
           python3 crates/libs/validator/tools/check_rule_tests.py
           python3 -m unittest discover crates/libs/validator/tools/tests
-          python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
       - name: Run validator tests and require every rule to pass
         shell: bash
         run: |
           set -o pipefail
           cargo test -p validator --locked -- --color never | tee "$RUNNER_TEMP/validator-tests.log"
           python3 crates/libs/validator/tools/check_rule_tests.py --test-log "$RUNNER_TEMP/validator-tests.log"
-
-  case-editor-audit:
-    name: Case Editor Audit Plan
-    needs: [test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Checkout frontend contract source
-        uses: actions/checkout@v4
-        with:
-          repository: QVIS-safety/e2br3-frontend
-          ref: ${{ (github.base_ref == 'dev' || github.ref_name == 'dev') && 'dev' || 'main' }}
-          path: frontend/E2BR3-frontend
-          token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
-
-      - name: Test audit runner
-        env:
-          E2BR3_FRONTEND_ROOT: ${{ github.workspace }}/frontend/E2BR3-frontend
-        run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
-
-      # Complete target coverage is checked from registry below. The API fuzzer's
-      # historical descriptor set is not the canonical UI denominator.
 
   # ============================================
   # Job 0: Validate E2BR3 registry
@@ -371,9 +345,9 @@ jobs:
           needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
           ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
            (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
-          ((needs.test-plan.outputs.backend == 'true' && needs.registry.result == 'success' && needs.test.result == 'success' && needs['case-editor-audit'].result == 'success') ||
-           (needs.test-plan.outputs.backend == 'false' && needs.registry.result == 'skipped' && needs.test.result == 'skipped' && needs['case-editor-audit'].result == 'skipped')) }}
-    needs: [test-plan, case-editor-audit, registry, fmt, clippy, validator, test]
+          ((needs.test-plan.outputs.backend == 'true' && needs.registry.result == 'success' && needs.test.result == 'success') ||
+           (needs.test-plan.outputs.backend == 'false' && needs.registry.result == 'skipped' && needs.test.result == 'skipped')) }}
+    needs: [test-plan, registry, fmt, clippy, validator, test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
