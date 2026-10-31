@@ -7,6 +7,7 @@ use lib_core::model::organization::{
 };
 use lib_core::model::user::{User, UserBmc, UserForCreate, UserForUpdate};
 use serial_test::serial;
+use sqlx::postgres::PgPoolOptions;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
@@ -14,11 +15,20 @@ use uuid::Uuid;
 #[tokio::test]
 async fn test_expired_user_is_soft_deactivated() -> Result<()> {
 	let mm = init_test_mm().await?;
+	let migration_pool = PgPoolOptions::new()
+		.max_connections(1)
+		.connect(&std::env::var("SERVICE_MIGRATION_DB_URL")?)
+		.await?;
+	let database: String = sqlx::query_scalar("SELECT current_database()")
+		.fetch_one(&migration_pool)
+		.await?;
+	assert_eq!(database, std::env::var("E2BR3_TEST_DATABASE_NAME")?);
 	AuthorizationMigrationService::reconcile_registry_storage(
-		mm.dbx().db(),
+		&migration_pool,
 		policy_registry(),
 	)
 	.await?;
+	migration_pool.close().await;
 
 	let root_ctx = Ctx::root_ctx();
 	let suffix = Uuid::new_v4();

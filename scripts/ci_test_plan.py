@@ -220,7 +220,7 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
     for package, targets in sorted(selections.items()):
         if package == 'validator':  # Dedicated job also verifies all rule bindings.
             continue
-        args = ['scripts/test-isolated-db.sh', '--locked', '-p', package, '-j1']
+        args = ['scripts/test-isolated-db.sh', '--locked', '-p', package, '-j1', '--no-fail-fast']
         if package == 'web-server' and filters:
             # libtest accepts one include filter; exclude the other page/category buckets in one DB run.
             prefixes = [f'case_editor_contract_web::{page.lower()}::{category}::'
@@ -238,6 +238,17 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
             args.extend(['--test', target])
         commands.append(args + ['--', '--test-threads=1', '--color', 'never'])
     return commands
+
+
+def run_commands(commands: list[list[str]]) -> int:
+    failed = 0
+    for command in commands:
+        print('Running:', ' '.join(command), flush=True)
+        if subprocess.run(command).returncode != 0:
+            failed += 1
+    if failed:
+        print(f'{failed} selected check command(s) failed', file=sys.stderr)
+    return 1 if failed else 0
 
 
 def main():
@@ -261,10 +272,7 @@ def main():
     root = Path.cwd()
     workspace = load_workspace(root)
     if args.command == 'run':
-        for command in commands_for(json.loads(args.selections), workspace, args.kind, json.loads(args.editor_filters)):
-            print('Running:', ' '.join(command), flush=True)
-            subprocess.run(command, check=True)
-        return
+        raise SystemExit(run_commands(commands_for(json.loads(args.selections), workspace, args.kind, json.loads(args.editor_filters))))
     event, base, head = (args.event, args.base, args.head) if args.event else event_revisions()
     paths = changed_paths(base, head, event == 'pull_request', root)
     plan = select_tests(paths, workspace)

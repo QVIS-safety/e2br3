@@ -243,4 +243,4 @@ crates/libs/lib-core/tests/database/editor_storage.rs	lib-core::database	DB sche
 crates/libs/lib-core/tests/database/reaction_term_highlight_migration.rs	lib-core::database	DB migration	Reaction highlight의 신규 varchar schema와 legacy boolean migration	138	2	0	0
 crates/libs/lib-core/tests/database/submission_schema.rs	lib-core::database	DB schema	제출 dispatch state 감사 schema guard	75	1	0	0
 crates/libs/lib-core/tests/database/transactions.rs	lib-core::database	DB	Dbx nested commit/rollback·query 실패·취소 후 transaction 상태	174	4	0	0
-crates/libs/lib-core/tests/database/user_expiration.rs	lib-core::database	DB	관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회	108	1	0	0
+crates/libs/lib-core/tests/database/user_expiration.rs	lib-core::database	DB	관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회	118	1	0	0
