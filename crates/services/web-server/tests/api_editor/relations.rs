@@ -325,6 +325,86 @@ async fn toggle_editor_case_lock(
 	Ok(())
 }
 
+async fn set_editor_case_archived(
+	app: &axum::Router,
+	cookie: &str,
+	mm: &ModelManager,
+	ctx: &Ctx,
+	uri: &str,
+	archived: bool,
+) -> Result<()> {
+	use tower::ServiceExt;
+	let case_id = uuid::Uuid::parse_str(editor_case_id(uri)?)?;
+	let case_uri = format!("/api/cases/{case_id}");
+	let (status, before) = get_json(app, cookie, &case_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{before}");
+	assert_eq!(
+		before["data"]["status"],
+		if archived { "draft" } else { "deleted" }
+	);
+	let spec = json!({"table":"cases","column":"status","record":{"source":"case"}});
+	let audit = super::audit::capture(mm, ctx, case_id, &spec, &Value::Null).await?;
+	let audit_ids = case_audit_ids(mm, ctx, &case_id.to_string()).await?;
+	let reason = "verify editor state across Case archive and restore";
+	let payload = if archived {
+		json!({"reason_for_change":reason,"e_signature":{"meaning":"delete case","password":"adminpwd"}})
+	} else {
+		json!({"reason_for_change":reason})
+	};
+	let target = if archived {
+		case_uri.clone()
+	} else {
+		format!("{case_uri}/restore")
+	};
+	let response = app
+		.clone()
+		.oneshot(
+			axum::http::Request::builder()
+				.method(if archived { "DELETE" } else { "POST" })
+				.uri(target)
+				.header("cookie", cookie)
+				.header("content-type", "application/json")
+				.body(axum::body::Body::from(payload.to_string()))?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let (status, after) = get_json(app, cookie, &case_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{after}");
+	assert_eq!(
+		after["data"]["status"],
+		if archived { "deleted" } else { "draft" }
+	);
+	super::audit::assert_mutation(
+		mm,
+		ctx,
+		case_id,
+		&spec,
+		audit,
+		&Value::Null,
+		reason,
+	)
+	.await?;
+	let after_audit = case_audit_ids(mm, ctx, &case_id.to_string()).await?;
+	assert!(audit_ids.iter().all(|id| after_audit.contains(id)));
+	let entries = lib_core::model::audit::AuditLogBmc::list_by_record(
+		ctx, mm, "cases", case_id,
+	)
+	.await?;
+	let mut appended_tables = entries
+		.iter()
+		.filter(|row| !audit_ids.contains(&row.id))
+		.map(|row| row.table_name.as_str())
+		.collect::<Vec<_>>();
+	appended_tables.sort_unstable();
+	let expected_tables = if archived {
+		vec!["cases", "e_signatures"]
+	} else {
+		vec!["cases"]
+	};
+	assert_eq!(appended_tables, expected_tables, "unexpected child audit");
+	Ok(())
+}
+
 // Each owner gets its own request so one denied row cannot mask another resource.
 async fn assert_child_mutation_guards(
 	app: &axum::Router,
@@ -403,16 +483,36 @@ async fn assert_editor_request_guards(
 		generate_web_token(&foreign.admin.email, foreign.admin.token_salt)?;
 	let foreign_cookie = cookie_header(&foreign_token.to_string());
 	assert!(!requests.is_empty());
-	for (denied_cookie, expected_status, locked) in [
-		(viewer_cookie.as_str(), StatusCode::FORBIDDEN, false),
-		(foreign_cookie.as_str(), StatusCode::NOT_FOUND, false),
-		(cookie, StatusCode::FORBIDDEN, true),
+	for (denied_cookie, expected_status, locked, archived) in [
+		(viewer_cookie.as_str(), StatusCode::FORBIDDEN, false, false),
+		(foreign_cookie.as_str(), StatusCode::NOT_FOUND, false, false),
+		(cookie, StatusCode::FORBIDDEN, true, false),
+		(cookie, StatusCode::FORBIDDEN, false, true),
 	] {
+		let (status, original) = get_json(app, cookie, uri).await?;
+		assert_eq!(status, StatusCode::OK, "{original}");
+		let projection_key = if uri.contains("/rows/") {
+			"data"
+		} else {
+			"rows"
+		};
+		if archived {
+			set_editor_case_archived(app, cookie, mm, &ctx, uri, true).await?;
+		}
 		if locked {
 			toggle_editor_case_lock(app, cookie, uri, true).await?;
 		}
 		let (status, before) = get_json(app, cookie, uri).await?;
 		assert_eq!(status, StatusCode::OK, "{before}");
+		assert_eq!(
+			before
+				.get(projection_key)
+				.ok_or("missing guarded projection")?,
+			original
+				.get(projection_key)
+				.ok_or("missing original projection")?,
+			"Case state transition changed editor IDs, values or children"
+		);
 		let audit_before = case_audit_ids(mm, &ctx, editor_case_id(uri)?).await?;
 		let (status, read) = get_json(app, denied_cookie, uri).await?;
 		assert_eq!(
@@ -467,6 +567,20 @@ async fn assert_editor_request_guards(
 		}
 		if locked {
 			toggle_editor_case_lock(app, cookie, uri, false).await?;
+		}
+		if archived {
+			set_editor_case_archived(app, cookie, mm, &ctx, uri, false).await?;
+			let (status, restored) = get_json(app, cookie, uri).await?;
+			assert_eq!(status, StatusCode::OK, "{restored}");
+			assert_eq!(
+				restored
+					.get(projection_key)
+					.ok_or("missing restored projection")?,
+				original
+					.get(projection_key)
+					.ok_or("missing original projection")?,
+				"Case restore changed editor IDs, values or children"
+			);
 		}
 	}
 	Ok(())

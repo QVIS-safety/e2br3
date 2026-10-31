@@ -768,12 +768,20 @@ pub(crate) async fn rejects_mixed_foreign_narrative_children_atomically(
 	assert_eq!(status, StatusCode::OK, "{target_before}");
 	let (status, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{foreign_before}");
-	let target_id = target_before["rows"]["caseSummaryInformation"][0]["id"]
-		.as_str()
-		.ok_or("missing target narrative child id")?;
-	let foreign_id = foreign_before["rows"]["caseSummaryInformation"][0]["id"]
-		.as_str()
-		.ok_or("missing foreign narrative child id")?;
+	let owners = [
+		(
+			"senderDiagnoses",
+			"diagnosisMeddraCode",
+			"10019212",
+			"10019212",
+		),
+		(
+			"caseSummaryInformation",
+			"summaryText",
+			"MUST ROLL BACK",
+			"FOREIGN",
+		),
+	];
 	let ctx = Ctx::new(
 		seed.admin.id,
 		seed.org_id,
@@ -781,27 +789,36 @@ pub(crate) async fn rejects_mixed_foreign_narrative_children_atomically(
 	)?;
 	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
 	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
-	assert_foreign_patch_rejected_without_mutation(
-		&app,
-		&cookie,
-		&mm,
-		&ctx,
-		&target_uri,
-		&foreign_uri,
-		&target_case,
-		&foreign_case,
-		&target_before,
-		&foreign_before,
-		&target_audit_before,
-		&foreign_audit_before,
-		"ich",
-		StatusCode::BAD_REQUEST,
-		json!({"caseSummaryInformation":[
-			{"id":target_id,"summaryText":"MUST ROLL BACK"},
-			{"id":foreign_id,"summaryText":"FOREIGN"}
-		]}),
-	)
-	.await
+	for (owner, field, value, foreign_value) in owners {
+		let target_id = target_before["rows"][owner][0]["id"]
+			.as_str()
+			.ok_or("missing target narrative child id")?;
+		let foreign_id = foreign_before["rows"][owner][0]["id"]
+			.as_str()
+			.ok_or("missing foreign narrative child id")?;
+		assert_foreign_patch_rejected_without_mutation(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&target_uri,
+			&foreign_uri,
+			&target_case,
+			&foreign_case,
+			&target_before,
+			&foreign_before,
+			&target_audit_before,
+			&foreign_audit_before,
+			"ich",
+			StatusCode::BAD_REQUEST,
+			json!({(owner):[
+				{"id":target_id,(field):value},
+				{"id":foreign_id,(field):foreign_value}
+			]}),
+		)
+		.await?;
+	}
+	Ok(())
 }
 
 pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
@@ -835,7 +852,11 @@ pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
 			&app,
 			&cookie,
 			&uri,
-			json!({"authorities":["ich"],"rows":{"drug":{"activeSubstances":[{"sequenceNumber":1,"substanceName":"Scoped substance"}]}}}),
+			json!({"authorities":["ich"],"rows":{"drug":{
+				"activeSubstances":[{"sequenceNumber":1,"substanceName":"Scoped substance"}],
+				"dosageInformation":[{"sequenceNumber":1,"dosageText":"Scoped dosage"}],
+				"indications":[{"sequenceNumber":1,"indicationText":"Scoped indication"}]
+			}}}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
@@ -847,12 +868,11 @@ pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
 	assert_eq!(status, StatusCode::OK, "{target_before}");
 	let (status, foreign_before) = get_json(&app, &cookie, foreign_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{foreign_before}");
-	let target_id = target_before["data"]["drug"]["activeSubstances"][0]["id"]
-		.as_str()
-		.ok_or("missing target drug child id")?;
-	let foreign_id = foreign_before["data"]["drug"]["activeSubstances"][0]["id"]
-		.as_str()
-		.ok_or("missing foreign drug child id")?;
+	let owners = [
+		("activeSubstances", "substanceName", "Target substance"),
+		("dosageInformation", "dosageText", "Target dosage"),
+		("indications", "indicationText", "Target indication"),
+	];
 	let ctx = Ctx::new(
 		seed.admin.id,
 		seed.org_id,
@@ -860,25 +880,34 @@ pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
 	)?;
 	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
 	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
-	assert_foreign_patch_rejected_without_mutation(
-		&app,
-		&cookie,
-		&mm,
-		&ctx,
-		target_uri,
-		foreign_uri,
-		&target_case,
-		&foreign_case,
-		&target_before,
-		&foreign_before,
-		&target_audit_before,
-		&foreign_audit_before,
-		"ich",
-		StatusCode::BAD_REQUEST,
-		json!({"drug":{"activeSubstances":[
-			{"id":target_id,"substanceName":"MUST ROLL BACK"},
-			{"id":foreign_id,"substanceName":"FOREIGN"}
-		]}}),
-	)
-	.await
+	for (owner, field, value) in owners {
+		let target_id = target_before["data"]["drug"][owner][0]["id"]
+			.as_str()
+			.ok_or("missing target drug child id")?;
+		let foreign_id = foreign_before["data"]["drug"][owner][0]["id"]
+			.as_str()
+			.ok_or("missing foreign drug child id")?;
+		assert_foreign_patch_rejected_without_mutation(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			target_uri,
+			foreign_uri,
+			&target_case,
+			&foreign_case,
+			&target_before,
+			&foreign_before,
+			&target_audit_before,
+			&foreign_audit_before,
+			"ich",
+			StatusCode::BAD_REQUEST,
+			json!({"drug":{(owner):[
+				{"id":target_id,(field):value},
+				{"id":foreign_id,(field):"FOREIGN"}
+			]}}),
+		)
+		.await?;
+	}
+	Ok(())
 }

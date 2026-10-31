@@ -2,7 +2,7 @@
 
 현재 프로그램에 등록한 **백엔드 436개 + 프런트 자체 1개 = 437개 HTTP operation**의 명세다. 요청·응답 필드, 저장·삭제·복원, 권한·잠금·감사, 오류, 직접 검사 코드와 남은 공백을 연결한다. API 경로의 중복·누락과 테스트가 있다는 사실을 실제 실행 성공과 구분한다.
 
-**기준:** 2026-10-31, backend `develop`의 `18f9b0e6e1f54cde3b88fb6e7c4e0ab8f0949ed5` 이후 이 변경. frontend `b9c8f45718704b561b034db8f21d990c56f88133`. **실행: NOT_RUN.** 사용자 지시에 따라 테스트·빌드·DB·API·UI를 실행하지 않았다. status와 상태 변화는 구현 및 assertion에서 읽은 계약이며 PASS 결과가 아니다.
+**기준:** 2026-10-31, backend `develop`의 `2727d980` 이후 이 변경. frontend `b9c8f45718704b561b034db8f21d990c56f88133`. **실행: NOT_RUN.** 사용자 지시에 따라 테스트·빌드·DB·API·UI를 실행하지 않았다. status와 상태 변화는 구현 및 assertion에서 읽은 계약이며 PASS 결과가 아니다.
 
 ## 명세 구성
 
@@ -12,7 +12,7 @@
 | [api-contract-manifest.json](api-contract-manifest.json) | 백엔드 모든 method/path → route·handler 또는 macro → 요청 extractor·반환형 → 중첩 Rust 타입·필드·serde 속성·소스 위치/해시 |
 | 아래 API군별 문서 | 사람이 읽는 입력·응답·오류·저장·삭제·권한·감사 의미; 동적 JSON의 의미는 타입 목록만으로 추론하지 않음 |
 | [coverage.tsv](coverage.tsv) | 백엔드 operation별 실제 HTTP assertion 근거와 검사 공백 |
-| [row-lifecycle.md](row-lifecycle.md), [row-lifecycle.tsv](row-lifecycle.tsv) | Editor 31 owner·RE 배열·Case 38·Presave 15 자원의 807개 lifecycle 검사 축 |
+| [row-lifecycle.md](row-lifecycle.md), [row-lifecycle.tsv](row-lifecycle.tsv) | Editor 31 owner·RE 배열·Case 38·Presave 15 자원의 1,063개 lifecycle 검사 축 |
 | [file-structure.md](file-structure.md), [file-structure.tsv](file-structure.tsv) | 모든 API 관련 테스트 파일의 소속·책임·실행 단위·등록 수 |
 
 JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, generic 타입과 serde 속성을 원형대로 보존하며, missing/null/clear/default 의미를 Rust 타입만 보고 만들어내지 않는다. 동적 `Value`, `Response`, multipart/파일 전송의 실제 shape와 오류는 handler 소스와 해당 API군 문서를 함께 읽는다.
@@ -43,19 +43,19 @@ JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, gener
 | `registration_only` | 활성 route inventory가 method/path 등록 확인 | HTTP 동작·저장·권한 검사 |
 | `uncovered` | 구현은 있으나 위 근거 없음 | 구현 결함이라는 판정 |
 
-**436은 전체 계약 검증을 끝낸 API 수가 아니다.** 하나의 동작을 검사하는 경로도 포함한다. 각 operation의 `gaps`, 명세, 807개 lifecycle 행렬을 함께 확인한다. 같은 BMC나 공통 guard를 쓴다는 이유로 호출하지 않은 HTTP method에 검사 근거를 옮기지 않았다. Presave study 자식 POST 3개도 201 응답·새 GET/list·소속·권한 거절·저장 및 감사 불변을 직접 검사한다.
+**436은 전체 계약 검증을 끝낸 API 수가 아니다.** 하나의 동작을 검사하는 경로도 포함한다. 각 operation의 `gaps`, 명세, 1,063개 lifecycle 행렬을 함께 확인한다. 같은 BMC나 공통 guard를 쓴다는 이유로 호출하지 않은 HTTP method에 검사 근거를 옮기지 않았다. Presave study 자식 POST 3개도 201 응답·새 GET/list·소속·권한 거절·저장 및 감사 불변을 직접 검사한다.
 
 `coverage.tsv`의 `method/path`는 router 원형, `spec`은 문서와 anchor, `evidence`는 `web-server` 기준 `tests/파일.rs::함수`(복수는 `;`), `gaps`는 직접 검사하지 않는 범위다. `evidence`는 근거 색인이며 모든 테스트의 역색인은 아니다. ignored/컴파일 제외·성공 조기 반환을 직접 행동 근거로 올리지 않는다.
 
-## 이번 보강과 파일 책임
+## 기준 변경군과 파일 책임
 
-이번에는 Case 조회 4·legacy Editor GET 14·Presave study POST 3·XML validate 1·terminology 검색 3·administration/health 5개 API에 직접 동작 assertion을 연결했다. 기존 파일에 응집된 검사를 보강하고 새 파일은 자원/조회 책임에 맞춰 등록했다. Case 부모 보존 helper, Editor 혼합 valid/invalid 요청, Presave 동일 DTO graph 2회 재저장과 원자성 검사를 추가했다. 아래 항목은 기준 commit의 기존 검사와 이번 추가 범위를 함께 설명한다.
+기준 `2727d980`까지 Case 조회 4·legacy Editor GET 14·Presave study POST 3·XML validate 1·terminology 검색 3·administration/health 5개 API에 직접 동작 assertion을 연결했다. Case 부모 보존, Editor 혼합 valid/invalid 요청, Presave 동일 DTO graph 재저장 검사도 이 기준에 포함된다. 이번 변경은 기존 Editor·RE verifier에 ID 연결 재저장, 수정 재전송, 생략/빈 배열, 외부 ID 거절과 Case archive/restore assertion을 보강했다. 아래는 기준 검사와 함께 유지하는 파일 책임이다.
 
 - CI soft 자식 3종: 삭제·재삭제·일반 재저장 비복원·명시 복원·동일 저장, fresh GET의 ID/count/형제 보존, 삭제 감사와 거절 rollback을 [ci_rows.rs](../api_editor/relations/ci_rows.rs)에 추가했다.
 - Editor 자원별 기존 assertion: viewer·다른 조직·Case 잠금의 update/delete/restore 거절 후 저장·감사 불변, soft transition/no-op 감사, source-document/assessment hard DELETE 감사, FDA device/code 3종 clear·재호출을 보강했다.
 - Case legacy 자원 38개: [subresources](../api_cases/subresources)의 drug/patient/report/general lifecycle 파일에 구분했다. 감사, 정책 거절, singleton, 행 흐름 helper도 각각 분리한다. source-document에는 등록되지 않은 item GET을 만들지 않고 collection 조회로 검사한다. Case ID만 받는 singleton에는 존재하지 않는 “다른 부모 ID” 거절을 요구하지 않는다.
 - Presave 15종: [lifecycle_matrix_web.rs](../api_presave/lifecycle_matrix_web.rs), [authorization_web.rs](../api_presave/authorization_web.rs), [audit_web.rs](../api_presave/audit_web.rs)로 lifecycle·권한·감사 책임을 분리했다. Case lock은 Presave 계약에 없어 N/A다.
-- 실제 결함 수정: Drug·Reaction·TestResult legacy PUT의 삭제행 일반 수정 후 404 경로를 차단했다. Reaction의 공개 `deleted:true/false` 삭제·복원 PUT은 성공 응답과 같은 ID를 유지한다. Editor DG의 삭제행 PATCH/복원 허용 경로는 별도로 유지하며, 변경값을 보낸 거절 요청의 감사 불변과 복원 후 원값을 검사한다.
+- 기준 `2727d980`에 반영된 결함 수정: Drug·Reaction·TestResult legacy PUT의 삭제행 일반 수정 후 404 경로를 차단했다. Reaction의 공개 `deleted:true/false` 삭제·복원 PUT은 성공 응답과 같은 ID를 유지한다. Editor DG의 삭제행 PATCH/복원 허용 경로는 별도로 유지하며, 변경값을 보낸 거절 요청의 감사 불변과 복원 후 원값을 검사한다.
 - RE 수신자 배열: [review_receivers.rs](../api_cases/contract/review_receivers.rs)에 2→1→동일1→[]→동일[]와 Case GET/shell·실제 JSON 감사·거절 불변을 연결했다.
 
 Editor는 **scalar 373 + behavior 62 = 435개**를 registry에서 등록한다. Legacy GET 수기 검사 14개를 합친 API 실행 계약은 **449개**이며 공통 patch builder 자체 검사 2개는 별도다. canonical UI 필드 360개, HTTP operation 55개, 직접 Rust test 선언 수와 다른 집계다. [generated 파일](../api_editor/pages)은 수기 verifier 실행 등록이고, 필드별 [registry](../../../../../registry/editor-contracts)는 계약 원본이다. 같은 검사를 중복 구현한 것이 아니다.
@@ -65,11 +65,13 @@ Editor는 **scalar 373 + behavior 62 = 435개**를 registry에서 등록한다. 
 ## 남은 공백
 
 1. 백엔드 30개와 프런트 proxy 1개에 직접 assertion을 추가해 operation 수준의 등록만/권한만/근거없음 공백은 해소했다. 이는 모든 필드·오류·권한 조합의 검증 완료를 뜻하지 않는다.
-2. 807 lifecycle 셀은 `added_not_run` 652, `covered` 2, `partial` 43, `partial_added_not_run` 33, `gap` 0, `not_applicable` 77이다. `missing`은 0이며 모든 셀 실행은 NOT_RUN이다. Case 38자원 부모 status 삭제/복원과 Presave graph 13자원 재저장을 보강했고 graph가 없는 reporter/narrative 2종은 N/A다.
-3. Editor 결합 축 31행은 자원별 혼합 요청 rollback을 추가하되 전수 조합 완료로 올리지 않았다. NR은 summary, DG는 active substance에 foreign 혼합 rollback을 추가했다. 모든 sibling 조합·동시 변경·응답 유실 후 신규 POST 재시도는 남아 있다.
+2. 1,063 lifecycle 셀은 `added_not_run` 923, `covered` 2, `not_applicable` 106, `missing` 32다. `partial`, `partial_added_not_run`, `gap`은 0이며 모든 셀 실행은 NOT_RUN이다. `missing` 32개는 Editor 31자원과 RE utility의 실제 동시 쓰기 충돌이며 순차 exact retry를 동시성 근거로 계산하지 않는다.
+3. Editor의 외부 소속 혼합 rollback은 NR sender diagnosis·summary, DG active substance·dosage·indication, assessment/relatedness와 FDA device/code까지 자원별 근거로 연결한다. 모든 payload 필드·sibling 순열·동시 변경·응답 유실 후 신규 POST 재시도까지 검사했다는 뜻은 아니다.
 4. 프런트 proxy는 실제 Next→backend 호출 4개를 integration 설정에 연결했다. 검증 완료 응답 200, 서버 토큰 부재 500, upstream 5xx·연결 실패는 아직 직접 검사하지 않는다. 실제 서버·세션·전용 draft Case가 필요하며 자동 CI job은 없다. 실행 조건은 [surfaces.md](surfaces.md)에 있다.
 5. 감사 chain 손상 HTTP 보고, CIOMS 전체 필드·한글·잘림, 외부 XML fixture/Java/전송·기관 수용은 해당 명세의 공백이다. 정상 감사 assertion을 손상 탐지·규제 준수 인증으로 바꾸지 않는다.
 6. 사용자 지시에 따라 테스트·빌드·Clippy·DB·API·UI를 실행하지 않았다. 같은 commit의 선택 목록·실행 로그·환경/데이터 버전이 있어야 통과를 입증한다.
+
+이번 변경은 기존 Rust 테스트 파일 17개의 assertion과 공통 helper를 보강했다. 새 테스트 파일은 0개이고 새 테스트 선언·verifier 함수도 0개이므로 435/449 등록 수는 변하지 않는다.
 
 ## 변경 시 정적 검증
 

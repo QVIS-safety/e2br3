@@ -134,7 +134,12 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
 	let id = create_case_for_editor(&app, &cookie, "FDA-DEVICE-IDENTITY", &["fda"])
 		.await?;
 	let base = format!("/api/cases/{id}/editor/pages");
@@ -144,14 +149,15 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		&format!("{base}/DG/rows"),
 		json!({"authorities":["fda"],"rows":{"drug":{
 			"drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
-			"fdaDevices":[{"deviceBrandName":"DEVICE-1","followUpTypes":[{"valueCode":"1"}]}]
+			"fdaDevices":[{"deviceBrandName":"DEVICE-1","followUpTypes":[{"valueCode":"1"}],"remedialActions":[{"valueCode":"10"}],"deviceProblemCodes":[{"valueCode":"1234567"}]}]
 		}}}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body}");
 	let drug_id = body["rowId"].as_str().ok_or("missing drug id")?;
 	let uri = format!("{base}/DG/rows/{drug_id}");
-	let (_, saved) = get_json(&app, &cookie, &uri).await?;
+	let (status, saved) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
 	let drug = &saved["data"]["drug"];
 	assert_eq!(drug["drug_characterization"], "1", "{saved}");
 	let original_device = &drug["fdaDevices"][0];
@@ -160,6 +166,46 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 	let original_code_id = original_device["followUpTypes"][0]["id"].clone();
 	let original_code_created_at =
 		original_device["followUpTypes"][0]["created_at"].clone();
+	let remedial_id = original_device["remedialActions"][0]["id"].clone();
+	let problem_id = original_device["deviceProblemCodes"][0]["id"].clone();
+	let full_replay = json!({"authorities":["fda"],"rows":{"drug":{"fdaDevices":[{
+		"id":original_device_id,"deviceBrandName":"DEVICE-1",
+		"followUpTypes":[{"id":original_code_id,"valueCode":"1"}],
+		"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+		"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
+	}]}}});
+	let audit_before_replay =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+			.await?;
+	for attempt in 0..2 {
+		let (status, replayed) =
+			patch_json(&app, &cookie, &uri, full_replay.clone()).await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {replayed}");
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		let devices = fresh["data"]["drug"]["fdaDevices"]
+			.as_array()
+			.ok_or("missing devices")?;
+		assert_eq!(devices.len(), 1);
+		let device = &devices[0];
+		assert_eq!(device["id"], original_device_id);
+		assert_eq!(device["device_brand_name"], "DEVICE-1");
+		for (owner, child_id, value) in [
+			("followUpTypes", &original_code_id, "1"),
+			("remedialActions", &remedial_id, "10"),
+			("deviceProblemCodes", &problem_id, "1234567"),
+		] {
+			let rows = device[owner].as_array().ok_or("missing device code rows")?;
+			assert_eq!(rows.len(), 1);
+			assert_eq!(rows[0]["id"], *child_id);
+			assert_eq!(rows[0]["value_code"], value);
+		}
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+				.await?,
+			audit_before_replay
+		);
+	}
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
@@ -168,7 +214,9 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 			"id":original_device_id,
 			"deviceBrandName":null,
 			"deviceBrandNameNullFlavor":null,
-			"followUpTypes":[{"id":original_code_id,"valueCode":"1"}]
+			"followUpTypes":[{"id":original_code_id,"valueCode":"1"}],
+			"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+			"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 		}]}}}),
 	)
 	.await?;
@@ -195,7 +243,9 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 			"id":original_device_id,
 			"deviceBrandName":null,
 			"deviceBrandNameNullFlavor":null,
-			"followUpTypes":[{"id":original_code_id,"valueCode":"2"}]
+			"followUpTypes":[{"id":original_code_id,"valueCode":"2"}],
+			"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+			"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 		}]}}}),
 	)
 	.await?;
@@ -209,6 +259,55 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		"{code_edited}"
 	);
 	assert_eq!(edited_code["value_code"], "2", "{code_edited}");
+	let updated_replay = json!({"authorities":["fda"],"rows":{"drug":{"fdaDevices":[{
+		"id":original_device_id,"deviceBrandName":null,"deviceBrandNameNullFlavor":null,
+		"followUpTypes":[{"id":original_code_id,"valueCode":"2"}],
+		"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+		"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
+	}]}}});
+	let updated_audits =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+			.await?;
+	for attempt in 0..2 {
+		let (status, replayed) =
+			patch_json(&app, &cookie, &uri, updated_replay.clone()).await?;
+		assert_eq!(
+			status,
+			StatusCode::OK,
+			"updated replay {attempt}: {replayed}"
+		);
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		let device = &fresh["data"]["drug"]["fdaDevices"][0];
+		assert_eq!(
+			fresh["data"]["drug"]["fdaDevices"].as_array().map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(device["id"], original_device_id);
+		assert_eq!(
+			device.get("device_brand_name"),
+			Some(&serde_json::Value::Null)
+		);
+		assert_eq!(
+			device.get("device_brand_name_null_flavor"),
+			Some(&serde_json::Value::Null)
+		);
+		for (owner, child_id, value) in [
+			("followUpTypes", &original_code_id, "2"),
+			("remedialActions", &remedial_id, "10"),
+			("deviceProblemCodes", &problem_id, "1234567"),
+		] {
+			let rows = device[owner].as_array().ok_or("missing device code rows")?;
+			assert_eq!(rows.len(), 1);
+			assert_eq!(rows[0]["id"], *child_id);
+			assert_eq!(rows[0]["value_code"], value);
+		}
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+				.await?,
+			updated_audits
+		);
+	}
 	let (status, body) = patch_json(
 		&app,
 		&cookie,

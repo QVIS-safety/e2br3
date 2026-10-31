@@ -70,6 +70,175 @@ pub(crate) async fn atomic_restore(
 		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
 	let case_uuid = uuid::Uuid::parse_str(&case_id)?;
+	let initial_replay = json!({"authorities":["ich"],"rows":{owner:{"id":row_id,"sequenceNumber":1,input_field:initial}}});
+	let initial_audits =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	for attempt in 0..2 {
+		let (status, replayed) =
+			patch_json(&app, &cookie, &row_uri, initial_replay.clone()).await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {replayed}");
+		let (fresh_status, fresh) = get_json(&app, &cookie, &row_uri).await?;
+		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+		assert_eq!(fresh["data"][owner]["id"], row_id);
+		assert_eq!(fresh["data"][owner][column], initial);
+		let (page_status, page) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+		)
+		.await?;
+		assert_eq!(page_status, StatusCode::OK, "{page}");
+		let rows = page["rows"]["rows"]
+			.as_array()
+			.ok_or("missing repeatable rows")?;
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0]["id"], row_id);
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			initial_audits
+		);
+	}
+	let collection_owner = match page_id {
+		"DH" => "pastDrugHistory",
+		"LR" => "literatureReferences",
+		_ => return Err("unexpected restore page".into()),
+	};
+	for rows in [json!({}), json!({collection_owner:[]})] {
+		let (status, _) = patch_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+			json!({"authorities":["ich"],"rows":rows}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK);
+		let (fresh_status, fresh) = get_json(&app, &cookie, &row_uri).await?;
+		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+		assert_eq!(fresh["data"][owner]["id"], row_id);
+		assert_eq!(fresh["data"][owner][column], initial);
+		let (page_status, page) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+		)
+		.await?;
+		assert_eq!(page_status, StatusCode::OK, "{page}");
+		let listed = page["rows"]["rows"]
+			.as_array()
+			.ok_or("missing repeatable rows")?;
+		assert_eq!(listed.len(), 1, "{page}");
+		assert_eq!(listed[0]["id"], row_id, "{page}");
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			initial_audits
+		);
+	}
+	let foreign_case_id = create_case_for_editor(
+		&app,
+		&cookie,
+		&format!("EDITOR-{page_id}-FOREIGN"),
+		&["ich"],
+	)
+	.await?;
+	let wrong_rows_uri =
+		format!("/api/cases/{foreign_case_id}/editor/pages/{page_id}/rows");
+	let wrong_row_uri = format!("{wrong_rows_uri}/{row_id}");
+	let original_before_scope = get_json(&app, &cookie, &row_uri).await?;
+	assert_eq!(original_before_scope.0, StatusCode::OK);
+	let original_list_before_scope = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+	)
+	.await?;
+	assert_eq!(original_list_before_scope.0, StatusCode::OK);
+	let foreign_list_before_scope = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{foreign_case_id}/editor/pages/{page_id}"),
+	)
+	.await?;
+	assert_eq!(foreign_list_before_scope.0, StatusCode::OK);
+	let original_audits_before_scope =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	let foreign_audits_before_scope =
+		crate::case_editor_contract_web::audit::case_audit_ids(
+			&mm,
+			&ctx,
+			&foreign_case_id,
+		)
+		.await?;
+	let (status, body) = get_json(&app, &cookie, &wrong_row_uri).await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&wrong_row_uri,
+		json!({"authorities":["ich"],"rows":{owner:{
+			"id":row_id,"sequenceNumber":1,input_field:conflicting
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("DELETE")
+				.uri(&wrong_row_uri)
+				.header("cookie", &cookie)
+				.header(
+					"x-e2br3-reason-for-change",
+					crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
+				)
+				.body(Body::empty())?,
+		)
+		.await?;
+	assert_eq!(response.status(), StatusCode::NOT_FOUND);
+	assert_eq!(
+		get_json(&app, &cookie, &row_uri).await?,
+		original_before_scope
+	);
+	assert_eq!(
+		get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+		)
+		.await?,
+		original_list_before_scope
+	);
+	assert_eq!(
+		get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{foreign_case_id}/editor/pages/{page_id}"),
+		)
+		.await?,
+		foreign_list_before_scope
+	);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?,
+		original_audits_before_scope
+	);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(
+			&mm,
+			&ctx,
+			&foreign_case_id,
+		)
+		.await?,
+		foreign_audits_before_scope
+	);
 	let (status, audit_before) = get_json(&app, &cookie, &row_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{audit_before}");
 	let delete_before = crate::case_editor_contract_web::audit::capture(

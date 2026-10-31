@@ -61,10 +61,51 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 		&mm,
 		&ctx,
 		&uri,
-		json!({"authorities":["ich"],"rows":creates}),
+		json!({"authorities":["ich"],"rows":creates.clone()}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{saved}");
+	let mut replay = creates;
+	for (owner, _, _) in &definitions {
+		let persisted = saved["rows"][owner]
+			.as_array()
+			.ok_or("missing CI replay rows")?;
+		for (request, row) in replay[owner]
+			.as_array_mut()
+			.ok_or("missing CI replay requests")?
+			.iter_mut()
+			.zip(persisted)
+		{
+			request["id"] = row["id"].clone();
+		}
+	}
+	let replay_audit = case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		for (owner, field, _) in &definitions {
+			assert_eq!(after["rows"][owner].as_array().map(Vec::len), Some(2));
+			let actual_rows = after["rows"][owner]
+				.as_array()
+				.ok_or("missing replayed CI rows")?;
+			let expected_rows = saved["rows"][owner]
+				.as_array()
+				.ok_or("missing saved CI rows")?;
+			for (actual, expected) in actual_rows.iter().zip(expected_rows) {
+				assert_eq!(actual["id"], expected["id"]);
+				assert_eq!(actual[field], expected[field]);
+			}
+		}
+		assert_eq!(case_audit_ids(&mm, &ctx, &case_id).await?, replay_audit);
+	}
 	for (owner, field, _) in &definitions {
 		let original = saved["rows"][owner]
 			.as_array()

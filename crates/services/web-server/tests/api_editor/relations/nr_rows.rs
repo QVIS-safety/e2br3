@@ -38,6 +38,44 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let diagnosis_id = body["rows"]["senderDiagnoses"][0]["id"].clone();
 	let summary_id = body["rows"]["caseSummaryInformation"][0]["id"].clone();
+	let replay = json!({"senderDiagnoses":[{"id":diagnosis_id,"sequenceNumber":1,"diagnosisMeddraVersion":"28.1","diagnosisMeddraCode":"10019211"}],"caseSummaryInformation":[{"id":summary_id,"sequenceNumber":1,"languageCode":"en","summaryText":"Summary"}]});
+	let audit_before_replay = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		assert_eq!(
+			after["rows"]["senderDiagnoses"].as_array().map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(after["rows"]["senderDiagnoses"][0]["id"], diagnosis_id);
+		assert_eq!(
+			after["rows"]["senderDiagnoses"][0]["diagnosis_meddra_code"],
+			"10019211"
+		);
+		assert_eq!(
+			after["rows"]["caseSummaryInformation"]
+				.as_array()
+				.map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(after["rows"]["caseSummaryInformation"][0]["id"], summary_id);
+		assert_eq!(
+			after["rows"]["caseSummaryInformation"][0]["summary_text"],
+			"Summary"
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_replay
+		);
+	}
 	for rows in [
 		json!({"senderDiagnoses":[
 			{"id":diagnosis_id,"diagnosisMeddraCode":"10000000"},

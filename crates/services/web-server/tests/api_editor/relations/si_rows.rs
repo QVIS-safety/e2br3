@@ -40,6 +40,56 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 	let ind_id = body["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"][0]
 		["id"]
 		.clone();
+	let replay = json!({
+		"studyRegistrationNumbers":[{"id":registration_id,"sequenceNumber":1,"registrationNumber":"REG","countryCode":"US"}],
+		"studyInformation":{"studyName":"Study","fdaCrossReportedIndNumbers":[{"id":ind_id,"sequenceNumber":1,"indNumber":"IND"}]}
+	});
+	let audit_before_replay = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["fda"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		assert_eq!(
+			after["rows"]["studyRegistrationNumbers"]
+				.as_array()
+				.map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(
+			after["rows"]["studyRegistrationNumbers"][0]["id"],
+			registration_id
+		);
+		assert_eq!(
+			after["rows"]["studyRegistrationNumbers"][0]["registration_number"],
+			"REG"
+		);
+		assert_eq!(
+			after["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"]
+				.as_array()
+				.map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(
+			after["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"][0]["id"],
+			ind_id
+		);
+		assert_eq!(
+			after["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"][0]
+				["ind_number"],
+			"IND"
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_replay
+		);
+	}
 	for rows in [
 		json!({"studyRegistrationNumbers":[
 			{"id":registration_id,"registrationNumber":"MUST ROLL BACK"},

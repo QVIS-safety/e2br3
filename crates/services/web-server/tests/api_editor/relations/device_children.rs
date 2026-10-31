@@ -76,6 +76,69 @@ pub(crate) async fn device_list_replacement_removes_children(
 	}
 	super::assert_editor_request_guards(&app, &cookie, &mm, &seed, &uri, &guarded)
 		.await?;
+
+	let foreign_case =
+		create_case_for_editor(&app, &cookie, "UI-REGRESSION-FOREIGN", &["ich"])
+			.await?;
+	let foreign_base = format!("/api/cases/{foreign_case}/editor/pages");
+	let (status, foreign_created) = post_json(
+		&app,
+		&cookie,
+		&format!("{foreign_base}/DG/rows"),
+		json!({"authorities":["ich"],"rows":{"drug":{
+			"drugCharacterization":"1","medicinalProduct":"FOREIGN DEVICE TEST",
+			"fdaDevices":[{"deviceBrandName":"FOREIGN DEVICE","followUpTypes":[{"valueCode":"2"}],
+				"remedialActions":[{"valueCode":"2"}],"deviceProblemCodes":[{"valueCode":"C133497"}]}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{foreign_created}");
+	let foreign_drug_id = foreign_created["rowId"]
+		.as_str()
+		.ok_or("missing foreign drug id")?;
+	let foreign_uri = format!("{foreign_base}/DG/rows/{foreign_drug_id}");
+	let (_, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
+	let foreign_device = foreign_before["data"]["drug"]["fdaDevices"][0].clone();
+	let (_, target_before) = get_json(&app, &cookie, &uri).await?;
+	let target_audits = super::case_audit_ids(&mm, &ctx, &id).await?;
+	let foreign_audits = super::case_audit_ids(&mm, &ctx, &foreign_case).await?;
+	let mut target_edit = original_device.clone();
+	target_edit["device_brand_name"] = json!("MUST ROLL BACK");
+	let mut mixed_requests = vec![(
+		json!([target_edit.clone(), foreign_device.clone()]),
+		StatusCode::NOT_FOUND,
+	)];
+	for group in groups {
+		let mut mixed = target_edit.clone();
+		mixed[group] = json!([
+			original_device[group][0].clone(),
+			foreign_device[group][0].clone()
+		]);
+		mixed_requests.push((json!([mixed]), StatusCode::BAD_REQUEST));
+	}
+	for (devices, expected_status) in mixed_requests {
+		let (status, rejected) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{"fdaDevices":devices}}}),
+		)
+		.await?;
+		assert_eq!(status, expected_status, "{rejected}");
+		assert_eq!(
+			get_json(&app, &cookie, &uri).await?,
+			(StatusCode::OK, target_before.clone())
+		);
+		assert_eq!(
+			get_json(&app, &cookie, &foreign_uri).await?,
+			(StatusCode::OK, foreign_before.clone())
+		);
+		assert_eq!(super::case_audit_ids(&mm, &ctx, &id).await?, target_audits);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &foreign_case).await?,
+			foreign_audits
+		);
+	}
 	let mut current_device = original_device.clone();
 	for group in groups {
 		let removed = current_device[group][0].clone();

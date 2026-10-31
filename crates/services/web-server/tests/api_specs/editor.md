@@ -2,6 +2,8 @@
 
 이 문서는 Editor API가 받아들이는 요청, 응답, 영속 상태와 감사 기록에 대한 검사 명세다. 테스트 실행 결과나 규제 적합성 인증서는 아니다. 필드별 입력·기대값의 원본은 [`registry/editor-contracts`](../../../../../registry/editor-contracts)에 있으며, 아래 계약은 실제 HTTP handler와 저장 모델을 대상으로 한다.
 
+기준 backend는 `2727d980`이며 실행 상태는 **NOT_RUN**이다. 기준 이후 기존 verifier의 assertion과 공통 helper를 보강했지만 새 테스트 파일이나 테스트 선언·verifier 함수는 추가하지 않았다.
+
 <a id="pages"></a>
 ## 요청과 응답
 
@@ -155,4 +157,4 @@ AE/LB/DG의 POST restore 3개는 각 페이지의 기존 복원 fixture에서 �
 
 위 14개 legacy GET의 assertion은 runtime NOT_RUN이다. CI는 camelCase `reportYear/caseIdentifier`, RP는 `reporterGivenName`, SD는 `organizationName`을 검사한다. RP와 SD projection에는 `deleted`가 없으므로 그 필드를 계약으로 주장하지 않는다. SI/DM/NR direct model projection은 snake_case와 `deleted`, AE/LB/DG/DH list DTO는 camelCase, detail의 nested model은 snake_case일 수 있다. 전체 필드·정렬·foreign row·권한/오류 조합은 남아 있다.
 
-이번 혼합 요청 보강에서 RP/DM/SI는 기존 404 소속 거절을 유지하며 SI는 FDA authority로 호출한다. NR summary·DG active-substance의 동일 조직 다른 부모 ID는 실제 handler의 400 계약을 단언한다. 유효 target 변경을 함께 보내고 두 Case의 fresh projection과 감사 ID가 유지되는지 확인한다. malformed 자식과 섞은 RP/DM/SI/NR/DG 수정도 상태·감사 불변을 검사한다. 모든 실행은 NOT_RUN이다.
+기준 `2727d980` 이후 보강한 혼합 요청 검사는 RP/DM/SI의 404 소속 거절을 유지하며 SI는 FDA authority로 호출한다. NR sender diagnosis·summary와 DG active substance·dosage·indication의 동일 조직 다른 부모 ID는 실제 handler의 400 계약을 단언한다. assessment/relatedness와 FDA device/code도 유효 target 변경에 외부 소속 ID를 섞고 두 Case의 fresh projection과 감사 ID가 유지되는지 확인한다. malformed 자식과 섞은 RP/DM/SI/NR/DG 수정도 상태·감사 불변을 검사한다. 모든 실행은 NOT_RUN이며 모든 payload 필드나 sibling 순열을 뜻하지 않는다.

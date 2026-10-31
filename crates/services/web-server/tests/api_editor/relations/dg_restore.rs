@@ -82,6 +82,72 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
 	let case_uuid = uuid::Uuid::parse_str(&case_id)?;
+	let initial_replay = json!({"authorities":["ich"],"rows":{"drug":{"id":row_id,"sequenceNumber":1,"drugCharacterization":"1","medicinalProduct":"Deleted drug"}}});
+	let initial_audits =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	for attempt in 0..2 {
+		let (status, replayed) =
+			patch_json(&app, &admin_cookie, &row_uri, initial_replay.clone())
+				.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {replayed}");
+		let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
+		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+		assert_eq!(fresh["data"]["drug"]["id"], row_id);
+		assert_eq!(fresh["data"]["drug"]["medicinal_product"], "Deleted drug");
+		assert_eq!(
+			fresh["data"]["drug"]["deviceCharacteristics"],
+			expected_children
+		);
+		let (page_status, page) = get_json(
+			&app,
+			&admin_cookie,
+			&format!("/api/cases/{case_id}/editor/pages/DG"),
+		)
+		.await?;
+		assert_eq!(page_status, StatusCode::OK, "{page}");
+		let rows = page["rows"]["rows"].as_array().ok_or("missing DG rows")?;
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0]["id"], row_id);
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			initial_audits
+		);
+	}
+	for rows in [json!({}), json!({"drugs":[]})] {
+		let (status, _) = patch_json(
+			&app,
+			&admin_cookie,
+			&format!("/api/cases/{case_id}/editor/pages/DG"),
+			json!({"authorities":["ich"],"rows":rows}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK);
+		let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
+		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+		assert_eq!(fresh["data"]["drug"]["id"], row_id);
+		assert_eq!(fresh["data"]["drug"]["medicinal_product"], "Deleted drug");
+		let (page_status, page) = get_json(
+			&app,
+			&admin_cookie,
+			&format!("/api/cases/{case_id}/editor/pages/DG"),
+		)
+		.await?;
+		assert_eq!(page_status, StatusCode::OK, "{page}");
+		let listed = page["rows"]["rows"].as_array().ok_or("missing DG rows")?;
+		assert_eq!(listed.len(), 1, "{page}");
+		assert_eq!(listed[0]["id"], row_id, "{page}");
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			initial_audits
+		);
+	}
 	let (status, audit_before) = get_json(&app, &admin_cookie, &row_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{audit_before}");
 	let delete_before = crate::case_editor_contract_web::audit::capture(
@@ -154,6 +220,32 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 		"deleted": false,
 		"medicinalProduct": "Restored drug"
 	}}});
+	let scope_detail_before = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(scope_detail_before.0, StatusCode::OK);
+	let scope_page_before = get_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG"),
+	)
+	.await?;
+	assert_eq!(scope_page_before.0, StatusCode::OK);
+	let scope_other_page_before = get_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{other_case_id}/editor/pages/DG"),
+	)
+	.await?;
+	assert_eq!(scope_other_page_before.0, StatusCode::OK);
+	let scope_audits_before =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	let scope_other_audits_before =
+		crate::case_editor_contract_web::audit::case_audit_ids(
+			&mm,
+			&ctx,
+			&other_case_id,
+		)
+		.await?;
 	let wrong_case_uri =
 		format!("/api/cases/{other_case_id}/editor/pages/DG/rows/{row_id}");
 	let (status, _) = get_json(&app, &admin_cookie, &wrong_case_uri).await?;
@@ -180,6 +272,42 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
+	assert_eq!(
+		get_json(&app, &admin_cookie, &row_uri).await?,
+		scope_detail_before
+	);
+	assert_eq!(
+		get_json(
+			&app,
+			&admin_cookie,
+			&format!("/api/cases/{case_id}/editor/pages/DG"),
+		)
+		.await?,
+		scope_page_before
+	);
+	assert_eq!(
+		get_json(
+			&app,
+			&admin_cookie,
+			&format!("/api/cases/{other_case_id}/editor/pages/DG"),
+		)
+		.await?,
+		scope_other_page_before
+	);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?,
+		scope_audits_before
+	);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(
+			&mm,
+			&ctx,
+			&other_case_id,
+		)
+		.await?,
+		scope_other_audits_before
+	);
 
 	let invalid_value = "X".repeat(251);
 	let (status, body) = patch_json(

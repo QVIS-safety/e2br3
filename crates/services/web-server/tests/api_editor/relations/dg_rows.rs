@@ -68,6 +68,47 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 			body["data"]["drug"]["indications"][0]["id"].clone(),
 		),
 	];
+	let replay = json!({"drug":{
+		"activeSubstances":[{"id":owners[0].1,"sequenceNumber":1,"substanceName":"Substance"}],
+		"dosageInformation":[{"id":owners[1].1,"sequenceNumber":1,"dosageText":"Dosage"}],
+		"indications":[{"id":owners[2].1,"sequenceNumber":1,"indicationText":"Indication"}]
+	}});
+	let audit_before_replay = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		for (owner, id) in &owners {
+			let rows = after["data"]["drug"][*owner]
+				.as_array()
+				.ok_or("missing drug child rows")?;
+			assert_eq!(rows.len(), 1);
+			assert_eq!(rows[0]["id"], id);
+		}
+		assert_eq!(
+			after["data"]["drug"]["activeSubstances"][0]["substance_name"],
+			"Substance"
+		);
+		assert_eq!(
+			after["data"]["drug"]["dosageInformation"][0]["dosage_text"],
+			"Dosage"
+		);
+		assert_eq!(
+			after["data"]["drug"]["indications"][0]["indication_text"],
+			"Indication"
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_replay
+		);
+	}
 	for drug in [
 		json!({"activeSubstances":[
 			{"id":owners[0].1,"substanceName":"MUST ROLL BACK"},

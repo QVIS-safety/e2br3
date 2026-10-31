@@ -30,6 +30,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		&ctx,
 		&uri,
 		json!({"authorities":["ich"],"rows":{
+			"patientInformation":{"raceCodes":["1"]},
 			"patientIdentifiers":[{"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
 			"medicalHistoryEpisodes":[{"sequenceNumber":1,"comments":"HISTORY"}],
 			"deathInfo":{"dateOfDeath":"20261001"},
@@ -61,6 +62,121 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		("parentPastDrugs", saved["parentPastDrugs"][0]["id"].clone()),
 	];
 	let parent_id = saved["parentInfo"]["id"].clone();
+	let death_id = saved["deathInfo"]["id"].clone();
+	let patient_id = saved["patientInformation"]["id"].clone();
+	let replay = json!({
+		"patientInformation":{"id":patient_id,"raceCodes":["1"]},
+		"patientIdentifiers":[{"id":owners[0].1,"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
+		"medicalHistoryEpisodes":[{"id":owners[1].1,"sequenceNumber":1,"comments":"HISTORY"}],
+		"deathInfo":{"id":death_id,"dateOfDeath":"20261001"},
+		"reportedCauses":[{"id":owners[2].1,"sequenceNumber":1,"causeText":"REPORTED"}],
+		"autopsyCauses":[{"id":owners[3].1,"sequenceNumber":1,"causeText":"AUTOPSY"}],
+		"parentInfo":{"id":parent_id,"parentIdentification":"PARENT"},
+		"parentMedicalHistory":[{"id":owners[4].1,"sequenceNumber":1,"comments":"PARENT-HISTORY"}],
+		"parentPastDrugs":[{"id":owners[5].1,"sequenceNumber":1,"drugName":"PARENT-DRUG"}]
+	});
+	let audit_before_replay = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		for (owner, id) in &owners {
+			let rows = after["rows"][*owner]
+				.as_array()
+				.ok_or("missing patient rows")?;
+			assert_eq!(rows.len(), 1, "{owner}: {after}");
+			assert_eq!(rows[0]["id"], id, "{owner}: {after}");
+		}
+		assert_eq!(
+			after["rows"]["patientIdentifiers"][0]["identifier_value"],
+			"PATIENT-ID"
+		);
+		assert_eq!(
+			after["rows"]["medicalHistoryEpisodes"][0]["comments"],
+			"HISTORY"
+		);
+		assert_eq!(after["rows"]["reportedCauses"][0]["cause_text"], "REPORTED");
+		assert_eq!(after["rows"]["autopsyCauses"][0]["cause_text"], "AUTOPSY");
+		assert_eq!(
+			after["rows"]["parentMedicalHistory"][0]["comments"],
+			"PARENT-HISTORY"
+		);
+		assert_eq!(
+			after["rows"]["parentPastDrugs"][0]["drug_name"],
+			"PARENT-DRUG"
+		);
+		assert_eq!(after["rows"]["parentInfo"]["id"], parent_id);
+		assert_eq!(
+			after["rows"]["parentInfo"]["parent_identification"],
+			"PARENT"
+		);
+		assert_eq!(after["rows"]["deathInfo"]["id"], death_id);
+		assert_eq!(after["rows"]["deathInfo"]["date_of_death"], "20261001");
+		assert_eq!(
+			after["rows"]["patientInformation"]["race_codes"],
+			json!(["1"])
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_replay
+		);
+	}
+	let changed_patient = json!({
+		"patientInformation":{"id":patient_id,"raceCodes":["2"]},
+		"deathInfo":{"id":death_id,"dateOfDeath":"20261002"}
+	});
+	let (status, changed) = patch_and_reload(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		&uri,
+		json!({"authorities":["ich"],"rows":changed_patient.clone()}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{changed}");
+	assert_eq!(changed["rows"]["patientInformation"]["id"], patient_id);
+	assert_eq!(
+		changed["rows"]["patientInformation"]["race_codes"],
+		json!(["2"])
+	);
+	assert_eq!(changed["rows"]["deathInfo"]["id"], death_id);
+	assert_eq!(changed["rows"]["deathInfo"]["date_of_death"], "20261002");
+	let audit_after_change = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for attempt in 0..2 {
+		let (status, replayed) = patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":changed_patient.clone()}),
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::OK,
+			"updated replay {attempt}: {replayed}"
+		);
+		assert_eq!(replayed["rows"]["patientInformation"]["id"], patient_id);
+		assert_eq!(
+			replayed["rows"]["patientInformation"]["race_codes"],
+			json!(["2"])
+		);
+		assert_eq!(replayed["rows"]["deathInfo"]["id"], death_id);
+		assert_eq!(replayed["rows"]["deathInfo"]["date_of_death"], "20261002");
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_after_change
+		);
+	}
 	let parent_children_before = [
 		(
 			"parentMedicalHistory",

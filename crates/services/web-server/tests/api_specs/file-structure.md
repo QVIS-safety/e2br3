@@ -36,7 +36,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_cases/contract/list_view.rs](../api_cases/contract/list_view.rs) | Case 목록 투영·누락된 safety report·limit/offset | HTTP 계약 | 386 | 3 | 0 |
 | [api_cases/contract/mod.rs](../api_cases/contract/mod.rs) | api_cases/contract 하위 책임 모듈 등록 | 모듈 등록 | 16 | 0 | 0 |
 | [api_cases/contract/query.rs](../api_cases/contract/query.rs) | Case 조건 검색의 가벼운 목록 응답 | HTTP 계약 | 197 | 3 | 0 |
-| [api_cases/contract/review_receivers.rs](../api_cases/contract/review_receivers.rs) | RE 수신자 JSON 저장·clear·행 정규화·기한 기본값과 입력 거절 | HTTP 계약 | 922 | 10 | 0 |
+| [api_cases/contract/review_receivers.rs](../api_cases/contract/review_receivers.rs) | RE 배열 저장·생략·clear·동일 재저장·Case 삭제/복원 보존·거절 시 상태/감사 불변 | HTTP 계약 | 1080 | 10 | 0 |
 | [api_cases/contract/save.rs](../api_cases/contract/save.rs) | Case 생성·수정 공개 필드·C.1.2 기본 시각·생략/null/blank 저장 의미 | HTTP 계약 | 569 | 8 | 0 |
 | [api_cases/contract/support.rs](../api_cases/contract/support.rs) | Case contract HTTP 전송·JSON/raw 응답 helper | helper | 141 | 0 | 0 |
 | [api_cases/contract/validation_cache.rs](../api_cases/contract/validation_cache.rs) | 목록 경고 수·기관별 cache·수정 동시성과 validator revision이 바뀐 cache 무효화 | HTTP 계약 | 625 | 4 | 0 |
@@ -120,25 +120,25 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_editor/pages/rp.generated.rs](../api_editor/pages/rp.generated.rs) | RP registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 62 | 4 | 29 |
 | [api_editor/pages/sd.generated.rs](../api_editor/pages/sd.generated.rs) | SD registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 45 | 1 | 27 |
 | [api_editor/pages/si.generated.rs](../api_editor/pages/si.generated.rs) | SI registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 57 | 6 | 14 |
-| [api_editor/relations.rs](../api_editor/relations.rs) | 관계 모듈 등록·바깥 행 5종 재저장/삭제/복원·감사와 하위 PATCH→GET·삭제 감사·자원별 권한/잠금 공통 assertion | 모듈 등록 | 507 | 0 | 0 |
-| [api_editor/relations/ae_restore.rs](../api_editor/relations/ae_restore.rs) | AE 삭제 행 read/restore와 case·권한 경계 | HTTP 계약 | 239 | 0 | 0 |
-| [api_editor/relations/ci_rows.rs](../api_editor/relations/ci_rows.rs) | CI soft 자식 3종 삭제/복원/재저장·ID/count·소속·감사·rollback | HTTP 계약 | 198 | 0 | 0 |
-| [api_editor/relations/device_children.rs](../api_editor/relations/device_children.rs) | Device 목록 교체 시 제거된 부모의 하위행 삭제 | HTTP 계약 | 200 | 0 | 0 |
-| [api_editor/relations/dg_restore.rs](../api_editor/relations/dg_restore.rs) | Drug 삭제/복원 시 자식과 case·권한 경계 | HTTP 계약 | 273 | 0 | 0 |
-| [api_editor/relations/dg_rows.rs](../api_editor/relations/dg_rows.rs) | DG 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 175 | 0 | 0 |
-| [api_editor/relations/dm_rows.rs](../api_editor/relations/dm_rows.rs) | DM 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 263 | 0 | 0 |
-| [api_editor/relations/documents.rs](../api_editor/relations/documents.rs) | Source document 삭제 시 목표 행 숨김 | HTTP 계약 | 102 | 0 | 0 |
-| [api_editor/relations/lb_restore.rs](../api_editor/relations/lb_restore.rs) | LB 삭제 행 read/restore와 case·권한 경계 | HTTP 계약 | 225 | 0 | 0 |
-| [api_editor/relations/nr_rows.rs](../api_editor/relations/nr_rows.rs) | NR 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 145 | 0 | 0 |
+| [api_editor/relations.rs](../api_editor/relations.rs) | 관계 모듈 등록·바깥 행 5종 재호출·PATCH→GET·감사와 viewer/조직/잠금/Case archive 공통 검증 | 모듈 등록 | 621 | 0 | 0 |
+| [api_editor/relations/ae_restore.rs](../api_editor/relations/ae_restore.rs) | AE 삭제 행 read/restore와 case·권한 경계 | HTTP 계약 | 369 | 0 | 0 |
+| [api_editor/relations/ci_rows.rs](../api_editor/relations/ci_rows.rs) | CI soft 자식 3종 삭제/복원/재저장·ID/count·소속·감사·rollback | HTTP 계약 | 239 | 0 | 0 |
+| [api_editor/relations/device_children.rs](../api_editor/relations/device_children.rs) | Device 목록 교체 시 제거된 부모의 하위행 삭제 | HTTP 계약 | 263 | 0 | 0 |
+| [api_editor/relations/dg_restore.rs](../api_editor/relations/dg_restore.rs) | Drug 삭제/복원 시 자식과 case·권한 경계 | HTTP 계약 | 401 | 0 | 0 |
+| [api_editor/relations/dg_rows.rs](../api_editor/relations/dg_rows.rs) | DG 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 216 | 0 | 0 |
+| [api_editor/relations/dm_rows.rs](../api_editor/relations/dm_rows.rs) | DM 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 379 | 0 | 0 |
+| [api_editor/relations/documents.rs](../api_editor/relations/documents.rs) | Source document ID 재저장·수정 재전송·생략/빈 배열·외부 ID rollback·hard 삭제 | HTTP 계약 | 228 | 0 | 0 |
+| [api_editor/relations/lb_restore.rs](../api_editor/relations/lb_restore.rs) | LB 삭제 행 read/restore와 case·권한 경계 | HTTP 계약 | 355 | 0 | 0 |
+| [api_editor/relations/nr_rows.rs](../api_editor/relations/nr_rows.rs) | NR 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 183 | 0 | 0 |
 | [api_editor/relations/parents.rs](../api_editor/relations/parents.rs) | 부모 자동 생성/재사용·자식 수정의 부모 ID 유지 | HTTP 계약 | 236 | 0 | 0 |
-| [api_editor/relations/relatedness.rs](../api_editor/relations/relatedness.rs) | Relatedness 삭제의 sibling 보존과 assessment 부모 삭제 | HTTP 계약 | 409 | 0 | 0 |
-| [api_editor/relations/restore.rs](../api_editor/relations/restore.rs) | DH/LR 삭제 행의 원자적 복원·수정 공통 검사 | HTTP 계약 | 243 | 0 | 0 |
-| [api_editor/relations/rp_rows.rs](../api_editor/relations/rp_rows.rs) | RP 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 116 | 0 | 0 |
-| [api_editor/relations/scope.rs](../api_editor/relations/scope.rs) | Study 자식의 케이스 분리·외부 ID 거절 | HTTP 계약 | 884 | 0 | 0 |
-| [api_editor/relations/si_rows.rs](../api_editor/relations/si_rows.rs) | SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 164 | 0 | 0 |
+| [api_editor/relations/relatedness.rs](../api_editor/relations/relatedness.rs) | Assessment/relatedness ID 재저장·수정 재전송·소속 rollback·soft 복원/hard 부모 삭제 구분 | HTTP 계약 | 590 | 0 | 0 |
+| [api_editor/relations/restore.rs](../api_editor/relations/restore.rs) | DH/LR 생성 ID 재저장·생략/빈 배열·다른 Case 행 거절·soft 삭제/복원 원자성 | HTTP 계약 | 412 | 0 | 0 |
+| [api_editor/relations/rp_rows.rs](../api_editor/relations/rp_rows.rs) | RP 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 142 | 0 | 0 |
+| [api_editor/relations/scope.rs](../api_editor/relations/scope.rs) | RP/DM/SI/SD 소속 검증·NR 2종/DG 3종 외부 ID 혼합 거절과 양쪽 상태/감사 불변 | HTTP 계약 | 913 | 0 | 0 |
+| [api_editor/relations/si_rows.rs](../api_editor/relations/si_rows.rs) | SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 214 | 0 | 0 |
 | [api_editor/rows.rs](../api_editor/rows.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 3 | 0 | 0 |
 | [api_editor/rows/creation.rs](../api_editor/rows/creation.rs) | 빈 collection/child 객체 생성 의미·draft 행·빈 product 거절 | HTTP 계약 | 157 | 0 | 0 |
-| [api_editor/rows/identity.rs](../api_editor/rows/identity.rs) | Drug device·code 하위행 재조회/교체의 ID 보존 | HTTP 계약 | 404 | 0 | 0 |
+| [api_editor/rows/identity.rs](../api_editor/rows/identity.rs) | Drug device·code 3종 재조회/교체·생성 ID 연결 및 수정 재전송의 ID/값/감사 보존 | HTTP 계약 | 503 | 0 | 0 |
 | [api_editor/rows/projection.rs](../api_editor/rows/projection.rs) | 반복행 정렬·목록 필드·일괄 상세 일치·인증 | HTTP 계약 | 293 | 0 | 0 |
 | [api_editor/support.rs](../api_editor/support.rs) | Editor HTTP·행 ID·registry behavior 조회·fixture helper | helper | 324 | 0 | 0 |
 

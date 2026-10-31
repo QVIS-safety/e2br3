@@ -116,6 +116,187 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.to_string();
 	assert!(parent_only.get("id").is_none());
 
+	let assert_assessment_state =
+		|projection: &Value, first_source: &str| -> Result<()> {
+			let rows = projection["data"]["drug"]["drugReactionAssessments"]
+				.as_array()
+				.ok_or("missing assessment rows")?;
+			assert_eq!(rows.len(), 3, "{projection}");
+			let first = rows
+				.iter()
+				.find(|row| row["id"] == json!(relatedness_id))
+				.ok_or("missing first relatedness")?;
+			assert_eq!(first["drugReactionAssessmentId"], assessment_id);
+			assert_eq!(first["reactionId"], reaction_ids[0]);
+			assert_eq!(first["sourceOfAssessment"], first_source);
+			let sibling = rows
+				.iter()
+				.find(|row| row["id"] == json!(sibling_id))
+				.ok_or("missing sibling relatedness")?;
+			assert_eq!(sibling["drugReactionAssessmentId"], assessment_id);
+			assert_eq!(sibling["reactionId"], reaction_ids[0]);
+			assert_eq!(sibling["sourceOfAssessment"], "Sponsor");
+			let parent = rows
+				.iter()
+				.find(|row| row["drugReactionAssessmentId"] == json!(parent_only_id))
+				.ok_or("missing parent-only assessment")?;
+			assert!(parent.get("id").is_none());
+			assert_eq!(parent["reactionId"], reaction_ids[1]);
+			assert_eq!(parent["expectedness"], "1");
+			Ok(())
+		};
+
+	// Replay the complete ID-attached projection without creating an audit row.
+	let attached_row = (*sibling_rows[0]).clone();
+	let mut updated_row = attached_row.clone();
+	updated_row["sourceOfAssessment"] = json!("Updated reporter");
+	let attached_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	let request = json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[attached_row]}}});
+	let (status, saved) = patch_json(&app, &cookie, &uri, request).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{fresh}");
+	assert_assessment_state(&fresh, "Reporter")?;
+	assert_eq!(
+		super::case_audit_ids(&mm, &ctx, &case_id).await?,
+		attached_audit_before,
+		"identical ID-attached save added an audit row"
+	);
+
+	// Apply one real update, then repeat the byte-equivalent request twice.
+	let update_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	let mut retry_audit_baseline = None;
+	for attempt in 0..3 {
+		let row = updated_row.clone();
+		let request = json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[row]}}});
+		let (status, saved) = patch_json(&app, &cookie, &uri, request).await?;
+		assert_eq!(status, StatusCode::OK, "{saved}");
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		assert_assessment_state(&fresh, "Updated reporter")?;
+		let audit_after = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+		if attempt == 0 {
+			assert!(audit_after.len() > update_audit_before.len());
+			retry_audit_baseline = Some(audit_after);
+		} else {
+			assert_eq!(
+				Some(audit_after),
+				retry_audit_baseline,
+				"retry added an audit row"
+			);
+		}
+	}
+	let audit_before_omission = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for rows in [
+		json!({"drug":{}}),
+		json!({"drug":{"drugReactionAssessments":[]}}),
+	] {
+		let (status, saved) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":rows}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{saved}");
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		assert_assessment_state(&fresh, "Updated reporter")?;
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_omission,
+			"omission/[] added an audit row"
+		);
+	}
+
+	// A valid target edit followed by a same-organization foreign parent or child
+	// must roll back both projections and both audit streams.
+	let foreign_case = create_case_for_editor(
+		&app,
+		&cookie,
+		"EDITOR-DG-ASSESSMENT-FOREIGN",
+		&["ich"],
+	)
+	.await?;
+	let (status, foreign_reaction) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{foreign_case}/reactions"),
+		json!({"data":{"case_id":foreign_case,"sequence_number":1,"primary_source_reaction":"Foreign reaction"}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{foreign_reaction}");
+	let foreign_reaction_id = foreign_reaction["data"]["id"]
+		.as_str()
+		.ok_or("missing foreign reaction")?;
+	let (status, foreign_drug) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{foreign_case}/drugs"),
+		json!({"data":{"case_id":foreign_case,"sequence_number":1,"drug_characterization":"1","medicinal_product":"Foreign assessment drug"}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{foreign_drug}");
+	let foreign_drug_id = foreign_drug["data"]["id"]
+		.as_str()
+		.ok_or("missing foreign drug")?;
+	let foreign_uri =
+		format!("/api/cases/{foreign_case}/editor/pages/DG/rows/{foreign_drug_id}");
+	let (status, foreign_saved) = patch_json(
+		&app,
+		&cookie,
+		&foreign_uri,
+		json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[{
+			"reactionId":foreign_reaction_id,"sequenceNumber":1,"sourceOfAssessment":"Foreign reporter"
+		}]}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{foreign_saved}");
+	let foreign_row = &foreign_saved["data"]["drug"]["drugReactionAssessments"][0];
+	let foreign_assessment_id = foreign_row["drugReactionAssessmentId"]
+		.as_str()
+		.ok_or("missing foreign assessment")?;
+	let foreign_relatedness_id = foreign_row["id"]
+		.as_str()
+		.ok_or("missing foreign relatedness")?;
+	let (_, target_before) = get_json(&app, &cookie, &uri).await?;
+	let (_, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
+	let target_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	let foreign_audit_before =
+		super::case_audit_ids(&mm, &ctx, &foreign_case).await?;
+	for foreign_row in [
+		json!({"drugReactionAssessmentId":foreign_assessment_id,"reactionId":foreign_reaction_id,"expectedness":"2"}),
+		json!({"id":foreign_relatedness_id,"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0],"sourceOfAssessment":"FOREIGN"}),
+	] {
+		let (status, rejected) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[
+				{"drugReactionAssessmentId":parent_only_id,"reactionId":reaction_ids[1],"expectedness":"2"},
+				foreign_row
+			]}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{rejected}");
+		assert_eq!(
+			get_json(&app, &cookie, &uri).await?,
+			(StatusCode::OK, target_before.clone())
+		);
+		assert_eq!(
+			get_json(&app, &cookie, &foreign_uri).await?,
+			(StatusCode::OK, foreign_before.clone())
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			target_audit_before
+		);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &foreign_case).await?,
+			foreign_audit_before
+		);
+	}
+
 	let (status, body) = patch_json(
 		&app,
 		&cookie,

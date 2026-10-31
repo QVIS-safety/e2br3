@@ -38,8 +38,134 @@ pub(crate) async fn source_document_delete_hides_the_target(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	let (_, saved) = get_json(&app, &cookie, &uri).await?;
+	let (status, saved) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
 	let doc = &saved["rows"]["sourceDocuments"][0];
+	let doc_id = doc["id"].clone();
+	let replay = json!({"sourceDocuments":[{"id":doc_id,"sourceDocumentName":"DOC","deleted":false}]});
+	let replay_audits = super::case_audit_ids(&mm, &ctx, &id).await?;
+	for attempt in 0..2 {
+		let (status, after) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":replay.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		let rows = fresh["rows"]["sourceDocuments"]
+			.as_array()
+			.ok_or("missing source documents")?;
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0]["id"], doc_id);
+		assert_eq!(rows[0]["sourceDocumentName"], "DOC");
+		assert_eq!(super::case_audit_ids(&mm, &ctx, &id).await?, replay_audits);
+	}
+	for rows in [json!({}), json!({"sourceDocuments":[]})] {
+		let (status, _) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":rows}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK);
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		assert_eq!(
+			fresh["rows"]["sourceDocuments"].as_array().map(Vec::len),
+			Some(1)
+		);
+		assert_eq!(fresh["rows"]["sourceDocuments"][0]["id"], doc_id);
+		assert_eq!(
+			fresh["rows"]["sourceDocuments"][0]["sourceDocumentName"],
+			"DOC"
+		);
+		assert_eq!(super::case_audit_ids(&mm, &ctx, &id).await?, replay_audits);
+	}
+	let changed = json!({"sourceDocuments":[{
+		"id":doc_id,"sourceDocumentName":"DOC-CHANGED","deleted":false
+	}]});
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":changed.clone()}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let changed_audits = super::case_audit_ids(&mm, &ctx, &id).await?;
+	for attempt in 0..2 {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":changed.clone()}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "changed replay {attempt}: {body}");
+		let (status, fresh) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{fresh}");
+		let rows = fresh["rows"]["sourceDocuments"]
+			.as_array()
+			.ok_or("missing source documents")?;
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0]["id"], doc_id);
+		assert_eq!(rows[0]["sourceDocumentName"], "DOC-CHANGED");
+		assert_eq!(super::case_audit_ids(&mm, &ctx, &id).await?, changed_audits);
+	}
+	let foreign_case_id = create_case_for_editor(
+		&app,
+		&cookie,
+		"EDITOR-CONTRACT-FOREIGN-DOC",
+		&["ich"],
+	)
+	.await?;
+	let foreign_uri = format!("/api/cases/{foreign_case_id}/editor/pages/CI");
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&foreign_uri,
+		json!({"authorities":["ich"],"rows":{
+			"sourceDocuments":[{"sourceDocumentName":"FOREIGN-DOC","deleted":false}]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{foreign_before}");
+	let foreign_doc_id = foreign_before["rows"]["sourceDocuments"][0]["id"].clone();
+	let (status, original_before) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{original_before}");
+	let original_audits = super::case_audit_ids(&mm, &ctx, &id).await?;
+	let foreign_audits = super::case_audit_ids(&mm, &ctx, &foreign_case_id).await?;
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"sourceDocuments":[
+			{"id":doc_id,"sourceDocumentName":"TARGET-MUST-NOT-CHANGE","deleted":false},
+			{"id":foreign_doc_id,"sourceDocumentName":"FOREIGN-MUST-NOT-CHANGE","deleted":false}
+		]}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let (status, original_after) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{original_after}");
+	assert_eq!(original_after, original_before);
+	let (status, foreign_after) = get_json(&app, &cookie, &foreign_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{foreign_after}");
+	assert_eq!(foreign_after, foreign_before);
+	assert_eq!(
+		super::case_audit_ids(&mm, &ctx, &id).await?,
+		original_audits
+	);
+	assert_eq!(
+		super::case_audit_ids(&mm, &ctx, &foreign_case_id).await?,
+		foreign_audits
+	);
 	let mut guarded = Vec::new();
 	for row in [
 		json!({"id":doc["id"],"sourceDocumentName":"Changed"}),

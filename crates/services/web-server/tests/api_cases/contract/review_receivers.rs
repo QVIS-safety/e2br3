@@ -1,5 +1,5 @@
 use super::super::case_support::toggle_case_action;
-use super::support::{get_json, post_json, put_json};
+use super::support::{delete_json, get_json, post_json, put_json};
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
@@ -14,6 +14,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq)]
 struct ReviewReceiverAudit {
 	id: i64,
+	table_name: String,
 	organization_id: Uuid,
 	user_id: Uuid,
 	action: String,
@@ -35,6 +36,7 @@ async fn case_audit_rows(
 		.into_iter()
 		.map(|row| ReviewReceiverAudit {
 			id: row.id,
+			table_name: row.table_name,
 			organization_id: row.organization_id,
 			user_id: row.user_id,
 			action: row.action,
@@ -310,6 +312,34 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 		shell["messageHeader"]["messageReceiverIdentifier"], "MFDS",
 		"{shell:?}"
 	);
+	let before_omission =
+		review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({"data":{},"reason_for_change":"leave review receivers omitted"}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let after_omission =
+		review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	assert_eq!(
+		after_omission.0["data"]["review_receivers_json"],
+		before_omission.0["data"]["review_receivers_json"]
+	);
+	assert_eq!(
+		after_omission.1["reviewReceivers"],
+		receivers["reviewReceivers"]
+	);
+	assert_eq!(
+		after_omission.1["messageHeader"]["messageReceiverIdentifier"],
+		"MFDS"
+	);
+	assert_eq!(
+		after_omission.2, before_omission.2,
+		"omission wrote an audit"
+	);
 	assert_rejected_review_receiver_update(
 		&app,
 		&cookie,
@@ -347,6 +377,108 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 	.await?;
 	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
+	let before_archive =
+		review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({"reason_for_change":"preserve review receivers across archive",
+			"e_signature":{"meaning":"delete case","password":"adminpwd"}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let archived = review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	assert_eq!(archived.0["data"]["status"], "deleted");
+	assert_eq!(
+		archived.0["data"]["review_receivers_json"],
+		before_archive.0["data"]["review_receivers_json"]
+	);
+	assert_eq!(
+		archived.1["reviewReceivers"],
+		before_archive.1["reviewReceivers"]
+	);
+	assert_rejected_review_receiver_update(
+		&app,
+		&cookie,
+		&cookie,
+		&mm,
+		&ctx,
+		case_id,
+		StatusCode::FORBIDDEN,
+		"archived case",
+	)
+	.await?;
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/restore"),
+		json!({"reason_for_change":"restore Case with review receivers"}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let restored = review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	assert_eq!(restored.0["data"]["status"], "draft");
+	assert_eq!(
+		restored.0["data"]["review_receivers_json"],
+		before_archive.0["data"]["review_receivers_json"]
+	);
+	assert_eq!(
+		restored.1["reviewReceivers"],
+		before_archive.1["reviewReceivers"]
+	);
+	for (before, after, old, new, reason, expected_tables) in [
+		(
+			&before_archive.2,
+			&archived.2,
+			"draft",
+			"deleted",
+			"preserve review receivers across archive",
+			vec!["cases", "e_signatures"],
+		),
+		(
+			&archived.2,
+			&restored.2,
+			"deleted",
+			"draft",
+			"restore Case with review receivers",
+			vec!["cases"],
+		),
+	] {
+		assert!(before.iter().all(|row| after.contains(row)));
+		let appended = after
+			.iter()
+			.filter(|row| !before.iter().any(|old| old.id == row.id))
+			.collect::<Vec<_>>();
+		let mut tables = appended
+			.iter()
+			.map(|row| row.table_name.as_str())
+			.collect::<Vec<_>>();
+		tables.sort_unstable();
+		assert_eq!(tables, expected_tables, "unexpected child audit");
+		let status_audit = appended
+			.iter()
+			.find(|row| row.table_name == "cases")
+			.ok_or("missing Case status audit")?;
+		assert_eq!(status_audit.action, "UPDATE");
+		assert_eq!(status_audit.user_id, ctx.user_id());
+		assert_eq!(status_audit.organization_id, ctx.organization_id());
+		assert_eq!(status_audit.reason.as_deref(), Some(reason));
+		assert_eq!(
+			status_audit
+				.old_values
+				.as_ref()
+				.ok_or("missing old Case status")?["status"],
+			old
+		);
+		assert_eq!(
+			status_audit
+				.new_values
+				.as_ref()
+				.ok_or("missing new Case status")?["status"],
+			new
+		);
+	}
 	audit = case_audit_rows(&mm, &ctx, case_id).await?;
 
 	let retained = receivers["reviewReceivers"].clone();
@@ -531,8 +663,28 @@ async fn update_case_rejects_malformed_review_receiver_json() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-BAD-JSON").await?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data":{"review_receivers_json":serde_json::to_string(&json!([
+				{"receiver":"MFDS","reportDueDate":"2026-09-10"}
+			]))?},
+			"reason_for_change":"prepare preserved review receiver"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let before = review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?;
+	assert_ne!(before.0["data"]["report_year"], "2025");
 
 	let (status, body) = put_json(
 		&app,
@@ -540,6 +692,7 @@ async fn update_case_rejects_malformed_review_receiver_json() -> Result<()> {
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
+				"report_year": "2025",
 				"review_receivers_json": "{\"reviewReceivers\":["
 			},
 			"reason_for_change": "reject malformed review receiver json"
@@ -550,9 +703,14 @@ async fn update_case_rejects_malformed_review_receiver_json() -> Result<()> {
 	assert!(
 		body["error"]["data"]["detail"]
 			.as_str()
-			.unwrap_or_default()
+			.ok_or("missing malformed JSON error detail")?
 			.contains("valid JSON"),
 		"{body:?}"
+	);
+	assert_eq!(
+		review_receiver_state(&app, &cookie, &mm, &ctx, case_id).await?,
+		before,
+		"malformed receiver JSON persisted the valid companion change or audit"
 	);
 
 	Ok(())
