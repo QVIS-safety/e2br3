@@ -38,7 +38,11 @@ async fn main() -> Result<()> {
 		"authorization storage reconciled: {} assignments, {} custom roles",
 		report.assignments, report.custom_roles
 	);
-	bootstrap::bootstrap_admin_user(&mm).await?;
+	if bootstrap::admin_bootstrap_enabled(std::env::var(
+		"SERVICE_BOOTSTRAP_ENABLED",
+	))? {
+		bootstrap::bootstrap_admin_user(&mm).await?;
+	}
 	start_user_expiry_worker(mm.clone());
 	start_reconcile_worker(mm.clone());
 

@@ -26,6 +26,7 @@ services:
       E2BR3_STRICT_SUBMISSION_CONFIG: "true"
       RUST_LOG: "web_server=info,lib_core=info,lib_web=info"
       SKIP_DEV_INIT: "1"
+      SERVICE_BOOTSTRAP_ENABLED: "false"
     volumes:
       - ../../schemas:/app/schemas:ro
 

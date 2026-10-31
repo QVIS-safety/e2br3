@@ -37,6 +37,8 @@ sudo COMPOSE_FILE=/opt/safetydb-staging/releases/fda9f62-20261027/compose.yml \
 The installer runs a read-only preflight before enabling the timer. Host dependencies
 are Docker Compose, Python 3, curl, PostgreSQL client tools compatible with RDS, and
 working GHCR authentication in `/root/.docker`. Runtime bootstrap must remain disabled.
+`SERVICE_BOOTSTRAP_ENABLED=false` is required in deployed environments; the local
+Cargo configuration explicitly enables the development demo accounts.
 Inspect `systemctl status e2br3-dev-update.service`, its journal, and private
 `last-success.json`/`last-error.log` in `STATE_DIR` for the actual deployment result.
 

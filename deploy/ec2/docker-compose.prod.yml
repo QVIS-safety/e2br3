@@ -27,6 +27,7 @@ services:
       E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS: "${E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS:?E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS must be configured}"
       RUST_LOG: "${RUST_LOG:-web_server=info,lib_core=info,lib_web=info}"
       SKIP_DEV_INIT: "1"
+      SERVICE_BOOTSTRAP_ENABLED: "false"
     volumes:
       # If this is wrong/missing, you'll see:
       # "XSD parse error: Failed to locate the main schema resource at '/app/schemas/...'"
