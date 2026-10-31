@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check validator-owned mappings and actual Cargo field/rule test results."""
+"""Check validator-owned mappings and actual Cargo rule test results."""
 
 from __future__ import annotations
 
@@ -29,11 +29,12 @@ def check_catalog(crate: Path = CRATE, root: Path = ROOT) -> set[str]:
     tests = set()
     for rule in rules:
         name = "rule_" + re.sub(r"[^a-z0-9]", "_", rule["ruleCode"].lower())
-        if rule["testName"] != name or name in tests:
+        full_name = f"{rule['testModule']}::{name}"
+        if rule["testName"] != name or full_name in tests:
             raise ValueError(f"invalid/duplicate test binding: {rule['ruleCode']}")
-        tests.add(name)
+        tests.add(full_name)
         if "scenarioId" in rule or "mutationTarget" in rule:
-            raise ValueError(f"field tests must not bind fuzzer scenarios: {rule['ruleCode']}")
+            raise ValueError(f"rule tests must not bind fuzzer scenarios: {rule['ruleCode']}")
         if rule["expectedIssueCode"] not in {rule["ruleCode"], "ICH.MEDDRA.VERSION.UNAVAILABLE"}:
             raise ValueError(f"invalid current issue-code binding: {rule['ruleCode']}")
         paths = rule["expectedIssuePaths"]
@@ -56,7 +57,7 @@ def check_catalog(crate: Path = CRATE, root: Path = ROOT) -> set[str]:
     seen = set()
     mapped_pages = set()
     target_pairs = set()
-    target_names = set()
+    target_fields = set()
     rules_by_code = {rule["ruleCode"]: rule for rule in rules}
     for path in sorted((crate / "field-rules").glob("*.json")):
         page = json.loads(path.read_text())
@@ -65,18 +66,18 @@ def check_catalog(crate: Path = CRATE, root: Path = ROOT) -> set[str]:
         mapped_pages.add(page["pageId"])
         for target in page["fields"]:
             field_path = target["fieldPath"]
-            name = field_test_name(page["pageId"], field_path)
-            if name in target_names:
-                raise ValueError(f"duplicate field test: {name}")
-            target_names.add(name)
+            key = (page["pageId"], field_path)
+            if key in target_fields:
+                raise ValueError(f"duplicate field mapping: {key}")
+            target_fields.add(key)
             codes_for_field = target["ruleCodes"]
             if not codes_for_field or len(codes_for_field) != len(set(codes_for_field)):
-                raise ValueError(f"field test requires unique rules: {field_path}")
+                raise ValueError(f"field mapping requires unique rules: {field_path}")
             for code in codes_for_field:
                 if code not in rules_by_code or field_path not in rules_by_code[code]["expectedIssuePaths"]:
-                    raise ValueError(f"field/rule test binding mismatch: {field_path}: {code}")
+                    raise ValueError(f"field/rule mapping mismatch: {field_path}: {code}")
                 if (code, field_path) in target_pairs:
-                    raise ValueError(f"duplicate field/rule test binding: {field_path}: {code}")
+                    raise ValueError(f"duplicate field/rule mapping: {field_path}: {code}")
                 target_pairs.add((code, field_path))
         for field in page["editorMappings"]:
             key = (page["pageId"], field["authority"], field["code"], field["frontendPath"])
@@ -94,27 +95,16 @@ def check_catalog(crate: Path = CRATE, root: Path = ROOT) -> set[str]:
         raise ValueError("validator field mapping pages differ from editor pages")
     expected_pairs = {(rule["ruleCode"], path) for rule in rules for path in rule["expectedIssuePaths"]}
     if target_pairs != expected_pairs:
-        raise ValueError(f"field tests do not cover rule paths: {sorted(expected_pairs - target_pairs)}")
+        raise ValueError(f"field mappings do not cover rule paths: {sorted(expected_pairs - target_pairs)}")
     return tests
-
-
-def field_test_name(page: str, path: str) -> str:
-    return "field_" + page.lower() + "_" + re.sub(r"[^a-z0-9]+", "_", path.lower()).strip("_")
-
-
-def field_test_names(crate: Path = CRATE) -> set[str]:
-    return {field_test_name(page["pageId"], target["fieldPath"])
-            for path in (crate / "field-rules").glob("*.json")
-            for page in [json.loads(path.read_text())]
-            for target in page["fields"]}
 
 
 def check_test_log(text: str, expected: set[str]) -> None:
     results: dict[str, list[str]] = {}
     for full_name, result in re.findall(r"^test (\S+) \.\.\. (\S+)", text, re.MULTILINE):
         name = full_name.rsplit("::", 1)[-1]
-        if name.startswith(("rule_", "field_")):
-            results.setdefault(name, []).append(result)
+        if name.startswith("rule_"):
+            results.setdefault(full_name, []).append(result)
     if set(results) != expected:
         raise ValueError(f"Cargo rule test coverage mismatch: missing={sorted(expected - set(results))}, "
                          f"extra={sorted(set(results) - expected)}")
@@ -125,13 +115,13 @@ def check_test_log(text: str, expected: set[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--test-log", type=Path, help="Cargo output; requires every field and rule test to pass")
+    parser.add_argument("--test-log", type=Path, help="Cargo output; requires every rule test to pass")
     args = parser.parse_args()
-    expected = check_catalog() | field_test_names()
+    expected = check_catalog()
     if args.test_log is not None:
         check_test_log(args.test_log.read_text(), expected)
-    print(f"validator rule/field tests: {len(expected)} bindings checked"
-          + ("; every Rust rule and field test passed" if args.test_log is not None else ""))
+    print(f"validator rule tests: {len(expected)} bindings checked"
+          + ("; every Rust rule test passed" if args.test_log is not None else ""))
 
 
 if __name__ == "__main__":

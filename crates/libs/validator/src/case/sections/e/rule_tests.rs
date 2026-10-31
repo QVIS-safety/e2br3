@@ -7,7 +7,7 @@ fn assert_edge(
 	invalid: Vec<ValidationIssue>,
 	repaired: Vec<ValidationIssue>,
 ) {
-	crate::field_tests::record_rule_result(&invalid, &repaired);
+	crate::rule_assertions::assert_rule_result(code, &invalid, &repaired);
 	let emitted_code = if code == "ICH.E.i.2.1a.VOCABULARY" {
 		"ICH.MEDDRA.VERSION.UNAVAILABLE"
 	} else {
@@ -377,5 +377,3 @@ rules! {
 	rule_mfds_e_i_5_required: "MFDS.E.i.5.REQUIRED",
 	rule_mfds_e_i_9_eu_forbidden: "MFDS.E.i.9.EU.FORBIDDEN",
 }
-
-include!("rule_test_bindings.rs");

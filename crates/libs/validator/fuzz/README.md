@@ -5,6 +5,16 @@ It verifies invalid/valid mutations through the real save/readback/validation
 and audit paths. Shared API/audit helpers remain in repository `scripts/`.
 The old script entry point forwards here for existing callers.
 
+- `runner.py`: CLI options, path setup and existing public imports.
+- `scenarios.py`: scenario definitions, catalog and rule dispositions.
+- `generation.py`: deterministic seeded mutations and fingerprints.
+- `terminology.py`: MedDRA/WHODrug release bindings.
+- `evidence.py`: issue/edge checks and source hashes.
+- `execution.py`: real API save/readback/validation/audit lifecycle.
+
+Run artifacts retain `runner_sha256` for the entry point and record every
+split module in `source_sha256`. A missing source file is an error.
+
 ```sh
 python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
 python3 crates/libs/validator/fuzz/runner.py --help

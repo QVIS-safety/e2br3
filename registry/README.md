@@ -158,16 +158,20 @@ Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
 helpers stay in `support.rs`; feature-specific setup stays with its tests.
 
-CI runs the full workspace and canonical backend execution check on every
-`dev`/`main` push, before publishing the backend image. PRs that change only
+CI first separates validator tests from the other backend suites by changed
+paths. Validator-only changes skip the registry/audit/database jobs; unrelated
+changes skip validator tests. Shared validator inputs run both. Formatting and
+workspace Clippy remain enabled. When backend suites are selected, `dev`/`main`
+pushes run the full remaining workspace and canonical backend execution check
+before publishing the backend image. PRs that change only
 known integration-test files run their complete Cargo test targets. Any API
 target run still requires all canonical field tests, including explicit RE/DG
 references. Documentation-only PRs skip the database test job; production,
 shared helpers, schema, registry, CI configuration and unknown paths require
-the full suite. Other jobs, including frontend contract checks, remain enabled.
+the full backend suite. Selected registry jobs include frontend contract checks.
 The selected scope appears in the Test Scope job summary. A targeted PR result
 does not stand for a full release validation. Test-only `authorization_kernel`
-changes include its compile-fail fixtures; the full push always runs it too.
+changes include its compile-fail fixtures; full backend pushes run it too.
 
 For a local preview (the base revision must exist):
 

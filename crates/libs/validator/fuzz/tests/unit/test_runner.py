@@ -1,15 +1,35 @@
 #!/usr/bin/env python3
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import runner as fuzzer
+from evidence import source_hashes
 
 
 class CaseBusinessValidatorFuzzerTests(unittest.TestCase):
+    def test_source_hashes_cover_every_module_and_reject_missing_sources(self):
+        names = {"runner.py", "scenarios.py", "generation.py",
+                 "evidence.py", "terminology.py", "execution.py"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in names:
+                (root / name).write_text(name)
+            baseline = source_hashes(root)
+            self.assertEqual(set(baseline), names)
+            for name in names:
+                (root / name).write_text(name + " changed")
+                changed = source_hashes(root)
+                self.assertEqual({key for key in names if changed[key] != baseline[key]}, {name})
+                (root / name).write_text(name)
+            (root / "scenarios.py").unlink()
+            with self.assertRaises(FileNotFoundError):
+                source_hashes(root)
+
     def test_every_rule_has_one_scenario(self):
         runner = fuzzer
         inventory = runner.discover_business_rule_codes()

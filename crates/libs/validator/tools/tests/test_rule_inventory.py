@@ -17,15 +17,16 @@ class RuleInventoryTests(unittest.TestCase):
 
 
     def test_result_gate_rejects_missing_ignored_failed_duplicate_and_extra_tests(self):
-        expected = {"rule_one", "field_ci_path"}
-        valid = "test c::rule_one ... ok\ntest field_tests::ci::field_ci_path ... ok\n"
+        expected = {"c::rule_one", "d::rule_two"}
+        valid = "test c::rule_one ... ok\ntest d::rule_two ... ok\n"
         check_rule_tests.check_test_log(valid, expected)
         for invalid in (
             "test c::rule_one ... ok\n",
-            valid.replace("field_ci_path ... ok", "field_ci_path ... ignored"),
-            valid.replace("field_ci_path ... ok", "field_ci_path ... FAILED"),
-            valid + "test e::rule_one ... ok\n",
+            valid.replace("rule_two ... ok", "rule_two ... ignored"),
+            valid.replace("rule_two ... ok", "rule_two ... FAILED"),
+            valid + "test c::rule_one ... ok\n",
             valid + "test e::rule_extra ... ok\n",
+            valid.replace("d::rule_two", "e::rule_two"),
         ):
             with self.subTest(log=invalid), self.assertRaises(ValueError):
                 check_rule_tests.check_test_log(invalid, expected)

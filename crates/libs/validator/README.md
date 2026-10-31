@@ -1,43 +1,61 @@
-# Validator field and rule tests
+# Validator rule tests
 
-The validation test binding is:
+The agreed 298 baseline business rules each have a named Rust test under
+`src/case/sections/{c,d,e,f,g,h}/rule_tests.rs`. Each test runs the production
+validator against invalid and repaired inputs, then checks the issue code,
+all declared issue paths and removal of the error after repair. The shared
+assertion in `src/tests/rule_assertions.rs` reads `rules.json` directly; it does
+not rerun the rule or capture results through another test layer.
 
-`field-rules/*.json fields -> ruleCodes -> rules.json Rust test binding -> production validator`
+`field-rules/*.json` retains field-to-rule metadata. The catalog checker checks
+those mappings against `rules.json`; they do not generate or execute separate
+field tests. Numeric row indices normalize to `[]` when comparing issue paths.
+These are deterministic, isolated logic tests, not production data or regulatory
+acceptance evidence.
 
-Each field has a named Rust test under `src/field_tests/`. It reads its field's
-JSON entry at execution time, runs every referenced rule fixture, and checks
-that the invalid result reports the expected code at that exact field path and
-that repair removes it. Fields are validator issue paths, including collection
-paths, not a count of frontend controls. Numeric row indices normalize to `[]`.
+Test files are organized by ownership:
 
-The existing 298 baseline rule tests remain under
-`src/case/sections/{c,d,e,f,g,h}/rule_tests.rs`. The generated function tables
-reuse those deterministic fixtures in field tests. Thread-local test capture
-collects the actual invalid/repaired issues; it does not manufacture results.
-`catalog_matches_rule_fixtures` also checks the declared issue paths against
-actual validator output. These are isolated logic tests, not production data
-or regulatory acceptance evidence.
+```text
+src/tests/                         # Policy/direct-issue tests and rule assertions
+src/case/sections/
+  tests.rs                         # Cross-section validation tests
+  helpers/tests.rs                 # Shared helper tests
+  {c,d,e,f,g,h}/
+    *tests.rs                      # Existing section regression tests
+    rule_tests.rs                  # Named rule tests
+    rule_fixtures/                 # C/D/G inputs and production validator calls
+tests/allowed_value_representation.rs  # Public API integration test
+rules.json                         # Rule-to-test and expected-issue bindings
+field-rules/                       # Field-to-rule JSON metadata
+tools/                             # Catalog and execution checks
+fuzz/                              # Separate persisted API fuzzer
+```
 
-- `field-rules/*.json` **fields** owns the field-path-to-rule bindings consumed
-  by Rust field tests. **editorMappings** preserves the previous UI metadata
-  for canonical inventory consumers; its historical statuses are not test results.
+C, D and G include their test setup and validation calls from
+`rule_fixtures/{ich,fda,mfds}.rs`. D and G share fixture constructors through
+`rule_fixtures/common.rs`. Section and policy regression tests use private
+`#[cfg(test)]` modules in separate files. These files preserve the existing
+Rust test names and do not expose production APIs.
+
 - `rules.json` binds baseline rule codes to Rust modules/test names and current
-  issue codes/paths. It contains no fuzzer scenarios or mutation targets. Twelve
-  historical MedDRA codes explicitly map to the current shared
-  `ICH.MEDDRA.VERSION.UNAVAILABLE` rule.
+  issue codes/paths. Twelve historical MedDRA codes explicitly map to the current
+  shared `ICH.MEDDRA.VERSION.UNAVAILABLE` rule.
+- `field-rules/*.json` **fields** owns field-path-to-rule metadata.
+  **editorMappings** preserves UI metadata for canonical inventory consumers;
+  its historical statuses are not test results.
 - `tools/rule_inventory.py` discovers the agreed production-source baseline.
-  The fuzzer may import that inventory; field tests do not depend on the fuzzer.
+  The fuzzer may import that inventory; rule tests do not depend on the fuzzer.
 - `fuzz/runner.py` separately owns real API save/readback/validation/audit checks.
-  The old script command forwards to it. Its scenarios do not define field-test
-  bindings or stand in for field-test execution.
+  The old script command forwards to it. Its inputs do not define rule-test
+  bindings or stand in for rule-test execution.
 
 ```sh
-python3 crates/libs/validator/tools/generate_field_tests.py --write
 python3 -m unittest discover crates/libs/validator/tools/tests
 python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
-cargo test -p validator field_tests::
-# One field and all its connected rules:
-cargo test -p validator field_tests::si::field_si_studyinformation_studytypereaction -- --exact
+# All named business-rule tests:
+cargo test -p validator '::rule_tests::rule_'
+# One business rule:
+cargo test -p validator case::sections::c::rule_tests::rule_ich_c_5_4_required -- --exact
 # Full CI gate:
 set -o pipefail
 cargo test -p validator --locked -- --color never | tee /tmp/validator-tests.log
@@ -45,11 +63,12 @@ python3 crates/libs/validator/tools/check_rule_tests.py --test-log /tmp/validato
 ```
 
 When changing a rule or field mapping, update its production implementation,
-rule fixture, `rules.json` and the corresponding `field-rules` entry, then run
-the generator. CI checks source/catalog/field identity consistency, generated
-file freshness, actual issue paths and execution of every rule and field test.
-Missing, ignored, failed, duplicate or wrongly connected tests fail the gate.
-The baseline is not an official-document completeness claim.
+rule test, `rules.json` and the corresponding `field-rules` entry. CI checks
+source/catalog/field identity consistency and requires every fully qualified
+rule test to execute and pass exactly once. Missing, ignored, failed, duplicate,
+extra or wrongly located rule tests fail the gate. Each rule test itself checks
+the declared issue paths. The baseline is not an official-document completeness
+claim.
 
 Business-rule assertions belong to this crate. The web-server integration suite
 keeps authority routing, DB projection-to-issue paths, cache invalidation and
@@ -59,7 +78,29 @@ the RP collection/row and SI sequence-gap checks live in `case_validation_web.rs
 Frontend integration tests cover scoped banners/dots, per-authority aggregation
 and stale validation responses, and run in the registry CI job.
 
-The validator CI job runs on `dev`/`main` pushes and PRs targeting either branch,
-without DB credentials. Dev image publication requires both this job and the
-workspace tests to pass. The workspace DB job excludes validator to avoid
-running the same suite twice.
+CI selects tests on `dev`/`main` pushes and PRs targeting either branch:
+
+| Changed files | Validator tests | Other backend/registry/audit tests |
+| --- | --- | --- |
+| Only `crates/libs/validator/**` | Run | Skip |
+| Unrelated backend files | Skip | Run |
+| Both areas or shared validator inputs | Run | Run |
+
+`scripts/ci_test_scope.py` lists shared inputs: transitive Rust dependencies,
+Cargo/toolchain configuration, the CI workflow/selector, registry metadata and
+the fuzzer's external helper files. Pushes compare the complete before/after
+range; PRs compare from the merge base. Deletions and both sides of renames are
+included. A new branch checks its complete tree; missing Git history fails the
+selection job instead of skipping tests. No changed files selects no test suite.
+
+Formatting and workspace Clippy checks still run, including compilation of
+downstream validator consumers. The validator tests require no DB credentials.
+The other workspace tests still exclude validator. Dev image publication requires
+the selected suites to pass and the unselected suites to be explicitly skipped;
+a failed, cancelled or unexpectedly skipped required suite blocks publication.
+The existing main-branch CD still requires a successful CI workflow.
+
+The shared Test Scope job also preserves `scripts/ci_test_plan.py`: when backend
+tests are selected, test-only PRs may run complete affected integration targets;
+backend pushes run the full remaining workspace. Validator selection remains
+independent of that backend target plan.

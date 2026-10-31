@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
+      validator: ${{ steps.scope.outputs.validator }}
+      backend: ${{ steps.scope.outputs.backend }}
       mode: ${{ steps.plan.outputs.mode }}
       targets: ${{ steps.plan.outputs.targets }}
       backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
@@ -27,7 +29,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify test selection
-        run: python3 -m unittest scripts/tests/test_ci_test_plan.py
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py
+      - name: Select validator and backend suites
+        id: scope
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/ci_test_scope.py | tee "$RUNNER_TEMP/test-scope.json"
+          cat "$RUNNER_TEMP/test-scope.json" >> "$GITHUB_STEP_SUMMARY"
       - name: Select tests from the complete PR diff
         id: plan
         shell: bash
@@ -42,7 +51,9 @@ jobs:
           cat "$RUNNER_TEMP/test-plan.json" >> "$GITHUB_STEP_SUMMARY"
 
   validator:
-    name: Validator Field and Rule Tests
+    name: Validator Rule Tests
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.validator == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -56,10 +67,9 @@ jobs:
       - name: Check field mappings and fuzzer logic
         run: |
           python3 crates/libs/validator/tools/check_rule_tests.py
-          python3 crates/libs/validator/tools/generate_field_tests.py --check
           python3 -m unittest discover crates/libs/validator/tools/tests
           python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
-      - name: Run validator tests and require every field and rule to pass
+      - name: Run validator tests and require every rule to pass
         shell: bash
         run: |
           set -o pipefail
@@ -68,6 +78,8 @@ jobs:
 
   case-editor-audit:
     name: Case Editor Audit Plan
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -94,6 +106,8 @@ jobs:
   # ============================================
   registry:
     name: E2BR3 Registry
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -229,7 +243,7 @@ jobs:
   test:
     name: Test
     needs: [registry, test-plan]
-    if: ${{ needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted' }}
+    if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -350,8 +364,16 @@ jobs:
 
   deploy-dev:
     name: Publish Dev Backend Image
-    if: ${{ github.event_name == 'push' && github.ref_name == 'dev' }}
-    needs: [registry, fmt, clippy, validator, test]
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && github.ref_name == 'dev' &&
+          needs.test-plan.result == 'success' &&
+          (needs.test-plan.outputs.backend == 'false' || needs.test-plan.outputs.mode == 'full') &&
+          needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
+          ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
+           (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
+          ((needs.test-plan.outputs.backend == 'true' && needs.registry.result == 'success' && needs.test.result == 'success' && needs['case-editor-audit'].result == 'success') ||
+           (needs.test-plan.outputs.backend == 'false' && needs.registry.result == 'skipped' && needs.test.result == 'skipped' && needs['case-editor-audit'].result == 'skipped')) }}
+    needs: [test-plan, case-editor-audit, registry, fmt, clippy, validator, test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

@@ -10,7 +10,7 @@ fn assert_edge(
 	invalid: Vec<ValidationIssue>,
 	repaired: Vec<ValidationIssue>,
 ) {
-	crate::field_tests::record_rule_result(&invalid, &repaired);
+	crate::rule_assertions::assert_rule_result(code, &invalid, &repaired);
 	let emitted_code = if code == "ICH.F.r.2.2a.VOCABULARY" {
 		"ICH.MEDDRA.VERSION.UNAVAILABLE"
 	} else {
@@ -299,5 +299,3 @@ rules! {
 	rule_mfds_f_r_1_nullflavor_vocabulary: "MFDS.F.r.1.NULLFLAVOR.VOCABULARY",
 	rule_mfds_f_r_7_c_1_6_1_required: "MFDS.F.r.7.C.1.6.1.REQUIRED",
 }
-
-include!("rule_test_bindings.rs");
