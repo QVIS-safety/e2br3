@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH", "N")
+LEGACY_READ_PAGES = ("CI", "RP", "SD", "SI", "DM", "NR", "AE", "LB", "DG", "DH")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = (
     REPO_ROOT
@@ -131,7 +132,9 @@ def normalize_editor_filters(filters: list[str]) -> list[str]:
     if not isinstance(filters, list) or any(not isinstance(value, str) for value in filters):
         raise ValueError("editor filters must be a list of module prefixes")
     pages = "|".join(page.lower() for page in ACTIVE_PAGES)
-    pattern = rf"case_editor_contract_web::(?:{pages})::(?:(?:fields|rows|relations|audit)::)?"
+    legacy_pages = "|".join(page.lower() for page in LEGACY_READ_PAGES)
+    pattern = (rf"case_editor_contract_web::(?:(?:{pages})::(?:(?:fields|rows|relations|audit)::)?"
+               rf"|legacy_reads::(?:{legacy_pages})::)")
     if any(not re.fullmatch(pattern, value) for value in filters):
         raise ValueError("invalid editor test module prefix")
     return [value for value in sorted(set(filters))
@@ -150,6 +153,31 @@ def expected_editor_tests(registry_root: Path) -> set[str]:
             for check in contract[group]:
                 expected.add(f'{prefix}::{category}::{check["id"]}')
     return expected
+
+
+def expected_legacy_read_tests(registry_root: Path) -> set[str]:
+    root = registry_root.parent / "crates/services/web-server/tests/api_editor"
+    if not re.search(r"(?m)^mod legacy_reads;$", (root / "mod.rs").read_text()):
+        raise ValueError("legacy editor reads are not registered in api_editor")
+    module = (root / "legacy_reads/mod.rs").read_text()
+    expected = set()
+    for page in LEGACY_READ_PAGES:
+        name = page.lower()
+        if not re.search(rf"(?m)^mod {name};$", module):
+            raise ValueError(f"legacy editor reads are not registered: {page}")
+        source = (root / "legacy_reads" / f"{name}.rs").read_text()
+        if "#[ignore" in source or "#[cfg(" in source:
+            raise ValueError(f"legacy editor read tests cannot be disabled: {page}")
+        declarations = re.findall(
+            r"(?m)^\s*#\[(?:tokio::)?test\]\s*(?:async\s+)?fn\s+(\w+)\s*\(", source)
+        if not declarations or len(declarations) != len(set(declarations)):
+            raise ValueError(f"legacy editor read test declarations missing/duplicated: {page}")
+        expected.update(f"case_editor_contract_web::legacy_reads::{name}::{test}" for test in declarations)
+    return expected
+
+
+def expected_editor_execution_tests(registry_root: Path) -> set[str]:
+    return expected_editor_tests(registry_root) | expected_legacy_read_tests(registry_root)
 
 
 def generate(registry_root: Path, output_root: Path) -> dict[str, str]:

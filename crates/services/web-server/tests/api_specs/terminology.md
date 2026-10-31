@@ -15,12 +15,12 @@
 | `GET /api/terminology/meddra` | 필수 `q`, 선택 `limit`(기본 20), `version`, `language`, `level`; `id,code,term,level,version,language,active,created_at` | active release만, code/name, version/language 전환, viewer/operational read |
 | `GET /api/terminology/whodrug` | 필수 `q`, 선택 `limit`; `id,code,drug_name,atc_code,version,language,active,created_at` | active row 검색 |
 | `GET /api/terminology/mfds-products` | 필수 `q`, 선택 `limit`; `id,item_seq,product_name_kr/en,manufacturer_name_kr/en,permit_date,cancellation_date,cancellation_status,version,active,created_at` | code/name와 inactive 제외 |
-| `GET /api/terminology/mfds-substances` | `q` 두 글자 이상, 선택 `limit`; `substance_code,substance_name_kr/en,version` | 보호 snapshot만; 2자 오류/정상 결과 직접 assertion 없음 |
+| `GET /api/terminology/mfds-substances` | `q` 두 글자 이상, 선택 `limit`; `substance_code,substance_name_kr/en,version` | 1자 `M` 400; M900001·M900002 개별 query에 해당 code 존재, inactive M900003 부재 |
 | `GET /api/terminology/mfds-products/{item_seq}/substances` | path의 품목기준코드; `item_seq,substance_code,substance_name_kr/en,quantity,unit,component_content,version` | active explicit link와 주요 값 |
 | `GET /api/terminology/countries` | query 없음; `code,name,active` | viewer 200와 KR 포함 |
 | `GET /api/terminology/code-lists` | 필수 `list_name`; `id,list_name,code,display_name,description,sort_order,active` | `sender_type` active code 순서 |
-| `GET /api/terminology/fda-code-search` | 필수 `list_name,q`, 선택 `limit`; 2자 미만은 빈 배열; `id,list_name,ncit_concept_code,level1_term,level2_term,level3_term,fda_code,imdrf_code` | 보호 snapshot만 |
-| `GET /api/terminology/ucum-units` | query 없음; `id,code,display_name,description,unit_type,active` | 보호 snapshot만 |
+| `GET /api/terminology/fda-code-search` | 필수 `list_name,q`, 선택 `limit`; 2자 미만은 빈 배열; `id,list_name,ncit_concept_code,level1_term,level2_term,level3_term,fda_code,imdrf_code` | 1자 `B` 빈 결과; trimmed `Boundary` query가 TEST-CODE-1/2 순서와 `test_device_problem` list_name 반환 |
+| `GET /api/terminology/ucum-units` | query 없음; `id,code,display_name,description,unit_type,active` | `zz-test` 행이 `{test-a}`, `{test-b}` 순서이고 `{test-hidden}` 부재 |
 | `GET /api/terminology/releases` | 선택 `dictionary`, `language`; release row 배열 | filter/list와 operational read |
 
 검색 row는 DB model의 snake_case serialization을 사용한다. `whodrug`, `mfds-products`, `mfds-substances`도 공용 query DTO 때문에 `version`, `language`, `level`을 역직렬화하지만 현재 handler는 이 세 값을 사용하지 않는다. limit의 handler 기본은 20이며 MedDRA model은 1..100으로 clamp한다. 다른 검색의 음수/과대 limit 경계는 이 문서가 보장하지 않으며 활성 assertion도 없다.
@@ -68,6 +68,6 @@ release row는 `id,dictionary,version,language,status,source_path,source_checksu
 
 ## Coverage 판정
 
-Route별로는 15개 중 12개가 직접 behavior/permission assertion을 가지며 `fda-code-search`, `mfds-substances`, `ucum-units` 세 경로는 `registration_only`다. 보호 경로 snapshot은 HTTP authorization assertion이 아니라 등록 inventory 근거다. 공통 근거는 [`protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot`](../authz/protected_route_inventory.rs#L46)이다.
+Route 15개 모두 하나 이상의 직접 behavior/permission assertion을 가진다. 신규 검색 assertion은 FDA의 짧은/trimmed query와 list filter·두 code 순서, MFDS의 최소 길이와 세 code별 active 가시성, UCUM의 `zz-test` 두 active code 순서와 hidden code 부재를 각각 확인한다(runtime NOT_RUN). 기존 보호 경로 snapshot 등록 근거도 유지한다. 전체 schema, missing query, limit 극단, release 전환과 권한 조합까지 모두 검증했다는 뜻은 아니다.
 
 검색 응답 전체 schema, SQL 오류 mapping, cross-org release visibility, exact pagination/order, GET query deserialization 오류, production dictionary content와 release row count는 이 source-only 검토에서 검증하지 않았다.

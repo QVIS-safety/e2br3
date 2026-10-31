@@ -2760,6 +2760,11 @@
       "id": "device_list_replacement_removes_children",
       "verifier": "relations::device_children::device_list_replacement_removes_children",
       "description": "device list replacement removes children"
+    },
+    {
+      "id": "mixed_foreign_children_rollback",
+      "verifier": "relations::scope::rejects_mixed_foreign_drug_children_atomically",
+      "description": "Reject a valid drug edit mixed with another case child; preserve both case projections and audit records."
     }
   ],
   "auditChecks": [

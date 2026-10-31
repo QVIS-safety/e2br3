@@ -61,15 +61,27 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		("parentPastDrugs", saved["parentPastDrugs"][0]["id"].clone()),
 	];
 	let parent_id = saved["parentInfo"]["id"].clone();
+	let parent_children_before = [
+		(
+			"parentMedicalHistory",
+			saved["parentMedicalHistory"][0].clone(),
+			"comments",
+		),
+		(
+			"parentPastDrugs",
+			saved["parentPastDrugs"][0].clone(),
+			"drug_name",
+		),
+	];
 	for rows in [
-		json!({"patientIdentifiers":[{"id":"not-a-uuid","identifierValue":"INVALID"}]}),
-		json!({"medicalHistoryEpisodes":[{"id":"not-a-uuid","comments":"INVALID"}]}),
-		json!({"reportedCauses":[{"id":"not-a-uuid","causeText":"INVALID"}]}),
-		json!({"autopsyCauses":[{"id":"not-a-uuid","causeText":"INVALID"}]}),
-		json!({"parentMedicalHistory":[{"id":"not-a-uuid","comments":"INVALID"}]}),
-		json!({"parentPastDrugs":[{"id":"not-a-uuid","drugName":"INVALID"}]}),
-		json!({"parentInfo":{"id":"not-a-uuid","parentIdentification":"INVALID"}}),
-		json!({"deathInfo":{"id":"not-a-uuid","dateOfDeath":"20261002"}}),
+		json!({"patientIdentifiers":[{"id":owners[0].1,"identifierValue":"MUST ROLL BACK"},{"id":"not-a-uuid","identifierValue":"INVALID"}]}),
+		json!({"medicalHistoryEpisodes":[{"id":owners[1].1,"comments":"MUST ROLL BACK"},{"id":"not-a-uuid","comments":"INVALID"}]}),
+		json!({"reportedCauses":[{"id":owners[2].1,"causeText":"MUST ROLL BACK"},{"id":"not-a-uuid","causeText":"INVALID"}]}),
+		json!({"autopsyCauses":[{"id":owners[3].1,"causeText":"MUST ROLL BACK"},{"id":"not-a-uuid","causeText":"INVALID"}]}),
+		json!({"parentMedicalHistory":[{"id":owners[4].1,"comments":"MUST ROLL BACK"},{"id":"not-a-uuid","comments":"INVALID"}]}),
+		json!({"parentPastDrugs":[{"id":owners[5].1,"drugName":"MUST ROLL BACK"},{"id":"not-a-uuid","drugName":"INVALID"}]}),
+		json!({"parentInfo":{"id":"not-a-uuid","parentIdentification":"INVALID"},"patientInformation":{"id":saved["patientInformation"]["id"],"patientInitials":"MUST ROLL BACK"}}),
+		json!({"deathInfo":{"id":"not-a-uuid","dateOfDeath":"20261002"},"patientInformation":{"id":saved["patientInformation"]["id"],"patientInitials":"MUST ROLL BACK"}}),
 	] {
 		assert_malformed_row_id_rejected_without_mutation(
 			&app, &cookie, &mm, &ctx, &uri, &case_id, "ich", rows,
@@ -205,13 +217,20 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			body["rows"]["parentInfo"]["parent_identification"], "RESTORED-PARENT",
 			"{body}"
 		);
-		for (owner, id) in &owners[4..] {
+		for (owner, before, value_field) in &parent_children_before {
 			assert_eq!(
 				body["rows"][*owner].as_array().map(Vec::len),
 				Some(1),
 				"{owner}: {body}"
 			);
-			assert_eq!(body["rows"][*owner][0]["id"], id, "{owner}: {body}");
+			assert_eq!(
+				body["rows"][*owner][0]["id"], before["id"],
+				"{owner}: {body}"
+			);
+			assert_eq!(
+				body["rows"][*owner][0][*value_field], before[*value_field],
+				"{owner}: child value changed across parent delete/restore"
+			);
 		}
 	}
 	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 7)

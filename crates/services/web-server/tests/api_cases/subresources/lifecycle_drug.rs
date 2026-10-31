@@ -1,4 +1,5 @@
 use super::lifecycle_audit::*;
+use super::lifecycle_parents::*;
 use super::lifecycle_policy::*;
 use super::lifecycle_support::*;
 use super::support::*;
@@ -250,6 +251,47 @@ async fn drug_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Result
 		restore: Some(format!("{assessment_collection}/{assessment_id}/relatedness/{related_id}/restore")),
 		restore_status: StatusCode::OK,
 	});
+	let case_rows = contracts
+		.iter()
+		.chain([&assessment_contract, &drug_contract])
+		.collect::<Vec<_>>();
+	assert_case_soft_parent_preserves_rows(
+		&app,
+		&cookie,
+		"adminpwd",
+		&mm,
+		&ctx,
+		case_id,
+		&case_rows,
+		&[],
+	)
+	.await?;
+	assert_nested_parent_contract(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		&drug_contract,
+		&case_rows[..case_rows.len() - 1],
+	)
+	.await?;
+	let device_contract = contracts
+		.iter()
+		.find(|contract| contract.table == "fda_device_information")
+		.ok_or("FDA device lifecycle contract is missing")?;
+	let code_contract = contracts
+		.iter()
+		.find(|contract| contract.table == "fda_device_codes")
+		.ok_or("FDA device code lifecycle contract is missing")?;
+	assert_nested_parent_contract(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		device_contract,
+		&[code_contract],
+	)
+	.await?;
 
 	for contract in contracts
 		.iter()

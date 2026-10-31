@@ -49,13 +49,13 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | LR | `literatureReference` | 3 | 3 | [JSON](../../../../../registry/editor-contracts/lr.json) / [등록](../api_editor/pages/lr.generated.rs) |
 | SI | `studyInformation`, `studyRegistrationNumbers` | 14 | 6 | [JSON](../../../../../registry/editor-contracts/si.json) / [등록](../api_editor/pages/si.generated.rs) |
 | DM | `autopsyCauses`, `deathInfo`, `medicalHistoryEpisodes`, `parentInfo`, `parentMedicalHistory`, `parentPastDrugs`, `patientIdentifiers`, `patientInformation`, `reportedCauses` | 87 | 8 | [JSON](../../../../../registry/editor-contracts/dm.json) / [등록](../api_editor/pages/dm.generated.rs) |
-| NR | `caseSummaryInformation`, `narrative`, `senderDiagnoses` | 8 | 5 | [JSON](../../../../../registry/editor-contracts/nr.json) / [등록](../api_editor/pages/nr.generated.rs) |
+| NR | `caseSummaryInformation`, `narrative`, `senderDiagnoses` | 8 | 6 | [JSON](../../../../../registry/editor-contracts/nr.json) / [등록](../api_editor/pages/nr.generated.rs) |
 | AE | `reaction` | 49 | 3 | [JSON](../../../../../registry/editor-contracts/ae.json) / [등록](../api_editor/pages/ae.generated.rs) |
 | LB | `testResult` | 14 | 6 | [JSON](../../../../../registry/editor-contracts/lb.json) / [등록](../api_editor/pages/lb.generated.rs) |
-| DG | `drug` | 94 | 14 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
+| DG | `drug` | 94 | 15 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
 
-N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 등록은 scalar 373 + behavior 60 = 433개다.
+N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 registry 등록은 scalar 373 + behavior 62 = 435개다. legacy GET 수기 14개를 더한 실행 계약은 449개이며 patch builder 자체 검사 2개는 별도다.
 
 위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor scalar 등록 365개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
 
@@ -139,16 +139,20 @@ DG의 `G.k.9.i.1`, `G.k.local.sourceProductPresaveId`는 실제 참조 레코드
 
 `GET /api/cases/{case_id}/editor/shell`은 `data` wrapper 없이 `CaseEditorShellDto`를 반환한다. [workflow](../api_cases/workflow.rs)의 `test_workflow_transition_updates_case_and_persists_event`가 `workflowDueAt`, [review receivers](../api_cases/contract/review_receivers.rs)의 검사가 `reviewReceivers`와 `messageHeader.messageReceiverIdentifier`를 직접 비교한다. shell 전체 필드·모든 권한 조합의 검사는 아니다. 구현은 [shell handler](../../src/web/rest/case_editor_rest/shell.rs)를 따른다.
 
-현재 router에는 이전 GET 조회 경로도 남아 있다: `/editor/CI`, `/editor/RP`, `/editor/SD`, `/editor/SI`, `/editor/DM`, `/editor/NR`, `/editor/AE/list`, `/editor/AE/{reaction_id}`, `/editor/LB/list`, `/editor/LB/{test_result_id}`, `/editor/DG/list`, `/editor/DG/{drug_id}`, `/editor/DH/list`, `/editor/DH/{past_drug_id}`. 이들은 `/api/cases/{case_id}` 아래에 있으며 pages projection과 별도 method/path다. [등록 소스](../../src/web/rest/routes/cases.rs)와 [DTO](../../src/web/rest/case_editor_dto.rs)는 존재하지만, 조사한 테스트의 직접 HTTP assertion은 찾지 못했다. pages GET 테스트를 이 경로의 실행 증거로 옮겨 계산하지 않는다.
+현재 router에는 이전 GET 조회 경로도 남아 있다: `/editor/CI`, `/editor/RP`, `/editor/SD`, `/editor/SI`, `/editor/DM`, `/editor/NR`, `/editor/AE/list`, `/editor/AE/{reaction_id}`, `/editor/LB/list`, `/editor/LB/{test_result_id}`, `/editor/DG/list`, `/editor/DG/{drug_id}`, `/editor/DH/list`, `/editor/DH/{past_drug_id}`. 이들은 `/api/cases/{case_id}` 아래에 있으며 pages projection과 별도 method/path다. [등록 소스](../../src/web/rest/routes/cases.rs)와 [DTO](../../src/web/rest/case_editor_dto.rs)에 맞춰 [legacy_reads](../api_editor/legacy_reads)의 14개 테스트가 해당 URL을 직접 호출하고 응답을 단언한다. pages GET 테스트와 별도 근거이며 실행 상태는 NOT_RUN이다.
 
 AE/LB/DG의 POST restore 3개는 각 페이지의 기존 복원 fixture에서 실제 요청·200·재조회·반복 복원·ID·감사를 검사하도록 연결되어 있다. PATCH 복원과 별개의 operation이며 실행 상태는 모두 NOT_RUN이다.
 
 
-| 이전 GET 경로군 | 요청/응답 계약 | 미검증 범위 |
+| 이전 GET 경로군 | 요청/응답 계약 | 직접 근거와 남은 범위 |
 |---|---|---|
-| CI/RP/SD/SI/DM/NR direct | 경로 Case UUID, body 없음. 성공 `200 {caseId,data}`. `data`는 해당 section reader의 저장 모델 투영 | 이 6개 URL 직접 HTTP assertion 없음 |
-| AE/LB/DG/DH `/list` | 경로 Case UUID, body 없음. 성공 `200 {caseId,rows:[...]}`; 페이지별 list DTO 사용 | 이 4개 URL 직접 HTTP assertion 없음 |
-| AE/LB/DG/DH `/{rowId}` | Case와 row UUID, body 없음. 성공 `200 {caseId,rowId,data}`; 부모 소속 검증, 삭제 행 포함 여부는 해당 reader 인자 | 이 4개 URL 직접 HTTP assertion 없음 |
+| CI/RP/SD/SI/DM/NR direct | 경로 Case UUID, body 없음. 성공 `200 {caseId,data}`. `data`는 해당 section reader의 저장 모델 투영 | 저장 행 ID와 페이지별 업무 projection을 fresh GET으로 단언 |
+| AE/LB/DG/DH `/list` | 경로 Case UUID, body 없음. 성공 `200 {caseId,rows:[...]}`; 페이지별 list DTO 사용 | 저장 행 ID·표시값, AE/LB/DG의 `deleted:false`를 fresh GET으로 단언. 삭제 행 필터는 이 검사 범위 밖이며 DH list에는 `deleted` 필드가 없음 |
+| AE/LB/DG/DH `/{rowId}` | Case와 row UUID, body 없음. 성공 `200 {caseId,rowId,data}`; 부모 소속 검증, 삭제 행 포함 여부는 해당 reader 인자 | Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언 |
 | `/editor/shell` | `200`의 `{id,status,organizationId,safetyReportIdentification:{safetyReportId},messageHeader:{messageReceiverIdentifier},dgPrdKey,createdAt,updatedAt,workflowStatus,workflowAssignedRole,workflowAssignedUserId,workflowDueAt,workflowDescription,workflowUpdatedAt,qcState,isLocked,canActOnWorkflow,workflowBlockReason,caseWriteBlockReason,reviewReceivers}` | safety report ID 부재는 400, message header 부재는 모델 404. `workflowDueAt`은 RFC3339 옵션이지만 다른 time 필드를 동일 문자열 형식으로 추정하지 않음. 날짜 직렬화 원문은 DTO manifest 참조 |
 
 이전 경로도 인증·Case/조직/scope read 정책을 적용한다. 단순 GET은 상태 변경이나 감사 mutation을 약속하지 않는다. 기존 잘못 저장된 `review_receivers_json`의 역직렬화 오류를 shell이 정상 빈 배열로 숨기지 않는다는 구현과, SQL NULL이면 빈 배열이라는 현재 계약도 구분한다.
+
+위 14개 legacy GET의 assertion은 runtime NOT_RUN이다. CI는 camelCase `reportYear/caseIdentifier`, RP는 `reporterGivenName`, SD는 `organizationName`을 검사한다. RP와 SD projection에는 `deleted`가 없으므로 그 필드를 계약으로 주장하지 않는다. SI/DM/NR direct model projection은 snake_case와 `deleted`, AE/LB/DG/DH list DTO는 camelCase, detail의 nested model은 snake_case일 수 있다. 전체 필드·정렬·foreign row·권한/오류 조합은 남아 있다.
+
+이번 혼합 요청 보강에서 RP/DM/SI는 기존 404 소속 거절을 유지하며 SI는 FDA authority로 호출한다. NR summary·DG active-substance의 동일 조직 다른 부모 ID는 실제 handler의 400 계약을 단언한다. 유효 target 변경을 함께 보내고 두 Case의 fresh projection과 감사 ID가 유지되는지 확인한다. malformed 자식과 섞은 RP/DM/SI/NR/DG 수정도 상태·감사 불변을 검사한다. 모든 실행은 NOT_RUN이다.

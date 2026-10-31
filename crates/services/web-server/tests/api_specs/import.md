@@ -47,7 +47,7 @@
 
 ## Validation
 
-`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. XML normalize 후 기본 10 MiB validator로 검사하고 `XmlValidationReport`를 `{"data":{"ok":...,"errors":[...]}}` 형태로 200 반환한다. 이 route는 source와 보호 snapshot에는 있지만 직접 호출하는 활성 API assertion이 없다. import handler 내부 validation이나 Case validation 테스트를 이 별도 endpoint의 증거로 간주하지 않는다.
+`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. XML normalize 후 기본 10 MiB validator로 검사한다. 활성 assertion은 valid XML의 `200`, `ok:true`, root element와 빈 errors, malformed XML의 `400`과 XML 관련 오류 body, XSD-invalid XML의 `200`, `ok:false`와 비어 있지 않은 errors를 실제 endpoint에서 확인한다. 전후 `cases`와 `xml_import_history` row count도 같음을 확인한다(runtime NOT_RUN). 용량 boundary와 권한 거절은 남아 있다.
 
 <a id="history"></a>
 
@@ -72,7 +72,7 @@
 
 import 실행/validation은 contextual mutation 정책, history는 contextual read 정책과 RLS context를 사용한다. import history가 per-entry 감사 이력 역할을 하며 업로더, 파일, Case, 상태, 오류, 시각을 보존한다. 일반 `audit_logs`에 대한 import endpoint별 active assertion은 없다.
 
-실행 소속은 요청/상품 연결 `import_contract_web.rs`, 이력·오류 다운로드 `import_history_web.rs`, 설정 효과 `import_settings_web.rs`로 나뉘고 필요한 준비 함수만 `support.rs`에서 공유한다. 기존 컴파일 제외 검사 세 개 중 약한 timestamp 중복은 삭제했고 오류 다운로드·C.1 날짜 검사는 현재 계약에 맞춰 활성화했다. TSV는 import 실행·history 목록·error download 세 경로를 `asserted`, 별도 validation endpoint를 `registration_only`로 분류한다.
+실행 소속은 요청/상품 연결 `import_contract_web.rs`, 이력·오류 다운로드 `import_history_web.rs`, 설정 효과 `import_settings_web.rs`로 나뉘고 필요한 준비 함수만 `support.rs`에서 공유한다. 기존 컴파일 제외 검사 세 개 중 약한 timestamp 중복은 삭제했고 오류 다운로드·C.1 날짜 검사는 현재 계약에 맞춰 활성화했다. TSV의 네 경로 모두 하나 이상의 직접 HTTP assertion이 있지만 각 행의 미검증 축은 유지한다.
 
 [XML import/export](../xml/import_export/mod.rs)와 [MFDS samples](../xml/mfds_import_samples_web.rs)도 관련 검사다. fixture 누락·setup/export 실패는 이제 성공으로 반환하지 않는다. MFDS sample 검사는 production parser가 산출한 section 존재·행 개수와 API 재조회를 대조하므로 영속 전달 근거이며, parser 자체의 모든 필드 정확성을 독립적으로 입증하는 oracle은 아니다.
 

@@ -2,23 +2,23 @@
 
 **검토일: 2026-10-31 / 실행: NOT_RUN.** 현재 소스 등록·책임 목록이다. 테스트·빌드·API·DB 실행 결과가 아니다. [API 계약](README.md), [operation 색인](coverage.tsv), [반복행 검사 행렬](row-lifecycle.md)을 함께 확인한다.
 
-9개 API 관련 target의 하위 Rust 파일 203개와 root 9개, 공유 helper·격리 guard 3개, lib-core database 8개까지 총 **223개 파일**이다. [TSV](file-structure.tsv)는 같은 목록이다.
+9개 API 관련 target의 하위 Rust 파일 225개와 root 9개, 공유 helper·격리 guard 3개, lib-core database 8개까지 총 **245개 파일**이다. [TSV](file-structure.tsv)는 같은 목록이다.
 
 `직접 선언`은 `#[test]`/`#[tokio::test]` 함수 수(ignored 포함), `scalar 등록`은 생성 파일의 field macro 호출 수다. Editor 수기 async verifier는 generated 등록에서 호출하므로 직접 선언 0이어도 실행 경로가 있다.
 
-Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성기 자체 검사 2개는 별개다. UI canonical 필드 360개·HTTP operation 436개·실행 성공 수와 구분한다.
+Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy read 14개는 별도이며 합계 449개다. 공통 patch 생성기 자체 검사 2개도 별개다. UI canonical 필드 360개·HTTP operation 436개·실행 성공 수와 구분한다.
 
 ## 실행 단위 요약
 
 | Target | 하위 Rust 파일 | 직접 선언 | scalar 등록 | ignored 선언 |
 |---|---:|---:|---:|---:|
-| `api_cases` | 52 | 144 | 0 | 0 |
-| `api_editor` | 42 | 62 | 373 | 0 |
-| `api_presave` | 14 | 44 | 0 | 0 |
-| `api_import` | 4 | 7 | 0 | 0 |
+| `api_cases` | 55 | 148 | 0 | 0 |
+| `api_editor` | 53 | 78 | 373 | 0 |
+| `api_presave` | 15 | 45 | 0 | 0 |
+| `api_import` | 5 | 8 | 0 | 0 |
 | `api_submission` | 12 | 29 | 0 | 1 |
-| `api_terminology` | 6 | 23 | 0 | 0 |
-| `api_administration` | 31 | 64 | 0 | 0 |
+| `api_terminology` | 6 | 24 | 0 | 0 |
+| `api_administration` | 37 | 69 | 0 | 0 |
 | `authz` | 24 | 84 | 0 | 1 |
 | `xml` | 18 | 20 | 0 | 0 |
 
@@ -26,20 +26,21 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
-| [api_cases.rs](../api_cases.rs) | api_cases Cargo integration target과 하위 모듈 연결 | target 등록 | 31 | 0 | 0 |
+| [api_cases.rs](../api_cases.rs) | api_cases Cargo integration target과 하위 모듈 연결 | target 등록 | 34 | 0 | 0 |
 | [api_cases/case_support.rs](../api_cases/case_support.rs) | Case HTTP 준비·workflow·validation 호출 공통 함수 | helper | 830 | 0 | 0 |
 | [api_cases/cioms_export.rs](../api_cases/cioms_export.rs) | CIOMS PDF 다운로드 응답·파일 구조·case 번호·권한 및 조직 경계 | HTTP 계약 | 182 | 2 | 0 |
 | [api_cases/compliance.rs](../api_cases/compliance.rs) | Case nullification/amendment 코드와 감사 사유·전자서명 요구 | HTTP 계약 | 116 | 3 | 0 |
 | [api_cases/contract/audit.rs](../api_cases/contract/audit.rs) | Case CRUD 감사와 긴 한글 narrative 저장의 감사·dirty flag·no-op 계약 | HTTP 계약 | 257 | 2 | 0 |
 | [api_cases/contract/delete.rs](../api_cases/contract/delete.rs) | Case 삭제 사유·soft-delete 가시성·삭제 후 수정 거절 | HTTP 계약 | 325 | 3 | 0 |
+| [api_cases/contract/link_options.rs](../api_cases/contract/link_options.rs) | Case link-options의 생성 Case ID·safety report ID·version·createdAt projection | HTTP 계약 | 48 | 1 | 0 |
 | [api_cases/contract/list_view.rs](../api_cases/contract/list_view.rs) | Case 목록 투영·누락된 safety report·limit/offset | HTTP 계약 | 386 | 3 | 0 |
-| [api_cases/contract/mod.rs](../api_cases/contract/mod.rs) | api_cases/contract 하위 책임 모듈 등록 | 모듈 등록 | 15 | 0 | 0 |
-| [api_cases/contract/query.rs](../api_cases/contract/query.rs) | Case 조건 검색의 가벼운 목록 응답 | HTTP 계약 | 114 | 1 | 0 |
+| [api_cases/contract/mod.rs](../api_cases/contract/mod.rs) | api_cases/contract 하위 책임 모듈 등록 | 모듈 등록 | 16 | 0 | 0 |
+| [api_cases/contract/query.rs](../api_cases/contract/query.rs) | Case 조건 검색의 가벼운 목록 응답 | HTTP 계약 | 197 | 3 | 0 |
 | [api_cases/contract/review_receivers.rs](../api_cases/contract/review_receivers.rs) | RE 수신자 JSON 저장·clear·행 정규화·기한 기본값과 입력 거절 | HTTP 계약 | 922 | 10 | 0 |
 | [api_cases/contract/save.rs](../api_cases/contract/save.rs) | Case 생성·수정 공개 필드·C.1.2 기본 시각·생략/null/blank 저장 의미 | HTTP 계약 | 569 | 8 | 0 |
 | [api_cases/contract/support.rs](../api_cases/contract/support.rs) | Case contract HTTP 전송·JSON/raw 응답 helper | helper | 141 | 0 | 0 |
 | [api_cases/contract/validation_cache.rs](../api_cases/contract/validation_cache.rs) | 목록 경고 수·기관별 cache·수정 동시성과 validator revision이 바뀐 cache 무효화 | HTTP 계약 | 625 | 4 | 0 |
-| [api_cases/field_notation.rs](../api_cases/field_notation.rs) | 필드 주석 저장·clear·행 ID·감사 및 recordId 존재/case/org 소속 | HTTP 계약 | 549 | 5 | 0 |
+| [api_cases/field_notation.rs](../api_cases/field_notation.rs) | 필드 주석 저장·clear·행 ID·감사 및 recordId 존재/case/org 소속 | HTTP 계약 | 599 | 5 | 0 |
 | [api_cases/intake/duplicates.rs](../api_cases/intake/duplicates.rs) | Intake 중복 기준·활성 필드·override·누락/NullFlavor 입력 | HTTP 계약 | 490 | 8 | 0 |
 | [api_cases/intake/input.rs](../api_cases/intake/input.rs) | Intake 필수 product·실패 시 rollback·follow-up 복제와 버전 | HTTP 계약 | 262 | 3 | 0 |
 | [api_cases/intake/mod.rs](../api_cases/intake/mod.rs) | api_cases/intake 하위 책임 모듈 등록 | 모듈 등록 | 5 | 0 | 0 |
@@ -58,19 +59,20 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_cases/subresources/drug.rs](../api_cases/subresources/drug.rs) | Drug와 하위 substance/dosage/device/relatedness CRUD·삭제/복원·원자성; 소속 경계는 drug_scope | HTTP 계약 | 708 | 8 | 0 |
 | [api_cases/subresources/drug_scope.rs](../api_cases/subresources/drug_scope.rs) | legacy Drug 자식의 Case/부모 소속·삭제된 부모 접근 거절·부모 복원 후 자식 ID/count | HTTP 계약 | 489 | 4 | 0 |
 | [api_cases/subresources/lifecycle_audit.rs](../api_cases/subresources/lifecycle_audit.rs) | 감사 행 조회와 actor/org/reason/old/new/changed_fields 검증 | 공통 검증 helper | 185 | 0 | 0 |
-| [api_cases/subresources/lifecycle_drug.rs](../api_cases/subresources/lifecycle_drug.rs) | Drug와 자식 9종의 재저장·삭제/복원·소속·권한·잠금·감사 | HTTP 계약 | 310 | 1 | 0 |
-| [api_cases/subresources/lifecycle_general.rs](../api_cases/subresources/lifecycle_general.rs) | Narrative·linked report·reaction·test result 6종과 field notation lifecycle | HTTP 계약 | 542 | 2 | 0 |
-| [api_cases/subresources/lifecycle_patient.rs](../api_cases/subresources/lifecycle_patient.rs) | Patient와 자식 10종의 재저장·삭제/복원·소속·권한·잠금·감사 | HTTP 계약 | 379 | 1 | 0 |
+| [api_cases/subresources/lifecycle_drug.rs](../api_cases/subresources/lifecycle_drug.rs) | Drug와 자식 9종의 재저장·삭제/복원·소속·권한·잠금·감사 | HTTP 계약 | 352 | 1 | 0 |
+| [api_cases/subresources/lifecycle_general.rs](../api_cases/subresources/lifecycle_general.rs) | Narrative·linked report·reaction·test result 6종과 field notation lifecycle | HTTP 계약 | 555 | 2 | 0 |
+| [api_cases/subresources/lifecycle_parents.rs](../api_cases/subresources/lifecycle_parents.rs) | Case·하위 부모 soft 삭제·복원과 자식 ID·값·감사 보존 | 공통 검증 helper | 333 | 0 | 0 |
+| [api_cases/subresources/lifecycle_patient.rs](../api_cases/subresources/lifecycle_patient.rs) | Patient와 자식 10종의 재저장·삭제/복원·소속·권한·잠금·감사 | HTTP 계약 | 417 | 1 | 0 |
 | [api_cases/subresources/lifecycle_policy.rs](../api_cases/subresources/lifecycle_policy.rs) | viewer·다른 조직/부모·Case 잠금 거절과 상태·감사 불변 | 공통 검증 helper | 210 | 0 | 0 |
-| [api_cases/subresources/lifecycle_report.rs](../api_cases/subresources/lifecycle_report.rs) | Report·sender·study·source document·header·receiver 12종 lifecycle | HTTP 계약 | 441 | 1 | 0 |
+| [api_cases/subresources/lifecycle_report.rs](../api_cases/subresources/lifecycle_report.rs) | Report·sender·study·source document·header·receiver 12종 lifecycle | HTTP 계약 | 457 | 1 | 0 |
 | [api_cases/subresources/lifecycle_singleton.rs](../api_cases/subresources/lifecycle_singleton.rs) | Singleton 갱신·동일 저장·hard delete/재생성 계약 | 공통 검증 helper | 282 | 0 | 0 |
 | [api_cases/subresources/lifecycle_support.rs](../api_cases/subresources/lifecycle_support.rs) | 기존 행 계약·새 GET/list·soft/hard 삭제/복원 재호출 공통 assertion | 공통 검증 helper | 601 | 0 | 0 |
-| [api_cases/subresources/mod.rs](../api_cases/subresources/mod.rs) | api_cases/subresources 하위 책임 모듈 등록 | 모듈 등록 | 21 | 0 | 0 |
+| [api_cases/subresources/mod.rs](../api_cases/subresources/mod.rs) | api_cases/subresources 하위 책임 모듈 등록 | 모듈 등록 | 22 | 0 | 0 |
 | [api_cases/subresources/narrative.rs](../api_cases/subresources/narrative.rs) | Narrative·summary·sender diagnosis CRUD/복원과 patient token preview | HTTP 계약 | 228 | 5 | 0 |
 | [api_cases/subresources/patient.rs](../api_cases/subresources/patient.rs) | Patient/parent 병력·identifier·단위·NullFlavor·감사 사유·소속과 복원 | HTTP 계약 | 623 | 7 | 0 |
 | [api_cases/subresources/primary_source.rs](../api_cases/subresources/primary_source.rs) | Reporter 지역별 RP 필드 저장 | HTTP 계약 | 134 | 1 | 0 |
 | [api_cases/subresources/reaction.rs](../api_cases/subresources/reaction.rs) | Reaction AE 공통 필드와 MFDS 의료기기 필드 생성·수정 | HTTP 계약 | 87 | 1 | 0 |
-| [api_cases/subresources/safety_report.rs](../api_cases/subresources/safety_report.rs) | Safety report C.1·하위 identifier/document/link CRUD·복원·날짜/NullFlavor | HTTP 계약 | 331 | 4 | 0 |
+| [api_cases/subresources/safety_report.rs](../api_cases/subresources/safety_report.rs) | Safety report C.1·하위 identifier/document/link CRUD·복원·날짜/NullFlavor | HTTP 계약 | 429 | 4 | 0 |
 | [api_cases/subresources/sender.rs](../api_cases/subresources/sender.rs) | Sender MFDS 건강전문가 유형 KR.1 저장 | HTTP 계약 | 63 | 1 | 0 |
 | [api_cases/subresources/singleton.rs](../api_cases/subresources/singleton.rs) | 단일행 리소스 POST 멱등성·없을 때 응답·행 ID 유지 | HTTP 계약 | 196 | 1 | 0 |
 | [api_cases/subresources/study.rs](../api_cases/subresources/study.rs) | Study type reaction 입력 저장 | HTTP 계약 | 42 | 1 | 0 |
@@ -78,6 +80,7 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_cases/subresources/test_result.rs](../api_cases/subresources/test_result.rs) | 검사결과 normal range 길이·MedDRA 검사명 대체 입력 | HTTP 계약 | 96 | 2 | 0 |
 | [api_cases/validation.rs](../api_cases/validation.rs) | Case validation 기관 선택·오류 projection·validator token과 상태 갱신 | HTTP 계약 | 386 | 10 | 0 |
 | [api_cases/validation_common.rs](../api_cases/validation_common.rs) | Validation fixture·JSON HTTP·필수 Case 하위 행 준비 helper | helper | 366 | 0 | 0 |
+| [api_cases/versions.rs](../api_cases/versions.rs) | Case version snapshot의 저장값·version 순서·reason·actor | HTTP 계약 | 75 | 1 | 0 |
 | [api_cases/workflow.rs](../api_cases/workflow.rs) | Workflow 전이·담당자 지정·역할/담당자/lock 제한과 관리자 override 감사 | HTTP 계약 | 515 | 6 | 0 |
 
 ## web-server::api_editor
@@ -93,16 +96,27 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_editor/fields/message_header.rs](../api_editor/fields/message_header.rs) | N registry 항목의 전용 message-header POST/PUT/GET 저장·거절·감사 불변 검사 | HTTP 계약 | 181 | 0 | 0 |
 | [api_editor/fields/null_flavor.rs](../api_editor/fields/null_flavor.rs) | 값↔NullFlavor 전이·동시 값 거절·부모/등록번호 관계 | HTTP 계약 | 566 | 0 | 0 |
 | [api_editor/fields/required_values.rs](../api_editor/fields/required_values.rs) | 필수 값 blank/잘못된 report year 거절과 저장 값·자식 보존 | HTTP 계약 | 209 | 0 | 0 |
-| [api_editor/mod.rs](../api_editor/mod.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 42 | 0 | 0 |
+| [api_editor/legacy_reads/ae.rs](../api_editor/legacy_reads/ae.rs) | AE legacy list/detail GET의 행 ID·업무 projection | HTTP 계약 | 55 | 2 | 0 |
+| [api_editor/legacy_reads/ci.rs](../api_editor/legacy_reads/ci.rs) | CI legacy direct GET의 저장 행 ID·camelCase projection | HTTP 계약 | 36 | 1 | 0 |
+| [api_editor/legacy_reads/dg.rs](../api_editor/legacy_reads/dg.rs) | DG legacy list/detail GET의 행 ID·업무 projection | HTTP 계약 | 62 | 2 | 0 |
+| [api_editor/legacy_reads/dh.rs](../api_editor/legacy_reads/dh.rs) | DH legacy list/detail GET의 행 ID·업무 projection | HTTP 계약 | 70 | 2 | 0 |
+| [api_editor/legacy_reads/dm.rs](../api_editor/legacy_reads/dm.rs) | DM legacy direct GET의 patient·history ID와 model projection | HTTP 계약 | 38 | 1 | 0 |
+| [api_editor/legacy_reads/lb.rs](../api_editor/legacy_reads/lb.rs) | LB legacy list/detail GET의 행 ID·업무 projection | HTTP 계약 | 63 | 2 | 0 |
+| [api_editor/legacy_reads/mod.rs](../api_editor/legacy_reads/mod.rs) | legacy Editor GET 10페이지 14개 검사 모듈 등록 | 모듈 등록 | 10 | 0 | 0 |
+| [api_editor/legacy_reads/nr.rs](../api_editor/legacy_reads/nr.rs) | NR legacy direct GET의 narrative ID와 model projection | HTTP 계약 | 38 | 1 | 0 |
+| [api_editor/legacy_reads/rp.rs](../api_editor/legacy_reads/rp.rs) | RP legacy direct GET의 저장 reporter ID·camelCase projection | HTTP 계약 | 34 | 1 | 0 |
+| [api_editor/legacy_reads/sd.rs](../api_editor/legacy_reads/sd.rs) | SD legacy direct GET의 sender ID·camelCase projection | HTTP 계약 | 38 | 1 | 0 |
+| [api_editor/legacy_reads/si.rs](../api_editor/legacy_reads/si.rs) | SI legacy direct GET의 study·registration ID와 model projection | HTTP 계약 | 41 | 1 | 0 |
+| [api_editor/mod.rs](../api_editor/mod.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 43 | 0 | 0 |
 | [api_editor/pages/ae.generated.rs](../api_editor/pages/ae.generated.rs) | AE registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 77 | 3 | 49 |
 | [api_editor/pages/ci.generated.rs](../api_editor/pages/ci.generated.rs) | CI registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 69 | 6 | 26 |
-| [api_editor/pages/dg.generated.rs](../api_editor/pages/dg.generated.rs) | DG registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 177 | 14 | 92 |
+| [api_editor/pages/dg.generated.rs](../api_editor/pages/dg.generated.rs) | DG registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 182 | 15 | 92 |
 | [api_editor/pages/dh.generated.rs](../api_editor/pages/dh.generated.rs) | DH registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 49 | 4 | 16 |
 | [api_editor/pages/dm.generated.rs](../api_editor/pages/dm.generated.rs) | DM registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 140 | 8 | 87 |
 | [api_editor/pages/lb.generated.rs](../api_editor/pages/lb.generated.rs) | LB registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 57 | 6 | 14 |
 | [api_editor/pages/lr.generated.rs](../api_editor/pages/lr.generated.rs) | LR registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 31 | 3 | 3 |
 | [api_editor/pages/n.generated.rs](../api_editor/pages/n.generated.rs) | N registry의 8개 header 필드 검사 실행 등록; 전용 REST API 사용 | 생성된 실행 등록 | 21 | 0 | 8 |
-| [api_editor/pages/nr.generated.rs](../api_editor/pages/nr.generated.rs) | NR registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 46 | 5 | 8 |
+| [api_editor/pages/nr.generated.rs](../api_editor/pages/nr.generated.rs) | NR registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 51 | 6 | 8 |
 | [api_editor/pages/rp.generated.rs](../api_editor/pages/rp.generated.rs) | RP registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 62 | 4 | 29 |
 | [api_editor/pages/sd.generated.rs](../api_editor/pages/sd.generated.rs) | SD registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 45 | 1 | 27 |
 | [api_editor/pages/si.generated.rs](../api_editor/pages/si.generated.rs) | SI registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유 | 생성된 실행 등록 | 57 | 6 | 14 |
@@ -111,17 +125,17 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_editor/relations/ci_rows.rs](../api_editor/relations/ci_rows.rs) | CI soft 자식 3종 삭제/복원/재저장·ID/count·소속·감사·rollback | HTTP 계약 | 198 | 0 | 0 |
 | [api_editor/relations/device_children.rs](../api_editor/relations/device_children.rs) | Device 목록 교체 시 제거된 부모의 하위행 삭제 | HTTP 계약 | 200 | 0 | 0 |
 | [api_editor/relations/dg_restore.rs](../api_editor/relations/dg_restore.rs) | Drug 삭제/복원 시 자식과 case·권한 경계 | HTTP 계약 | 273 | 0 | 0 |
-| [api_editor/relations/dg_rows.rs](../api_editor/relations/dg_rows.rs) | DG 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 166 | 0 | 0 |
-| [api_editor/relations/dm_rows.rs](../api_editor/relations/dm_rows.rs) | DM 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 244 | 0 | 0 |
+| [api_editor/relations/dg_rows.rs](../api_editor/relations/dg_rows.rs) | DG 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 175 | 0 | 0 |
+| [api_editor/relations/dm_rows.rs](../api_editor/relations/dm_rows.rs) | DM 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 263 | 0 | 0 |
 | [api_editor/relations/documents.rs](../api_editor/relations/documents.rs) | Source document 삭제 시 목표 행 숨김 | HTTP 계약 | 102 | 0 | 0 |
 | [api_editor/relations/lb_restore.rs](../api_editor/relations/lb_restore.rs) | LB 삭제 행 read/restore와 case·권한 경계 | HTTP 계약 | 225 | 0 | 0 |
-| [api_editor/relations/nr_rows.rs](../api_editor/relations/nr_rows.rs) | NR 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 139 | 0 | 0 |
+| [api_editor/relations/nr_rows.rs](../api_editor/relations/nr_rows.rs) | NR 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 145 | 0 | 0 |
 | [api_editor/relations/parents.rs](../api_editor/relations/parents.rs) | 부모 자동 생성/재사용·자식 수정의 부모 ID 유지 | HTTP 계약 | 236 | 0 | 0 |
-| [api_editor/relations/relatedness.rs](../api_editor/relations/relatedness.rs) | Relatedness 삭제의 sibling 보존과 assessment 부모 삭제 | HTTP 계약 | 386 | 0 | 0 |
+| [api_editor/relations/relatedness.rs](../api_editor/relations/relatedness.rs) | Relatedness 삭제의 sibling 보존과 assessment 부모 삭제 | HTTP 계약 | 409 | 0 | 0 |
 | [api_editor/relations/restore.rs](../api_editor/relations/restore.rs) | DH/LR 삭제 행의 원자적 복원·수정 공통 검사 | HTTP 계약 | 243 | 0 | 0 |
-| [api_editor/relations/rp_rows.rs](../api_editor/relations/rp_rows.rs) | RP 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 113 | 0 | 0 |
-| [api_editor/relations/scope.rs](../api_editor/relations/scope.rs) | Study 자식의 케이스 분리·외부 ID 거절 | HTTP 계약 | 672 | 0 | 0 |
-| [api_editor/relations/si_rows.rs](../api_editor/relations/si_rows.rs) | SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 158 | 0 | 0 |
+| [api_editor/relations/rp_rows.rs](../api_editor/relations/rp_rows.rs) | RP 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 116 | 0 | 0 |
+| [api_editor/relations/scope.rs](../api_editor/relations/scope.rs) | Study 자식의 케이스 분리·외부 ID 거절 | HTTP 계약 | 884 | 0 | 0 |
+| [api_editor/relations/si_rows.rs](../api_editor/relations/si_rows.rs) | SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 164 | 0 | 0 |
 | [api_editor/rows.rs](../api_editor/rows.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 3 | 0 | 0 |
 | [api_editor/rows/creation.rs](../api_editor/rows/creation.rs) | 빈 collection/child 객체 생성 의미·draft 행·빈 product 거절 | HTTP 계약 | 157 | 0 | 0 |
 | [api_editor/rows/identity.rs](../api_editor/rows/identity.rs) | Drug device·code 하위행 재조회/교체의 ID 보존 | HTTP 계약 | 404 | 0 | 0 |
@@ -133,30 +147,32 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
 | [api_presave.rs](../api_presave.rs) | api_presave Cargo integration target과 하위 모듈 연결 | target 등록 | 4 | 0 | 0 |
-| [api_presave/audit_web.rs](../api_presave/audit_web.rs) | 부모/자식 15종 HTTP 수정의 actor/org/reason/category/old/new 감사 | HTTP 계약 | 367 | 1 | 0 |
+| [api_presave/audit_web.rs](../api_presave/audit_web.rs) | 부모/자식 15종 HTTP 수정의 actor/org/reason/category/old/new 감사 | HTTP 계약 | 616 | 1 | 0 |
 | [api_presave/authorization_web.rs](../api_presave/authorization_web.rs) | 부모/자식 15종 read-only/조직 경계와 거절 후 상태·감사 불변 | HTTP 계약 | 679 | 1 | 0 |
 | [api_presave/crud_matrix_web.rs](../api_presave/crud_matrix_web.rs) | Sender/receiver/product/reporter 공통 aggregate CRUD와 생략/null/blank 저장 | HTTP 계약 | 648 | 3 | 0 |
 | [api_presave/delete_constraints_web.rs](../api_presave/delete_constraints_web.rs) | 참조 중인 Presave 부모 삭제 제약과 product soft-delete scope | HTTP 계약 | 162 | 2 | 0 |
 | [api_presave/helpers.rs](../api_presave/helpers.rs) | Presave HTTP와 부모·자식·Info editor fixture helper | helper | 649 | 0 | 0 |
 | [api_presave/legacy_routes_web.rs](../api_presave/legacy_routes_web.rs) | 제거한 legacy presave templates URL의 404 | HTTP 계약 | 27 | 1 | 0 |
-| [api_presave/lifecycle_matrix_web.rs](../api_presave/lifecycle_matrix_web.rs) | 반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback | HTTP 계약 | 868 | 4 | 0 |
-| [api_presave/mod.rs](../api_presave/mod.rs) | api_presave 하위 책임 모듈 등록 | 모듈 등록 | 13 | 0 | 0 |
+| [api_presave/lifecycle_matrix_web.rs](../api_presave/lifecycle_matrix_web.rs) | 반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback | HTTP 계약 | 874 | 4 | 0 |
+| [api_presave/mod.rs](../api_presave/mod.rs) | api_presave 하위 책임 모듈 등록 | 모듈 등록 | 14 | 0 | 0 |
 | [api_presave/narrative_web.rs](../api_presave/narrative_web.rs) | Narrative Presave CRUD·모든 parent/child 필드 저장 | HTTP 계약 | 158 | 1 | 0 |
 | [api_presave/product_web.rs](../api_presave/product_web.rs) | Product 정체성·기관 공통 값·scope와 details graph 원자 저장/삭제/오류 | HTTP 계약 | 886 | 10 | 0 |
 | [api_presave/receiver_web.rs](../api_presave/receiver_web.rs) | Receiver 필수 값·중복·timeline과 routes/details graph 계약 | HTTP 계약 | 537 | 4 | 0 |
 | [api_presave/reporter_web.rs](../api_presave/reporter_web.rs) | Reporter MFDS qualification detail 입력·재조회 | HTTP 계약 | 173 | 2 | 0 |
 | [api_presave/sender_web.rs](../api_presave/sender_web.rs) | Sender 정체성·person/gateway details graph·명시적 삭제·rollback·감사 사유 | HTTP 계약 | 942 | 10 | 0 |
+| [api_presave/study_children_create_web.rs](../api_presave/study_children_create_web.rs) | Study child 3종 직접 POST·fresh read·부모/권한 거절 rollback | HTTP 계약 | 224 | 1 | 0 |
 | [api_presave/study_web.rs](../api_presave/study_web.rs) | Study registration/product/reporter graph 저장·삭제·잘못된 child 거절 | HTTP 계약 | 751 | 5 | 0 |
 
 ## web-server::api_import
 
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
-| [api_import.rs](../api_import.rs) | api_import Cargo integration target과 하위 모듈 연결 | target 등록 | 10 | 0 | 0 |
+| [api_import.rs](../api_import.rs) | api_import Cargo integration target과 하위 모듈 연결 | target 등록 | 12 | 0 | 0 |
 | [api_import/import_contract_web.rs](../api_import/import_contract_web.rs) | XML upload filename·선택 product/sender 연결과 XML 값 보존 | HTTP 계약 | 232 | 2 | 0 |
 | [api_import/import_history_web.rs](../api_import/import_history_web.rs) | Import 이력 시각 형식과 오류 상세 text 다운로드 | HTTP 계약 | 154 | 2 | 0 |
 | [api_import/import_settings_web.rs](../api_import/import_settings_web.rs) | Import C.1 날짜·default sender·product-linked sender 설정 적용 | HTTP 계약 | 386 | 3 | 0 |
-| [api_import/support.rs](../api_import/support.rs) | 실제 XML fixture 탐색·import multipart와 JSON/raw HTTP 준비 | helper | 208 | 0 | 0 |
+| [api_import/support.rs](../api_import/support.rs) | 실제 XML fixture 탐색·import multipart와 JSON/raw HTTP 준비 | helper | 236 | 0 | 0 |
+| [api_import/validation_web.rs](../api_import/validation_web.rs) | XML validate의 valid/malformed/XSD-invalid report와 무저장 | HTTP 계약 | 77 | 1 | 0 |
 
 ## web-server::api_submission
 
@@ -185,14 +201,14 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_terminology/mod.rs](../api_terminology/mod.rs) | terminology import·permission·release·search 테스트와 support를 등록한다. | 모듈 등록 | 6 | 0 | 0 |
 | [api_terminology/permissions.rs](../api_terminology/permissions.rs) | viewer·operational user의 용어 조회 권한과 import/release mutation 거부를 검증한다. | HTTP 계약 | 113 | 3 | 0 |
 | [api_terminology/releases.rs](../api_terminology/releases.rs) | 사전 release 승인·활성화·rollback·언어 전환·재import와 활성 사전 변경 후 Case 경고 cache 무효화 | HTTP 계약 | 756 | 7 | 0 |
-| [api_terminology/search.rs](../api_terminology/search.rs) | 국가·code list·MedDRA·WHODrug·활성 MFDS product/substance 검색 응답을 검증한다. | HTTP 계약 | 160 | 5 | 0 |
-| [api_terminology/support.rs](../api_terminology/support.rs) | terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다. | fixture/helper | 377 | 0 | 0 |
+| [api_terminology/search.rs](../api_terminology/search.rs) | 국가·code list·MedDRA·WHODrug·활성 MFDS product/substance 검색 응답을 검증한다. | HTTP 계약 | 252 | 6 | 0 |
+| [api_terminology/support.rs](../api_terminology/support.rs) | terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다. | fixture/helper | 415 | 0 | 0 |
 
 ## web-server::api_administration
 
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
-| [api_administration.rs](../api_administration.rs) | api_administration Cargo integration target과 하위 모듈 연결 | target 등록 | 21 | 0 | 0 |
+| [api_administration.rs](../api_administration.rs) | api_administration Cargo integration target과 하위 모듈 연결 | target 등록 | 26 | 0 | 0 |
 | [api_administration/admin_settings/appendices_web.rs](../api_administration/admin_settings/appendices_web.rs) | 관리자 설정의 appendices 저장·조회와 빈 값 거부 계약을 HTTP로 검증한다. | HTTP 계약 | 53 | 1 | 0 |
 | [api_administration/admin_settings/audit_web.rs](../api_administration/admin_settings/audit_web.rs) | 관리자 설정 변경 시 변경 필드가 감사 로그에 기록되는지 HTTP 응답과 저장 감사 행으로 검증한다. | HTTP 계약 | 171 | 1 | 0 |
 | [api_administration/admin_settings/mod.rs](../api_administration/admin_settings/mod.rs) | 관리자 설정의 appendices·audit·notice·settings·workflow 테스트 모듈을 등록한다. | 모듈 등록 | 5 | 0 | 0 |
@@ -202,7 +218,12 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_administration/app_branding_web.rs](../api_administration/app_branding_web.rs) | 앱 branding API가 기본 이름과 구성된 이름을 반환하는 계약을 HTTP로 검증한다. | HTTP 계약 | 67 | 2 | 0 |
 | [api_administration/audit_web.rs](../api_administration/audit_web.rs) | 감사 목록·정상 hash-chain 무결성 보고와 viewer 거절; 손상된 chain 보고는 미검사 | HTTP 계약 | 85 | 2 | 0 |
 | [api_administration/error_mapping_web.rs](../api_administration/error_mapping_web.rs) | 사용자 API의 잘못된 UUID는 400, 존재하지 않는 UUID는 404로 매핑되는지 검증한다. | HTTP 계약 | 44 | 2 | 0 |
+| [api_administration/health_web.rs](../api_administration/health_web.rs) | 공개 health의 204·빈 body·무인증 호출 | HTTP 계약 | 15 | 1 | 0 |
 | [api_administration/middleware_ctx.rs](../api_administration/middleware_ctx.rs) | 인증 middleware가 사용자 context를 해석하고 연속 요청 사이에 context를 누출하지 않는지 검증한다. | HTTP 계약 | 80 | 2 | 0 |
+| [api_administration/organizations/delete_web.rs](../api_administration/organizations/delete_web.rs) | 조직 hard delete·감사와 FK 종속 실패 rollback | HTTP 계약 | 129 | 1 | 0 |
+| [api_administration/organizations/list_web.rs](../api_administration/organizations/list_web.rs) | System admin 교차 tenant 조직 filter·정렬·limit·DTO | HTTP 계약 | 94 | 1 | 0 |
+| [api_administration/organizations/mod.rs](../api_administration/organizations/mod.rs) | 조직 목록·수정·삭제 계약 모듈 등록 | 모듈 등록 | 3 | 0 | 0 |
+| [api_administration/organizations/update_web.rs](../api_administration/organizations/update_web.rs) | 조직 type 정규화·fresh GET·감사와 invalid rollback | HTTP 계약 | 97 | 1 | 0 |
 | [api_administration/role_admin/crud_web.rs](../api_administration/role_admin/crud_web.rs) | custom permission profile 생성·수정·soft delete와 메뉴 권한·설명 persistence 및 비활성 역할 사용자 목록 동작을 검증한다. | HTTP 계약 | 293 | 5 | 0 |
 | [api_administration/role_admin/effective_access.rs](../api_administration/role_admin/effective_access.rs) | 역할 effective-access의 administration·case·dashboard·information·persistence·terminology·transfer 모듈을 등록한다. | 모듈 등록 | 9 | 0 | 0 |
 | [api_administration/role_admin/effective_access/administration_web.rs](../api_administration/role_admin/effective_access/administration_web.rs) | custom 역할의 admin/user/PDF/audit 권한 행렬이 실제 관리 API 접근으로 반영되는지 검증한다. | HTTP 계약 | 571 | 4 | 0 |
@@ -222,8 +243,9 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 | [api_administration/user_organization_membership_web.rs](../api_administration/user_organization_membership_web.rs) | 한 계정의 조직 membership 목록·전환과 membership 없는 조직 전환 거부를 검증한다. | HTTP 계약 | 115 | 2 | 0 |
 | [api_administration/users/access_web.rs](../api_administration/users/access_web.rs) | 임시 비밀번호와 최초 로그인 재설정, 접근 종료 비활성화, access 기간 persistence를 검증한다. | HTTP 계약 | 283 | 3 | 0 |
 | [api_administration/users/create_web.rs](../api_administration/users/create_web.rs) | 관리자 사용자 생성, 기본 역할·선택 필드 기본값, 중복 email과 길이 제한 오류를 검증한다. | HTTP 계약 | 258 | 5 | 0 |
-| [api_administration/users/mod.rs](../api_administration/users/mod.rs) | 사용자 생성·수정·접근 수명주기 테스트 모듈을 등록한다. | 모듈 등록 | 3 | 0 | 0 |
+| [api_administration/users/mod.rs](../api_administration/users/mod.rs) | 사용자 생성·수정·접근 수명주기 테스트 모듈을 등록한다. | 모듈 등록 | 4 | 0 | 0 |
 | [api_administration/users/update_web.rs](../api_administration/users/update_web.rs) | 관리자 사용자 수정, 빈 이름 거부·시작일 제거와 username/email 길이 제한을 검증한다. | HTTP 계약 | 119 | 3 | 0 |
+| [api_administration/users/workflow_options_web.rs](../api_administration/users/workflow_options_web.rs) | Workflow 사용자 option의 활성·동일 조직·정렬·limit·DTO | HTTP 계약 | 97 | 1 | 0 |
 
 ## web-server::authz
 
@@ -311,6 +333,9 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 |---|---|
 | [api-contract-manifest.json](api-contract-manifest.json) | 백엔드436 operation·중첩 DTO·소스 해시·테스트/명세 연결 |
 | [check_api_contract_manifest.py](check_api_contract_manifest.py) | stdlib 정적 생성/불일치 검사; Cargo 실행 단위 아님 |
+| [`registry/tools/generate_editor_contract_web_tests.py`](../../../../../registry/tools/generate_editor_contract_web_tests.py) | 373 scalar와 62 behavior 등록을 생성·검사하고 legacy read 14개 선언을 별도 execution set에 합침 |
+| [`registry/tools/check_contract_test_results.py`](../../../../../registry/tools/check_contract_test_results.py) | 필요한 Editor 결과의 missing·ignored·failed·duplicate를 거절; legacy read도 같은 결과 gate에 포함 |
+| [`scripts/ci_test_plan.py`](../../../../../scripts/ci_test_plan.py) | 변경 파일의 integration target 및 Editor page/category/legacy prefix 선택 |
 | [authz/protected_route_inventory.snapshot](../authz/protected_route_inventory.snapshot) | 보호 API 429개 등록 inventory 기준; 동작 검사가 아님 |
 | [xml/fixtures/mfds/kr-literature-initial-v1.0.xml](../xml/fixtures/mfds/kr-literature-initial-v1.0.xml) | MFDS 공식 sample 원본; 출처와 사용 제한은 Import 명세 참조 |
 | [xml/fixtures/mfds/.gitattributes](../xml/fixtures/mfds/.gitattributes) | XML 원본 byte/개행 보존 |
@@ -328,8 +353,12 @@ Editor는 scalar 373 + behavior 60 = 433개를 등록한다. 공통 patch 생성
 
 `scripts/ci_test_plan.py`는 test 파일의 owning target과 crate 의존성을 사용한다. 하위 test 파일 변경은 해당 target, 공통 test helper 변경은 이를 공유하는 crate target, production lib-core 변경은 필요한 의존 crate까지 선택한다. 파일을 나누었다는 이유만으로 같은 Cargo target 내부 함수를 개별 job으로 실행하지 않는다. API 명세 문서만 바꾸면 Rust 실행을 선택하지 않는다.
 
-Editor는 registry의 verifier 연결에 따라 변경 leaf의 실제 사용 페이지·책임 범위를 선택한다. 여러 범위를 한 `api_editor` 실행과 한 DB 준비로 묶으며 공통 patch 생성기 자체 검사 2개도 실행한다. 공통 모듈·연결 없는 leaf 변경은 Editor 전체로 넓힌다. Clippy도 test-only 변경은 선택 integration target만, production 변경은 의존 crate의 전체 target을 검사한다.
+Editor는 registry의 verifier 연결에 따라 변경 leaf의 실제 사용 페이지·책임 범위를 선택한다. 여러 범위를 한 `api_editor` 실행과 한 DB 준비로 묶으며 공통 patch 생성기 자체 검사 2개도 실행한다. `legacy_reads/{page}.rs` 변경은 `case_editor_contract_web::legacy_reads::{page}::` 하나만 선택한다. canonical page/category 선택에서는 선택하지 않은 모든 legacy prefix를 `--skip`하므로 14개가 뜻하지 않게 실행되지 않는다. 공통 모듈·연결 없는 leaf 변경은 Editor 전체로 넓힌다. Clippy도 test-only 변경은 선택 integration target만, production 변경은 의존 crate의 전체 target을 검사한다.
+
+Editor 결과 gate의 expected execution set은 registry의 435개와 legacy source에서 읽은 14개 선언을 합친다. legacy module/file 등록 누락, `#[ignore]`/`#[cfg]`, 선언 중복을 생성 단계에서 거절하고 실행 결과의 누락·ignored·failed·duplicate도 거절한다. 공통 patch 생성기 자체 검사 2개는 registry/legacy 449개와 별도다.
 
 테스트만 수정하면 frontend/registry 전체 job은 생략하지만, backend 필수 계약은 현재 editor contract와 registry의 명시적 test 연결에서 읽어 실제 실행 로그와 대조한다. Production·계약 입력 변경 시에는 frontend 추출/테스트와 전체 registry 검증을 유지하고 두 계약 목록의 전체·target별 일치도 확인한다. XML 자산은 xml crate, web-server 전체 또는 api_import/api_submission/xml target에만 준비하며 CI와 로컬 격리 실행기가 같은 선택 규칙을 사용한다.
 
 Module 연결·파일 누락·명세 근거·이동 전후 선언 및 assertion을 정적으로 대조했다. 컴파일, SQL 실행, 전체 runtime PASS는 미확인이다. 모든 동작의 공백은 각 API 명세의 미단언 항목과 coverage.tsv의 gaps에 남긴다.
+
+Frontend의 [`validator-proxy.integration.test.ts`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/__tests__/integration/validator-proxy.integration.test.ts)는 Node 환경에서 실행 중인 실제 Next frontend·backend, 인증 cookie, validator token과 validation issue가 남은 전용 draft Case를 요구한다. mock fetch/server 없이 4개 검사가 missing case ID, cookie/token과 두 body spelling 전달, query `caseId` 우선순위와 backend 404, 무cookie 403 및 backend error 보존을 확인한다. [`jest.integration.config.js`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/jest.integration.config.js)는 기존 live 2개와 신규 4개를 합친 6개 suite assertion을 별도 명령에 등록한다. 기본 [`jest.config.js`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/jest.config.js)는 두 integration 파일을 unit 실행에서 제외한다. 현재 backend CI workflow와 test-plan에는 이 frontend live suite를 자동 실행하는 job이 없으므로 backend 계약의 통과 증거로 계산하지 않는다. 이 문서 갱신에서는 frontend test를 실행하지 않았다.

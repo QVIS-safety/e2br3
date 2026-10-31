@@ -291,6 +291,11 @@
       "id": "narrative_rows_delete_restore_and_resave_are_stable",
       "verifier": "relations::nr_rows::narrative_rows_delete_restore_and_resave_are_stable",
       "description": "NR child deletion is repeatable, omission and empty lists do not restore rows, and explicit restore plus resave preserve ids and counts"
+    },
+    {
+      "id": "mixed_foreign_children_rollback",
+      "verifier": "relations::scope::rejects_mixed_foreign_narrative_children_atomically",
+      "description": "Reject a valid narrative edit mixed with another case child; preserve both case projections and audit records."
     }
   ],
   "auditChecks": [],

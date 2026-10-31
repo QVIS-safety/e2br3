@@ -93,6 +93,44 @@ pub(super) async fn seed_active_terminology_rows(
 	.execute(&mut *tx)
 	.await?;
 
+	sqlx::query(
+		"INSERT INTO mfds_product_substances
+		 (item_seq, substance_code, substance_name_kr, substance_name_en, version, active)
+		 VALUES
+		 ('9000000999', 'M900002', '정렬성분', 'Sorted Substance', '2026-01', true),
+		 ('9000000002', 'M900003', '비활성성분', 'Inactive Substance', '2026-02', false)
+		 ON CONFLICT (item_seq, substance_code, material_sequence, total_amount_sequence, version)
+		 DO UPDATE SET substance_name_kr=EXCLUDED.substance_name_kr,
+		 substance_name_en=EXCLUDED.substance_name_en, active=EXCLUDED.active",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO fda_hierarchical_code_lists
+		 (list_name, ncit_concept_code, level1_term, level2_term, level3_term, fda_code, imdrf_code)
+		 VALUES
+		 ('test_device_problem', 'TEST-CODE-2', 'Boundary Alpha', 'Second', NULL, 'T2', 'I2'),
+		 ('test_device_problem', 'TEST-CODE-1', 'Boundary Alpha', 'First', NULL, 'T1', 'I1'),
+		 ('other_test_list', 'TEST-CODE-3', 'Boundary Alpha', NULL, NULL, 'T3', 'I3')
+		 ON CONFLICT (list_name, ncit_concept_code) DO UPDATE SET
+		 level1_term=EXCLUDED.level1_term, level2_term=EXCLUDED.level2_term",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO ucum_units (code, display_name, unit_type, active)
+		 VALUES
+		 ('{test-a}', 'Test A', 'zz-test', true),
+		 ('{test-b}', 'Test B', 'zz-test', true),
+		 ('{test-hidden}', 'Test Hidden', 'zz-test', false)
+		 ON CONFLICT (code) DO UPDATE SET display_name=EXCLUDED.display_name,
+		 unit_type=EXCLUDED.unit_type, active=EXCLUDED.active",
+	)
+	.execute(&mut *tx)
+	.await?;
+
 	tx.commit().await?;
 	Ok(())
 }

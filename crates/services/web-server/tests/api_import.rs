@@ -8,3 +8,5 @@ mod import_history_web;
 mod import_settings_web;
 #[path = "api_import/support.rs"]
 mod support;
+#[path = "api_import/validation_web.rs"]
+mod validation_web;

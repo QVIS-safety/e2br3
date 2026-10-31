@@ -1,4 +1,5 @@
 use super::lifecycle_audit::*;
+use super::lifecycle_parents::*;
 use super::lifecycle_policy::*;
 use super::lifecycle_singleton::*;
 use super::lifecycle_support::*;
@@ -331,6 +332,21 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		json!("updated-lifecycle.txt"),
 	);
 	source_contract.item_readable = false;
+	let case_rows = soft_contracts
+		.iter()
+		.chain([&sender_contract, &study_contract, &source_contract])
+		.collect::<Vec<_>>();
+	assert_case_soft_parent_preserves_rows(
+		&app,
+		&cookie,
+		"adminpwd",
+		&mm,
+		&ctx,
+		case_id,
+		&case_rows,
+		&[&message_contract, &receiver_contract, &report_contract],
+	)
+	.await?;
 
 	for contract in soft_contracts.iter().chain([
 		&sender_contract,

@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "registry/tools"))
-from generate_editor_contract_web_tests import ACTIVE_PAGES, load_contract, normalize_editor_filters, expected_editor_tests
+from generate_editor_contract_web_tests import ACTIVE_PAGES, LEGACY_READ_PAGES, load_contract, normalize_editor_filters, expected_editor_execution_tests
 
 from ci_test_scope import changed_paths, event_revisions
 
@@ -134,6 +134,9 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
                         editor_filters.append(f'case_editor_contract_web::{parts[3].split(".")[0]}::')
                     elif parts[2:] == ('fields', 'message_header.rs'):
                         editor_filters.append('case_editor_contract_web::n::')
+                    elif (len(parts) == 4 and parts[2] == 'legacy_reads'
+                          and Path(parts[3]).stem.upper() in LEGACY_READ_PAGES):
+                        editor_filters.append(f'case_editor_contract_web::legacy_reads::{Path(parts[3]).stem}::')
                     elif len(parts) == 4 and parts[2] in EDITOR_GROUPS:
                         # shortcut: leaf verifiers have no cross-leaf helpers; widen selection if such dependencies are added.
                         category = parts[2]
@@ -170,7 +173,7 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     selected.update({name: [] for name in affected})
     selected = {name: sorted(targets) for name, targets in sorted(selected.items())}
     if editor_filters and not editor_all and selected.get('web-server'):
-        registered = expected_editor_tests(REGISTRY_ROOT)
+        registered = expected_editor_execution_tests(REGISTRY_ROOT)
         editor_filters = [prefix for prefix in editor_filters if any(name.startswith(prefix) for name in registered)]
         if not editor_filters:
             raise ValueError('changed editor verifier has no registered contract checks')
@@ -222,6 +225,8 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
             # libtest accepts one include filter; exclude the other page/category buckets in one DB run.
             prefixes = [f'case_editor_contract_web::{page.lower()}::{category}::'
                         for page in ACTIVE_PAGES for category in EDITOR_GROUPS]
+            prefixes += [f'case_editor_contract_web::legacy_reads::{page.lower()}::'
+                         for page in LEGACY_READ_PAGES]
             skips = [arg for prefix in prefixes if not any(prefix.startswith(f) for f in filters)
                      for arg in ('--skip', prefix)]
             commands.append(args + ['--test', 'api_editor', 'case_editor_contract_web::',

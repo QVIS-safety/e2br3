@@ -78,6 +78,34 @@ pub(super) async fn post_json(
 	Ok((status, value))
 }
 
+pub(super) async fn validate_xml_bytes(
+	app: &axum::Router,
+	cookie: &str,
+	filename: &str,
+	xml: &[u8],
+) -> Result<(StatusCode, Value)> {
+	let boundary = "X-BOUNDARY-XML-VALIDATION";
+	let mut multipart = format!(
+		"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/xml\r\n\r\n"
+	)
+	.into_bytes();
+	multipart.extend_from_slice(xml);
+	multipart.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml/validate")
+		.header("cookie", cookie)
+		.header(
+			"content-type",
+			format!("multipart/form-data; boundary={boundary}"),
+		)
+		.body(Body::from(multipart))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
 pub(super) async fn import_xml_fixture_with_product(
 	app: &axum::Router,
 	cookie: &str,

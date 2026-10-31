@@ -91,22 +91,22 @@
 - 직접 단언: 허용된 sender 선택 `200`, 무작위 sender `403`, 선택이 case 목록 자체를 축소하지 않음. [`test_active_sender_selection_does_not_filter_case_list`](../api_cases/scope/cases.rs).
 
 <a id="get-api-users-workflow-options"></a>
-### `GET /api/users/workflow-options` — authorization_only
+### `GET /api/users/workflow-options` — asserted
 
 - 쿼리: camelCase `limit`; 생략 시 소스상 200이다. 성공 구현은 `case.workflow.config.read` 권한 아래 활성 사용자 옵션 `data:[{id,email,displayName}]`을 반환한다.
-- 직접 단언은 권한 없는 일반 사용자와 case read만 가진 사용자에 대한 `403`뿐이다. [`test_user_without_case_read_cannot_list_workflow_user_options`](../authz/rbac_users/non_admin_forbidden_web.rs), [`test_case_reader_without_workflow_grant_cannot_list_workflow_user_options`](../authz/rbac_users/non_admin_forbidden_web.rs).
-- 공백/음수/대형 `limit`, 성공 응답 내용과 조직 범위는 미단언이다.
+- 기존 권한 없는 일반 사용자와 case read만 가진 사용자의 `403`에 더해 활성 동일 조직 사용자만의 정렬, `limit`, `id/email/displayName` DTO를 직접 단언한다. [`test_user_without_case_read_cannot_list_workflow_user_options`](../authz/rbac_users/non_admin_forbidden_web.rs), [`test_case_reader_without_workflow_grant_cannot_list_workflow_user_options`](../authz/rbac_users/non_admin_forbidden_web.rs), [`workflow_options_are_active_same_org_sorted_limited_dto_rows`](../api_administration/users/workflow_options_web.rs).
+- 공백/음수/대형 `limit` 경계는 미단언이다(runtime NOT_RUN).
 
 ## 조직
 
 조직 DTO와 저장 모델은 [`organization.rs`](../../../../libs/lib-core/src/model/organization.rs), 핸들러는 [`organization_rest.rs`](../../src/web/rest/organization_rest.rs)다. 응답 `Organization`은 `data.{id,name,type,address,city,state,postcode,country_code,contact_email,contact_phone,active,created_at,updated_at,created_by,updated_by}`처럼 모델의 기본 snake_case를 유지하며 `org_type`만 `type`으로 바뀐다. 조직 관리는 정책상 플랫폼 관리자 전용이다.
 
 <a id="get-api-organizations"></a>
-### `GET /api/organizations` — authorization_only
+### `GET /api/organizations` — asserted
 
 - 구현: `filters[...]`와 `list_options.*`를 받아 `200 {"data":[Organization,...]}`를 반환한다.
-- 활성 HTTP 단언은 manager/user/viewer와 sponsor admin의 `403`뿐이다. 이름과 달리 [`test_system_admin_can_create_and_list_organizations`](../authz/rbac_organizations.rs)는 목록 요청을 보내지 않고 생성 뒤 item GET만 수행한다.
-- 성공 목록, 필터·페이지, 플랫폼 관리자 교차 조직 가시성은 미단언이다.
+- 기존 manager/user/viewer와 sponsor admin의 `403`을 유지한다. 이름과 달리 [`test_system_admin_can_create_and_list_organizations`](../authz/rbac_organizations.rs)는 목록 요청을 보내지 않고 생성 뒤 item GET만 수행한다.
+- 신규 assertion은 system admin의 교차 tenant 목록에서 이름 contains와 active 필터, 이름 정렬, `limit`, 반환 이름·ID와 seed 조직 제외를 확인한다. [`system_admin_lists_filtered_sorted_organizations_across_tenants`](../api_administration/organizations/list_web.rs). 전체 filter/page 조합과 응답 DTO 전체는 남아 있다(runtime NOT_RUN).
 
 <a id="post-api-organizations"></a>
 ### `POST /api/organizations` — asserted
@@ -122,16 +122,15 @@
 - 없는/잘못된 UUID 오류 본문은 미단언이다.
 
 <a id="put-api-organizations-id"></a>
-### `PUT /api/organizations/{id}` — authorization_only
+### `PUT /api/organizations/{id}` — asserted
 
 - 구현 요청은 `{"data":{"name":...,"type":...,"address":...,"city":...,"state":...,"postcode":...,"country_code":...,"contact_email":...,"contact_phone":...,"active":...}}`, 성공은 `200 {"data":Organization}`다.
-- 직접 단언은 manager/user/viewer 및 sponsor admin의 `403`뿐이다. [`test_non_admin_cannot_update_organization`](../authz/rbac_organizations.rs), [`test_sponsor_admin_cannot_access_organization_admin_endpoints`](../authz/rbac_organizations.rs).
+- 기존 manager/user/viewer 및 sponsor admin의 `403`에 더해 type 정규화, 응답과 fresh GET 영속값, UPDATE 감사, invalid type의 상태·감사 불변을 단언한다. [`test_non_admin_cannot_update_organization`](../authz/rbac_organizations.rs), [`test_sponsor_admin_cannot_access_organization_admin_endpoints`](../authz/rbac_organizations.rs), [`update_normalizes_type_persists_and_audits_while_invalid_input_is_unchanged`](../api_administration/organizations/update_web.rs). 모든 선택 필드 조합은 남아 있다(runtime NOT_RUN).
 
 <a id="delete-api-organizations-id"></a>
-### `DELETE /api/organizations/{id}` — authorization_only
+### `DELETE /api/organizations/{id}` — asserted
 
-- 구현 성공은 모델 delete 후 `204`다. 직접 단언은 manager/user/viewer 및 sponsor admin의 `403`뿐이다. [`test_non_admin_cannot_delete_organization`](../authz/rbac_organizations.rs).
-- 성공 삭제의 hard/soft 의미, 종속 데이터 오류, 감사 행은 미단언이다.
+- 구현 성공은 모델 delete 후 `204`다. 기존 manager/user/viewer 및 sponsor admin의 `403`에 더해 fresh GET 404인 hard delete와 DELETE 감사, FK 종속 실패의 조직·감사 불변을 단언한다. [`test_non_admin_cannot_delete_organization`](../authz/rbac_organizations.rs), [`test_sponsor_admin_cannot_access_organization_admin_endpoints`](../authz/rbac_organizations.rs), [`delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency`](../api_administration/organizations/delete_web.rs). 모든 종속 유형은 남아 있다(runtime NOT_RUN).
 
 ## 권한 프로필
 
@@ -269,17 +268,16 @@
 - login cookie를 그대로 refresh에 전달하는 end-to-end 연결, 새 cookie/만료 값, 이전 token의 효력은 미단언이다.
 
 <a id="get-health"></a>
-### `GET /health` — uncovered
+### `GET /health` — asserted
 
-- 공개 handler는 body 없이 `204 No Content`를 반환한다. 전체 응답 mapper가 `x-request-id`를 추가하는 구현은 별도 unit test로 확인되지만 `/health` router를 실제 호출하지 않는다. [`lib.rs`](../../src/lib.rs), [`mw_res_map.rs`](../../../../libs/lib-web/src/middleware/mw_res_map.rs).
-- health route의 `204`, body, content-type, 인증 독립성은 활성 HTTP 테스트에서 직접 단언되지 않는다.
+- 공개 handler를 인증 cookie 없이 호출해 `204 No Content`와 빈 body를 직접 단언한다. [`health_is_public_no_content_with_empty_body`](../api_administration/health_web.rs). 전체 응답 mapper의 `x-request-id` 구현 근거는 [`lib.rs`](../../src/lib.rs), [`mw_res_map.rs`](../../../../libs/lib-web/src/middleware/mw_res_map.rs)이며 health의 header/content-type은 미단언이다(runtime NOT_RUN).
 
 ## 비활성·간접 증거와 남은 공백
 
 - [`dump_protected_inventory_snapshot`](../authz/protected_route_inventory.rs)은 `#[ignore]`이며 수동 snapshot 생성기다. 활성 inventory 테스트도 라우터 소스와 snapshot 문자열을 비교할 뿐 HTTP 인증을 단언하지 않는다.
 - [`authorization_snapshot.rs`](../authz/authorization_snapshot.rs)는 extractor 단위 테스트다. snapshot attach 성공/누락을 확인하지만 위 34개 경로 중 어느 하나의 HTTP 허용을 대신하지 않는다.
 - [`lib.rs`](../../src/lib.rs)의 CSRF 테스트는 origin 판정 helper만 호출한다. 실제 state-changing `/api` 요청의 `403`과 login/logoff/refresh의 CSRF 경계는 단언하지 않는다.
-- 조직 목록·수정·삭제와 workflow options는 성공 기능 단언이 없다. health는 경로 자체의 활성 HTTP 단언이 없다. Audit integrity는 정상 chain report와 viewer `403`까지 활성 HTTP 단언이 있고, 손상 chain 보고 분기가 남아 있다.
+- 조직 목록·수정·삭제, workflow options와 health에는 위 범위의 직접 HTTP assertion이 추가되었다(runtime NOT_RUN). 기존 권한 거절 근거도 유지한다. Audit integrity는 정상 chain report와 viewer `403`까지 활성 HTTP 단언이 있고, 손상 chain 보고 분기가 남아 있다.
 - 사용자/role/settings 변경은 일부 감사 행을 확인하지만, 모든 mutation의 감사 user/reason/category/e-signature와 실패 요청의 무변경성은 포괄적으로 단언되지 않는다.
 
 34개 등록 경로와 상태·증거의 최종 병합 위치는 [`coverage.tsv`](coverage.tsv)다.

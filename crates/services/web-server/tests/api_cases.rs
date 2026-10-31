@@ -27,5 +27,8 @@ mod validation;
 #[path = "api_cases/workflow.rs"]
 mod workflow;
 
+#[path = "api_cases/versions.rs"]
+mod versions;
+
 #[path = "api_cases/validation_common.rs"]
 mod validation_common;

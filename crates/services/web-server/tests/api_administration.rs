@@ -19,3 +19,8 @@ mod user_organization_membership_web;
 mod administration_support;
 #[path = "api_administration/users/mod.rs"]
 mod users;
+
+#[path = "api_administration/health_web.rs"]
+mod health_web;
+#[path = "api_administration/organizations/mod.rs"]
+mod organizations;

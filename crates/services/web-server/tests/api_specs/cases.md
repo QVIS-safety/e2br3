@@ -2,7 +2,7 @@
 
 이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, message-header, `PUT /submission-receiver`, administration 소유의 case audit-trail은 제외했다.
 
-검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 227, `authorization_only` 1, `registration_only` 3, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
+검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 모두에 하나 이상의 직접 HTTP assertion이 있다. 이는 전체 계약 검증을 뜻하지 않으며 operation별 남은 필드·권한·오류 gap은 [전체 커버리지](coverage.tsv)의 `spec=cases.md#...` 행에 기록했다.
 
 ## 공통 계약
 
@@ -33,7 +33,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - `GET /cases/{id}`: Case 공개 필드와 `qc_state`, `is_locked`, workflow actionability/write-block reason을 반환한다.
 - `DELETE /cases/{id}`: 본문 `reason_for_change`, `e_signature {meaning,password}`를 검증하고 `200 {"data":CaseReadResult}`로 deleted 상태를 반환한다. 삭제 후에도 Case 조회·목록·lifecycle에 남는다. 일반 child DELETE의 204와 구분한다.
 - `POST /cases/query`와 alias `POST /case-query/search`: body 자체가 camelCase `conditions[] {page,item,operator,values}`, `resultPages`, `reportTypeLast`, `noAckAcceptHistory`, `authorities`, `limit`, `offset`; 최대 5,000행. 응답은 `caseIds`, list-view `items`, 선택한 `elements`, `elementValues`, `total`. `GET /case-query/catalog`은 query 가능한 page/item catalog를 반환한다.
-- 주요 assertion은 Case create/list/get/update/delete, 조직·송신자 scope, list-view projection과 query 결과다. catalog, alias search, link-options에는 행동 assertion이 없다.
+- catalog는 200과 queryable page/item/operator metadata를, alias search는 같은 요청의 `/cases/query`와 `caseIds/items/elements/total` 일치를, link-options는 생성 Case의 `caseId`, `safetyReportId`, `version:1`, 문자열 `createdAt` 투영을 직접 단언한다. 전체 catalog schema, 모든 query 조건·오류·권한 조합, link-options의 나머지 필드·pagination·교차 조직·빈 결과는 남아 있다(runtime NOT_RUN).
 
 근거:
 
@@ -96,7 +96,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - `POST /lock/toggle`, `POST /review/toggle`: `{"data":{"expected_status":"..."}}`; stale 화면 상태는 409. Case read shape를 `200`으로 반환한다.
 - `POST /restore`: `reason_for_change`가 필수이고 deleted Case를 draft로 복원한다. `GET /lifecycle`은 동일 safety-report 계열의 `{safety_report_id,current_case_id,items[]}`.
 - `POST /workflow/transition`: `data {to_status,target_role?,target_user_id?,comment?,due_at?,override_reason?}`. `POST /workflow/assign`: `data {target_role,target_user_id?,comment?,due_at?,override_reason?}`. due_at은 RFC3339. 역할/assignee, lock, 관리자 override를 검증하고 `CaseReadResult`를 반환한다.
-- `GET /workflow/events`는 camelCase event array, `GET /workflow/config`는 `workflowEnabled,statuses,roles`. `GET /versions`는 현재 활성 assertion이 200/404 조직 가시성뿐이어서 authorization_only다.
+- `GET /workflow/events`는 camelCase event array, `GET /workflow/config`는 `workflowEnabled,statuses,roles`. `GET /versions`는 기존 동일 조직 200·타 조직 404에 더해 저장 snapshot의 version 순서와 선택 필드를 직접 단언한다. endpoint에는 pagination query가 없으며 전체 snapshot schema와 동시 version 생성은 남아 있다(runtime NOT_RUN).
 
 근거:
 
@@ -392,6 +392,6 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 ## Coverage gap 우선순위
 
 1. 신규 38-resource lifecycle matrix와 review receiver 배열 교체 검사는 아직 runtime NOT_RUN이다. 격리 DB에서 실행하기 전에는 source-derived status·RLS·audit 기대를 실행 성공으로 올릴 수 없다. FDA device `replace`의 row identity 정책, hard parent 삭제 시 모든 FK cascade의 상세 child audit, field notation의 37개 허용 record kind 각각은 이 matrix의 전수 대상이 아니다.
-2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`는 등록 이외 행동 assertion이 전혀 없다.
-3. `GET /cases/{case_id}/versions`는 조직 가시성만 검증되어 반환 필드, 정렬, 빈 결과가 미검증이다.
+2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`에 직접 응답 assertion을 추가했다. catalog 전체 필드·연산자 조합, 검색 pagination/오류와 link-options의 모든 필터 조합은 남아 있다(runtime NOT_RUN).
+3. `GET /cases/{case_id}/versions`는 기존 조직 가시성 검사에 더해 저장 snapshot·version 내림차순·reason·actor를 단언한다. 전체 snapshot schema, 빈 결과와 동시 version 생성은 미검증이다(runtime NOT_RUN).
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.

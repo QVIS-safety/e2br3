@@ -41,8 +41,14 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		["id"]
 		.clone();
 	for rows in [
-		json!({"studyRegistrationNumbers":[{"id":"not-a-uuid","registrationNumber":"INVALID"}]}),
-		json!({"studyInformation":{"fdaCrossReportedIndNumbers":[{"id":"not-a-uuid","indNumber":"INVALID"}]}}),
+		json!({"studyRegistrationNumbers":[
+			{"id":registration_id,"registrationNumber":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","registrationNumber":"INVALID"}
+		]}),
+		json!({"studyInformation":{"fdaCrossReportedIndNumbers":[
+			{"id":ind_id,"indNumber":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","indNumber":"INVALID"}
+		]}}),
 	] {
 		assert_malformed_row_id_rejected_without_mutation(
 			&app, &cookie, &mm, &ctx, &uri, &case_id, "fda", rows,

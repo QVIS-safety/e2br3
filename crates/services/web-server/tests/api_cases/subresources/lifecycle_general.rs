@@ -1,4 +1,5 @@
 use super::lifecycle_audit::*;
+use super::lifecycle_parents::*;
 use super::lifecycle_policy::*;
 use super::lifecycle_singleton::*;
 use super::lifecycle_support::*;
@@ -170,6 +171,18 @@ async fn general_case_rows_enforce_scope_permission_lock_lifecycle_and_audit(
 			deleted_update,
 		));
 	}
+	let case_rows = contracts.iter().collect::<Vec<_>>();
+	assert_case_soft_parent_preserves_rows(
+		&app,
+		&cookie,
+		"adminpwd",
+		&mm,
+		&ctx,
+		case_id,
+		&case_rows,
+		&[&narrative_contract],
+	)
+	.await?;
 
 	for contract in &contracts {
 		assert_row_mutation_policy(

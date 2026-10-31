@@ -25,16 +25,18 @@ async fn assert_foreign_patch_rejected_without_mutation(
 	foreign_before: &Value,
 	target_audit_before: &[i64],
 	foreign_audit_before: &[i64],
+	authority: &str,
+	expected_status: StatusCode,
 	rows: Value,
 ) -> Result<()> {
 	let (status, body) = patch_json(
 		app,
 		cookie,
 		target_uri,
-		json!({"authorities": ["ich"], "rows": rows}),
+		json!({"authorities": [authority], "rows": rows}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	assert_eq!(status, expected_status, "{body}");
 	let (status, target_after) = get_json(app, cookie, target_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{target_after}");
 	assert_eq!(&target_after, target_before, "target case mutated");
@@ -140,6 +142,13 @@ pub(crate) async fn isolates_study_children_and_rejects_foreign_ids(
 		.ok_or("missing IND id")?;
 	let (status, target_before) = get_json(&app, &cookie, &first_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{target_before}");
+	let target_study_id = target_before["rows"]["studyInformation"]["id"]
+		.as_str()
+		.ok_or("missing target study id")?;
+	let target_registration_id = target_before["rows"]["studyRegistrationNumbers"]
+		[0]["id"]
+		.as_str()
+		.ok_or("missing target registration id")?;
 	let (status, foreign_before) = get_json(&app, &cookie, &second_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{foreign_before}");
 	let ctx = Ctx::new(
@@ -155,9 +164,12 @@ pub(crate) async fn isolates_study_children_and_rejects_foreign_ids(
 		&first_uri,
 		json!({"authorities":["fda"],"rows":{
 			"studyInformation":{"id":foreign_study_id,"studyName":"TAMPERED"},
-			"studyRegistrationNumbers":[{
+			"studyRegistrationNumbers":[
+				{"id":target_registration_id,"registrationNumber":"MUST ROLL BACK"},
+				{
 				"id":foreign_registration_id,"registrationNumber":"TAMPERED"
-			}]
+				}
+			]
 		}}),
 	)
 	.await?;
@@ -179,7 +191,7 @@ pub(crate) async fn isolates_study_children_and_rejects_foreign_ids(
 		"rejected study patch audited the foreign case"
 	);
 
-	for rows in [
+	for mut rows in [
 		json!({
 			"studyRegistrationNumbers": [{
 				"id": foreign_registration_id,
@@ -211,14 +223,32 @@ pub(crate) async fn isolates_study_children_and_rejects_foreign_ids(
 			}
 		}),
 	] {
-		let (status, body) = patch_json(
+		if !rows["studyInformation"].is_object() {
+			rows["studyInformation"] = json!({});
+		}
+		let study = rows["studyInformation"]
+			.as_object_mut()
+			.ok_or("missing mixed study information")?;
+		study.insert("id".to_string(), json!(target_study_id));
+		study.insert("studyName".to_string(), json!("MUST ROLL BACK"));
+		assert_foreign_patch_rejected_without_mutation(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&first_uri,
-			json!({"authorities": ["fda"], "rows": rows}),
+			&second_uri,
+			&first_case,
+			&second_case,
+			&target_before,
+			&foreign_before,
+			&target_audit_before,
+			&foreign_audit_before,
+			"fda",
+			StatusCode::NOT_FOUND,
+			rows,
 		)
 		.await?;
-		assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
 	}
 
 	let (status, second) = get_json(&app, &cookie, &second_uri).await?;
@@ -284,6 +314,9 @@ pub(crate) async fn rejects_foreign_reporter_rows_without_mutation(
 
 	let (status, target_before) = get_json(&app, &cookie, &target_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{target_before}");
+	let target_active_id = target_before["rows"]["primarySources"][0]["id"]
+		.as_str()
+		.ok_or("missing target active reporter id")?;
 	let (status, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{foreign_before}");
 	let ctx = Ctx::new(
@@ -293,11 +326,18 @@ pub(crate) async fn rejects_foreign_reporter_rows_without_mutation(
 	)?;
 	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
 	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
-	for rows in [
+	for mut rows in [
 		json!({"primarySources":[{"id":foreign_active_id,"reporterGivenName":"TAMPERED"}]}),
 		json!({"primarySources":[{"id":foreign_active_id,"deleted":true}]}),
 		json!({"primarySources":[{"id":foreign_deleted_id,"deleted":false,"reporterGivenName":"RESTORED"}]}),
 	] {
+		rows["primarySources"]
+			.as_array_mut()
+			.ok_or("missing reporter rows")?
+			.insert(
+				0,
+				json!({"id":target_active_id,"reporterGivenName":"MUST ROLL BACK"}),
+			);
 		assert_foreign_patch_rejected_without_mutation(
 			&app,
 			&cookie,
@@ -311,6 +351,8 @@ pub(crate) async fn rejects_foreign_reporter_rows_without_mutation(
 			&foreign_before,
 			&target_audit_before,
 			&foreign_audit_before,
+			"ich",
+			StatusCode::NOT_FOUND,
 			rows,
 		)
 		.await?;
@@ -502,11 +544,17 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 	assert_eq!(status, StatusCode::OK, "{foreign_before_parent_delete}");
 	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
 	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
-	for rows in [
+	let target_patient_id = target_before_parent_delete["rows"]
+		["patientInformation"]["id"]
+		.as_str()
+		.ok_or("missing target patient id")?;
+	for mut rows in [
 		json!({"deathInfo":{"id":death_info_id,"dateOfDeath":"20260101"}}),
 		json!({"parentInfo":{"id":parent_info_id,"parentIdentification":"TAMPERED"}}),
 		json!({"parentInfo":{"id":parent_info_id,"deleted":true}}),
 	] {
+		rows["patientInformation"] =
+			json!({"id":target_patient_id,"patientInitials":"MUST ROLL BACK"});
 		assert_foreign_patch_rejected_without_mutation(
 			&app,
 			&cookie,
@@ -520,6 +568,8 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 			&foreign_before_parent_delete,
 			&target_audit_before,
 			&foreign_audit_before,
+			"ich",
+			StatusCode::NOT_FOUND,
 			rows,
 		)
 		.await?;
@@ -541,7 +591,12 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 				&foreign_before_parent_delete,
 				&target_audit_before,
 				&foreign_audit_before,
-				json!({(*owner):[row]}),
+				"ich",
+				StatusCode::NOT_FOUND,
+				json!({
+					"patientInformation":{"id":target_patient_id,"patientInitials":"MUST ROLL BACK"},
+					(*owner):[row]
+				}),
 			)
 			.await?;
 		}
@@ -560,7 +615,12 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 			&foreign_before_parent_delete,
 			&target_audit_before,
 			&foreign_audit_before,
-			json!({(*owner):[{"id":id,"deleted":false}]}),
+			"ich",
+			StatusCode::NOT_FOUND,
+			json!({
+				"patientInformation":{"id":target_patient_id,"patientInitials":"MUST ROLL BACK"},
+				(*owner):[{"id":id,"deleted":false}]
+			}),
 		)
 		.await?;
 	}
@@ -592,7 +652,12 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 		&foreign_before,
 		&target_audit_before,
 		&foreign_audit_before,
-		json!({"parentInfo":{"id":parent_info_id,"deleted":false}}),
+		"ich",
+		StatusCode::NOT_FOUND,
+		json!({
+			"patientInformation":{"id":target_patient_id,"patientInitials":"MUST ROLL BACK"},
+			"parentInfo":{"id":parent_info_id,"deleted":false}
+		}),
 	)
 	.await?;
 	Ok(())
@@ -669,4 +734,151 @@ pub(crate) async fn rejects_foreign_sender_without_mutation(
 		"rejected sender patch audited the foreign case"
 	);
 	Ok(())
+}
+
+pub(crate) async fn rejects_mixed_foreign_narrative_children_atomically(
+	_page_id: &str,
+	_check_id: &str,
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let target_case =
+		create_case_for_editor(&app, &cookie, "NR-MIXED-TARGET", &["ich"]).await?;
+	let foreign_case =
+		create_case_for_editor(&app, &cookie, "NR-MIXED-FOREIGN", &["ich"]).await?;
+	let target_uri = format!("/api/cases/{target_case}/editor/pages/NR");
+	let foreign_uri = format!("/api/cases/{foreign_case}/editor/pages/NR");
+	for (uri, suffix) in [(&target_uri, "TARGET"), (&foreign_uri, "FOREIGN")] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			uri,
+			json!({"authorities":["ich"],"rows":{
+				"senderDiagnoses":[{"sequenceNumber":1,"diagnosisMeddraVersion":"28.1","diagnosisMeddraCode":"10019211"}],
+				"caseSummaryInformation":[{"sequenceNumber":1,"languageCode":"en","summaryText":suffix}]
+			}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+	}
+	let (status, target_before) = get_json(&app, &cookie, &target_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{target_before}");
+	let (status, foreign_before) = get_json(&app, &cookie, &foreign_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{foreign_before}");
+	let target_id = target_before["rows"]["caseSummaryInformation"][0]["id"]
+		.as_str()
+		.ok_or("missing target narrative child id")?;
+	let foreign_id = foreign_before["rows"]["caseSummaryInformation"][0]["id"]
+		.as_str()
+		.ok_or("missing foreign narrative child id")?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
+	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
+	assert_foreign_patch_rejected_without_mutation(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		&target_uri,
+		&foreign_uri,
+		&target_case,
+		&foreign_case,
+		&target_before,
+		&foreign_before,
+		&target_audit_before,
+		&foreign_audit_before,
+		"ich",
+		StatusCode::BAD_REQUEST,
+		json!({"caseSummaryInformation":[
+			{"id":target_id,"summaryText":"MUST ROLL BACK"},
+			{"id":foreign_id,"summaryText":"FOREIGN"}
+		]}),
+	)
+	.await
+}
+
+pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
+	_page_id: &str,
+	_check_id: &str,
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let target_case =
+		create_case_for_editor(&app, &cookie, "DG-MIXED-TARGET", &["ich"]).await?;
+	let foreign_case =
+		create_case_for_editor(&app, &cookie, "DG-MIXED-FOREIGN", &["ich"]).await?;
+	let mut uris = Vec::new();
+	for case_id in [&target_case, &foreign_case] {
+		let (status, body) = super::super::support::post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/drugs"),
+			json!({"data":{"case_id":case_id,"sequence_number":1,"drug_characterization":"1","medicinal_product":"Scoped drug"}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{body}");
+		let drug_id = body["data"]["id"]
+			.as_str()
+			.ok_or("missing scoped drug id")?;
+		let uri = format!("/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}");
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{"activeSubstances":[{"sequenceNumber":1,"substanceName":"Scoped substance"}]}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		uris.push(uri);
+	}
+	let target_uri = &uris[0];
+	let foreign_uri = &uris[1];
+	let (status, target_before) = get_json(&app, &cookie, target_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{target_before}");
+	let (status, foreign_before) = get_json(&app, &cookie, foreign_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{foreign_before}");
+	let target_id = target_before["data"]["drug"]["activeSubstances"][0]["id"]
+		.as_str()
+		.ok_or("missing target drug child id")?;
+	let foreign_id = foreign_before["data"]["drug"]["activeSubstances"][0]["id"]
+		.as_str()
+		.ok_or("missing foreign drug child id")?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let target_audit_before = case_audit_ids(&mm, &ctx, &target_case).await?;
+	let foreign_audit_before = case_audit_ids(&mm, &ctx, &foreign_case).await?;
+	assert_foreign_patch_rejected_without_mutation(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		target_uri,
+		foreign_uri,
+		&target_case,
+		&foreign_case,
+		&target_before,
+		&foreign_before,
+		&target_audit_before,
+		&foreign_audit_before,
+		"ich",
+		StatusCode::BAD_REQUEST,
+		json!({"drug":{"activeSubstances":[
+			{"id":target_id,"substanceName":"MUST ROLL BACK"},
+			{"id":foreign_id,"substanceName":"FOREIGN"}
+		]}}),
+	)
+	.await
 }

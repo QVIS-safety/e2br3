@@ -13,7 +13,7 @@ from check_contract_test_results import (
     expected_tests,
     require_backend_projection_parity,
 )
-from generate_editor_contract_web_tests import ACTIVE_PAGES, expected_editor_tests
+from generate_editor_contract_web_tests import ACTIVE_PAGES, LEGACY_READ_PAGES, expected_editor_execution_tests
 
 
 class ContractTestResultsTests(unittest.TestCase):
@@ -147,7 +147,7 @@ class ContractTestResultsTests(unittest.TestCase):
 
     def test_real_registry_backend_projection_is_the_union_of_its_sources(self):
         registry = Path(__file__).resolve().parents[1]
-        editor = expected_editor_tests(registry)
+        editor = expected_editor_execution_tests(registry)
         cases = backend_expected_tests(registry, {'api_cases'})
         imports = backend_expected_tests(registry, {'api_import'})
         self.assertEqual(editor, backend_expected_tests(registry, {'api_editor'}))
@@ -233,6 +233,15 @@ class ContractTestResultsTests(unittest.TestCase):
             }]))
             contracts = registry / 'editor-contracts'
             contracts.mkdir()
+            editor_root = root / 'crates/services/web-server/tests/api_editor'
+            legacy_root = editor_root / 'legacy_reads'
+            legacy_root.mkdir(parents=True)
+            (editor_root / 'mod.rs').write_text('mod legacy_reads;\n')
+            (legacy_root / 'mod.rs').write_text(''.join(
+                f'mod {page.lower()};\n' for page in LEGACY_READ_PAGES))
+            for page in LEGACY_READ_PAGES:
+                (legacy_root / f'{page.lower()}.rs').write_text(
+                    '#[tokio::test]\nasync fn reads_persisted_row() {}\n')
             for page in ACTIVE_PAGES:
                 fields = ([{'code': 'C.1.3'}] if page == 'CI' else [])
                 (contracts / f'{page.lower()}.json').write_text(json.dumps({
@@ -257,6 +266,16 @@ class ContractTestResultsTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, 'projection mismatch for api_cases'):
                 require_backend_projection_parity(inventory, registry)
+
+    def test_legacy_editor_result_gate_rejects_missing_ignored_and_duplicate_results(self):
+        name = 'case_editor_contract_web::legacy_reads::ci::reads_persisted_row'
+        catalog = {name, 'case_editor_contract_web::ci::fields::c_1_3'}
+        filters = ['case_editor_contract_web::legacy_reads::ci::']
+        log = f'test {name} ... ok\ntest result: ok. 1 passed; 0 failed\n'
+        self.assertEqual(1, check_backend_results(self.inventory, log, {'api_editor'}, catalog, filters))
+        for invalid in ('', log + log, log.replace('... ok', '... ignored')):
+            with self.assertRaises(ValueError):
+                check_backend_results(self.inventory, invalid, {'api_editor'}, catalog, filters)
 
 
 if __name__ == '__main__':

@@ -10,4 +10,5 @@ mod product_web;
 mod receiver_web;
 mod reporter_web;
 mod sender_web;
+mod study_children_create_web;
 mod study_web;

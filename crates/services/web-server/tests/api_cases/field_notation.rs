@@ -170,6 +170,56 @@ async fn field_notation_scalar_lifecycle_preserves_id_and_audits_changes(
 		request_json(&app, &cookie, "GET", query.clone(), None).await?;
 	assert_eq!(status, StatusCode::OK, "{read}");
 	assert_eq!(read, saved);
+	let audit_before_parent_delete =
+		notation_audit_actions(&mm, notation_id).await?;
+	let (status, deleted_case) = request_json(
+		&app,
+		&cookie,
+		"DELETE",
+		format!("/api/cases/{case_id}"),
+		Some(json!({
+			"reason_for_change":"verify field notation survives case delete",
+			"e_signature":{"meaning":"delete case","password":"adminpwd"}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{deleted_case}");
+	assert_eq!(deleted_case["data"]["status"], "deleted");
+	let (status, read_while_deleted) =
+		request_json(&app, &cookie, "GET", query.clone(), None).await?;
+	assert_eq!(status, StatusCode::OK, "{read_while_deleted}");
+	assert_eq!(read_while_deleted, saved);
+	let (status, rejected) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		endpoint.clone(),
+		Some(json!({"e2bCode":"C.1.1","notation":"must not persist"})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{rejected}");
+	assert_eq!(
+		notation_audit_actions(&mm, notation_id).await?,
+		audit_before_parent_delete
+	);
+	let (status, restored_case) = request_json(
+		&app,
+		&cookie,
+		"POST",
+		format!("/api/cases/{case_id}/restore"),
+		Some(json!({"reason_for_change":"restore field notation parent"})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{restored_case}");
+	assert_eq!(restored_case["data"]["status"], "draft");
+	assert_eq!(
+		notation_audit_actions(&mm, notation_id).await?,
+		audit_before_parent_delete
+	);
+	let (status, read_after_restore) =
+		request_json(&app, &cookie, "GET", query.clone(), None).await?;
+	assert_eq!(status, StatusCode::OK, "{read_after_restore}");
+	assert_eq!(read_after_restore, saved);
 
 	let (status, updated) = request_json(
 		&app,

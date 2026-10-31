@@ -1,5 +1,6 @@
 mod audit;
 mod fields;
+mod legacy_reads;
 mod relations;
 mod rows;
 mod support;

@@ -41,6 +41,11 @@ mod relations {
     async fn narrative_rows_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::nr_rows::narrative_rows_delete_restore_and_resave_are_stable("NR", "narrative_rows_delete_restore_and_resave_are_stable").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn mixed_foreign_children_rollback() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::scope::rejects_mixed_foreign_narrative_children_atomically("NR", "mixed_foreign_children_rollback").await
+    }
 }
 mod audit {
 }

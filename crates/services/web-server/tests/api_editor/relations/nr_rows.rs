@@ -39,8 +39,14 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 	let diagnosis_id = body["rows"]["senderDiagnoses"][0]["id"].clone();
 	let summary_id = body["rows"]["caseSummaryInformation"][0]["id"].clone();
 	for rows in [
-		json!({"senderDiagnoses":[{"id":"not-a-uuid","diagnosisMeddraCode":"10000000"}]}),
-		json!({"caseSummaryInformation":[{"id":"not-a-uuid","summaryText":"INVALID"}]}),
+		json!({"senderDiagnoses":[
+			{"id":diagnosis_id,"diagnosisMeddraCode":"10000000"},
+			{"id":"not-a-uuid","diagnosisMeddraCode":"10000000"}
+		]}),
+		json!({"caseSummaryInformation":[
+			{"id":summary_id,"summaryText":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","summaryText":"INVALID"}
+		]}),
 	] {
 		assert_malformed_row_id_rejected_without_mutation(
 			&app, &cookie, &mm, &ctx, &uri, &case_id, "ich", rows,

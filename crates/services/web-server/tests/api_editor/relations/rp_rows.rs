@@ -44,7 +44,10 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 		&uri,
 		&case_id,
 		"ich",
-		json!({"primarySources":[{"id":"not-a-uuid","reporterGivenName":"INVALID"}]}),
+		json!({"primarySources":[
+			{"id":row_id,"reporterGivenName":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","reporterGivenName":"INVALID"}
+		]}),
 	)
 	.await?;
 	let delete = json!({"primarySources":[{"id":row_id,"deleted":true}]});

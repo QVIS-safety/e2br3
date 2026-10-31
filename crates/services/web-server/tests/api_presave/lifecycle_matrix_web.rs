@@ -419,7 +419,13 @@ async fn parent_archive_restore_preserves_hard_soft_and_graph_only_children(
 		json!({ "data": { "rows": { "routes": [{
 			"sequenceNumber": 1,
 			"authority": "fda",
-			"receiverLabel": "Parent lifecycle route"
+			"receiverLabel": "Parent lifecycle route",
+			"messageReceiverIdentifier": "CBER_IND",
+			"conditionPage": "CI",
+			"conditionFieldCode": "FDA_REPORT_TYPE",
+			"conditionOperator": "Equal",
+			"conditionValueCode": "3",
+			"conditionValueLabel": "CBER IND"
 		}] } } }),
 	)
 	.await?;

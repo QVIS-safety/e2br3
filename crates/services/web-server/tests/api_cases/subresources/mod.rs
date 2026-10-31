@@ -1,4 +1,5 @@
 mod lifecycle_audit;
+mod lifecycle_parents;
 mod lifecycle_policy;
 mod lifecycle_singleton;
 mod lifecycle_support;

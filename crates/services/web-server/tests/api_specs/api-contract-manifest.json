@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_commit": "ef334e934a7dc381083fbb340931cad2a2faea0d",
+  "baseline_commit": "18f9b0e6e1f54cde3b88fb6e7c4e0ab8f0949ed5",
   "baseline_route_count": 436,
   "operation_count": 436,
   "runtime": "NOT_RUN",
@@ -129,7 +129,11 @@
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "990c3f092cd27d73c1436068f6effb3fc40a050155f0328dc1360e43abaf3bd0",
     "crates/services/web-server/tests/api_administration/audit_web.rs": "1bba65c9031fb71402048449c9fd876db7f482153273ba63324b3d521d15054c",
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0980cad0996aaf2a1ab68af4ba8fb8d5d5d4ecaee782dde365dcd5cba220643c",
+    "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
+    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "e0d5862fde2d1741d84b223660ecae63280d79d46aaaa6bd9437e5f934336584",
+    "crates/services/web-server/tests/api_administration/organizations/list_web.rs": "6d18d4ec465294bb3e006868b9a89ce9392296247cdd88869de2d42411a0cfb4",
+    "crates/services/web-server/tests/api_administration/organizations/update_web.rs": "55eafb9d4a74491ab98a99dbc269f8c52eceda484d291aec52237c6128b8a03d",
     "crates/services/web-server/tests/api_administration/role_admin/crud_web.rs": "6a58a6f3e1efe8375bc08fd52b68a63ef39d9ead0a5b1855ec906ca87edb54b7",
     "crates/services/web-server/tests/api_administration/role_admin/effective_access/administration_web.rs": "4b346e0e096ff9caf90433d4c075dc25c3b6ad3b21a43808d05210255e1e7ad7",
     "crates/services/web-server/tests/api_administration/role_admin/effective_access/information_web.rs": "6e965f5f41c60014ab6a16a00a6a82beddbecfa65f58881c901e2f71d5558312",
@@ -140,13 +144,15 @@
     "crates/services/web-server/tests/api_administration/users/access_web.rs": "a9c260950adda69a4d7a076282f736035cc6092e7ad6c12bd76f766cdf6bf471",
     "crates/services/web-server/tests/api_administration/users/create_web.rs": "9976ba229071985a1e5a1a6b0d465d29ff5fca23a2c2b09f5f8408af890a3270",
     "crates/services/web-server/tests/api_administration/users/update_web.rs": "bcd331479a724c110fc8a175477f671eedeb9233314949c5041e2ae60db9bd23",
+    "crates/services/web-server/tests/api_administration/users/workflow_options_web.rs": "549c0b0be2eb94249089ec0c0dd43374320eaeee690952a0ed840228a59501b2",
     "crates/services/web-server/tests/api_cases/cioms_export.rs": "d27150dcf98693e58c544675c36e5099b245367137364c491523cb327cb177c7",
     "crates/services/web-server/tests/api_cases/contract/audit.rs": "a16a248b7b8f247685b6946f82ec5a7918c11480bd94e200f1578a41a4840c5e",
     "crates/services/web-server/tests/api_cases/contract/delete.rs": "bc20149b1460ab7e2b92fe6946801820590660ee9edd7b1431b4400458fdb221",
+    "crates/services/web-server/tests/api_cases/contract/link_options.rs": "fabfe0f9b8fec1732b1dfc55723aa00031c5b0e9ed0c59616701421a85713a7a",
     "crates/services/web-server/tests/api_cases/contract/list_view.rs": "1034706006658d4255d89f99041b3d3427d3b66db8765e6a34db7d7609d754e0",
-    "crates/services/web-server/tests/api_cases/contract/query.rs": "b133f7a7534734cd1f008953386a3008ae86abe44da9674353508b7043a0c864",
+    "crates/services/web-server/tests/api_cases/contract/query.rs": "5fb1db3b7412784204ab0ef5cbf676ccef3532e134a2470cd02314b8c506cde3",
     "crates/services/web-server/tests/api_cases/contract/review_receivers.rs": "dfd114bf1423ea8c4fdaa9a87d54f3ca6d3707649946762eba1262cc7385c9b1",
-    "crates/services/web-server/tests/api_cases/field_notation.rs": "dfbbbe274f479f53cd0275556c6494a970c5e1547aadded9876b74f994491f10",
+    "crates/services/web-server/tests/api_cases/field_notation.rs": "c74b964434c300f25326ba5df53bbbb5e6f182d544b003fbabe68318c8e7145d",
     "crates/services/web-server/tests/api_cases/intake/duplicates.rs": "dabe01b3be5625fdccd04d60f987ab7a85306d06cc0fcf1ff131b8b94e47bef2",
     "crates/services/web-server/tests/api_cases/intake/input.rs": "17f383de000840ee68f348d89facf2a9fccc2f60755a5029d96c25a983f27f23",
     "crates/services/web-server/tests/api_cases/lifecycle.rs": "05f154a4bce870c6b8e641dd8c002e45cfe102be47fccae62fa3cedac90c5745",
@@ -158,57 +164,70 @@
     "crates/services/web-server/tests/api_cases/settings.rs": "d8d6dfffb2d712000cf09258f3384f10d7fb952f28a0be341abee78f51bb5c6f",
     "crates/services/web-server/tests/api_cases/subresources/drug.rs": "65b87197a7480a8fadb39dfc9c18254233f75445346b9ca7d837d1f23b377767",
     "crates/services/web-server/tests/api_cases/subresources/drug_scope.rs": "1344fc05923c4272ff981a0e467efaa0766f3c2fb0fc3ae8d308cfbaea7bc898",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "d9d3df0f7391545446f8dd686a96b0666ef83aec67ef7cc57e378f3710f10df8",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs": "dd54a73274bbcc605f5ba5893ee3be3073f259e6edbde50f9533ea77f844103d",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs": "b09e49b8da1b596754ff84ff29fda770bcf71e1d992d2f6606df8260dcccc26e",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "51a218f8c1b0cdfb981718a77b2214c789d4a9b715573826cf241f7f5e18e0bf",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "dfb1dc9f078516fe556d6c00622cbca784209bb0d245dbee346d4cabda12f947",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs": "4da4ac80df6d6804f4b27113faef06f9746604a4dbe5ff8626e3c93301fe7d1d",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs": "16e366e6573a457c1c9bb8ade53b3b4f1ab7cd9324ed6b75c743695dbaaa38d3",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "9cb2cd0f3e2bd2b9bed0c093f4dbed7056da56f8cc46d91f65c7823003a2c4a0",
     "crates/services/web-server/tests/api_cases/subresources/narrative.rs": "38a53235df52f69855ca68a15b0caea1669090fb47eed8ed78b6f4c0458580df",
     "crates/services/web-server/tests/api_cases/subresources/patient.rs": "e75e88b44a6a9a24db090954332806a8ec6267f07b996928936bdcbc140e6079",
     "crates/services/web-server/tests/api_cases/subresources/primary_source.rs": "2cfb22ac5556e8d6cb2ba3c558cbd990b24a588304083003dfeb60423a84fe4e",
     "crates/services/web-server/tests/api_cases/subresources/reaction.rs": "c78a64ef66923229bba47fbd39a8d76120701846ab994c2c797e15f4ec4cbbcc",
-    "crates/services/web-server/tests/api_cases/subresources/safety_report.rs": "ebb8bc8323b806d659cee02158578034a22072758e64906e2b287d439f91a315",
+    "crates/services/web-server/tests/api_cases/subresources/safety_report.rs": "377c6fe8f57ef4dbf8707b6d7e2f568ad61f3d7f8458cf246db708771dfc1711",
     "crates/services/web-server/tests/api_cases/subresources/sender.rs": "6c7fb474acb3aa5031c0f63b78680e05503ec86c5fec8345c096862231165e69",
     "crates/services/web-server/tests/api_cases/subresources/singleton.rs": "f36f1958a79aaadf49fcfa6438b2c45bbc78dead9c0413057e837859d6f0cb5d",
     "crates/services/web-server/tests/api_cases/subresources/study.rs": "fef3f0e41916e64606bbd325fadb242604d1dd07181d3df9e0394c27fd35c760",
     "crates/services/web-server/tests/api_cases/subresources/test_result.rs": "553efa4a8fd9537c27b00f55f9388dfa99f74603b7b748b46c9bf5ca88ac76a3",
     "crates/services/web-server/tests/api_cases/validation.rs": "2082dade95f831d9113ca78e5709060750d590c053b65d6f0a8581964ae6c904",
+    "crates/services/web-server/tests/api_cases/versions.rs": "41e287798feaf5c5962572ebe7f2cc9360773a99af4e7c59cd6dfbbe9a39c9fa",
     "crates/services/web-server/tests/api_cases/workflow.rs": "7092ad81152716eab644dc3c9fa13df24e3be108a5aa4eb39e046adff192213d",
+    "crates/services/web-server/tests/api_editor/legacy_reads/ae.rs": "75de27b41ffa1b4e891bff5d6b60f65b756e5f83a148f285ad35f56e2c3d5605",
+    "crates/services/web-server/tests/api_editor/legacy_reads/ci.rs": "ef5aa9e4fc0f45218aa7d28652e4c89ac451f37953f5fd1442b8c550ae0c0edd",
+    "crates/services/web-server/tests/api_editor/legacy_reads/dg.rs": "d04cd474ad3c3ed637d484a6406cf08789413da04d4772d2e26c38d7d1406050",
+    "crates/services/web-server/tests/api_editor/legacy_reads/dh.rs": "48af9a64955aac8cf6f68d7a6308afd43ae0b164b64361e09870a20a5c7dc5e0",
+    "crates/services/web-server/tests/api_editor/legacy_reads/dm.rs": "3a416e2718900ca5b866df73fd678735522dc56c625e20a4a2dc917bc33c71e6",
+    "crates/services/web-server/tests/api_editor/legacy_reads/lb.rs": "0caa0cc2c49df5bd6678cbf48fec5b4b1f5ed6724cba3cb18d479412e6d20223",
+    "crates/services/web-server/tests/api_editor/legacy_reads/nr.rs": "d8988ebd6e33410a4f229db53b7f5a74d823cc2e9b0e33d25ed19a3aa32580a4",
+    "crates/services/web-server/tests/api_editor/legacy_reads/rp.rs": "4c50100f4698d6b088d6f5077b024721bab43862703adfe48d3b0ce79678d962",
+    "crates/services/web-server/tests/api_editor/legacy_reads/sd.rs": "b5791bd93addeb427efef3204b57faf8a2146144bc716b3abde4bc2c22a32d37",
+    "crates/services/web-server/tests/api_editor/legacy_reads/si.rs": "5597369a99cde1355e535c6017c21c4f22c103a246df709f0be884cb534b33a3",
     "crates/services/web-server/tests/api_editor/pages/ae.generated.rs": "82bc952927334562bc4a45a7750f1dc861ebf81389cdfd61f1368760f1f07bb0",
     "crates/services/web-server/tests/api_editor/pages/ci.generated.rs": "01c7af92637c37e8d131124ac38a87ee57b18abab270cd6c071a41e1a68f18cd",
-    "crates/services/web-server/tests/api_editor/pages/dg.generated.rs": "71de02adf983d97ac3c099e88e9c64adaf52804714c91b5d79adce5df9b81f95",
+    "crates/services/web-server/tests/api_editor/pages/dg.generated.rs": "a526f36b4559b8cc10a735411ec03f932a086e85eef1acb3d159220aaea27556",
     "crates/services/web-server/tests/api_editor/pages/dh.generated.rs": "455cf1de0a35b9721cd42ec9bbaec6d764db49f2e26793d3a07611a6830031ec",
     "crates/services/web-server/tests/api_editor/pages/dm.generated.rs": "a342f0315be955856800d7909da29172e3bb9e248069e503e02a698656b27e34",
     "crates/services/web-server/tests/api_editor/pages/lb.generated.rs": "dc8ef9effce95c301f906c3aaf5830af5fbf98701d7871649b19d4193711dcfe",
     "crates/services/web-server/tests/api_editor/pages/lr.generated.rs": "0b73de9f0140c0b488bd3e3ff63ea301a298f788172bb9d10894a5beb9ce4335",
     "crates/services/web-server/tests/api_editor/pages/n.generated.rs": "fb9af924a64527b3e2dbec3f0a0ef90aff682d97540c57571cfe25c3ed123f1d",
-    "crates/services/web-server/tests/api_editor/pages/nr.generated.rs": "0906c6b60e01e6d2a0170bef2864fbab16cd7e8e7e22ffae16d97d2410a24826",
+    "crates/services/web-server/tests/api_editor/pages/nr.generated.rs": "01a2f4cfb6e607d4efd38c8bd807b968ecda4c66aad57b2f9d28f92c066091b3",
     "crates/services/web-server/tests/api_editor/pages/rp.generated.rs": "9e79d04064ba4e31a72f80048af28e949072bf5beb9e6c9b9f24cc9e86842c99",
     "crates/services/web-server/tests/api_editor/pages/sd.generated.rs": "cf4e2f9656dbe5d37f2632025c1e6c22a10d6f4866324930306a3c35005b7c68",
     "crates/services/web-server/tests/api_editor/pages/si.generated.rs": "2b141fbc63f9cd0e35f304aa3fc9b5f24f83e9db53e92daa7327aeeea4670b51",
     "crates/services/web-server/tests/api_import/import_contract_web.rs": "b822b941b47fee3fb48226f5b61c3cf33f9334c566d14b397a1811134b14aec7",
     "crates/services/web-server/tests/api_import/import_history_web.rs": "69a72ed021e6488ee9bb800a170e6939da97eff57c6fc4a528b47012a2cf3b46",
     "crates/services/web-server/tests/api_import/import_settings_web.rs": "0579b71d1c7b4675dc69d2095ea7d4b1007eb5a7a1ab9f5c04d256a1a8e2c353",
-    "crates/services/web-server/tests/api_presave/audit_web.rs": "2e2bd778660fa3230b95d066694d63f0ef39f6528a9a4e4f006f022e57915f0c",
+    "crates/services/web-server/tests/api_import/validation_web.rs": "aa2e36682c95051af7bd730c4f1600ec2d6862d0272388a71e3a3ebc085bbec8",
+    "crates/services/web-server/tests/api_presave/audit_web.rs": "14f4a8e0a117b5814608385dec3fc4c723a1ed03922f8c2c3dc5ddf27cf88972",
     "crates/services/web-server/tests/api_presave/authorization_web.rs": "581e7983223736ec0db37e3ebc4ee4ff07e3f9a1b3f52324267689b56856ab50",
     "crates/services/web-server/tests/api_presave/crud_matrix_web.rs": "6e192bb2f9176acd066682326943d8fb8118a2a1def1bd2f1cb7a8d45c7747eb",
     "crates/services/web-server/tests/api_presave/delete_constraints_web.rs": "3e0c6d2dc6c1452cd2b3721b62386b13541fc5ef3dfbf3b1e966982357118ad3",
-    "crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs": "0df43f224a5c9318747650f6ca5cbdc69cf81fd1f67b94dc54087678b904b7e6",
+    "crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs": "7226ae6cbabb8374c54f1ae289ddf2262b875317011f5f4ba43e82617bb033d9",
     "crates/services/web-server/tests/api_presave/narrative_web.rs": "c5818ebf72bf4d4ad67ce6fc7ef596f7621f56a644d2a48b57bb849a12d464b6",
     "crates/services/web-server/tests/api_presave/product_web.rs": "09fd3ee5221998bd7d514bd632d3f729a2042aba6cde95d81126e8554b46ffc3",
     "crates/services/web-server/tests/api_presave/receiver_web.rs": "43417715d9e390c5d60890743118abb6eea0c8aaa4920c57f9bb6cb11c4b40f4",
     "crates/services/web-server/tests/api_presave/reporter_web.rs": "0c252b15e3d74589013ae9890b08deb112495ef3e4916d5a072b902fbf43779a",
     "crates/services/web-server/tests/api_presave/sender_web.rs": "44ea3c965f2ffcbfe415c8bdf8d4fbf170f959343d042c685b33a28b79067c10",
+    "crates/services/web-server/tests/api_presave/study_children_create_web.rs": "e423d02b36a86c432ca6976aa7c503fab7b3253f1735de367b4af8809653b615",
     "crates/services/web-server/tests/api_presave/study_web.rs": "d9cba1e4e915828e2402d231c535acd5e539d3e7c5d5cf075ef57b4f19ba0be6",
-    "crates/services/web-server/tests/api_specs/administration.md": "27ba63dfa10eaef861a76300ce29e22cc0d5539a4517d8cd415526760a54daf4",
-    "crates/services/web-server/tests/api_specs/cases.md": "d5be44ab497ff3b52a93f4c09a41736f623e70e11a207206e8256bafd33c0417",
-    "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "a32f30f4d487871c36689bb5e8564bc2a7f1e42ead20d75fe16eb226dc093917",
-    "crates/services/web-server/tests/api_specs/coverage.tsv": "5b2fdc1140847bd556a3d475146f8070e5eb06f686c1cb0b8975f13398e0f379",
-    "crates/services/web-server/tests/api_specs/editor.md": "1e20e8c67b219a9fd05227d5ebdbd35d26d7adc31edda517ce8376e4570d4e18",
+    "crates/services/web-server/tests/api_specs/administration.md": "4ff7f70f6bea5cdb291f046e66b1d54a6b29bf1d2dbd2d4747129eb05730e9ea",
+    "crates/services/web-server/tests/api_specs/cases.md": "055ec66477cd059f257c1e502195e287ebf375502c6ff5707a7e60cc27971c58",
+    "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "d366a4ba83d3d6a57c663cad4904498c42af6fe947de5e04d31648142931e79d",
+    "crates/services/web-server/tests/api_specs/coverage.tsv": "723411d6e35d5568f179cca8eba57fee6c1c1e90fb72f8b40b1bcb03b2488342",
+    "crates/services/web-server/tests/api_specs/editor.md": "43a07f788c23eaadae26bb43c2e2aed11cccc72dbad32aa8227398ee556bb12b",
     "crates/services/web-server/tests/api_specs/export.md": "a1c8da782f26fe5433d1fabc543e64b05c03fb3049edfb48d3e87a42f2f931f7",
-    "crates/services/web-server/tests/api_specs/import.md": "43b0a068f357d0445ef4fc099d91e6dea935de674961eb5155e262a9805904fb",
-    "crates/services/web-server/tests/api_specs/presave.md": "68b7bcd1b8762bf5b179ef20bf4a03526b5ea82cf9450939d9cdd651e4045ed8",
+    "crates/services/web-server/tests/api_specs/import.md": "80068926714771830b33c814abb1c9dcf5a7384ea15e278cc94b6e6b90a2489a",
+    "crates/services/web-server/tests/api_specs/presave.md": "0291151cbe60f65ebef5461f6b980c0d78f16f986b15bbbfe4cb2444abff50b7",
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
-    "crates/services/web-server/tests/api_specs/terminology.md": "296d4ccedd80d3732d132a9018edf77cdd4bbb977b7b539fbe0687bcf09f59d3",
+    "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
     "crates/services/web-server/tests/api_submission/callbacks.rs": "f1a9b4cc8e67d262ba4e90fbc4afbdfd273330098abdc47ed36877eacab477a9",
     "crates/services/web-server/tests/api_submission/dispatch.rs": "cc5b7db5f3da350b52e3d215a9d4048ead6fabfb0cc1ce3211f5c291069428a7",
     "crates/services/web-server/tests/api_submission/headers.rs": "aa695e6f18c2f55700e9ca0982823e24cdfc5b14a708508ae629638ef745438c",
@@ -219,7 +238,7 @@
     "crates/services/web-server/tests/api_terminology/imports.rs": "4e7533d22757abd2bb7cd9f49e4d5f880302fd893df886d3ca0e25ad5c927673",
     "crates/services/web-server/tests/api_terminology/permissions.rs": "be1e39ded889e9ca7740984c0e549764d5cf49a17a6213ea18253396322d423a",
     "crates/services/web-server/tests/api_terminology/releases.rs": "d01d0f9a9ed4778560296127ad27ef81bf2a8d9eb4c9413639f9f8b128108836",
-    "crates/services/web-server/tests/api_terminology/search.rs": "d491bc973f0094377604699f1107d1ff16eeb199231f0bf0c606462417ea6527",
+    "crates/services/web-server/tests/api_terminology/search.rs": "c90dd46736ddd66624cd9363b1de8670f5143915e3216b272dcac24f01f5c7a3",
     "crates/services/web-server/tests/authz/authentication_web.rs": "1250feff04411f57d5803358fc0434eeade238ab159d1632aa5c275d0b5f9bea",
     "crates/services/web-server/tests/authz/protected_route_inventory.rs": "2217266d7c5ab5c73dbdd7792ffea2be610b23bf6364d5dea25fe47bc401ced2",
     "crates/services/web-server/tests/authz/protected_route_inventory.snapshot": "a1bf0054e466a281134a3d24df5ef1c712c491af8dfe62865f81272224448a0c",
@@ -1786,10 +1805,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/case-query/catalog",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "cases.md#case-core",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 snapshot 일치 검사만 있음; 요청 필드·성공 상태/응답·오류·권한·상태·감사 행동은 미검증 (ignored dump test는 행동 증거가 아님)",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_cases/contract/query.rs::test_case_query_catalog_describes_queryable_fields",
+        "gaps": "runtime NOT_RUN; catalog 200과 page/item/operator metadata를 단언; 전체 catalog schema·권한 오류는 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 14
@@ -1879,10 +1898,10 @@
       "coverage": {
         "method": "POST",
         "path": "/api/case-query/search",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "cases.md#case-core",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 snapshot 일치 검사만 있음; 요청 필드·성공 상태/응답·오류·권한·상태·감사 행동은 미검증 (ignored dump test는 행동 증거가 아님)",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_cases/contract/query.rs::test_case_query_search_alias_returns_same_projection_as_cases_query",
+        "gaps": "runtime NOT_RUN; 동일 요청의 /cases/query와 caseIds/items/elements/total 투영 일치를 단언; 모든 조건·오류·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 15
@@ -2552,10 +2571,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/link-options",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "cases.md#case-core",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 snapshot 일치 검사만 있음; 요청 필드·성공 상태/응답·오류·권한·상태·감사 행동은 미검증 (ignored dump test는 행동 증거가 아님)",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_cases/contract/link_options.rs::test_case_link_options_projects_created_case",
+        "gaps": "runtime NOT_RUN; 생성 Case의 caseId·safetyReportId·version=1·문자열 createdAt 투영을 단언; 나머지 필드·pagination·교차 조직·빈 결과는 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 21
@@ -9648,10 +9667,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/AE/list",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/ae.rs::test_ae_legacy_list_projects_rows",
+        "gaps": "runtime NOT_RUN; 저장 행 ID·업무 list projection·삭제 필터를 fresh GET으로 단언; 전체 필드·정렬·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 80
@@ -9757,10 +9776,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/AE/{reaction_id}",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/ae.rs::test_ae_legacy_detail_projects_row",
+        "gaps": "runtime NOT_RUN; Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언; 전체 필드·foreign row·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 81
@@ -9858,10 +9877,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/CI",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/ci.rs::test_ci_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 CI projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 82
@@ -9959,10 +9978,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/DG/list",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/dg.rs::test_dg_legacy_list_projects_rows",
+        "gaps": "runtime NOT_RUN; 저장 행 ID·업무 list projection·삭제 필터를 fresh GET으로 단언; 전체 필드·정렬·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 83
@@ -10068,10 +10087,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/DG/{drug_id}",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/dg.rs::test_dg_legacy_detail_projects_row",
+        "gaps": "runtime NOT_RUN; Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언; 전체 필드·foreign row·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 84
@@ -10169,10 +10188,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/DH/list",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/dh.rs::test_dh_legacy_list_projects_rows",
+        "gaps": "runtime NOT_RUN; 저장 행 ID·업무 list projection·삭제 필터를 fresh GET으로 단언; 전체 필드·정렬·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 85
@@ -10278,10 +10297,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/DH/{past_drug_id}",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/dh.rs::test_dh_legacy_detail_projects_row",
+        "gaps": "runtime NOT_RUN; Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언; 전체 필드·foreign row·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 86
@@ -10379,10 +10398,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/DM",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/dm.rs::test_dm_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 DM projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 87
@@ -10480,10 +10499,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/LB/list",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/lb.rs::test_lb_legacy_list_projects_rows",
+        "gaps": "runtime NOT_RUN; 저장 행 ID·업무 list projection·삭제 필터를 fresh GET으로 단언; 전체 필드·정렬·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 88
@@ -10589,10 +10608,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/LB/{test_result_id}",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/lb.rs::test_lb_legacy_detail_projects_row",
+        "gaps": "runtime NOT_RUN; Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언; 전체 필드·foreign row·권한 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 89
@@ -10690,10 +10709,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/NR",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/nr.rs::test_nr_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 NR projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 90
@@ -10791,10 +10810,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/RP",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/rp.rs::test_rp_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 RP projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 91
@@ -10892,10 +10911,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/SD",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/sd.rs::test_sd_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 SD projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 92
@@ -10993,10 +11012,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/editor/SI",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "editor.md#legacy",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "이전 조회 경로 직접 HTTP assertion 없음; pages GET과 다름",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_editor/legacy_reads/si.rs::test_si_legacy_read_projects_persisted_rows",
+        "gaps": "runtime NOT_RUN; persisted row ID와 실제 SI projection 값을 fresh GET으로 단언; 전체 필드·권한/오류 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 93
@@ -36447,10 +36466,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/cases/{case_id}/versions",
-        "status": "authorization_only",
+        "status": "asserted",
         "spec": "cases.md#workflow-validation",
-        "evidence": "tests/authz/rls_web.rs::test_rls_case_versions_filters_org",
-        "gaps": "동일 조직 200·타 조직 404만 검증; 응답 스키마·정렬·페이지는 미검증",
+        "evidence": "tests/authz/rls_web.rs::test_rls_case_versions_filters_org;tests/api_cases/versions.rs::test_case_versions_returns_saved_snapshot",
+        "gaps": "runtime NOT_RUN; 동일 조직 200·타 조직 404와 저장 snapshot의 version 순서·선택 필드를 단언; 전체 snapshot schema·동시 version 생성은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 293
@@ -39831,10 +39850,10 @@
       "coverage": {
         "method": "POST",
         "path": "/api/import/xml/validate",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "import.md#validation",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "별도 endpoint 활성 호출·응답 schema·오류 미assertion",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_import/validation_web.rs::xml_validation_reports_valid_malformed_and_xsd_invalid_without_writes",
+        "gaps": "runtime NOT_RUN; valid 200 ok/root/errors, malformed 400 XML 오류, XSD-invalid 200 ok=false/errors 및 cases·xml_import_history count 불변을 단언; 용량 boundary·권한 거절은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 318
@@ -39947,10 +39966,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/organizations",
-        "status": "authorization_only",
+        "status": "asserted",
         "spec": "administration.md#get-api-organizations",
-        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_list_organizations;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints",
-        "gaps": "성공 목록·필터·페이지·플랫폼 교차 조직 가시성 미단언",
+        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_list_organizations;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints;tests/api_administration/organizations/list_web.rs::system_admin_lists_filtered_sorted_organizations_across_tenants",
+        "gaps": "runtime NOT_RUN; 기존 비관리자/sponsor 403과 system admin의 name contains·active 필터, name 정렬·limit, 반환 name/ID와 seed 조직 제외를 단언; 전체 filter/page·DTO는 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 319
@@ -40170,10 +40189,10 @@
       "coverage": {
         "method": "DELETE",
         "path": "/api/organizations/{id}",
-        "status": "authorization_only",
+        "status": "asserted",
         "spec": "administration.md#delete-api-organizations-id",
-        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_delete_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints",
-        "gaps": "성공 204·삭제 의미·종속 오류·감사 미단언",
+        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_delete_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints;tests/api_administration/organizations/delete_web.rs::delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency",
+        "gaps": "runtime NOT_RUN; 기존 403과 204 hard delete·감사 및 FK 실패 rollback을 단언; 모든 종속 유형은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 321
@@ -40401,10 +40420,10 @@
       "coverage": {
         "method": "PUT",
         "path": "/api/organizations/{id}",
-        "status": "authorization_only",
+        "status": "asserted",
         "spec": "administration.md#put-api-organizations-id",
-        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_update_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints",
-        "gaps": "성공 200·type 정규화·상태 변화·감사 미단언",
+        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_update_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints;tests/api_administration/organizations/update_web.rs::update_normalizes_type_persists_and_audits_while_invalid_input_is_unchanged",
+        "gaps": "runtime NOT_RUN; 기존 403과 type 정규화·fresh GET·감사·invalid 무변경을 단언; 모든 선택 필드 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 323
@@ -47740,10 +47759,10 @@
       "coverage": {
         "method": "POST",
         "path": "/api/presaves/studies/{study_id}/products",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "presave.md#study",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "setup fixture 요청만 있음; endpoint 전용 assertion 없음",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_presave/study_children_create_web.rs::direct_study_child_posts_persist_parented_rows_and_reject_unauthorized_parents",
+        "gaps": "runtime NOT_RUN; 201·parent/업무값 fresh read와 missing/cross-org/viewer 거절 뒤 양 조직 row·audit 불변을 단언; 모든 nullable/constraint 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 383
@@ -48416,10 +48435,10 @@
       "coverage": {
         "method": "POST",
         "path": "/api/presaves/studies/{study_id}/registration-numbers",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "presave.md#study",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "setup fixture 요청만 있음; endpoint 전용 assertion 없음",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_presave/study_children_create_web.rs::direct_study_child_posts_persist_parented_rows_and_reject_unauthorized_parents",
+        "gaps": "runtime NOT_RUN; 201·parent/업무값 fresh read와 missing/cross-org/viewer 거절 뒤 양 조직 row·audit 불변을 단언; 모든 nullable/constraint 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 388
@@ -49096,10 +49115,10 @@
       "coverage": {
         "method": "POST",
         "path": "/api/presaves/studies/{study_id}/reporters",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "presave.md#study",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "setup fixture 요청만 있음; endpoint 전용 assertion 없음",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_presave/study_children_create_web.rs::direct_study_child_posts_persist_parented_rows_and_reject_unauthorized_parents",
+        "gaps": "runtime NOT_RUN; 201·parent/업무값 fresh read와 missing/cross-org/viewer 거절 뒤 양 조직 row·audit 불변을 단언; 모든 nullable/constraint 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 393
@@ -50746,10 +50765,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/terminology/fda-code-search",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "terminology.md#search-read",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 endpoint assertion 없음; 2자 미만·정상·query 오류 미검증",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_terminology/search.rs::terminology_reference_searches_enforce_boundaries_filter_and_order",
+        "gaps": "runtime NOT_RUN; 1자 B 빈 결과와 trimmed Boundary query의 TEST-CODE-1/2 순서·test_device_problem list_name을 단언; 전체 projection·missing query·limit 극단은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 407
@@ -51537,10 +51556,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/terminology/mfds-substances",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "terminology.md#search-read",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 endpoint assertion 없음; 2자 오류와 정상 검색 미검증",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_terminology/search.rs::terminology_reference_searches_enforce_boundaries_filter_and_order",
+        "gaps": "runtime NOT_RUN; 1자 M 400과 M900001/M900002 개별 query 존재·inactive M900003 부재를 단언; multi-result 정렬·전체 projection·limit 극단·release 전환은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 413
@@ -52240,10 +52259,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/terminology/ucum-units",
-        "status": "registration_only",
+        "status": "asserted",
         "spec": "terminology.md#search-read",
-        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot",
-        "gaps": "활성 endpoint assertion 없음; active/filter/order 미검증",
+        "evidence": "tests/authz/protected_route_inventory.rs::protected_inventory_matches_checked_in_snapshot;tests/api_terminology/search.rs::terminology_reference_searches_enforce_boundaries_filter_and_order",
+        "gaps": "runtime NOT_RUN; unit_type=zz-test 행의 {test-a}/{test-b} 순서와 {test-hidden} 부재를 단언; 전체 projection·inactive policy 전체·권한 거절은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 418
@@ -53227,10 +53246,10 @@
       "coverage": {
         "method": "GET",
         "path": "/api/users/workflow-options",
-        "status": "authorization_only",
+        "status": "asserted",
         "spec": "administration.md#get-api-users-workflow-options",
-        "evidence": "tests/authz/rbac_users/non_admin_forbidden_web.rs::test_user_without_case_read_cannot_list_workflow_user_options;tests/authz/rbac_users/non_admin_forbidden_web.rs::test_case_reader_without_workflow_grant_cannot_list_workflow_user_options",
-        "gaps": "성공 status·payload·조직 범위·limit 경계 미단언",
+        "evidence": "tests/authz/rbac_users/non_admin_forbidden_web.rs::test_user_without_case_read_cannot_list_workflow_user_options;tests/authz/rbac_users/non_admin_forbidden_web.rs::test_case_reader_without_workflow_grant_cannot_list_workflow_user_options;tests/api_administration/users/workflow_options_web.rs::workflow_options_are_active_same_org_sorted_limited_dto_rows",
+        "gaps": "runtime NOT_RUN; 기존 권한 403과 활성 동일 조직·정렬·limit·DTO를 단언; malformed/과대 limit은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 428
@@ -53865,10 +53884,10 @@
       "coverage": {
         "method": "GET",
         "path": "/health",
-        "status": "uncovered",
+        "status": "asserted",
         "spec": "administration.md#get-health",
-        "evidence": "-",
-        "gaps": "route 204·body·인증 독립성의 활성 등록 inventory/HTTP 단언 없음",
+        "evidence": "tests/api_administration/health_web.rs::health_is_public_no_content_with_empty_body",
+        "gaps": "runtime NOT_RUN; 무인증 204와 빈 body를 단언; header/content-type 조합은 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 434

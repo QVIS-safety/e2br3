@@ -158,3 +158,95 @@ async fn test_sponsor_admin_can_search_active_meddra_and_whodrug_terms() -> Resu
 
 	Ok(())
 }
+
+async fn get_terminology(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+) -> Result<(StatusCode, serde_json::Value)> {
+	let res = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("GET")
+				.uri(uri)
+				.header("cookie", cookie)
+				.body(Body::empty())?,
+		)
+		.await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice(&body)?))
+}
+
+#[serial]
+#[tokio::test]
+async fn terminology_reference_searches_enforce_boundaries_filter_and_order(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	seed_active_terminology_rows(&mm).await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = get_terminology(
+		&app,
+		&cookie,
+		"/api/terminology/fda-code-search?list_name=test_device_problem&q=B&limit=10",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"].as_array().map(Vec::len), Some(0));
+	let (status, body) = get_terminology(
+		&app,
+		&cookie,
+		"/api/terminology/fda-code-search?list_name=test_device_problem&q=%20Boundary%20&limit=10",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let rows = body["data"].as_array().ok_or("missing FDA rows")?;
+	assert_eq!(rows.len(), 2);
+	assert_eq!(rows[0]["ncit_concept_code"], "TEST-CODE-1");
+	assert_eq!(rows[1]["ncit_concept_code"], "TEST-CODE-2");
+	assert!(rows
+		.iter()
+		.all(|row| row["list_name"] == "test_device_problem"));
+
+	let (status, body) = get_terminology(
+		&app,
+		&cookie,
+		"/api/terminology/mfds-substances?q=M&limit=10",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	for (code, present) in [("M900001", true), ("M900002", true), ("M900003", false)]
+	{
+		let (status, body) = get_terminology(
+			&app,
+			&cookie,
+			&format!("/api/terminology/mfds-substances?q={code}&limit=10"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body:?}");
+		let rows = body["data"].as_array().ok_or("missing MFDS rows")?;
+		assert_eq!(
+			rows.iter().any(|row| row["substance_code"] == code),
+			present,
+			"{body:?}"
+		);
+	}
+
+	let (status, body) =
+		get_terminology(&app, &cookie, "/api/terminology/ucum-units").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let rows = body["data"].as_array().ok_or("missing UCUM rows")?;
+	let test_codes = rows
+		.iter()
+		.filter(|row| row["unit_type"] == "zz-test")
+		.map(|row| row["code"].as_str())
+		.collect::<Vec<_>>();
+	assert_eq!(test_codes, vec![Some("{test-a}"), Some("{test-b}")]);
+	assert!(!body.to_string().contains("{test-hidden}"));
+	Ok(())
+}

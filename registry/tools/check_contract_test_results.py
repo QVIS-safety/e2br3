@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import re
 
-from generate_editor_contract_web_tests import test_name, expected_editor_tests, normalize_editor_filters
+from generate_editor_contract_web_tests import test_name, expected_editor_execution_tests, normalize_editor_filters
 
 
 BACKEND_CONTRACT_TARGETS = ('api_cases', 'api_editor', 'api_import')
@@ -132,7 +132,7 @@ def backend_expected_tests(registry_root: Path, backend_targets: set[str] | None
                 if backend_targets is None or target in backend_targets:
                     expected.add(name)
     if editor_tests is None:
-        editor_tests = expected_editor_tests(registry_root)
+        editor_tests = expected_editor_execution_tests(registry_root)
     if backend_targets is None or 'api_editor' in backend_targets:
         expected.update(editor_tests)
     expected = filter_editor_tests(expected, backend_targets, editor_filters)
@@ -142,7 +142,7 @@ def backend_expected_tests(registry_root: Path, backend_targets: set[str] | None
 
 
 def require_backend_projection_parity(inventory: dict, registry_root: Path) -> None:
-    editor_tests = expected_editor_tests(registry_root)
+    editor_tests = expected_editor_execution_tests(registry_root)
     for target in (None, *(frozenset({name}) for name in BACKEND_CONTRACT_TARGETS)):
         inventory_expected = expected_tests(inventory, 'backend', target, editor_tests)
         registry_expected = backend_expected_tests(registry_root, target, editor_tests)

@@ -135,8 +135,10 @@ Coverage 판정에서는 fixture 생성을 위한 요청만으로 endpoint를 as
 - 권한·조직·거절 무감사: [`authorization_web.rs::presave_read_only_and_cross_org_roles_cannot_mutate_any_resource`](../api_presave/authorization_web.rs)
 - 15 table 감사: [`audit_web.rs::presave_parent_and_child_http_updates_record_complete_audit_rows`](../api_presave/audit_web.rs)
 
-현재 [coverage.tsv](coverage.tsv)는 73개 중 70개에 동작 assertion, 3개에 등록 검사만 연결한다. Study direct child products/registration-numbers/reporters의 POST는 준비용 생성 호출만 있어 `registration_only`를 유지한다. 새 assertion을 모든 생성 계약의 증거로 확대하지 않는다. 남은 공백은 parent/child 동시 경쟁, pagination, 제한 scope가 비어 있지 않은 sender/product/study 조합, 감사 hash-chain 자체 무결성, 각 constraint 오류의 모든 nullable 조합이다. HTTP 상태·응답·DB 상태·감사를 확인하는 신규 검사는 실행하지 않았으므로 통과했다고 주장하지 않는다. 전체 요청·응답 Rust 필드와 serde 속성은 [operation/DTO manifest](api-contract-manifest.json)에서 해당 method/path와 타입을 연결한다.
+현재 [coverage.tsv](coverage.tsv)의 73개 경로 모두 하나 이상의 직접 HTTP assertion을 가진다. Study direct child products/registration-numbers/reporters POST는 각각 201, parent/업무값 fresh read와 missing/cross-org/viewer 거절을 확인하고, 거절 뒤 양 조직 row와 audit count 불변을 확인한다(runtime NOT_RUN). 이는 모든 생성 계약을 덮지 않는다. 남은 공백은 parent/child 동시 경쟁, pagination, 제한 scope가 비어 있지 않은 sender/product/study 조합, 감사 hash-chain 자체 무결성, 각 constraint 오류의 모든 nullable 조합이다. 전체 요청·응답 Rust 필드와 serde 속성은 [operation/DTO manifest](api-contract-manifest.json)에서 해당 method/path와 타입을 연결한다.
 
 ## Legacy 미등록 404
 
 `GET /api/presave-templates`, `GET /api/presave-templates/{id}`, `GET /api/presave-templates/{id}/audit`, `GET /api/presaves/products/{id}/substances`는 등록 경로가 아니다. [`legacy_routes_web.rs::test_legacy_presave_templates_route_is_removed`](../api_presave/legacy_routes_web.rs#L8)이 404를 확인한다. 이 네 경로는 등록 coverage TSV 행에 넣지 않는다.
+
+동일 값 재저장은 [`audit_web.rs`](../api_presave/audit_web.rs)의 기존 검사에 연결했다. sender/receiver/product/study details의 ID가 있는 DTO를 두 번 반복하고, fresh graph의 ID·값·개수 및 15개 정확한 record의 UPDATE 감사 총량이 유지되는지 비교한다. reporter/narrative는 동일 PATCH를 검사하며 graph가 없어 graph replay는 N/A다. sender gateway·receiver consignee·product substance·study registration의 다른 부모 ID와 유효 parent 수정을 섞은 PUT은 400이며 양쪽 graph와 parent/child 감사가 유지된다. 다른 sibling마다 동일 혼합 조합을 전부 검사했다는 뜻은 아니다. NOT_RUN.

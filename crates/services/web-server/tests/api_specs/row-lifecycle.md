@@ -1,6 +1,6 @@
 # 반복행 삭제·재저장 API 계약
 
-**기준:** backend `ef334e934a7dc381083fbb340931cad2a2faea0d` 이후 이 변경. **실행: NOT_RUN.** 등록 route, handler/BMC, registry와 활성 assertion을 대조했다. 아래 status는 소스상 기대값이며 실제 실행 결과가 아니다. [검사 행렬](row-lifecycle.tsv)은 각 자원과 검사 축을 한 행씩 연결한다. [전체 API 색인](coverage.tsv)의 `asserted`만으로 이 행렬의 공백을 채우지 않는다.
+**기준:** backend `18f9b0e6e1f54cde3b88fb6e7c4e0ab8f0949ed5` 이후 이 변경. **실행: NOT_RUN.** 등록 route, handler/BMC, registry와 활성 assertion을 대조했다. 아래 status는 소스상 기대값이며 실제 실행 결과가 아니다. [검사 행렬](row-lifecycle.tsv)은 각 자원과 검사 축을 한 행씩 연결한다. [전체 API 색인](coverage.tsv)의 `asserted`만으로 이 행렬의 공백을 채우지 않는다.
 
 ## 전수조사 범위
 
@@ -53,26 +53,35 @@ Legacy Case 38자원은 soft 27개·hard 10개·query-keyed notation 물리 clea
 | [relations.rs](../api_editor/relations.rs) | 바깥 행 5종 재호출과 하위 PATCH→GET·삭제 audit; 자원별 viewer/조직/잠금 거절 후 상태·감사 불변 |
 | [ci_rows.rs](../api_editor/relations/ci_rows.rs) | CI soft 자식 3종 삭제/복원/재저장·ID/count/형제 유지·mixed wrong-case rollback |
 | [rp_rows.rs](../api_editor/relations/rp_rows.rs), [dm_rows.rs](../api_editor/relations/dm_rows.rs), [si_rows.rs](../api_editor/relations/si_rows.rs), [nr_rows.rs](../api_editor/relations/nr_rows.rs), [dg_rows.rs](../api_editor/relations/dg_rows.rs) | 페이지별 하위 행 삭제·숨김·복원·재저장, malformed ID 거절 |
-| [scope.rs](../api_editor/relations/scope.rs) | RP/DM/SI/SD의 외부 ID 변경 거절과 양쪽 Case 재조회·감사 불변 |
+| [scope.rs](../api_editor/relations/scope.rs) | RP/DM/SI/SD 소속 거절과 NR summary·DG active substance mixed-child 거절; 양쪽 Case 재조회·감사 불변 |
 | [documents.rs](../api_editor/relations/documents.rs), [relatedness.rs](../api_editor/relations/relatedness.rs) | hard delete 재호출·재생성 방지, relatedness soft 복원과 assessment hard 삭제 구분 |
 | [drug_scope.rs](../api_cases/subresources/drug_scope.rs) | legacy drug child 5종과 FDA code의 소속·삭제된 부모 경계 |
 | [review_receivers.rs](../api_cases/contract/review_receivers.rs) | RE 배열 부분 삭제·동일 저장·전체 clear |
 | [lifecycle_drug.rs](../api_cases/subresources/lifecycle_drug.rs), [lifecycle_patient.rs](../api_cases/subresources/lifecycle_patient.rs), [lifecycle_report.rs](../api_cases/subresources/lifecycle_report.rs), [lifecycle_general.rs](../api_cases/subresources/lifecycle_general.rs) | Case 자원 38종의 기존 ID 재저장·삭제/복원·role/org/lock·성공 감사와 거절 무감사 |
 | [api_presave](../api_presave) | 기존 graph 검사와 새 lifecycle_matrix/authorization/audit 책임별 부모6·자식9 검사 |
 
-생성 파일은 위 수기 assertion을 실행하도록 연결하는 registry 등록이다. 이번 CI 동작 2개를 더해 Editor **373 scalar + 60 behavior = 433개**가 등록된다. Rust 선언 수, canonical UI 필드 360개, HTTP operation 436개와는 다른 집계다. 시험 성공 수가 아니다.
+생성 파일은 위 수기 assertion을 실행하도록 연결하는 registry 등록이다. 이번 NR/DG mixed-child 동작 2개를 더해 Editor **373 scalar + 62 behavior = 435개**가 등록된다. Rust 선언 수, canonical UI 필드 360개, HTTP operation 436개와는 다른 집계다. legacy GET 수기 14개를 합친 실행 계약은 449개이고 patch builder 자체 검사 2개는 별도다. 시험 성공 수가 아니다.
+
+## 이번 공백 보강
+
+- Case 38자원 모두 실제 Case DELETE의 `status=deleted` 동안 읽기 ID·값 보존, 내용 PUT 403, child 감사 불변, Case restore 후 같은 데이터·감사를 검사한다. 36자원은 [lifecycle_parents.rs](../api_cases/subresources/lifecycle_parents.rs), notation과 other identifier는 기존 책임 파일에 연결했다. Case 부모의 status 변경 감사와 삭제 전자서명 연결도 검사한다.
+- Drug·FDA device·patient parent의 soft 삭제는 자식 GET 404와 감사 불변, 부모 복원 후 원래 ID·값을 확인한다. assessment/narrative/patient/study/death-info hard cascade는 기존 물리 삭제·새 ID 생성 근거를 유지한다.
+- RP/DM/SI/NR/DG의 valid 변경과 malformed 자식이 섞인 요청을 보강했다. foreign ID 혼합은 RP/DM/SI와 NR summary·DG active substance를 검사한다. NR/DG parent mismatch는 실제 handler 계약대로 400, 기존 RP/DM/SI 소속 오류는 404다. DM parentInfo 복원 후 병력/과거약물 값도 비교한다.
+- Presave details 4개에 속한 13자원의 ID가 있는 동일 DTO를 두 번 저장하고 fresh graph ID·값·개수와 no-op UPDATE 감사 불변을 검사한다. reporter/narrative는 단일 PATCH 검사이며 graph 축은 N/A다. parent 수정+외부 child가 섞인 요청은 4개 대표 child에서 양쪽 graph·감사 불변을 확인한다.
+
+807셀의 현재 분포는 `added_not_run` 652, `covered` 2, `partial` 43, `partial_added_not_run` 33, `gap` 0, `not_applicable` 77이다. `missing` 0이며 실행 상태는 전부 NOT_RUN이다. Editor 결합 축은 정확히 31행이며 전체 조합 완료로 올리지 않았다.
 
 ## 프런트 호출 연결과 남은 검사
 
-frontend `344049025f4d3a8adba73b7db5cf644f18978412`의 저장 hook·mapper·endpoint와 기존 격리 검사를 정적으로 대조했다. 저장된 바깥 행 삭제는 DELETE, 그 외 기존 행은 PATCH, 신규 행은 POST다. 생성 응답의 ID를 받은 뒤 재조회가 실패하면 다음 저장은 기존 ID PATCH로 전환한다. 삭제 성공 뒤 form marker를 정리하고 복원은 `deleted:false` PATCH로 보낸다. 전용 POST restore client 함수는 없다.
+frontend `b9c8f45718704b561b034db8f21d990c56f88133`의 저장 hook·mapper·endpoint와 기존 격리 검사를 정적으로 대조했다. 저장된 바깥 행 삭제는 DELETE, 그 외 기존 행은 PATCH, 신규 행은 POST다. 생성 응답의 ID를 받은 뒤 재조회가 실패하면 다음 저장은 기존 ID PATCH로 전환한다. 삭제 성공 뒤 form marker를 정리하고 복원은 `deleted:false` PATCH로 보낸다. 전용 POST restore client 함수는 없다.
 
-이 호출 선택·hook 검사는 HTTP/DB의 실제 저장 결과 증거로 계산하지 않는다. 프런트 소스와 테스트는 이번 변경에서 수정하지 않았다.
+이 호출 선택·hook 검사는 HTTP/DB의 실제 저장 결과 증거로 계산하지 않는다. 프런트 저장 hook/mapper는 변경하지 않았다. 별도 Next validator proxy의 live HTTP 검사 4개와 integration 설정을 추가했으며 실행 조건은 [surfaces.md](surfaces.md)에 기록했다.
 
 이번에 채운 범위는 CI soft 자식 3종, Case legacy 자원 38종의 실제 등록 method별 lifecycle, Presave 부모6·자식9의 권한/감사 및 직접 soft 자식의 반복 삭제/복원이다. hard delete 분류도 확인했다: Case sender와 study는 `deleted` 열이 없는 물리 삭제이며 assessment/source-document와 함께 새 생성 시 새 ID를 받는다. SourceDocument에는 item GET이 등록되어 있지 않아 collection 조회를 근거로 삼는다. Singleton·scalar notation은 case_id만 target으로 받으므로 같은 조직의 다른 Case를 일괄 404로 기대하지 않는다.
 
 남은 범위는 다음과 같다.
 
-1. 모든 부모·자식 조합의 cascade 세부 값/감사와 Case archive/restore, 생성 권한의 모든 역할·할당 scope 조합. 개별 자원 삭제 검사를 이 결합 축의 전수 검증으로 올리지 않는다.
+1. Case 38자원의 Case 부모 status 삭제/복원은 직접 검사하며 drug/device/patient-parent soft 보존 및 기존 hard cascade도 연결한다. 모든 비행렬 자식·동시 cascade 조합과 생성 권한의 모든 역할·할당 scope까지 검사한 것은 아니다.
 2. Presave 감사는 15종의 정상 HTTP 수정 metadata/old/new, soft 부모6·direct 자식5의 삭제 no-op을 검사한다. 모든 hard 삭제와 category 조합, hash-chain 손상은 별도다.
 3. 모든 필드의 제약·nullable 조합, full body 재전송, 응답 유실 후 신규 POST 중복 생성, 동시 저장 충돌. 필드별 scalar 테스트와 lifecycle 검사의 서로 다른 범위를 유지한다.
 4. 같은 commit에서 선택된 테스트 목록·환경·실행 로그. 이번 작업에서는 사용자 지시에 따라 실행하지 않았으며 모든 셀은 NOT_RUN이다.

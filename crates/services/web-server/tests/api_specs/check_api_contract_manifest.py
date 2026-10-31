@@ -17,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[4]
 WEB = REPO / "crates/services/web-server"
 OUT = HERE / "api-contract-manifest.json"
-BASELINE_COMMIT = "ef334e934a7dc381083fbb340931cad2a2faea0d"
+BASELINE_COMMIT = "18f9b0e6e1f54cde3b88fb6e7c4e0ab8f0949ed5"
 PRIMITIVES = {
 	"bool", "char", "f32", "f64", "i8", "i16", "i32", "i64", "i128",
 	"isize", "str", "u8", "u16", "u32", "u64", "u128", "usize", "String",

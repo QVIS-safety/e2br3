@@ -1,6 +1,25 @@
 use super::support::*;
 use crate::validation_common::post_json as post_value;
 
+async fn other_identifier_audit_actions(
+	mm: &lib_core::model::ModelManager,
+	id: Uuid,
+) -> Result<Vec<String>> {
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
+		.await?;
+	let actions = sqlx::query_scalar::<_, String>(
+		"SELECT action FROM audit_logs
+		 WHERE table_name='other_case_identifiers' AND record_id=$1 ORDER BY id",
+	)
+	.bind(id)
+	.fetch_all(&mut *tx)
+	.await?;
+	tx.rollback().await?;
+	Ok(actions)
+}
+
 #[serial]
 #[tokio::test]
 async fn safety_report_preserves_c1_boolean_null_flavors() -> Result<()> {
@@ -195,7 +214,7 @@ async fn test_other_case_identifier_soft_delete_restore() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 
@@ -221,6 +240,85 @@ async fn test_other_case_identifier_soft_delete_restore() -> Result<()> {
 	let row_id = extract_id(&body)?;
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["deleted"], false);
+	let item = format!("/api/cases/{case_id}/other-identifiers/{row_id}");
+	let (status, fresh) = request_json_with_reason(
+		&app,
+		&cookie,
+		"GET",
+		item.clone(),
+		None,
+		"read identifier before case delete",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{fresh}");
+	assert_eq!(fresh, value);
+	let audit_before_parent_delete =
+		other_identifier_audit_actions(&mm, row_id).await?;
+	let (status, deleted_case) = request_json_with_reason(
+		&app,
+		&cookie,
+		"DELETE",
+		format!("/api/cases/{case_id}"),
+		Some(json!({
+			"reason_for_change":"verify identifier survives case delete",
+			"e_signature":{"meaning":"delete case","password":"adminpwd"}
+		})),
+		"verify identifier case parent delete",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{deleted_case}");
+	assert_eq!(deleted_case["data"]["status"], "deleted");
+	let (status, read_while_deleted) = request_json_with_reason(
+		&app,
+		&cookie,
+		"GET",
+		item.clone(),
+		None,
+		"read identifier under deleted case",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{read_while_deleted}");
+	assert_eq!(read_while_deleted, value);
+	let (status, rejected) = request_json_with_reason(
+		&app,
+		&cookie,
+		"PUT",
+		item.clone(),
+		Some(json!({"data":{"case_identifier":"MUST-NOT-PERSIST"}})),
+		"reject identifier mutation under deleted case",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{rejected}");
+	assert_eq!(
+		other_identifier_audit_actions(&mm, row_id).await?,
+		audit_before_parent_delete
+	);
+	let (status, restored_case) = request_json_with_reason(
+		&app,
+		&cookie,
+		"POST",
+		format!("/api/cases/{case_id}/restore"),
+		Some(json!({"reason_for_change":"restore identifier case parent"})),
+		"restore identifier case parent",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{restored_case}");
+	assert_eq!(restored_case["data"]["status"], "draft");
+	assert_eq!(
+		other_identifier_audit_actions(&mm, row_id).await?,
+		audit_before_parent_delete
+	);
+	let (status, read_after_restore) = request_json_with_reason(
+		&app,
+		&cookie,
+		"GET",
+		item,
+		None,
+		"read identifier after case restore",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{read_after_restore}");
+	assert_eq!(read_after_restore, value);
 
 	let (status, body) = delete_json(
 		&app,

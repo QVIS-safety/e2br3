@@ -69,9 +69,18 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		),
 	];
 	for drug in [
-		json!({"activeSubstances":[{"id":"not-a-uuid","substanceName":"INVALID"}]}),
-		json!({"dosageInformation":[{"id":"not-a-uuid","dosageText":"INVALID"}]}),
-		json!({"indications":[{"id":"not-a-uuid","indicationText":"INVALID"}]}),
+		json!({"activeSubstances":[
+			{"id":owners[0].1,"substanceName":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","substanceName":"INVALID"}
+		]}),
+		json!({"dosageInformation":[
+			{"id":owners[1].1,"dosageText":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","dosageText":"INVALID"}
+		]}),
+		json!({"indications":[
+			{"id":owners[2].1,"indicationText":"MUST ROLL BACK"},
+			{"id":"not-a-uuid","indicationText":"INVALID"}
+		]}),
 	] {
 		assert_malformed_row_id_rejected_without_mutation(
 			&app,

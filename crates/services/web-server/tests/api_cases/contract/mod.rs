@@ -1,6 +1,7 @@
 mod audit;
 #[path = "delete.rs"]
 mod delete;
+mod link_options;
 #[path = "list_view.rs"]
 mod list_view;
 #[path = "query.rs"]

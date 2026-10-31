@@ -162,6 +162,11 @@ mod relations {
     async fn device_list_replacement_removes_children() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::device_children::device_list_replacement_removes_children("DG", "device_list_replacement_removes_children").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn mixed_foreign_children_rollback() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::scope::rejects_mixed_foreign_drug_children_atomically("DG", "mixed_foreign_children_rollback").await
+    }
 }
 mod audit {
     #[serial_test::serial]

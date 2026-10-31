@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_test_plan import commands_for, load_workspace, select_tests, target_for, xml_assets_for_cargo_args
-from generate_editor_contract_web_tests import expected_editor_tests
+from generate_editor_contract_web_tests import expected_editor_execution_tests
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -204,8 +204,10 @@ class TestPlanTests(unittest.TestCase):
             self.assertEqual(plan['editor_filters'], [])
 
     def test_editor_filter_union_runs_once_without_losing_or_repeating_contracts(self):
-        registered = expected_editor_tests(ROOT / 'registry')
+        registered = expected_editor_execution_tests(ROOT / 'registry')
         for filters in (['case_editor_contract_web::dg::'],
+                        ['case_editor_contract_web::legacy_reads::ci::'],
+                        ['case_editor_contract_web::dg::', 'case_editor_contract_web::legacy_reads::dg::'],
                         ['case_editor_contract_web::ae::fields::', 'case_editor_contract_web::dm::fields::',
                          'case_editor_contract_web::dg::fields::', 'case_editor_contract_web::si::fields::'],
                         ['case_editor_contract_web::dg::', 'case_editor_contract_web::dg::rows::',
@@ -222,6 +224,16 @@ class TestPlanTests(unittest.TestCase):
             self.assertIn('api_cases', other)
             self.assertNotIn('api_editor', other)
             self.assertNotIn('--skip', other)
+
+    def test_legacy_editor_reads_select_their_own_page_and_shared_files_widen(self):
+        root = 'crates/services/web-server/tests/api_editor/legacy_reads/'
+        for page in ('ci', 'dg'):
+            plan = self.plan(root + page + '.rs')
+            self.assertEqual(plan['selections'], {'web-server': ['api_editor']})
+            self.assertEqual(plan['editor_filters'], [f'case_editor_contract_web::legacy_reads::{page}::'])
+            self.assertTrue(plan['backend_contracts'])
+        for shared in ('mod.rs', 'unknown.rs'):
+            self.assertEqual(self.plan(root + shared)['editor_filters'], [])
 
     def test_editor_filters_cannot_narrow_a_whole_crate_or_an_unrelated_target(self):
         filters = ['case_editor_contract_web::dg::']

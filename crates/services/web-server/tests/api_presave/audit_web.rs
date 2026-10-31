@@ -87,6 +87,49 @@ async fn assert_update_audits(
 	Ok(())
 }
 
+async fn audit_update_count(
+	mm: &lib_core::model::ModelManager,
+	records: &[(&str, Uuid)],
+) -> Result<i64> {
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
+		.await?;
+	let mut count = 0;
+	for (table_name, record_id) in records {
+		count += sqlx::query_scalar::<_, i64>(
+			"SELECT COUNT(*) FROM audit_logs
+			 WHERE table_name=$1 AND record_id=$2 AND action='UPDATE'",
+		)
+		.bind(table_name)
+		.bind(record_id)
+		.fetch_one(&mut *tx)
+		.await?;
+	}
+	tx.rollback().await?;
+	Ok(count)
+}
+
+fn without_write_metadata(mut value: Value) -> Value {
+	match &mut value {
+		Value::Object(object) => {
+			for key in ["createdAt", "updatedAt", "createdBy", "updatedBy"] {
+				object.remove(key);
+			}
+			for child in object.values_mut() {
+				*child = without_write_metadata(child.take());
+			}
+		}
+		Value::Array(rows) => {
+			for row in rows {
+				*row = without_write_metadata(row.take());
+			}
+		}
+		_ => {}
+	}
+	value
+}
+
 #[serial]
 #[tokio::test]
 async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
@@ -123,7 +166,13 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 		json!({"data":{"rows":{"routes":[{
 			"sequenceNumber":1,
 			"authority":"fda",
-			"receiverLabel":"Audit Route Old"
+			"receiverLabel":"Audit Route Old",
+			"messageReceiverIdentifier":"CBER_IND",
+			"conditionPage":"CI",
+			"conditionFieldCode":"FDA_REPORT_TYPE",
+			"conditionOperator":"Equal",
+			"conditionValueCode":"3",
+			"conditionValueLabel":"CBER IND"
 		}]}}}),
 	)
 	.await?;
@@ -233,14 +282,35 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 		(Method::PATCH, format!("/api/presaves/studies/{study_id}/reporters/{study_reporter_id}"), json!({"data":{"reporter_organization":"Audit Study Reporter New"}})),
 		(Method::PUT, format!("/api/presaves/studies/{study_id}/details"), json!({"data":{"rows":{"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-IND-NEW"}]}}})),
 		(Method::PATCH, format!("/api/presaves/narratives/{narrative_id}"), json!({"data":{"rows":{"narrative":{"caseNarrative":"Audit Narrative New"}}}})),
+		(Method::PUT, format!("/api/presaves/senders/{sender_id}/details"), json!({"data":{"rows":{
+			"sender":{"city":"Audit City New"},
+			"gateways":[{"id":gateway_id,"senderIdentifier":"AUDIT-NEW"}],
+			"responsiblePersons":[{"id":responsible_id,"department":"Audit Department New"}]
+		}}})),
+		(Method::PUT, format!("/api/presaves/receivers/{receiver_id}/details"), json!({"data":{"rows":{
+			"receiver":{"description":"Audit Receiver New"},
+			"consignees":[{"id":consignee_id,"name":"Audit Consignee New"}],
+			"routes":[{"id":route_id,"receiverLabel":"Audit Route New"}]
+		}}})),
+		(Method::PUT, format!("/api/presaves/products/{product_id}/details"), json!({"data":{"rows":{
+			"product":{"medicinalProduct":"Audit Product New"},
+			"activeSubstances":[{"id":substance_id,"substanceName":"Audit Substance New"}]
+		}}})),
+		(Method::PUT, format!("/api/presaves/studies/{study_id}/details"), json!({"data":{"rows":{
+			"study":{"studyName":"Audit Study New"},
+			"registrationNumbers":[{"id":registration_id,"registrationNumber":"AUDIT-REG-NEW"}],
+			"products":[{"id":study_product_id,"productName":"Audit Study Product New"}],
+			"reporters":[{"id":study_reporter_id,"reporterOrganization":"Audit Study Reporter New"}],
+			"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-IND-NEW"}]
+		}}})),
 	];
-	for (method, uri, body) in operations {
+	for (method, uri, body) in &operations {
 		request_json_ok_with_audit_compliance(
 			&app,
 			&cookie,
-			method,
-			uri,
-			body,
+			method.clone(),
+			uri.clone(),
+			body.clone(),
 			reason,
 			Some(category),
 		)
@@ -362,6 +432,185 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 		],
 	)
 	.await?;
+
+	let graph_uris = [
+		format!("/api/presaves/senders/{sender_id}/details"),
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		format!("/api/presaves/products/{product_id}/details"),
+		format!("/api/presaves/reporters/{reporter_id}"),
+		format!("/api/presaves/studies/{study_id}/details"),
+		format!("/api/presaves/narratives/{narrative_id}"),
+	];
+	let replay_records = [
+		("sender_presaves", sender_id),
+		("sender_presave_gateways", gateway_id),
+		("sender_presave_responsible_persons", responsible_id),
+		("receiver_presaves", receiver_id),
+		("receiver_presave_consignees", consignee_id),
+		("receiver_presave_routes", route_id),
+		("product_presaves", product_id),
+		("product_presave_active_substances", substance_id),
+		("reporter_presaves", reporter_id),
+		("study_presaves", study_id),
+		("study_presave_registration_numbers", registration_id),
+		("study_presave_products", study_product_id),
+		("study_presave_reporters", study_reporter_id),
+		("study_presave_fda_cross_reported_ind_numbers", fda_ind_id),
+		("narrative_presaves", narrative_id),
+	];
+	let mut before_replay = Vec::new();
+	for uri in &graph_uris {
+		before_replay.push(get_json_ok(&app, &cookie, uri.clone()).await?);
+	}
+	let audit_count = audit_update_count(&mm, &replay_records).await?;
+	for _ in 0..2 {
+		for (method, uri, body) in &operations {
+			request_json_ok_with_audit_compliance(
+				&app,
+				&cookie,
+				method.clone(),
+				uri.clone(),
+				body.clone(),
+				reason,
+				Some(category),
+			)
+			.await?;
+		}
+	}
+	for (uri, expected) in graph_uris.iter().zip(&before_replay) {
+		let replayed = get_json_ok(&app, &cookie, uri.clone()).await?;
+		assert_eq!(
+			without_write_metadata(replayed["data"].clone()),
+			without_write_metadata(expected["data"].clone()),
+			"{uri}"
+		);
+	}
+	assert_eq!(
+		audit_update_count(&mm, &replay_records).await?,
+		audit_count,
+		"same-value graph replay must not emit UPDATE audits"
+	);
+
+	let other_sender = create_sender_presave_via_api(&app, &cookie, "fda").await?;
+	let other_gateway =
+		create_sender_gateway_via_api(&app, &cookie, other_sender, 1, "OTHER")
+			.await?;
+	let other_receiver =
+		create_receiver_presave_via_api(&app, &cookie, "fda").await?;
+	let other_consignee = create_receiver_consignee_via_api(
+		&app,
+		&cookie,
+		other_receiver,
+		1,
+		"Other Consignee",
+	)
+	.await?;
+	let other_product = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let other_substance = create_product_active_substance_via_api(
+		&app,
+		&cookie,
+		other_product,
+		1,
+		"Other Substance",
+	)
+	.await?;
+	let other_study = create_study_presave_for_product_via_api(
+		&app,
+		&cookie,
+		other_product,
+		"fda",
+	)
+	.await?;
+	let other_registration = create_study_registration_number_via_api(
+		&app,
+		&cookie,
+		other_study,
+		1,
+		"OTHER-REG",
+	)
+	.await?;
+	let rollback_records = [
+		("sender_presaves", sender_id),
+		("sender_presave_gateways", other_gateway),
+		("receiver_presaves", receiver_id),
+		("receiver_presave_consignees", other_consignee),
+		("product_presaves", product_id),
+		("product_presave_active_substances", other_substance),
+		("study_presaves", study_id),
+		("study_presave_registration_numbers", other_registration),
+		("sender_presaves", other_sender),
+		("receiver_presaves", other_receiver),
+		("product_presaves", other_product),
+		("study_presaves", other_study),
+	];
+	let rollback_audit_count = audit_update_count(&mm, &rollback_records).await?;
+	let mut rollback_expected = Vec::new();
+	for index in [0, 1, 2, 4] {
+		rollback_expected
+			.push(get_json_ok(&app, &cookie, graph_uris[index].clone()).await?);
+	}
+	let foreign_parent_uris = [
+		format!("/api/presaves/senders/{other_sender}/details"),
+		format!("/api/presaves/receivers/{other_receiver}/details"),
+		format!("/api/presaves/products/{other_product}/details"),
+		format!("/api/presaves/studies/{other_study}/details"),
+	];
+	let mut foreign_parent_expected = Vec::new();
+	for uri in &foreign_parent_uris {
+		foreign_parent_expected.push(get_json_ok(&app, &cookie, uri.clone()).await?);
+	}
+	let rollback_cases = [
+		(
+			format!("/api/presaves/senders/{sender_id}/details"),
+			json!({"data":{"rows":{
+				"sender":{"city":"must roll back"},
+				"gateways":[{"id":other_gateway,"senderIdentifier":"must not move"}]
+			}}}),
+		),
+		(
+			format!("/api/presaves/receivers/{receiver_id}/details"),
+			json!({"data":{"rows":{
+				"receiver":{"description":"must roll back"},
+				"consignees":[{"id":other_consignee,"name":"must not move"}]
+			}}}),
+		),
+		(
+			format!("/api/presaves/products/{product_id}/details"),
+			json!({"data":{"rows":{
+				"product":{"medicinalProduct":"must roll back"},
+				"activeSubstances":[{"id":other_substance,"substanceName":"must not move"}]
+			}}}),
+		),
+		(
+			format!("/api/presaves/studies/{study_id}/details"),
+			json!({"data":{"rows":{
+				"study":{"studyName":"must roll back"},
+				"registrationNumbers":[{"id":other_registration,"registrationNumber":"must not move"}]
+			}}}),
+		),
+	];
+	for ((uri, body), expected) in rollback_cases.iter().zip(&rollback_expected) {
+		let (status, value) = request_json(
+			&app,
+			&cookie,
+			Method::PUT,
+			uri.clone(),
+			Some(body.clone()),
+		)
+		.await?;
+		assert_eq!(status, axum::http::StatusCode::BAD_REQUEST, "{value:?}");
+		let after = get_json_ok(&app, &cookie, uri.clone()).await?;
+		assert_eq!(after["data"], expected["data"], "{uri}");
+	}
+	for (uri, expected) in foreign_parent_uris.iter().zip(&foreign_parent_expected) {
+		let after = get_json_ok(&app, &cookie, uri.clone()).await?;
+		assert_eq!(after["data"], expected["data"], "{uri}");
+	}
+	assert_eq!(
+		audit_update_count(&mm, &rollback_records).await?,
+		rollback_audit_count,
+		"wrong-parent graph requests must not emit UPDATE audits"
+	);
 
 	Ok(())
 }

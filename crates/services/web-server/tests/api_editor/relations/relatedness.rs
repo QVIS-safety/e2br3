@@ -382,5 +382,28 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.ok_or("missing assessments after rejected child restore")?
 		.iter()
 		.all(|row| row["reactionId"] != json!(reaction_ids[0])));
+	let before_replay = body;
+	let audit_before_replay = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	for row in [
+		json!({"drugReactionAssessmentId":parent_only_id,"reactionId":reaction_ids[1],"deleted":true,"_deleteAssessment":true}),
+		json!({"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0],"_deleteAssessment":true}),
+	] {
+		let (status, rejected) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[row]}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{rejected}");
+		let (status, after) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{after}");
+		assert_eq!(after, before_replay);
+		assert_eq!(
+			super::case_audit_ids(&mm, &ctx, &case_id).await?,
+			audit_before_replay,
+			"repeated hard parent deletion must not add audit rows"
+		);
+	}
 	Ok(())
 }
