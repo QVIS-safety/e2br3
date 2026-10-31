@@ -78,7 +78,7 @@ resolver는 `x-e2br3-reason-for-change`, `x-e2br3-change-category`를 percent-de
 - 공지는 writer 이메일과 CREATE/UPDATE old/new title을 확인한다. [`test_dashboard_notices_are_org_scoped_and_audited`](../api_administration/admin_settings/notices_web.rs).
 - editor 변경 reason이 case audit projection의 `reason`과 field row에 나타나는 것은 [`fda_device_scalar_editor_save_projects_audit_trail`](../api_editor/audit/projection.rs)에서 확인한다.
 
-설정/공지 테스트의 DB 직접 query는 audit 조회 API 권한을 증명하지 않는다. 반대로 audit API 테스트는 모든 mutation이 감사된다는 전수 증명이 아니다. category header, percent-decoding 오류, IP/user-agent, e-signature, 실패 mutation의 무감사, 감사 chain HTTP integrity 경로는 남은 공백이다.
+설정/공지 테스트의 DB 직접 query는 audit 조회 API 권한을 증명하지 않는다. 반대로 audit API 테스트는 모든 mutation이 감사된다는 전수 증명이 아니다. category header, percent-decoding 오류, IP/user-agent, e-signature, 실패 mutation의 무감사, 손상된 감사 chain의 HTTP 보고 분기는 남은 공백이다. 정상 chain report와 viewer 403는 [감사 API 명세](administration.md#get-api-audit-logs-verify-integrity)에 연결했다.
 
 <a id="error-contract"></a>
 ## 오류 계약과 정보 은닉
@@ -93,6 +93,6 @@ response mapper는 인증 오류를 보통 `403 NO_AUTH`, 최초 암호 제한�
 - route inventory와 소스 parser 테스트는 등록 누락을 찾을 수 있지만 인증·인가를 실행하지 않는다.
 - policy kernel/model/helper 테스트는 정책 규칙을 격리해 확인하지만 middleware, error mapping, 실제 handler context를 함께 통과하지 않는다.
 - HTTP `403`만 확인한 경로는 성공 payload/state/audit 계약을 확인하지 않는다. Administration 표에서 이 경우를 `authorization_only`로 표시했다.
-- 조직 성공 list/update/delete, workflow options 성공, audit integrity HTTP, health HTTP에는 활성 직접 단언이 없다.
+- 조직 성공 list/update/delete, workflow options 성공, health HTTP에는 활성 직접 단언이 없다.
 - CSRF는 helper unit test만 있으며 `/auth/v1`의 origin 경계에는 직접 테스트가 없다.
 - 이 문서 작성 과정에서는 어떤 검증 명령도 실행하지 않았으므로 현재 환경에서의 통과 상태를 주장하지 않는다.

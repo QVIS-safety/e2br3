@@ -34,3 +34,6 @@ mod rbac_subresources;
 mod rbac_users;
 #[path = "authz/rls_web.rs"]
 mod rls_web;
+
+#[path = "authz/support.rs"]
+mod authz_support;

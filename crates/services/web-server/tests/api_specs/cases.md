@@ -40,7 +40,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - [tests/api_cases/contract/delete.rs::test_delete_case_soft_deletes_and_keeps_case_visible](../api_cases/contract/delete.rs)
 - [tests/api_cases/contract/list_view.rs::test_case_list_view_honors_limit_and_offset](../api_cases/contract/list_view.rs)
 - [tests/api_cases/contract/list_view.rs::test_case_list_view_projects_reference_grid_fields](../api_cases/contract/list_view.rs)
-- [tests/api_cases/contract/list_view.rs::test_case_query_returns_lightweight_list_view_items](../api_cases/contract/list_view.rs)
+- [tests/api_cases/contract/query.rs::test_case_query_returns_lightweight_list_view_items](../api_cases/contract/query.rs)
 - [tests/api_cases/lifecycle.rs::test_case_save_does_not_auto_transition_status_when_updating_fields](../api_cases/lifecycle.rs)
 - [tests/api_cases/lifecycle.rs::test_create_case_rejects_every_protected_lifecycle_status](../api_cases/lifecycle.rs)
 - [tests/api_cases/locking.rs::test_case_read_returns_separate_qc_and_lock_axes](../api_cases/locking.rs)
@@ -122,11 +122,10 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 - `GET`, `DELETE`: query `e2bCode` 필수, `recordId` 선택. `PUT`: body `{e2bCode,recordId?,notation}`, unknown field 거절. e2bCode는 1–64자의 ASCII 영숫자/점/밑줄/하이픈, notation은 최대 10,000자다.
 - GET은 저장 행이 없어도 `200 {id:null,e2bCode,recordId,notation:""}`; PUT upsert와 DELETE는 `200 FieldNotationResponse`.
-- 세 operation 모두 registration_only다.
-
-근거:
-
-- 활성 행동 assertion 없음.
+- 세 operation 모두 asserted다. [field_notation.rs](../api_cases/field_notation.rs)는 scalar 저장→조회→수정 시 ID 유지→공백 PUT(trim 후 빈 문자열, 행 유지)→DELETE→없는 행 조회를 검사한다. 감사 action 순서 CREATE/UPDATE/UPDATE/DELETE도 확인한다.
+- 실제 Drug 행 UUID로 같은 e2bCode의 scalar/record notation을 따로 저장·조회하고 ID/값 격리를 검사한다. viewer GET은 200, PUT/DELETE는 403이며 거절 후 저장 값과 해당 notation 감사 action이 불변인지 확인한다.
+- **구현 공백:** `recordId`는 nullable UUID이며 FK/행 존재/case·조직 소속 검사가 없다. 요청 case의 권한 검사와 recordId 소유권 검사는 별개다. 현재 테스트는 다른 case의 행을 거절한다고 주장하지 않는다.
+- 미단언: 잘못된 e2bCode·notation 길이·unknown field 경계, 타 case 접근 조합, 감사 old/new payload, 반복행 삭제 시 notation 정리. 입력 길이 제한은 구현의 UTF-8 byte 길이 기준이다.
 
 <a id="drug"></a>
 ## Drug와 하위 리소스
@@ -363,6 +362,6 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 ## Coverage gap 우선순위
 
 1. registration_only 122개 중 drug device/code/assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
-2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`, field-notation 3개는 등록 이외 행동 assertion이 전혀 없다.
+2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`는 등록 이외 행동 assertion이 전혀 없다.
 3. `GET /cases/{case_id}/versions`는 조직 가시성만 검증되어 반환 필드, 정렬, 빈 결과가 미검증이다.
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.

@@ -236,11 +236,12 @@
 - editor 연결: FDA device scalar 저장 뒤 `item`, `value`, 반복행 번호, reason을 이 API로 조회하는 활성 generated test가 있다. [`dg.generated.rs`](../api_editor/pages/dg.generated.rs), [`projection.rs`](../api_editor/audit/projection.rs). 이는 UI 자체 렌더링 테스트가 아니라 editor 저장 결과의 조회 표현 단언이다.
 
 <a id="get-api-audit-logs-verify-integrity"></a>
-### `GET /api/audit-logs/verify-integrity` — registration_only
+### `GET /api/audit-logs/verify-integrity` — asserted
 
 - 구현은 audit collection 권한 뒤 hash chain을 검사하고 `200 {"data":{"total_rows":number,"verified_ok_rows":number,"broken_rows":number,"first_broken_id":number|null,"first_broken_reason":string|null,"checked_at":"RFC3339"}}`를 반환한다.
-- [`test_audit_chain_preserves_id_order_with_waiting_writer`](../api_administration/audit_web.rs)는 SQL 검증 함수를 직접 호출할 뿐 이 HTTP 경로를 호출하지 않는다. 보호 경로 스냅샷도 등록 문자열 비교뿐이다.
-- 성공/거부 HTTP 상태, 응답 schema, 손상 보고 분기는 모두 미단언이다.
+- [`test_audit_integrity_reports_healthy_chain_and_requires_permission`](../api_administration/audit_web.rs)는 admin GET 200, 비어 있지 않은 정상 chain의 total=verified·broken=0·최초 손상 필드 null·RFC3339 checked_at, viewer GET 403와 보고서 비노출을 검사한다.
+- [`test_audit_chain_preserves_id_order_with_waiting_writer`](../../../../libs/lib-core/tests/database/audit_chain.rs)는 별도 lib-core/database 검사다. 실제 advisory lock 대기 중인 writer를 만들어 ID 순서와 hash chain을 검증하며 HTTP 근거로 계산하지 않는다.
+- 손상 chain의 first_broken_id/reason 반환과 다른 권한 조합은 미단언이다. SQL 함수가 전체 chain을 검사하므로 이 보고서는 조직별 row 필터 결과가 아니다.
 
 ## 인증과 health
 

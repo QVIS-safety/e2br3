@@ -1,4 +1,4 @@
-#![allow(unused_imports, dead_code)]
+#![allow(unused_imports)]
 
 pub(super) use crate::common::{
 	cookie_header, init_test_mm, insert_user, seed_company_org_with_users,
@@ -53,25 +53,6 @@ pub(super) async fn request_json(
 	let value = serde_json::from_slice(&bytes)
 		.unwrap_or_else(|_| json!({ "raw": String::from_utf8_lossy(&bytes) }));
 	Ok((status, value))
-}
-
-pub(super) async fn request_raw_status(
-	app: &Router,
-	method: &str,
-	cookie: &str,
-	uri: &str,
-	content_type: Option<&str>,
-	body: impl Into<Body>,
-) -> Result<StatusCode> {
-	let mut req = Request::builder().method(method).uri(uri);
-	if !cookie.is_empty() {
-		req = req.header("cookie", cookie);
-	}
-	if let Some(content_type) = content_type {
-		req = req.header("content-type", content_type);
-	}
-	let res = app.clone().oneshot(req.body(body.into())?).await?;
-	Ok(res.status())
 }
 
 pub(super) async fn create_empty_custom_role(
@@ -136,77 +117,6 @@ pub(super) async fn custom_role_user(
 			.await?;
 	let token = generate_web_token(&user.email, user.token_salt)?;
 	Ok((user.id, cookie_header(&token.to_string())))
-}
-
-pub(super) async fn assert_get_status(
-	app: &Router,
-	cookie: &str,
-	uri: &str,
-	expected: StatusCode,
-) -> Result<Value> {
-	let (status, value) =
-		request_json(app, "GET", cookie, uri.to_string(), None).await?;
-	assert_eq!(status, expected, "{uri} body={value:?}");
-	Ok(value)
-}
-
-pub(super) async fn assert_get_not_status(
-	app: &Router,
-	cookie: &str,
-	uri: &str,
-	disallowed: StatusCode,
-) -> Result<Value> {
-	let (status, value) =
-		request_json(app, "GET", cookie, uri.to_string(), None).await?;
-	assert_ne!(status, disallowed, "{uri} body={value:?}");
-	Ok(value)
-}
-
-pub(super) async fn assert_profile_capabilities(
-	app: &Router,
-	cookie: &str,
-	expected: &[(&str, &str, bool)],
-) -> Result<Value> {
-	let (status, profile) = request_json(
-		app,
-		"GET",
-		cookie,
-		"/api/users/me/profile".to_string(),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{profile:?}");
-	for (module, action, expected) in expected {
-		assert_eq!(
-			profile["data"]["capabilities"][*module][*action].as_bool(),
-			Some(*expected),
-			"{module}.{action} capability mismatch: {profile:?}"
-		);
-	}
-	Ok(profile)
-}
-
-pub(super) async fn assert_workflow_assign_status(
-	app: &Router,
-	cookie: &str,
-	case_id: Uuid,
-	target_role: &str,
-	expected: StatusCode,
-) -> Result<Value> {
-	let (status, value) = request_json(
-		app,
-		"POST",
-		cookie,
-		format!("/api/cases/{case_id}/workflow/assign"),
-		Some(json!({
-			"data": {
-				"target_role": target_role
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, expected, "{value:?}");
-	Ok(value)
 }
 
 pub(super) async fn create_case(

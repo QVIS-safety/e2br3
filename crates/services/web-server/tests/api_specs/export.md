@@ -36,7 +36,9 @@
 <a id="cioms"></a>
 ## CIOMS PDF
 
-`GET /api/cases/{id}/export/cioms.pdf`는 선택적 query `include_notation`을 받아 Case·설정을 읽고 200 `application/pdf`, `{case_number}-cioms.pdf` attachment를 반환한다. `with_authorized_case_export`를 거친다. 현재 조사한 API 테스트에는 이 endpoint의 직접 HTTP assertion이 없다. 라우트 등록 확인과 PDF 생성 함수 단위 검사가 있더라도 API 응답·권한·필드·한글 font·페이지 잘림 검증 완료로 표시하지 않는다.
+`GET /api/cases/{id}/export/cioms.pdf`는 선택적 query `include_notation`을 받아 Case·설정을 읽고 200 `application/pdf`, `{case_number}-cioms.pdf` attachment를 반환한다. `with_authorized_case_export`를 거친다. [cioms_export.rs](../api_cases/cioms_export.rs)의 활성 HTTP 검사는 실제 case·reaction·suspect drug·dechallenge assessment를 만든 뒤 200, content type, attachment 파일명, PDF header/EOF/xref/page tree와 case 번호 byte 포함을 확인한다. 별도 검사에서 viewer 403, 다른 조직 case 403, 없는 case 404를 단언한다.
+
+이는 PDF parser나 화면 렌더링 검사가 아니다. 전체 필드 매핑·한글 font 렌더링·페이지 잘림·notation 옵션·dechallenge 오류 HTTP 응답은 미단언이다. font는 [font.rs](../../src/web/rest/cioms_export_rest/font.rs)가 저장소의 NotoSansCJKkr-Regular.otf를 `include_bytes!`로 포함하며 템플릿은 소스 상수다. 필수 자산 누락은 build 오류이며 테스트를 skip하거나 성공 대역으로 바꾸지 않는다.
 
 <a id="limits"></a>
 ## 실행 조건과 증거의 한계

@@ -1,5 +1,7 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
+#[path = "database/audit_chain.rs"]
+mod audit_chain;
 #[path = "database/editor_storage.rs"]
 mod editor_storage;
 #[path = "database/reaction_term_highlight_migration.rs"]
