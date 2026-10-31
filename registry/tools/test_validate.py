@@ -2499,9 +2499,12 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [registry, fmt, clippy, validator, test]",
+            "needs: [test-plan, case-editor-audit, registry, fmt, clippy, validator, test]",
             deploy_job,
         )
+        self.assertIn("needs.test-plan.result == 'success'", deploy_job)
+        self.assertIn("needs.test-plan.outputs.mode == 'full'", deploy_job)
+        self.assertIn("needs.registry.result == 'success' && needs.test.result == 'success'", deploy_job)
 
     def test_ci_shares_verified_inventory_and_checks_api_test_results(self):
         workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
@@ -2515,7 +2518,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: canonical-editor-inventory", registry_job)
         self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
         self.assertIn("needs: [registry, test-plan]", test_job)
-        self.assertIn("if: ${{ needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted' }}", test_job)
+        self.assertIn("if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}", test_job)
         self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
         self.assertIn("uses: actions/download-artifact@v8", test_job)
         self.assertIn("name: canonical-editor-inventory", test_job)
