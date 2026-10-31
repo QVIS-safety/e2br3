@@ -154,6 +154,10 @@ fixtures and generic contract verification; DM/AE-specific checks stay with
 their page tests. Frontend payload cases share one `it.each` harness, and
 invalid-input cases also report individually by page, authority, code and path.
 
+Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
+list views, validation caching, saves, and deletion/restoration. Shared HTTP
+helpers stay in `support.rs`; feature-specific setup stays with its tests.
+
 Validate registry rows against extracted backend BMC fields:
 
 ```sh

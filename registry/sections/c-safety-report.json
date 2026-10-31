@@ -2754,16 +2754,16 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::editor_shell_reads_saved_review_receivers_as_an_array"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::review_receiver_json_can_be_cleared_back_to_sql_null"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::update_case_rejects_review_receiver_name_over_128_chars"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::update_case_rejects_review_receiver_name_over_128_chars"
         }
       ],
       "frontend": [
@@ -2802,16 +2802,16 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::editor_shell_reads_saved_review_receivers_as_an_array"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::review_receiver_json_can_be_cleared_back_to_sql_null"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::update_case_rejects_invalid_review_receiver_dates"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::update_case_rejects_invalid_review_receiver_dates"
         }
       ],
       "frontend": [
@@ -2850,16 +2850,16 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::editor_shell_reads_saved_review_receivers_as_an_array"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::review_receiver_json_can_be_cleared_back_to_sql_null"
         },
         {
-          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
-          "test": "case_contract_web::update_case_rejects_invalid_review_receiver_dates"
+          "file": "crates/services/web-server/tests/api/case_contract/review_receivers.rs",
+          "test": "case_contract_web::review_receivers::update_case_rejects_invalid_review_receiver_dates"
         }
       ],
       "frontend": [
