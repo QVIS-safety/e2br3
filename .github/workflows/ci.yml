@@ -30,6 +30,8 @@ jobs:
           fetch-depth: 0
       - name: Verify test selection
         run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py
+      - name: Verify staging deployment guards
+        run: python3 -m unittest discover -s deploy/ec2 -p 'test_update_dev.py'
       - name: Select validator and backend suites
         id: scope
         shell: bash
@@ -402,6 +404,8 @@ jobs:
           IMAGE_REF="ghcr.io/qvis-safety/e2br3-web-server:${GITHUB_SHA}"
           echo "IMAGE_REF=${IMAGE_REF}" >> "${GITHUB_ENV}"
           docker buildx build --platform linux/amd64 --push \
+            --label org.opencontainers.image.revision="${GITHUB_SHA}" \
+            --label io.qvis.staging.ci=passed \
             --cache-from type=gha,scope=dev-backend \
             --cache-to type=gha,mode=max,scope=dev-backend \
             --tag "${IMAGE_REF}" --tag ghcr.io/qvis-safety/e2br3-web-server:dev .

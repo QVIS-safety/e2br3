@@ -54,6 +54,8 @@ COPY --from=builder /app/build-artifacts/terminology-loader /app/terminology-loa
 
 # Copy web-folder if it exists (static files)
 COPY --chown=appuser:appuser web-folder/ /app/web-folder/
+COPY db/migrations/ /app/db/migrations/
+COPY deploy/ec2/migrate-rds.sh /app/deploy/ec2/migrate-rds.sh
 
 # Set ownership
 RUN chown -R appuser:appuser /app

@@ -10,6 +10,47 @@
 - `terminology-load.sh`: Docker Compose wrapper for one-off terminology dry-run/load operations.
 - `../../db/`: Organized SQL source tree (`admin/`, `bootstrap/`, `migrations/`, `seed/`).
 
+## Dev staging automatic deployment
+
+Backend dev pushes run the existing CI gates before publishing the `:dev` image.
+Frontend dev pushes run the editor contract tests and production image build before
+publication. Both images carry the exact source revision and `io.qvis.staging.ci=passed`.
+The EC2 `e2br3-dev-update.timer` checks these images every minute with the host's
+existing GHCR credentials; GitHub Actions publication success alone is not deployment success.
+
+`update-dev.py` updates the existing `safetydb-staging` Compose project. It preserves
+the database credential, schema/upload mounts, network, and port mappings. It pins both
+images by registry digest, rejects missing CI metadata, and checks the complete applied
+migration history before touching a running service. Unknown or rewritten migrations
+require a deliberate database reconciliation; they are never baselined automatically.
+Pending migrations use the existing migration runner after a successful private DB dump.
+No database reset, seed, image prune, or legacy container creation is performed.
+
+Install only after both CI-published images and a compatible database are available:
+
+```sh
+sudo COMPOSE_FILE=/opt/safetydb-staging/releases/fda9f62-20261027/compose.yml \
+  STATE_DIR=/opt/safetydb-staging/private/dev-deploy \
+  sh /opt/safetydb-staging/deploy/ec2/install-dev-updater.sh
+```
+
+The installer runs a read-only preflight before enabling the timer. Host dependencies
+are Docker Compose, Python 3, curl, PostgreSQL client tools compatible with RDS, and
+working GHCR authentication in `/root/.docker`. Runtime bootstrap must remain disabled.
+Inspect `systemctl status e2br3-dev-update.service`, its journal, and private
+`last-success.json`/`last-error.log` in `STATE_DIR` for the actual deployment result.
+
+Rollout verifies both backend ports, frontend HTTP, the frontend API proxy, and the
+staging HTTPS health endpoint. Failed rollout restores the previous images and reports
+failure. Applied SQL remains applied; image restoration is not a database rollback.
+Future SQL migrations must therefore preserve rollback compatibility. Backups remain
+on the instance and do not provide recovery after loss of that instance.
+
+The selected images are persisted as `STATE_DIR/images.json`. Manual Compose operations
+must include `-f STATE_DIR/images.json` after the original Compose file, otherwise they
+would select the original release's image tags. Stop automatic updates with
+`systemctl stop e2br3-dev-update.timer` before deliberate manual changes.
+
 ## One-time setup on EC2
 
 1. Install Docker and Docker Compose plugin.
