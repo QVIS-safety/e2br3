@@ -17,7 +17,13 @@
         "ruleCode": "ICH.E.i.1.1a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "primarySourceReaction"
+      "payloadPath": "primarySourceReaction",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "primary_source_reaction", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.1.2",
@@ -34,7 +40,13 @@
         "ruleCode": "ICH.E.i.1.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "primarySourceReactionTranslation"
+      "payloadPath": "primarySourceReactionTranslation",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "primary_source_reaction_translation", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.2.1b",
@@ -51,7 +63,13 @@
         "ruleCode": "ICH.E.i.2.1b.LENGTH.MAX",
         "invalidValue": "111111111"
       },
-      "payloadPath": "reactionMeddraCodeLLT"
+      "payloadPath": "reactionMeddraCodeLLT",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "reaction_meddra_code", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.4",
@@ -69,7 +87,13 @@
         "invalidValue": "not-a-date"
       },
       "payloadPath": "reactionStartDate",
-      "nullFlavorPartnerCode": "E.i.4.local.reactionStartDateNullFlavor"
+      "nullFlavorPartnerCode": "E.i.4.local.reactionStartDateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "start_date", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.7",
@@ -86,7 +110,13 @@
         "ruleCode": "ICH.E.i.7.ALLOWED.VALUE",
         "invalidValue": "6"
       },
-      "payloadPath": "reactionOutcome"
+      "payloadPath": "reactionOutcome",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "outcome", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.1.1b",
@@ -148,6 +178,12 @@
             "label": "und: Undetermined"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "reaction_language", "record": {"source": "projection", "path": "reaction.id"}}
       }
     },
     {
@@ -165,7 +201,13 @@
         "ruleCode": "ICH.E.i.2.1a.LENGTH.MAX",
         "invalidValue": "1.000"
       },
-      "payloadPath": "reactionMeddraVersionLLT"
+      "payloadPath": "reactionMeddraVersionLLT",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "reaction_meddra_version", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.1",
@@ -182,7 +224,13 @@
         "ruleCode": "ICH.E.i.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "payloadPath": "termHighlighted"
+      "payloadPath": "termHighlighted",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "term_highlighted", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.serious",
@@ -199,7 +247,13 @@
         "reason": "Derived local editor flag has no Input Contract."
       },
       "payloadPath": "seriousness.serious",
-      "auditItem": "Serious Reaction/Event"
+      "auditItem": "Serious Reaction/Event",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "serious", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2a",
@@ -218,7 +272,13 @@
         "issuePath": "reactions[].seriousness.criteriaResultsInDeath"
       },
       "payloadPath": "seriousness.criteriaResultsInDeath",
-      "nullFlavorPartnerCode": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_death", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2b",
@@ -237,7 +297,13 @@
         "issuePath": "reactions[].seriousness.criteriaLifeThreatening"
       },
       "payloadPath": "seriousness.criteriaLifeThreatening",
-      "nullFlavorPartnerCode": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_life_threatening", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2c",
@@ -256,7 +322,13 @@
         "issuePath": "reactions[].seriousness.criteriaHospitalization"
       },
       "payloadPath": "seriousness.criteriaHospitalization",
-      "nullFlavorPartnerCode": "E.i.3.2c.local.criteriaHospitalizationNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_hospitalization", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2d",
@@ -275,7 +347,13 @@
         "issuePath": "reactions[].seriousness.criteriaDisabling"
       },
       "payloadPath": "seriousness.criteriaDisabling",
-      "nullFlavorPartnerCode": "E.i.3.2d.local.criteriaDisablingNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2d.local.criteriaDisablingNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_disabling", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2e",
@@ -294,7 +372,13 @@
         "issuePath": "reactions[].seriousness.criteriaCongenitalAnomaly"
       },
       "payloadPath": "seriousness.criteriaCongenitalAnomaly",
-      "nullFlavorPartnerCode": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_congenital_anomaly", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2f",
@@ -313,7 +397,13 @@
         "issuePath": "reactions[].seriousness.criteriaOtherMedicallyImportant"
       },
       "payloadPath": "seriousness.criteriaOtherMedicallyImportant",
-      "nullFlavorPartnerCode": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor"
+      "nullFlavorPartnerCode": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_other_medically_important", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "FDA.E.i.3.2h",
@@ -333,7 +423,13 @@
         "issuePath": "reactions[].requiredIntervention"
       },
       "payloadPath": "requiredIntervention",
-      "nullFlavorPartnerCode": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor"
+      "nullFlavorPartnerCode": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "required_intervention", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.local.expectedness",
@@ -351,7 +447,13 @@
       },
       "payloadPath": "expectedness",
       "domFieldNumber": "AE_EXPECTEDNESS",
-      "auditItem": "Expectedness"
+      "auditItem": "Expectedness",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "expectedness", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.local.severity",
@@ -369,7 +471,13 @@
       },
       "payloadPath": "severity",
       "domFieldNumber": "AE_SEVERITY",
-      "auditItem": "Severity"
+      "auditItem": "Severity",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "severity", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.5",
@@ -387,7 +495,13 @@
         "invalidValue": "not-a-date"
       },
       "payloadPath": "reactionEndDate",
-      "nullFlavorPartnerCode": "E.i.5.local.reactionEndDateNullFlavor"
+      "nullFlavorPartnerCode": "E.i.5.local.reactionEndDateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "end_date", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.6a",
@@ -405,7 +519,13 @@
         "ruleCode": "ICH.E.i.6a.LENGTH.MAX",
         "invalidValue": "123456"
       },
-      "payloadPath": "reactionDuration.value"
+      "payloadPath": "reactionDuration.value",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "duration_value", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.6b",
@@ -455,6 +575,12 @@
             "label": "a = Year"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "duration_unit", "record": {"source": "projection", "path": "reaction.id"}}
       }
     },
     {
@@ -473,7 +599,13 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "reactions[].medicalConfirmation"
       },
-      "payloadPath": "medicalConfirmation"
+      "payloadPath": "medicalConfirmation",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "medical_confirmation", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.9",
@@ -498,6 +630,12 @@
         "optionDataValue": "KR",
         "optionLabel": "KR",
         "selectedLabel": "KR"
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "country_code", "record": {"source": "projection", "path": "reaction.id"}}
       }
     },
     {
@@ -515,7 +653,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.aeClassification",
-      "domFieldNumber": "KR_DVC_AECL"
+      "domFieldNumber": "KR_DVC_AECL",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_ae_classification", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.aeOutcome",
@@ -532,7 +676,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.aeOutcome",
-      "domFieldNumber": "KR_DVC_AEOUT"
+      "domFieldNumber": "KR_DVC_AEOUT",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_ae_outcome", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.causeMedicalDevice",
@@ -549,7 +699,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.causeMedicalDevice",
-      "domFieldNumber": "KR_DVC_CC_MD"
+      "domFieldNumber": "KR_DVC_CC_MD",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_cause_medical_device", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.causeProcedureIssue",
@@ -566,7 +722,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.causeProcedureIssue",
-      "domFieldNumber": "KR_DVC_CC_PI"
+      "domFieldNumber": "KR_DVC_CC_PI",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_cause_procedure_issue", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.causePatientCondition",
@@ -583,7 +745,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.causePatientCondition",
-      "domFieldNumber": "KR_DVC_CC_PC"
+      "domFieldNumber": "KR_DVC_CC_PC",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_cause_patient_condition", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.causeUnableToAssess",
@@ -600,7 +768,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.causeUnableToAssess",
-      "domFieldNumber": "KR_DVC_CC_UA"
+      "domFieldNumber": "KR_DVC_CC_UA",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_cause_unable_to_assess", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.causeOther",
@@ -617,7 +791,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.causeOther",
-      "domFieldNumber": "KR_DVC_CC_OTH"
+      "domFieldNumber": "KR_DVC_CC_OTH",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_cause_other", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionReason",
@@ -634,7 +814,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionReason",
-      "domFieldNumber": "KR_DVC_ACT_RSN"
+      "domFieldNumber": "KR_DVC_ACT_RSN",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_reason", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionRecall",
@@ -651,7 +837,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionRecall",
-      "domFieldNumber": "KR_DVC_ACT_RC"
+      "domFieldNumber": "KR_DVC_ACT_RC",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_recall", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionRepair",
@@ -668,7 +860,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionRepair",
-      "domFieldNumber": "KR_DVC_ACT_RP"
+      "domFieldNumber": "KR_DVC_ACT_RP",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_repair", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionInspection",
@@ -685,7 +883,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionInspection",
-      "domFieldNumber": "KR_DVC_ACT_INSP"
+      "domFieldNumber": "KR_DVC_ACT_INSP",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_inspection", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionReplacement",
@@ -702,7 +906,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionReplacement",
-      "domFieldNumber": "KR_DVC_ACT_REPL"
+      "domFieldNumber": "KR_DVC_ACT_REPL",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_replacement", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionImprovement",
@@ -719,7 +929,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionImprovement",
-      "domFieldNumber": "KR_DVC_ACT_IMP"
+      "domFieldNumber": "KR_DVC_ACT_IMP",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_improvement", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionMonitoring",
@@ -736,7 +952,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionMonitoring",
-      "domFieldNumber": "KR_DVC_ACT_MON"
+      "domFieldNumber": "KR_DVC_ACT_MON",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_monitoring", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionNotification",
@@ -753,7 +975,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionNotification",
-      "domFieldNumber": "KR_DVC_ACT_NTF"
+      "domFieldNumber": "KR_DVC_ACT_NTF",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_notification", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionLabelChange",
@@ -770,7 +998,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionLabelChange",
-      "domFieldNumber": "KR_DVC_ACT_CAS"
+      "domFieldNumber": "KR_DVC_ACT_CAS",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_label_change", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.KR.device.actionOther",
@@ -787,7 +1021,13 @@
         "reason": "This app-local MFDS device field has no Input Contract."
       },
       "payloadPath": "mfdsDeviceAe.actionOther",
-      "domFieldNumber": "KR_DVC_ACT_OTH"
+      "domFieldNumber": "KR_DVC_ACT_OTH",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "mfds_device_action_other", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2a.local.criteriaResultsInDeathNullFlavor",
@@ -805,7 +1045,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaResultsInDeathNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2a"
+      "nullFlavorPartnerCode": "E.i.3.2a",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_death_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2b.local.criteriaLifeThreateningNullFlavor",
@@ -823,7 +1069,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaLifeThreateningNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2b"
+      "nullFlavorPartnerCode": "E.i.3.2b",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_life_threatening_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2c.local.criteriaHospitalizationNullFlavor",
@@ -841,7 +1093,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaHospitalizationNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2c"
+      "nullFlavorPartnerCode": "E.i.3.2c",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_hospitalization_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2d.local.criteriaDisablingNullFlavor",
@@ -859,7 +1117,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaDisablingNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2d"
+      "nullFlavorPartnerCode": "E.i.3.2d",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_disabling_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2e.local.criteriaCongenitalAnomalyNullFlavor",
@@ -877,7 +1141,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaCongenitalAnomalyNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2e"
+      "nullFlavorPartnerCode": "E.i.3.2e",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_congenital_anomaly_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.3.2f.local.criteriaOtherMedicallyImportantNullFlavor",
@@ -895,7 +1165,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "seriousness.criteriaOtherMedicallyImportantNullFlavor",
-      "nullFlavorPartnerCode": "E.i.3.2f"
+      "nullFlavorPartnerCode": "E.i.3.2f",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "criteria_other_medically_important_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.4.local.reactionStartDateNullFlavor",
@@ -913,7 +1189,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "reactionStartDateNullFlavor",
-      "nullFlavorPartnerCode": "E.i.4"
+      "nullFlavorPartnerCode": "E.i.4",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "E.i.5.local.reactionEndDateNullFlavor",
@@ -931,7 +1213,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "reactionEndDateNullFlavor",
-      "nullFlavorPartnerCode": "E.i.5"
+      "nullFlavorPartnerCode": "E.i.5",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     },
     {
       "code": "FDA.E.i.3.2h.local.requiredInterventionNullFlavor",
@@ -950,7 +1238,44 @@
       },
       "payloadPath": "requiredInterventionNullFlavor",
       "nullFlavorPartnerCode": "FDA.E.i.3.2h",
-      "domFieldNumber": "FDA.E.i.3.2h"
+      "domFieldNumber": "FDA.E.i.3.2h",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "reactions", "column": "required_intervention_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [
+    {
+      "id": "split_null_flavor_http_contract",
+      "verifier": "fields::null_flavor::split_null_flavor_http_contract",
+      "description": "split null flavor http contract"
+    }
+  ],
+  "collections": [
+    {
+      "id": "batched_rows_match_detail_and_require_auth",
+      "verifier": "rows::projection::batched_rows_match_detail_and_require_auth",
+      "description": "Empty and populated list batches match individual GET responses; unauthenticated access is forbidden."
+    }
+  ],
+  "relations": [
+    {
+      "id": "deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards",
+      "verifier": "relations::ae_restore::deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards",
+      "description": "deleted reaction can be read and restored with case and auth guards",
+      "audit": {
+        "table": "reactions",
+        "column": "deleted",
+        "record": {
+          "source": "projection",
+          "path": "reaction.id"
+        }
+      }
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {}
 }

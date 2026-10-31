@@ -1866,8 +1866,8 @@
     "automatedTests": {
       "backend": [
         {
-          "file": "crates/services/web-server/tests/api_editor/dg.rs",
-          "test": "case_editor_contract_web::dg::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment"
+          "file": "crates/services/web-server/tests/api_editor/pages/dg.generated.rs",
+          "test": "case_editor_contract_web::dg::relations::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment"
         }
       ]
     }

@@ -6,6 +6,10 @@ import argparse
 import json
 from pathlib import Path
 import subprocess
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "registry/tools"))
+from generate_editor_contract_web_tests import ACTIVE_PAGES, normalize_editor_filters, expected_editor_tests
 
 from ci_test_scope import changed_paths, event_revisions
 
@@ -64,14 +68,32 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     selected = {}  # Empty target list means all tests in this crate.
     production = set()
     full_reasons = []
+    editor_filters = []
+    editor_all = False
     for path in paths:
+        if path == 'crates/services/web-server/tests/api_editor/API_SPEC.md':
+            continue
         if Path(path).name in ('README.md', 'AGENTS.md', 'subagent.md') or (path.startswith('docs/') and path.endswith('.md')):
+            continue
+        if path.startswith('registry/editor-contracts/') and Path(path).stem.upper() in ACTIVE_PAGES and path.endswith('.json'):
+            selected.setdefault('web-server', ['api_editor'])
+            if selected['web-server'] and 'api_editor' not in selected['web-server']:
+                selected['web-server'].append('api_editor')
+            editor_filters.append(f'case_editor_contract_web::{Path(path).stem}::')
             continue
         owner = next((name for name, data in workspace.items() if path.startswith(data['root'])), None)
         if owner is not None:
             relative = path[len(workspace[owner]['root']):]
             if relative.startswith('tests/'):
                 target = target_for(owner, relative, workspace)
+                if target == 'api_editor':
+                    parts = Path(relative).parts
+                    if len(parts) == 4 and parts[2] == 'pages' and parts[3].endswith('.generated.rs') and parts[3].split('.')[0].upper() in ACTIVE_PAGES:
+                        editor_filters.append(f'case_editor_contract_web::{parts[3].split(".")[0]}::')
+                    elif len(parts) == 4 and parts[2] in ('fields', 'rows', 'relations', 'audit'):
+                        editor_filters.extend(f'case_editor_contract_web::{page.lower()}::{parts[2]}::' for page in ACTIVE_PAGES)
+                    else:
+                        editor_all = True
                 if target is None:
                     selected[owner] = []
                 elif owner not in selected:
@@ -94,10 +116,16 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     affected = set(workspace) if full_reasons else consumers(production, workspace)
     selected.update({name: [] for name in affected})
     selected = {name: sorted(targets) for name, targets in sorted(selected.items())}
+    if editor_filters and not editor_all and selected.get('web-server'):
+        registered = expected_editor_tests(Path(__file__).resolve().parents[1] / 'registry')
+        editor_filters = [prefix for prefix in editor_filters if any(name.startswith(prefix) for name in registered)]
+        if not editor_filters:
+            raise ValueError('changed editor verifier has no registered contract checks')
     backend_contracts = 'web-server' in selected and (
         not selected['web-server'] or bool(CONTRACT_TARGETS.intersection(selected['web-server'])))
     return {
         'selections': selected,
+        'editor_filters': [] if editor_all or 'web-server' in affected or selected.get('web-server') == [] else normalize_editor_filters(editor_filters),
         'validator': 'validator' in selected,
         'backend': any(name != 'validator' for name in selected),
         'registry': backend_contracts,
@@ -108,7 +136,7 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     }
 
 
-def commands_for(selections: dict, workspace: dict, kind: str = 'tests') -> list[list[str]]:
+def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_filters: list[str] | None = None) -> list[list[str]]:
     if not isinstance(selections, dict) or not selections:
         raise ValueError('selections must be a nonempty package-to-targets object')
     for package, targets in selections.items():
@@ -116,6 +144,9 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests') -> list
             raise ValueError('unknown package or invalid target list')
         if len(set(targets)) != len(targets) or not set(targets) <= workspace[package]['targets'].keys():
             raise ValueError('unknown or duplicate integration targets')
+    filters = normalize_editor_filters(editor_filters if editor_filters is not None else [])
+    if filters and ('web-server' not in selections or 'api_editor' not in selections['web-server']):
+        raise ValueError('editor filters require an explicitly selected api_editor target')
     package_args = [arg for package in sorted(selections) for arg in ('-p', package)]
     if kind == 'fmt':
         return [['cargo', 'fmt', *package_args, '--check']]
@@ -128,6 +159,12 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests') -> list
         if package == 'validator':  # Dedicated job also verifies all rule bindings.
             continue
         args = ['scripts/test-isolated-db.sh', '--locked', '-p', package, '-j1']
+        if package == 'web-server' and filters:
+            for prefix in filters:
+                commands.append(args + ['--test', 'api_editor', prefix, '--', '--test-threads=1', '--color', 'never'])
+            targets = [target for target in targets if target != 'api_editor']
+            if not targets:
+                continue
         for target in targets:
             args.extend(['--test', target])
         commands.append(args + ['--', '--test-threads=1', '--color', 'never'])
@@ -144,12 +181,13 @@ def main():
     plan_parser.add_argument('--github-output', type=Path)
     run_parser = subparsers.add_parser('run')
     run_parser.add_argument('--selections', required=True)
+    run_parser.add_argument('--editor-filters', default='[]')
     run_parser.add_argument('--kind', choices=('tests', 'fmt', 'clippy'), default='tests')
     args = parser.parse_args()
     root = Path.cwd()
     workspace = load_workspace(root)
     if args.command == 'run':
-        for command in commands_for(json.loads(args.selections), workspace, args.kind):
+        for command in commands_for(json.loads(args.selections), workspace, args.kind, json.loads(args.editor_filters)):
             print('Running:', ' '.join(command), flush=True)
             subprocess.run(command, check=True)
         return

@@ -1,145 +1,11 @@
-use super::support::field_contract_test;
-use super::support::{
-	create_case_for_editor, create_reaction_contract_fixture, patch_json,
-};
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
-use axum::http::StatusCode;
-use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
-use lib_core::model::store::set_full_context_dbx;
-use serde_json::{json, Value};
-use uuid::Uuid;
-const PAGE_ID: &str = "AE";
-include!("generated/ae_fields.rs");
-
-#[serial_test::serial]
-#[tokio::test]
-async fn split_null_flavor_http_contract() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
-	let case_id = create_case_for_editor(
-		&app,
-		&cookie,
-		&format!("EDITOR-AE-SPLIT-{}", Uuid::new_v4()),
-		&["ich"],
-	)
-	.await?;
-	let reaction_id =
-		create_reaction_contract_fixture(&app, &cookie, &case_id).await?;
-	let uri = format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}");
-
-	let request = |start_date: Value, null_flavor: Value| {
-		json!({
-			"authorities": ["ich"],
-			"rows": {
-				"reaction": {
-					"reactionStartDate": start_date,
-					"reactionStartDateNullFlavor": null_flavor
-				}
-			}
-		})
-	};
-	let (status, body) =
-		patch_json(&app, &cookie, &uri, request(Value::Null, json!("MSK"))).await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-
-	let (status, body) =
-		patch_json(&app, &cookie, &uri, request(json!("MSK"), Value::Null)).await?;
-	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
-	assert_eq!(
-		body["error"]["data"]["detail"]["path"],
-		"reactions.0.reactionStartDate"
-	);
-
-	let (status, body) = patch_json(
-		&app,
-		&cookie,
-		&uri,
-		request(json!("20260715"), json!("MSK")),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
-	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
-	assert_eq!(
-		body["error"]["data"]["detail"]["path"],
-		"reactions.0.reactionStartDateNullFlavor"
-	);
-
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	let pair = mm
-		.dbx()
-		.fetch_one(
-			sqlx::query_as::<_, (Option<sqlx::types::time::Date>, Option<String>)>(
-				"SELECT start_date, start_date_null_flavor FROM reactions WHERE id = $1",
-			)
-			.bind(Uuid::parse_str(&reaction_id)?),
-		)
-		.await?;
-	mm.dbx().commit_txn().await?;
-	assert_eq!(pair, (None, Some("MSK".to_string())));
-	Ok(())
-}
-
-#[serial_test::serial]
-#[tokio::test]
-async fn severity_can_be_cleared_and_reloaded() -> crate::common::Result<()> {
-	use super::support::{create_case_for_editor, get_json, patch_json, post_json};
-	use crate::common::{cookie_header, init_test_mm, seed_org_with_users};
-	use axum::http::StatusCode;
-	use lib_auth::token::generate_web_token;
-	use serde_json::{json, Value};
-
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-	let case_id =
-		create_case_for_editor(&app, &cookie, "EDITOR-AE-CLEAR", &["ich"]).await?;
-	let (status, body) = post_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/reactions"),
-		json!({"data": {"case_id": case_id, "sequence_number": 1}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{body}");
-	let reaction_id = body["data"]["id"].as_str().ok_or("missing reaction id")?;
-	let uri = format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}");
-
-	for severity in [json!("moderate"), Value::Null] {
-		let (status, body) = patch_json(
-			&app,
-			&cookie,
-			&uri,
-			json!({"authorities": ["ich"], "rows": {"reaction": {"severity": severity}}}),
-		)
-		.await?;
-		assert_eq!(status, StatusCode::OK, "{body}");
-	}
-
-	let (status, body) = get_json(&app, &cookie, &uri).await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["data"]["reaction"]["severity"], Value::Null);
-	super::support::assert_batched_rows(&app, &cookie, &case_id, "AE").await?;
-	Ok(())
-}
-
-#[serial_test::serial]
-#[tokio::test]
-async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
+pub(crate) async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
+	page_id: &str,
+	check_id: &str,
 ) -> crate::common::Result<()> {
-	use super::support::{create_case_for_editor, get_json, patch_json, post_json};
+	use crate::case_editor_contract_web::support::{
+		create_case_for_editor, get_json, patch_row_with_reason as patch_json,
+		post_json,
+	};
 	use crate::common::{cookie_header, init_test_mm, seed_org_with_users};
 	use axum::body::Body;
 	use axum::http::{Request, StatusCode};
@@ -154,7 +20,7 @@ async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 	let case_id =
 		create_case_for_editor(&app, &admin_cookie, "EDITOR-AE-RESTORE", &["ich"])
 			.await?;
@@ -181,6 +47,28 @@ async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
 	assert_eq!(status, StatusCode::CREATED, "{body}");
 	let row_id = body["rowId"].as_str().ok_or("missing AE row id")?;
 	let row_uri = format!("{rows_uri}/{row_id}");
+	let lifecycle = crate::case_editor_contract_web::support::behavior_contract(
+		page_id,
+		"relations",
+		check_id,
+	)?;
+	let audit_spec = &lifecycle["audit"];
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let case_uuid = uuid::Uuid::parse_str(&case_id)?;
+	let (status, audit_before) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{audit_before}");
+	let delete_before = crate::case_editor_contract_web::audit::capture(
+		&mm,
+		&ctx,
+		case_uuid,
+		audit_spec,
+		&audit_before["data"],
+	)
+	.await?;
 	let response = app
 		.clone()
 		.oneshot(
@@ -188,10 +76,35 @@ async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
 				.method("DELETE")
 				.uri(&row_uri)
 				.header("cookie", &admin_cookie)
+				.header(
+					"x-e2br3-reason-for-change",
+					crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
+				)
 				.body(Body::empty())?,
 		)
 		.await?;
 	assert_eq!(response.status(), StatusCode::NO_CONTENT);
+	let (status, audit_deleted) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{audit_deleted}");
+	crate::case_editor_contract_web::audit::assert_mutation(
+		&mm,
+		&ctx,
+		case_uuid,
+		audit_spec,
+		delete_before,
+		&audit_deleted["data"],
+		crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
+	)
+	.await?;
+	let restore_before = crate::case_editor_contract_web::audit::capture(
+		&mm,
+		&ctx,
+		case_uuid,
+		audit_spec,
+		&audit_deleted["data"],
+	)
+	.await?;
+
 	let (status, body) = get_json(
 		&app,
 		&admin_cookie,
@@ -258,6 +171,17 @@ async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth_guards(
 
 	let (status, body) = patch_json(&app, &admin_cookie, &row_uri, restore).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
+	crate::case_editor_contract_web::audit::assert_mutation(
+		&mm,
+		&ctx,
+		case_uuid,
+		audit_spec,
+		restore_before,
+		&body["data"],
+		crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
+	)
+	.await?;
+
 	assert_eq!(body["data"]["reaction"]["deleted"], false, "{body}");
 	assert_eq!(
 		body["data"]["reaction"]["primary_source_reaction"], "Restored reaction",

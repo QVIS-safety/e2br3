@@ -1,28 +1,39 @@
-#[path = "ae.rs"]
-mod ae;
-#[path = "ci.rs"]
-mod ci;
-#[path = "db_invariants.rs"]
-mod db_invariants;
-#[path = "dg.rs"]
-mod dg;
-#[path = "dh.rs"]
-mod dh;
-#[path = "dm.rs"]
-mod dm;
-#[path = "draft_save.rs"]
-mod draft_save;
-#[path = "lb.rs"]
-mod lb;
-#[path = "lr.rs"]
-mod lr;
-#[path = "nr.rs"]
-mod nr;
-#[path = "rp.rs"]
-mod rp;
-#[path = "sd.rs"]
-mod sd;
-#[path = "si.rs"]
-mod si;
-#[path = "support.rs"]
+mod audit;
+mod fields;
+mod relations;
+mod rows;
 mod support;
+
+#[rustfmt::skip]
+#[path = "pages/ae.generated.rs"]
+mod ae;
+#[rustfmt::skip]
+#[path = "pages/ci.generated.rs"]
+mod ci;
+#[rustfmt::skip]
+#[path = "pages/dg.generated.rs"]
+mod dg;
+#[rustfmt::skip]
+#[path = "pages/dh.generated.rs"]
+mod dh;
+#[rustfmt::skip]
+#[path = "pages/dm.generated.rs"]
+mod dm;
+#[rustfmt::skip]
+#[path = "pages/lb.generated.rs"]
+mod lb;
+#[rustfmt::skip]
+#[path = "pages/lr.generated.rs"]
+mod lr;
+#[rustfmt::skip]
+#[path = "pages/nr.generated.rs"]
+mod nr;
+#[rustfmt::skip]
+#[path = "pages/rp.generated.rs"]
+mod rp;
+#[rustfmt::skip]
+#[path = "pages/sd.generated.rs"]
+mod sd;
+#[rustfmt::skip]
+#[path = "pages/si.generated.rs"]
+mod si;

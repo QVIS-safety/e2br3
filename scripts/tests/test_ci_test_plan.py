@@ -123,6 +123,29 @@ class TestPlanTests(unittest.TestCase):
                 self.assertEqual(target_for('web-server', 'tests/' + source.relative_to(tests).as_posix(),
                                             self.workspace), family.name, str(source))
 
+    def test_editor_scope_tracks_page_and_responsibility_without_duplicate_runs(self):
+        page = 'crates/services/web-server/tests/api_editor/pages/dg.generated.rs'
+        plan = self.plan(page, 'registry/editor-contracts/dg.json')
+        self.assertEqual(plan['editor_filters'], ['case_editor_contract_web::dg::'])
+        commands = commands_for(plan['selections'], self.workspace, editor_filters=plan['editor_filters'])
+        self.assertEqual(len(commands), 1)
+        self.assertIn('case_editor_contract_web::dg::', commands[0])
+        mixed = self.plan(page, 'crates/services/web-server/tests/api_editor/fields/null_flavor.rs')
+        self.assertIn('case_editor_contract_web::ci::fields::', mixed['editor_filters'])
+        self.assertNotIn('case_editor_contract_web::dg::fields::', mixed['editor_filters'])
+        for shared in ('crates/services/web-server/tests/api_editor/support.rs',
+                       'crates/services/web-server/tests/common/mod.rs',
+                       'crates/services/web-server/src/lib.rs'):
+            self.assertEqual(self.plan(page, shared)['editor_filters'], [])
+
+    def test_editor_filters_cannot_narrow_a_whole_crate_or_an_unrelated_target(self):
+        filters = ['case_editor_contract_web::dg::']
+        for selections in ({'web-server': []}, {'web-server': ['api_cases']}):
+            with self.assertRaises(ValueError):
+                commands_for(selections, self.workspace, editor_filters=filters)
+        with self.assertRaises(ValueError):
+            commands_for({'web-server': ['api_editor']}, self.workspace, editor_filters=['dg'])
+
     def test_removed_target_runs_remaining_crate_tests(self):
         workspace = {name: {**data, 'targets': dict(data['targets'])} for name, data in self.workspace.items()}
         del workspace['lib-core']['targets']['section_presave']
@@ -147,9 +170,10 @@ class TestPlanTests(unittest.TestCase):
         db = self.plan('db/migrations/new.sql')
         self.assertEqual(db['selections'], self.plan('crates/libs/lib-core/src/model.rs')['selections'])
         registry = self.plan('registry/editor-contracts/ci.json')
-        self.assertIn('input-contracts', registry['selections'])
+        self.assertEqual({'web-server': ['api_editor']}, registry['selections'])
+        self.assertEqual(['case_editor_contract_web::ci::'], registry['editor_filters'])
         self.assertTrue(registry['registry'])
-        self.assertTrue(registry['validator'])
+        self.assertFalse(registry['validator'])
         xml = self.plan('docs/exporter/fda/fixture.xml')
         self.assertEqual(set(xml['selections']), {'xml', 'lib-rest-core', 'lib-web', 'web-server'})
         for path in ('Cargo.lock', 'Cargo.toml', '.github/workflows/ci.yml',

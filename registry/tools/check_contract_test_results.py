@@ -7,10 +7,10 @@ import json
 from pathlib import Path
 import re
 
-from generate_editor_contract_web_tests import test_name
+from generate_editor_contract_web_tests import test_name, expected_editor_tests, normalize_editor_filters
 
 
-def expected_tests(inventory: dict, side: str, backend_targets: set[str] | None = None) -> set:
+def expected_tests(inventory: dict, side: str, backend_targets: set[str] | None = None, editor_tests: set[str] | None = None, editor_filters: list[str] | None = None) -> set:
     fields = inventory['fields']
     identities = [field['identity'] for field in fields]
     if not fields or len(identities) != len(set(identities)):
@@ -36,7 +36,7 @@ def expected_tests(inventory: dict, side: str, backend_targets: set[str] | None 
                     expected.add((reference['file'], reference['test']))
         elif side == 'backend':
             if backend_targets is None or 'api_editor' in backend_targets:
-                expected.add(f'case_editor_contract_web::{field["page"].lower()}::{test_name(field["code"])}')
+                expected.add(f'case_editor_contract_web::{field["page"].lower()}::fields::{test_name(field["code"])}')
         else:
             expected.add(('__tests__/case-save/editor-field-contract.generated.test.ts',
                           f'{field["page"]} {field["code"]} emits canonical rows payload'))
@@ -45,6 +45,15 @@ def expected_tests(inventory: dict, side: str, backend_targets: set[str] | None 
             expected.add(('__tests__/case-editor/editor-contract-snapshot.test.ts',
                           f'{field["page"]} {field["authority"]} {field["code"]} '
                           f'{field["frontendPath"]} rejects invalid input'))
+    if side == 'backend':
+        if editor_tests is not None and (backend_targets is None or 'api_editor' in backend_targets):
+            expected.update(editor_tests)
+        filters = normalize_editor_filters(editor_filters if editor_filters is not None else [])
+        if filters:
+            if backend_targets is None or 'api_editor' not in backend_targets:
+                raise ValueError('editor filters require an explicitly selected api_editor target')
+            expected = {name for name in expected if not name.startswith('case_editor_contract_web::')
+                        or any(name.startswith(prefix) for prefix in filters)}
     if side == 'backend' and not expected:
         raise ValueError('selected backend targets contain no canonical contract tests')
     return expected
@@ -59,8 +68,8 @@ def require_passed(expected: set, results: dict, passed: str) -> None:
                          f'failed/skipped/duplicate={invalid}')
 
 
-def check_backend_results(inventory: dict, log: str, backend_targets: set[str] | None = None) -> int:
-    expected = expected_tests(inventory, 'backend', backend_targets)
+def check_backend_results(inventory: dict, log: str, backend_targets: set[str] | None = None, editor_tests: set[str] | None = None, editor_filters: list[str] | None = None) -> int:
+    expected = expected_tests(inventory, 'backend', backend_targets, editor_tests, editor_filters)
     results, pending = {}, {}
     for line in log.splitlines():
         match = re.match(r'^test (\S+) \.\.\. (\S+)', line)
@@ -99,6 +108,7 @@ def main() -> None:
     parser.add_argument('--inventory', type=Path, required=True)
     parser.add_argument('--backend-log', type=Path)
     parser.add_argument('--backend-selections', help='CI package-to-targets JSON; an empty target list means the whole crate')
+    parser.add_argument('--editor-filters', default='[]')
     parser.add_argument('--frontend-results', type=Path)
     parser.add_argument('--frontend-root', type=Path)
     args = parser.parse_args()
@@ -122,7 +132,8 @@ def main() -> None:
     inventory = json.loads(args.inventory.read_text())
     result = {'canonicalFields': len(inventory['fields'])}
     if args.backend_log is not None:
-        result['backendTestsPassed'] = check_backend_results(inventory, args.backend_log.read_text(), backend_targets)
+        result['backendTestsPassed'] = check_backend_results(inventory, args.backend_log.read_text(), backend_targets,
+            expected_editor_tests(Path(__file__).resolve().parents[1]), json.loads(args.editor_filters))
         result['backendTargets'] = sorted(backend_targets) if backend_targets is not None else 'all'
     if args.frontend_results is not None:
         result['frontendTestsPassed'] = check_frontend_results(

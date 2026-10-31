@@ -1,16 +1,18 @@
-use super::support::{create_case_for_editor, patch_json, post_json};
+use crate::case_editor_contract_web::support::{
+	create_case_for_editor, patch_json, post_json,
+};
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::set_full_context_dbx;
 use serde_json::json;
-use serial_test::serial;
 use uuid::Uuid;
 
-#[serial]
-#[tokio::test]
-async fn newly_added_pairs_persist_either_member_and_reject_both() -> Result<()> {
+pub(crate) async fn assessment_values_and_single_audit_entry_persist(
+	_page_id: &str,
+	_check_id: &str,
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -74,75 +76,6 @@ async fn newly_added_pairs_persist_either_member_and_reject_both() -> Result<()>
 		body["data"]["drug"]["drugReactionAssessments"][0]["expectedness"],
 		json!("2")
 	);
-	let (status, body) = patch_json(
-		&app,
-		&cookie,
-		&dg_uri,
-		json!({"authorities": ["ich"], "rows": {"drug": {"dosageInformation": [{
-			"sequenceNumber": 1,
-			"doseForm": null, "doseFormNullFlavor": "UNK",
-			"routeOfAdministration": null, "routeOfAdministrationNullFlavor": "ASKU",
-			"parentRouteOfAdministration": null, "parentRouteOfAdministrationNullFlavor": "NASK"
-		}]}}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	let (dosage_id, dose_form, dose_form_nf, route, route_nf, parent_route, parent_route_nf): (Uuid, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>) = mm.dbx().fetch_one(
-		sqlx::query_as("SELECT id, dose_form, dose_form_null_flavor, route_of_administration, route_of_administration_null_flavor, parent_route, parent_route_null_flavor FROM dosage_information WHERE drug_id = $1")
-			.bind(Uuid::parse_str(drug_id)?),
-	).await?;
-	assert_eq!(
-		(
-			dose_form,
-			dose_form_nf,
-			route,
-			route_nf,
-			parent_route,
-			parent_route_nf
-		),
-		(
-			None,
-			Some("UNK".into()),
-			None,
-			Some("ASKU".into()),
-			None,
-			Some("NASK".into())
-		)
-	);
-	mm.dbx().commit_txn().await?;
-
-	let (status, body) = patch_json(
-		&app,
-		&cookie,
-		&dg_uri,
-		json!({"authorities": ["ich"], "rows": {"drug": {"dosageInformation": [{
-			"id": dosage_id,
-			"doseForm": "Tablet", "doseFormNullFlavor": null,
-			"routeOfAdministration": "048", "routeOfAdministrationNullFlavor": null,
-			"parentRouteOfAdministration": "Oral", "parentRouteOfAdministrationNullFlavor": null
-		}]}}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	mm.dbx().commit_txn().await?;
-
 	mm.dbx().begin_txn().await?;
 	set_full_context_dbx(
 		mm.dbx(),
@@ -170,24 +103,28 @@ async fn newly_added_pairs_persist_either_member_and_reject_both() -> Result<()>
 	assert_eq!(stored_expectedness.as_deref(), Some("2"));
 	mm.dbx().commit_txn().await?;
 
-	mm.dbx().begin_txn().await?;
-	mm.dbx()
-		.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
-		.await?;
-	let (audit_count,): (i64,) = mm
-		.dbx()
-		.fetch_one(
-			sqlx::query_as(
-				"SELECT count(*)
-				 FROM audit_logs
-				 WHERE table_name = 'drug_reaction_assessments'
-				   AND record_id = $1
-				   AND changed_fields ? 'expectedness'",
-			)
-			.bind(assessment_id),
-		)
-		.await?;
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let logs = lib_core::model::audit::AuditLogBmc::list_by_record(
+		&ctx,
+		&mm,
+		"drug_reaction_assessments",
+		assessment_id,
+	)
+	.await?;
+	let audit_count = logs
+		.iter()
+		.filter(|log| {
+			log.changed_fields
+				.as_ref()
+				.and_then(|fields| fields.get("expectedness"))
+				.is_some()
+		})
+		.count();
 	assert_eq!(audit_count, 1);
-	mm.dbx().rollback_txn().await?;
+
 	Ok(())
 }

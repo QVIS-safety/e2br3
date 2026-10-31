@@ -18,7 +18,13 @@
         "invalidValue": "not-a-date"
       },
       "payloadPath": "testDate",
-      "nullFlavorPartnerCode": "F.r.1.local.testDateNullFlavor"
+      "nullFlavorPartnerCode": "F.r.1.local.testDateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_date", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.2.1",
@@ -42,7 +48,13 @@
           "value": "20200102"
         }
       ],
-      "payloadPath": "testName"
+      "payloadPath": "testName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": ""},
+        "blank": {"effect": "store", "input": "", "value": ""},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_name", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.3.1",
@@ -59,7 +71,13 @@
         "ruleCode": "ICH.F.r.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "payloadPath": "testResultCode"
+      "payloadPath": "testResultCode",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_result_code", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.3.2",
@@ -76,7 +94,13 @@
         "ruleCode": "ICH.F.r.3.2.ALLOWED.VALUE",
         "invalidValue": "not-a-number"
       },
-      "payloadPath": "testResult"
+      "payloadPath": "testResult",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_result_value", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.3.3",
@@ -101,7 +125,13 @@
         "optionLabel": "mg/dL = milligram per deciliter",
         "selectedLabel": "mg/dL = milligram per deciliter"
       },
-      "payloadPath": "testUnit"
+      "payloadPath": "testUnit",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_result_unit", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.2.2a",
@@ -127,6 +157,12 @@
             "label": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_meddra_version", "record": {"source": "projection", "path": "testResult.id"}}
       }
     },
     {
@@ -161,6 +197,12 @@
             "value": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_meddra_code", "record": {"source": "projection", "path": "testResult.id"}}
       }
     },
     {
@@ -178,7 +220,13 @@
         "ruleCode": "ICH.F.r.3.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "testResultUnstructured"
+      "payloadPath": "testResultUnstructured",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "result_unstructured", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.4",
@@ -195,7 +243,13 @@
         "ruleCode": "ICH.F.r.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "lowRange"
+      "payloadPath": "lowRange",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "normal_low_value", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.5",
@@ -212,7 +266,13 @@
         "ruleCode": "ICH.F.r.5.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "highRange"
+      "payloadPath": "highRange",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "normal_high_value", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.6",
@@ -229,7 +289,13 @@
         "ruleCode": "ICH.F.r.6.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "comments"
+      "payloadPath": "comments",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "comments", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.7",
@@ -247,7 +313,13 @@
         "invalidValue": "not-a-boolean",
         "issuePath": "testResults[].moreInformationAvailable"
       },
-      "payloadPath": "moreInformationAvailable"
+      "payloadPath": "moreInformationAvailable",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "more_info_available", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.1.local.testDateNullFlavor",
@@ -265,7 +337,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "testDateNullFlavor",
-      "nullFlavorPartnerCode": "F.r.1"
+      "nullFlavorPartnerCode": "F.r.1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_date_null_flavor", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     },
     {
       "code": "F.r.local.testResultQualifier",
@@ -282,7 +360,59 @@
         "reason": "The UI select limits values to EQ/LT/LE/GT/GE, while the backend has no separate portable 422 input-contract rule for this optional serialization modifier."
       },
       "auditItem": "Test Result Qualifier",
-      "payloadPath": "testResultQualifier"
+      "payloadPath": "testResultQualifier",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "test_results", "column": "test_result_qualifier", "record": {"source": "projection", "path": "testResult.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [
+    {
+      "id": "clearing_numeric_result_clears_qualifier_and_keeps_free_text",
+      "verifier": "fields::coupled_clear::clearing_numeric_result_clears_qualifier_and_keeps_free_text",
+      "description": "clearing numeric result clears qualifier and keeps free text"
+    },
+    {
+      "id": "blank_test_name_keeps_meddra_selection",
+      "verifier": "fields::coupled_clear::blank_test_name_keeps_meddra_selection",
+      "description": "blank test name keeps meddra selection"
+    }
+  ],
+  "collections": [
+    {
+      "id": "list_projection_includes_displayed_result_columns",
+      "verifier": "rows::projection::list_projection_includes_displayed_result_columns",
+      "description": "list projection includes displayed result columns"
+    },
+    {
+      "id": "incomplete_test_result_creates_empty_name",
+      "verifier": "rows::creation::incomplete_test_result_creates_empty_name",
+      "description": "incomplete test result creates empty name"
+    },
+    {
+      "id": "batched_rows_match_detail_and_require_auth",
+      "verifier": "rows::projection::batched_rows_match_detail_and_require_auth",
+      "description": "Empty and populated list batches match individual GET responses; unauthenticated access is forbidden."
+    }
+  ],
+  "relations": [
+    {
+      "id": "deleted_test_result_can_be_read_and_restored_with_case_and_auth_guards",
+      "verifier": "relations::lb_restore::deleted_test_result_can_be_read_and_restored_with_case_and_auth_guards",
+      "description": "deleted test result can be read and restored with case and auth guards",
+      "audit": {
+        "table": "test_results",
+        "column": "deleted",
+        "record": {
+          "source": "projection",
+          "path": "testResult.id"
+        }
+      }
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {}
 }

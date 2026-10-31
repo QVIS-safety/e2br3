@@ -20,7 +20,7 @@ class ContractTestResultsTests(unittest.TestCase):
                  'frontend': [{'file': '__tests__/review.test.tsx', 'test': 'saves receiver'}]}},
         ]}
         self.log = ('running 2 tests\n'
-                    'test case_editor_contract_web::ci::c_1_3 ... ok\n'
+                    'test case_editor_contract_web::ci::fields::c_1_3 ... ok\n'
                     'test case_contract_web::saves_receiver ... ok\n'
                     'test result: ok. 2 passed; 0 failed; 0 ignored;\n')
         self.frontend_root = Path('/frontend')
@@ -100,7 +100,7 @@ class ContractTestResultsTests(unittest.TestCase):
         self.assertEqual(3, check_frontend_results(self.inventory, self.report, self.frontend_root))
 
     def test_selected_targets_require_all_of_their_contracts_without_unrelated_tests(self):
-        for targets, expected_name in [({'api_editor'}, 'case_editor_contract_web::ci::c_1_3'),
+        for targets, expected_name in [({'api_editor'}, 'case_editor_contract_web::ci::fields::c_1_3'),
                                        ({'api_cases'}, 'case_contract_web::saves_receiver')]:
             expected = expected_tests(self.inventory, 'backend', targets)
             self.assertEqual(expected, {expected_name})
@@ -112,6 +112,19 @@ class ContractTestResultsTests(unittest.TestCase):
         self.assertEqual(2, check_backend_results(self.inventory, self.log, {'api_editor', 'api_cases'}))
         with self.assertRaises(ValueError):
             check_backend_results(self.inventory, self.log, {'api_presave'})
+
+    def test_non_ui_contract_checks_are_required_and_scope_keeps_fail_closed_gate(self):
+        field = 'case_editor_contract_web::ci::fields::c_1_3'
+        row = 'case_editor_contract_web::ci::rows::identifiers'
+        catalog = {field, row}
+        with self.assertRaises(ValueError):
+            check_backend_results(self.inventory, self.log, {'api_editor'}, catalog)
+        log = f'test {row} ... ok\ntest result: ok. 1 passed; 0 failed\n'
+        filters = ['case_editor_contract_web::ci::rows::']
+        self.assertEqual(1, check_backend_results(self.inventory, log, {'api_editor'}, catalog, filters))
+        for invalid in ('', log + log, log.replace('... ok', '... ignored')):
+            with self.assertRaises(ValueError):
+                check_backend_results(self.inventory, invalid, {'api_editor'}, catalog, filters)
 
     def test_selected_targets_keep_each_explicit_reference_in_its_own_target(self):
         inventory = copy.deepcopy(self.inventory)

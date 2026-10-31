@@ -68,8 +68,8 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         generated_count = sum(
             (
                 repo
-                / "crates/services/web-server/tests/api_editor/generated"
-                / f"{page_id.lower()}_fields.rs"
+                / "crates/services/web-server/tests/api_editor/pages"
+                / f"{page_id.lower()}.generated.rs"
             )
             .read_text(encoding="utf-8")
             .count("field_contract_test!(")

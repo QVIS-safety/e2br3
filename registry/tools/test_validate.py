@@ -291,6 +291,13 @@ class RegistryValidatorTests(unittest.TestCase):
             "projectionPath": "safetyReportIdentification.reportType",
             "patch": {"kind": "row", "owner": "safetyReportIdentification"},
             "roundTripValue": "2",
+            "persistence": {
+                "clear": {"effect": "store", "input": None, "value": None},
+                "blank": {"effect": "store", "input": "", "value": None},
+                "omission": "preserve",
+                "audit": {"table": "safety_report_identification", "column": "report_type",
+                          "record": {"source": "projection", "path": "safetyReportIdentification.id"}},
+            },
             "constraint": {
                 "status": "verified",
                 "ruleCode": "ICH.C.1.3.ALLOWED.VALUE",
@@ -307,6 +314,21 @@ class RegistryValidatorTests(unittest.TestCase):
         )
 
         self.assertEqual([], result.errors)
+
+    def test_persistence_contract_requires_explicit_boundaries_and_real_record_binding(self):
+        for mutation in ('missing', 'clear', 'omission', 'audit'):
+            field = self.editor_field()
+            if mutation == 'missing':
+                del field['persistence']
+            elif mutation == 'clear':
+                field['persistence']['clear'] = {'effect': 'not_applicable', 'reason': 'skip'}
+            elif mutation == 'omission':
+                field['persistence']['omission'] = 'clear'
+            else:
+                field['persistence']['audit']['record'] = {'source': 'projection'}
+            result = validate.ValidationResult()
+            editor_contract._validate_persistence(field['code'], field, result)
+            self.assertTrue(result.errors, mutation)
 
     def test_complete_editor_field_requires_manifest_entry(self):
         result = validate.ValidationResult()

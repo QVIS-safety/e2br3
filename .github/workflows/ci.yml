@@ -23,6 +23,7 @@ jobs:
       backend: ${{ steps.plan.outputs.backend }}
       registry: ${{ steps.plan.outputs.registry }}
       selections: ${{ steps.plan.outputs.selections }}
+      editor_filters: ${{ steps.plan.outputs.editor_filters }}
       rust: ${{ steps.plan.outputs.rust }}
       xml_assets: ${{ steps.plan.outputs.xml_assets }}
       backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
@@ -164,7 +165,8 @@ jobs:
       - name: Check formatting
         env:
           SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
-        run: python3 scripts/ci_test_plan.py run --kind fmt --selections "$SELECTED_TESTS"
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+        run: python3 scripts/ci_test_plan.py run --kind fmt --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   # ============================================
   # Job 2: Run Clippy linter
@@ -210,7 +212,8 @@ jobs:
       - name: Run Clippy
         env:
           SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
-        run: python3 scripts/ci_test_plan.py run --kind clippy --selections "$SELECTED_TESTS"
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+        run: python3 scripts/ci_test_plan.py run --kind clippy --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   # ============================================
   # Job 3: Run tests with PostgreSQL
@@ -280,6 +283,7 @@ jobs:
       - name: Run selected crate tests
         env:
           SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
           SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
           SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
@@ -288,17 +292,18 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
 
       - name: Require selected backend contract execution
         if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
         env:
           SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
         run: |
           python3 registry/tools/check_contract_test_results.py \
             --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
             --backend-log "$RUNNER_TEMP/workspace-tests.log" \
-            --backend-selections "$SELECTED_TESTS"
+            --backend-selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   deploy-dev:
     name: Publish Dev Backend Image
