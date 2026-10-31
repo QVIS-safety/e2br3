@@ -12,14 +12,14 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 
 | Target | 하위 Rust 파일 | 직접 선언 | scalar 등록 | ignored 선언 |
 |---|---:|---:|---:|---:|
-| `api_cases` | 43 | 137 | 0 | 0 |
+| `api_cases` | 43 | 136 | 0 | 0 |
 | `api_editor` | 34 | 52 | 365 | 0 |
 | `api_presave` | 11 | 37 | 0 | 0 |
 | `api_import` | 4 | 7 | 0 | 0 |
 | `api_submission` | 12 | 29 | 0 | 1 |
 | `api_terminology` | 6 | 23 | 0 | 0 |
-| `api_administration` | 31 | 65 | 0 | 0 |
-| `authz` | 24 | 92 | 0 | 1 |
+| `api_administration` | 31 | 64 | 0 | 0 |
+| `authz` | 24 | 84 | 0 | 1 |
 | `xml` | 18 | 19 | 0 | 0 |
 
 ## web-server::api_cases
@@ -63,7 +63,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_cases/subresources/reaction.rs](../api_cases/subresources/reaction.rs) | Reaction AE 공통 필드와 MFDS 의료기기 필드 생성·수정 | HTTP 계약 | 87 | 1 | 0 |
 | [api_cases/subresources/safety_report.rs](../api_cases/subresources/safety_report.rs) | Safety report C.1·하위 identifier/document/link CRUD·복원·날짜/NullFlavor | HTTP 계약 | 331 | 4 | 0 |
 | [api_cases/subresources/sender.rs](../api_cases/subresources/sender.rs) | Sender MFDS 건강전문가 유형 KR.1 저장 | HTTP 계약 | 63 | 1 | 0 |
-| [api_cases/subresources/singleton.rs](../api_cases/subresources/singleton.rs) | 단일행 리소스 POST 멱등성·없을 때 응답·행 ID 유지 | HTTP 계약 | 232 | 2 | 0 |
+| [api_cases/subresources/singleton.rs](../api_cases/subresources/singleton.rs) | 단일행 리소스 POST 멱등성·없을 때 응답·행 ID 유지 | HTTP 계약 | 196 | 1 | 0 |
 | [api_cases/subresources/study.rs](../api_cases/subresources/study.rs) | Study type reaction 입력 저장 | HTTP 계약 | 42 | 1 | 0 |
 | [api_cases/subresources/support.rs](../api_cases/subresources/support.rs) | 하위 리소스 HTTP/raw 응답·Case/부모 행 준비 helper | helper | 338 | 0 | 0 |
 | [api_cases/subresources/test_result.rs](../api_cases/subresources/test_result.rs) | 검사결과 normal range 길이·MedDRA 검사명 대체 입력 | HTTP 계약 | 96 | 2 | 0 |
@@ -184,7 +184,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [api_administration/error_mapping_web.rs](../api_administration/error_mapping_web.rs) | 사용자 API의 잘못된 UUID는 400, 존재하지 않는 UUID는 404로 매핑되는지 검증한다. | HTTP 계약 | 44 | 2 | 0 |
 | [api_administration/middleware_ctx.rs](../api_administration/middleware_ctx.rs) | 인증 middleware가 사용자 context를 해석하고 연속 요청 사이에 context를 누출하지 않는지 검증한다. | HTTP 계약 | 80 | 2 | 0 |
 | [api_administration/role_admin/crud_web.rs](../api_administration/role_admin/crud_web.rs) | custom permission profile 생성·수정·soft delete와 메뉴 권한·설명 persistence 및 비활성 역할 사용자 목록 동작을 검증한다. | HTTP 계약 | 293 | 5 | 0 |
-| [api_administration/role_admin/effective_access/administration_web.rs](../api_administration/role_admin/effective_access/administration_web.rs) | custom 역할의 admin/user/PDF/audit/organization 권한 행렬이 실제 관리 API 접근으로 반영되는지 검증한다. | HTTP 계약 | 591 | 5 | 0 |
+| [api_administration/role_admin/effective_access/administration_web.rs](../api_administration/role_admin/effective_access/administration_web.rs) | custom 역할의 admin/user/PDF/audit 권한 행렬이 실제 관리 API 접근으로 반영되는지 검증한다. | HTTP 계약 | 571 | 4 | 0 |
 | [api_administration/role_admin/effective_access/case_web.rs](../api_administration/role_admin/effective_access/case_web.rs) | case 권한 행렬과 home-workflow-read가 case 목록·queue 접근 및 profile capability에 반영되는지 검증한다. | HTTP 계약 | 181 | 2 | 0 |
 | [api_administration/role_admin/effective_access/dashboard_web.rs](../api_administration/role_admin/effective_access/dashboard_web.rs) | home notice 권한의 runtime capability 반영과 예약된 report/mail 행의 비권한 효과를 검증한다. | HTTP 계약 | 134 | 2 | 0 |
 | [api_administration/role_admin/effective_access/information_web.rs](../api_administration/role_admin/effective_access/information_web.rs) | information 권한 행렬이 sender presave의 조회·생성·수정·삭제 권한으로 반영되는지 검증한다. | HTTP 계약 | 218 | 1 | 0 |
@@ -214,14 +214,14 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 | [authz/authorization_snapshot.rs](../authz/authorization_snapshot.rs) | DB에서 repeatable-read로 적재한 authorization snapshot이 request-parts middleware extractor로 전달되고, 미부착 요청은 거부되는지 검증한다. | middleware component | 42 | 2 | 0 |
 | [authz/protected_route_inventory.rs](../authz/protected_route_inventory.rs) | source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다. | 소스 gate | 83 | 5 | 0 |
 | [authz/protected_route_parser.rs](../authz/protected_route_parser.rs) | Rust route 등록 source를 method/path/context inventory로 변환하는 parser와 괄호·인자 분리 로직을 단위 검증한다. | 소스 gate | 236 | 2 | 0 |
-| [authz/rbac_audit.rs](../authz/rbac_audit.rs) | audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다. | HTTP 계약 | 692 | 15 | 0 |
-| [authz/rbac_cases.rs](../authz/rbac_cases.rs) | 관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다. | HTTP 계약 | 96 | 3 | 0 |
-| [authz/rbac_drug.rs](../authz/rbac_drug.rs) | 관리자 drug 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 68 | 2 | 0 |
-| [authz/rbac_narrative.rs](../authz/rbac_narrative.rs) | 관리자 narrative 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 66 | 2 | 0 |
+| [authz/rbac_audit.rs](../authz/rbac_audit.rs) | audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다. | HTTP 계약 | 656 | 13 | 0 |
+| [authz/rbac_cases.rs](../authz/rbac_cases.rs) | 관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다. | HTTP 계약 | 86 | 2 | 0 |
+| [authz/rbac_drug.rs](../authz/rbac_drug.rs) | 관리자 drug 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 56 | 1 | 0 |
+| [authz/rbac_narrative.rs](../authz/rbac_narrative.rs) | 관리자 narrative 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 55 | 1 | 0 |
 | [authz/rbac_organizations.rs](../authz/rbac_organizations.rs) | organization 관리 endpoint의 system-admin 전용 CRUD와 잘못된 org type 거부를 검증한다. | HTTP 계약 | 348 | 8 | 0 |
-| [authz/rbac_patient.rs](../authz/rbac_patient.rs) | 관리자 patient 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 67 | 2 | 0 |
-| [authz/rbac_safety_report.rs](../authz/rbac_safety_report.rs) | 관리자 safety report 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 76 | 2 | 0 |
-| [authz/rbac_subresources.rs](../authz/rbac_subresources.rs) | drug active-substance와 patient medical-history 하위 자원의 관리자 허용·viewer 거부를 검증한다. | HTTP 계약 | 186 | 3 | 0 |
+| [authz/rbac_patient.rs](../authz/rbac_patient.rs) | 관리자 patient 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 56 | 1 | 0 |
+| [authz/rbac_safety_report.rs](../authz/rbac_safety_report.rs) | 관리자 safety report 생성 허용과 viewer 생성 거부를 검증한다. | HTTP 계약 | 67 | 1 | 0 |
+| [authz/rbac_subresources.rs](../authz/rbac_subresources.rs) | drug active-substance와 patient medical-history 하위 자원의 관리자 허용·viewer 거부를 검증한다. | HTTP 계약 | 173 | 2 | 0 |
 | [authz/rbac_users/mod.rs](../authz/rbac_users/mod.rs) | 사용자 역할 생성/수정 정책·비관리자 거절·profile·조직 scope 모듈 등록 | 모듈 등록 | 5 | 0 | 0 |
 | [authz/rbac_users/non_admin_forbidden_web.rs](../authz/rbac_users/non_admin_forbidden_web.rs) | 비관리자의 사용자 CRUD·목록·workflow option 접근 거부와 permission denied 응답을 검증한다. | HTTP 계약 | 288 | 9 | 0 |
 | [authz/rbac_users/permission_profiles_web.rs](../authz/rbac_users/permission_profiles_web.rs) | system-admin eligible action, target-org 요구, cross-org 숨김, sponsor org scope와 custom role 20개 제한을 검증한다. | HTTP 계약 | 350 | 5 | 0 |
@@ -305,5 +305,7 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 ## CI 선택과 미확인 범위
 
 `scripts/ci_test_plan.py`는 test 파일의 owning target과 crate 의존성을 사용한다. 하위 test 파일 변경은 해당 target, 공통 test helper 변경은 이를 공유하는 crate target, production lib-core 변경은 필요한 의존 crate까지 선택한다. 파일을 나누었다는 이유만으로 같은 Cargo target 내부 함수를 개별 job으로 실행하지 않는다. API 명세 문서만 바꾸면 Rust 실행을 선택하지 않는다.
+
+Editor는 registry의 verifier 연결에 따라 변경 leaf의 실제 사용 페이지·책임 범위를 선택한다. 여러 범위를 한 `api_editor` 실행과 한 DB 준비로 묶으며 공통 patch 생성기 자체 검사 2개도 실행한다. 공통 모듈·연결 없는 leaf 변경은 Editor 전체로 넓힌다. Clippy도 test-only 변경은 선택 integration target만, production 변경은 의존 crate의 전체 target을 검사한다.
 
 Module 연결·파일 누락·명세 근거·이동 전후 선언 및 assertion을 정적으로 대조했다. 컴파일, SQL 실행, 전체 runtime PASS는 미확인이다. 모든 동작의 공백은 각 API 명세의 미단언 항목과 coverage.tsv의 gaps에 남긴다.

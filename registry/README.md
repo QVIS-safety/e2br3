@@ -173,8 +173,10 @@ crate tests. Documentation-only changes skip Rust tests and lint jobs.
 DB changes select lib-core and its consumers; registry changes select input
 contracts, validator and their consumers. Unknown shared inputs select every
 crate and are listed as `full_reasons` in the Test Scope job summary.
-Formatting and Clippy use the selected crates. Validator retains its dedicated
-rule-binding gate. Each other selected crate runs sequentially against its own
+Formatting uses the selected crates. Clippy checks the owning integration targets
+for test-only edits; production changes retain `--all-targets` for the changed
+crates and their consumers. Validator retains its dedicated rule-binding gate.
+Each other selected crate runs sequentially against its own
 isolated PostgreSQL database. `api_editor`, `api_cases`, and `api_import` own
 canonical backend assertions. Selecting any of them requires registry/frontend
 inventory checks and passing results for every canonical assertion in the
@@ -202,6 +204,17 @@ Its `support.rs` files contain shared fixtures/helpers, not test cases.
 Test-only changes under a directory select that target, including its helpers.
 `tests/common/` is shared by targets and selects the whole web crate. Keep
 canonical test references in the registry in sync when moving an assertion.
+
+Editor generated-page or contract JSON edits select that page. Changes to a leaf
+verifier in `fields/rows/relations/audit` select the corresponding category only
+on pages that bind that verifier in the registry. Shared helpers stay in the
+parent modules; changing those modules, or a leaf with no registered consumers,
+selects the full Editor target. Page/category prefixes are combined into one
+`api_editor` invocation with exclusions for unselected categories, so multiple
+prefixes share one isolated database setup. The two pure patch-builder checks
+also run. The execution checker still requires every selected registered
+contract result, exactly once; this selection does not claim a measured runtime
+improvement or full Editor coverage for a partial change.
 
 Pure SQL schema/migration and transaction tests live in
 `lib-core/tests/database/` and run with `--test database`; they do not require
@@ -236,6 +249,7 @@ replace the product's approved validation plan or its retained execution records
 | Frontend admin, DM, LR, NR and utility file-layout checks (14 cases) | Runtime role permissions, section save/readback and audit-access tests remain. Folder names and import spelling are not acceptance criteria. |
 | Frontend shared-audit implementation and DG layout checks (11 net cases) | Readonly audit access guard, field audit actions, DG receiver selection, NullFlavor and soft-delete wiring remain. LB/SI functional checks were retained when their layout assertions were removed. |
 | Backend minimal FDA validation response (1 case) | `case_contract_web::validation_cache::test_single_profile_validation_caches_each_profile` verifies FDA/MFDS responses, DB cache rows, list aggregation and invalidation after saves. |
+| Backend overlapping permission/setup checks and safety-report singleton (10 net cases) | Five create-permission tests retain the original minimal admin payload/201 and viewer payload/403 in one fixture each. Case create/201 remains in viewer-list setup. Stronger audit/organization tests retain the same role/status assertions; the singleton test verifies the repeated safety-report POST and GET return the first ID. |
 | Backend legacy authorization migration/source-shape checks (22 cases) | Runtime `authorization_snapshot`, `authorization_isolation`, `authorization_storage`, `rbac_*`, `rls_web`, role metadata/effective-access and compile-fail suites remain; permit/snapshot/organization binding and restore-action guards are retained. |
 
 Validate registry rows against extracted backend BMC fields:

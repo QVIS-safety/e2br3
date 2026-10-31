@@ -36,7 +36,7 @@ crates/services/web-server/tests/api_cases/subresources/primary_source.rs	web-se
 crates/services/web-server/tests/api_cases/subresources/reaction.rs	web-server::api_cases	HTTP 계약	Reaction AE 공통 필드와 MFDS 의료기기 필드 생성·수정	87	1	0	0
 crates/services/web-server/tests/api_cases/subresources/safety_report.rs	web-server::api_cases	HTTP 계약	Safety report C.1·하위 identifier/document/link CRUD·복원·날짜/NullFlavor	331	4	0	0
 crates/services/web-server/tests/api_cases/subresources/sender.rs	web-server::api_cases	HTTP 계약	Sender MFDS 건강전문가 유형 KR.1 저장	63	1	0	0
-crates/services/web-server/tests/api_cases/subresources/singleton.rs	web-server::api_cases	HTTP 계약	단일행 리소스 POST 멱등성·없을 때 응답·행 ID 유지	232	2	0	0
+crates/services/web-server/tests/api_cases/subresources/singleton.rs	web-server::api_cases	HTTP 계약	단일행 리소스 POST 멱등성·없을 때 응답·행 ID 유지	196	1	0	0
 crates/services/web-server/tests/api_cases/subresources/study.rs	web-server::api_cases	HTTP 계약	Study type reaction 입력 저장	42	1	0	0
 crates/services/web-server/tests/api_cases/subresources/support.rs	web-server::api_cases	helper	하위 리소스 HTTP/raw 응답·Case/부모 행 준비 helper	338	0	0	0
 crates/services/web-server/tests/api_cases/subresources/test_result.rs	web-server::api_cases	HTTP 계약	검사결과 normal range 길이·MedDRA 검사명 대체 입력	96	2	0	0
@@ -127,7 +127,7 @@ crates/services/web-server/tests/api_administration/audit_web.rs	web-server::api
 crates/services/web-server/tests/api_administration/error_mapping_web.rs	web-server::api_administration	HTTP 계약	사용자 API의 잘못된 UUID는 400, 존재하지 않는 UUID는 404로 매핑되는지 검증한다.	44	2	0	0
 crates/services/web-server/tests/api_administration/middleware_ctx.rs	web-server::api_administration	HTTP 계약	인증 middleware가 사용자 context를 해석하고 연속 요청 사이에 context를 누출하지 않는지 검증한다.	80	2	0	0
 crates/services/web-server/tests/api_administration/role_admin/crud_web.rs	web-server::api_administration	HTTP 계약	custom permission profile 생성·수정·soft delete와 메뉴 권한·설명 persistence 및 비활성 역할 사용자 목록 동작을 검증한다.	293	5	0	0
-crates/services/web-server/tests/api_administration/role_admin/effective_access/administration_web.rs	web-server::api_administration	HTTP 계약	custom 역할의 admin/user/PDF/audit/organization 권한 행렬이 실제 관리 API 접근으로 반영되는지 검증한다.	591	5	0	0
+crates/services/web-server/tests/api_administration/role_admin/effective_access/administration_web.rs	web-server::api_administration	HTTP 계약	custom 역할의 admin/user/PDF/audit 권한 행렬이 실제 관리 API 접근으로 반영되는지 검증한다.	571	4	0	0
 crates/services/web-server/tests/api_administration/role_admin/effective_access/case_web.rs	web-server::api_administration	HTTP 계약	case 권한 행렬과 home-workflow-read가 case 목록·queue 접근 및 profile capability에 반영되는지 검증한다.	181	2	0	0
 crates/services/web-server/tests/api_administration/role_admin/effective_access/dashboard_web.rs	web-server::api_administration	HTTP 계약	home notice 권한의 runtime capability 반영과 예약된 report/mail 행의 비권한 효과를 검증한다.	134	2	0	0
 crates/services/web-server/tests/api_administration/role_admin/effective_access/information_web.rs	web-server::api_administration	HTTP 계약	information 권한 행렬이 sender presave의 조회·생성·수정·삭제 권한으로 반영되는지 검증한다.	218	1	0	0
@@ -152,14 +152,14 @@ crates/services/web-server/tests/authz/authentication_web.rs	web-server::authz	H
 crates/services/web-server/tests/authz/authorization_snapshot.rs	web-server::authz	middleware component	DB에서 repeatable-read로 적재한 authorization snapshot이 request-parts middleware extractor로 전달되고, 미부착 요청은 거부되는지 검증한다.	42	2	0	0
 crates/services/web-server/tests/authz/protected_route_inventory.rs	web-server::authz	소스 gate	source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다.	83	5	0	1
 crates/services/web-server/tests/authz/protected_route_parser.rs	web-server::authz	소스 gate	Rust route 등록 source를 method/path/context inventory로 변환하는 parser와 괄호·인자 분리 로직을 단위 검증한다.	236	2	0	0
-crates/services/web-server/tests/authz/rbac_audit.rs	web-server::authz	HTTP 계약	audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다.	692	15	0	0
-crates/services/web-server/tests/authz/rbac_cases.rs	web-server::authz	HTTP 계약	관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다.	96	3	0	0
-crates/services/web-server/tests/authz/rbac_drug.rs	web-server::authz	HTTP 계약	관리자 drug 생성 허용과 viewer 생성 거부를 검증한다.	68	2	0	0
-crates/services/web-server/tests/authz/rbac_narrative.rs	web-server::authz	HTTP 계약	관리자 narrative 생성 허용과 viewer 생성 거부를 검증한다.	66	2	0	0
+crates/services/web-server/tests/authz/rbac_audit.rs	web-server::authz	HTTP 계약	audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다.	656	13	0	0
+crates/services/web-server/tests/authz/rbac_cases.rs	web-server::authz	HTTP 계약	관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다.	86	2	0	0
+crates/services/web-server/tests/authz/rbac_drug.rs	web-server::authz	HTTP 계약	관리자 drug 생성 허용과 viewer 생성 거부를 검증한다.	56	1	0	0
+crates/services/web-server/tests/authz/rbac_narrative.rs	web-server::authz	HTTP 계약	관리자 narrative 생성 허용과 viewer 생성 거부를 검증한다.	55	1	0	0
 crates/services/web-server/tests/authz/rbac_organizations.rs	web-server::authz	HTTP 계약	organization 관리 endpoint의 system-admin 전용 CRUD와 잘못된 org type 거부를 검증한다.	348	8	0	0
-crates/services/web-server/tests/authz/rbac_patient.rs	web-server::authz	HTTP 계약	관리자 patient 생성 허용과 viewer 생성 거부를 검증한다.	67	2	0	0
-crates/services/web-server/tests/authz/rbac_safety_report.rs	web-server::authz	HTTP 계약	관리자 safety report 생성 허용과 viewer 생성 거부를 검증한다.	76	2	0	0
-crates/services/web-server/tests/authz/rbac_subresources.rs	web-server::authz	HTTP 계약	drug active-substance와 patient medical-history 하위 자원의 관리자 허용·viewer 거부를 검증한다.	186	3	0	0
+crates/services/web-server/tests/authz/rbac_patient.rs	web-server::authz	HTTP 계약	관리자 patient 생성 허용과 viewer 생성 거부를 검증한다.	56	1	0	0
+crates/services/web-server/tests/authz/rbac_safety_report.rs	web-server::authz	HTTP 계약	관리자 safety report 생성 허용과 viewer 생성 거부를 검증한다.	67	1	0	0
+crates/services/web-server/tests/authz/rbac_subresources.rs	web-server::authz	HTTP 계약	drug active-substance와 patient medical-history 하위 자원의 관리자 허용·viewer 거부를 검증한다.	173	2	0	0
 crates/services/web-server/tests/authz/rbac_users/mod.rs	web-server::authz	모듈 등록	사용자 역할 생성/수정 정책·비관리자 거절·profile·조직 scope 모듈 등록	5	0	0	0
 crates/services/web-server/tests/authz/rbac_users/non_admin_forbidden_web.rs	web-server::authz	HTTP 계약	비관리자의 사용자 CRUD·목록·workflow option 접근 거부와 permission denied 응답을 검증한다.	288	9	0	0
 crates/services/web-server/tests/authz/rbac_users/permission_profiles_web.rs	web-server::authz	HTTP 계약	system-admin eligible action, target-org 요구, cross-org 숨김, sponsor org scope와 custom role 20개 제한을 검증한다.	350	5	0	0

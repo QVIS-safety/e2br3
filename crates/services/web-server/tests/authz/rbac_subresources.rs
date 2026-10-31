@@ -87,39 +87,8 @@ async fn create_patient(
 
 #[serial]
 #[tokio::test]
-async fn test_admin_can_create_drug_active_substance() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-	let cookie = cookie_header(&token.to_string());
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let drug_id = create_drug(&app, &cookie, case_id).await?;
-
-	let body = json!({
-		"data": {
-			"drug_id": drug_id,
-			"sequence_number": 1,
-			"substance_name": "Substance A"
-		}
-	});
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!(
-			"/api/cases/{case_id}/drugs/{drug_id}/active-substances"
-		))
-		.header("cookie", &cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(body.to_string()))?;
-	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::CREATED);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_viewer_cannot_create_drug_active_substance() -> Result<()> {
+async fn test_drug_active_substance_create_enforces_role_permissions() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -147,8 +116,26 @@ async fn test_viewer_cannot_create_drug_active_substance() -> Result<()> {
 		.header("cookie", &viewer_cookie)
 		.header("content-type", "application/json")
 		.body(Body::from(body.to_string()))?;
-	let res = app.oneshot(req).await?;
+	let res = app.clone().oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+	let body = json!({
+		"data": {
+			"drug_id": drug_id,
+			"sequence_number": 1,
+			"substance_name": "Substance A"
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/active-substances"
+		))
+		.header("cookie", &admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::CREATED);
 	Ok(())
 }
 

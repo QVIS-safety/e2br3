@@ -33,23 +33,7 @@ async fn create_drug(
 
 #[serial]
 #[tokio::test]
-async fn test_admin_can_create_drug() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-
-	let case_id =
-		create_case(&app, &cookie_header(&token.to_string()), seed.org_id).await?;
-	let status =
-		create_drug(&app, &cookie_header(&token.to_string()), case_id).await?;
-	assert_eq!(status, StatusCode::CREATED);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_viewer_cannot_create_drug() -> Result<()> {
+async fn test_drug_create_enforces_role_permissions() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -64,5 +48,9 @@ async fn test_viewer_cannot_create_drug() -> Result<()> {
 		create_drug(&app, &cookie_header(&viewer_token.to_string()), case_id)
 			.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
+
+	let status =
+		create_drug(&app, &cookie_header(&admin_token.to_string()), case_id).await?;
+	assert_eq!(status, StatusCode::CREATED);
 	Ok(())
 }

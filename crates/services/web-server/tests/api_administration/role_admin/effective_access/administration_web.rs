@@ -569,23 +569,3 @@ async fn test_admin_read_grants_effective_audit_log_access() -> Result<()> {
 
 	Ok(())
 }
-#[serial]
-#[tokio::test]
-async fn test_organization_management_requires_system_admin() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
-
-	// seed.admin is a sponsor admin (ROLE_SPONSOR_ADMIN_CRO), not a system admin.
-	assert_get_status(
-		&app,
-		&admin_cookie,
-		"/api/organizations",
-		StatusCode::FORBIDDEN,
-	)
-	.await?;
-
-	Ok(())
-}

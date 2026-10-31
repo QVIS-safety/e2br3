@@ -38,16 +38,6 @@ async fn create_case(cookie: &str, app: &axum::Router, _org_id: Uuid) -> Result<
 
 #[serial]
 #[tokio::test]
-async fn test_admin_can_create_case() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-	create_case(&cookie_header(&token.to_string()), &app, seed.org_id).await
-}
-
-#[serial]
-#[tokio::test]
 async fn test_viewer_cannot_create_case() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

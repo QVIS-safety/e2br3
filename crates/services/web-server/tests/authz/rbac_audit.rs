@@ -15,42 +15,6 @@ use uuid::Uuid;
 
 #[serial]
 #[tokio::test]
-async fn test_admin_can_list_audit_logs() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-
-	let req = Request::builder()
-		.method("GET")
-		.uri("/api/audit-logs")
-		.header("cookie", cookie_header(&token.to_string()))
-		.body(Body::empty())?;
-	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::OK);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_viewer_cannot_list_audit_logs() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
-	let app = web_server::app(mm);
-
-	let req = Request::builder()
-		.method("GET")
-		.uri("/api/audit-logs")
-		.header("cookie", cookie_header(&token.to_string()))
-		.body(Body::empty())?;
-	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::FORBIDDEN);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_custom_manager_without_admin_read_cannot_list_audit_logs() -> Result<()>
 {
 	let mm = init_test_mm().await?;

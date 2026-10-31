@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -7,6 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_test_plan import commands_for, load_workspace, select_tests, target_for
+from generate_editor_contract_web_tests import expected_editor_tests
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -129,14 +131,55 @@ class TestPlanTests(unittest.TestCase):
         self.assertEqual(plan['editor_filters'], ['case_editor_contract_web::dg::'])
         commands = commands_for(plan['selections'], self.workspace, editor_filters=plan['editor_filters'])
         self.assertEqual(len(commands), 1)
-        self.assertIn('case_editor_contract_web::dg::', commands[0])
+        self.assertIn('case_editor_contract_web::', commands[0])
         mixed = self.plan(page, 'crates/services/web-server/tests/api_editor/fields/null_flavor.rs')
-        self.assertIn('case_editor_contract_web::ci::fields::', mixed['editor_filters'])
-        self.assertNotIn('case_editor_contract_web::dg::fields::', mixed['editor_filters'])
+        self.assertEqual(mixed['editor_filters'], [
+            'case_editor_contract_web::ae::fields::', 'case_editor_contract_web::dg::',
+            'case_editor_contract_web::dm::fields::', 'case_editor_contract_web::si::fields::'])
         for shared in ('crates/services/web-server/tests/api_editor/support.rs',
+                       'crates/services/web-server/tests/api_editor/fields.rs',
                        'crates/services/web-server/tests/common/mod.rs',
                        'crates/services/web-server/src/lib.rs'):
-            self.assertEqual(self.plan(page, shared)['editor_filters'], [])
+            for paths in ((page, shared), (shared, page)):
+                self.assertEqual(self.plan(*paths)['editor_filters'], [])
+
+    def test_editor_leaf_changes_select_consumers_and_unmapped_leaves_widen(self):
+        root = 'crates/services/web-server/tests/api_editor/'
+        # A full-target selection cannot cover a file missing from Rust module registration.
+        for category in ('fields', 'rows', 'relations', 'audit'):
+            parent = ROOT / root / (category + '.rs')
+            registered = set(re.findall(r'^pub\(super\) mod (\w+);$', parent.read_text(), re.MULTILINE))
+            self.assertEqual(registered, {path.stem for path in (ROOT / root / category).glob('*.rs')},
+                             f'{category}: every verifier file must be reachable from its parent module')
+        self.assertEqual(self.plan(root + 'rows/identity.rs')['editor_filters'],
+                         ['case_editor_contract_web::dg::rows::'])
+        self.assertEqual(self.plan(root + 'relations/restore.rs')['editor_filters'],
+                         ['case_editor_contract_web::dh::relations::', 'case_editor_contract_web::lr::relations::'])
+        for paths in ((root + 'rows/removed.rs', root + 'pages/dg.generated.rs'),
+                      (root + 'pages/dg.generated.rs', root + 'rows/removed.rs')):
+            plan = self.plan(*paths)
+            self.assertEqual(plan['selections'], {'web-server': ['api_editor']})
+            self.assertEqual(plan['editor_filters'], [])
+
+    def test_editor_filter_union_runs_once_without_losing_or_repeating_contracts(self):
+        registered = expected_editor_tests(ROOT / 'registry')
+        for filters in (['case_editor_contract_web::dg::'],
+                        ['case_editor_contract_web::ae::fields::', 'case_editor_contract_web::dm::fields::',
+                         'case_editor_contract_web::dg::fields::', 'case_editor_contract_web::si::fields::'],
+                        ['case_editor_contract_web::dg::', 'case_editor_contract_web::dg::rows::',
+                         'case_editor_contract_web::lr::relations::']):
+            commands = commands_for({'web-server': ['api_cases', 'api_editor']}, self.workspace,
+                                    editor_filters=filters)
+            self.assertEqual(len(commands), 2)
+            editor, other = commands
+            self.assertEqual(editor.count('api_editor'), 1)
+            self.assertIn('case_editor_contract_web::', editor)
+            skips = tuple(editor[i + 1] for i, arg in enumerate(editor) if arg == '--skip')
+            self.assertEqual({name for name in registered if not name.startswith(skips)},
+                             {name for name in registered if name.startswith(tuple(filters))})
+            self.assertIn('api_cases', other)
+            self.assertNotIn('api_editor', other)
+            self.assertNotIn('--skip', other)
 
     def test_editor_filters_cannot_narrow_a_whole_crate_or_an_unrelated_target(self):
         filters = ['case_editor_contract_web::dg::']
@@ -209,6 +252,17 @@ class TestPlanTests(unittest.TestCase):
                         {'web-server': ['api_cases', 'api_cases']}, {'web-server': [None]}, {'web-server': 'api_cases'}):
             with self.assertRaises(ValueError):
                 commands_for(invalid, self.workspace)
+
+    def test_clippy_limits_test_only_edits_and_keeps_production_targets(self):
+        selection = {'web-server': ['api_cases', 'authz'], 'lib-core': ['authorization'], 'validator': []}
+        self.assertEqual(commands_for(selection, self.workspace, 'clippy'), [
+            ['cargo', 'clippy', '--locked', '--all-features', '--all-targets', '-p', 'validator'],
+            ['cargo', 'clippy', '--locked', '--all-features', '-p', 'lib-core', '--test', 'authorization'],
+            ['cargo', 'clippy', '--locked', '--all-features', '-p', 'web-server', '--test', 'api_cases', '--test', 'authz'],
+        ])
+        self.assertEqual(commands_for({'lib-core': [], 'web-server': []}, self.workspace, 'clippy'), [
+            ['cargo', 'clippy', '--locked', '--all-features', '--all-targets', '-p', 'lib-core', '-p', 'web-server'],
+        ])
 
     def test_push_and_pr_share_one_plan_and_discover_new_workspace_crates(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "registry/tools"))
-from generate_editor_contract_web_tests import ACTIVE_PAGES, normalize_editor_filters, expected_editor_tests
+from generate_editor_contract_web_tests import ACTIVE_PAGES, load_contract, normalize_editor_filters, expected_editor_tests
 
 from ci_test_scope import changed_paths, event_revisions
 
@@ -21,6 +21,9 @@ FAMILIES = {
 }
 
 CONTRACT_TARGETS = {'api_cases', 'api_editor', 'api_import'}
+EDITOR_GROUPS = {'fields': 'fieldChecks', 'rows': 'collections',
+                 'relations': 'relations', 'audit': 'auditChecks'}
+REGISTRY_ROOT = Path(__file__).resolve().parents[1] / 'registry'
 
 
 def load_workspace(root: Path) -> dict:
@@ -92,8 +95,17 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
                     parts = Path(relative).parts
                     if len(parts) == 4 and parts[2] == 'pages' and parts[3].endswith('.generated.rs') and parts[3].split('.')[0].upper() in ACTIVE_PAGES:
                         editor_filters.append(f'case_editor_contract_web::{parts[3].split(".")[0]}::')
-                    elif len(parts) == 4 and parts[2] in ('fields', 'rows', 'relations', 'audit'):
-                        editor_filters.extend(f'case_editor_contract_web::{page.lower()}::{parts[2]}::' for page in ACTIVE_PAGES)
+                    elif len(parts) == 4 and parts[2] in EDITOR_GROUPS:
+                        # shortcut: leaf verifiers have no cross-leaf helpers; widen selection if such dependencies are added.
+                        category = parts[2]
+                        verifier = f'{category}::{Path(parts[3]).stem}::'
+                        pages = [page for page in ACTIVE_PAGES
+                                 if any(check['verifier'].startswith(verifier)
+                                        for check in load_contract(REGISTRY_ROOT, page)[EDITOR_GROUPS[category]])]
+                        # Unmapped/deleted verifiers must widen coverage, never silently skip it.
+                        if not pages:
+                            editor_all = True
+                        editor_filters.extend(f'case_editor_contract_web::{page.lower()}::{category}::' for page in pages)
                     else:
                         editor_all = True
                 if target is None:
@@ -119,7 +131,7 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     selected.update({name: [] for name in affected})
     selected = {name: sorted(targets) for name, targets in sorted(selected.items())}
     if editor_filters and not editor_all and selected.get('web-server'):
-        registered = expected_editor_tests(Path(__file__).resolve().parents[1] / 'registry')
+        registered = expected_editor_tests(REGISTRY_ROOT)
         editor_filters = [prefix for prefix in editor_filters if any(name.startswith(prefix) for name in registered)]
         if not editor_filters:
             raise ValueError('changed editor verifier has no registered contract checks')
@@ -153,7 +165,13 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
     if kind == 'fmt':
         return [['cargo', 'fmt', *package_args, '--check']]
     if kind == 'clippy':
-        return [['cargo', 'clippy', '--locked', '--all-targets', '--all-features', *package_args]]
+        args = ['cargo', 'clippy', '--locked', '--all-features']
+        whole_crates = [arg for package, targets in sorted(selections.items()) if not targets for arg in ('-p', package)]
+        commands = [args + ['--all-targets', *whole_crates]] if whole_crates else []
+        for package, targets in sorted(selections.items()):
+            if targets:
+                commands.append(args + ['-p', package] + [arg for target in targets for arg in ('--test', target)])
+        return commands
     if kind != 'tests':
         raise ValueError(f'unknown check: {kind}')
     commands = []
@@ -162,8 +180,13 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
             continue
         args = ['scripts/test-isolated-db.sh', '--locked', '-p', package, '-j1']
         if package == 'web-server' and filters:
-            for prefix in filters:
-                commands.append(args + ['--test', 'api_editor', prefix, '--', '--test-threads=1', '--color', 'never'])
+            # libtest accepts one include filter; exclude the other page/category buckets in one DB run.
+            prefixes = [f'case_editor_contract_web::{page.lower()}::{category}::'
+                        for page in ACTIVE_PAGES for category in EDITOR_GROUPS]
+            skips = [arg for prefix in prefixes if not any(prefix.startswith(f) for f in filters)
+                     for arg in ('--skip', prefix)]
+            commands.append(args + ['--test', 'api_editor', 'case_editor_contract_web::',
+                                    '--', '--test-threads=1', '--color', 'never', *skips])
             targets = [target for target in targets if target != 'api_editor']
             if not targets:
                 continue

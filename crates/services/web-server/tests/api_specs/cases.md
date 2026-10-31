@@ -2,7 +2,7 @@
 
 이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, message-header, `PUT /submission-receiver`, administration 소유의 case audit-trail은 제외했다.
 
-검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 108, `authorization_only` 1, `registration_only` 122, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
+검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 111, `authorization_only` 1, `registration_only` 119, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
 
 ## 공통 계약
 
@@ -47,7 +47,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - [tests/api_cases/scope/cases.rs::test_case_list_is_filtered_by_sender_scope](../api_cases/scope/cases.rs)
 - [tests/api_cases/scope/cases.rs::test_case_update_requires_matching_sender_scope](../api_cases/scope/cases.rs)
 - [tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent](../api_cases/subresources/singleton.rs)
-- [tests/authz/rbac_cases.rs::test_admin_can_create_case](../authz/rbac_cases.rs)
+- [tests/authz/rbac_cases.rs::test_viewer_can_list_cases](../authz/rbac_cases.rs): 준비 단계의 관리자 POST 201과 viewer GET 200을 함께 확인한다.
 - [tests/authz/rls_web.rs::test_rls_list_cases_filters_org](../authz/rls_web.rs)
 
 <a id="intake"></a>
@@ -337,6 +337,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 | `POST` | `/api/cases/{case_id}/safety-report/studies/{study_id}/registrations/{id}/restore` |
 
 - safety-report singleton: create `case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria(+null_flavor), local_criteria_report_type, combination_product_report_indicator(+null_flavor), first_sender_type, additional_documents_available, other_case_identifiers_exist(+null_flavor), worldwide_unique_id, nullification_code/reason, receiver_organization`; update는 case_id 제외. POST는 신규/기존 모두 201 entity, GET/PUT 200, DELETE 204.
+- singleton 검사는 두 번째 POST 응답의 `data.id`와 후속 GET의 `data.id`가 첫 생성 ID와 같은지 직접 단언한다.
 - sender: `case_id, source_sender_presave_id, sender_type, health_professional_type_kr1, organization_name, department, street_address, city, state, postcode, country_code, person title/name parts(+null flavors), telephone, fax, email`.
 - primary source: `case_id, source_reporter_presave_id, sequence_number`, reporter name/address/contact 각 값과 null flavor, `country_code, email(+null flavor), qualification(+null flavor), qualification_kr1, primary_source_regulatory`.
 - literature: `case_id, reference_text(+null_flavor), sequence_number, document_base64, file_name, media_type, representation, compression`. documents: `case_id, title, document_base64, file_name, media_type, representation, compression, sequence_number`.
@@ -378,7 +379,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 ## Coverage gap 우선순위
 
-1. registration_only 122개 중 drug device/code/assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
+1. registration_only 119개 중 drug device/code/assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
 2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`는 등록 이외 행동 assertion이 전혀 없다.
 3. `GET /cases/{case_id}/versions`는 조직 가시성만 검증되어 반환 필드, 정렬, 빈 결과가 미검증이다.
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.

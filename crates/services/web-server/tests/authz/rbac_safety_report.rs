@@ -37,24 +37,7 @@ async fn create_safety_report(
 
 #[serial]
 #[tokio::test]
-async fn test_admin_can_create_safety_report() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
-
-	let case_id =
-		create_case(&app, &cookie_header(&token.to_string()), seed.org_id).await?;
-	let (status, body) =
-		create_safety_report(&app, &cookie_header(&token.to_string()), case_id)
-			.await?;
-	assert_eq!(status, StatusCode::CREATED, "{body}");
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_viewer_cannot_create_safety_report() -> Result<()> {
+async fn test_safety_report_create_enforces_role_permissions() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -65,12 +48,20 @@ async fn test_viewer_cannot_create_safety_report() -> Result<()> {
 	let case_id =
 		create_case(&app, &cookie_header(&admin_token.to_string()), seed.org_id)
 			.await?;
-	let (status, _body) = create_safety_report(
+	let (status, body) = create_safety_report(
 		&app,
 		&cookie_header(&viewer_token.to_string()),
 		case_id,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN);
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
+
+	let (status, body) = create_safety_report(
+		&app,
+		&cookie_header(&admin_token.to_string()),
+		case_id,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
 	Ok(())
 }
