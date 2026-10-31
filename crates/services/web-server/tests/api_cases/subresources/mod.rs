@@ -1,7 +1,15 @@
+mod lifecycle_audit;
+mod lifecycle_policy;
+mod lifecycle_singleton;
+mod lifecycle_support;
 mod support;
 
 mod drug;
 mod drug_scope;
+mod lifecycle_drug;
+mod lifecycle_general;
+mod lifecycle_patient;
+mod lifecycle_report;
 mod narrative;
 mod patient;
 mod primary_source;

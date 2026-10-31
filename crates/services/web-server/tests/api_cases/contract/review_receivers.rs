@@ -1,12 +1,156 @@
+use super::super::case_support::toggle_case_action;
 use super::support::{get_json, post_json, put_json};
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
+use lib_core::model::audit::AuditLogBmc;
 use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use serial_test::serial;
 use uuid::Uuid;
+
+#[derive(Clone, Debug, PartialEq)]
+struct ReviewReceiverAudit {
+	id: i64,
+	organization_id: Uuid,
+	user_id: Uuid,
+	action: String,
+	reason: Option<String>,
+	category: Option<String>,
+	changed_fields: Option<Value>,
+	old_values: Option<Value>,
+	new_values: Option<Value>,
+}
+
+async fn case_audit_rows(
+	mm: &ModelManager,
+	ctx: &Ctx,
+	case_id: Uuid,
+) -> Result<Vec<ReviewReceiverAudit>> {
+	let mut rows = AuditLogBmc::list_by_record(ctx, mm, "cases", case_id).await?;
+	rows.sort_by_key(|row| row.id);
+	Ok(rows
+		.into_iter()
+		.map(|row| ReviewReceiverAudit {
+			id: row.id,
+			organization_id: row.organization_id,
+			user_id: row.user_id,
+			action: row.action,
+			reason: row.reason_for_change,
+			category: row.change_category,
+			changed_fields: row.changed_fields,
+			old_values: row.old_values,
+			new_values: row.new_values,
+		})
+		.collect())
+}
+
+async fn review_receiver_state(
+	app: &axum::Router,
+	admin_cookie: &str,
+	mm: &ModelManager,
+	ctx: &Ctx,
+	case_id: Uuid,
+) -> Result<(Value, Value, Vec<ReviewReceiverAudit>)> {
+	let (status, case) =
+		get_json(app, admin_cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(status, StatusCode::OK, "{case}");
+	let (status, shell) = get_json(
+		app,
+		admin_cookie,
+		&format!("/api/cases/{case_id}/editor/shell"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{shell}");
+	Ok((case, shell, case_audit_rows(mm, ctx, case_id).await?))
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn assert_rejected_review_receiver_update(
+	app: &axum::Router,
+	admin_cookie: &str,
+	actor_cookie: &str,
+	mm: &ModelManager,
+	ctx: &Ctx,
+	case_id: Uuid,
+	expected: StatusCode,
+	label: &str,
+) -> Result<()> {
+	let before = review_receiver_state(app, admin_cookie, mm, ctx, case_id).await?;
+	let (status, body) = put_json(
+		app,
+		actor_cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {"review_receivers_json": serde_json::to_string(&json!([{
+				"receiver": format!("Rejected {label}"),
+				"reportDueDate": "2026-10-01"
+			}]))?},
+			"reason_for_change": format!("reject {label} review receiver update")
+		}),
+	)
+	.await?;
+	assert_eq!(status, expected, "{label}: {body}");
+	assert_eq!(
+		review_receiver_state(app, admin_cookie, mm, ctx, case_id).await?,
+		before,
+		"{label}: rejected update changed Case GET, editor shell, or audit"
+	);
+	Ok(())
+}
+
+fn assert_review_receiver_audit(
+	before: &[ReviewReceiverAudit],
+	after: &[ReviewReceiverAudit],
+	ctx: &Ctx,
+	reason: &str,
+	old: Value,
+	new: Value,
+) {
+	let appended = after
+		.iter()
+		.filter(|row| !before.iter().any(|old_row| old_row.id == row.id))
+		.collect::<Vec<_>>();
+	assert_eq!(
+		appended.len(),
+		1,
+		"unexpected Case audit rows: {appended:?}"
+	);
+	let row = appended[0];
+	assert_eq!(row.action, "UPDATE");
+	assert_eq!(row.user_id, ctx.user_id());
+	assert_eq!(row.organization_id, ctx.organization_id());
+	assert_eq!(row.reason.as_deref(), Some(reason));
+	assert_eq!(row.category, None);
+	assert_eq!(
+		row.old_values
+			.as_ref()
+			.and_then(|value| value.get("review_receivers_json")),
+		Some(&old)
+	);
+	assert_eq!(
+		row.new_values
+			.as_ref()
+			.and_then(|value| value.get("review_receivers_json")),
+		Some(&new)
+	);
+	assert_eq!(
+		row.changed_fields
+			.as_ref()
+			.and_then(|value| value.get("review_receivers_json"))
+			.and_then(|value| value.get("old")),
+		Some(&old)
+	);
+	assert_eq!(
+		row.changed_fields
+			.as_ref()
+			.and_then(|value| value.get("review_receivers_json"))
+			.and_then(|value| value.get("new")),
+		Some(&new)
+	);
+}
 
 #[serial]
 #[tokio::test]
@@ -109,9 +253,21 @@ async fn create_re_validation_case(
 async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let other = seed_org_with_users(&mm, "otheradminpwd", "otherviewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let viewer_cookie = cookie_header(
+		&generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?.to_string(),
+	);
+	let other_cookie = cookie_header(
+		&generate_web_token(&other.admin.email, other.admin.token_salt)?.to_string(),
+	);
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let app = web_server::app(mm.clone());
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
 	let receivers = json!({
 		"reviewReceivers": [{
@@ -121,17 +277,29 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 		}]
 	});
 
+	let initial_audit = case_audit_rows(&mm, &ctx, case_id).await?;
+	let initial_raw = serde_json::to_string(&receivers)?;
+	let initial_reason = "save review receiver";
 	let (status, body) = put_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}"),
 		json!({
-			"data": { "review_receivers_json": serde_json::to_string(&receivers)? },
-			"reason_for_change": "save review receiver"
+			"data": { "review_receivers_json": initial_raw.clone() },
+			"reason_for_change": initial_reason
 		}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let mut audit = case_audit_rows(&mm, &ctx, case_id).await?;
+	assert_review_receiver_audit(
+		&initial_audit,
+		&audit,
+		&ctx,
+		initial_reason,
+		Value::Null,
+		Value::String(initial_raw.clone()),
+	);
 
 	let (status, shell) =
 		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/shell"))
@@ -142,20 +310,66 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 		shell["messageHeader"]["messageReceiverIdentifier"], "MFDS",
 		"{shell:?}"
 	);
+	assert_rejected_review_receiver_update(
+		&app,
+		&cookie,
+		&viewer_cookie,
+		&mm,
+		&ctx,
+		case_id,
+		StatusCode::FORBIDDEN,
+		"viewer",
+	)
+	.await?;
+	assert_rejected_review_receiver_update(
+		&app,
+		&cookie,
+		&other_cookie,
+		&mm,
+		&ctx,
+		case_id,
+		StatusCode::NOT_FOUND,
+		"other organization",
+	)
+	.await?;
+	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_rejected_review_receiver_update(
+		&app,
+		&cookie,
+		&cookie,
+		&mm,
+		&ctx,
+		case_id,
+		StatusCode::FORBIDDEN,
+		"locked case",
+	)
+	.await?;
+	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	audit = case_audit_rows(&mm, &ctx, case_id).await?;
+
 	let retained = receivers["reviewReceivers"].clone();
 	let expanded = json!([
 		retained[0],
 		{"receiver":"FDA","reportDueDate":"2026-09-12","reportedDate":"2026-09-13"}
 	]);
 	// RE is a replacement JSON array, with no row DELETE/restore endpoint.
-	for rows in [expanded, retained.clone(), retained, json!([]), json!([])] {
+	let mut stored = Value::String(initial_raw);
+	for (index, rows) in [expanded, retained.clone(), retained, json!([]), json!([])]
+		.into_iter()
+		.enumerate()
+	{
+		let reason = format!("replace review receivers step {index}");
+		let raw = serde_json::to_string(&rows)?;
+		let before = audit.clone();
 		let (status, body) = put_json(
 			&app,
 			&cookie,
 			&format!("/api/cases/{case_id}"),
 			json!({
-				"data":{"review_receivers_json":serde_json::to_string(&rows)?},
-				"reason_for_change":"replace review receivers"
+				"data":{"review_receivers_json":raw.clone()},
+				"reason_for_change":reason.clone()
 			}),
 		)
 		.await?;
@@ -169,6 +383,21 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 			"removed receiver reappeared on resave"
 		);
 		assert_eq!(shell["messageHeader"]["messageReceiverIdentifier"], "MFDS");
+		audit = case_audit_rows(&mm, &ctx, case_id).await?;
+		let next = Value::String(raw);
+		if next == stored {
+			assert_eq!(audit, before, "identical replacement wrote an audit row");
+		} else {
+			assert_review_receiver_audit(
+				&before,
+				&audit,
+				&ctx,
+				&reason,
+				stored.clone(),
+				next.clone(),
+			);
+		}
+		stored = next;
 	}
 
 	Ok(())

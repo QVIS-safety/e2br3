@@ -26,6 +26,8 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 	let (status, body) = patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities":["ich"],"rows":{"primarySources":[{
 			"sequenceNumber":1,"reporterGivenName":"Reporter"
@@ -50,6 +52,8 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":delete}),
 		)
@@ -69,6 +73,8 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":rows}),
 		)
@@ -87,6 +93,8 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":restore}),
 		)
@@ -99,5 +107,7 @@ pub(crate) async fn reporter_row_delete_restore_and_resave_is_stable(
 		assert_eq!(rows[0]["id"], row_id, "{body}");
 		assert_eq!(rows[0]["reporterGivenName"], "Restored reporter", "{body}");
 	}
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 1)
+		.await?;
 	Ok(())
 }

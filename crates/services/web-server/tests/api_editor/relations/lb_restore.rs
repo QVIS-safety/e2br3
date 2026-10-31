@@ -215,7 +215,7 @@ pub(crate) async fn deleted_test_result_can_be_read_and_restored_with_case_and_a
 		&app,
 		&admin_cookie,
 		&mm,
-		&ctx,
+		&seed,
 		&lifecycle,
 		&format!("/api/cases/{case_id}/editor/pages/LB"),
 		&restore,

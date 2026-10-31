@@ -717,7 +717,7 @@ impl ReactionBmc {
 			     deleted = CASE WHEN 'deleted' = ANY($54) THEN NULL ELSE COALESCE($52, deleted) END,
 			     updated_at = now(),
 			     updated_by = $53
-			 WHERE id = $1 AND case_id = $2",
+			 WHERE id = $1 AND case_id = $2 AND (deleted = false OR $52 = false)",
 			Self::TABLE
 		);
 		let result = mm

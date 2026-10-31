@@ -1,4 +1,5 @@
 pub(super) mod ae_restore;
+pub(super) mod ci_rows;
 pub(super) mod device_children;
 pub(super) mod dg_restore;
 pub(super) mod dg_rows;
@@ -18,7 +19,7 @@ pub(super) async fn assert_row_lifecycle_replay(
 	app: &axum::Router,
 	cookie: &str,
 	mm: &lib_core::model::ModelManager,
-	ctx: &lib_core::ctx::Ctx,
+	seed: &crate::common::SeedOrgUsers,
 	lifecycle: &serde_json::Value,
 	page_uri: &str,
 	restore_request: &serde_json::Value,
@@ -28,6 +29,11 @@ pub(super) async fn assert_row_lifecycle_replay(
 	use axum::http::{Request, StatusCode};
 	use serde_json::Value;
 	use tower::ServiceExt;
+	let ctx = &lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
 
 	fn row_state(data: &Value, owner: &str) -> crate::common::Result<Value> {
 		let mut row = data[owner]
@@ -164,6 +170,21 @@ pub(super) async fn assert_row_lifecycle_replay(
 			"{method} {uri} changed the row count/identity"
 		);
 	}
+	let mut guarded = vec![
+		("PATCH", row_uri.clone(), restore_request.clone()),
+		("DELETE", row_uri.clone(), Value::Null),
+	];
+	if has_post_restore {
+		guarded.push(("POST", format!("{row_uri}/restore"), Value::Null));
+	}
+	let mut create_request = restore_request.clone();
+	let create_row = create_request["rows"][owner]
+		.as_object_mut()
+		.ok_or("missing create row")?;
+	create_row.remove("id");
+	create_row.remove("deleted");
+	guarded.push(("POST", format!("{page_uri}/rows"), create_request));
+	assert_editor_request_guards(app, cookie, mm, seed, &row_uri, &guarded).await?;
 	Ok(())
 }
 
@@ -174,15 +195,93 @@ use axum::http::StatusCode;
 use lib_core::{ctx::Ctx, model::ModelManager};
 use serde_json::{json, Value};
 
+// Request and projection paths share these owners; singleton parentInfo is an object.
+const SOFT_CHILD_TABLES: &[(&str, &str)] = &[
+	("/documentsHeldBySender", "documents_held_by_sender"),
+	("/otherCaseIdentifiers", "other_case_identifiers"),
+	("/linkedReports", "linked_report_numbers"),
+	("/primarySources", "primary_sources"),
+	("/patientIdentifiers", "patient_identifiers"),
+	("/medicalHistoryEpisodes", "medical_history_episodes"),
+	("/reportedCauses", "reported_causes_of_death"),
+	("/autopsyCauses", "autopsy_causes_of_death"),
+	("/parentInfo", "parent_information"),
+	("/parentMedicalHistory", "parent_medical_history"),
+	("/parentPastDrugs", "parent_past_drug_history"),
+	("/studyRegistrationNumbers", "study_registration_numbers"),
+	(
+		"/studyInformation/fdaCrossReportedIndNumbers",
+		"study_fda_cross_reported_inds",
+	),
+	("/senderDiagnoses", "sender_diagnoses"),
+	("/caseSummaryInformation", "case_summary_information"),
+	("/drug/activeSubstances", "drug_active_substances"),
+	("/drug/dosageInformation", "dosage_information"),
+	("/drug/indications", "drug_indications"),
+	("/drug/drugReactionAssessments", "relatedness_assessments"),
+];
+
+fn editor_case_id(uri: &str) -> Result<&str> {
+	uri.strip_prefix("/api/cases/")
+		.and_then(|rest| rest.split('/').next())
+		.ok_or_else(|| "invalid editor page URI".into())
+}
+
 async fn patch_and_reload(
 	app: &axum::Router,
 	cookie: &str,
+	mm: &ModelManager,
+	ctx: &Ctx,
 	uri: &str,
 	payload: Value,
 ) -> Result<(StatusCode, Value)> {
-	let (status, response) = patch_json(app, cookie, uri, payload).await?;
+	let case_id = uuid::Uuid::parse_str(editor_case_id(uri)?)?;
+	let mut snapshots = Vec::new();
+	for (path, table) in SOFT_CHILD_TABLES {
+		let Some(value) = payload["rows"].pointer(path) else {
+			continue;
+		};
+		let rows = match value {
+			Value::Array(rows) => rows.as_slice(),
+			Value::Object(_) => std::slice::from_ref(value),
+			_ => return Err(format!("invalid lifecycle owner {path}").into()),
+		};
+		for row in rows {
+			let Some(id) = row.get("id") else { continue };
+			let id = uuid::Uuid::parse_str(id.as_str().ok_or("invalid row ID")?)?;
+			let projection = json!({"id":id});
+			let spec = json!({"table":table,"column":"deleted",
+				"record":{"source":"projection","path":"id"}});
+			let before =
+				super::audit::capture(mm, ctx, case_id, &spec, &projection).await?;
+			snapshots.push((spec, projection, before));
+		}
+	}
+	let (status, response) = super::support::patch_json_with_reason(
+		app,
+		cookie,
+		uri,
+		payload,
+		Some(super::support::ROW_CHANGE_REASON),
+	)
+	.await?;
 	if !status.is_success() {
+		for (_, _, before) in snapshots {
+			super::audit::assert_rejected(mm, ctx, case_id, before).await?;
+		}
 		return Ok((status, response));
+	}
+	for (spec, projection, before) in snapshots {
+		super::audit::assert_mutation(
+			mm,
+			ctx,
+			case_id,
+			&spec,
+			before,
+			&projection,
+			super::support::ROW_CHANGE_REASON,
+		)
+		.await?;
 	}
 	let (read_status, persisted) = get_json(app, cookie, uri).await?;
 	assert_eq!(read_status, StatusCode::OK, "{persisted}");
@@ -197,6 +296,180 @@ async fn patch_and_reload(
 		"PATCH response differs from persisted GET"
 	);
 	Ok((status, persisted))
+}
+
+async fn toggle_editor_case_lock(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	locked: bool,
+) -> Result<()> {
+	let case_uri = format!("/api/cases/{}", editor_case_id(uri)?);
+	let (status, before) = get_json(app, cookie, &case_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{before}");
+	assert_eq!(before["data"]["is_locked"], !locked);
+	let expected_status = before["data"]["status"]
+		.as_str()
+		.ok_or("missing case status")?;
+	let (status, body) = super::support::post_json(
+		app,
+		cookie,
+		&format!("{case_uri}/lock/toggle"),
+		json!({"data":{"expected_status":expected_status}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, after) = get_json(app, cookie, &case_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{after}");
+	assert_eq!(after["data"]["is_locked"], locked);
+	Ok(())
+}
+
+// Each owner gets its own request so one denied row cannot mask another resource.
+async fn assert_child_mutation_guards(
+	app: &axum::Router,
+	cookie: &str,
+	mm: &ModelManager,
+	seed: &crate::common::SeedOrgUsers,
+	uri: &str,
+	authority: &str,
+	expected_owners: usize,
+) -> Result<()> {
+	let (status, saved) = get_json(app, cookie, uri).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	let key = if uri.contains("/rows/") {
+		"data"
+	} else {
+		"rows"
+	};
+	let mut requests = Vec::new();
+	let mut owners = 0;
+	for (path, _) in SOFT_CHILD_TABLES {
+		let Some(value) = saved[key].pointer(path) else {
+			continue;
+		};
+		let row = match value {
+			Value::Array(rows) if !rows.is_empty() => &rows[0],
+			Value::Object(_) if value.get("id").is_some() => value,
+			_ => continue,
+		};
+		let id = row["id"].as_str().ok_or("guard row missing ID")?;
+		owners += 1;
+		for deleted in [None, Some(true), Some(false)] {
+			let mut patch = json!({"id":id});
+			if let Some(deleted) = deleted {
+				patch["deleted"] = json!(deleted);
+			}
+			if value.is_array() {
+				patch = json!([patch]);
+			}
+			for segment in path.trim_start_matches('/').split('/').rev() {
+				patch = json!({segment:patch});
+			}
+			requests.push((
+				"PATCH",
+				uri.to_string(),
+				json!({"authorities":[authority],"rows":patch}),
+			));
+		}
+	}
+	assert_eq!(
+		owners, expected_owners,
+		"lifecycle guard owner inventory changed: {uri}"
+	);
+	assert_editor_request_guards(app, cookie, mm, seed, uri, &requests).await
+}
+
+async fn assert_editor_request_guards(
+	app: &axum::Router,
+	cookie: &str,
+	mm: &ModelManager,
+	seed: &crate::common::SeedOrgUsers,
+	uri: &str,
+	requests: &[(&str, String, Value)],
+) -> Result<()> {
+	use crate::common::{cookie_header, seed_org_with_users};
+	use lib_auth::token::generate_web_token;
+	use tower::ServiceExt;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let viewer = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let viewer_cookie = cookie_header(&viewer.to_string());
+	let foreign = seed_org_with_users(mm, "adminpwd", "viewpwd").await?;
+	let foreign_token =
+		generate_web_token(&foreign.admin.email, foreign.admin.token_salt)?;
+	let foreign_cookie = cookie_header(&foreign_token.to_string());
+	assert!(!requests.is_empty());
+	for (denied_cookie, expected_status, locked) in [
+		(viewer_cookie.as_str(), StatusCode::FORBIDDEN, false),
+		(foreign_cookie.as_str(), StatusCode::NOT_FOUND, false),
+		(cookie, StatusCode::FORBIDDEN, true),
+	] {
+		if locked {
+			toggle_editor_case_lock(app, cookie, uri, true).await?;
+		}
+		let (status, before) = get_json(app, cookie, uri).await?;
+		assert_eq!(status, StatusCode::OK, "{before}");
+		let audit_before = case_audit_ids(mm, &ctx, editor_case_id(uri)?).await?;
+		let (status, read) = get_json(app, denied_cookie, uri).await?;
+		assert_eq!(
+			status,
+			if expected_status == StatusCode::NOT_FOUND {
+				StatusCode::NOT_FOUND
+			} else {
+				StatusCode::OK
+			},
+			"{read}"
+		);
+		for (method, request_uri, request) in requests {
+			let response = app
+				.clone()
+				.oneshot(
+					axum::http::Request::builder()
+						.method(*method)
+						.uri(request_uri)
+						.header("cookie", denied_cookie)
+						.header("content-type", "application/json")
+						.header(
+							"x-e2br3-reason-for-change",
+							super::support::ROW_CHANGE_REASON,
+						)
+						.body(if request.is_null() {
+							axum::body::Body::empty()
+						} else {
+							axum::body::Body::from(request.to_string())
+						})?,
+				)
+				.await?;
+			let status = response.status();
+			let body =
+				axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+			assert_eq!(
+				status,
+				expected_status,
+				"{method} {request_uri}: {request}: {}",
+				String::from_utf8_lossy(&body)
+			);
+			let (status, after) = get_json(app, cookie, uri).await?;
+			assert_eq!(status, StatusCode::OK, "{after}");
+			assert_eq!(
+				after, before,
+				"rejected row mutation changed persisted projection"
+			);
+			assert_eq!(
+				case_audit_ids(mm, &ctx, editor_case_id(uri)?).await?,
+				audit_before,
+				"rejected row mutation wrote a case audit entry"
+			);
+		}
+		if locked {
+			toggle_editor_case_lock(app, cookie, uri, false).await?;
+		}
+	}
+	Ok(())
 }
 
 // The rejected request must leave both the API projection and audit stream unchanged.
@@ -214,7 +487,7 @@ async fn assert_malformed_row_id_rejected_without_mutation(
 	let (status, before) = get_json(app, cookie, uri).await?;
 	assert_eq!(status, StatusCode::OK, "{before}");
 	let audit_before = case_audit_ids(mm, ctx, case_id).await?;
-	let (status, body) = patch_and_reload(
+	let (status, body) = patch_json(
 		app,
 		cookie,
 		uri,

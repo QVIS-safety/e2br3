@@ -2,7 +2,7 @@
 
 이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, message-header, `PUT /submission-receiver`, administration 소유의 case audit-trail은 제외했다.
 
-검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 128, `authorization_only` 9, `registration_only` 94, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
+검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 227, `authorization_only` 1, `registration_only` 3, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
 
 ## 공통 계약
 
@@ -28,6 +28,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 - `POST /cases`: `data.safetyReportIdentification.safetyReportId`, `dgPrdKey`, `status`, `reviewReceiversJson`, `workflowRoutesJson`, `mfdsReportType`, `fdaReportType`, `reportYear`. status는 생성을 위한 draft만 허용한다. 정상 응답은 `201 Data<CaseReadResult>`.
 - `PUT /cases/{id}`: `data`에 `dg_prd_key`, `status`, `review_receivers_json`, `workflow_routes_json`, `mfds_report_type`, `fda_report_type`, `report_year`; 바깥에 `reason_for_change`, `e_signature`. patch-value 필드는 omitted/문자열/null을 구분한다. `review_receivers_json`은 array 또는 `reviewReceivers` array 객체이며 receiver 이름, 비음수 reportDue, YYYY-MM-DD 날짜를 검증한다.
+- review receiver 저장은 배열 전체 교체다. 신규 계약 검사는 2→1→동일 1→빈 배열→동일 빈 배열을 Case GET과 editor shell에서 재조회하고, 실제 저장 JSON 문자열의 audit `old_values/new_values/changed_fields`, actor·organization·reason을 확인한다. 동일 배열 재저장은 audit을 추가하지 않으며 viewer 403, 다른 조직 404, 잠금 403 뒤 두 API 상태와 audit이 그대로임을 확인한다(runtime NOT_RUN).
 - `GET /cases`: raw query의 `filters[organization_id|safety_report_id|status]`와 `list_options[limit|offset|order_bys]`. `GET /list-view`도 list options와 comma-separated `authorities`를 받고 `{items,summary}`를 반환한다. `GET /link-options`는 `{items}`.
 - `GET /cases/{id}`: Case 공개 필드와 `qc_state`, `is_locked`, workflow actionability/write-block reason을 반환한다.
 - `DELETE /cases/{id}`: 본문 `reason_for_change`, `e_signature {meaning,password}`를 검증하고 `200 {"data":CaseReadResult}`로 deleted 상태를 반환한다. 삭제 후에도 Case 조회·목록·lifecycle에 남는다. 일반 child DELETE의 204와 구분한다.
@@ -43,6 +44,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - [tests/api_cases/contract/query.rs::test_case_query_returns_lightweight_list_view_items](../api_cases/contract/query.rs)
 - [tests/api_cases/lifecycle.rs::test_case_save_does_not_auto_transition_status_when_updating_fields](../api_cases/lifecycle.rs)
 - [tests/api_cases/lifecycle.rs::test_create_case_rejects_every_protected_lifecycle_status](../api_cases/lifecycle.rs)
+- [tests/api_cases/contract/review_receivers.rs::editor_shell_reads_saved_review_receivers_as_an_array](../api_cases/contract/review_receivers.rs)
 - [tests/api_cases/locking.rs::test_case_read_returns_separate_qc_and_lock_axes](../api_cases/locking.rs)
 - [tests/api_cases/scope/cases.rs::test_case_list_is_filtered_by_sender_scope](../api_cases/scope/cases.rs)
 - [tests/api_cases/scope/cases.rs::test_case_update_requires_matching_sender_scope](../api_cases/scope/cases.rs)
@@ -128,6 +130,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - `recordId`를 주면 GET/PUT/DELETE 공통으로 실제 행의 FK chain이 요청 Case로 이어지는지 확인한다. 존재하지 않는 UUID, 같은 조직의 다른 Case 행, 다른 조직의 행은 `404 ENTITY_UUID_NOT_FOUND`다. 요청 Case의 권한 검사 뒤, notation 조회/변경과 같은 DB transaction에서 검사한다. 거절하면 notation을 변경하기 전에 rollback한다.
 - Soft-deleted 행은 복원 가능한 기존 identity이므로 허용한다. `recordId=None`인 scalar 계약은 유지한다. `e2bCode`와 record table 사이의 필드 의미 일치까지 검사하는 계약은 아니다.
 - 신규 [존재·nested/soft-delete 검사](../api_cases/field_notation.rs)와 [case/org 소속 검사](../api_cases/field_notation.rs)는 실제 Drug/Dosage 행을 사용한다. 임의 UUID와 교차 소속의 GET/PUT/DELETE 404, 정상 notation 재조회 값·ID, 해당 조직의 notation 감사 건수 불변을 단언한다. 37종 각각의 runtime 성공을 검사한 것은 아니다.
+- [field_notation_repeated_clear_and_lock_preserve_state_and_audit](../api_cases/subresources/lifecycle_general.rs)는 scalar PUT/DELETE의 viewer 403·다른 조직 404·잠금 403과 저장값·감사 불변, DELETE의 멱등적 200, 두 번째 DELETE의 무감사, 삭제 후 PUT의 새 ID와 fresh GET을 추가로 단언한다. `recordId=None`인 같은 조직의 다른 Case는 독립적인 정상 scalar target이므로 wrong-parent 404로 다루지 않는다. 이 신규 검사는 runtime NOT_RUN이다.
 
 행 주체의 범위는 registry Editor audit subject 36종과 실제 frontend device-characteristic subject 1종이다. 같은 모델의 [membership query](../../../../libs/lib-core/src/model/e2b_field_notation.rs)가 아래 FK 경로를 사용한다.
 
@@ -189,9 +192,9 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - FDA device: `drug_id, sequence_number, malfunction, device_brand_name(+null_flavor), common_device_name(+null_flavor), device_product_code, manufacturer_name/address/city/state/country, device_usage, device_lot_number, operator_of_device`. device code는 `device_id, element, sequence_number, value_code`. `PUT /devices/replace`는 `data.devices[]`와 각 device의 code/follow-up 배열을 원자 교체한다.
 - drug-reaction assessment: create `drug_id, reaction_id, administration_start_interval_value/unit, last_dose_interval_value/unit, recurrence_action, reaction_recurred, dechallenge_result, expectedness`; update는 drug_id 제외. relatedness는 create `drug_reaction_assessment_id, sequence_number, source_of_assessment, method_of_assessment, method_of_assessment_kr1, result_of_assessment, result_of_assessment_kr1(+null_flavor), result_of_assessment_kr2`; update는 부모/sequence 제외.
 
-`generated_drug_child_routes_bind_drug_to_case_for_every_resource`는 동일 조직의 Case A 경로에 Case B의 drug/child ID를 넣어 FDA device, active-substance, dosage, indication, device-characteristic 각각의 POST/list/get/PUT/DELETE와 restore가 404인지 검사한다. owning 경로에서는 생성 ID, item 상태와 collection count, DELETE 204와 deleted 상태를 확인한다. 다만 active-substance 외 네 종류의 PUT과 dosage/indication/device-characteristic restore는 정상 성공을 직접 확인하지 않아 `authorization_only`다.
+`generated_drug_child_routes_bind_drug_to_case_for_every_resource`는 동일 조직의 Case A 경로에 Case B의 drug/child ID를 넣어 FDA device, active-substance, dosage, indication, device-characteristic 각각의 POST/list/get/PUT/DELETE와 restore가 404인지 검사한다. owning 경로에서는 생성 ID, item 상태와 collection count, DELETE 204와 deleted 상태를 확인한다. 이 검사의 정상 update/restore 공백은 아래 lifecycle matrix의 정상 PUT·DELETE·restore와 fresh item/list assertion이 보완한다.
 
-FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wrong-case 404를 확인한다. parent device 삭제 중에는 code POST/list/get/PUT/DELETE/restore 여섯 동작이 모두 404이고 device restore 뒤 동일 code ID/value/count가 보존되는지 확인한다. Drug parent DELETE 204 뒤 child list/item 404, 동일 drug ID restore 뒤 child ID/value/count 보존도 별도 검사한다. 이 추가 검사는 활성 test body의 정적 근거이며 runtime은 NOT_RUN이다. 역할별 권한, case lock, 반복 DELETE, audit row는 남은 공백이다.
+FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wrong-case 404를 확인한다. parent device 삭제 중에는 code POST/list/get/PUT/DELETE/restore 여섯 동작이 모두 404이고 device restore 뒤 동일 code ID/value/count가 보존되는지 확인한다. Drug parent DELETE 204 뒤 child list/item 404, 동일 drug ID restore 뒤 child ID/value/count 보존도 별도 검사한다. 신규 [drug_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_drug.rs)는 9개 drug family에 viewer 403, 다른 조직·wrong Case/parent 404, 잠금 403, fresh item/list, 반복 DELETE, restore ID, 거절 무변경과 record audit reason을 한 matrix로 단언한다. Drug 삭제행의 legacy PUT은 SQL에서 `deleted=false`를 원자적으로 요구해 404이며, 다른 값을 보낸 뒤 audit 무변경과 명시 restore 후 기존 값 보존을 확인한다. Editor DG의 명시적 삭제행 복원은 별도 allow-deleted patch 경로를 유지한다. `drug_reaction_assessments`는 `DELETE FROM` hard delete이고 restore가 없으며, 삭제 뒤 GET/list 부재·반복 404·재생성 새 ID를 검사한다. runtime은 NOT_RUN이다.
 
 근거:
 
@@ -209,6 +212,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - [tests/api_cases/subresources/drug_scope.rs::generated_drug_child_routes_bind_drug_to_case_for_every_resource](../api_cases/subresources/drug_scope.rs)
 - [tests/api_cases/subresources/drug_scope.rs::fda_device_code_routes_reject_a_matching_drug_from_a_different_case](../api_cases/subresources/drug_scope.rs)
 - [tests/api_cases/subresources/drug_scope.rs::deleted_drug_hides_children_and_restore_preserves_child_identity](../api_cases/subresources/drug_scope.rs)
+- [tests/api_cases/subresources/lifecycle_drug.rs::drug_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_drug.rs)
 - [tests/api_editor/pages/dg.generated.rs::deleted_drug_can_be_read_and_restored_with_children_and_guards](../api_editor/pages/dg.generated.rs)
 
 <a id="clinical"></a>
@@ -226,12 +230,13 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - reaction create 필드: `case_id, sequence_number, primary_source_reaction/translation, reaction_language, reaction_meddra_code/version, term_highlighted, serious`, 각 serious criterion(+null flavor), `required_intervention(+null flavor), expectedness, severity`, MFDS device AE 분류/결과/원인/action 필드, `start_date/end_date(+null flavor), duration_value/unit, outcome, medical_confirmation, country_code, deleted`. update는 case_id/sequence 제외.
 - test result create: `case_id, sequence_number, test_date(+null flavor), test_name, test_meddra_version/code, test_result_code/value/qualifier/unit, result_unstructured, normal_low_value, normal_high_value, comments, more_info_available`; update는 case_id/sequence 제외.
 - 공통 CRUD handler 소스상 status는 create 201, list/get/update 200, soft delete 204, restore 200이며 assertion 없는 verb에는 runtime 검증을 주장하지 않는다.
-- reaction은 create/update와 목록 GET, test-result는 create/update에 활성 행동 assertion이 있다. 두 리소스의 item GET/delete/restore와 test-result 목록은 다른 테스트의 setup helper 호출을 coverage로 세지 않아 registration_only다.
+- reaction은 create/update와 목록 GET, test-result는 create/update에 기존 행동 assertion이 있다. 신규 [general lifecycle matrix](../api_cases/subresources/lifecycle_general.rs)는 두 리소스의 item/list fresh GET, 같은 ID update, DELETE와 반복 DELETE 204, 삭제 후 404·restore 동일 ID, viewer/다른 조직/wrong Case/잠금 거절, 거절 전후 상태·감사 불변 및 성공 audit reason을 직접 단언한다. 활성 reaction은 legacy PUT의 `deleted:true`를 받아 `200` deleted entity를 반환하고 기본 GET/list에서는 숨긴다. 삭제행에 `deleted:false`를 명시한 legacy PUT은 같은 ID를 복원하면서 함께 보낸 업무 필드를 갱신하고, 동일 PUT 재호출은 audit을 추가하지 않는다. audit은 `deleted`의 false→true→false와 복원 시 업무 필드 old/new를 기록한다. `deleted`를 생략하거나 true로 둔 이미 삭제된 reaction PUT과 삭제된 test-result PUT은 SQL 조건으로 404를 반환하며, 삭제 전과 다른 값을 보낸 뒤 audit 무변경과 명시 restore 후 기존 값을 확인한다. runtime은 NOT_RUN이다.
 
 근거:
 
 - [tests/api_cases/subresources/reaction.rs::test_reaction_supports_ae_common_and_mfds_device_fields](../api_cases/subresources/reaction.rs)
 - [tests/api_cases/subresources/test_result.rs::test_test_results_support_50_character_normal_ranges](../api_cases/subresources/test_result.rs)
+- [tests/api_cases/subresources/lifecycle_general.rs::general_case_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_general.rs)
 - [tests/api_editor/pages/lb.generated.rs::list_projection_includes_displayed_result_columns](../api_editor/pages/lb.generated.rs)
 - [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_and_export_but_blocks_submission](../api_submission/validation.rs)
 
@@ -274,7 +279,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - past drug: `patient_id, sequence_number, drug_name(+null_flavor), mfds_medicinal_product_version/id, mpid/version, phpid/version, start/end_date(+null flavor), indication/reaction MedDRA version/code`. source code-system 필드는 server 관리라 입력에서 무시된다.
 - death info: `patient_id, date_of_death(+null_flavor), autopsy_performed(+null_flavor)`. reported/autopsy cause: `death_info_id, sequence_number, meddra_version/code, comments`.
 - parent: `patient_id, parent_identification(+null_flavor), parent_birth_date(+null_flavor), parent_age/unit, LMP(+null_flavor), weight_kg, height_cm, sex(+null_flavor), medical_history_text`. parent medical history는 patient medical history와 같은 update 필드; parent past drug는 `parent_id, sequence_number, drug_name, mpid/version, mfds_medicinal_product_version/id, phpid/version, dates/null flavors, indication/reaction MedDRA version/code`.
-- parent medical-history/past-drugs와 death-info reported/autopsy causes는 create/list/get/update/delete/restore, wrong case/parent 404, viewer 변경 요청 403, soft-delete 가시성까지 한 활성 table-driven test에서 assertion 되어 있다. 다른 patient item family는 operation별 TSV 상태를 따른다.
+- parent medical-history/past-drugs와 death-info reported/autopsy causes는 create/list/get/update/delete/restore, wrong case/parent 404, viewer 변경 요청 403, soft-delete 가시성까지 기존 table-driven test에서 assertion 되어 있다. 신규 [patient lifecycle matrix](../api_cases/subresources/lifecycle_patient.rs)는 patient 10개 family 전부에 다른 조직 404, 잠금 403, 반복 DELETE, 삭제행 재저장 비복원, restore ID/list, record audit reason과 거절 무감사를 추가한다. patient와 death-info는 hard delete라 반복 404·재생성 새 ID를 확인하며, identifier DELETE만 200 entity인 예외를 보존한다. runtime은 NOT_RUN이다.
 
 근거:
 
@@ -284,6 +289,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - [tests/api_cases/subresources/patient.rs::patient_physical_fields_preserve_values_and_ucum_units](../api_cases/subresources/patient.rs)
 - [tests/api_cases/subresources/patient.rs::test_audit_reason_header_records_normal_patient_update_reason](../api_cases/subresources/patient.rs)
 - [tests/api_cases/subresources/patient.rs::test_patient_subresources_endpoints_ok](../api_cases/subresources/patient.rs)
+- [tests/api_cases/subresources/lifecycle_patient.rs::patient_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_patient.rs)
 - [tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent](../api_cases/subresources/singleton.rs)
 - [tests/api_submission/validation.rs::test_submission_rejects_case_validation_before_routing_or_dispatch](../api_submission/validation.rs)
 
@@ -304,7 +310,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - narrative singleton: create `case_id, source_narrative_presave_id, case_narrative, reporter_comments, sender_comments, additional_information`; update는 case_id 제외. 신규 POST 201, 기존 POST 200 무변경, GET/PUT 200, DELETE 204.
 - preview: body `{template}`; `200 {"data":{"rendered":"...","tokens":[...]}}`. 알려진 patient token을 치환하고 unknown token은 유지한다.
 - sender diagnosis: create `narrative_id, sequence_number, diagnosis_meddra_version/code`; update는 version/code. summary: create `narrative_id, sequence_number, language_code, summary_text`; update는 language/text.
-- child handler는 소스상 공통 CRUD/restore status를 쓴다. sender diagnosis create/list/delete/restore와 summary create/list가 assertion 되었고 item GET/PUT 및 summary delete/restore는 registration_only다.
+- child handler는 소스상 공통 CRUD/restore status를 쓴다. 기존 검사는 sender diagnosis create/list/delete/restore와 summary create/list를 확인한다. 신규 general lifecycle matrix는 두 child의 item/list GET, PUT과 동일 PUT 재저장, DELETE·반복 DELETE, restore·반복 restore, viewer/조직/Case/잠금 거절과 성공·거절 audit을 추가로 단언한다(runtime NOT_RUN).
 
 근거:
 
@@ -348,7 +354,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - literature: `case_id, reference_text(+null_flavor), sequence_number, document_base64, file_name, media_type, representation, compression`. documents: `case_id, title, document_base64, file_name, media_type, representation, compression, sequence_number`.
 - study: `case_id, source_study_presave_id, study_name(+null_flavor), sponsor_study_number(+null_flavor), study_type_reaction, study_type_reaction_kr1, fda_ind_number_occurred, fda_pre_anda_number_occurred`.
 - registration: `study_information_id, registration_number(+null_flavor), country_code(+null_flavor), sequence_number`. FDA cross-reported IND: `study_information_id, ind_number(+null_flavor), sequence_number`.
-- 하위 collection/item handler는 소스상 create 201/list-get-update 200/delete 204/restore 200이다. 활성 assertion은 singleton create/get/update, sender create/get/update, primary-source create/list/update, literature/study/registration/IND create에 집중되어 있으며 나머지 status는 runtime 검증을 주장하지 않는다.
+- 하위 collection/item handler는 소스상 create 201/list-get-update 200/delete 204/restore 200이다. 신규 [report lifecycle matrix](../api_cases/subresources/lifecycle_report.rs)는 report 12개 family의 정상 update/fresh GET·list, viewer 403, 다른 조직·wrong Case/parent 404, 잠금 403, 삭제·반복 삭제, audit reason과 거절 무감사를 직접 단언한다. `sender_information`, `study_information`, `source_documents`는 `deleted` 열이 없고 실제 `base_uuid::delete` hard delete라 반복 404·재생성 새 ID를 검사한다. registration/IND와 document/literature/primary-source/other-identifier는 soft delete/list 제외/동일 ID restore를 검사한다. message-header/receiver/safety-report singleton도 hard delete 뒤 새 ID 재생성을 확인한다. runtime은 NOT_RUN이다.
 
 근거:
 
@@ -357,6 +363,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - [tests/api_cases/subresources/safety_report.rs::test_safety_report_subresources_endpoints_ok](../api_cases/subresources/safety_report.rs)
 - [tests/api_cases/subresources/sender.rs::test_sender_information_supports_mfds_health_professional_type_kr1](../api_cases/subresources/sender.rs)
 - [tests/api_cases/subresources/study.rs::test_study_create_accepts_study_type_reaction](../api_cases/subresources/study.rs)
+- [tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_report.rs)
 - [tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent](../api_cases/subresources/singleton.rs)
 
 <a id="identifiers-source-documents"></a>
@@ -374,9 +381,9 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 | `PUT`, `DELETE` | `/api/cases/{case_id}/source-documents/{id}` |
 
 - other identifier: create `case_id, sequence_number, source_of_identifier, case_identifier`; update는 source/identifier. 공통 CRUD/restore이며 create/list/delete/restore가 assertion 되어 있다.
-- linked report: create `case_id, sequence_number, linked_report_number`; update는 linked number. 모든 operation은 registration_only다.
-- source document: create `case_id, source_document_name, source_document_base64, source_document_media_type, sequence_number`; update는 case_id 제외. 등록된 operation은 list/create/update/delete이며 모두 registration_only다.
-- receiver singleton: `case_id, receiver_type, organization_name, department, street_address, city, state_province, postcode, country_code, telephone, fax, email`. 이 리소스의 route는 core 표에 배치되며 POST/GET만 assertion, PUT/DELETE는 registration_only다.
+- linked report: create `case_id, sequence_number, linked_report_number`; update는 linked number. 신규 general lifecycle matrix가 create 201, item/list GET, PUT과 동일 PUT, DELETE·반복 DELETE, restore·반복 restore, viewer/조직/Case/잠금 및 audit 계약을 단언한다(runtime NOT_RUN).
+- source document: create `case_id, source_document_name, source_document_base64, source_document_media_type, sequence_number`; update는 case_id 제외. item GET route는 없으므로 collection GET에서 ID/value/count와 삭제 후 제외를 확인한다. hard DELETE 204, 반복 DELETE 404, 같은 collection POST 재생성 새 ID와 viewer/조직/Case/잠금/audit 계약을 report lifecycle matrix가 단언한다(runtime NOT_RUN).
+- receiver singleton: `case_id, receiver_type, organization_name, department, street_address, city, state_province, postcode, country_code, telephone, fax, email`. 이 리소스의 route는 core 표에 배치된다. 신규 report lifecycle matrix가 POST 201, GET, PUT과 동일 PUT, DELETE·반복 DELETE, 재생성 새 ID, viewer/조직/Case/잠금 및 audit 계약을 단언한다(runtime NOT_RUN).
 
 근거:
 
@@ -384,7 +391,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 
 ## Coverage gap 우선순위
 
-1. registration_only 94개 중 drug assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. Drug의 8개 `authorization_only` operation은 wrong-case 404만 있어 정상 PUT/restore 계약이 남는다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
+1. 신규 38-resource lifecycle matrix와 review receiver 배열 교체 검사는 아직 runtime NOT_RUN이다. 격리 DB에서 실행하기 전에는 source-derived status·RLS·audit 기대를 실행 성공으로 올릴 수 없다. FDA device `replace`의 row identity 정책, hard parent 삭제 시 모든 FK cascade의 상세 child audit, field notation의 37개 허용 record kind 각각은 이 matrix의 전수 대상이 아니다.
 2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`는 등록 이외 행동 assertion이 전혀 없다.
 3. `GET /cases/{case_id}/versions`는 조직 가시성만 검증되어 반환 필드, 정렬, 빈 결과가 미검증이다.
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.

@@ -43,6 +43,8 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 	let (status, body) = patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities":["ich"],"rows":{"drug":{
 			"activeSubstances":[{"sequenceNumber":1,"substanceName":"Substance"}],
@@ -91,6 +93,8 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":{"drug":deleted}}),
 		)
@@ -116,6 +120,8 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":{"drug":drug}}),
 		)
@@ -139,6 +145,8 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":{"drug":restored}}),
 		)
@@ -152,5 +160,7 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 			assert_eq!(rows[0]["id"], id, "{owner}: {body}");
 		}
 	}
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 3)
+		.await?;
 	Ok(())
 }

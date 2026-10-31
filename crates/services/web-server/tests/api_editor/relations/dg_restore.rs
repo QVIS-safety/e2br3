@@ -263,7 +263,7 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 		&app,
 		&admin_cookie,
 		&mm,
-		&ctx,
+		&seed,
 		&lifecycle,
 		&format!("/api/cases/{case_id}/editor/pages/DG"),
 		&restore,

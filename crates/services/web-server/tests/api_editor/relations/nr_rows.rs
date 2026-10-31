@@ -26,6 +26,8 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 	let (status, body) = patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities":["ich"],"rows":{
 			"senderDiagnoses":[{"sequenceNumber":1,"diagnosisMeddraVersion":"28.1","diagnosisMeddraCode":"10019211"}],
@@ -53,6 +55,8 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":deleted}),
 		)
@@ -74,6 +78,8 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":rows}),
 		)
@@ -95,6 +101,8 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":restored}),
 		)
@@ -125,5 +133,7 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 			"{body}"
 		);
 	}
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 2)
+		.await?;
 	Ok(())
 }

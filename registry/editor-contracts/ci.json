@@ -639,6 +639,16 @@
       "id": "source_document_delete_hides_the_target",
       "verifier": "relations::documents::source_document_delete_hides_the_target",
       "description": "source document delete hides the target"
+    },
+    {
+      "id": "ci_soft_children_delete_restore_and_resave_are_stable",
+      "verifier": "relations::ci_rows::ci_soft_children_delete_restore_and_resave_are_stable",
+      "description": "CI soft children preserve IDs and sibling values through repeated deletion, omission and explicit restoration; enforce actor, organization, lock and audit contracts"
+    },
+    {
+      "id": "ci_child_foreign_case_rejection_rolls_back_rows_and_audits",
+      "verifier": "relations::ci_rows::ci_child_foreign_case_rejection_rolls_back_rows_and_audits",
+      "description": "CI rejects another case child for update/delete/restore and rolls back earlier row changes and audits"
     }
   ],
   "auditChecks": [],

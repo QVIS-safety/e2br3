@@ -7,7 +7,7 @@
 <a id="request-pipeline"></a>
 ## 요청 파이프라인
 
-[`app`](../../src/lib.rs)은 바깥쪽부터 request stamp, cookie manager, 전역 context resolver, response mapper를 적용한다. `/api`에는 추가로 CSRF origin middleware와 `mw_ctx_require_and_set_dbx`를 적용한다. `/auth/v1/login`과 `/auth/v1/logoff`는 public router, `/auth/v1/refresh`만 인증 middleware 아래 있고 `/health`는 공개다.
+[`app`](../../src/lib.rs)은 바깥쪽부터 request stamp, cookie manager, 전역 context resolver, response mapper를 적용한다. `/api`에는 추가로 CSRF origin middleware와 `mw_ctx_require_and_set_dbx`를 적용한다. `/auth/v1/login`과 `/auth/v1/logoff`는 public router, `/auth/v1/refresh`만 인증 middleware 아래 있고 `/health`는 공개다. `/internal/submissions/**` 세 경로는 cookie 인증·authorization snapshot·`/api` CSRF layer 밖에서 각각 `x-callback-token` 또는 `x-reconcile-token`을 환경 설정값과 상수 시간 방식으로 비교한다. 세 경로의 구체 계약은 [submission.md](submission.md#internal)에 있다.
 
 1. [`mw_req_stamp_resolver`](../../../../libs/lib-web/src/middleware/mw_req_stamp.rs)가 request UUID와 수신 시각을 만든다.
 2. [`mw_ctx_resolver`](../../../../libs/lib-web/src/middleware/mw_auth.rs)가 `auth-token` cookie를 읽는다. token 식별자가 `email|organization_uuid`이면 그 조직 계정을, legacy email-only이면 이메일 계정을 찾는다. 서명과 만료를 검증하고 DB에서 repeatable-read authorization snapshot을 로드한다.
@@ -43,7 +43,7 @@ snapshot은 principal, active organization, identity/grants, 조직 policy revis
 <a id="policy-and-rls"></a>
 ## 정책 허가와 permit 기반 RLS
 
-관리 handler는 collection/proposed/existing resource context를 정책 action과 함께 평가한다. 대표 action은 `user.list|read|create|update`, 역할 할당 전용 user action, `organization.*`, `role.*`, settings/notice, audit collection 및 case audit read다. read/mutation permit을 얻은 뒤 [`rls_ctx_for_authorized_read` / `rls_ctx_for_authorized_mutation`](../../../../libs/lib-rest-core/src/lib.rs)으로 DB context를 만든다.
+관리 handler는 collection/proposed/existing resource context를 정책 action과 함께 평가한다. 대표 action은 `user.list|read|create|update`, 역할 할당 전용 user action, `organization.*`, `role.*`, settings/notice, audit collection 및 case audit read다. read/mutation permit을 얻은 뒤 [`rls_ctx_for_authorized_read` / `rls_ctx_for_authorized_mutation`](../../../../libs/lib-rest-core/src/authorization.rs)으로 DB context를 만든다.
 
 직접 HTTP 단언이 있는 범위는 다음과 같다.
 
@@ -94,5 +94,5 @@ response mapper는 인증 오류를 보통 `403 NO_AUTH`, 최초 암호 제한�
 - policy kernel/model/helper 테스트는 정책 규칙을 격리해 확인하지만 middleware, error mapping, 실제 handler context를 함께 통과하지 않는다.
 - HTTP `403`만 확인한 경로는 성공 payload/state/audit 계약을 확인하지 않는다. Administration 표에서 이 경우를 `authorization_only`로 표시했다.
 - 조직 성공 list/update/delete, workflow options 성공, health HTTP에는 활성 직접 단언이 없다.
-- CSRF는 helper unit test만 있으며 `/auth/v1`의 origin 경계에는 직접 테스트가 없다.
+- CSRF는 helper unit test만 있으며 `/auth/v1`과 `/internal`의 origin 경계에는 직접 브라우저/HTTP 테스트가 없다. 내부 machine-token 검사는 cookie 기반 CSRF 보호를 대신하는 일반 사용자 권한이 아니다.
 - 이 문서 작성 과정에서는 어떤 검증 명령도 실행하지 않았으므로 현재 환경에서의 통과 상태를 주장하지 않는다.

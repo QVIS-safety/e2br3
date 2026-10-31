@@ -574,7 +574,9 @@ macro_rules! generate_case_rest_fns {
                 );
                 let ParamsForUpdate { data } = params;
                 $bmc::update_in_case(&ctx, &mm, case_id, id, data).await?;
-                let entity = $bmc::get_in_case(&ctx, &mm, case_id, id).await?;
+                let entity = $bmc::get_in_case_with_deleted(
+                    &ctx, &mm, case_id, id, true,
+                ).await?;
                 Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
                     })
                 ).await

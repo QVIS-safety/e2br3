@@ -1,6 +1,6 @@
 # Submission API 명세와 검사 범위
 
-대상 실행 단위는 `api_submission`이며 Case의 message-header·권한 검사는 `api_cases`, `api_administration`에도 있다. 아래는 현재 코드에 존재하는 assertion 명세다. 실행 결과는 **NOT_RUN**이다. 제출 테스트의 `start_mock_esg`/`configure_mock_as2_transport`는 기존 로컬 응답 대역이다. 이 테스트로 외부 FDA/MFDS 접수나 실제 AS2/Java 연동을 증명하지 않는다.
+현재 등록 범위는 `/api` 제출·message-header 15개와 `/internal` machine-token 경로 3개, 모두 18개다. 대상 실행 단위는 `api_submission`이며 Case의 message-header·권한 검사는 `api_cases`, `api_administration`에도 있다. 아래는 현재 코드에 존재하는 assertion 명세다. 실행 결과는 **NOT_RUN**이다. 제출 테스트의 `start_mock_esg`/`configure_mock_as2_transport`는 기존 로컬 응답 대역이다. 이 테스트로 외부 FDA/MFDS 접수나 실제 AS2/Java 연동을 증명하지 않는다.
 
 라우트 원본: [Case routes](../../src/web/rest/routes/cases.rs), [submission routes](../../src/web/rest/routes/submissions.rs). 요청·응답 원본: [submission_rest](../../src/web/rest/submission_rest.rs), [전자서명 입력](../../src/web/rest/compliance.rs).
 
@@ -13,7 +13,7 @@
 | `POST /api/cases/{id}/submissions/mfds` | 같은 compliance 본문 | 201. 요청 URL의 기관이 Case appendices와 별도로 제출 기관을 결정. MFDS 로컬 AS2 대역 응답 ID 확인 |
 | `GET /api/cases/{id}/submissions` | Case UUID | 200 `data.items`. 재시도 후 중복 없이 1개이고 불명 결과가 그대로 보임 |
 
-`e_signature`는 `meaning`과 `password` 문자열이며, 변경 사유·의미·비밀번호는 공백만으로 구성될 수 없다. 비밀번호 재확인과 서명 저장은 위 compliance 구현을 따른다. 본문은 일반 CRUD의 `data` envelope가 아니다. 구현은 `submission.execute` 권한과 Case mutation 경계를 거쳐 서명을 기록하고 제출을 예약한 뒤 전송한다. `201` 자체는 규제기관 접수 성공을 뜻하지 않는다.
+`e_signature`는 `meaning`과 `password` 문자열이며, body 자체와 `reason_for_change`, `e_signature.meaning`, `e_signature.password`는 모두 필수이고 세 문자열은 공백만으로 구성될 수 없다. 비밀번호 재확인과 서명 저장은 위 compliance 구현을 따른다. 본문은 일반 CRUD의 `data` envelope가 아니다. `x-idempotency-key`가 있으면 UTF-8이어야 하며 저장 전 양끝 공백을 제거한다. 구현은 `submission.execute` 권한과 Case mutation 경계를 거쳐 서명을 기록하고 제출을 예약한 뒤 전송한다. `201` 자체는 규제기관 접수 성공을 뜻하지 않는다.
 
 검사 근거:
 
@@ -47,12 +47,12 @@
 |---|---|---|
 | `GET /api/submissions/receiver-options` | 필수 query `authority=fda|mfds`; 200 `data.items` | FDA Postmarket 식별자와 MFDS 5개 조건/수신처 식별자. 잘못된 authority의 구현 400은 소스 조건이며 전 값 테스트가 아님 |
 | `PUT /api/cases/{id}/submission-receiver` | `{"data":{"authority":"mfds","receiver_label":"MFDS(KR)"}}`; 200 `data` MessageHeader | draft/reviewed/validated/locked에서 기관·수신처 적용, 메시지/배치 번호·sender·date 재조회; execute 권한 |
-| `POST /api/cases/{case_id}/message-header` | `data`에 header 필드; 신규 201, 기존 200 | 중복 POST가 기존 ID·기존 값 보존 |
+| `POST /api/cases/{case_id}/message-header` | `data`에 필수 `case_id,message_number,message_sender_identifier,message_receiver_identifier,message_date`, 선택 `batch_sender_identifier,batch_receiver_identifier,batch_transmission_date`; 역직렬화 뒤 path가 body `case_id`를 덮어씀. 신규 201, 기존 200 | 중복 POST가 기존 ID·기존 값 보존 |
 | `GET /api/cases/{case_id}/message-header` | 200 `data`; 미생성 404 | POST 및 수신처 적용 후 재조회 |
-| `PUT /api/cases/{case_id}/message-header` | `data` 변경 필드; 200 `data` | XML 전제조건을 수정하는 경로 및 intake 회귀의 일부 assertion; 모든 헤더 필드 clear/감사 계약은 아님 |
-| `DELETE /api/cases/{case_id}/message-header` | 구현상 204 | 등록 확인 외 직접 삭제 assertion은 찾지 못함. 자동으로 다른 singleton DELETE 검사에 포함하지 않음 |
+| `PUT /api/cases/{case_id}/message-header` | `data`의 `batch_number`와 create의 선택/필수 header 필드를 모두 선택적으로 patch; 200 `data`. DTO가 `Option<T>`라 생략과 JSON `null`은 모두 update 값 없음으로 해석되어 필드를 지우지 않음 | XML 전제조건을 수정하는 경로 및 intake 회귀의 일부 assertion; 모든 헤더 필드 변경/감사 계약은 아님 |
+| `DELETE /api/cases/{case_id}/message-header` | 204 hard delete; 반복 DELETE와 삭제 뒤 GET은 404, 같은 path POST는 새 ID로 재생성 | lifecycle 검사가 viewer 403·타 조직/잘못된 Case 404·lock 403, 거절 뒤 상태/감사 불변, DELETE 감사와 재생성을 함께 단언 |
 
-근거: [headers](../api_submission/headers.rs)의 `test_submission_receiver_options_list_defaults_by_authority`, `test_submission_receiver_selection_updates_message_header_n_identifiers`; [singleton](../api_cases/subresources/singleton.rs)의 `test_singleton_post_endpoints_are_idempotent`; [XML gate](../xml/import_export/rejections.rs)의 `test_manual_export_rejects_missing_headers_and_records_errors`; [transfer permissions](../api_administration/role_admin/effective_access/transfer_web.rs)의 제출 수신처 변경 검사.
+근거: [headers](../api_submission/headers.rs)의 `test_submission_receiver_options_list_defaults_by_authority`, `test_submission_receiver_selection_updates_message_header_n_identifiers`; [singleton](../api_cases/subresources/singleton.rs)의 `test_singleton_post_endpoints_are_idempotent`; [`report_rows_enforce_scope_permission_lock_lifecycle_and_audit`](../api_cases/subresources/lifecycle_report.rs)의 message-header 계약; [XML gate](../xml/import_export/rejections.rs)의 `test_manual_export_rejects_missing_headers_and_records_errors`; [transfer permissions](../api_administration/role_admin/effective_access/transfer_web.rs)의 제출 수신처 변경 검사.
 
 `concurrent_authority_header_preparation_returns_request_scoped_values`는 같은 Case에 FDA/MFDS HTTP PUT을 `tokio::join!`으로 보내고, 두 응답의 200과 기관별 sender/receiver를 각각 확인한다. 응답이 다른 요청의 기관 값으로 섞이지 않는 검사이며, 모든 동시 변경 조합이나 최종 저장 순서까지 보장하지 않는다.
 
@@ -64,7 +64,7 @@
 | Method / path | 요청 | 응답·검사 |
 |---|---|---|
 | `POST /internal/submissions/callbacks/ack` | 최상위 `remote_submission_id`, `ack_level`, `success`, 선택적 `ack_code`, `ack_message` 및 callback header | 200 `data` submission; ACK3 상태·재조회·이벤트. 같은 payload 재호출 시 중복 이벤트. 토큰 누락/오류 400. `ack_level` 누락 검사는 400 또는 422를 허용하므로 단일 오류코드 보증이 아님 |
-| `POST /internal/submissions/reconcile` | reconcile header; 선택적 JSON `limit` (구현 기본 25) | 200 `data.result`의 attempted/processed ID, 빈 결과·인증, HTTP reconcile 뒤 ESG 중복 전송 방지. legacy/AS2는 아래 service 검사와 구분 |
+| `POST /internal/submissions/reconcile` | reconcile header; body 생략 가능, JSON `limit` 선택(기본 25, worker에서 1..100으로 clamp) | 200 `data.result`의 attempted/processed ID, 빈 결과·인증, HTTP reconcile 뒤 ESG 중복 전송 방지. legacy/AS2는 아래 service 검사와 구분 |
 | `GET /internal/submissions/reconcile/status` | reconcile header | 200 `data.status`; total_runs 증가와 total_attempted 타입. 프로세스 재시작 이후 누적 보존 검사는 아님 |
 
 근거: [callbacks](../api_submission/callbacks.rs)의 `test_internal_submission_endpoints_require_valid_callback_token`, `test_internal_ack_callback_rejects_malformed_payload`, 앞의 update/duplicate 검사; [reconcile HTTP](../api_submission/reconcile/web.rs)의 `test_internal_reconcile_endpoint_auth_and_empty_result`, `test_internal_reconcile_status_accumulates_runtime_counters`, `test_internal_reconcile_does_not_resend_esg_attempt`, `test_internal_reconcile_transport_change_does_not_resend_esg_attempt`. [worker 계약](../api_submission/reconcile/service.rs)의 `test_reconcile_blocks_legacy_attempts_without_reexport_or_resend`, `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`는 service 직접 호출 검사이며 HTTP 근거로 계산하지 않는다.

@@ -173,6 +173,20 @@ pub(super) async fn assert_mutation(
 		"audit new value"
 	);
 	for change in changes {
+		if column == "deleted" {
+			assert_eq!(
+				change.action, "UPDATE",
+				"soft deletion is an audited update"
+			);
+			assert!(
+				change
+					.changed_fields
+					.as_ref()
+					.and_then(|fields| fields.get(column))
+					.is_some(),
+				"deleted transition missing from changed_fields"
+			);
+		}
 		assert_eq!(change.user_id, ctx.user_id(), "audit actor");
 		assert_eq!(
 			change.organization_id,
@@ -185,6 +199,38 @@ pub(super) async fn assert_mutation(
 			"audit reason"
 		);
 	}
+	Ok(())
+}
+
+pub(super) async fn assert_hard_delete(
+	mm: &ModelManager,
+	ctx: &Ctx,
+	table: &str,
+	id: Uuid,
+	before: &[i64],
+	reason: &str,
+) -> Result<()> {
+	let logs = AuditLogBmc::list_by_record(ctx, mm, table, id).await?;
+	let deleted: Vec<_> = logs
+		.iter()
+		.filter(|log| !before.contains(&log.id) && log.action == "DELETE")
+		.collect();
+	assert_eq!(
+		deleted.len(),
+		1,
+		"missing or duplicated hard-delete audit for {table}/{id}"
+	);
+	let log = deleted[0];
+	assert_eq!(log.table_name, table);
+	assert_eq!(log.record_id, id);
+	assert_eq!(log.user_id, ctx.user_id());
+	assert_eq!(log.organization_id, ctx.organization_id());
+	assert_eq!(log.reason_for_change.as_deref(), Some(reason));
+	assert_eq!(
+		log.old_values.as_ref().and_then(|row| row.get("id")),
+		Some(&serde_json::json!(id))
+	);
+	assert!(log.new_values.is_none(), "hard delete retained new_values");
 	Ok(())
 }
 

@@ -26,6 +26,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 	let (status, body) = patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities":["ich"],"rows":{
 			"patientIdentifiers":[{"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
@@ -82,6 +84,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":deleted_rows}),
 		)
@@ -111,6 +115,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":rows}),
 		)
@@ -134,6 +140,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":restored_rows}),
 		)
@@ -152,6 +160,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":parent_delete}),
 		)
@@ -167,6 +177,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":rows}),
 		)
@@ -181,6 +193,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":parent_restore}),
 		)
@@ -200,5 +214,31 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			assert_eq!(body["rows"][*owner][0]["id"], id, "{owner}: {body}");
 		}
 	}
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 7)
+		.await?;
+	let (status, saved) = super::get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	let death_id = saved["rows"]["deathInfo"]["id"]
+		.as_str()
+		.ok_or("missing death singleton ID")?;
+	let guarded = [
+		(
+			"PATCH",
+			uri.clone(),
+			json!({"authorities":["ich"],"rows":{"deathInfo":{"id":death_id,"dateOfDeath":"20261002"}}}),
+		),
+		(
+			"PATCH",
+			uri.clone(),
+			json!({"authorities":["fda"],"rows":{"patientInformation":{"raceCodes":["1"]}}}),
+		),
+		(
+			"PATCH",
+			uri.clone(),
+			json!({"authorities":["fda"],"rows":{"patientInformation":{"raceCodes":[]}}}),
+		),
+	];
+	super::assert_editor_request_guards(&app, &cookie, &mm, &seed, &uri, &guarded)
+		.await?;
 	Ok(())
 }

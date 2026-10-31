@@ -26,6 +26,8 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 	let (status, body) = patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities":["fda"],"rows":{
 			"studyRegistrationNumbers":[{"sequenceNumber":1,"registrationNumber":"REG","countryCode":"US"}],
@@ -55,6 +57,8 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["fda"],"rows":deleted}),
 		)
@@ -83,6 +87,8 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["fda"],"rows":rows}),
 		)
@@ -104,6 +110,8 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		let (status, body) = patch_and_reload(
 			&app,
 			&cookie,
+			&mm,
+			&ctx,
 			&uri,
 			json!({"authorities":["fda"],"rows":restored}),
 		)
@@ -144,5 +152,7 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 			"{body}"
 		);
 	}
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "fda", 2)
+		.await?;
 	Ok(())
 }

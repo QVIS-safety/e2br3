@@ -90,6 +90,39 @@ pub(super) async fn delete_json(
 	Ok((status, body))
 }
 
+pub(super) async fn request_json_with_reason(
+	app: &Router,
+	cookie: &str,
+	method: &str,
+	uri: String,
+	body: Option<Value>,
+	reason: &str,
+) -> Result<(StatusCode, Value)> {
+	let mut request = Request::builder()
+		.method(method)
+		.uri(uri)
+		.header("cookie", cookie);
+	if method != "GET" {
+		request = request.header("x-e2br3-reason-for-change", reason);
+	}
+	let body = match body {
+		Some(value) => {
+			request = request.header("content-type", "application/json");
+			Body::from(value.to_string())
+		}
+		None => Body::empty(),
+	};
+	let response = app.clone().oneshot(request.body(body)?).await?;
+	let status = response.status();
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	let value = if bytes.is_empty() {
+		Value::Null
+	} else {
+		serde_json::from_slice(&bytes)?
+	};
+	Ok((status, value))
+}
+
 pub(super) async fn create_case(
 	app: &Router,
 	cookie: &str,

@@ -1,5 +1,6 @@
 use crate::case_editor_contract_web::support::{
-	create_case_for_editor, get_json, patch_json, post_json,
+	create_case_for_editor, get_json, patch_row_with_reason as patch_json,
+	post_json, ROW_CHANGE_REASON,
 };
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
@@ -14,7 +15,12 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -132,9 +138,29 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.ok_or("missing parent-only assessment after erase-only patch")?;
 	assert_eq!(cleared_parent["expectedness"], Value::Null, "{body}");
 
-	let (status, body) = patch_json(
+	let mut guarded = Vec::new();
+	for deleted in [None, Some(true), Some(false)] {
+		let mut row = json!({"id":relatedness_id,"drugReactionAssessmentId":assessment_id,
+            "reactionId":reaction_ids[0],"sourceOfAssessment":"Guarded"});
+		if let Some(deleted) = deleted {
+			row["deleted"] = json!(deleted);
+		}
+		guarded.push((
+			"PATCH",
+			uri.clone(),
+			json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[row]}}}),
+		));
+	}
+	guarded.push(("PATCH", uri.clone(), json!({"authorities":["ich"],"rows":{"drug":{
+        "drugReactionAssessments":[{"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0],"_deleteAssessment":true}]
+    }}})));
+	super::assert_editor_request_guards(&app, &cookie, &mm, &seed, &uri, &guarded)
+		.await?;
+	let (status, body) = super::patch_and_reload(
 		&app,
 		&cookie,
+		&mm,
+		&ctx,
 		&uri,
 		json!({"authorities": ["ich"], "rows": {"drug": {
 			"drugReactionAssessments": [{
@@ -155,6 +181,33 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.collect::<Vec<_>>();
 	assert_eq!(siblings_after_delete.len(), 1, "{body}");
 	assert_eq!(siblings_after_delete[0]["id"], json!(sibling_id), "{body}");
+	for row in [
+		json!({"id":relatedness_id,"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0],"deleted":true}),
+		json!({"id":relatedness_id,"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0]}),
+	] {
+		let (status, after) = super::patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[row]}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{after}");
+		let siblings: Vec<_> = after["data"]["drug"]["drugReactionAssessments"]
+			.as_array()
+			.ok_or("missing assessment replay")?
+			.iter()
+			.filter(|row| row["reactionId"] == json!(reaction_ids[0]))
+			.collect();
+		assert_eq!(
+			siblings.len(),
+			1,
+			"ordinary resave restored a deleted relatedness"
+		);
+		assert_eq!(siblings[0]["id"], sibling_id);
+	}
 	let restore_relatedness = json!({"authorities": ["ich"], "rows": {"drug": {
 		"drugReactionAssessments": [{
 			"id": relatedness_id,
@@ -165,8 +218,15 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		}]
 	}}});
 	for attempt in 0..2 {
-		let (status, body) =
-			patch_json(&app, &cookie, &uri, restore_relatedness.clone()).await?;
+		let (status, body) = super::patch_and_reload(
+			&app,
+			&cookie,
+			&mm,
+			&ctx,
+			&uri,
+			restore_relatedness.clone(),
+		)
+		.await?;
 		assert_eq!(status, StatusCode::OK, "restore attempt {attempt}: {body}");
 		let (status, persisted) = get_json(&app, &cookie, &uri).await?;
 		assert_eq!(status, StatusCode::OK, "{persisted}");
@@ -218,6 +278,7 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.iter()
 		.all(|row| row["reactionId"] != json!(reaction_ids[2])));
 
+	let delete_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
@@ -233,6 +294,19 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
+	crate::case_editor_contract_web::audit::assert_hard_delete(
+		&mm,
+		&ctx,
+		"drug_reaction_assessments",
+		uuid::Uuid::parse_str(&parent_only_id)?,
+		&delete_audit_before,
+		ROW_CHANGE_REASON,
+	)
+	.await?;
+	let (read_status, persisted) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(read_status, StatusCode::OK, "{persisted}");
+	assert_eq!(body["data"], persisted["data"]);
+
 	assert!(body["data"]["drug"]["drugReactionAssessments"]
 		.as_array()
 		.ok_or("missing assessments after parent delete")?
@@ -253,6 +327,7 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 	.await?;
 	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
 
+	let delete_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
@@ -267,6 +342,19 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
+	crate::case_editor_contract_web::audit::assert_hard_delete(
+		&mm,
+		&ctx,
+		"drug_reaction_assessments",
+		uuid::Uuid::parse_str(&assessment_id)?,
+		&delete_audit_before,
+		ROW_CHANGE_REASON,
+	)
+	.await?;
+	let (read_status, persisted) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(read_status, StatusCode::OK, "{persisted}");
+	assert_eq!(body["data"], persisted["data"]);
+
 	assert!(body["data"]["drug"]["drugReactionAssessments"]
 		.as_array()
 		.ok_or("missing assessments after related parent delete")?

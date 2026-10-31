@@ -5,7 +5,7 @@
 <a id="pages"></a>
 ## 요청과 응답
 
-공통 경로를 `/api/cases/{caseId}/editor/pages/{page}`로 표기한다. `caseId`와 `rowId`는 해당 조직·Case에 속하는 UUID여야 한다. 인증 쿠키와 편집 권한이 필요하다. 변경 사유는 `x-e2br3-reason-for-change` 헤더로 전달한다.
+공통 경로를 `/api/cases/{caseId}/editor/pages/{page}`로 표기한다. `caseId`와 `rowId`는 해당 조직·Case에 속하는 UUID여야 한다. 인증 쿠키가 필요하며 GET은 `case.child.read`, 변경은 `case.child.update` 정책과 Case scope·수정 가능한 상태를 적용한다. viewer의 조회 허용과 변경 거절은 구분한다. 변경 사유는 `x-e2br3-reason-for-change` 헤더로 전달한다.
 
 | API | 적용 페이지 | 정상 응답 | 검사 대상 |
 |---|---|---|---|
@@ -31,13 +31,19 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 }
 ```
 
+요청 DTO [`CaseEditorPagePatchRequest`](../../src/web/rest/case_editor_dto.rs)는 최상위에서 `authorities`, `rows`만 허용한다(`deny_unknown_fields`). `authorities`는 선택 문자열 배열이며 생략/null/빈 목록은 현재 구현에서 ICH로 해석한다. GET의 `authorities`는 배열이 아닌 쉼표 구분 문자열이며 `ich`, `fda`, `mfds`를 중복 제거한다. 모르는 기관은 400이다. `rows` 생략은 빈 map, 명시 null이나 잘못된 JSON 타입은 extractor 오류다. owner 안의 각 값은 해당 페이지 parser와 [필드 계약](../../../../../registry/editor-contracts)에서 해석하므로 모든 중첩 객체가 unknown-key를 거절한다고 가정하면 안 된다.
+
+목록 GET의 선택 query는 `include_deleted`, `include_rows` boolean이다. `include_rows`의 기본값은 false다. AE/LB/DG 목록은 `include_deleted` 기본 false이며 true이면 삭제 상태의 행을 포함한다. LR/DH는 query DTO에 해당 필드가 있어도 loader가 사용하지 않아 활성 목록만 반환한다. `include_rows=true`는 반환된 각 ID의 상세를 `rows.rowDetails`에 함께 붙인다. direct 페이지는 같은 query DTO를 받더라도 반복행 목록 옵션을 사용하지 않는다. body·UUID·query extractor 오류와 API 오류의 envelope 차이는 [공통 인증·오류 계약](authorization.md)을 따른다.
+
+응답 DTO의 최상위 이름은 camelCase다. 페이지 projection은 `{caseId,pageId,authorities,saved,requiredCount,fields,rows,sectionSummaries}`다. 현재 projection builder는 `requiredCount:0`, `fields:{}`, `sectionSummaries:[]`를 반환하며 이를 사업규칙 검증 통과 결과로 해석하면 안 된다. 상세는 `{caseId,rowId,data}`이고 `data` 안에는 페이지 owner별 실제 model/projection 필드가 들어간다. `data`의 모델 필드는 snake_case일 수 있다. 타입·중첩 필드·serde 규칙의 전체 원문은 [DTO](../../src/web/rest/case_editor_dto.rs)와 [operation/DTO manifest](api-contract-manifest.json)에 연결한다.
+
 직접 페이지의 반복행 owner는 객체 배열이며, DG 같은 행 상세에서는 owner 내부의 하위 컬렉션이 배열이다. 기존 자식 행 수정에는 `rowIdentities`에 명시된 조회 ID를 넣는다. DG assessment는 `drugReactionAssessmentId`·`reactionId`를 사용하며, relatedness 자식이 있을 때만 그 자식의 `id`를 함께 보낸다. FDA·MFDS 필드는 해당 계약에 지정된 `authority`를 소문자로 전달한다. 임의 UUID나 운영 참조정보를 만든 값으로 실제 FK 저장을 통과시켰다고 간주하지 않는다.
 
 ## 페이지별 요청 owner와 계약 정의
 
 | 페이지 | `rows`의 owner | 필드 계약 | 추가 동작 검사 | 정의 / 실행 등록 |
 |---|---|---:|---:|---|
-| CI | `case`, `documentsHeldBySender`, `linkedReports`, `otherCaseIdentifiers`, `safetyReportIdentification`, `sourceDocuments` | 26 | 4 | [JSON](../../../../../registry/editor-contracts/ci.json) / [등록](../api_editor/pages/ci.generated.rs) |
+| CI | `case`, `documentsHeldBySender`, `linkedReports`, `otherCaseIdentifiers`, `safetyReportIdentification`, `sourceDocuments` | 26 | 6 | [JSON](../../../../../registry/editor-contracts/ci.json) / [등록](../api_editor/pages/ci.generated.rs) |
 | RP | `primarySources` | 29 | 4 | [JSON](../../../../../registry/editor-contracts/rp.json) / [등록](../api_editor/pages/rp.generated.rs) |
 | SD | `receiverInformation`, `senderInformation` | 27 | 1 | [JSON](../../../../../registry/editor-contracts/sd.json) / [등록](../api_editor/pages/sd.generated.rs) |
 | LR | `literatureReference` | 3 | 3 | [JSON](../../../../../registry/editor-contracts/lr.json) / [등록](../api_editor/pages/lr.generated.rs) |
@@ -49,7 +55,7 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | DG | `drug` | 94 | 14 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
 
-N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 등록은 scalar 373 + behavior 58 = 431개다.
+N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 등록은 scalar 373 + behavior 60 = 433개다.
 
 위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor scalar 등록 365개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
 
@@ -85,8 +91,22 @@ N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 
 - **빈 입력:** 일반 컬렉션의 `[]`는 미완성 부모를 만들지 않는다. `[{}]`의 draft 생성 허용 여부는 컬렉션별 검사에 명시한다. FDA `fdaDevices`처럼 전체 목록을 교체하는 컬렉션에서 `[]`는 기존 행 제거를 뜻하므로 일반 목록과 구분한다.
 - **소속·중복:** 중복 자식 ID, 다른 부모/Case의 자식 ID는 허용하지 않는다. FDA device 중복 ID와 중복 code ID는 400, 다른 drug의 device ID는 404, 다른 device의 code ID는 400이다. 거절 후 기존 자식 목록이 바뀌지 않아야 한다.
 - **부모 생성:** SI 등록번호, DM 병력·사망원인·부모 정보, NR 요약·진단, DH 과거약물을 먼저 저장할 때 필요한 부모를 생성하고 이후 편집에서 같은 부모 ID 및 이미 저장한 값을 보존한다.
-- **삭제·복원:** 삭제된 행은 활성 목록에서 제외되고 상세에는 삭제 상태로 남는다. PATCH 복원과 값 수정은 함께 성공하거나 함께 취소되어야 한다. LR/DH sequence 충돌, AE/LB/DG 잘못된 복원 입력은 이전 삭제 상태와 내용을 보존한다. 다른 Case ID로 접근하면 404, viewer의 복원 변경은 403이다.
+- **삭제·복원:** soft 바깥 행은 활성 목록에서 제외되고 Editor 상세에는 삭제 상태로 남는다. direct soft 자식은 페이지 projection에서 빠지며 hard 자식은 실제 행이 제거된다. PATCH 복원과 값 수정은 함께 성공하거나 함께 취소되어야 한다. LR/DH sequence 충돌, AE/LB/DG 잘못된 복원 입력은 이전 삭제 상태와 내용을 보존한다. 다른 Case ID로 접근하면 404, viewer의 복원 변경은 403이다.
 - **연결 관계:** DG relatedness 하위 항목 삭제는 형제·부모를 보존하고 부모 assessment 삭제는 해당 연결을 제거한다. DG 행 삭제/복원은 자식 데이터와 식별자의 계약을 지킨다.
+
+자원별 삭제 요청은 다음처럼 구별한다. 모든 owner를 같은 복원 규칙으로 처리하지 않는다.
+
+| 자원 | 삭제·재저장·복원 계약 | 권한·감사 assertion |
+|---|---|---|
+| CI soft 자식 3종 | `documentsHeldBySender`, `otherCaseIdentifiers`, `linkedReports`의 기존 `id`에 `deleted:true`; 반복 삭제/누락/`[]`/ID만 재저장은 숨김 유지, `deleted:false`만 같은 ID 복원. 다른 Case의 ID는 **400** | [ci_rows](../api_editor/relations/ci_rows.rs): 형제 행 보존, 혼합 요청 전체 rollback, viewer 403·다른 조직 404·잠금 403, 거절 후 projection·감사 불변 |
+| RP·DM·SI·NR·DG soft 자식 16종 | 기존 16종 명시 복원에 CI 3종을 더해 19종의 삭제 필드 감사 확인. parentInfo는 배열이 아닌 singleton | [공통 관계 검사](../api_editor/relations.rs)와 페이지별 `_rows.rs`: 삭제 old/new·actor·org·사유·UPDATE action·changed_fields, no-op 거짓 전환 없음 |
+| CI sourceDocuments | 물리 DELETE, 동일 ID 삭제/수정/false 복원 재호출 404 | [documents](../api_editor/relations/documents.rs): 정상 DELETE 감사 old record·actor/org/reason, 거절 후 감사 불변 |
+| DG relatedness와 assessment | relatedness는 soft 삭제·명시 복원, assessment `_deleteAssessment`는 물리 삭제 및 자식 연결 제거 | [relatedness](../api_editor/relations/relatedness.rs): 반복 삭제·일반 재저장·복원 감사와 별도 부모 DELETE 감사, 권한/조직/잠금 거절 |
+| DG FDA device와 code 3종 | device 배열은 전체 replacement; 포함된 code 그룹의 생략도 빈 목록으로 해석. 제거된 code ID 재사용은 400, 제거된 device ID 재사용은 404. 해당 Editor 요청은 자동 복원하지 않음 | [device_children](../api_editor/relations/device_children.rs): 그룹별 삭제·재전송·상세 GET·형제 보존·삭제 감사·stale ID 거절 후 불변 |
+| DM deathInfo·raceCodes | deathInfo는 저장/clear용 singleton이고 Editor에서 `deleted` lifecycle이 없다. raceCodes는 값 배열 교체 | [dm_rows](../api_editor/relations/dm_rows.rs)의 자원별 변경 거절; 정상 필드 저장/clear/감사는 scalar 계약 |
+| LR·DH·AE·LB·DG 바깥 행 | PATCH 복원과 별도 POST restore 유무, 반복 DELETE status를 구분 | [공통 관계 검사](../api_editor/relations.rs): 저장/삭제/복원/생성 요청별 viewer·조직·잠금, fresh GET·감사 불변 |
+
+표의 assertion은 구현되어 있으나 **NOT_RUN**이다. 예를 들어 같은 Case 내부의 서로 다른 모든 부모 조합, 모든 권한 프로필의 조합, 동시 요청이나 신규 POST의 네트워크 재전송까지 증명하지 않는다. 정확한 미검사 축은 [행렬](row-lifecycle.tsv)을 따른다.
 
 구체적 요청 본문과 상태별 기대값은 [rows](../api_editor/rows), [relations](../api_editor/relations)의 검사와 각 페이지 JSON의 `collections`, `relations` 등록으로 연결된다. 검사가 없는 API 동작을 이 명세만으로 검증 완료 처리하지 않는다.
 
@@ -121,4 +141,14 @@ DG의 `G.k.9.i.1`, `G.k.local.sourceProductPresaveId`는 실제 참조 레코드
 
 현재 router에는 이전 GET 조회 경로도 남아 있다: `/editor/CI`, `/editor/RP`, `/editor/SD`, `/editor/SI`, `/editor/DM`, `/editor/NR`, `/editor/AE/list`, `/editor/AE/{reaction_id}`, `/editor/LB/list`, `/editor/LB/{test_result_id}`, `/editor/DG/list`, `/editor/DG/{drug_id}`, `/editor/DH/list`, `/editor/DH/{past_drug_id}`. 이들은 `/api/cases/{case_id}` 아래에 있으며 pages projection과 별도 method/path다. [등록 소스](../../src/web/rest/routes/cases.rs)와 [DTO](../../src/web/rest/case_editor_dto.rs)는 존재하지만, 조사한 테스트의 직접 HTTP assertion은 찾지 못했다. pages GET 테스트를 이 경로의 실행 증거로 옮겨 계산하지 않는다.
 
-AE/LB/DG의 별도 POST restore 세 경로 역시 등록은 있지만 현재 부모 복원 assertion은 PATCH 경로에 있다. 이 차이는 [전체 커버리지 목록](coverage.tsv)에 그대로 남긴다.
+AE/LB/DG의 POST restore 3개는 각 페이지의 기존 복원 fixture에서 실제 요청·200·재조회·반복 복원·ID·감사를 검사하도록 연결되어 있다. PATCH 복원과 별개의 operation이며 실행 상태는 모두 NOT_RUN이다.
+
+
+| 이전 GET 경로군 | 요청/응답 계약 | 미검증 범위 |
+|---|---|---|
+| CI/RP/SD/SI/DM/NR direct | 경로 Case UUID, body 없음. 성공 `200 {caseId,data}`. `data`는 해당 section reader의 저장 모델 투영 | 이 6개 URL 직접 HTTP assertion 없음 |
+| AE/LB/DG/DH `/list` | 경로 Case UUID, body 없음. 성공 `200 {caseId,rows:[...]}`; 페이지별 list DTO 사용 | 이 4개 URL 직접 HTTP assertion 없음 |
+| AE/LB/DG/DH `/{rowId}` | Case와 row UUID, body 없음. 성공 `200 {caseId,rowId,data}`; 부모 소속 검증, 삭제 행 포함 여부는 해당 reader 인자 | 이 4개 URL 직접 HTTP assertion 없음 |
+| `/editor/shell` | `200`의 `{id,status,organizationId,safetyReportIdentification:{safetyReportId},messageHeader:{messageReceiverIdentifier},dgPrdKey,createdAt,updatedAt,workflowStatus,workflowAssignedRole,workflowAssignedUserId,workflowDueAt,workflowDescription,workflowUpdatedAt,qcState,isLocked,canActOnWorkflow,workflowBlockReason,caseWriteBlockReason,reviewReceivers}` | safety report ID 부재는 400, message header 부재는 모델 404. `workflowDueAt`은 RFC3339 옵션이지만 다른 time 필드를 동일 문자열 형식으로 추정하지 않음. 날짜 직렬화 원문은 DTO manifest 참조 |
+
+이전 경로도 인증·Case/조직/scope read 정책을 적용한다. 단순 GET은 상태 변경이나 감사 mutation을 약속하지 않는다. 기존 잘못 저장된 `review_receivers_json`의 역직렬화 오류를 shell이 정상 빈 배열로 숨기지 않는다는 구현과, SQL NULL이면 빈 배열이라는 현재 계약도 구분한다.

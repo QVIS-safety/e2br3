@@ -107,7 +107,11 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     for path in paths:
         if path == 'crates/services/web-server/tests/api_editor/API_SPEC.md':
             continue
-        if path.startswith('crates/services/web-server/tests/api_specs/') and Path(path).suffix in ('.md', '.tsv'):
+        if path.startswith('crates/services/web-server/tests/api_specs/') and (
+            Path(path).suffix in ('.md', '.tsv') or Path(path).name in (
+                'api-contract-manifest.json', 'check_api_contract_manifest.py',
+            )
+        ):
             continue
         if Path(path).name in ('README.md', 'AGENTS.md', 'subagent.md') or (path.startswith('docs/') and path.endswith('.md')):
             continue

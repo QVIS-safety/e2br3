@@ -54,6 +54,16 @@ mod relations {
     async fn source_document_delete_hides_the_target() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::documents::source_document_delete_hides_the_target("CI", "source_document_delete_hides_the_target").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn ci_soft_children_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::ci_rows::ci_soft_children_delete_restore_and_resave_are_stable("CI", "ci_soft_children_delete_restore_and_resave_are_stable").await
+    }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn ci_child_foreign_case_rejection_rolls_back_rows_and_audits() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::ci_rows::ci_child_foreign_case_rejection_rolls_back_rows_and_audits("CI", "ci_child_foreign_case_rejection_rolls_back_rows_and_audits").await
+    }
 }
 mod audit {
 }

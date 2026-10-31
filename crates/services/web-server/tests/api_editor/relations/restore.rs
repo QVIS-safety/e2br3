@@ -162,7 +162,7 @@ pub(crate) async fn atomic_restore(
 		&app,
 		&cookie,
 		&mm,
-		&ctx,
+		&seed,
 		&lifecycle,
 		&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
 		&json!({"authorities": ["ich"], "rows": {owner: {

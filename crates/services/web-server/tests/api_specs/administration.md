@@ -177,7 +177,7 @@
 
 - 응답: wrapper 없는 `200` 객체. 주요 키는 `timezone`, `meddra_language`, `meddra_version`, `idf_version`, `company_logo`, `orientation`, `data_ordering`, export/import boolean, `import_date_update`, `appendices`, case number 필드, `workflow_enabled`, `workflow`, session 시간, `notices`다.
 - 설정 read 권한과 notice read 권한은 별도이며 notice read가 없으면 `notices:[]`로 가린다.
-- 직접 단언: 저장된 MedDRA 설정과 viewer `403`, admin-read custom 권한의 `200`. [`settings_web.rs`](../api_administration/admin_settings/settings_web.rs), [`test_pdf_admin_read_and_edit_grant_registered_admin_actions`](../api_administration/role_admin/effective_access/administration_web.rs).
+- 직접 단언: 저장된 MedDRA 설정과 viewer `403`, admin-read custom 권한의 `200`, notice read 권한이 없을 때 마지막 GET의 `notices:[]` redaction. [`settings_web.rs`](../api_administration/admin_settings/settings_web.rs), [`test_dashboard_notices_hidden_without_notice_read`](../api_administration/admin_settings/notices_web.rs), [`test_pdf_admin_read_and_edit_grant_registered_admin_actions`](../api_administration/role_admin/effective_access/administration_web.rs).
 
 <a id="put-api-admin-settings"></a>
 ### `PUT /api/admin/settings` — asserted
@@ -279,7 +279,7 @@
 - [`dump_protected_inventory_snapshot`](../authz/protected_route_inventory.rs)은 `#[ignore]`이며 수동 snapshot 생성기다. 활성 inventory 테스트도 라우터 소스와 snapshot 문자열을 비교할 뿐 HTTP 인증을 단언하지 않는다.
 - [`authorization_snapshot.rs`](../authz/authorization_snapshot.rs)는 extractor 단위 테스트다. snapshot attach 성공/누락을 확인하지만 위 34개 경로 중 어느 하나의 HTTP 허용을 대신하지 않는다.
 - [`lib.rs`](../../src/lib.rs)의 CSRF 테스트는 origin 판정 helper만 호출한다. 실제 state-changing `/api` 요청의 `403`과 login/logoff/refresh의 CSRF 경계는 단언하지 않는다.
-- 조직 목록·수정·삭제와 workflow options는 성공 기능 단언이 없다. audit integrity와 health는 경로 자체의 활성 HTTP 단언이 없다.
+- 조직 목록·수정·삭제와 workflow options는 성공 기능 단언이 없다. health는 경로 자체의 활성 HTTP 단언이 없다. Audit integrity는 정상 chain report와 viewer `403`까지 활성 HTTP 단언이 있고, 손상 chain 보고 분기가 남아 있다.
 - 사용자/role/settings 변경은 일부 감사 행을 확인하지만, 모든 mutation의 감사 user/reason/category/e-signature와 실패 요청의 무변경성은 포괄적으로 단언되지 않는다.
 
 34개 등록 경로와 상태·증거의 최종 병합 위치는 [`coverage.tsv`](coverage.tsv)다.
