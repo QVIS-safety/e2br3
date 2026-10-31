@@ -92,7 +92,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 				.as_array()
 				.ok_or("missing patient rows")?;
 			assert_eq!(rows.len(), 1, "{owner}: {after}");
-			assert_eq!(rows[0]["id"], id, "{owner}: {after}");
+			assert_eq!(&rows[0]["id"], id, "{owner}: {after}");
 		}
 		assert_eq!(
 			after["rows"]["patientIdentifiers"][0]["identifier_value"],
@@ -280,7 +280,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 				.as_array()
 				.ok_or("missing restored patient rows")?;
 			assert_eq!(rows.len(), 1, "{owner}: {body}");
-			assert_eq!(rows[0]["id"], id, "{owner}: {body}");
+			assert_eq!(&rows[0]["id"], id, "{owner}: {body}");
 		}
 	}
 	let parent_delete = json!({"parentInfo":{"id":parent_id,"deleted":true}});

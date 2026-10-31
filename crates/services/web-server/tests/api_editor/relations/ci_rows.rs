@@ -91,7 +91,7 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
-		for (owner, field, _) in &definitions {
+		for &(owner, field, _) in &definitions {
 			assert_eq!(after["rows"][owner].as_array().map(Vec::len), Some(2));
 			let actual_rows = after["rows"][owner]
 				.as_array()
@@ -106,7 +106,7 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 		}
 		assert_eq!(case_audit_ids(&mm, &ctx, &case_id).await?, replay_audit);
 	}
-	for (owner, field, _) in &definitions {
+	for &(owner, field, _) in &definitions {
 		let original = saved["rows"][owner]
 			.as_array()
 			.ok_or("missing CI children")?;

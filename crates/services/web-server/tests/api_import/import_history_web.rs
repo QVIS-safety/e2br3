@@ -2,8 +2,8 @@ use super::support::{fixture_xml, get_json, get_response, import_xml_string};
 use crate::common::{
 	cookie_header, init_test_env, init_test_mm, seed_org_with_users, Result,
 };
-use axum::body::to_bytes;
-use axum::http::StatusCode;
+use axum::body::{to_bytes, Body};
+use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::{set_org_context, set_user_context};
@@ -11,6 +11,7 @@ use serde_json::{json, Value};
 use serial_test::serial;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use tower::ServiceExt;
 
 #[serial]
 #[tokio::test]

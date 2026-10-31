@@ -83,6 +83,7 @@ class GitDiffTests(unittest.TestCase):
         for name, event in (
             ("push", {"before": self.base, "after": head}),
             ("pull_request", {"pull_request": {"base": {"sha": self.base}, "head": {"sha": head}}}),
+            ("workflow_dispatch", {}),
         ):
             with self.subTest(event=name):
                 event_file = self.root / "event.json"
@@ -91,7 +92,9 @@ class GitDiffTests(unittest.TestCase):
                     [sys.executable, "-c", "import json; from ci_test_scope import event_revisions; print(json.dumps(event_revisions()))"],
                     cwd=self.root, check=True, capture_output=True, text=True,
                     env={**os.environ, "GITHUB_EVENT_NAME": name,
-                         "GITHUB_EVENT_PATH": str(event_file), "GITHUB_SHA": "wrong-checkout-sha",
+                         "GITHUB_EVENT_PATH": str(event_file),
+                         "GITHUB_SHA": head if name == "workflow_dispatch" else "wrong-checkout-sha",
                          "PYTHONPATH": str(Path(__file__).resolve().parents[1])},
                 )
-                self.assertEqual(json.loads(result.stdout), [name, self.base, head])
+                expected_base = "0" * 40 if name == "workflow_dispatch" else self.base
+                self.assertEqual(json.loads(result.stdout), [name, expected_base, head])

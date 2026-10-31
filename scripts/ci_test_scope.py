@@ -33,4 +33,6 @@ def event_revisions() -> tuple[str, str, str]:
         return event_name, event['pull_request']['base']['sha'], event['pull_request']['head']['sha']
     if event_name == 'push':
         return event_name, event['before'], event['after']
+    if event_name == 'workflow_dispatch':
+        return event_name, '0' * 40, os.environ['GITHUB_SHA']
     raise ValueError(f'unsupported CI event: {event_name}')

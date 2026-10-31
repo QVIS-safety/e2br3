@@ -90,7 +90,7 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 				.as_array()
 				.ok_or("missing drug child rows")?;
 			assert_eq!(rows.len(), 1);
-			assert_eq!(rows[0]["id"], id);
+			assert_eq!(&rows[0]["id"], id);
 		}
 		assert_eq!(
 			after["data"]["drug"]["activeSubstances"][0]["substance_name"],
@@ -207,7 +207,7 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 				.as_array()
 				.ok_or("missing restored drug child rows")?;
 			assert_eq!(rows.len(), 1, "{owner}: {body}");
-			assert_eq!(rows[0]["id"], id, "{owner}: {body}");
+			assert_eq!(&rows[0]["id"], id, "{owner}: {body}");
 		}
 	}
 	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 3)

@@ -169,7 +169,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 |---|---|---|---:|---:|---:|
 | [api_import.rs](../api_import.rs) | api_import Cargo integration target과 하위 모듈 연결 | target 등록 | 12 | 0 | 0 |
 | [api_import/import_contract_web.rs](../api_import/import_contract_web.rs) | XML upload filename·선택 product/sender 연결과 XML 값 보존 | HTTP 계약 | 232 | 2 | 0 |
-| [api_import/import_history_web.rs](../api_import/import_history_web.rs) | Import 이력 시각 형식과 오류 상세 text 다운로드 | HTTP 계약 | 154 | 2 | 0 |
+| [api_import/import_history_web.rs](../api_import/import_history_web.rs) | Import 이력 시각 형식과 오류 상세 text 다운로드 | HTTP 계약 | 155 | 2 | 0 |
 | [api_import/import_settings_web.rs](../api_import/import_settings_web.rs) | Import C.1 날짜·default sender·product-linked sender 설정 적용 | HTTP 계약 | 386 | 3 | 0 |
 | [api_import/support.rs](../api_import/support.rs) | 실제 XML fixture 탐색·import multipart와 JSON/raw HTTP 준비 | helper | 236 | 0 | 0 |
 | [api_import/validation_web.rs](../api_import/validation_web.rs) | XML validate의 valid/malformed/XSD-invalid report와 무저장 | HTTP 계약 | 77 | 1 | 0 |
