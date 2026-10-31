@@ -3284,7 +3284,6 @@ async fn test_receiver_presave_route_bmc_crud() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires audit_logs table in the test database"]
 async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -3332,26 +3331,15 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 	)
 	.await?;
 
-	set_auditor_role(&mm).await?;
-	let changed_fields_result = sqlx::query_scalar(
-		"SELECT changed_fields
-		 FROM audit_logs
-		 WHERE table_name = 'product_presaves'
-		   AND record_id = $1
-		   AND action = 'UPDATE'
-		 ORDER BY created_at DESC
-		 LIMIT 1",
+	assert_audit_changed_field(
+		&mm,
+		"product_presaves",
+		product_id,
+		"brand_name",
+		json!(null),
+		json!(format!("Field Audit Brand {suffix}")),
 	)
-	.bind(product_id)
-	.fetch_one(mm.dbx().db())
-	.await;
-	reset_role(&mm).await?;
-	let changed_fields: serde_json::Value = changed_fields_result?;
-
-	assert!(
-		changed_fields.get("brand_name").is_some(),
-		"expected changed_fields to contain brand_name, got {changed_fields}"
-	);
+	.await?;
 
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
@@ -3361,7 +3349,6 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires audit_logs table in the test database"]
 async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -3473,7 +3460,6 @@ async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires audit_logs table in the test database"]
 async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
