@@ -42,6 +42,23 @@ pub(crate) async fn source_document_delete_hides_the_target(
 		Some(0),
 		"{saved}"
 	);
+	for row in [
+		json!({"id":doc["id"],"deleted":true}),
+		json!({"id":doc["id"],"deleted":false,"sourceDocumentName":"must not restore"}),
+		json!({"id":doc["id"],"sourceDocumentName":"must not recreate"}),
+	] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"sourceDocuments":[row]}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+		let (status, after_replay) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{after_replay}");
+		assert_eq!(after_replay, saved, "stale row replay changed CI");
+	}
 
 	Ok(())
 }

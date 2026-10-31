@@ -47,6 +47,11 @@ mod relations {
     async fn registration_creates_study_with_empty_name() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::parents::registration_creates_study_with_empty_name("SI", "registration_creates_study_with_empty_name").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn study_rows_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::si_rows::study_rows_delete_restore_and_resave_are_stable("SI", "study_rows_delete_restore_and_resave_are_stable").await
+    }
 }
 mod audit {
 }

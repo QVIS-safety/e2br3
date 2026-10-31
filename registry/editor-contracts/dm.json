@@ -1437,18 +1437,18 @@
       "code": "FDA.D.11.r.1",
       "authority": "FDA",
       "frontendPath": "patientInformation.raceCodes[]",
-      "projectionPath": "patientInformation.race_codes[]",
+      "projectionPath": "patientInformation.race_codes",
       "patch": {
         "kind": "rows",
         "owner": "patientInformation"
       },
-      "roundTripValue": "C41260",
+      "roundTripValue": ["C41260"],
       "constraint": {
         "status": "verified",
         "ruleCode": "FDA.D.11.r.1.LENGTH.MAX",
-        "invalidValue": "XXXXXXXXXXX"
+        "invalidValue": ["XXXXXXXXXXX"]
       },
-      "payloadPath": "raceCodes[]",
+      "payloadPath": "raceCodes",
       "nullFlavorPartnerCode": "FDA.D.11.r.1.local.raceCodeNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": [], "value": []},
@@ -2336,6 +2336,16 @@
           }
         ]
       }
+    },
+    {
+      "id": "rejects_foreign_patient_rows_without_mutation",
+      "verifier": "relations::scope::rejects_foreign_patient_rows_without_mutation",
+      "description": "DM singleton and child ids from another case are rejected for update, delete, and explicit restore without changing either case or audit trail"
+    },
+    {
+      "id": "patient_rows_delete_restore_and_resave_are_stable",
+      "verifier": "relations::dm_rows::patient_rows_delete_restore_and_resave_are_stable",
+      "description": "DM soft-deleted child and parent rows stay hidden across omission and empty-list saves, tolerate repeated deletion, and preserve ids and counts after explicit restore and resave"
     }
   ],
   "auditChecks": [],
@@ -2378,15 +2388,6 @@
     },
     "parentPastDrugs[]": {
       "requestPath": "parentPastDrugs.[]",
-      "keys": [
-        {
-          "name": "id",
-          "required": true
-        }
-      ]
-    },
-    "patientInformation.race_codes[]": {
-      "requestPath": "patientInformation.raceCodes[]",
       "keys": [
         {
           "name": "id",

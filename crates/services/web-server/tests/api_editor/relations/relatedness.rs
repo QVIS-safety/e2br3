@@ -155,6 +155,43 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.collect::<Vec<_>>();
 	assert_eq!(siblings_after_delete.len(), 1, "{body}");
 	assert_eq!(siblings_after_delete[0]["id"], json!(sibling_id), "{body}");
+	let restore_relatedness = json!({"authorities": ["ich"], "rows": {"drug": {
+		"drugReactionAssessments": [{
+			"id": relatedness_id,
+			"drugReactionAssessmentId": assessment_id,
+			"reactionId": reaction_ids[0],
+			"deleted": false,
+			"sourceOfAssessment": "Restored reporter"
+		}]
+	}}});
+	for attempt in 0..2 {
+		let (status, body) =
+			patch_json(&app, &cookie, &uri, restore_relatedness.clone()).await?;
+		assert_eq!(status, StatusCode::OK, "restore attempt {attempt}: {body}");
+		let (status, persisted) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{persisted}");
+		assert_eq!(body["data"], persisted["data"], "restore readback mismatch");
+		let body = persisted;
+		let siblings = body["data"]["drug"]["drugReactionAssessments"]
+			.as_array()
+			.ok_or("missing assessments after relatedness restore")?
+			.iter()
+			.filter(|row| row["reactionId"] == json!(reaction_ids[0]))
+			.collect::<Vec<_>>();
+		assert_eq!(siblings.len(), 2, "{body}");
+		assert!(
+			siblings.iter().any(|row| {
+				row["id"] == json!(relatedness_id)
+					&& row["drugReactionAssessmentId"] == json!(assessment_id)
+					&& row["sourceOfAssessment"] == "Restored reporter"
+			}),
+			"{body}"
+		);
+		assert!(
+			siblings.iter().any(|row| row["id"] == json!(sibling_id)),
+			"{body}"
+		);
+	}
 
 	let (status, body) = patch_json(
 		&app,
@@ -201,5 +238,61 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.ok_or("missing assessments after parent delete")?
 		.iter()
 		.all(|row| row["reactionId"] != json!(reaction_ids[1])));
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"drugReactionAssessments": [{
+				"drugReactionAssessmentId": parent_only_id,
+				"reactionId": reaction_ids[1],
+				"deleted": false
+			}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"drugReactionAssessments": [{
+				"drugReactionAssessmentId": assessment_id,
+				"reactionId": reaction_ids[0],
+				"_deleteAssessment": true
+			}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert!(body["data"]["drug"]["drugReactionAssessments"]
+		.as_array()
+		.ok_or("missing assessments after related parent delete")?
+		.iter()
+		.all(|row| row["reactionId"] != json!(reaction_ids[0])));
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"drugReactionAssessments": [{
+				"id": relatedness_id,
+				"drugReactionAssessmentId": assessment_id,
+				"reactionId": reaction_ids[0],
+				"deleted": false
+			}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+	let (status, body) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert!(body["data"]["drug"]["drugReactionAssessments"]
+		.as_array()
+		.ok_or("missing assessments after rejected child restore")?
+		.iter()
+		.all(|row| row["reactionId"] != json!(reaction_ids[0])));
 	Ok(())
 }

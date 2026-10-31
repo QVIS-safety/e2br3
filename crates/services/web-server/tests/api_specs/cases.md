@@ -2,7 +2,7 @@
 
 이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, message-header, `PUT /submission-receiver`, administration 소유의 case audit-trail은 제외했다.
 
-검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 111, `authorization_only` 1, `registration_only` 119, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
+검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 중 `asserted` 128, `authorization_only` 9, `registration_only` 94, `uncovered` 0개다. 상세 판정과 operation별 gap은 [전체 커버리지](coverage.tsv)에서 `spec=cases.md#...` 행을 보면 된다.
 
 ## 공통 계약
 
@@ -177,7 +177,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 | `GET`, `PUT`, `DELETE` | `/api/cases/{case_id}/drugs/{id}` |
 | `POST` | `/api/cases/{case_id}/drugs/{id}/restore` |
 
-공통 CRUD handler 소스상 status는 create 201, list/get/update 200, soft delete 204, restore 200이다. path의 `case_id`, `drug_id`, `device_id`, `assessment_id`가 body의 부모 ID보다 우선하며 다른 부모 아래의 child ID는 404다. assertion이 없는 operation의 실제 runtime 결과로 간주하지 않는다.
+공통 CRUD handler 소스상 status는 create 201, list/get/update 200, soft delete 204, restore 200이다. FDA device code restore는 본문 없는 204인 예외다. path의 `case_id`, `drug_id`, `device_id`, `assessment_id`가 body의 부모 ID보다 우선한다. drug 하위 공통 handler 다섯 종류는 먼저 활성 drug가 요청 Case에 속하는지 검사하고, FDA device code는 이어서 활성 device가 같은 drug에 속하는지 검사한다. 소속이 다르거나 parent drug/device가 삭제됐으면 404다. assertion이 없는 operation의 실제 runtime 결과로 간주하지 않는다.
 
 허용 필드:
 
@@ -189,7 +189,9 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - FDA device: `drug_id, sequence_number, malfunction, device_brand_name(+null_flavor), common_device_name(+null_flavor), device_product_code, manufacturer_name/address/city/state/country, device_usage, device_lot_number, operator_of_device`. device code는 `device_id, element, sequence_number, value_code`. `PUT /devices/replace`는 `data.devices[]`와 각 device의 code/follow-up 배열을 원자 교체한다.
 - drug-reaction assessment: create `drug_id, reaction_id, administration_start_interval_value/unit, last_dose_interval_value/unit, recurrence_action, reaction_recurred, dechallenge_result, expectedness`; update는 drug_id 제외. relatedness는 create `drug_reaction_assessment_id, sequence_number, source_of_assessment, method_of_assessment, method_of_assessment_kr1, result_of_assessment, result_of_assessment_kr1(+null_flavor), result_of_assessment_kr2`; update는 부모/sequence 제외.
 
-활성 assertion은 drug와 active-substance의 일부 CRUD, device create/replace/list, device code create, device-characteristic create/list, dosage/indication create, relatedness create에 집중되어 있다. 나머지 item verb는 registration_only다. device와 code POST는 생성 응답 뒤 editor DG 조회로 저장된 값을 확인한다.
+`generated_drug_child_routes_bind_drug_to_case_for_every_resource`는 동일 조직의 Case A 경로에 Case B의 drug/child ID를 넣어 FDA device, active-substance, dosage, indication, device-characteristic 각각의 POST/list/get/PUT/DELETE와 restore가 404인지 검사한다. owning 경로에서는 생성 ID, item 상태와 collection count, DELETE 204와 deleted 상태를 확인한다. 다만 active-substance 외 네 종류의 PUT과 dosage/indication/device-characteristic restore는 정상 성공을 직접 확인하지 않아 `authorization_only`다.
+
+FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wrong-case 404를 확인한다. parent device 삭제 중에는 code POST/list/get/PUT/DELETE/restore 여섯 동작이 모두 404이고 device restore 뒤 동일 code ID/value/count가 보존되는지 확인한다. Drug parent DELETE 204 뒤 child list/item 404, 동일 drug ID restore 뒤 child ID/value/count 보존도 별도 검사한다. 이 추가 검사는 활성 test body의 정적 근거이며 runtime은 NOT_RUN이다. 역할별 권한, case lock, 반복 DELETE, audit row는 남은 공백이다.
 
 근거:
 
@@ -199,11 +201,14 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - [tests/api_cases/subresources/drug.rs::test_relatedness_assessment_endpoints_ok](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::dg_kr_product_fields_create_read_and_update_independently](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::dg_kr_substance_fields_create_read_and_update_independently](../api_cases/subresources/drug.rs)
-- [tests/api_cases/subresources/drug.rs::drug_child_id_is_hidden_under_a_different_drug](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::fda_device_replace_normalizes_blank_null_flavors](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::fda_device_replace_rolls_back_on_constraint_violation](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::test_drug_active_substance_soft_delete_restore](../api_cases/subresources/drug.rs)
 - [tests/api_cases/subresources/drug.rs::test_drug_subresources_endpoints_ok](../api_cases/subresources/drug.rs)
+- [tests/api_cases/subresources/drug_scope.rs::drug_child_id_is_hidden_under_a_different_drug](../api_cases/subresources/drug_scope.rs)
+- [tests/api_cases/subresources/drug_scope.rs::generated_drug_child_routes_bind_drug_to_case_for_every_resource](../api_cases/subresources/drug_scope.rs)
+- [tests/api_cases/subresources/drug_scope.rs::fda_device_code_routes_reject_a_matching_drug_from_a_different_case](../api_cases/subresources/drug_scope.rs)
+- [tests/api_cases/subresources/drug_scope.rs::deleted_drug_hides_children_and_restore_preserves_child_identity](../api_cases/subresources/drug_scope.rs)
 - [tests/api_editor/pages/dg.generated.rs::deleted_drug_can_be_read_and_restored_with_children_and_guards](../api_editor/pages/dg.generated.rs)
 
 <a id="clinical"></a>
@@ -379,7 +384,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 
 ## Coverage gap 우선순위
 
-1. registration_only 119개 중 drug device/code/assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
+1. registration_only 94개 중 drug assessment, patient의 non-nested item, safety-report documents/literature/study item, linked-report/source-document의 mutation이 가장 넓은 공백이다. Drug의 8개 `authorization_only` operation은 wrong-case 404만 있어 정상 PUT/restore 계약이 남는다. 성공 status와 body뿐 아니라 wrong parent/case 404, viewer 403, soft-delete/restore, audit reason을 묶어 검증해야 한다.
 2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`는 등록 이외 행동 assertion이 전혀 없다.
 3. `GET /cases/{case_id}/versions`는 조직 가시성만 검증되어 반환 필드, 정렬, 빈 결과가 미검증이다.
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.

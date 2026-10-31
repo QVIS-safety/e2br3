@@ -549,10 +549,19 @@ lib_rest_core::generate_drug_child_rest_fns! {
 async fn ensure_device_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
+	case_id: Uuid,
 	drug_id: Uuid,
 	device_id: Uuid,
 ) -> Result<()> {
+	DrugInformationBmc::get_in_case(ctx, mm, case_id, drug_id).await?;
 	let device = FdaDeviceInformationBmc::get(ctx, mm, device_id).await?;
+	if device.deleted {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "fda_device_information",
+			id: device_id,
+		}
+		.into());
+	}
 	ensure_drug_scope(drug_id, device.drug_id, device_id, "fda_device_information")
 }
 
@@ -581,7 +590,7 @@ pub async fn create_fda_device_code(
 		format!("fda_device_codes:new:device:{device_id}"),
 		move |ctx, mm| {
 			Box::pin(async move {
-				ensure_device_scope(ctx, mm, drug_id, device_id).await?;
+				ensure_device_scope(ctx, mm, case_id, drug_id, device_id).await?;
 				let mut data = params.data;
 				data.device_id = device_id;
 				let id = FdaDeviceCodeBmc::create(ctx, mm, data).await?;
@@ -618,7 +627,7 @@ pub async fn list_fda_device_codes(
 		format!("fda_device_codes:list:device:{device_id}"),
 		move |ctx, mm| {
 			Box::pin(async move {
-				ensure_device_scope(ctx, mm, drug_id, device_id).await?;
+				ensure_device_scope(ctx, mm, case_id, drug_id, device_id).await?;
 				let mut filter = FdaDeviceCodeFilter::default();
 				filter.device_id = Some(modql::filter::OpValsValue::from(vec![
 					modql::filter::OpValValue::Eq(serde_json::json!(
@@ -645,11 +654,12 @@ pub async fn list_fda_device_codes(
 async fn scoped_fda_device_code(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
+	case_id: Uuid,
 	drug_id: Uuid,
 	device_id: Uuid,
 	id: Uuid,
 ) -> Result<FdaDeviceCode> {
-	ensure_device_scope(ctx, mm, drug_id, device_id).await?;
+	ensure_device_scope(ctx, mm, case_id, drug_id, device_id).await?;
 	let code = FdaDeviceCodeBmc::get(ctx, mm, id).await?;
 	if code.device_id != device_id {
 		return Err(model::Error::EntityUuidNotFound {
@@ -685,7 +695,8 @@ pub async fn get_fda_device_code(
 		move |ctx, mm| {
 			Box::pin(async move {
 				let data =
-					scoped_fda_device_code(ctx, mm, drug_id, device_id, id).await?;
+					scoped_fda_device_code(ctx, mm, case_id, drug_id, device_id, id)
+						.await?;
 				Ok((
 					axum::http::StatusCode::OK,
 					axum::Json(lib_rest_core::rest_result::DataRestResult { data }),
@@ -722,7 +733,8 @@ pub async fn update_fda_device_code(
 		format!("fda_device_codes:{id}:device:{device_id}"),
 		move |ctx, mm| {
 			Box::pin(async move {
-				scoped_fda_device_code(ctx, mm, drug_id, device_id, id).await?;
+				scoped_fda_device_code(ctx, mm, case_id, drug_id, device_id, id)
+					.await?;
 				FdaDeviceCodeBmc::update(ctx, mm, id, params.data).await?;
 				let data = FdaDeviceCodeBmc::get(ctx, mm, id).await?;
 				Ok((
@@ -738,12 +750,13 @@ pub async fn update_fda_device_code(
 async fn set_fda_device_code_deleted(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
+	case_id: Uuid,
 	drug_id: Uuid,
 	device_id: Uuid,
 	id: Uuid,
 	deleted: bool,
 ) -> Result<axum::http::StatusCode> {
-	scoped_fda_device_code(ctx, mm, drug_id, device_id, id).await?;
+	scoped_fda_device_code(ctx, mm, case_id, drug_id, device_id, id).await?;
 	if deleted {
 		FdaDeviceCodeBmc::delete(ctx, mm, id).await?;
 	} else {
@@ -776,7 +789,7 @@ macro_rules! fda_device_code_delete_handler {
 				format!("fda_device_codes:{id}:device:{device_id}"),
 				move |ctx, mm| {
 					Box::pin(set_fda_device_code_deleted(
-						ctx, mm, drug_id, device_id, id, $deleted,
+						ctx, mm, case_id, drug_id, device_id, id, $deleted,
 					))
 				},
 			)

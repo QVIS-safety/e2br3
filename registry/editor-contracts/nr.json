@@ -286,6 +286,11 @@
       "id": "partial_narrative_and_children_keep_parent",
       "verifier": "relations::parents::partial_narrative_and_children_keep_parent",
       "description": "partial narrative and children keep parent"
+    },
+    {
+      "id": "narrative_rows_delete_restore_and_resave_are_stable",
+      "verifier": "relations::nr_rows::narrative_rows_delete_restore_and_resave_are_stable",
+      "description": "NR child deletion is repeatable, omission and empty lists do not restore rows, and explicit restore plus resave preserve ids and counts"
     }
   ],
   "auditChecks": [],

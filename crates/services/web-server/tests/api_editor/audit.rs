@@ -10,6 +10,21 @@ use serde_json::Value;
 use std::collections::HashSet;
 use uuid::Uuid;
 
+pub(super) async fn case_audit_ids(
+	mm: &ModelManager,
+	ctx: &Ctx,
+	case_id: &str,
+) -> Result<Vec<i64>> {
+	let mut ids =
+		AuditLogBmc::list_by_record(ctx, mm, "cases", Uuid::parse_str(case_id)?)
+			.await?
+			.into_iter()
+			.map(|log| log.id)
+			.collect::<Vec<_>>();
+	ids.sort_unstable();
+	Ok(ids)
+}
+
 pub(super) struct Snapshot {
 	logs: HashSet<i64>,
 	record_id: Option<Uuid>,

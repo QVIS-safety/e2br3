@@ -632,6 +632,66 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		"Other Product Substance",
 	)
 	.await?;
+	let hard_deleted_substance = create_product_active_substance_via_api(
+		&app,
+		&admin_cookie,
+		product_a,
+		3,
+		"Hard Deleted Substance",
+	)
+	.await?;
+	let hard_deleted_uri = format!(
+		"/api/presaves/products/{product_a}/active-substances/{hard_deleted_substance}"
+	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		hard_deleted_uri.clone(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	for method in [Method::GET, Method::DELETE] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			method,
+			hard_deleted_uri.clone(),
+			None,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{value:?}");
+	}
+	let before_failed_replay = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_a}/details"),
+	)
+	.await?;
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/products/{product_a}/details"),
+		Some(json!({"data": {"rows": {
+			"product": {"drugBrandName": "must roll back"},
+			"activeSubstances": [{
+				"id": hard_deleted_substance,
+				"sequenceNumber": 4,
+				"substanceName": "must not replay"
+			}]
+		}}})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{value:?}");
+	let after_failed_replay = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_a}/details"),
+	)
+	.await?;
+	assert_eq!(after_failed_replay["data"], before_failed_replay["data"]);
 	put_json_ok(
 		&app,
 		&admin_cookie,
@@ -791,6 +851,36 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 			"legacy Product payload was accepted: {value:?}"
 		);
 	}
+
+	let replacement = create_product_active_substance_via_api(
+		&app,
+		&admin_cookie,
+		product_a,
+		4,
+		"Replacement Substance",
+	)
+	.await?;
+	assert_ne!(replacement, hard_deleted_substance);
+	let listed = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_a}/active-substances"),
+	)
+	.await?;
+	let listed = listed["data"].as_array().ok_or("substance list")?;
+	let substance_keep = substance_keep.to_string();
+	let replacement = replacement.to_string();
+	let hard_deleted_substance = hard_deleted_substance.to_string();
+	assert_eq!(listed.len(), 2, "{listed:?}");
+	assert!(listed
+		.iter()
+		.any(|row| row["id"].as_str() == Some(substance_keep.as_str())));
+	assert!(listed
+		.iter()
+		.any(|row| row["id"].as_str() == Some(replacement.as_str())));
+	assert!(listed
+		.iter()
+		.all(|row| row["id"].as_str() != Some(hard_deleted_substance.as_str())));
 
 	Ok(())
 }

@@ -206,6 +206,74 @@ async fn section_presave_receiver_details_contract_includes_routes() -> Result<(
 		value["data"]["rows"]["routes"][0]["conditionValueCode"],
 		"3"
 	);
+	let route_id = value["data"]["rows"]["routes"][0]["id"]
+		.as_str()
+		.ok_or("missing route id")?;
+	let route_id = uuid::Uuid::parse_str(route_id)?;
+
+	let deleted = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		json!({"data": {"rows": {"routes": [{"id": route_id, "deleted": true}]}}}),
+	)
+	.await?;
+	assert_eq!(
+		deleted["data"]["rows"]["routes"].as_array().map(Vec::len),
+		Some(0)
+	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		Some(json!({"data": {"rows": {
+			"receiver": {"description": "must roll back"},
+			"routes": [{
+				"id": route_id,
+				"sequenceNumber": 2,
+				"authority": "fda",
+				"receiverLabel": "must not replay",
+				"messageReceiverIdentifier": "CBER_IND",
+				"conditionPage": "CI",
+				"conditionFieldCode": "FDA_REPORT_TYPE",
+				"conditionOperator": "Equal",
+				"conditionValueCode": "3",
+				"conditionValueLabel": "CBER IND"
+			}]
+		}}})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{value:?}");
+	let after_replay = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+	)
+	.await?;
+	assert_eq!(after_replay["data"], deleted["data"]);
+	let replacement = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		json!({"data": {"rows": {"routes": [{
+			"sequenceNumber": 2,
+			"authority": "fda",
+			"receiverLabel": "Replacement Route",
+			"messageReceiverIdentifier": "CBER_IND",
+			"conditionPage": "CI",
+			"conditionFieldCode": "FDA_REPORT_TYPE",
+			"conditionOperator": "Equal",
+			"conditionValueCode": "3",
+			"conditionValueLabel": "CBER IND"
+		}]}}}),
+	)
+	.await?;
+	let routes = replacement["data"]["rows"]["routes"]
+		.as_array()
+		.ok_or("missing routes")?;
+	assert_eq!(routes.len(), 1, "{routes:?}");
+	assert_ne!(routes[0]["id"], route_id.to_string());
 
 	Ok(())
 }
@@ -247,6 +315,66 @@ async fn test_receiver_presave_details_graph_load_save_noop_delete_and_invalid(
 		"Other",
 	)
 	.await?;
+	let hard_deleted_consignee = create_receiver_consignee_via_api(
+		&app,
+		&admin_cookie,
+		receiver_a,
+		3,
+		"Hard Deleted",
+	)
+	.await?;
+	let hard_deleted_uri = format!(
+		"/api/presaves/receivers/{receiver_a}/consignees/{hard_deleted_consignee}"
+	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		hard_deleted_uri.clone(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	for method in [Method::GET, Method::DELETE] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			method,
+			hard_deleted_uri.clone(),
+			None,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{value:?}");
+	}
+	let before_replay = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_a}/details"),
+	)
+	.await?;
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/receivers/{receiver_a}/details"),
+		Some(json!({"data": {"rows": {
+			"receiver": {"description": "must roll back"},
+			"consignees": [{
+				"id": hard_deleted_consignee,
+				"sequenceNumber": 4,
+				"name": "must not replay"
+			}]
+		}}})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{value:?}");
+	let after_replay = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_a}/details"),
+	)
+	.await?;
+	assert_eq!(after_replay["data"], before_replay["data"]);
 
 	let details = get_json_ok(
 		&app,
@@ -378,6 +506,32 @@ async fn test_receiver_presave_details_graph_load_save_noop_delete_and_invalid(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let replacement = create_receiver_consignee_via_api(
+		&app,
+		&admin_cookie,
+		receiver_a,
+		5,
+		"Replacement",
+	)
+	.await?;
+	assert_ne!(replacement, hard_deleted_consignee);
+	let listed = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_a}/consignees"),
+	)
+	.await?;
+	let listed = listed["data"].as_array().ok_or("missing consignees")?;
+	assert_eq!(listed.len(), 3, "{listed:?}");
+	let replacement = replacement.to_string();
+	let hard_deleted_consignee = hard_deleted_consignee.to_string();
+	assert!(listed
+		.iter()
+		.any(|row| row["id"].as_str() == Some(replacement.as_str())));
+	assert!(listed
+		.iter()
+		.all(|row| row["id"].as_str() != Some(hard_deleted_consignee.as_str())));
 
 	Ok(())
 }

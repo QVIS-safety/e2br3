@@ -406,6 +406,35 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		"KEEP-PRODUCT",
 	)
 	.await?;
+	let reporter_presave_id = create_named_reporter_presave_via_api(
+		&app,
+		&admin_cookie,
+		format!("Lifecycle Reporter {}", Uuid::new_v4()),
+		"Lifecycle Reporter Org",
+	)
+	.await?;
+	let study_reporter_id = create_study_reporter_via_api(
+		&app,
+		&admin_cookie,
+		study_id,
+		1,
+		reporter_presave_id,
+		"Lifecycle Reporter Org",
+	)
+	.await?;
+	let with_fda_ind = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/studies/{study_id}/details"),
+		json!({"data": {"rows": {
+			"fdaCrossReportedInds": [{"sequenceNumber": 1, "indNumber": "KEEP-IND"}]
+		}}}),
+	)
+	.await?;
+	let fda_ind_id = with_fda_ind["data"]["rows"]["fdaCrossReportedInds"][0]["id"]
+		.as_str()
+		.ok_or("missing FDA IND id")?
+		.to_owned();
 
 	put_json_ok(
 		&app,
@@ -463,38 +492,165 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		1
 	);
 
-	let after_delete = put_json_ok(
+	for (row_key, row_id, omitted_update, expected_count) in [
+		(
+			"registrationNumbers",
+			registration_delete_id.to_string(),
+			json!({
+				"id": registration_delete_id,
+				"registrationNumber": "UPDATED-WHILE-DELETED",
+				"countryCode": "US"
+			}),
+			2,
+		),
+		(
+			"products",
+			study_product_id.to_string(),
+			json!({"id": study_product_id, "productName": "UPDATED-WHILE-DELETED"}),
+			1,
+		),
+		(
+			"reporters",
+			study_reporter_id.to_string(),
+			json!({
+				"id": study_reporter_id,
+				"reporterOrganization": "Updated While Deleted"
+			}),
+			1,
+		),
+		(
+			"fdaCrossReportedInds",
+			fda_ind_id.clone(),
+			json!({"id": fda_ind_id, "indNumber": "UPDATED-WHILE-DELETED"}),
+			1,
+		),
+	] {
+		let mut delete_body = json!({"data": {"rows": {}}});
+		delete_body["data"]["rows"][row_key] =
+			json!([{"id": row_id, "deleted": true}]);
+		put_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+			delete_body,
+		)
+		.await?;
+		let deleted = get_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+		)
+		.await?;
+		let deleted_rows = deleted["data"]["rows"][row_key]
+			.as_array()
+			.ok_or("missing deleted rows")?;
+		assert_eq!(deleted_rows.len(), expected_count);
+		let deleted_row = deleted_rows
+			.iter()
+			.find(|row| row["id"].as_str() == Some(row_id.as_str()))
+			.ok_or("missing deleted row")?;
+		assert_eq!(deleted_row["deleted"], true);
+
+		let mut restore_row = omitted_update.clone();
+		restore_row["deleted"] = json!(false);
+		let mut omitted_body = json!({"data": {"rows": {}}});
+		omitted_body["data"]["rows"][row_key] = json!([omitted_update]);
+		put_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+			omitted_body,
+		)
+		.await?;
+		let after_omitted = get_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+		)
+		.await?;
+		let omitted_row = after_omitted["data"]["rows"][row_key]
+			.as_array()
+			.ok_or("missing rows after omitted deleted")?
+			.iter()
+			.find(|row| row["id"].as_str() == Some(row_id.as_str()))
+			.ok_or("missing row after omitted deleted")?;
+		assert_eq!(omitted_row["deleted"], true);
+		for (field, expected) in
+			omitted_update.as_object().ok_or("missing update fields")?
+		{
+			assert_eq!(&omitted_row[field], expected, "{row_key}.{field}");
+		}
+
+		for _ in 0..2 {
+			let mut restore_body = json!({"data": {"rows": {}}});
+			restore_body["data"]["rows"][row_key] = json!([restore_row.clone()]);
+			put_json_ok(
+				&app,
+				&admin_cookie,
+				format!("/api/presaves/studies/{study_id}/details"),
+				restore_body,
+			)
+			.await?;
+			let restored = get_json_ok(
+				&app,
+				&admin_cookie,
+				format!("/api/presaves/studies/{study_id}/details"),
+			)
+			.await?;
+			let restored_rows = restored["data"]["rows"][row_key]
+				.as_array()
+				.ok_or("missing restored rows")?;
+			assert_eq!(restored_rows.len(), expected_count);
+			let restored_row = restored_rows
+				.iter()
+				.find(|row| row["id"].as_str() == Some(row_id.as_str()))
+				.ok_or("missing restored row")?;
+			assert_eq!(restored_row["deleted"], false);
+			for (field, expected) in
+				restore_row.as_object().ok_or("missing restore fields")?
+			{
+				assert_eq!(&restored_row[field], expected, "{row_key}.{field}");
+			}
+		}
+
+		let mut redelete_body = json!({"data": {"rows": {}}});
+		redelete_body["data"]["rows"][row_key] =
+			json!([{"id": row_id, "deleted": true}]);
+		put_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+			redelete_body,
+		)
+		.await?;
+		let redeleted = get_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_id}/details"),
+		)
+		.await?;
+		let redeleted_row = redeleted["data"]["rows"][row_key]
+			.as_array()
+			.ok_or("missing re-deleted rows")?
+			.iter()
+			.find(|row| row["id"].as_str() == Some(row_id.as_str()))
+			.ok_or("missing re-deleted row")?;
+		assert_eq!(redeleted_row["deleted"], true);
+	}
+
+	let after_lifecycle = get_json_ok(
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/studies/{study_id}/details"),
-		json!({
-			"data": { "rows": {
-				"registrationNumbers": [{ "id": registration_delete_id, "deleted": true }]
-			} }
-		}),
 	)
 	.await?;
-	let registrations = after_delete["data"]["rows"]["registrationNumbers"]
+	let kept_registration = after_lifecycle["data"]["rows"]["registrationNumbers"]
 		.as_array()
-		.unwrap();
-	let deleted_registration = registrations
-		.iter()
-		.find(|row| row["id"].as_str() == Some(&registration_delete_id.to_string()))
-		.ok_or("missing deleted registration")?;
-	assert_eq!(deleted_registration["deleted"].as_bool(), Some(true));
-	let kept_registration = registrations
+		.ok_or("missing registration numbers")?
 		.iter()
 		.find(|row| row["id"].as_str() == Some(&registration_keep_id.to_string()))
 		.ok_or("missing kept registration")?;
-	assert_eq!(kept_registration["deleted"].as_bool(), Some(false));
-	assert!(
-		after_delete["data"]["rows"]["products"]
-			.as_array()
-			.unwrap()
-			.iter()
-			.any(|row| row["id"].as_str() == Some(&study_product_id.to_string())),
-		"{after_delete:?}"
-	);
+	assert_eq!(kept_registration["deleted"], false);
 
 	Ok(())
 }
@@ -542,7 +698,13 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 	)
 	.await?;
 
-	for body in [
+	let baseline = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/studies/{study_a}/details"),
+	)
+	.await?;
+	for mut body in [
 		json!({ "data": { "rows": { "registrationNumbers": [{ "deleted": true }] } } }),
 		json!({ "data": { "rows": { "products": [{ "deleted": true }] } } }),
 		json!({ "data": { "rows": { "registrationNumbers": [{ "id": registration_b, "deleted": true }] } } }),
@@ -550,6 +712,7 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 		json!({ "data": { "rows": { "registrationNumbers": [{ "id": registration_b, "sequenceNumber": 2, "registrationNumber": "WRONG" }] } } }),
 		json!({ "data": { "rows": { "products": [{ "id": product_b_child, "sequenceNumber": 2, "productName": "WRONG" }] } } }),
 	] {
+		body["data"]["rows"]["study"] = json!({"studyName": "must roll back"});
 		let (status, value) = request_json(
 			&app,
 			&admin_cookie,
@@ -559,6 +722,13 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 		)
 		.await?;
 		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		let after = get_json_ok(
+			&app,
+			&admin_cookie,
+			format!("/api/presaves/studies/{study_a}/details"),
+		)
+		.await?;
+		assert_eq!(after["data"], baseline["data"]);
 	}
 
 	for legacy_body in [

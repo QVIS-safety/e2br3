@@ -63,7 +63,7 @@ pub(super) async fn apply_si_page_rows_patch(
 		});
 	let study_id = if let Some(study) = study {
 		let update = StudyInformationForUpdate {
-			source_study_presave_id: uuid_field(study, &["sourceStudyPresaveId"]),
+			source_study_presave_id: uuid_field(study, &["sourceStudyPresaveId"])?,
 			study_name: string_field(study, &["studyName"]),
 			study_name_null_flavor: string_field(study, &["studyNameNullFlavor"]),
 			sponsor_study_number: string_field(study, &["sponsorStudyNumber"]),
@@ -79,7 +79,15 @@ pub(super) async fn apply_si_page_rows_patch(
 				&["fdaPreAndaNumberOccurred"],
 			),
 		};
-		if let Some(id) = uuid_field(study, &["id"]) {
+		if let Some(id) = uuid_field(study, &["id"])? {
+			let current = StudyInformationBmc::get(ctx, mm, id).await?;
+			if current.case_id != case_id {
+				return Err(lib_core::model::Error::EntityUuidNotFound {
+					entity: "study_information",
+					id,
+				}
+				.into());
+			}
 			let clear_fields =
 				explicit_null_model_fields(study, SI_STUDY_PATCH_FIELDS);
 			lib_core::model::update_uuid_patch::<StudyInformationBmc, _>(
@@ -165,7 +173,7 @@ pub(super) async fn apply_si_page_rows_patch(
 		for value in registrations {
 			let registration =
 				as_object(page_id, "studyRegistrationNumbers", value)?;
-			let id = uuid_field(registration, &["id"]);
+			let id = uuid_field(registration, &["id"])?;
 			if bool_field(registration, &["deleted"]) == Some(true) {
 				if let Some(id) = id {
 					let existing =
@@ -205,6 +213,11 @@ pub(super) async fn apply_si_page_rows_patch(
 						id,
 					}
 					.into());
+				}
+				if bool_field(registration, &["deleted"]) == Some(false)
+					&& existing.deleted
+				{
+					StudyRegistrationNumberBmc::restore(ctx, mm, id).await?;
 				}
 				let clear_fields = explicit_null_model_fields(
 					registration,
@@ -262,7 +275,7 @@ pub(super) async fn apply_si_page_rows_patch(
 					"studyInformation.fdaCrossReportedIndNumbers",
 					value,
 				)?;
-				let id = uuid_field(number, &["id"]);
+				let id = uuid_field(number, &["id"])?;
 				if bool_field(number, &["deleted"]) == Some(true) {
 					if let Some(id) = id {
 						let existing =
@@ -297,6 +310,11 @@ pub(super) async fn apply_si_page_rows_patch(
 							id,
 						}
 						.into());
+					}
+					if bool_field(number, &["deleted"]) == Some(false)
+						&& existing.deleted
+					{
+						StudyFdaCrossReportedIndBmc::restore(ctx, mm, id).await?;
 					}
 					let clear_fields =
 						explicit_null_model_fields(number, SI_FDA_IND_PATCH_FIELDS);

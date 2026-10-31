@@ -22,9 +22,9 @@ parent 단일 행과 graph 생성 본문은 `{"data":{"rows":{...}}}`다. PATCH�
 |---|---|---|
 | `GET /api/presaves/senders` | scope 내 sender graph 목록 | 목록과 responsible person 포함 |
 | `POST /api/presaves/senders` | `rows.sender`, 선택 `gateways[]`, `responsiblePersons[]`; 201 graph | canonical camelCase, 중복 409, 자식 원자 생성 |
-| `GET /api/presaves/senders/{id}` | parent row | 없음(권한/등록 snapshot만) |
-| `PATCH /api/presaves/senders/{id}` | parent 일부 변경 또는 `deleted:true` archive | 누락 보존, blank/null clear |
-| `DELETE /api/presaves/senders/{id}` | 참조 없을 때 archive, 204 | 성공과 참조 중 409 |
+| `GET /api/presaves/senders/{id}` | parent row | archive/restore 뒤 동일 ID와 deleted 상태 |
+| `PATCH /api/presaves/senders/{id}` | parent 일부 변경 또는 `deleted:true` archive | 누락 보존, blank/null clear, `deleted:false` 동일 ID 반복 restore |
+| `DELETE /api/presaves/senders/{id}` | 참조 없을 때 archive, 204 | 반복 DELETE 204, deleted readback, 참조 중 409와 상태 불변 |
 | `GET`, `PUT /api/presaves/senders/{id}/details` | `rows.sender`, `gateways[]`, `responsiblePersons[]`의 원자 graph 조회/변경 | load/save, rollback, 명시 삭제/복원, 잘못된 자식 ID |
 | `GET`, `POST /api/presaves/senders/{sender_id}/gateways` | child 목록 / snake_case 단건 생성 | POST만 직접 assertion |
 | `GET`, `PATCH`, `DELETE /api/presaves/senders/{sender_id}/gateways/{id}` | child 조회/변경/soft delete | 세 method 직접 assertion |
@@ -41,14 +41,14 @@ parent 단일 행과 graph 생성 본문은 `{"data":{"rows":{...}}}`다. PATCH�
 |---|---|---|
 | `GET /api/presaves/receivers` | scope 내 receiver parent row 목록 | 목록 포함 |
 | `POST /api/presaves/receivers` | `rows.receiver`, 선택 `consignees[]`, `routes[]`; 201 graph | 필수값·허용 receiver type·timeline·중복 오류 |
-| `GET /api/presaves/receivers/{id}` | parent row | 없음 |
-| `PATCH /api/presaves/receivers/{id}` | parent 일부 변경/archive | null clear |
-| `DELETE /api/presaves/receivers/{id}` | 참조 없을 때 archive | 204와 참조 중 409 |
-| `GET`, `PUT /api/presaves/receivers/{id}/details` | `rows.receiver`, `consignees[]`, `routes[]` 원자 graph | camelCase, load/save/no-op/delete/잘못된 부모 |
-| `GET`, `POST /api/presaves/receivers/{receiver_id}/consignees` | child 목록/생성 | POST만 직접 assertion |
-| `GET`, `PATCH`, `DELETE /api/presaves/receivers/{receiver_id}/consignees/{id}` | child 조회/변경/hard delete | GET/DELETE 직접 assertion, PATCH는 snapshot만 |
+| `GET /api/presaves/receivers/{id}` | parent row | archive/restore 뒤 동일 ID와 deleted 상태 |
+| `PATCH /api/presaves/receivers/{id}` | parent 일부 변경/archive | null clear, `deleted:false` 동일 ID 반복 restore |
+| `DELETE /api/presaves/receivers/{id}` | 참조 없을 때 archive | 반복 DELETE 204와 deleted readback |
+| `GET`, `PUT /api/presaves/receivers/{id}/details` | `rows.receiver`, `consignees[]`, `routes[]` 원자 graph | camelCase, load/save/no-op, hard delete old-ID replay 404·전체 rollback·새 ID/count |
+| `GET`, `POST /api/presaves/receivers/{receiver_id}/consignees` | child 목록/생성 | replacement 새 ID와 정확한 count |
+| `GET`, `PATCH`, `DELETE /api/presaves/receivers/{receiver_id}/consignees/{id}` | child 조회/변경/hard delete | DELETE 204, GET·재DELETE 404; PATCH 정상 성공은 미검증 |
 
-receiver 대표 키는 `receiverType`(`Regulatory Authority` 또는 `Original Manufacturer`), `organizationName`, `description`, 기관별 timeline day count/not-applicable 쌍이다. consignee는 `sequence_number`, `name`, `email`, `phone`을 받는다. details source에는 route rows도 있지만 별도 route CRUD는 등록되지 않았다.
+receiver 대표 키는 `receiverType`(`Regulatory Authority` 또는 `Original Manufacturer`), `organizationName`, `description`, 기관별 timeline day count/not-applicable 쌍이다. consignee는 `sequence_number`, `name`, `email`, `phone`을 받는다. details source에는 route rows도 있지만 별도 route CRUD는 등록되지 않았다. route는 details PUT으로 hard delete되며 old ID replay는 404와 전체 graph rollback, 재생성은 새 ID와 정확한 count를 직접 검사한다.
 
 <a id="product"></a>
 
@@ -58,12 +58,12 @@ receiver 대표 키는 `receiverType`(`Regulatory Authority` 또는 `Original Ma
 |---|---|---|
 | `GET /api/presaves/products` | scope와 선택 `senderIds=uuid,...` 필터 목록 | scope 필터와 목록 |
 | `POST /api/presaves/products` | `rows.product`, 선택 `activeSubstances[]`; 201 graph | 원자 생성, sender/identity 필수, identity 중복 |
-| `GET /api/presaves/products/{id}` | parent row | 없음 |
-| `PATCH /api/presaves/products/{id}` | parent 일부 변경/archive | 저장·clear와 legacy key 거절 |
-| `DELETE /api/presaves/products/{id}` | 참조 없을 때 archive | 성공, 참조 중 409, editor scope 회귀 |
-| `GET`, `PUT /api/presaves/products/{id}/details` | `rows.product`, `activeSubstances[]` 원자 graph | effective MFDS/ICH 필드, save/no-op/delete/rollback/invalid child |
-| `GET`, `POST /api/presaves/products/{product_id}/active-substances` | child 목록/생성 | POST 직접 assertion, GET은 snapshot만 |
-| `GET`, `PATCH`, `DELETE /api/presaves/products/{product_id}/active-substances/{id}` | child 조회/변경/hard delete | GET/DELETE와 PATCH 오류 직접 assertion; PATCH 성공값 round-trip 없음 |
+| `GET /api/presaves/products/{id}` | parent row | archive/restore 뒤 동일 ID와 deleted 상태 |
+| `PATCH /api/presaves/products/{id}` | parent 일부 변경/archive | 저장·clear, legacy key 거절, `deleted:false` 동일 ID 반복 restore |
+| `DELETE /api/presaves/products/{id}` | 참조 없을 때 archive | 반복 DELETE 204, deleted readback, 참조 중 409 뒤 상태 불변 |
+| `GET`, `PUT /api/presaves/products/{id}/details` | `rows.product`, `activeSubstances[]` 원자 graph | save/no-op, hard delete old-ID replay 404·전체 rollback·새 ID/count |
+| `GET`, `POST /api/presaves/products/{product_id}/active-substances` | child 목록/생성 | replacement 새 ID와 정확한 active count |
+| `GET`, `PATCH`, `DELETE /api/presaves/products/{product_id}/active-substances/{id}` | child 조회/변경/hard delete | DELETE 204, GET·재DELETE 404; PATCH 성공값 round-trip 없음 |
 
 product create/PATCH와 graph의 canonical 요청 키는 `senderPresaveId`, `receiverPresaveId`, `productId`, `medicinalProduct`, `medicinalProductNotation`, `preApprovalIpName`, `drugBrandName`, `originalManufacturer`, `productDescription`, `mpid`, `mpidVersion`, `mfdsMpid`, `mfdsMpidVersion`, `phpid`, `phpidVersion`, `investigationalProductBlinded`, `obtainDrugCountry`, `drugAuthorizationNumber`, `drugAuthorizationCountry`, `drugAuthorizationHolder`, `holderApplicantNameNotation`다. identity에는 `productId` 또는 `preApprovalIpName` 중 하나가 필요하다. `brandName`은 canonical key가 아니며 unknown field로 거절된다. details graph 응답은 모두 camelCase다. 반면 direct product list/get/PATCH 응답은 model serialization을 그대로 써서 대다수 키가 snake_case이고 `preApprovalIpName`, `drugBrandName`, `mpidVersion`, `phpidVersion`만 명시적 serde 이름을 쓴다. substance graph 키는 `id`, `deleted`, `sequenceNumber`, `substanceName`, `substanceTermIdVersion`, `substanceTermId`, `mfdsVersion`, `mfdsId`, `substanceStrengthValue`, `substanceStrengthUnit`다. MFDS device rows와 과거 source 필드는 details 응답에 포함되지 않는다.
 
@@ -74,9 +74,9 @@ product create/PATCH와 graph의 canonical 요청 키는 `senderPresaveId`, `rec
 | Method/path | 정상 계약 | 활성 assertion |
 |---|---|---|
 | `GET`, `POST /api/presaves/reporters` | `rows.reporter` 목록/생성 | 두 method 직접 assertion |
-| `GET`, `PATCH`, `DELETE /api/presaves/reporters/{id}` | wrapped row 조회/변경/archive | 세 method 직접 assertion |
+| `GET`, `PATCH`, `DELETE /api/presaves/reporters/{id}` | wrapped row 조회/변경/archive | 반복 DELETE 204와 동일 ID 반복 restore/readback |
 | `GET`, `POST /api/presaves/narratives` | `rows.narrative` 목록/생성 | 두 method 직접 assertion |
-| `GET`, `PATCH`, `DELETE /api/presaves/narratives/{id}` | wrapped row 조회/변경/archive | 세 method 직접 assertion |
+| `GET`, `PATCH`, `DELETE /api/presaves/narratives/{id}` | wrapped row 조회/변경/archive | 반복 DELETE 204와 동일 ID 반복 restore/readback |
 
 reporter 대표 키는 `reporterTitle`, `reporterGivenName`, `reporterFamilyName`, 각 null-flavor, `organization`, `countryCode`, `qualification`, `qualificationKr1`, `primarySourceRegulatory`다. narrative는 `caseNarrative`, `caseNarrativeNotation`, `additionalInformation`, `templateTitle`을 사용한다. legacy snake_case unwrapped body는 422다. DELETE 뒤 단건과 목록은 `deleted:true` row를 계속 반환한다.
 
@@ -86,12 +86,12 @@ reporter 대표 키는 `reporterTitle`, `reporterGivenName`, `reporterFamilyName
 
 | Method/path | 정상 계약 | 활성 assertion |
 |---|---|---|
-| `GET /api/presaves/studies` | scope와 선택 `productIds=uuid,...` 필터 목록 | 없음 |
+| `GET /api/presaves/studies` | scope와 선택 `productIds=uuid,...` 필터 목록 | restore 뒤 동일 ID가 정확히 1개 |
 | `POST /api/presaves/studies` | `rows.study`, `products[]`, `reporters[]`, `registrationNumbers[]`, `fdaCrossReportedInds[]`; 201 graph | 모든 canonical row 원자 생성 |
-| `GET /api/presaves/studies/{id}` | parent row | 없음 |
-| `PATCH /api/presaves/studies/{id}` | parent 일부 변경/archive | optional text clear |
-| `DELETE /api/presaves/studies/{id}` | archive, 204 | 없음 |
-| `GET`, `PUT /api/presaves/studies/{id}/details` | 5개 row 집합 원자 조회/변경 | load/save, child 생성·명시 삭제, no-op, 잘못된 ID |
+| `GET /api/presaves/studies/{id}` | parent row | archive/restore 뒤 동일 ID와 deleted 상태 |
+| `PATCH /api/presaves/studies/{id}` | parent 일부 변경/archive | optional text clear, `deleted:false` 동일 ID 반복 restore |
+| `DELETE /api/presaves/studies/{id}` | archive, 204 | 반복 DELETE 204와 deleted readback |
+| `GET`, `PUT /api/presaves/studies/{id}/details` | 5개 row 집합 원자 조회/변경 | 네 child 종류의 명시 삭제·생략 시 삭제 유지·동일 ID 반복 restore/re-delete, invalid/wrong-parent 전체 graph rollback |
 | `GET`, `POST /api/presaves/studies/{study_id}/products` 및 `/{id}`의 `GET`, `PATCH`, `DELETE` | study-product 단건 CRUD | fixture 생성 요청만 있고 endpoint 전용 assertion 없음 |
 | `GET`, `POST /api/presaves/studies/{study_id}/registration-numbers` 및 `/{id}`의 `GET`, `PATCH`, `DELETE` | registration 단건 CRUD | fixture 생성 요청만 있고 endpoint 전용 assertion 없음 |
 | `GET`, `POST /api/presaves/studies/{study_id}/reporters` 및 `/{id}`의 `GET`, `PATCH`, `DELETE` | study-reporter 단건 CRUD | fixture 생성 요청만 있고 endpoint 전용 assertion 없음 |
@@ -100,7 +100,9 @@ study 대표 키는 `productPresaveId`, `studyName`, `studyNameNotation`, `spons
 
 ## 상태와 감사
 
-details handler는 transaction 안에서 parent/child preflight 후 일괄 적용한다. 잘못된 다른-parent ID, 새 row의 `deleted:true`, id 없는 delete, parent archive와 child 변경 동시 요청을 거절하며 테스트는 sender/product/receiver/study의 일부 rollback을 직접 확인한다. parent DELETE와 PATCH `deleted:true`는 lifecycle archive를 사용한다. 직접 child DELETE의 soft/hard 구분은 위 표를 따른다. 참조 중 parent archive 409는 sender/product에서 직접 확인된다.
+details handler는 transaction 안에서 parent/child preflight 후 일괄 적용한다. 잘못된 다른-parent ID, 새 row의 `deleted:true`, id 없는 delete, parent archive와 child 변경 동시 요청을 거절한다. Product active-substance, receiver consignee/route의 hard delete 뒤 old ID graph replay는 404이고 요청 전후 전체 details 객체가 같은지 확인한다. 새 행은 다른 ID로 생성되고 active count를 확인한다. Study product, registration number, reporter, FDA cross-reported IND는 `deleted:true` 뒤 일반 필드 업데이트에서 `deleted`를 생략해도 삭제 상태를 유지하고, 명시적 `deleted:false`를 두 번 보내도 같은 ID와 count로 복원되며, 다시 `deleted:true`로 삭제되는지 매 단계 GET으로 재조회한다. Study invalid/wrong-parent 여섯 요청도 전체 details 불변을 확인한다.
+
+여섯 parent family는 DELETE를 두 번 보내 모두 204인지, GET의 동일 ID/deleted=true, `deleted:false` PATCH를 두 번 보내 매번 응답과 GET이 동일 ID/deleted=false인지, 목록에 그 ID가 정확히 하나인지 검사한다. parent DELETE와 PATCH `deleted:true`는 lifecycle archive를 사용한다. 참조 중 parent archive 409는 sender/product에서 확인하며 후속 GET이 동일 ID/deleted=false인지도 검사한다. 이 추가 검사는 runtime NOT_RUN이다.
 
 `x-e2br3-reason-for-change`와 `x-e2br3-change-category`가 audit context로 전달되며 [`sender_web.rs::info_update_audit_reason_records_sender_presave_reason`](../api_presave/sender_web.rs#L268)은 sender details UPDATE의 `audit_logs.reason_for_change`, `change_category`, 변경 열을 직접 확인한다. 다른 presave family의 audit old/new/user/org/rejected-write 무감사는 활성 assertion이 없다.
 
@@ -108,11 +110,11 @@ details handler는 transaction 안에서 parent/child preflight 후 일괄 적�
 
 Coverage 판정에서는 fixture 생성을 위한 요청만으로 endpoint를 asserted 처리하지 않았다. 직접 근거의 시작점은 다음과 같다.
 
-- 공통 CRUD/blank: [`crud_matrix_web.rs::test_section_presave_sender_receiver_product_reporter_rest_contract`](../api_presave/crud_matrix_web.rs#L9), [`crud_matrix_web.rs::presave_optional_text_blank_null_and_omitted_contract`](../api_presave/crud_matrix_web.rs#L281)
-- graph/원자성: [`sender_web.rs::test_sender_presave_details_graph_load_and_save`](../api_presave/sender_web.rs#L327), [`receiver_web.rs::test_receiver_presave_details_graph_load_save_noop_delete_and_invalid`](../api_presave/receiver_web.rs#L215), [`product_web.rs::test_product_presave_details_noop_delete_and_invalid_child_operations`](../api_presave/product_web.rs#L600), [`study_web.rs::test_study_presave_details_graph_load_save_and_delete`](../api_presave/study_web.rs#L68)
+- 공통 CRUD/blank/lifecycle: [`crud_matrix_web.rs::test_section_presave_sender_receiver_product_reporter_rest_contract`](../api_presave/crud_matrix_web.rs), [`crud_matrix_web.rs::presave_optional_text_blank_null_and_omitted_contract`](../api_presave/crud_matrix_web.rs), [`crud_matrix_web.rs::presave_parent_delete_is_repeatable_and_patch_restores_the_same_row`](../api_presave/crud_matrix_web.rs)
+- graph/원자성: [`sender_web.rs::test_sender_presave_details_graph_load_and_save`](../api_presave/sender_web.rs), [`receiver_web.rs::test_receiver_presave_details_graph_load_save_noop_delete_and_invalid`](../api_presave/receiver_web.rs), [`receiver_web.rs::section_presave_receiver_details_contract_includes_routes`](../api_presave/receiver_web.rs), [`product_web.rs::test_product_presave_details_noop_delete_and_invalid_child_operations`](../api_presave/product_web.rs), [`study_web.rs::test_study_presave_details_requires_explicit_child_delete`](../api_presave/study_web.rs), [`study_web.rs::test_study_presave_details_rejects_invalid_child_operations`](../api_presave/study_web.rs)
 - 삭제 제약: [`delete_constraints_web.rs::test_presave_rest_rejects_deleting_referenced_parent`](../api_presave/delete_constraints_web.rs#L10)
 
-TSV에서 `authorization_only`는 실제 permission HTTP assertion만 있는 `GET /api/presaves/senders/{id}` 한 경로다. `registration_only` 26개는 활성 endpoint/permission assertion 없이 등록 source와 보호 경로 snapshot만 확인된다. 특히 Study direct child 15개, child collection GET, 일부 child PATCH, parent GET과 Study DELETE가 비어 있다. 응답 전체 schema, pagination, 동시 변경, cross-org 403/404 구분, 모든 family 감사, 모든 거절 후 DB 불변은 전 경로 공통으로 완전 assertion되지 않았다.
+TSV는 `asserted` 54개, `registration_only` 19개이며 `authorization_only`는 0개다. `registration_only`는 활성 endpoint assertion 없이 등록 source와 보호 경로 snapshot만 확인된다. Study direct child 15개, sender gateway/responsible-person collection GET, sender responsible-person PATCH, receiver consignee PATCH가 이에 해당한다. 응답 전체 schema, pagination, 동시 변경, cross-org 403/404 구분, 모든 family 감사, 모든 거절 후 DB 불변은 전 경로 공통으로 완전 assertion되지 않았다.
 
 ## Legacy 미등록 404
 

@@ -462,6 +462,11 @@
       "id": "registration_creates_study_with_empty_name",
       "verifier": "relations::parents::registration_creates_study_with_empty_name",
       "description": "registration creates study with empty name"
+    },
+    {
+      "id": "study_rows_delete_restore_and_resave_are_stable",
+      "verifier": "relations::si_rows::study_rows_delete_restore_and_resave_are_stable",
+      "description": "SI child deletion is repeatable, omission and empty lists do not restore rows, and explicit restore plus resave preserve ids and counts"
     }
   ],
   "auditChecks": [],

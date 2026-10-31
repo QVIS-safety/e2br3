@@ -158,6 +158,19 @@ pub(crate) async fn atomic_restore(
 		"{body}"
 	);
 
+	super::assert_row_lifecycle_replay(
+		&app,
+		&cookie,
+		&mm,
+		&ctx,
+		&lifecycle,
+		&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+		&json!({"authorities": ["ich"], "rows": {owner: {
+			"id": row_id, "deleted": false, input_field: restored
+		}}}),
+	)
+	.await?;
+
 	// Reusing an active sequence makes the restore itself fail at the database
 	// constraint. The authorized mutation transaction must keep the target
 	// deleted and preserve the replacement row.

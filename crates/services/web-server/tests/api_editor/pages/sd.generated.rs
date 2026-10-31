@@ -35,6 +35,11 @@ mod fields {
 mod rows {
 }
 mod relations {
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn rejects_foreign_sender_without_mutation() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::scope::rejects_foreign_sender_without_mutation("SD", "rejects_foreign_sender_without_mutation").await
+    }
 }
 mod audit {
 }

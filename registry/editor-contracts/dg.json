@@ -2734,6 +2734,11 @@
   ],
   "relations": [
     {
+      "id": "drug_child_rows_delete_restore_and_resave_are_stable",
+      "verifier": "relations::dg_rows::drug_child_rows_delete_restore_and_resave_are_stable",
+      "description": "active substance, dosage, and indication rows restore only on explicit deleted false and retain their IDs on replay"
+    },
+    {
       "id": "relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment",
       "verifier": "relations::relatedness::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment",
       "description": "relatedness delete preserves sibling and parent delete removes assessment"

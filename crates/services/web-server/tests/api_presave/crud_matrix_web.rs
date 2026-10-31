@@ -2,8 +2,9 @@ use super::helpers::*;
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::{Method, StatusCode};
 use lib_auth::token::generate_web_token;
-use serde_json::json;
+use serde_json::{json, Value};
 use serial_test::serial;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
@@ -489,6 +490,159 @@ async fn presave_optional_text_blank_null_and_omitted_contract() -> Result<()> {
 		narrative["data"]["rows"]["narrative"].get("templateTitle"),
 		Some(&json!(null))
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn presave_parent_delete_is_repeatable_and_patch_restores_the_same_row(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
+	let product_sender_id =
+		create_sender_presave_via_api(&app, &cookie, "fda").await?;
+	let product_id = create_named_product_presave_for_sender_via_api(
+		&app,
+		&cookie,
+		product_sender_id,
+		format!("Lifecycle Product {}", Uuid::new_v4()),
+		"Lifecycle Product",
+	)
+	.await?;
+	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
+	let reporter_id = create_named_reporter_presave_via_api(
+		&app,
+		&cookie,
+		format!("Lifecycle Reporter {}", Uuid::new_v4()),
+		"Lifecycle Reporter Org",
+	)
+	.await?;
+	let study_product_id =
+		create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
+	let study_id = create_study_presave_for_product_via_api(
+		&app,
+		&cookie,
+		study_product_id,
+		"fda",
+	)
+	.await?;
+	let narrative = post_json_created(
+		&app,
+		&cookie,
+		"/api/presaves/narratives".to_string(),
+		json!({"data": {"rows": {"narrative": {
+			"caseNarrative": format!("Lifecycle narrative {}", Uuid::new_v4())
+		}}}}),
+	)
+	.await?;
+	let narrative_id = data_rows_id(&narrative, "narrative")?;
+
+	for (path, item_pointer, list_path, list_id_pointer, id, restore_body) in [
+		(
+			format!("/api/presaves/senders/{sender_id}"),
+			"/data",
+			"/api/presaves/senders".to_string(),
+			"/id",
+			sender_id,
+			json!({"data": {"deleted": false}}),
+		),
+		(
+			format!("/api/presaves/products/{product_id}"),
+			"/data",
+			"/api/presaves/products".to_string(),
+			"/id",
+			product_id,
+			json!({"data": {"deleted": false}}),
+		),
+		(
+			format!("/api/presaves/receivers/{receiver_id}"),
+			"/data",
+			"/api/presaves/receivers".to_string(),
+			"/id",
+			receiver_id,
+			json!({"data": {"deleted": false}}),
+		),
+		(
+			format!("/api/presaves/reporters/{reporter_id}"),
+			"/data/rows/reporter",
+			"/api/presaves/reporters".to_string(),
+			"/rows/reporter/id",
+			reporter_id,
+			json!({"data": {"rows": {"reporter": {"deleted": false}}}}),
+		),
+		(
+			format!("/api/presaves/studies/{study_id}"),
+			"/data",
+			"/api/presaves/studies".to_string(),
+			"/id",
+			study_id,
+			json!({"data": {"deleted": false}}),
+		),
+		(
+			format!("/api/presaves/narratives/{narrative_id}"),
+			"/data/rows/narrative",
+			"/api/presaves/narratives".to_string(),
+			"/rows/narrative/id",
+			narrative_id,
+			json!({"data": {"rows": {"narrative": {"deleted": false}}}}),
+		),
+	] {
+		for _ in 0..2 {
+			let (status, value) =
+				request_json(&app, &cookie, Method::DELETE, path.clone(), None)
+					.await?;
+			assert_eq!(status, StatusCode::NO_CONTENT, "{path}: {value:?}");
+		}
+
+		let deleted = get_json_ok(&app, &cookie, path.clone()).await?;
+		let deleted_row = deleted
+			.pointer(item_pointer)
+			.ok_or("missing deleted parent row")?;
+		assert_eq!(deleted_row["id"], id.to_string(), "{path}: {deleted:?}");
+		assert_eq!(deleted_row["deleted"], true, "{path}: {deleted:?}");
+
+		for _ in 0..2 {
+			let (status, restored) = request_json(
+				&app,
+				&cookie,
+				Method::PATCH,
+				path.clone(),
+				Some(restore_body.clone()),
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{path}: {restored:?}");
+			let restored_row = restored
+				.pointer(item_pointer)
+				.ok_or("missing restored parent row")?;
+			assert_eq!(restored_row["id"], id.to_string(), "{path}: {restored:?}");
+			assert_eq!(restored_row["deleted"], false, "{path}: {restored:?}");
+
+			let reloaded = get_json_ok(&app, &cookie, path.clone()).await?;
+			let reloaded_row = reloaded
+				.pointer(item_pointer)
+				.ok_or("missing reloaded parent row")?;
+			assert_eq!(reloaded_row["id"], id.to_string(), "{path}: {reloaded:?}");
+			assert_eq!(reloaded_row["deleted"], false, "{path}: {reloaded:?}");
+
+			let listed = get_json_ok(&app, &cookie, list_path.clone()).await?;
+			let rows = listed["data"].as_array().ok_or("missing presave list")?;
+			let expected_id = id.to_string();
+			let matching_count = rows
+				.iter()
+				.filter(|row| {
+					row.pointer(list_id_pointer).and_then(Value::as_str)
+						== Some(expected_id.as_str())
+				})
+				.count();
+			assert_eq!(matching_count, 1, "{list_path}: {listed:?}");
+		}
+	}
 
 	Ok(())
 }

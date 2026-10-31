@@ -484,10 +484,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		};
 		for value in episodes {
 			let episode = as_object(page_id, "medicalHistoryEpisodes", value)?;
-			let id = uuid_field(episode, &["id"]);
+			let id = uuid_field(episode, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = MedicalHistoryEpisodeBmc::get(ctx, mm, id).await?;
+				if current.patient_id != patient_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "medical_history_episodes",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(episode, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					MedicalHistoryEpisodeBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					MedicalHistoryEpisodeBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -526,8 +539,13 @@ pub(super) async fn apply_dm_page_rows_patch(
 				comments,
 				family_history,
 			};
-			let id = if let Some(id) = id {
-				id
+			let id = if let Some(current) = current {
+				if bool_field(episode, &["deleted"]) == Some(false)
+					&& current.deleted
+				{
+					MedicalHistoryEpisodeBmc::restore(ctx, mm, current.id).await?;
+				}
+				current.id
 			} else {
 				MedicalHistoryEpisodeBmc::create(
 					ctx,
@@ -582,10 +600,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		};
 		for value in identifier_rows {
 			let identifier = as_object(page_id, "patientIdentifiers", value)?;
-			let id = uuid_field(identifier, &["id"]);
+			let id = uuid_field(identifier, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = PatientIdentifierBmc::get(ctx, mm, id).await?;
+				if current.patient_id != patient_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "patient_identifiers",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(identifier, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					PatientIdentifierBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					PatientIdentifierBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -599,7 +630,13 @@ pub(super) async fn apply_dm_page_rows_patch(
 					&["identifierValueNullFlavor"],
 				),
 			};
-			if let Some(id) = id {
+			if let Some(current) = current {
+				let id = current.id;
+				if bool_field(identifier, &["deleted"]) == Some(false)
+					&& current.deleted
+				{
+					PatientIdentifierBmc::restore(ctx, mm, id).await?;
+				}
 				let clear_fields = explicit_null_model_fields(
 					identifier,
 					PATIENT_IDENTIFIER_PATCH_FIELDS,
@@ -652,7 +689,7 @@ pub(super) async fn apply_dm_page_rows_patch(
 	let empty_death_info = Map::new();
 	let death_info_row = optional_row_object(page_id, rows, "deathInfo")?
 		.or_else(|| has_death_children.then_some(&empty_death_info));
-	let existing_death_info = PatientDeathInformationBmc::list(
+	let listed_death_info = PatientDeathInformationBmc::list(
 		ctx,
 		mm,
 		Some(vec![PatientDeathInformationFilter {
@@ -663,6 +700,24 @@ pub(super) async fn apply_dm_page_rows_patch(
 	.await?
 	.into_iter()
 	.next();
+	let provided_death_info = if let Some(death_info) = death_info_row {
+		if let Some(id) = uuid_field(death_info, &["id"])? {
+			let current = PatientDeathInformationBmc::get(ctx, mm, id).await?;
+			if current.patient_id != patient_id {
+				return Err(lib_core::model::Error::EntityUuidNotFound {
+					entity: "patient_death_information",
+					id,
+				}
+				.into());
+			}
+			Some(current)
+		} else {
+			None
+		}
+	} else {
+		None
+	};
+	let existing_death_info = provided_death_info.or(listed_death_info);
 	let death_info_id = if let Some(death_info) = death_info_row {
 		let update = PatientDeathInformationForUpdate {
 			date_of_death: date_field(
@@ -731,10 +786,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		};
 		for value in causes {
 			let cause = as_object(page_id, "reportedCauses", value)?;
-			let id = uuid_field(cause, &["id"]);
+			let id = uuid_field(cause, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
+				if current.death_info_id != death_info_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "reported_causes_of_death",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(cause, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					ReportedCauseOfDeathBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					ReportedCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -743,7 +811,12 @@ pub(super) async fn apply_dm_page_rows_patch(
 				meddra_code: string_field(cause, &["meddraCode"]),
 				comments: string_field(cause, &["causeText"]),
 			};
-			if let Some(id) = id {
+			if let Some(current) = current {
+				let id = current.id;
+				if bool_field(cause, &["deleted"]) == Some(false) && current.deleted
+				{
+					ReportedCauseOfDeathBmc::restore(ctx, mm, id).await?;
+				}
 				let clear_fields =
 					explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
 				lib_core::model::update_uuid_patch::<ReportedCauseOfDeathBmc, _>(
@@ -790,10 +863,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		};
 		for value in causes {
 			let cause = as_object(page_id, "autopsyCauses", value)?;
-			let id = uuid_field(cause, &["id"]);
+			let id = uuid_field(cause, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
+				if current.death_info_id != death_info_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "autopsy_causes_of_death",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(cause, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					AutopsyCauseOfDeathBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					AutopsyCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -802,7 +888,12 @@ pub(super) async fn apply_dm_page_rows_patch(
 				meddra_code: string_field(cause, &["meddraCode"]),
 				comments: string_field(cause, &["causeText"]),
 			};
-			if let Some(id) = id {
+			if let Some(current) = current {
+				let id = current.id;
+				if bool_field(cause, &["deleted"]) == Some(false) && current.deleted
+				{
+					AutopsyCauseOfDeathBmc::restore(ctx, mm, id).await?;
+				}
 				let clear_fields =
 					explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
 				lib_core::model::update_uuid_patch::<AutopsyCauseOfDeathBmc, _>(
@@ -847,7 +938,7 @@ pub(super) async fn apply_dm_page_rows_patch(
 	let parent_patch = optional_row_object(page_id, rows, "parentInfo")?
 		.or_else(|| has_parent_children.then_some(&empty_parent));
 	if let Some(parent) = parent_patch {
-		let existing = ParentInformationBmc::list(
+		let listed = ParentInformationBmc::list(
 			ctx,
 			mm,
 			Some(vec![ParentInformationFilter {
@@ -859,11 +950,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		.await?
 		.into_iter()
 		.next();
+		let provided = if let Some(id) = uuid_field(parent, &["id"])? {
+			let current = ParentInformationBmc::get(ctx, mm, id).await?;
+			if current.patient_id != patient_id {
+				return Err(lib_core::model::Error::EntityUuidNotFound {
+					entity: "parent_information",
+					id,
+				}
+				.into());
+			}
+			Some(current)
+		} else {
+			None
+		};
+		let existing = provided.or(listed);
 		if bool_field(parent, &["deleted"]) == Some(true) {
-			if let Some(id) = uuid_field(parent, &["id"])
-				.or_else(|| existing.as_ref().map(|row| row.id))
-			{
-				ParentInformationBmc::delete(ctx, mm, id).await?;
+			if let Some(existing) = existing {
+				ParentInformationBmc::delete(ctx, mm, existing.id).await?;
 			}
 		} else {
 			let (parent_identification, parent_identification_null_flavor) =
@@ -924,6 +1027,11 @@ pub(super) async fn apply_dm_page_rows_patch(
 				medical_history_text: string_field(parent, &["medicalHistoryText"]),
 			};
 			if let Some(existing) = existing {
+				if bool_field(parent, &["deleted"]) == Some(false)
+					&& existing.deleted
+				{
+					ParentInformationBmc::restore(ctx, mm, existing.id).await?;
+				}
 				let clear_fields =
 					explicit_null_model_fields(parent, DM_PARENT_PATCH_FIELDS);
 				ParentInformationBmc::update_patch(
@@ -990,10 +1098,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		})?;
 		for value in history_rows {
 			let history = as_object(page_id, "parentMedicalHistory", value)?;
-			let id = uuid_field(history, &["id"]);
+			let id = uuid_field(history, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = ParentMedicalHistoryBmc::get(ctx, mm, id).await?;
+				if current.parent_id != parent_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "parent_medical_history",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(history, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					ParentMedicalHistoryBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					ParentMedicalHistoryBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -1025,8 +1146,13 @@ pub(super) async fn apply_dm_page_rows_patch(
 				end_date_null_flavor: end_date_null_flavor.clone(),
 				comments: string_field(history, &["comments"]),
 			};
-			let id = if let Some(id) = id {
-				id
+			let id = if let Some(current) = current {
+				if bool_field(history, &["deleted"]) == Some(false)
+					&& current.deleted
+				{
+					ParentMedicalHistoryBmc::restore(ctx, mm, current.id).await?;
+				}
+				current.id
 			} else {
 				ParentMedicalHistoryBmc::create(
 					ctx,
@@ -1094,10 +1220,23 @@ pub(super) async fn apply_dm_page_rows_patch(
 		})?;
 		for value in drug_rows {
 			let drug = as_object(page_id, "parentPastDrugs", value)?;
-			let id = uuid_field(drug, &["id"]);
+			let id = uuid_field(drug, &["id"])?;
+			let current = if let Some(id) = id {
+				let current = ParentPastDrugHistoryBmc::get(ctx, mm, id).await?;
+				if current.parent_id != parent_id {
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "parent_past_drug_history",
+						id,
+					}
+					.into());
+				}
+				Some(current)
+			} else {
+				None
+			};
 			if bool_field(drug, &["deleted"]) == Some(true) {
-				if let Some(id) = id {
-					ParentPastDrugHistoryBmc::delete(ctx, mm, id).await?;
+				if let Some(current) = current {
+					ParentPastDrugHistoryBmc::delete(ctx, mm, current.id).await?;
 				}
 				continue;
 			}
@@ -1149,7 +1288,11 @@ pub(super) async fn apply_dm_page_rows_patch(
 				),
 				reaction_meddra_code: string_field(drug, &["reactionMeddraCode"]),
 			};
-			if let Some(id) = id {
+			if let Some(current) = current {
+				let id = current.id;
+				if bool_field(drug, &["deleted"]) == Some(false) && current.deleted {
+					ParentPastDrugHistoryBmc::restore(ctx, mm, id).await?;
+				}
 				let clear_fields = explicit_null_model_fields(
 					drug,
 					DM_PARENT_PAST_DRUG_PATCH_FIELDS,

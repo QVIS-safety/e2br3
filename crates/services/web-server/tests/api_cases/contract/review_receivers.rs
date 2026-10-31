@@ -142,6 +142,34 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 		shell["messageHeader"]["messageReceiverIdentifier"], "MFDS",
 		"{shell:?}"
 	);
+	let retained = receivers["reviewReceivers"].clone();
+	let expanded = json!([
+		retained[0],
+		{"receiver":"FDA","reportDueDate":"2026-09-12","reportedDate":"2026-09-13"}
+	]);
+	// RE is a replacement JSON array, with no row DELETE/restore endpoint.
+	for rows in [expanded, retained.clone(), retained, json!([]), json!([])] {
+		let (status, body) = put_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}"),
+			json!({
+				"data":{"review_receivers_json":serde_json::to_string(&rows)?},
+				"reason_for_change":"replace review receivers"
+			}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		let (status, shell) =
+			get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/shell"))
+				.await?;
+		assert_eq!(status, StatusCode::OK, "{shell}");
+		assert_eq!(
+			shell["reviewReceivers"], rows,
+			"removed receiver reappeared on resave"
+		);
+		assert_eq!(shell["messageHeader"]["messageReceiverIdentifier"], "MFDS");
+	}
 
 	Ok(())
 }

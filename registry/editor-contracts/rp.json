@@ -735,7 +735,18 @@
       "description": "reporters remain ordered by sequence and id after update"
     }
   ],
-  "relations": [],
+  "relations": [
+    {
+      "id": "rejects_foreign_reporter_rows_without_mutation",
+      "verifier": "relations::scope::rejects_foreign_reporter_rows_without_mutation",
+      "description": "RP child ids from another case are rejected for update, delete, and explicit restore without changing either case or audit trail"
+    },
+    {
+      "id": "reporter_row_delete_restore_and_resave_is_stable",
+      "verifier": "relations::rp_rows::reporter_row_delete_restore_and_resave_is_stable",
+      "description": "RP reporter deletion is repeatable, omission and an empty list do not restore it, and explicit restore plus resave preserve its id and count"
+    }
+  ],
   "auditChecks": [],
   "rowIdentities": {
     "primarySources[]": {

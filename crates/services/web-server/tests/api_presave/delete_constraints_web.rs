@@ -55,6 +55,14 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 	assert!(value.to_string().contains("sender presave is in use"));
+	let sender = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}"),
+	)
+	.await?;
+	assert_eq!(sender["data"]["id"], sender_id.to_string());
+	assert_eq!(sender["data"]["deleted"], false);
 
 	let (status, value) = request_json(
 		&app,
@@ -79,6 +87,14 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 	assert!(value.to_string().contains("product presave is in use"));
+	let product = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}"),
+	)
+	.await?;
+	assert_eq!(product["data"]["id"], product_id.to_string());
+	assert_eq!(product["data"]["deleted"], false);
 
 	Ok(())
 }

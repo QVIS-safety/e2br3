@@ -623,7 +623,13 @@
   ],
   "fieldChecks": [],
   "collections": [],
-  "relations": [],
+  "relations": [
+    {
+      "id": "rejects_foreign_sender_without_mutation",
+      "verifier": "relations::scope::rejects_foreign_sender_without_mutation",
+      "description": "sender IDs from another case are rejected without changing either case or its audit trail"
+    }
+  ],
   "auditChecks": [],
   "rowIdentities": {}
 }

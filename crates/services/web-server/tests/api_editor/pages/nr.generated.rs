@@ -36,6 +36,11 @@ mod relations {
     async fn partial_narrative_and_children_keep_parent() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::parents::partial_narrative_and_children_keep_parent("NR", "partial_narrative_and_children_keep_parent").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn narrative_rows_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::nr_rows::narrative_rows_delete_restore_and_resave_are_stable("NR", "narrative_rows_delete_restore_and_resave_are_stable").await
+    }
 }
 mod audit {
 }

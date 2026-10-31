@@ -125,6 +125,16 @@ mod relations {
     async fn child_creation_and_update_preserve_parent_identity() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::parents::child_creation_and_update_preserve_parent_identity("DM", "child_creation_and_update_preserve_parent_identity").await
     }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn rejects_foreign_patient_rows_without_mutation() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::scope::rejects_foreign_patient_rows_without_mutation("DM", "rejects_foreign_patient_rows_without_mutation").await
+    }
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn patient_rows_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::dm_rows::patient_rows_delete_restore_and_resave_are_stable("DM", "patient_rows_delete_restore_and_resave_are_stable").await
+    }
 }
 mod audit {
 }

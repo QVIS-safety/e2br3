@@ -17,7 +17,7 @@
 | `GET /{page}/rows/{rowId}` | LR, DH, AE, LB, DG | 200, `data`에 상세 | 삭제된 행도 `deleted: true`로 조회 가능 |
 | `PATCH /{page}/rows/{rowId}` | LR, DH, AE, LB, DG | 200, `data`에 상세 | 필드 변경, 하위 행 수정, `deleted: false`를 통한 복원과 편집의 원자성 |
 | `DELETE /{page}/rows/{rowId}` | LR, DH, AE, LB, DG | 204, 본문 없음 | soft delete, 목록에서 제외, 자식 보존·연결 정리 |
-| `POST /{page}/rows/{rowId}/restore` | AE, LB, DG | 전용 복원 handler | 라우트 존재. 이 파일군의 복원 검사는 PATCH 복원 경로를 기준으로 하며 POST 복원과 동일한 실행 증거로 취급하지 않는다. |
+| `POST /{page}/rows/{rowId}/restore` | AE, LB, DG | 200, 복원 행 | 실제 POST 복원·반복 복원 후 상세/목록·ID·감사 및 다른 Case/viewer 거절 assertion이 있다. NOT_RUN. |
 | `GET /api/cases/{caseId}/audit-trail` | Case 전체 | 200, `data` 배열 | 변경 항목·값·사유·반복행 위치 표시 |
 
 PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 이름은 페이지 계약의 `patch.owner`, `payloadPath`를 따른다. 응답 이름은 `projectionPath`를 따르며 요청의 camelCase와 같다고 가정하지 않는다.
@@ -38,16 +38,18 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | 페이지 | `rows`의 owner | 필드 계약 | 추가 동작 검사 | 정의 / 실행 등록 |
 |---|---|---:|---:|---|
 | CI | `case`, `documentsHeldBySender`, `linkedReports`, `otherCaseIdentifiers`, `safetyReportIdentification`, `sourceDocuments` | 26 | 4 | [JSON](../../../../../registry/editor-contracts/ci.json) / [등록](../api_editor/pages/ci.generated.rs) |
-| RP | `primarySources` | 29 | 2 | [JSON](../../../../../registry/editor-contracts/rp.json) / [등록](../api_editor/pages/rp.generated.rs) |
-| SD | `receiverInformation`, `senderInformation` | 27 | 0 | [JSON](../../../../../registry/editor-contracts/sd.json) / [등록](../api_editor/pages/sd.generated.rs) |
+| RP | `primarySources` | 29 | 4 | [JSON](../../../../../registry/editor-contracts/rp.json) / [등록](../api_editor/pages/rp.generated.rs) |
+| SD | `receiverInformation`, `senderInformation` | 27 | 1 | [JSON](../../../../../registry/editor-contracts/sd.json) / [등록](../api_editor/pages/sd.generated.rs) |
 | LR | `literatureReference` | 3 | 3 | [JSON](../../../../../registry/editor-contracts/lr.json) / [등록](../api_editor/pages/lr.generated.rs) |
-| SI | `studyInformation`, `studyRegistrationNumbers` | 14 | 5 | [JSON](../../../../../registry/editor-contracts/si.json) / [등록](../api_editor/pages/si.generated.rs) |
-| DM | `autopsyCauses`, `deathInfo`, `medicalHistoryEpisodes`, `parentInfo`, `parentMedicalHistory`, `parentPastDrugs`, `patientIdentifiers`, `patientInformation`, `reportedCauses` | 87 | 6 | [JSON](../../../../../registry/editor-contracts/dm.json) / [등록](../api_editor/pages/dm.generated.rs) |
-| NR | `caseSummaryInformation`, `narrative`, `senderDiagnoses` | 8 | 4 | [JSON](../../../../../registry/editor-contracts/nr.json) / [등록](../api_editor/pages/nr.generated.rs) |
+| SI | `studyInformation`, `studyRegistrationNumbers` | 14 | 6 | [JSON](../../../../../registry/editor-contracts/si.json) / [등록](../api_editor/pages/si.generated.rs) |
+| DM | `autopsyCauses`, `deathInfo`, `medicalHistoryEpisodes`, `parentInfo`, `parentMedicalHistory`, `parentPastDrugs`, `patientIdentifiers`, `patientInformation`, `reportedCauses` | 87 | 8 | [JSON](../../../../../registry/editor-contracts/dm.json) / [등록](../api_editor/pages/dm.generated.rs) |
+| NR | `caseSummaryInformation`, `narrative`, `senderDiagnoses` | 8 | 5 | [JSON](../../../../../registry/editor-contracts/nr.json) / [등록](../api_editor/pages/nr.generated.rs) |
 | AE | `reaction` | 49 | 3 | [JSON](../../../../../registry/editor-contracts/ae.json) / [등록](../api_editor/pages/ae.generated.rs) |
 | LB | `testResult` | 14 | 6 | [JSON](../../../../../registry/editor-contracts/lb.json) / [등록](../api_editor/pages/lb.generated.rs) |
-| DG | `drug` | 92 | 13 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
+| DG | `drug` | 94 | 14 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
+
+N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 등록은 scalar 373 + behavior 58 = 431개다.
 
 위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor scalar 등록 365개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
 
@@ -75,6 +77,8 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 결합 필드 계약은 [fields/coupled_clear.rs](../api_editor/fields/coupled_clear.rs), 값/NF 전환은 [fields/null_flavor.rs](../api_editor/fields/null_flavor.rs), 필수값 거절과 변경 원자성은 [fields/required_values.rs](../api_editor/fields/required_values.rs)에 있다. 예를 들어 LB 수치 결과 clear는 qualifier도 지우지만 자유 텍스트를 보존해야 한다. DG PHPID의 null 처리와 blank 처리에서 동반 version 보존 여부도 구분한다.
 
 ## 반복행 및 부모·자식 계약
+
+[반복행 삭제·재저장 명세](row-lifecycle.md)와 [자원별 검사 행렬](row-lifecycle.tsv)에 실제 재호출·재조회·복원 assertion과 미검사 항목을 구분했다. 5개 바깥 행과 direct 자식은 검사 파일을 페이지별로 나누며, 잘못된 UUID는 400, 다른 Case/부모의 ID는 거절한다. `deleted:false`만 명시 복원하고 삭제 flag 생략은 복원하지 않는다. `raceCodes`는 UUID 행이 없는 값 배열이다.
 
 - **ID 보존:** 기존 행·하위 코드 수정에서 `id`, `created_at`, 변경하지 않은 형제 행을 보존한다. 새 행에는 다른 ID와 충돌하지 않는 sequence가 필요하다.
 - **목록과 상세:** 목록 표시 열의 값이 상세 저장값과 일치해야 한다. batch 상세는 개별 상세 GET과 동일해야 한다. LR/DH/RP의 sequence 정렬 계약은 `collections` 등록을 따른다.

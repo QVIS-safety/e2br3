@@ -138,6 +138,22 @@ pub(crate) async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth
 	let (status, _) =
 		patch_json(&app, &viewer_cookie, &row_uri, restore.clone()).await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
+	let (status, _) = post_json(
+		&app,
+		&admin_cookie,
+		&format!("{wrong_case_uri}/restore"),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND);
+	let (status, _) = post_json(
+		&app,
+		&viewer_cookie,
+		&format!("{row_uri}/restore"),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN);
 
 	let invalid_value = "X".repeat(251);
 	let (status, body) = patch_json(
@@ -169,7 +185,8 @@ pub(crate) async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth
 		"{body}"
 	);
 
-	let (status, body) = patch_json(&app, &admin_cookie, &row_uri, restore).await?;
+	let (status, body) =
+		patch_json(&app, &admin_cookie, &row_uri, restore.clone()).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	crate::case_editor_contract_web::audit::assert_mutation(
 		&mm,
@@ -208,5 +225,15 @@ pub(crate) async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth
 				&& row["reactionPrimarySourceNative"] == "Restored reaction")),
 		"{body}"
 	);
+	super::assert_row_lifecycle_replay(
+		&app,
+		&admin_cookie,
+		&mm,
+		&ctx,
+		&lifecycle,
+		&format!("/api/cases/{case_id}/editor/pages/AE"),
+		&restore,
+	)
+	.await?;
 	Ok(())
 }

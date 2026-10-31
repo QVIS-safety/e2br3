@@ -144,6 +144,11 @@ mod rows {
 mod relations {
     #[serial_test::serial]
     #[tokio::test]
+    async fn drug_child_rows_delete_restore_and_resave_are_stable() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::relations::dg_rows::drug_child_rows_delete_restore_and_resave_are_stable("DG", "drug_child_rows_delete_restore_and_resave_are_stable").await
+    }
+    #[serial_test::serial]
+    #[tokio::test]
     async fn relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment() -> crate::common::Result<()> {
         crate::case_editor_contract_web::relations::relatedness::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment("DG", "relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment").await
     }

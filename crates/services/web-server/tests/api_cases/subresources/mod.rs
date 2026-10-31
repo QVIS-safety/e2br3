@@ -1,6 +1,7 @@
 mod support;
 
 mod drug;
+mod drug_scope;
 mod narrative;
 mod patient;
 mod primary_source;
