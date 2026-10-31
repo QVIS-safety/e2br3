@@ -1,5 +1,6 @@
 use crate::case_editor_contract_web::support::{
-	create_case_for_editor, get_json, patch_json, post_json,
+	create_case_for_editor, create_reaction_contract_fixture, get_json, patch_json,
+	post_json,
 };
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
