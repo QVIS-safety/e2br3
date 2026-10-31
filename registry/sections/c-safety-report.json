@@ -1585,7 +1585,7 @@
     "label": "Study Type Where Reaction(s) or Event(s) Were Observed",
     "section": "C",
     "authority": "ICH",
-    "status": "incomplete",
+    "status": "complete",
     "editor_page": "SI",
     "editor_status": "complete",
     "backend": {
@@ -1602,8 +1602,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
       "evidence": "SectionStudy binds fieldNumber C.5.4 to studyInformation.studyTypeReaction."
     },
-    "action": "Implement the remaining FDA premarket value-1 restriction for C.5.4.",
-    "notes": "ICH required/allowed-value validation, FDA route/aggregate validation, and MFDS CT/CU receiver validation exist; the audited FDA premarket value restriction remains incomplete."
+    "action": "Maintain ICH E2D(R1) codes 1-6 and receiver-specific MFDS eligibility.",
+    "notes": "Input contracts accept ICH E2D(R1) codes 1-6. The validator owns ICH conditional presence, FDA route/aggregate requirements, and MFDS codes 1-3 with CT=1/CU=2. FDA R0103 premarket value-1 restriction was retired in the April 2024 workbook."
   },
   {
     "id": "C.5.4.KR.1",

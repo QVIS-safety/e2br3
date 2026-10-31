@@ -323,10 +323,16 @@
       "sourceHash": "fnv1a64:85565efdb387d5c3",
       "requirements": [
         {
-          "id": "premarket-or-aggregate-study-type",
-          "sourceExcerpt": "Observation Code: (Value allowed: 1)",
-          "disposition": "deferred",
-          "reason": "No FDA aggregate-patient or premarket-receiver condition restricts C.5.4 to value 1."
+          "id": "aggregate-study-type",
+          "sourceExcerpt": "If Patient (name or initials) (D.1) = AGGREGRATE",
+          "disposition": "business_rule",
+          "ruleCodes": ["FDA.W0002"]
+        },
+        {
+          "id": "retired-premarket-study-type",
+          "sourceExcerpt": "Message Receiver Identifier (N.2.r.3) = 'CDER_IND' or 'CBER_IND'",
+          "disposition": "guidance",
+          "reason": "FDA R0103 was retired in the April 2024 workbook revision history; the older source snapshot does not impose a current premarket value-1 restriction. The December 2025 ICH E2D(R1) amendment adds codes 4-6, now accepted by FDA AEMS."
         }
       ]
     },
@@ -352,13 +358,13 @@
           "id": "study-type-base-policy",
           "sourceExcerpt": "입력값은 \"1\",\"2\",\"3\"만 허용함",
           "disposition": "business_rule",
-          "ruleCodes": ["ICH.C.5.4.REQUIRED", "ICH.C.5.4.ALLOWED.VALUE"]
+          "ruleCodes": ["ICH.C.5.4.REQUIRED", "MFDS.C.5.4.RECEIVER"]
         },
         {
           "id": "study-type-receiver-restriction",
           "sourceExcerpt": "임상시험(CT)의 경우 \"1\"만 허용",
-          "disposition": "deferred",
-          "reason": "The receiver-specific CT/CU value restriction is not registered or evaluated."
+          "disposition": "business_rule",
+          "ruleCodes": ["MFDS.C.5.4.RECEIVER"]
         }
       ]
     },

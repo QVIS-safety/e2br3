@@ -80,7 +80,7 @@ Business-rule assertions belong to this crate. The web-server integration suite
 keeps authority routing, DB projection-to-issue paths, cache invalidation and
 counts, authentication and submission gates. It does not repeat the individual
 rule fixtures. Editor persistence tests remain separate from validation tests;
-the RP collection/row and SI sequence-gap checks live in `case_validation_web.rs`.
+the RP collection/row and SI sequence-gap checks live in `crates/services/web-server/tests/api_cases/validation.rs`.
 Frontend integration tests cover scoped banners/dots, per-authority aggregation
 and stale validation responses, and run in the registry CI job.
 

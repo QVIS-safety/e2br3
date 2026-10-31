@@ -1242,7 +1242,10 @@ fn c_5_4(
 			issues,
 			"ICH.C.5.4.ALLOWED.VALUE",
 			&path,
-			valid_code(study.study_type_reaction.as_deref(), &["1", "2", "3"]),
+			valid_code(
+				study.study_type_reaction.as_deref(),
+				&["1", "2", "3", "4", "5", "6"],
+			),
 		);
 		length(
 			issues,
@@ -2067,6 +2070,18 @@ fn mfds_receiver_rules(
 	let clinical = is_mfds_clinical_trial_receiver(receiver);
 	let compassionate = is_mfds_compassionate_use_receiver(receiver);
 	let ct_or_cu = clinical || compassionate;
+	// The bundled MFDS rules retain 1-3 despite the later ICH E2D(R1) codes.
+	if !ct_or_cu {
+		for (idx, study) in validation_ctx.studies.iter().enumerate() {
+			push_business_violation(
+				issues,
+				!valid_code(study.study_type_reaction.as_deref(), &["1", "2", "3"]),
+				"MFDS.C.5.4.RECEIVER",
+				format!("studyInformation.{idx}.studyTypeReaction"),
+				"MFDS C.5.4 accepts study types 1, 2 or 3.",
+			);
+		}
+	}
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		push_business_violation(
 			issues,

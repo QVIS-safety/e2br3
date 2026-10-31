@@ -68,6 +68,8 @@ currently lists them as `Conditional-Mandatory`: `C.2.r.2.5`, `D.8.r.2a`,
 Guide PDF `Conformance` rows state these elements are optional. Preserve these
 dictionary overrides if the source CSV is regenerated.
 
+C.5.4 includes codes 4–6 from the [ICH E2D(R1) alignment paper](https://www.fda.gov/media/195119/download?attachment=) (16 December 2025, section 3). The dictionary builder reapplies this amendment after reading the older CSV. FDA AEMS accepts these codes; MFDS recipient validation retains 1–3, with CT=1 and CU=2. Input contracts check the shared code format; regional eligibility stays in the validator.
+
 ICH `conditional_mandatory` entries may carry `condition_text` copied from the
 ICH E2B(R3) Implementation Guide PDF `Conformance` row. The source CSV does not
 consistently include these conditions in `ICH BUSINESS RULE`.

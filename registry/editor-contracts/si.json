@@ -135,11 +135,11 @@
         "kind": "rows",
         "owner": "studyInformation"
       },
-      "roundTripValue": "2",
+      "roundTripValue": "6",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.C.5.4.ALLOWED.VALUE",
-        "invalidValue": "0"
+        "invalidValue": "7"
       },
       "payloadPath": "studyTypeReaction",
       "persistence": {

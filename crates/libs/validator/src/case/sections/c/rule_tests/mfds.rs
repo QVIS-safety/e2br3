@@ -250,6 +250,44 @@ fn verify_mfds(code: &str) {
 			)
 		}
 		"MFDS.C.5.4.RECEIVER" => {
+			for receiver in ["MFDS-O-KR", "MFDS-O-FR", "MFDS-O-CT", "MFDS-O-CU"] {
+				for value in [
+					None,
+					Some(""),
+					Some("1"),
+					Some("2"),
+					Some("3"),
+					Some("4"),
+					Some("5"),
+					Some("6"),
+					Some("7"),
+				] {
+					let mut ctx = mfds_ctx(true);
+					ctx.message_header =
+						Some(fixture::message_header(receiver, receiver));
+					ctx.studies = vec![fixture::study(value, Some("s"))];
+					let rejected = match receiver {
+						"MFDS-O-CT" => value != Some("1"),
+						"MFDS-O-CU" => value != Some("2"),
+						_ => matches!(value, Some("4" | "5" | "6" | "7")),
+					};
+					let actual: Vec<_> = mfds_issues(&ctx)
+						.into_iter()
+						.filter(|issue| issue.code == code)
+						.collect();
+					assert_eq!(
+						actual.len(),
+						usize::from(rejected),
+						"{receiver} {value:?}: {actual:?}"
+					);
+					if rejected {
+						assert_eq!(
+							actual[0].field_path.as_deref(),
+							Some("studyInformation.0.studyTypeReaction")
+						);
+					}
+				}
+			}
 			let mut b = mfds_ctx(true);
 			let mut s = fixture::study(Some("2"), Some("s"));
 			b.studies.push(s.clone());
