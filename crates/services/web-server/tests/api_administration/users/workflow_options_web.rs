@@ -39,7 +39,7 @@ async fn workflow_options_are_active_same_org_sorted_limited_dto_rows() -> Resul
 				.bind(inactive.id),
 		)
 		.await?;
-	assert_eq!(updated.rows_affected(), 1);
+	assert_eq!(updated, 1);
 	dbx.commit_txn().await?;
 	let cookie = cookie_header(
 		&generate_web_token(&admin.email, admin.token_salt)?.to_string(),

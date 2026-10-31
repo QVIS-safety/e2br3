@@ -82,17 +82,17 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 	let dbx = mm.dbx();
 	dbx.begin_txn().await?;
 	set_full_context_dbx(dbx, admin.id, seed.org_id, ROLE_SYSTEM_ADMIN).await?;
-	let deleted_exists = dbx
+	let (deleted_exists,) = dbx
 		.fetch_one(
-			sqlx::query_scalar::<_, bool>(
+			sqlx::query_as::<_, (bool,)>(
 				"SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)",
 			)
 			.bind(deleted_id),
 		)
 		.await?;
-	let dependent_exists = dbx
+	let (dependent_exists,) = dbx
 		.fetch_one(
-			sqlx::query_scalar::<_, bool>(
+			sqlx::query_as::<_, (bool,)>(
 				"SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)",
 			)
 			.bind(dependent.org_id),
@@ -105,9 +105,9 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 		ROLE_SPONSOR_ADMIN_CRO,
 	)
 	.await?;
-	let user_exists = dbx
+	let (user_exists,) = dbx
 		.fetch_one(
-			sqlx::query_scalar::<_, bool>(
+			sqlx::query_as::<_, (bool,)>(
 				"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)",
 			)
 			.bind(dependent_user.id),
