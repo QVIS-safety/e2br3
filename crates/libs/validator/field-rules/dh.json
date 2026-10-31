@@ -72,6 +72,7 @@
     {
       "fieldPath": "patientInformation.pastDrugs[].indicationMeddraVersion",
       "ruleCodes": [
+        "ICH.D.8.r.6a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.8.r.6a.REQUIRED"
       ]
     },
@@ -91,6 +92,7 @@
     {
       "fieldPath": "patientInformation.pastDrugs[].reactionMeddraVersion",
       "ruleCodes": [
+        "ICH.D.8.r.7a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.8.r.7a.REQUIRED"
       ]
     }

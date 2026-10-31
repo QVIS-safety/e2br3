@@ -162,25 +162,18 @@ fn meddra(
 
 /// ICH.D.1.REQUIRED
 /// ICH.D.1.LENGTH.MAX
-fn d_1(
-	patient: Option<&PatientInformation>,
-	report_type_is_study: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
+fn d_1(patient: Option<&PatientInformation>, issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "patientInformation.patientInitials";
-	if !report_type_is_study {
-		let present = patient.is_some_and(|patient| {
-			!should_require_patient_initials(patient)
-				|| has_patient_initials(patient)
-		});
-		required_field(
-			issues,
-			"ICH.D.1.REQUIRED",
-			PATH,
-			"[D.1] This Element is required.",
-			present,
-		);
-	}
+	let present = patient.is_some_and(|patient| {
+		!should_require_patient_initials(patient) || has_patient_initials(patient)
+	});
+	required_field(
+		issues,
+		"ICH.D.1.REQUIRED",
+		PATH,
+		"[D.1] This Element is required.",
+		present,
+	);
 	length(
 		issues,
 		"ICH.D.1.LENGTH.MAX",
@@ -233,27 +226,9 @@ patient_identifier_length!(
 	"patientInformation.hospitalRecordNumber"
 );
 
-/// ICH.D.1.1.4.REQUIRED
 /// ICH.D.1.1.4.LENGTH.MAX
-fn d_1_1_4(
-	identifiers: &[PatientIdentifier],
-	report_type_is_study: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
+fn d_1_1_4(identifiers: &[PatientIdentifier], issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "patientInformation.patientStudyNumber";
-	let value = identifiers.iter().find_map(|identifier| {
-		patient_identifier_value(identifier, "4")
-			.map(str::trim)
-			.filter(|value| !value.is_empty())
-	});
-	required_when(
-		issues,
-		"ICH.D.1.1.4.REQUIRED",
-		PATH,
-		"[D.1.1.4] Patient study number is required when report type is study (C.1.3=2).",
-		report_type_is_study,
-		value.is_some(),
-	);
 	for identifier in identifiers {
 		length(
 			issues,
@@ -1033,8 +1008,10 @@ fn d_9_3(death: &PatientDeathInformation, issues: &mut Vec<ValidationIssue>) {
 		"ICH.D.9.3.REQUIRED",
 		"patientInformation.death.autopsyPerformed",
 		"[D.9.3] Autopsy was performed is required when [D.9.1] date of death is provided.",
-		death.date_of_death.is_some(),
-		death.autopsy_performed.is_some(),
+		death.date_of_death.is_some()
+			|| has_text(death.date_of_death_null_flavor.as_deref()),
+		death.autopsy_performed.is_some()
+			|| has_text(death.autopsy_performed_null_flavor.as_deref()),
 	);
 }
 
@@ -1219,10 +1196,13 @@ fn d_10_6(
 ) {
 	let path = format!("patientInformation.parents.{idx}.sex");
 	let has_payload = has_text(parent.parent_identification.as_deref())
+		|| has_text(parent.parent_identification_null_flavor.as_deref())
 		|| parent.parent_birth_date.is_some()
+		|| has_text(parent.parent_birth_date_null_flavor.as_deref())
 		|| parent.parent_age.is_some()
 		|| has_text(parent.parent_age_unit.as_deref())
 		|| parent.last_menstrual_period_date.is_some()
+		|| has_text(parent.last_menstrual_period_date_null_flavor.as_deref())
 		|| parent.weight_kg.is_some()
 		|| parent.height_cm.is_some()
 		|| has_text(parent.medical_history_text.as_deref())
@@ -1233,7 +1213,8 @@ fn d_10_6(
 		&path,
 		"[D.10.6] Parent sex is required when parent data is populated.",
 		has_payload,
-		has_text(parent.sex.as_deref()),
+		has_text(parent.sex.as_deref())
+			|| has_text(parent.sex_null_flavor.as_deref()),
 	);
 	allowed(
 		issues,
@@ -1403,7 +1384,6 @@ fn d_10_8_r_1(
 	);
 }
 
-/// ICH.D.10.8.r.2a.REQUIRED
 /// ICH.D.10.8.r.2a.LENGTH.MAX
 fn d_10_8_r_2a(
 	parent_idx: usize,
@@ -1413,14 +1393,6 @@ fn d_10_8_r_2a(
 ) {
 	let path = format!(
 		"patientInformation.parents.{parent_idx}.pastDrugs.{idx}.mpidVersion"
-	);
-	required_when(
-		issues,
-		"ICH.D.10.8.r.2a.REQUIRED",
-		&path,
-		"[D.10.8.r.2a] Parent past drug MPID version is required when [D.10.8.r.2b] MPID is populated.",
-		has_text(drug.mpid.as_deref()),
-		has_text(drug.mpid_version.as_deref()),
 	);
 	length(
 		issues,
@@ -1456,7 +1428,6 @@ fn d_10_8_r_2b(
 	);
 }
 
-/// ICH.D.10.8.r.3a.REQUIRED
 /// ICH.D.10.8.r.3a.LENGTH.MAX
 fn d_10_8_r_3a(
 	parent_idx: usize,
@@ -1466,14 +1437,6 @@ fn d_10_8_r_3a(
 ) {
 	let path = format!(
 		"patientInformation.parents.{parent_idx}.pastDrugs.{idx}.phpidVersion"
-	);
-	required_when(
-		issues,
-		"ICH.D.10.8.r.3a.REQUIRED",
-		&path,
-		"[D.10.8.r.3a] Parent past drug PhPID version is required when [D.10.8.r.3b] PhPID is populated.",
-		has_text(drug.phpid.as_deref()),
-		has_text(drug.phpid_version.as_deref()),
 	);
 	length(
 		issues,
@@ -2145,20 +2108,8 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let report_type_is_study =
-		validation_ctx.safety_report.as_ref().is_some_and(|report| {
-			report.report_type.as_deref().map(str::trim) == Some("2")
-		});
-	d_1(
-		validation_ctx.patient.as_ref(),
-		report_type_is_study,
-		issues,
-	);
-	d_1_1_4(
-		&validation_ctx.patient_identifiers,
-		report_type_is_study,
-		issues,
-	);
+	d_1(validation_ctx.patient.as_ref(), issues);
+	d_1_1_4(&validation_ctx.patient_identifiers, issues);
 	for identifier in &validation_ctx.patient_identifiers {
 		d_1_1_1(identifier, issues);
 		d_1_1_2(identifier, issues);

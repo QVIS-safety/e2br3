@@ -4,7 +4,8 @@
     {
       "fieldPath": "documentsHeldBySender",
       "ruleCodes": [
-        "FDA.R0009"
+        "FDA.R0009",
+        "ICH.C.1.6.1.r.1.REQUIRED"
       ]
     },
     {
@@ -16,6 +17,8 @@
     {
       "fieldPath": "documentsHeldBySender[].includedDocument",
       "ruleCodes": [
+        "FDA.C.1.6.1.r.2.FILE_NAME.REQUIRED",
+        "FDA.C.1.6.1.r.2.MEDIA_TYPE.MATCH",
         "ICH.C.1.6.1.r.2.ALLOWED.VALUE"
       ]
     },
@@ -28,7 +31,9 @@
     {
       "fieldPath": "otherCaseIdentifiers",
       "ruleCodes": [
-        "FDA.R0017"
+        "FDA.R0017",
+        "ICH.C.1.9.1.r.1.REQUIRED",
+        "ICH.C.1.9.1.r.2.REQUIRED"
       ]
     },
     {

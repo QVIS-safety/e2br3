@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "scope": "Agreed 298-code Case business-rule baseline, including explicit legacy-code redirects; not an official-document completeness claim.",
+  "scope": "Validator-owned implemented Case business rules, including explicit legacy-code redirects; not an official-document completeness claim.",
   "rules": [
     {
       "ruleCode": "FDA.C.1.12.REQUIRED",
@@ -9,7 +9,25 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.combinationProductReportIndicator"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
+    },
+    {
+      "ruleCode": "FDA.C.1.6.1.r.2.FILE_NAME.REQUIRED",
+      "testName": "rule_fda_c_1_6_1_r_2_file_name_required",
+      "expectedIssueCode": "FDA.C.1.6.1.r.2.FILE_NAME.REQUIRED",
+      "expectedIssuePaths": [
+        "documentsHeldBySender[].includedDocument"
+      ],
+      "testModule": "case::sections::c::rule_tests::fda"
+    },
+    {
+      "ruleCode": "FDA.C.1.6.1.r.2.MEDIA_TYPE.MATCH",
+      "testName": "rule_fda_c_1_6_1_r_2_media_type_match",
+      "expectedIssueCode": "FDA.C.1.6.1.r.2.MEDIA_TYPE.MATCH",
+      "expectedIssuePaths": [
+        "documentsHeldBySender[].includedDocument"
+      ],
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.1.7.1.REQUIRED",
@@ -18,7 +36,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.2.PRIMARY.MSK.FORBIDDEN",
@@ -27,7 +45,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterGivenName"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.2.PRIMARY.REQUIRED",
@@ -42,7 +60,7 @@
         "primarySources[].reporterStreet",
         "primarySources[].reporterTelephone"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.2.r.2.8.MSK.FORBIDDEN",
@@ -51,7 +69,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterEmail"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.2.r.2.8.REQUIRED",
@@ -60,7 +78,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterEmail"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.C.3.SENDER.REQUIRED",
@@ -80,7 +98,25 @@
         "senderInformation.streetAddress",
         "senderInformation.telephone"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
+    },
+    {
+      "ruleCode": "FDA.C.4.r.2.FILE_NAME.REQUIRED",
+      "testName": "rule_fda_c_4_r_2_file_name_required",
+      "expectedIssueCode": "FDA.C.4.r.2.FILE_NAME.REQUIRED",
+      "expectedIssuePaths": [
+        "literatureReferences[].documentBase64"
+      ],
+      "testModule": "case::sections::c::rule_tests::fda"
+    },
+    {
+      "ruleCode": "FDA.C.4.r.2.MEDIA_TYPE.MATCH",
+      "testName": "rule_fda_c_4_r_2_media_type_match",
+      "expectedIssueCode": "FDA.C.4.r.2.MEDIA_TYPE.MATCH",
+      "expectedIssuePaths": [
+        "literatureReferences[].documentBase64"
+      ],
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.1.R0027",
@@ -89,7 +125,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientInitialsNullFlavor"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.11.NULLFLAVOR.ROUTE",
@@ -98,7 +134,7 @@
       "expectedIssuePaths": [
         "patientInformation.raceCodeNullFlavor"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.11.REQUIRED",
@@ -107,7 +143,7 @@
       "expectedIssuePaths": [
         "patientInformation.raceCodes"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.11.r.1.REQUIRED",
@@ -116,7 +152,7 @@
       "expectedIssuePaths": [
         "patientInformation.raceCodes"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.12.NULLFLAVOR.ROUTE",
@@ -125,7 +161,7 @@
       "expectedIssuePaths": [
         "patientInformation.ethnicityCodeNullFlavor"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.12.REQUIRED",
@@ -134,7 +170,7 @@
       "expectedIssuePaths": [
         "patientInformation.ethnicityCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.2.REQUIRED",
@@ -143,7 +179,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientBirthDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.D.9.1.REQUIRED",
@@ -152,7 +188,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.dateOfDeath"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED",
@@ -161,7 +197,7 @@
       "expectedIssuePaths": [
         "reactions[].requiredInterventionNullFlavor"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.E.i.3.2h.REQUIRED",
@@ -170,7 +206,7 @@
       "expectedIssuePaths": [
         "reactions[].requiredIntervention"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.E.i.4-6.REQUIRED",
@@ -179,7 +215,7 @@
       "expectedIssuePaths": [
         "reactions[].startDate"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.K.12.R.3.REQUIRED",
@@ -188,7 +224,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaDevices[].deviceProblemCodes"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.K.12.REQUIRED",
@@ -197,7 +233,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaDevices[].malfunction"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.1.ROUTE",
@@ -206,7 +242,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.12.COLLECTION.REQUIRED",
@@ -215,7 +251,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaDevices"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.12.r.4-6.AT_LEAST_ONE",
@@ -224,7 +260,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaDevices[].deviceBrandName"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.9.REQUIRED",
@@ -233,7 +269,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.9.i.2.r.1.REQUIRED",
@@ -242,7 +278,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].sourceOfAssessment"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.9.i.2.r.2.REQUIRED",
@@ -251,7 +287,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].methodOfAssessment"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.G.k.9.i.2.r.3.REQUIRED",
@@ -260,7 +296,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].resultOfAssessment"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0008",
@@ -269,7 +305,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0009",
@@ -278,7 +314,7 @@
       "expectedIssuePaths": [
         "documentsHeldBySender"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0011",
@@ -287,7 +323,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.fulfilExpeditedCriteria"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0012",
@@ -296,7 +332,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0013",
@@ -305,7 +341,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0014",
@@ -314,7 +350,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0015",
@@ -323,7 +359,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0016",
@@ -332,7 +368,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.localCriteriaReportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0017",
@@ -341,7 +377,7 @@
       "expectedIssuePaths": [
         "otherCaseIdentifiers"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0020",
@@ -350,7 +386,7 @@
       "expectedIssuePaths": [
         "primarySources[].qualification"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0024",
@@ -359,7 +395,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaIndNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0024.FORMAT",
@@ -368,7 +404,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaIndNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0025",
@@ -377,7 +413,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaPreAndaNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0025.FORMAT",
@@ -386,7 +422,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaPreAndaNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0026",
@@ -395,7 +431,7 @@
       "expectedIssuePaths": [
         "studyInformation.fdaCrossReportedIndNumbers"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0069",
@@ -404,7 +440,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0070",
@@ -413,7 +449,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0071",
@@ -422,7 +458,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0072",
@@ -431,7 +467,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaOtherCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0101",
@@ -440,25 +476,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.nullificationAmendmentCode"
       ],
-      "testModule": "case::sections::c::rule_tests"
-    },
-    {
-      "ruleCode": "FDA.R0102",
-      "testName": "rule_fda_r0102",
-      "expectedIssueCode": "FDA.R0102",
-      "expectedIssuePaths": [
-        "studyInformation[].studyTypeReaction"
-      ],
-      "testModule": "case::sections::c::rule_tests"
-    },
-    {
-      "ruleCode": "FDA.R0103",
-      "testName": "rule_fda_r0103",
-      "expectedIssueCode": "FDA.R0103",
-      "expectedIssuePaths": [
-        "studyInformation[].studyTypeReaction"
-      ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0104",
@@ -467,7 +485,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReaction"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0107",
@@ -476,7 +494,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaIndNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0108",
@@ -485,7 +503,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaPreAndaNumberOccurred"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0109",
@@ -494,7 +512,7 @@
       "expectedIssuePaths": [
         "studyInformation[].fdaCrossReportedIndNumbers[].indNumber"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0110",
@@ -503,7 +521,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0111",
@@ -512,7 +530,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0112",
@@ -521,7 +539,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.R0113",
@@ -530,7 +548,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReaction"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0001",
@@ -539,7 +557,7 @@
       "expectedIssuePaths": [
         "linkedReports"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0002",
@@ -548,7 +566,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReaction"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0003",
@@ -557,7 +575,7 @@
       "expectedIssuePaths": [
         "patientInformation.raceCodeNullFlavor"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0004",
@@ -566,7 +584,7 @@
       "expectedIssuePaths": [
         "patientInformation.ethnicityCodeNullFlavor"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0006",
@@ -575,7 +593,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaAdditionalInfoCoded"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0007",
@@ -584,7 +602,7 @@
       "expectedIssuePaths": [
         "drugs[].fdaDevices[].remedialActions"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::fda"
     },
     {
       "ruleCode": "FDA.W0010",
@@ -593,7 +611,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientInitials"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::fda"
     },
     {
       "ruleCode": "ICH.C.1.1.REQUIRED",
@@ -602,7 +620,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.safetyReportId"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.11.2.REQUIRED",
@@ -611,7 +629,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.nullificationReason"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
@@ -620,7 +638,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.transmissionDate"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.2.REQUIRED",
@@ -629,7 +647,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.transmissionDate"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.3.REQUIRED",
@@ -638,7 +656,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
@@ -647,7 +665,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.dateFirstReceivedFromSource"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
@@ -656,7 +674,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.dateFirstReceivedFromSource"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.4.REQUIRED",
@@ -665,7 +683,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.dateFirstReceivedFromSource"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
@@ -674,7 +692,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.dateOfMostRecentInformation"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.5.REQUIRED",
@@ -683,7 +701,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.dateOfMostRecentInformation"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.6.1.REQUIRED",
@@ -692,16 +710,17 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.additionalDocumentsAvailable"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.6.1.r.1.REQUIRED",
       "testName": "rule_ich_c_1_6_1_r_1_required",
       "expectedIssueCode": "ICH.C.1.6.1.r.1.REQUIRED",
       "expectedIssuePaths": [
+        "documentsHeldBySender",
         "documentsHeldBySender[].documentDescription"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.6.1.r.2.ALLOWED.VALUE",
@@ -710,7 +729,7 @@
       "expectedIssuePaths": [
         "documentsHeldBySender[].includedDocument"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.7.REQUIRED",
@@ -719,7 +738,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.fulfilExpeditedCriteria"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.8.1.REQUIRED",
@@ -728,7 +747,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.worldwideUniqueId"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.8.2.REQUIRED",
@@ -737,7 +756,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.firstSenderType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.9.1.REQUIRED",
@@ -746,16 +765,17 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.otherCaseIdentifiersExist"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.9.1.r.1.REQUIRED",
       "testName": "rule_ich_c_1_9_1_r_1_required",
       "expectedIssueCode": "ICH.C.1.9.1.r.1.REQUIRED",
       "expectedIssuePaths": [
+        "otherCaseIdentifiers",
         "otherCaseIdentifiers[].source"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.9.1.r.2.FORMAT",
@@ -764,25 +784,17 @@
       "expectedIssuePaths": [
         "otherCaseIdentifiers[].caseIdentifier"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.1.9.1.r.2.REQUIRED",
       "testName": "rule_ich_c_1_9_1_r_2_required",
       "expectedIssueCode": "ICH.C.1.9.1.r.2.REQUIRED",
       "expectedIssuePaths": [
+        "otherCaseIdentifiers",
         "otherCaseIdentifiers[].caseIdentifier"
       ],
-      "testModule": "case::sections::c::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.C.2.r.2.1.REQUIRED",
-      "testName": "rule_ich_c_2_r_2_1_required",
-      "expectedIssueCode": "ICH.C.2.r.2.1.REQUIRED",
-      "expectedIssuePaths": [
-        "primarySources[].reporterOrganization"
-      ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.3.REQUIRED",
@@ -791,7 +803,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterCountry"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.3.VOCABULARY",
@@ -800,7 +812,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterCountry"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.4.REQUIRED",
@@ -809,7 +821,7 @@
       "expectedIssuePaths": [
         "primarySources[].qualification"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.5.EXACTLY_ONCE",
@@ -818,7 +830,7 @@
       "expectedIssuePaths": [
         "primarySources[].primarySourceForRegulatoryPurposes"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.5.REQUIRED",
@@ -827,7 +839,7 @@
       "expectedIssuePaths": [
         "primarySources[].primarySourceForRegulatoryPurposes"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.2.r.REQUIRED",
@@ -836,7 +848,7 @@
       "expectedIssuePaths": [
         "primarySources"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.3.1.REQUIRED",
@@ -845,7 +857,7 @@
       "expectedIssuePaths": [
         "senderInformation.senderType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.3.2.REQUIRED",
@@ -854,7 +866,7 @@
       "expectedIssuePaths": [
         "senderInformation.organizationName"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.3.4.5.VOCABULARY",
@@ -863,7 +875,7 @@
       "expectedIssuePaths": [
         "senderInformation.countryCode"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.4.r.2.ALLOWED.VALUE",
@@ -872,7 +884,7 @@
       "expectedIssuePaths": [
         "literatureReferences[].documentBase64"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.5.1.r.2.VOCABULARY",
@@ -881,7 +893,7 @@
       "expectedIssuePaths": [
         "studyInformation[].registrations[].registrationCountry"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.C.5.4.REQUIRED",
@@ -890,16 +902,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReaction"
       ],
-      "testModule": "case::sections::c::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.D.1.1.4.REQUIRED",
-      "testName": "rule_ich_d_1_1_4_required",
-      "expectedIssueCode": "ICH.D.1.1.4.REQUIRED",
-      "expectedIssuePaths": [
-        "patientInformation.patientStudyNumber"
-      ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::c::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.1.REQUIRED",
@@ -908,7 +911,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientInitials"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.2.1.FUTURE_DATE.FORBIDDEN",
@@ -917,7 +920,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].parentBirthDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.2.2a.REQUIRED",
@@ -926,7 +929,16 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].parentAge"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.10.2.2b.ALLOWED.VALUE",
+      "testName": "rule_ich_d_10_2_2b_allowed_value",
+      "expectedIssueCode": "ICH.D.10.2.2b.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "patientInformation.parents[].parentAgeUnit"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.2.2b.REQUIRED",
@@ -935,7 +947,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].parentAgeUnit"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.2.EXCLUSIVE",
@@ -944,7 +956,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].parentBirthDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.3.FUTURE_DATE.FORBIDDEN",
@@ -953,7 +965,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].lastMenstrualPeriodDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.5.INTEGER",
@@ -962,7 +974,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].heightCm"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.6.REQUIRED",
@@ -971,7 +983,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].sex"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.1a.ALLOWED.VALUE",
@@ -980,7 +992,16 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.10.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_10_7_1_r_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.10.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.parents[].medicalHistory[].meddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.1a.REQUIRED",
@@ -989,7 +1010,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.1a.VOCABULARY",
@@ -999,7 +1020,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.1b.REQUIRED",
@@ -1008,7 +1029,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.1b.VOCABULARY",
@@ -1017,7 +1038,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.7.1.r.FUTURE_DATE.FORBIDDEN",
@@ -1026,7 +1047,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].medicalHistory[].dateRange"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
@@ -1035,25 +1056,16 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].mpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
-      "ruleCode": "ICH.D.10.8.r.2a.REQUIRED",
-      "testName": "rule_ich_d_10_8_r_2a_required",
-      "expectedIssueCode": "ICH.D.10.8.r.2a.REQUIRED",
+      "ruleCode": "ICH.D.10.8.r.6a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_10_8_r_6a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.10.8.r.6a.MEDDRA.VERSION.CONSISTENT",
       "expectedIssuePaths": [
-        "patientInformation.parents[].pastDrugs[].mpidVersion"
+        "patientInformation.parents[].pastDrugs[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.D.10.8.r.3a.REQUIRED",
-      "testName": "rule_ich_d_10_8_r_3a_required",
-      "expectedIssueCode": "ICH.D.10.8.r.3a.REQUIRED",
-      "expectedIssuePaths": [
-        "patientInformation.parents[].pastDrugs[].phpidVersion"
-      ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.6a.REQUIRED",
@@ -1062,7 +1074,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.6a.VOCABULARY",
@@ -1072,7 +1084,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.6b.REQUIRED",
@@ -1081,7 +1093,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.6b.VOCABULARY",
@@ -1090,7 +1102,16 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.10.8.r.7a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_10_8_r_7a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.10.8.r.7a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.parents[].pastDrugs[].reactionMeddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.7a.REQUIRED",
@@ -1099,7 +1120,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.7a.VOCABULARY",
@@ -1109,7 +1130,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.7b.REQUIRED",
@@ -1118,7 +1139,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.7b.VOCABULARY",
@@ -1127,7 +1148,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.10.8.r.FUTURE_DATE.FORBIDDEN",
@@ -1136,7 +1157,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].dateRange"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
@@ -1145,7 +1166,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientBirthDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.2.1a.REQUIRED",
@@ -1154,7 +1175,7 @@
       "expectedIssuePaths": [
         "patientInformation.gestationPeriod"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.2.1b.REQUIRED",
@@ -1163,7 +1184,7 @@
       "expectedIssuePaths": [
         "patientInformation.gestationPeriodUnit"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.2a.REQUIRED",
@@ -1172,7 +1193,7 @@
       "expectedIssuePaths": [
         "patientInformation.ageAtTimeOfOnset"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.2b.REQUIRED",
@@ -1181,7 +1202,7 @@
       "expectedIssuePaths": [
         "patientInformation.ageUnit"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.2.EXCLUSIVE",
@@ -1190,7 +1211,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientBirthDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.4.INTEGER",
@@ -1199,7 +1220,7 @@
       "expectedIssuePaths": [
         "patientInformation.heightCm"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.6.FUTURE_DATE.FORBIDDEN",
@@ -1208,7 +1229,7 @@
       "expectedIssuePaths": [
         "patientInformation.lastMenstrualPeriodDate"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.6.NULLFLAVOR.ALLOWED",
@@ -1217,7 +1238,7 @@
       "expectedIssuePaths": [
         "patientInformation.lastMenstrualPeriodDateNullFlavor"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.1a.ALLOWED.VALUE",
@@ -1226,7 +1247,16 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_7_1_r_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.medicalHistory[].meddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.1a.REQUIRED",
@@ -1235,7 +1265,7 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.1a.VOCABULARY",
@@ -1245,7 +1275,7 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.1b.REQUIRED",
@@ -1254,7 +1284,7 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.1b.VOCABULARY",
@@ -1263,7 +1293,16 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.7.1.r.6.ALLOWED.VALUE",
+      "testName": "rule_ich_d_7_1_r_6_allowed_value",
+      "expectedIssueCode": "ICH.D.7.1.r.6.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "patientInformation.medicalHistory[].familyHistory"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.6.PARENT_DUPLICATE",
@@ -1272,7 +1311,7 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistory[].familyHistory"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
@@ -1281,7 +1320,7 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistoryEpisodes[].dateRange"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.7.2.REQUIRED",
@@ -1290,7 +1329,16 @@
       "expectedIssuePaths": [
         "patientInformation.medicalHistoryText"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.7.3.ALLOWED.VALUE",
+      "testName": "rule_ich_d_7_3_allowed_value",
+      "expectedIssueCode": "ICH.D.7.3.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "patientInformation.concomitantTherapy"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.MPID_PHPID.EXCLUSIVE",
@@ -1299,7 +1347,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].mpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.1.REQUIRED",
@@ -1308,7 +1356,16 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].drugName"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.8.r.6a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_8_r_6a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.8.r.6a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.pastDrugs[].indicationMeddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.6a.REQUIRED",
@@ -1317,7 +1374,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.6a.VOCABULARY",
@@ -1327,7 +1384,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.6b.REQUIRED",
@@ -1336,7 +1393,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.6b.VOCABULARY",
@@ -1345,7 +1402,16 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.8.r.7a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_8_r_7a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.8.r.7a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.pastDrugs[].reactionMeddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.7a.REQUIRED",
@@ -1354,7 +1420,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.7a.VOCABULARY",
@@ -1364,7 +1430,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.7b.REQUIRED",
@@ -1373,7 +1439,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.7b.VOCABULARY",
@@ -1382,7 +1448,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.8.r.FUTURE_DATE.FORBIDDEN",
@@ -1391,7 +1457,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugs[].dateRange"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.1.FUTURE_DATE.FORBIDDEN",
@@ -1400,7 +1466,16 @@
       "expectedIssuePaths": [
         "patientInformation.death.dateOfDeath"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.9.2.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_9_2_r_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.9.2.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.death.reportedCauses[].meddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.2.r.1a.REQUIRED",
@@ -1409,7 +1484,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.reportedCauses[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.2.r.1a.VOCABULARY",
@@ -1419,7 +1494,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.reportedCauses[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.2.r.1b.REQUIRED",
@@ -1428,7 +1503,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.reportedCauses[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.2.r.1b.VOCABULARY",
@@ -1437,7 +1512,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.reportedCauses[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.2.r.2.REQUIRED",
@@ -1446,7 +1521,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.reportedCauses[].comments"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.3.REQUIRED",
@@ -1455,7 +1530,16 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyPerformed"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.D.9.4.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_d_9_4_r_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.D.9.4.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "patientInformation.death.autopsyCauses[].meddraVersion"
+      ],
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.4.r.1a.REQUIRED",
@@ -1464,7 +1548,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyCauses[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.4.r.1a.VOCABULARY",
@@ -1474,7 +1558,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyCauses[].meddraVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.4.r.1b.REQUIRED",
@@ -1483,7 +1567,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyCauses[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.4.r.1b.VOCABULARY",
@@ -1492,7 +1576,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyCauses[].meddraCode"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.D.9.4.r.2.REQUIRED",
@@ -1501,7 +1585,7 @@
       "expectedIssuePaths": [
         "patientInformation.death.autopsyCauses[].comments"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.1.1b.REQUIRED",
@@ -1510,7 +1594,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionLanguage"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.1.1b.VOCABULARY",
@@ -1519,7 +1603,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionLanguage"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.2.1a.ALLOWED.VALUE",
@@ -1528,7 +1612,16 @@
       "expectedIssuePaths": [
         "reactions[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.E.i.2.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_e_i_2_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.E.i.2.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "reactions[].reactionMeddraVersion"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.2.1a.REQUIRED",
@@ -1537,7 +1630,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.2.1a.VOCABULARY",
@@ -1547,7 +1640,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionMeddraVersion"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.2.1b.REQUIRED",
@@ -1556,7 +1649,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.2.1b.VOCABULARY",
@@ -1565,7 +1658,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionMeddraCode"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2.CRITERIA.REQUIRED",
@@ -1574,7 +1667,7 @@
       "expectedIssuePaths": [
         "reactions[].seriousnessCriteria"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2.NI.ONLY",
@@ -1583,7 +1676,7 @@
       "expectedIssuePaths": [
         "reactions[].seriousnessCriteria"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2a.REQUIRED",
@@ -1592,7 +1685,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaDeath"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2b.REQUIRED",
@@ -1601,7 +1694,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaLifeThreatening"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2c.REQUIRED",
@@ -1610,7 +1703,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaHospitalization"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2d.REQUIRED",
@@ -1619,7 +1712,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaDisabling"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2e.REQUIRED",
@@ -1628,7 +1721,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaCongenitalAnomaly"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.3.2f.REQUIRED",
@@ -1637,7 +1730,7 @@
       "expectedIssuePaths": [
         "reactions[].criteriaOtherMedicallyImportant"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN",
@@ -1646,7 +1739,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionDateRange"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.6a.REQUIRED",
@@ -1655,7 +1748,7 @@
       "expectedIssuePaths": [
         "reactions[].durationValue"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.6b.REQUIRED",
@@ -1664,7 +1757,7 @@
       "expectedIssuePaths": [
         "reactions[].durationUnit"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.7.REQUIRED",
@@ -1673,7 +1766,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionOutcome"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.8.HCP.OMIT",
@@ -1682,7 +1775,7 @@
       "expectedIssuePaths": [
         "reactions[].medicalConfirmation"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.9.VOCABULARY",
@@ -1691,7 +1784,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionCountry"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.E.i.REQUIRED",
@@ -1700,7 +1793,7 @@
       "expectedIssuePaths": [
         "reactions"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
@@ -1709,7 +1802,7 @@
       "expectedIssuePaths": [
         "testResults[].testDate"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.1.REQUIRED",
@@ -1718,7 +1811,7 @@
       "expectedIssuePaths": [
         "testResults[].testDate"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.1.REQUIRED",
@@ -1727,7 +1820,7 @@
       "expectedIssuePaths": [
         "testResults[].testName"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.2a.ALLOWED.VALUE",
@@ -1736,7 +1829,16 @@
       "expectedIssuePaths": [
         "testResults[].testMeddraVersion"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.F.r.2.2a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_f_r_2_2a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.F.r.2.2a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "testResults[].testMeddraVersion"
+      ],
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.2a.REQUIRED",
@@ -1745,7 +1847,7 @@
       "expectedIssuePaths": [
         "testResults[].testMeddraVersion"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.2a.VOCABULARY",
@@ -1755,7 +1857,7 @@
       "expectedIssuePaths": [
         "testResults[].testMeddraVersion"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.2b.REQUIRED",
@@ -1764,7 +1866,7 @@
       "expectedIssuePaths": [
         "testResults[].testMeddraCode"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.2b.VOCABULARY",
@@ -1773,7 +1875,7 @@
       "expectedIssuePaths": [
         "testResults[].testMeddraCode"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.2.REQUIRED",
@@ -1782,7 +1884,7 @@
       "expectedIssuePaths": [
         "testResults[].testName"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.3.1.REQUIRED",
@@ -1791,7 +1893,7 @@
       "expectedIssuePaths": [
         "testResults[].testResultCode"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.3.2.REQUIRED",
@@ -1800,7 +1902,7 @@
       "expectedIssuePaths": [
         "testResults[].testResultValue"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.3.3.REQUIRED",
@@ -1809,7 +1911,7 @@
       "expectedIssuePaths": [
         "testResults[].testResultUnit"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.3.3.VOCABULARY",
@@ -1818,7 +1920,7 @@
       "expectedIssuePaths": [
         "testResults[].testResultUnit"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.F.r.3.4.REQUIRED",
@@ -1827,7 +1929,7 @@
       "expectedIssuePaths": [
         "testResults[].resultUnstructured"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.1.AGGREGATE.REQUIRED",
@@ -1836,7 +1938,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.1.REQUIRED",
@@ -1845,7 +1947,7 @@
       "expectedIssuePaths": [
         "drugs[].drugCharacterization"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.1.MPID_PHPID.EXCLUSIVE",
@@ -1854,7 +1956,7 @@
       "expectedIssuePaths": [
         "drugs[].phpid"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.2.REQUIRED",
@@ -1863,7 +1965,7 @@
       "expectedIssuePaths": [
         "drugs[].medicinalProduct"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.3.r.1.REQUIRED",
@@ -1872,16 +1974,7 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].substanceName"
       ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.G.k.2.3.r.2a.REQUIRED",
-      "testName": "rule_ich_g_k_2_3_r_2a_required",
-      "expectedIssueCode": "ICH.G.k.2.3.r.2a.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].activeSubstances[].substanceTermIdVersion"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.3.r.3b.REQUIRED",
@@ -1890,7 +1983,7 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].strengthUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.3.r.3b.VOCABULARY",
@@ -1899,7 +1992,7 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].strengthUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.3.r.REQUIRED",
@@ -1908,7 +2001,7 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.4.VOCABULARY",
@@ -1917,7 +2010,16 @@
       "expectedIssuePaths": [
         "drugs[].obtainDrugCountry"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.G.k.2.5.ALLOWED.VALUE",
+      "testName": "rule_ich_g_k_2_5_allowed_value",
+      "expectedIssueCode": "ICH.G.k.2.5.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "drugs[].investigationalProductBlinded"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.2.5.STUDY.ONLY",
@@ -1926,7 +2028,7 @@
       "expectedIssuePaths": [
         "drugs[].investigationalProductBlinded"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.3.2.REQUIRED",
@@ -1935,7 +2037,7 @@
       "expectedIssuePaths": [
         "drugs[].drugAuthorizationCountry"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.3.2.VOCABULARY",
@@ -1944,16 +2046,7 @@
       "expectedIssuePaths": [
         "drugs[].drugAuthorizationCountry"
       ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.G.k.4.r.11.2a.REQUIRED",
-      "testName": "rule_ich_g_k_4_r_11_2a_required",
-      "expectedIssueCode": "ICH.G.k.4.r.11.2a.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].dosageInformation[].parentRouteTermIdVersion"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.1b.REQUIRED",
@@ -1962,7 +2055,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].doseUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.3.REQUIRED",
@@ -1971,7 +2064,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].frequencyUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.3.VOCABULARY",
@@ -1980,7 +2073,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].frequencyUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
@@ -1989,7 +2082,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].firstAdministrationDate"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.6a.REQUIRED",
@@ -1998,7 +2091,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].durationValue"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.4.r.6b.REQUIRED",
@@ -2007,16 +2100,7 @@
       "expectedIssuePaths": [
         "drugs[].dosageInformation[].durationUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "ICH.G.k.4.r.9.2a.REQUIRED",
-      "testName": "rule_ich_g_k_4_r_9_2a_required",
-      "expectedIssueCode": "ICH.G.k.4.r.9.2a.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].dosageInformation[].doseFormTermIdVersion"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.5a.REQUIRED",
@@ -2025,7 +2109,7 @@
       "expectedIssuePaths": [
         "drugs[].cumulativeDoseFirstReactionValue"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.5b.REQUIRED",
@@ -2034,7 +2118,7 @@
       "expectedIssuePaths": [
         "drugs[].cumulativeDoseFirstReactionUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.6a.REQUIRED",
@@ -2043,7 +2127,7 @@
       "expectedIssuePaths": [
         "drugs[].gestationPeriodExposureValue"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.6b.REQUIRED",
@@ -2052,7 +2136,7 @@
       "expectedIssuePaths": [
         "drugs[].gestationPeriodExposureUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.7.r.2a.ALLOWED.VALUE",
@@ -2061,7 +2145,16 @@
       "expectedIssuePaths": [
         "drugs[].indications[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.G.k.7.r.2a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_g_k_7_r_2a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.G.k.7.r.2a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "drugs[].indications[].indicationMeddraVersion"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.7.r.2a.REQUIRED",
@@ -2070,7 +2163,7 @@
       "expectedIssuePaths": [
         "drugs[].indications[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.7.r.2a.VOCABULARY",
@@ -2080,7 +2173,7 @@
       "expectedIssuePaths": [
         "drugs[].indications[].indicationMeddraVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.7.r.2b.REQUIRED",
@@ -2089,7 +2182,7 @@
       "expectedIssuePaths": [
         "drugs[].indications[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.7.r.2b.VOCABULARY",
@@ -2098,7 +2191,7 @@
       "expectedIssuePaths": [
         "drugs[].indications[].indicationMeddraCode"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.9.i.3.1a.REQUIRED",
@@ -2107,7 +2200,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].administrationStartIntervalValue"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.9.i.3.1b.REQUIRED",
@@ -2116,7 +2209,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].administrationStartIntervalUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.9.i.3.2a.REQUIRED",
@@ -2125,7 +2218,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].lastDoseIntervalValue"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.9.i.3.2b.REQUIRED",
@@ -2134,7 +2227,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].lastDoseIntervalUnit"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.G.k.REQUIRED",
@@ -2143,7 +2236,7 @@
       "expectedIssuePaths": [
         "drugs"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.1.REQUIRED",
@@ -2152,7 +2245,7 @@
       "expectedIssuePaths": [
         "narrative.caseNarrative"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.3.r.1a.ALLOWED.VALUE",
@@ -2161,7 +2254,16 @@
       "expectedIssuePaths": [
         "narrative.senderDiagnoses[].diagnosisMeddraVersion"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.H.3.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "testName": "rule_ich_h_3_r_1a_meddra_version_consistent",
+      "expectedIssueCode": "ICH.H.3.r.1a.MEDDRA.VERSION.CONSISTENT",
+      "expectedIssuePaths": [
+        "narrative.senderDiagnoses[].diagnosisMeddraVersion"
+      ],
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.3.r.1a.REQUIRED",
@@ -2170,7 +2272,7 @@
       "expectedIssuePaths": [
         "narrative.senderDiagnoses[].diagnosisMeddraVersion"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.3.r.1a.VOCABULARY",
@@ -2180,7 +2282,7 @@
       "expectedIssuePaths": [
         "narrative.senderDiagnoses[].diagnosisMeddraVersion"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.3.r.1b.REQUIRED",
@@ -2189,7 +2291,7 @@
       "expectedIssuePaths": [
         "narrative.senderDiagnoses[].diagnosisMeddraCode"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.3.r.1b.VOCABULARY",
@@ -2198,7 +2300,7 @@
       "expectedIssuePaths": [
         "narrative.senderDiagnoses[].diagnosisMeddraCode"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.5.r.1b.REQUIRED",
@@ -2207,7 +2309,7 @@
       "expectedIssuePaths": [
         "narrative.caseSummaries[].languageCode"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "ICH.H.5.r.1b.VOCABULARY",
@@ -2216,7 +2318,7 @@
       "expectedIssuePaths": [
         "narrative.caseSummaries[].languageCode"
       ],
-      "testModule": "case::sections::h::rule_tests"
+      "testModule": "case::sections::h::rule_tests::ich"
     },
     {
       "ruleCode": "MFDS.C.1.3.RECEIVER",
@@ -2225,7 +2327,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.reportType"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.1.7.NULLFLAVOR.R2.RETRANSMISSION.REQUIRED",
@@ -2234,7 +2336,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.fulfilExpeditedCriteria"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.1.7.RECEIVER",
@@ -2243,7 +2345,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.fulfilExpeditedCriteria"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.2.RECEIVER.REQUIRED",
@@ -2253,7 +2355,7 @@
         "primarySources[].reporterGivenName",
         "primarySources[].reporterOrganization"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.2.r.2.3-5.RECEIVER.REQUIRED",
@@ -2262,7 +2364,7 @@
       "expectedIssuePaths": [
         "primarySources[].reporterStreet"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.2.r.4.KR.1.REQUIRED",
@@ -2271,16 +2373,16 @@
       "expectedIssuePaths": [
         "primarySources[].qualificationKr1"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
-      "ruleCode": "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU",
-      "testName": "rule_mfds_c_2_r_4_nullflavor_forbidden_ct_cu",
-      "expectedIssueCode": "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU",
+      "ruleCode": "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT",
+      "testName": "rule_mfds_c_2_r_4_nullflavor_forbidden_ct",
+      "expectedIssueCode": "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT",
       "expectedIssuePaths": [
         "primarySources[].qualification"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.2.r.4.REQUIRED",
@@ -2289,7 +2391,7 @@
       "expectedIssuePaths": [
         "primarySources[].qualification"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.3.1.KR.1.REQUIRED",
@@ -2298,7 +2400,7 @@
       "expectedIssuePaths": [
         "senderInformation[].healthProfessionalTypeKr1"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.3.3.3.RECEIVER.REQUIRED",
@@ -2307,7 +2409,7 @@
       "expectedIssuePaths": [
         "senderInformation.personGivenName"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.5.1.r.1.NULLFLAVOR.FORBIDDEN",
@@ -2316,7 +2418,7 @@
       "expectedIssuePaths": [
         "studyInformation[].registrations[].registrationNumber"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.5.1.r.1.RECEIVER.REQUIRED",
@@ -2325,7 +2427,7 @@
       "expectedIssuePaths": [
         "studyInformation.registrations"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.5.4.KR.1.REQUIRED",
@@ -2334,7 +2436,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReactionKr1"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.5.4.RECEIVER",
@@ -2343,7 +2445,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyTypeReaction"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.C.5.RECEIVER.REQUIRED",
@@ -2352,7 +2454,7 @@
       "expectedIssuePaths": [
         "studyInformation[].studyName"
       ],
-      "testModule": "case::sections::c::rule_tests"
+      "testModule": "case::sections::c::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.1.1.4.REQUIRED",
@@ -2361,7 +2463,7 @@
       "expectedIssuePaths": [
         "patientInformation.patientStudyNumber"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
@@ -2370,7 +2472,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].mfdsMedicinalProductVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
@@ -2379,7 +2481,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].mfdsMedicinalProductId"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
@@ -2388,7 +2490,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].mfdsMedicinalProductId"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.10.8.r.2b.REQUIRED",
@@ -2397,7 +2499,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].mpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.10.8.r.3b.REQUIRED",
@@ -2406,7 +2508,7 @@
       "expectedIssuePaths": [
         "patientInformation.parents[].pastDrugs[].phpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.2.2a.REQUIRED",
@@ -2415,7 +2517,7 @@
       "expectedIssuePaths": [
         "patientInformation.ageAtTimeOfOnset"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.2.2b.REQUIRED",
@@ -2424,7 +2526,16 @@
       "expectedIssuePaths": [
         "patientInformation.ageUnit"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
+    },
+    {
+      "ruleCode": "MFDS.D.2.3.ALLOWED.VALUE",
+      "testName": "rule_mfds_d_2_3_allowed_value",
+      "expectedIssueCode": "MFDS.D.2.3.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "patientInformation.patientAgeGroup"
+      ],
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.5.REQUIRED",
@@ -2433,7 +2544,7 @@
       "expectedIssuePaths": [
         "patientInformation.sex"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.1.KR.1a.REQUIRED",
@@ -2442,7 +2553,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].mfdsMedicinalProductVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.1.KR.1b.REQUIRED",
@@ -2451,7 +2562,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].mfdsMedicinalProductId"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.1.KR.1b.VOCABULARY",
@@ -2460,7 +2571,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].mfdsMedicinalProductId"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.2a.REQUIRED",
@@ -2469,7 +2580,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].mpidVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.2b.REQUIRED",
@@ -2478,7 +2589,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].mpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.3a.REQUIRED",
@@ -2487,7 +2598,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].phpidVersion"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.D.8.r.3b.REQUIRED",
@@ -2496,7 +2607,7 @@
       "expectedIssuePaths": [
         "patientInformation.pastDrugHistory[].phpid"
       ],
-      "testModule": "case::sections::d::rule_tests"
+      "testModule": "case::sections::d::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.E.i.4.REQUIRED",
@@ -2505,7 +2616,7 @@
       "expectedIssuePaths": [
         "reactions[].startDate"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.E.i.5.REQUIRED",
@@ -2514,7 +2625,7 @@
       "expectedIssuePaths": [
         "reactions[].endDate"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.E.i.9.EU.FORBIDDEN",
@@ -2523,7 +2634,7 @@
       "expectedIssuePaths": [
         "reactions[].reactionCountry"
       ],
-      "testModule": "case::sections::e::rule_tests"
+      "testModule": "case::sections::e::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.F.r.1.NULLFLAVOR.VOCABULARY",
@@ -2532,7 +2643,7 @@
       "expectedIssuePaths": [
         "testResults[].testDateNullFlavor"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.F.r.7.C.1.6.1.REQUIRED",
@@ -2541,7 +2652,7 @@
       "expectedIssuePaths": [
         "safetyReportIdentification.additionalDocumentsAvailable"
       ],
-      "testModule": "case::sections::f::rule_tests"
+      "testModule": "case::sections::f::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.1a.REQUIRED",
@@ -2550,7 +2661,7 @@
       "expectedIssuePaths": [
         "drugs[].mpidVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.1b.REQUIRED",
@@ -2559,7 +2670,7 @@
       "expectedIssuePaths": [
         "drugs[].mpid"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.2a.REQUIRED",
@@ -2568,7 +2679,7 @@
       "expectedIssuePaths": [
         "drugs[].phpidVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.2b.REQUIRED",
@@ -2577,7 +2688,7 @@
       "expectedIssuePaths": [
         "drugs[].phpid"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.KR.1a.REQUIRED",
@@ -2586,16 +2697,7 @@
       "expectedIssuePaths": [
         "drugs[].mfdsMpidVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "MFDS.G.k.2.1.KR.1b.REQUIRED",
-      "testName": "rule_mfds_g_k_2_1_kr_1b_required",
-      "expectedIssueCode": "MFDS.G.k.2.1.KR.1b.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].mfdsMpid"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.1.KR.1b.VOCABULARY",
@@ -2604,7 +2706,7 @@
       "expectedIssuePaths": [
         "drugs[].mfdsMpid"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
@@ -2613,16 +2715,17 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].mfdsVersion"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
       "testName": "rule_mfds_g_k_2_3_r_1_kr_1b_required",
       "expectedIssueCode": "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
       "expectedIssuePaths": [
+        "drugs[].activeSubstances",
         "drugs[].activeSubstances[].mfdsId"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.3.r.1.KR.1b.VOCABULARY",
@@ -2631,7 +2734,16 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].mfdsId"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
+    },
+    {
+      "ruleCode": "MFDS.G.k.2.3.r.2a.REQUIRED",
+      "testName": "rule_mfds_g_k_2_3_r_2a_required",
+      "expectedIssueCode": "MFDS.G.k.2.3.r.2a.REQUIRED",
+      "expectedIssuePaths": [
+        "drugs[].activeSubstances[].substanceTermIdVersion"
+      ],
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.2.3.r.2b.REQUIRED",
@@ -2640,7 +2752,25 @@
       "expectedIssuePaths": [
         "drugs[].activeSubstances[].substanceTermId"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
+    },
+    {
+      "ruleCode": "MFDS.G.k.4.r.10.2a.REQUIRED",
+      "testName": "rule_mfds_g_k_4_r_10_2a_required",
+      "expectedIssueCode": "MFDS.G.k.4.r.10.2a.REQUIRED",
+      "expectedIssuePaths": [
+        "drugs[].dosageInformation[].routeTermIdVersion"
+      ],
+      "testModule": "case::sections::g::rule_tests::mfds"
+    },
+    {
+      "ruleCode": "MFDS.G.k.4.r.9.2a.REQUIRED",
+      "testName": "rule_mfds_g_k_4_r_9_2a_required",
+      "expectedIssueCode": "MFDS.G.k.4.r.9.2a.REQUIRED",
+      "expectedIssuePaths": [
+        "drugs[].dosageInformation[].doseFormTermIdVersion"
+      ],
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.8.REQUIRED",
@@ -2649,7 +2779,7 @@
       "expectedIssuePaths": [
         "drugs[].actionTaken"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
@@ -2658,16 +2788,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].methodOfAssessmentKr1"
       ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-      "testName": "rule_mfds_g_k_9_i_2_r_3_kr_1_required",
-      "expectedIssueCode": "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].drugReactionAssessments[].resultOfAssessmentKr1"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
@@ -2676,7 +2797,7 @@
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].resultOfAssessmentKr2"
       ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::g::rule_tests::mfds"
     },
     {
       "ruleCode": "MFDS.H.4.KOREAN.REQUIRED",
@@ -2685,34 +2806,7 @@
       "expectedIssuePaths": [
         "narrative.senderComments"
       ],
-      "testModule": "case::sections::h::rule_tests"
-    },
-    {
-      "ruleCode": "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-      "testName": "rule_mfds_kr_domestic_ingredientcode_required",
-      "expectedIssueCode": "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].activeSubstances[].mfdsId"
-      ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-      "testName": "rule_mfds_kr_domestic_productcode_required",
-      "expectedIssueCode": "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].mfdsMpid"
-      ],
-      "testModule": "case::sections::g::rule_tests"
-    },
-    {
-      "ruleCode": "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-      "testName": "rule_mfds_kr_foreign_whompid_required",
-      "expectedIssueCode": "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-      "expectedIssuePaths": [
-        "drugs[].mfdsMpid"
-      ],
-      "testModule": "case::sections::g::rule_tests"
+      "testModule": "case::sections::h::rule_tests::mfds"
     }
   ]
 }

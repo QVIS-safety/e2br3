@@ -249,6 +249,11 @@ fn codes_for(ctx: &ValidationContext) -> Vec<String> {
 fn assessment_errors_follow_expanded_editor_rows_including_empty_rows() {
 	for first_relatedness_count in [0, 2] {
 		let mut ctx = empty_ctx();
+		ctx.message_header =
+			Some(super::super::c::golden_c1_value_tests::message_header(
+				"MFDS",
+				"MFDS-O-CT",
+			));
 		ctx.drugs = vec![drug()];
 		let first = assessment();
 		let mut second = assessment();
@@ -256,7 +261,12 @@ fn assessment_errors_follow_expanded_editor_rows_including_empty_rows() {
 		second.administration_start_interval_unit = Some("d".into());
 		ctx.drug_reaction_assessments = vec![first, second];
 		ctx.relatedness_assessments = (0..first_relatedness_count)
-			.map(|_| relatedness())
+			.map(|_| {
+				let mut row = relatedness();
+				row.method_of_assessment_kr1 = Some("2".into());
+				row.result_of_assessment_kr2 = Some("1".into());
+				row
+			})
 			.collect();
 		let mut last = relatedness();
 		last.drug_reaction_assessment_id = Uuid::from_u128(2);
@@ -277,11 +287,11 @@ fn assessment_errors_follow_expanded_editor_rows_including_empty_rows() {
 					relatedness_sequence_number: row.sequence_number,
 					source_of_assessment: row.source_of_assessment.clone(),
 					method_of_assessment: None,
-					method_of_assessment_kr1: None,
+					method_of_assessment_kr1: row.method_of_assessment_kr1.clone(),
 					result_of_assessment: None,
 					result_of_assessment_kr1: None,
 					result_of_assessment_kr1_null_flavor: None,
-					result_of_assessment_kr2: None,
+					result_of_assessment_kr2: row.result_of_assessment_kr2.clone(),
 				})
 				.collect(),
 		};
@@ -485,7 +495,6 @@ fn nested_collection_companion_rules_are_preserved() {
 		"ICH.G.k.1.REQUIRED".to_string(),
 		"ICH.G.k.1.AGGREGATE.REQUIRED".to_string(),
 		"ICH.G.k.2.2.REQUIRED".to_string(),
-		"ICH.G.k.2.3.r.2a.REQUIRED".to_string(),
 		"ICH.G.k.2.3.r.3b.REQUIRED".to_string(),
 		"ICH.G.k.4.r.1b.REQUIRED".to_string(),
 		"ICH.G.k.4.r.6a.REQUIRED".to_string(),

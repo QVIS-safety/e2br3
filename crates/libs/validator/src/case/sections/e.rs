@@ -100,9 +100,8 @@ fn e_i_2_1a(idx: usize, reaction: &Reaction, issues: &mut Vec<ValidationIssue>) 
 		"ICH.E.i.2.1a.REQUIRED",
 		&path,
 		SECTION,
-		"[E.i.2.1a] Reaction MedDRA version is required when [E.i.2.1b] is populated.",
-		has_text(reaction.reaction_meddra_code.as_deref())
-			&& !has_text(reaction.reaction_meddra_version.as_deref()),
+		"[E.i.2.1a] Reaction MedDRA version is required when a reaction row is present.",
+		!has_text(reaction.reaction_meddra_version.as_deref()),
 	);
 	max_length(
 		issues,
@@ -260,7 +259,9 @@ fn e_i_3_2(idx: usize, reaction: &Reaction, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		"[E.i.3.2] At least one seriousness criterion must be true when [E.i.3.1] is serious.",
-		reaction.serious == Some(true) && !any_criteria_true,
+		(reaction.serious == Some(true)
+            || matches!(reaction.term_highlighted.as_deref().map(str::trim), Some("3" | "4")))
+            && !any_criteria_true,
 	);
 	reject_when(
 		issues,

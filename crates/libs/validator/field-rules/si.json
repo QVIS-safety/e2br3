@@ -56,8 +56,6 @@
     {
       "fieldPath": "studyInformation[].studyTypeReaction",
       "ruleCodes": [
-        "FDA.R0102",
-        "FDA.R0103",
         "FDA.R0104",
         "FDA.R0113",
         "FDA.W0002",

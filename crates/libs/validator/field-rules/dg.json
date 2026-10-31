@@ -16,15 +16,15 @@
     {
       "fieldPath": "drugs[].activeSubstances",
       "ruleCodes": [
-        "ICH.G.k.2.3.r.REQUIRED"
+        "ICH.G.k.2.3.r.REQUIRED",
+        "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED"
       ]
     },
     {
       "fieldPath": "drugs[].activeSubstances[].mfdsId",
       "ruleCodes": [
         "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-        "MFDS.G.k.2.3.r.1.KR.1b.VOCABULARY",
-        "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
+        "MFDS.G.k.2.3.r.1.KR.1b.VOCABULARY"
       ]
     },
     {
@@ -55,7 +55,7 @@
     {
       "fieldPath": "drugs[].activeSubstances[].substanceTermIdVersion",
       "ruleCodes": [
-        "ICH.G.k.2.3.r.2a.REQUIRED"
+        "MFDS.G.k.2.3.r.2a.REQUIRED"
       ]
     },
     {
@@ -73,7 +73,7 @@
     {
       "fieldPath": "drugs[].dosageInformation[].doseFormTermIdVersion",
       "ruleCodes": [
-        "ICH.G.k.4.r.9.2a.REQUIRED"
+        "MFDS.G.k.4.r.9.2a.REQUIRED"
       ]
     },
     {
@@ -108,9 +108,9 @@
       ]
     },
     {
-      "fieldPath": "drugs[].dosageInformation[].parentRouteTermIdVersion",
+      "fieldPath": "drugs[].dosageInformation[].routeTermIdVersion",
       "ruleCodes": [
-        "ICH.G.k.4.r.11.2a.REQUIRED"
+        "MFDS.G.k.4.r.10.2a.REQUIRED"
       ]
     },
     {
@@ -177,12 +177,6 @@
       "fieldPath": "drugs[].drugReactionAssessments[].resultOfAssessment",
       "ruleCodes": [
         "FDA.G.k.9.i.2.r.3.REQUIRED"
-      ]
-    },
-    {
-      "fieldPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1",
-      "ruleCodes": [
-        "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED"
       ]
     },
     {
@@ -262,6 +256,7 @@
       "fieldPath": "drugs[].indications[].indicationMeddraVersion",
       "ruleCodes": [
         "ICH.G.k.7.r.2a.ALLOWED.VALUE",
+        "ICH.G.k.7.r.2a.MEDDRA.VERSION.CONSISTENT",
         "ICH.G.k.7.r.2a.REQUIRED",
         "ICH.G.k.7.r.2a.VOCABULARY"
       ]
@@ -269,6 +264,7 @@
     {
       "fieldPath": "drugs[].investigationalProductBlinded",
       "ruleCodes": [
+        "ICH.G.k.2.5.ALLOWED.VALUE",
         "ICH.G.k.2.5.STUDY.ONLY"
       ]
     },
@@ -281,10 +277,7 @@
     {
       "fieldPath": "drugs[].mfdsMpid",
       "ruleCodes": [
-        "MFDS.G.k.2.1.KR.1b.REQUIRED",
-        "MFDS.G.k.2.1.KR.1b.VOCABULARY",
-        "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-        "MFDS.KR.FOREIGN.WHOMPID.REQUIRED"
+        "MFDS.G.k.2.1.KR.1b.VOCABULARY"
       ]
     },
     {
@@ -463,7 +456,7 @@
       "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1NullFlavor",
       "businessValidation": {
         "status": "not_applicable",
-        "reason": "Business validation consumes this companion and reports the issue on G.k.9.i.2.r.3.KR.1."
+        "reason": "Current MFDS G223 makes WHO-UMC result optional; value, length and nullFlavor constraints are owned by input-contracts."
       }
     },
     {

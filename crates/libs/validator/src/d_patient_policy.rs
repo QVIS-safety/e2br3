@@ -10,11 +10,12 @@ pub fn has_patient_payload(patient: &PatientInformation) -> bool {
 }
 
 pub fn should_require_patient_initials(_patient: &PatientInformation) -> bool {
-	false
+	true
 }
 
 pub fn has_patient_initials(patient: &PatientInformation) -> bool {
 	super::has_text(patient.patient_initials.as_deref())
+		|| super::has_text(patient.patient_initials_null_flavor.as_deref())
 }
 
 pub fn should_require_fda_race(patient: &PatientInformation) -> bool {

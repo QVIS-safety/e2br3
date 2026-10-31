@@ -31,6 +31,7 @@
       "fieldPath": "narrative.senderDiagnoses[].diagnosisMeddraVersion",
       "ruleCodes": [
         "ICH.H.3.r.1a.ALLOWED.VALUE",
+        "ICH.H.3.r.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.H.3.r.1a.REQUIRED",
         "ICH.H.3.r.1a.VOCABULARY"
       ]

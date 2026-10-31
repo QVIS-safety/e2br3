@@ -9,18 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 RULE_RE = re.compile(r'"((?:ICH|FDA|MFDS)\.[A-Za-z0-9_.-]+)"')
 INPUT_ONLY_SUFFIXES = (".LENGTH.MAX", ".ALLOWED.VALUE", ".NULLFLAVOR.ALLOWED")
-RETAINED_ALLOWED_VALUE_RULES = {
-    "ICH.C.1.6.1.r.2.ALLOWED.VALUE",
-    "ICH.C.4.r.2.ALLOWED.VALUE",
-    "ICH.D.6.NULLFLAVOR.ALLOWED",
-    "ICH.D.7.1.r.1a.ALLOWED.VALUE",
-    "ICH.D.10.7.1.r.1a.ALLOWED.VALUE",
-    "ICH.E.i.2.1a.ALLOWED.VALUE",
-    "ICH.F.r.2.2a.ALLOWED.VALUE",
-    "ICH.G.k.7.r.2a.ALLOWED.VALUE",
-    "ICH.H.3.r.1a.ALLOWED.VALUE",
-}
+
 GENERATED_BUSINESS_RULE_CODES = {
+    *(f"FDA.{field}.{kind}" for field in ("C.1.6.1.r.2", "C.4.r.2")
+      for kind in ("FILE_NAME.REQUIRED", "MEDIA_TYPE.MATCH")),
     *(f"ICH.E.i.3.2{suffix}.REQUIRED" for suffix in "abcdef"),
     *(
         f"ICH.{section}.r.{suffix}{part}.{kind}"
@@ -45,6 +37,11 @@ GENERATED_BUSINESS_RULE_CODES = {
 def discover_business_rule_codes(root: Path = ROOT) -> set[str]:
     codes: set[str] = set()
     section_root = root / "crates/libs/validator/src/case/sections"
+    common_source = (section_root / "mod.rs").read_text().split("\n#[cfg(test)]", 1)[0]
+    retained_source = common_source.split("fn retain_case_business_rules(", 1)[1].split("fn has_multiple_values", 1)[0]
+    retained_codes = set(RULE_RE.findall(retained_source))
+    collector_source = common_source.split("fn collect_meddra_version_issues(", 1)[1].split("pub(crate) fn normalize_validation_field_path", 1)[0]
+    codes.update(RULE_RE.findall(collector_source))
     for name in "cdefgh":
         path = section_root / f"{name}.rs"
         production_source = path.read_text().split("\n#[cfg(test)]", 1)[0]
@@ -54,9 +51,9 @@ def discover_business_rule_codes(root: Path = ROOT) -> set[str]:
         code
         for code in codes
         if not code.endswith((".", ".r"))
-        and code != "ICH.E.i.3.2"
+        and code not in {"ICH.E.i.3.2", "ICH.MEDDRA.VERSION.UNAVAILABLE"}
         and (
-            code in RETAINED_ALLOWED_VALUE_RULES
+            code in retained_codes
             or not code.endswith(INPUT_ONLY_SUFFIXES)
         )
     }

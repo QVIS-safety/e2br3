@@ -275,7 +275,7 @@ pub(super) fn linked_report_number(value: String) -> LinkedReportNumber {
 	}
 }
 
-pub(super) fn primary_source() -> PrimarySource {
+pub(in crate::case::sections) fn primary_source() -> PrimarySource {
 	PrimarySource {
 		id: Uuid::nil(),
 		case_id: Uuid::nil(),
@@ -480,7 +480,10 @@ pub(super) fn patient(initials: &str) -> PatientInformation {
 	}
 }
 
-pub(super) fn message_header(batch: &str, receiver: &str) -> MessageHeader {
+pub(in crate::case::sections) fn message_header(
+	batch: &str,
+	receiver: &str,
+) -> MessageHeader {
 	MessageHeader {
 		id: Uuid::nil(),
 		case_id: Uuid::nil(),
@@ -713,7 +716,7 @@ fn mfds_c_1_7_ni_requires_verified_r2_origin() {
 }
 
 #[test]
-fn mfds_cu_forbids_qualification_null_flavor_but_allows_c_5_2_null_flavor() {
+fn mfds_cu_allows_qualification_and_c_5_2_null_flavors() {
 	let mut report = study_report();
 	report.fulfil_expedited_criteria = Some(true);
 	let mut ctx = ctx_with(report);
@@ -736,9 +739,9 @@ fn mfds_cu_forbids_qualification_null_flavor_but_allows_c_5_2_null_flavor() {
 
 	mfds_receiver_rules(&ctx, &mut issues);
 
-	assert!(issues
+	assert!(!issues
 		.iter()
-		.any(|issue| { issue.code == "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU" }));
+		.any(|issue| issue.code == "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT"));
 	assert!(!issues.iter().any(|issue| {
 		issue.code == "MFDS.C.5.RECEIVER.REQUIRED"
 			&& issue.path == "studyInformation.0.studyName"
@@ -1077,13 +1080,17 @@ fn sponsor_study_number_is_optional_with_or_without_null_flavor() {
 }
 
 #[test]
-fn study_reporter_organization_null_flavor_satisfies_required_rule() {
+fn study_reporter_organization_remains_optional() {
 	let mut source = primary_source();
 	source.organization_null_flavor = Some("NASK".to_string());
 	let mut ctx = ctx_with(study_report());
 	ctx.primary_sources = vec![source];
 
-	assert_eq!(filtered(&ctx, &["ICH.C.2.r.2.1.REQUIRED"]), Vec::new());
+	let mut issues = Vec::new();
+	collect_ich_issues(&ctx, &mut issues);
+	assert!(!issues
+		.iter()
+		.any(|issue| issue.path == "primarySources.0.reporterOrganization"));
 }
 
 #[test]
