@@ -160,11 +160,21 @@ class TestPlanTests(unittest.TestCase):
 
     def test_documentation_and_empty_diff_skip_tests(self):
         for paths in ([], ['README.md', 'AGENTS.md', 'docs/design.md', 'registry/README.md',
-                          'crates/libs/lib-core/README.md', 'crates/services/web-server/AGENTS.md']):
+                          'crates/libs/lib-core/README.md', 'crates/services/web-server/AGENTS.md'],
+                         ['crates/services/web-server/tests/api_specs/editor.md',
+                          'crates/services/web-server/tests/api_specs/coverage.tsv',
+                          'crates/services/web-server/tests/api_editor/API_SPEC.md']):
             plan = self.plan(*paths)
             self.assertEqual(plan['selections'], {})
             for flag in ('validator', 'backend', 'registry', 'backend_contracts', 'rust'):
                 self.assertFalse(plan[flag])
+
+    def test_api_spec_directory_does_not_hide_executable_changes(self):
+        source = 'crates/services/web-server/tests/api_specs/check.rs'
+        self.assertEqual(self.plan(source)['selections'], {'web-server': []})
+        mixed = self.plan('crates/services/web-server/tests/api_specs/editor.md',
+                          'crates/services/web-server/tests/api_editor/fields.rs')
+        self.assertEqual(mixed['selections'], {'web-server': ['api_editor']})
 
     def test_shared_inputs_select_consumers_and_unknown_inputs_are_explicit(self):
         db = self.plan('db/migrations/new.sql')

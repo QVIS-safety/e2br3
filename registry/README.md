@@ -148,11 +148,14 @@ python3 registry/tools/check_contract_test_results.py \
   --frontend-results /tmp/editor-contract-tests.json
 ```
 
-Backend page tests live in `tests/api_editor/{page}.rs`, with
-generated field declarations under `generated/`. `support.rs` owns shared
-fixtures and generic contract verification; DM/AE-specific checks stay with
-their page tests. Frontend payload cases share one `it.each` harness, and
+Backend page registrations live in `tests/api_editor/pages/{page}.generated.rs`.
+Verification lives under `fields/`, `rows/`, `relations/`, and `audit/`, with
+shared fixtures in `support.rs`. Frontend payload cases share one `it.each` harness, and
 invalid-input cases also report individually by page, authority, code and path.
+
+[API specifications and coverage](../crates/services/web-server/tests/api_specs/README.md)
+connect registered HTTP operations to request/response contracts, active test
+assertions, and gaps. The index describes source evidence, not test run results.
 
 Case API tests live in `tests/api_cases/contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
