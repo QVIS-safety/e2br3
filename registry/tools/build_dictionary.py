@@ -707,7 +707,7 @@ def move_allowed_value_constraints_to_end(entries: list[dict[str, Any]]) -> None
             entry["allowed_value_constraint"] = constraint
 
 
-def apply_official_2025_null_flavor_overrides(
+def apply_official_2025_amendments(
     ich_entries: list[dict[str, Any]], fda_entries: list[dict[str, Any]]
 ) -> None:
     """Apply later official Q&A/regional rules that supersede source snapshots."""
@@ -720,6 +720,20 @@ def apply_official_2025_null_flavor_overrides(
         ich["C.2.r.3"].pop("null_flavors", None)
         ich["D.9.3"]["allowed_values"] = "false, true, nullFlavor: ASKU, NASK, UNK"
         ich["D.9.3"]["null_flavors"] = ["UNK", "ASKU", "NASK"]
+        # ICH E2D(R1) alignment, 16 December 2025, section 3 (FDA now accepts 4-6).
+        study = ich["C.5.4"]
+        study["allowed_values"] = (
+            "1=Clinical trials  2=Individual patient use(e.g. 'compassionate use' or 'named patient basis') "
+            "3=Other studies (e.g. pharmacoepidemiology, pharmacoeconomics, intensive monitoring) "
+            "4=Patient Support Program 5=Market Research Program "
+            "6=Organised Data Collection System with source data from a digital platform"
+        )
+        study["allowed_value_constraint"] = allowed_value_constraint(study["allowed_values"])
+        study["notes"] = (
+            "ICH E2D(R1) alignment (16 December 2025), section 3: "
+            "https://www.fda.gov/media/195119/download?attachment=. "
+            "FDA AEMS accepts codes 4-6; MFDS regional receiver rules retain codes 1-3."
+        )
         interval_flavors = ich["F.r.3.2"].pop("null_flavors", [])
         ich["F.r.3.2"]["interval_bound_null_flavors"] = interval_flavors
 
@@ -925,7 +939,7 @@ def main() -> int:
     nf_annotated = merge_nullflavors(ich_entries, nullflavor_usage)
     vocab_annotated = merge_vocabulary(ich_entries, vocabulary_usage)
     sev_annotated = merge_fda_severity(ich_entries, fda_severity)
-    apply_official_2025_null_flavor_overrides(ich_entries, [])
+    apply_official_2025_amendments(ich_entries, [])
     preserve_documented_amendments("ich-e2br3.json", ich_entries)
     move_allowed_value_constraints_to_end(ich_entries)
     path = write_dictionary("ich-e2br3.json", "ICH", ICH_SOURCE, ich_entries)
@@ -952,7 +966,7 @@ def main() -> int:
     )
 
     fda_entries = parse_fda_csv(fda_text)
-    apply_official_2025_null_flavor_overrides([], fda_entries)
+    apply_official_2025_amendments([], fda_entries)
     fda_sev_annotated = merge_fda_severity(fda_entries, fda_severity)
     preserve_documented_amendments("fda-regional.json", fda_entries)
     path = write_dictionary("fda-regional.json", "FDA", FDA_SOURCE, fda_entries)

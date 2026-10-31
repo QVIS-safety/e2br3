@@ -104,9 +104,13 @@ pub async fn refresh_case_validation_cache(
 			)
 			.await
 			.map_err(lib_core::model::Error::from)?;
+		let revision = CaseValidationSummaryBmc::validation_revision(mm, validator::VALIDATOR_REVISION).await?;
 		let reports =
 			validate_case_for_authorities(ctx, mm, case_id, authorities).await?;
-		CaseValidationSummaryBmc::upsert_for_reports(ctx, mm, case_id, &reports)
+		if revision != CaseValidationSummaryBmc::validation_revision(mm, validator::VALIDATOR_REVISION).await? {
+			return Err(Error::BadRequest { message: "Validation definitions changed during validation. Retry validation.".to_string() });
+		}
+		CaseValidationSummaryBmc::upsert_for_reports(ctx, mm, case_id, &reports, &revision)
 			.await?;
 		Ok(reports)
 	}

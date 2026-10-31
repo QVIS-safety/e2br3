@@ -72,8 +72,8 @@ class CanonicalUiInventoryTests(unittest.TestCase):
                 if 'frontend' not in references:
                     self.assertIn(field['identity'], frontend_fields)
                 if 'backend' not in references:
-                    generated = (self.registry.parent / 'crates/services/web-server/tests/api/'
-                                 'case_editor_contract/generated' / f'{field["page"].lower()}_fields.rs')
+                    generated = (self.registry.parent / 'crates/services/web-server/tests/api_editor/'
+                                 'pages' / f'{field["page"].lower()}.generated.rs')
                     self.assertTrue(generated.is_file(), str(generated))
                     declaration = f'field_contract_test!({test_name(field["code"])}, "{field["code"]}");'
                     self.assertIn(declaration, generated.read_text())

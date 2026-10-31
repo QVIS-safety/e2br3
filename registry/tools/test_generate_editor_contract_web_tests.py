@@ -37,6 +37,8 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
                 "// BLOCKED editor contract G.k.9.i.1:",
                 outputs["DG"],
             )
+            self.assertIn('field_contract_test!(n_1_5, "N.1.5");', outputs["N"])
+            self.assertEqual(8, outputs["N"].count("field_contract_test!("))
 
     def test_rejects_blocked_field_without_reason(self):
         fields = [{"code": "G.k.9.i.1", "execution": {"status": "blocked"}}]
@@ -54,7 +56,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         repo = Path(__file__).resolve().parents[2]
         root = (
             repo
-            / "crates/services/web-server/tests/api/case_editor_contract_web.rs"
+            / "crates/services/web-server/tests/api_editor/mod.rs"
         ).read_text(encoding="utf-8")
         self.assertNotIn("async fn", root)
         self.assertNotIn("#[tokio::test]", root)
@@ -68,8 +70,8 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         generated_count = sum(
             (
                 repo
-                / "crates/services/web-server/tests/api/case_editor_contract/generated"
-                / f"{page_id.lower()}_fields.rs"
+                / "crates/services/web-server/tests/api_editor/pages"
+                / f"{page_id.lower()}.generated.rs"
             )
             .read_text(encoding="utf-8")
             .count("field_contract_test!(")

@@ -115,7 +115,8 @@ if [[ "$upgrade_reused_database" -eq 1 ]]; then
 	for migration in \
 		db/migrations/20260920_preserve_test_date_precision.sql \
 		db/migrations/20260921_fda_device_audit_triggers.sql \
-		db/migrations/20261007_drug_not_administered_terminology.sql; do
+		db/migrations/20261007_drug_not_administered_terminology.sql \
+		db/migrations/20261031_validation_revision.sql; do
 		if ! psql "$admin_ui_url" -v ON_ERROR_STOP=1 -f "$repo_root/$migration"; then
 			printf 'Failed to upgrade UI database %s with %s.\n' "$database_name" "$migration" >&2
 			exit 2

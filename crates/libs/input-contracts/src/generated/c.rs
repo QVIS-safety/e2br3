@@ -866,7 +866,7 @@ pub fn c_5_4(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		&mut issues,
 		"ICH.C.5.4.ALLOWED.VALUE",
 		input.value,
-		&["1", "2", "3"],
+		&["1", "2", "3", "4", "5", "6"],
 	);
 	issues
 }

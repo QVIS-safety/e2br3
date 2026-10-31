@@ -540,42 +540,8 @@ fn c_2_r_1_4(idx: usize, source: &PrimarySource, issues: &mut Vec<ValidationIssu
 	);
 }
 
-/// ICH.C.2.r.2.1.REQUIRED
 /// ICH.C.2.r.2.1.LENGTH.MAX
-fn c_2_r_2_1(
-	sources: &[PrimarySource],
-	report_type_is_study: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
-	if sources.is_empty() {
-		return;
-	}
-	let (value, null_flavor) = sources
-		.iter()
-		.find_map(|source| {
-			let value = source
-				.organization
-				.as_deref()
-				.map(str::trim)
-				.filter(|value| !value.is_empty());
-			let null_flavor = source
-				.organization_null_flavor
-				.as_deref()
-				.map(str::trim)
-				.filter(|value| !value.is_empty());
-			(value.is_some() || null_flavor.is_some())
-				.then_some((value, null_flavor))
-		})
-		.unwrap_or((None, None));
-	required_when(
-		issues,
-		"ICH.C.2.r.2.1.REQUIRED",
-		"primarySources.0.reporterOrganization",
-		"reporter",
-		"[C.2.r.2.1] Reporter organization is required when report type is study (C.1.3=2).",
-		report_type_is_study,
-		value.is_some() || null_flavor.is_some(),
-	);
+fn c_2_r_2_1(sources: &[PrimarySource], issues: &mut Vec<ValidationIssue>) {
 	for (idx, source) in sources.iter().enumerate() {
 		c_2_length(
 			idx,
@@ -1276,7 +1242,10 @@ fn c_5_4(
 			issues,
 			"ICH.C.5.4.ALLOWED.VALUE",
 			&path,
-			valid_code(study.study_type_reaction.as_deref(), &["1", "2", "3"]),
+			valid_code(
+				study.study_type_reaction.as_deref(),
+				&["1", "2", "3", "4", "5", "6"],
+			),
 		);
 		length(
 			issues,
@@ -1308,6 +1277,30 @@ pub(crate) fn collect_ich_issues(
 	} else {
 		push_missing_safety_report_field_issues(issues);
 	}
+	if let Some(report) = validation_ctx.safety_report.as_ref() {
+		let documents_required = report.additional_documents_available == Some(true)
+			&& validation_ctx.documents_held_by_sender.is_empty();
+		reject_when(
+			issues,
+			"ICH.C.1.6.1.r.1.REQUIRED",
+			"documentsHeldBySender",
+			"case-identification",
+			"[C.1.6.1.r] At least one document is required when C.1.6.1 is true.",
+			documents_required,
+		);
+		let identifiers_required = report.other_case_identifiers_exist == Some(true)
+			&& validation_ctx.other_case_identifiers.is_empty();
+		for code in ["ICH.C.1.9.1.r.1.REQUIRED", "ICH.C.1.9.1.r.2.REQUIRED"] {
+			reject_when(
+				issues,
+				code,
+				"otherCaseIdentifiers",
+				"case-identification",
+				"[C.1.9.1.r] At least one identifier is required when C.1.9.1 is true.",
+				identifiers_required,
+			);
+		}
+	}
 
 	let report_type_is_study =
 		validation_ctx.safety_report.as_ref().is_some_and(|report| {
@@ -1327,11 +1320,7 @@ pub(crate) fn collect_ich_issues(
 		c_2_r_2_6(idx, source, issues);
 		c_2_r_2_7(idx, source, issues);
 	}
-	c_2_r_2_1(
-		&validation_ctx.primary_sources,
-		report_type_is_study,
-		issues,
-	);
+	c_2_r_2_1(&validation_ctx.primary_sources, issues);
 	c_2_r_5(&validation_ctx.primary_sources, issues);
 
 	for (idx, document) in validation_ctx.documents_held_by_sender.iter().enumerate()
@@ -1428,9 +1417,29 @@ fn push_missing_safety_report_field_issues(issues: &mut Vec<ValidationIssue>) {
 			"[C.1.5] is required.",
 		),
 		(
+			"ICH.C.1.6.1.REQUIRED",
+			"safetyReportIdentification.additionalDocumentsAvailable",
+			"[C.1.6.1] is required.",
+		),
+		(
 			"ICH.C.1.7.REQUIRED",
 			"safetyReportIdentification.fulfilExpeditedCriteria",
 			"[C.1.7] is required.",
+		),
+		(
+			"ICH.C.1.8.1.REQUIRED",
+			"safetyReportIdentification.worldwideUniqueId",
+			"[C.1.8.1] is required.",
+		),
+		(
+			"ICH.C.1.8.2.REQUIRED",
+			"safetyReportIdentification.firstSenderType",
+			"[C.1.8.2] is required.",
+		),
+		(
+			"ICH.C.1.9.1.REQUIRED",
+			"safetyReportIdentification.otherCaseIdentifiersExist",
+			"[C.1.9.1] is required.",
 		),
 	] {
 		reject_when(issues, code, path, "case-identification", message, true);
@@ -1754,8 +1763,6 @@ fn fda_sender_rules(
 /// FDA.R0110
 /// FDA.R0111
 /// FDA.R0112
-/// FDA.R0102
-/// FDA.R0103
 /// FDA.R0104
 /// FDA.R0113
 /// FDA.R0024
@@ -1832,22 +1839,10 @@ fn fda_study_route_rules(
 			"FDA premarket reports with an IND/Pre-ANDA number and C.5.4 must use C.1.3 value 2.",
 		),
 		(
-			premarket && report_type == Some("2") && study_type.is_none(),
-			"FDA.R0102",
-			"studyInformation.0.studyTypeReaction",
-			"FDA premarket study reports require C.5.4 with value 1, 2, or 3.",
-		),
-		(
 			postmarket && report_type == Some("2") && study_type.is_none(),
 			"FDA.R0104",
 			"studyInformation.0.studyTypeReaction",
-			"FDA postmarket study reports require C.5.4 with value 1, 2, or 3.",
-		),
-		(
-			postmarket && report_type == Some("1") && study_type.is_some(),
-			"FDA.R0103",
-			"studyInformation.0.studyTypeReaction",
-			"FDA postmarket spontaneous reports must not provide C.5.4.",
+			"FDA postmarket study reports require C.5.4.",
 		),
 		(
 			premarket
@@ -2075,6 +2070,18 @@ fn mfds_receiver_rules(
 	let clinical = is_mfds_clinical_trial_receiver(receiver);
 	let compassionate = is_mfds_compassionate_use_receiver(receiver);
 	let ct_or_cu = clinical || compassionate;
+	// The bundled MFDS rules retain 1-3 despite the later ICH E2D(R1) codes.
+	if !ct_or_cu {
+		for (idx, study) in validation_ctx.studies.iter().enumerate() {
+			push_business_violation(
+				issues,
+				!valid_code(study.study_type_reaction.as_deref(), &["1", "2", "3"]),
+				"MFDS.C.5.4.RECEIVER",
+				format!("studyInformation.{idx}.studyTypeReaction"),
+				"MFDS C.5.4 accepts study types 1, 2 or 3.",
+			);
+		}
+	}
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		push_business_violation(
 			issues,
@@ -2114,11 +2121,11 @@ fn mfds_receiver_rules(
 		);
 		push_business_violation(
 			issues,
-			ct_or_cu
+			clinical
 				&& trimmed(source.qualification_null_flavor.as_deref()).is_some(),
-			"MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU",
+			"MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT",
 			format!("primarySources.{idx}.qualification"),
-			"MFDS clinical-trial and compassionate-use reports must not use a C.2.r.4 nullFlavor.",
+			"MFDS clinical-trial reports must not use a C.2.r.4 nullFlavor.",
 		);
 		if ct_or_cu {
 			for (field, value, null_flavor) in [
@@ -2278,7 +2285,7 @@ mod conditioned_field_rule_tests;
 
 #[cfg(test)]
 #[path = "c/golden_c1_value_tests.rs"]
-mod golden_c1_value_tests;
+pub(super) mod golden_c1_value_tests;
 
 #[cfg(test)]
 #[path = "c/rule_tests.rs"]

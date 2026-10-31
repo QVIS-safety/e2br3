@@ -98,6 +98,7 @@
       "fieldPath": "reactions[].reactionMeddraVersion",
       "ruleCodes": [
         "ICH.E.i.2.1a.ALLOWED.VALUE",
+        "ICH.E.i.2.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.E.i.2.1a.REQUIRED",
         "ICH.E.i.2.1a.VOCABULARY"
       ]

@@ -28,7 +28,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].registrationNumber",
-      "nullFlavorPartnerCode": "C.5.1.r.1.local.registrationNumberNullFlavor"
+      "nullFlavorPartnerCode": "C.5.1.r.1.local.registrationNumberNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_registration_numbers", "column": "registration_number", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
+      }
     },
     {
       "code": "C.5.1.r.2",
@@ -64,6 +70,12 @@
         "optionDataValue": "KR",
         "optionLabel": "KR",
         "selectedLabel": "KR"
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_registration_numbers", "column": "country_code", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
     },
     {
@@ -82,7 +94,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "studyName",
-      "nullFlavorPartnerCode": "C.5.2.local.studyNameNullFlavor"
+      "nullFlavorPartnerCode": "C.5.2.local.studyNameNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "study_name", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "C.5.3",
@@ -100,7 +118,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "sponsorStudyNumber",
-      "nullFlavorPartnerCode": "C.5.3.local.sponsorStudyNumberNullFlavor"
+      "nullFlavorPartnerCode": "C.5.3.local.sponsorStudyNumberNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "sponsor_study_number", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "C.5.4",
@@ -111,13 +135,19 @@
         "kind": "rows",
         "owner": "studyInformation"
       },
-      "roundTripValue": "2",
+      "roundTripValue": "6",
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.C.5.4.ALLOWED.VALUE",
-        "invalidValue": "0"
+        "invalidValue": "7"
       },
-      "payloadPath": "studyTypeReaction"
+      "payloadPath": "studyTypeReaction",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "study_type_reaction", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "C.5.4.KR.1",
@@ -134,7 +164,13 @@
         "ruleCode": "MFDS.C.5.4.KR.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "payloadPath": "studyTypeReactionKr1"
+      "payloadPath": "studyTypeReactionKr1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "study_type_reaction_kr1", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "FDA.C.5.5a",
@@ -151,7 +187,13 @@
         "ruleCode": "FDA.C.5.5a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "fdaIndNumberOccurred"
+      "payloadPath": "fdaIndNumberOccurred",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "fda_ind_number_occurred", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "FDA.C.5.5b",
@@ -168,7 +210,13 @@
         "ruleCode": "FDA.C.5.5b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "fdaPreAndaNumberOccurred"
+      "payloadPath": "fdaPreAndaNumberOccurred",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "fda_pre_anda_number_occurred", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "FDA.C.5.6.r",
@@ -186,7 +234,13 @@
         "invalidValue": "XXXXXXXXXXX"
       },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumber",
-      "nullFlavorPartnerCode": "FDA.C.5.6.r.local.indNumberNullFlavor"
+      "nullFlavorPartnerCode": "FDA.C.5.6.r.local.indNumberNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_fda_cross_reported_inds", "column": "ind_number", "record": {"source": "projection", "path": "studyInformation.fdaCrossReportedIndNumbers[].id"}}
+      }
     },
     {
       "code": "FDA.C.5.6.r.local.indNumberNullFlavor",
@@ -204,7 +258,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "fdaCrossReportedIndNumbers[].indNumberNullFlavor",
-      "nullFlavorPartnerCode": "FDA.C.5.6.r"
+      "nullFlavorPartnerCode": "FDA.C.5.6.r",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_fda_cross_reported_inds", "column": "ind_number_null_flavor", "record": {"source": "projection", "path": "studyInformation.fdaCrossReportedIndNumbers[].id"}}
+      }
     },
     {
       "code": "C.5.1.r.1.local.registrationNumberNullFlavor",
@@ -232,6 +292,12 @@
         "studyInformation": {
           "studyName": "Study fixture"
         }
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_registration_numbers", "column": "registration_number_null_flavor", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
     },
     {
@@ -260,6 +326,12 @@
         "studyInformation": {
           "studyName": "Study fixture"
         }
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_registration_numbers", "column": "country_code_null_flavor", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
     },
     {
@@ -278,7 +350,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "studyNameNullFlavor",
-      "nullFlavorPartnerCode": "C.5.2"
+      "nullFlavorPartnerCode": "C.5.2",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "study_name_null_flavor", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     },
     {
       "code": "C.5.3.local.sponsorStudyNumberNullFlavor",
@@ -296,7 +374,120 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "sponsorStudyNumberNullFlavor",
-      "nullFlavorPartnerCode": "C.5.3"
+      "nullFlavorPartnerCode": "C.5.3",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "study_information", "column": "sponsor_study_number_null_flavor", "record": {"source": "projection", "path": "studyInformation.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [
+    {
+      "id": "registration_blank_values_can_be_replaced_by_null_flavors",
+      "verifier": "fields::null_flavor::registration_blank_values_can_be_replaced_by_null_flavors",
+      "description": "registration blank values can be replaced by null flavors"
+    }
+  ],
+  "collections": [
+    {
+      "id": "empty_collections_do_not_create_parents",
+      "verifier": "rows::creation::empty_collections_do_not_create_parents",
+      "description": "empty collections do not create parents",
+      "parameters": {
+        "cases": [
+          {
+            "rows": {
+              "studyRegistrationNumbers": []
+            },
+            "absentParent": "studyInformation"
+          },
+          {
+            "rows": {
+              "studyInformation": {
+                "fdaCrossReportedIndNumbers": []
+              }
+            },
+            "absentParent": "studyInformation"
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "isolates_study_children_and_rejects_foreign_ids",
+      "verifier": "relations::scope::isolates_study_children_and_rejects_foreign_ids",
+      "description": "isolates study children and rejects foreign ids"
+    },
+    {
+      "id": "child_creation_and_update_preserve_parent_identity",
+      "verifier": "relations::parents::child_creation_and_update_preserve_parent_identity",
+      "description": "child creation and update preserve parent identity",
+      "parameters": {
+        "parent": {
+          "owner": "studyInformation",
+          "inputField": "studyName",
+          "column": "study_name"
+        },
+        "cases": [
+          {
+            "rows": {
+              "studyRegistrationNumbers": [
+                {
+                  "registrationNumber": "",
+                  "countryCode": "KR"
+                }
+              ]
+            },
+            "collection": "studyRegistrationNumbers",
+            "field": "country_code",
+            "expected": "KR"
+          },
+          {
+            "rows": {
+              "studyRegistrationNumbers": [
+                {}
+              ]
+            },
+            "collection": "studyRegistrationNumbers",
+            "field": "registration_number",
+            "expected": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "registration_creates_study_with_empty_name",
+      "verifier": "relations::parents::registration_creates_study_with_empty_name",
+      "description": "registration creates study with empty name"
+    },
+    {
+      "id": "study_rows_delete_restore_and_resave_are_stable",
+      "verifier": "relations::si_rows::study_rows_delete_restore_and_resave_are_stable",
+      "description": "SI child deletion is repeatable, omission and empty lists do not restore rows, and explicit restore plus resave preserve ids and counts"
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {
+    "studyRegistrationNumbers[]": {
+      "requestPath": "studyRegistrationNumbers.[]",
+      "keys": [
+        {
+          "name": "id",
+          "required": true
+        }
+      ]
+    },
+    "studyInformation.fdaCrossReportedIndNumbers[]": {
+      "requestPath": "studyInformation.fdaCrossReportedIndNumbers[]",
+      "keys": [
+        {
+          "name": "id",
+          "required": true
+        }
+      ]
+    }
+  }
 }

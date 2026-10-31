@@ -1,4 +1,4 @@
-use super::policy_kernel_characterization::protected_route_inventory;
+use super::protected_route_parser::protected_route_inventory;
 
 #[test]
 fn protected_inventory_covers_representative_context_kinds() {

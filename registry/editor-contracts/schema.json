@@ -6,6 +6,68 @@
   "properties": {
     "pageId": { "type": "string" },
     "registryFile": { "type": "string" },
+    "fieldChecks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/behaviorCheck"
+      }
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/behaviorCheck"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/behaviorCheck"
+      }
+    },
+    "auditChecks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/behaviorCheck"
+      }
+    },
+    "rowIdentities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "requestPath",
+          "keys"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "requestPath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "keys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "required"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "rowPrerequisites": {
       "type": "object",
       "additionalProperties": { "type": "object" }
@@ -188,12 +250,270 @@
             }
           },
           "nullFlavorPartnerCode": { "type": "string", "minLength": 1 },
+          "persistence": { "$ref": "#/$defs/persistence" },
           "constraint": { "$ref": "#/$defs/stage" }
         }
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "pageId": {
+            "not": {
+              "const": "N"
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "fieldChecks",
+          "collections",
+          "relations",
+          "auditChecks",
+          "rowIdentities"
+        ],
+        "properties": {
+          "fields": {
+            "items": {
+              "allOf": [
+                {
+                  "if": {
+                    "not": {
+                      "required": [
+                        "execution"
+                      ]
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "persistence"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
+    "clearOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "effect",
+            "input",
+            "value"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "effect": {
+              "const": "store"
+            },
+            "input": {},
+            "value": {}
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "effect",
+            "input",
+            "status",
+            "ruleCode"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "effect": {
+              "const": "reject"
+            },
+            "input": {},
+            "status": {
+              "const": 422
+            },
+            "ruleCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "auditBinding": {
+      "type": "object",
+      "required": [
+        "table",
+        "column",
+        "record"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "table": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_]*$"
+        },
+        "column": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_]*$"
+        },
+        "record": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "source"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "const": "case"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "source",
+                "path"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "const": "projection"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "required": [
+        "clear",
+        "blank",
+        "omission",
+        "audit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "clear": {
+          "$ref": "#/$defs/clearOutcome"
+        },
+        "blank": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/clearOutcome"
+            },
+            {
+              "type": "object",
+              "required": [
+                "effect",
+                "reason"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "effect": {
+                  "const": "not_applicable"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "omission": {
+          "oneOf": [
+            {
+              "const": "preserve"
+            },
+            {
+              "type": "object",
+              "required": [
+                "effect",
+                "value"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "effect": {
+                  "const": "store"
+                },
+                "value": {}
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "effect",
+                "status",
+                "error",
+                "detail"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "effect": {
+                  "const": "reject"
+                },
+                "status": {
+                  "const": 400
+                },
+                "error": {
+                  "const": "INVALID_REQUEST"
+                },
+                "detail": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "audit": {
+          "$ref": "#/$defs/auditBinding"
+        }
+      }
+    },
+    "behaviorCheck": {
+      "type": "object",
+      "required": [
+        "id",
+        "verifier",
+        "description"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]+$"
+        },
+        "verifier": {
+          "type": "string",
+          "pattern": "^(fields|rows|relations|audit)::[a-z][a-z0-9_]*::[a-z][a-z0-9_]*$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "audit": {
+          "$ref": "#/$defs/auditBinding"
+        }
+      }
+    },
     "stage": {
       "type": "object",
       "required": ["status"],

@@ -18,7 +18,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "referenceText",
-      "nullFlavorPartnerCode": "C.4.r.local.referenceTextNullFlavor"
+      "nullFlavorPartnerCode": "C.4.r.local.referenceTextNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "literature_references", "column": "reference_text", "record": {"source": "projection", "path": "literatureReference.id"}}
+      }
     },
     {
       "code": "C.4.r.local.referenceTextNullFlavor",
@@ -36,7 +42,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "referenceTextNullFlavor",
-      "nullFlavorPartnerCode": "C.4.r.1"
+      "nullFlavorPartnerCode": "C.4.r.1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "literature_references", "column": "reference_text_null_flavor", "record": {"source": "projection", "path": "literatureReference.id"}}
+      }
     },
     {
       "code": "C.4.r.2",
@@ -53,7 +65,52 @@
         "ruleCode": "ICH.C.4.r.2.ALLOWED.VALUE",
         "invalidValue": "***"
       },
-      "payloadPath": "documentBase64"
+      "payloadPath": "documentBase64",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "literature_references", "column": "document_base64", "record": {"source": "projection", "path": "literatureReference.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [],
+  "collections": [
+    {
+      "id": "page_projection_orders_references_by_sequence_then_id",
+      "verifier": "rows::projection::page_projection_orders_references_by_sequence_then_id",
+      "description": "page projection orders references by sequence then id"
+    },
+    {
+      "id": "batched_rows_match_detail_and_require_auth",
+      "verifier": "rows::projection::batched_rows_match_detail_and_require_auth",
+      "description": "Empty and populated list batches match individual GET responses; unauthenticated access is forbidden."
+    }
+  ],
+  "relations": [
+    {
+      "id": "deleted_reference_can_be_restored_and_edited_atomically",
+      "verifier": "relations::restore::atomic_restore",
+      "description": "deleted reference can be restored and edited atomically",
+      "parameters": {
+        "owner": "literatureReference",
+        "inputField": "referenceText",
+        "column": "reference_text",
+        "initial": "Deleted citation",
+        "restored": "Restored and edited citation",
+        "conflicting": "Conflicting deleted citation",
+        "replacement": "Active replacement citation"
+      },
+      "audit": {
+        "table": "literature_references",
+        "column": "deleted",
+        "record": {
+          "source": "projection",
+          "path": "literatureReference.id"
+        }
+      }
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {}
 }

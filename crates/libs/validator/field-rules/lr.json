@@ -4,6 +4,8 @@
     {
       "fieldPath": "literatureReferences[].documentBase64",
       "ruleCodes": [
+        "FDA.C.4.r.2.FILE_NAME.REQUIRED",
+        "FDA.C.4.r.2.MEDIA_TYPE.MATCH",
         "ICH.C.4.r.2.ALLOWED.VALUE"
       ]
     }

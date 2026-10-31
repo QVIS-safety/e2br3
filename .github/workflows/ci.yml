@@ -19,36 +19,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      validator: ${{ steps.scope.outputs.validator }}
-      backend: ${{ steps.scope.outputs.backend }}
-      mode: ${{ steps.plan.outputs.mode }}
-      targets: ${{ steps.plan.outputs.targets }}
+      validator: ${{ steps.plan.outputs.validator }}
+      backend: ${{ steps.plan.outputs.backend }}
+      registry: ${{ steps.plan.outputs.registry }}
+      selections: ${{ steps.plan.outputs.selections }}
+      editor_filters: ${{ steps.plan.outputs.editor_filters }}
+      rust: ${{ steps.plan.outputs.rust }}
+      xml_assets: ${{ steps.plan.outputs.xml_assets }}
       backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Verify test selection
-        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py registry/tools/test_check_contract_test_results.py
       - name: Verify staging deployment guards
         run: python3 -m unittest discover -s deploy/ec2 -p 'test_update_dev.py'
-      - name: Select validator and backend suites
-        id: scope
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/ci_test_scope.py | tee "$RUNNER_TEMP/test-scope.json"
-          cat "$RUNNER_TEMP/test-scope.json" >> "$GITHUB_STEP_SUMMARY"
-      - name: Select tests from the complete PR diff
+      - name: Verify API specification matches source
+        run: python3 crates/services/web-server/tests/api_specs/check_api_contract_manifest.py
+      - name: Select affected crates and test targets
         id: plan
         shell: bash
-        env:
-          CI_EVENT_NAME: ${{ github.event_name }}
-          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -o pipefail
-          python3 scripts/ci_test_plan.py plan --event "$CI_EVENT_NAME" \
-            --base "$CI_BASE_SHA" --head "$GITHUB_SHA" --github-output "$GITHUB_OUTPUT" \
+          python3 scripts/ci_test_plan.py plan --github-output "$GITHUB_OUTPUT" \
             | tee "$RUNNER_TEMP/test-plan.json"
           cat "$RUNNER_TEMP/test-plan.json" >> "$GITHUB_STEP_SUMMARY"
 
@@ -66,11 +60,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install native build dependencies
         run: sudo apt-get update && sudo apt-get install -y libxml2-dev pkg-config
-      - name: Check field mappings and fuzzer logic
+      - name: Check field mappings and rule test bindings
         run: |
           python3 crates/libs/validator/tools/check_rule_tests.py
           python3 -m unittest discover crates/libs/validator/tools/tests
-          python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
       - name: Run validator tests and require every rule to pass
         shell: bash
         run: |
@@ -78,38 +71,13 @@ jobs:
           cargo test -p validator --locked -- --color never | tee "$RUNNER_TEMP/validator-tests.log"
           python3 crates/libs/validator/tools/check_rule_tests.py --test-log "$RUNNER_TEMP/validator-tests.log"
 
-  case-editor-audit:
-    name: Case Editor Audit Plan
-    needs: [test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Checkout frontend contract source
-        uses: actions/checkout@v4
-        with:
-          repository: QVIS-safety/e2br3-frontend
-          ref: ${{ (github.base_ref == 'dev' || github.ref_name == 'dev') && 'dev' || 'main' }}
-          path: frontend/E2BR3-frontend
-          token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
-
-      - name: Test audit runner
-        env:
-          E2BR3_FRONTEND_ROOT: ${{ github.workspace }}/frontend/E2BR3-frontend
-        run: python3 -m unittest scripts/tests/test_case_editor_input_fuzzer.py
-
-      # Complete target coverage is checked from registry below. The API fuzzer's
-      # historical descriptor set is not the canonical UI denominator.
-
   # ============================================
   # Job 0: Validate E2BR3 registry
   # ============================================
   registry:
     name: E2BR3 Registry
     needs: [test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' }}
+    if: ${{ needs.test-plan.outputs.registry == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -142,7 +110,7 @@ jobs:
           npm run test:editor-contracts -- \
             __tests__/input-contracts.test.ts __tests__/ui-binding/review-section.test.tsx \
             --json --outputFile="$RUNNER_TEMP/editor-contract-tests.json"
-          npm test -- __tests__/case-editor/validation-state.test.ts __tests__/case-editor/loadValidationForAuthorities.test.ts __tests__/case-editor/CaseValidationProvider.test.tsx __tests__/case-form/case-editor-route-loading.test.tsx __tests__/validation/backendFieldBanners.test.ts __tests__/validation/collection-field-error.test.tsx __tests__/api/case-list-validation.test.ts --runInBand
+          npm test -- __tests__/case-editor/validation-state.test.ts __tests__/case-editor/loadValidationForAuthorities.test.ts __tests__/case-editor/CaseValidationProvider.test.tsx __tests__/case-form/case-editor-route-loading.test.tsx __tests__/validation/backendFieldBanners.test.ts __tests__/validation/backend-field-path-contract.test.ts __tests__/case-form/input-error-persistence.test.tsx __tests__/validation/collection-field-error.test.tsx __tests__/api/case-list-validation.test.ts --runInBand
 
       - name: Validate registry
         env:
@@ -152,7 +120,6 @@ jobs:
           python3 -m unittest registry/tools/test_build_dictionary.py
           python3 -m unittest registry/tools/test_extract_frontend_fields.py
           python3 -m unittest registry/tools/test_generate_editor_contract_web_tests.py
-          python3 -m unittest registry/tools/test_check_contract_test_results.py
           python3 registry/tools/generate_editor_contract_web_tests.py --check
           python3 registry/tools/validate.py
           python3 registry/tools/validate.py --strict-dictionary
@@ -173,7 +140,7 @@ jobs:
             --frontend-root "$E2BR3_FRONTEND_ROOT" \
             --frontend-results "$RUNNER_TEMP/editor-contract-tests.json"
 
-      - name: Share verified canonical inventory with API tests
+      - name: Retain verified canonical inventory
         uses: actions/upload-artifact@v7
         with:
           name: canonical-editor-inventory
@@ -186,6 +153,8 @@ jobs:
   # ============================================
   fmt:
     name: Rustfmt
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -197,20 +166,26 @@ jobs:
           components: rustfmt
 
       - name: Check formatting
-        run: cargo fmt --all --check
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+        run: python3 scripts/ci_test_plan.py run --kind fmt --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   # ============================================
   # Job 2: Run Clippy linter
   # ============================================
   clippy:
     name: Clippy
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      # XML fixture-backed tests are compiled by --all-targets.
+      # Prepare assets only for selected XML consumers or whole-crate checks.
       - name: Checkout XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
@@ -220,6 +195,7 @@ jobs:
             docs/refs/instances
 
       - name: Prepare XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         run: |
           mkdir -p docs/exporter
           cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
@@ -237,7 +213,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxml2-dev pkg-config
 
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+        run: python3 scripts/ci_test_plan.py run --kind clippy --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   # ============================================
   # Job 3: Run tests with PostgreSQL
@@ -245,7 +224,7 @@ jobs:
   test:
     name: Test
     needs: [registry, test-plan]
-    if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}
+    if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -269,15 +248,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download verified canonical inventory
-        uses: actions/download-artifact@v8
-        with:
-          name: canonical-editor-inventory
-          path: ${{ runner.temp }}/editor-contract
-
       # XML fixtures and schemas were intentionally removed from the release
       # tree, but the validation suites still exercise those canonical assets.
       - name: Checkout XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         uses: actions/checkout@v4
         with:
           ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
@@ -287,6 +261,7 @@ jobs:
             docs/refs/instances
 
       - name: Prepare XML validation assets
+        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         run: |
           mkdir -p docs/exporter
           cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
@@ -301,38 +276,10 @@ jobs:
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client libxml2-dev pkg-config
 
-      - name: Initialize database schema
+      - name: Run selected crate tests
         env:
-          PGPASSWORD: dev_only_pwd
-          APP_DB_USER: app_user
-        run: |
-          psql -h localhost -U "${APP_DB_USER}" -d app_db -v ON_ERROR_STOP=1 \
-            -v "app_db_user=${APP_DB_USER}" \
-            -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-          sh scripts/db/list_init_sql.sh db 1 |
-          while IFS= read -r f; do
-            psql -h localhost -U "${APP_DB_USER}" -d app_db -v ON_ERROR_STOP=1 \
-              -v "app_db_user=${APP_DB_USER}" -f "db/$f"
-          done
-
-      - name: Run lib-core tests
-        if: ${{ needs.test-plan.outputs.mode == 'full' }}
-        env:
-          # Skip local dev DB bootstrap; CI already initializes the schema
-          SKIP_DEV_INIT: "1"
-          # Database connection (matches the service above)
-          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
-          # Test-only keys (NOT for production)
-          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
-          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
-          SERVICE_TOKEN_DURATION_SEC: "1800"
-          SERVICE_WEB_FOLDER: "web-folder/"
-        run: scripts/test-isolated-db.sh -p lib-core -j1 -- --test-threads=1
-
-      - name: Run remaining workspace tests
-        if: ${{ needs.test-plan.outputs.mode == 'full' }}
-        env:
-          SKIP_DEV_INIT: "1"
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
           SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
           SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
@@ -341,41 +288,32 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1 --color never 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
 
-      - name: Run changed integration targets
-        if: ${{ needs.test-plan.outputs.mode == 'targeted' }}
-        env:
-          SELECTED_TESTS: ${{ needs.test-plan.outputs.targets }}
-          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
-          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
-          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
-          SERVICE_TOKEN_DURATION_SEC: "1800"
-          SERVICE_WEB_FOLDER: "web-folder/"
-        shell: bash
-        run: |
-          set -o pipefail
-          python3 scripts/ci_test_plan.py run --targets "$SELECTED_TESTS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
-
-      - name: Require complete backend contract execution
+      - name: Require selected backend contract execution
         if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
+        env:
+          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
+          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
         run: |
           python3 registry/tools/check_contract_test_results.py \
-            --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
-            --backend-log "$RUNNER_TEMP/workspace-tests.log"
+            --registry-root registry \
+            --backend-log "$RUNNER_TEMP/workspace-tests.log" \
+            --backend-selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
   deploy-dev:
     name: Publish Dev Backend Image
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && github.ref_name == 'dev' &&
           needs.test-plan.result == 'success' &&
-          (needs.test-plan.outputs.backend == 'false' || needs.test-plan.outputs.mode == 'full') &&
           needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
           ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
            (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
-          ((needs.test-plan.outputs.backend == 'true' && needs.registry.result == 'success' && needs.test.result == 'success' && needs['case-editor-audit'].result == 'success') ||
-           (needs.test-plan.outputs.backend == 'false' && needs.registry.result == 'skipped' && needs.test.result == 'skipped' && needs['case-editor-audit'].result == 'skipped')) }}
-    needs: [test-plan, case-editor-audit, registry, fmt, clippy, validator, test]
+          ((needs.test-plan.outputs.registry == 'true' && needs.registry.result == 'success') ||
+           (needs.test-plan.outputs.registry == 'false' && needs.registry.result == 'skipped')) &&
+          ((needs.test-plan.outputs.backend == 'true' && needs.test.result == 'success') ||
+           (needs.test-plan.outputs.backend == 'false' && needs.test.result == 'skipped')) }}
+    needs: [test-plan, registry, fmt, clippy, validator, test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

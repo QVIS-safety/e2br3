@@ -178,15 +178,32 @@ async fn apply_rp_source_patch(
 	case_id: Uuid,
 	source: &serde_json::Map<String, Value>,
 ) -> Result<()> {
-	let id = uuid_field(source, &["id"]);
+	let id = uuid_field(source, &["id"])?;
+	let current = if let Some(id) = id {
+		let current = PrimarySourceBmc::get(ctx, mm, id).await?;
+		if current.case_id != case_id {
+			return Err(lib_core::model::Error::EntityUuidNotFound {
+				entity: "primary_sources",
+				id,
+			}
+			.into());
+		}
+		Some(current)
+	} else {
+		None
+	};
 	if bool_field(source, &["deleted"]) == Some(true) {
-		if let Some(id) = id {
+		if let Some(current) = current {
+			let id = current.id;
 			PrimarySourceBmc::delete(ctx, mm, id).await?;
 		}
 		return Ok(());
 	}
 	let update = PrimarySourceForUpdate {
-		source_reporter_presave_id: uuid_field(source, &["sourceReporterPresaveId"]),
+		source_reporter_presave_id: uuid_field(
+			source,
+			&["sourceReporterPresaveId"],
+		)?,
 		reporter_title: string_field(source, &["reporterTitle"]),
 		reporter_title_null_flavor: string_field(
 			source,
@@ -244,7 +261,11 @@ async fn apply_rp_source_patch(
 			&["primarySourceForRegulatoryPurposes"],
 		),
 	};
-	if let Some(id) = id {
+	if let Some(current) = current {
+		let id = current.id;
+		if bool_field(source, &["deleted"]) == Some(false) && current.deleted {
+			PrimarySourceBmc::restore(ctx, mm, id).await?;
+		}
 		let clear_fields =
 			explicit_null_model_fields(source, RP_PRIMARY_SOURCE_PATCH_FIELDS);
 		PrimarySourceBmc::update_patch(ctx, mm, id, update, &clear_fields).await?;

@@ -1,0 +1,2 @@
+# Preserve the official attachment bytes, including its whitespace.
+kr-literature-initial-v1.0.xml -text -whitespace

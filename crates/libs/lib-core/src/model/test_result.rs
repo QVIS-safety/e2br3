@@ -423,7 +423,7 @@ impl TestResultBmc {
 			     more_info_available = CASE WHEN 'more_info_available' = ANY($18) THEN NULL ELSE COALESCE($16, more_info_available) END,
 			     updated_at = now(),
 			     updated_by = $17
-			 WHERE id = $1 AND case_id = $2",
+			 WHERE id = $1 AND case_id = $2 AND deleted = false",
 			Self::TABLE
 		);
 		let result = mm

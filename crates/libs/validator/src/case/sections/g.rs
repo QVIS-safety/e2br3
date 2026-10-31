@@ -544,7 +544,6 @@ fn g_k_2_3_r_1(
 	}
 }
 
-/// ICH.G.k.2.3.r.2a.REQUIRED
 /// ICH.G.k.2.3.r.2a.LENGTH.MAX
 fn g_k_2_3_r_2a(
 	_flat_idx: usize,
@@ -552,20 +551,6 @@ fn g_k_2_3_r_2a(
 	substance: &DrugActiveSubstance,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let Some((drug_idx, idx)) = nested else {
-		return;
-	};
-	let required_path =
-		format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermIdVersion");
-	reject_when(
-		issues,
-		"ICH.G.k.2.3.r.2a.REQUIRED",
-		&required_path,
-		SECTION,
-		"[G.k.2.3.r.2a] Substance TermID version is required when [G.k.2.3.r.2b] TermID is populated.",
-		has_text(substance.substance_termid.as_deref())
-			&& !has_text(substance.substance_termid_version.as_deref()),
-	);
 	if let Some((drug_idx, idx)) = nested {
 		let path = format!(
 			"drugs.{drug_idx}.activeSubstances.{idx}.substanceTermIdVersion"
@@ -940,7 +925,6 @@ fn g_k_4_r_9_1(
 	}
 }
 
-/// ICH.G.k.4.r.9.2a.REQUIRED
 /// ICH.G.k.4.r.9.2a.LENGTH.MAX
 fn g_k_4_r_9_2a(
 	_flat_idx: usize,
@@ -948,20 +932,6 @@ fn g_k_4_r_9_2a(
 	dosage: &DosageInformation,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let Some((drug_idx, idx)) = nested else {
-		return;
-	};
-	let required_path =
-		format!("drugs.{drug_idx}.dosageInformation.{idx}.doseFormTermIdVersion");
-	reject_when(
-		issues,
-		"ICH.G.k.4.r.9.2a.REQUIRED",
-		&required_path,
-		SECTION,
-		"[G.k.4.r.9.2a] Dose form TermID version is required when [G.k.4.r.9.2b] is populated.",
-		has_text(dosage.dose_form_termid.as_deref())
-			&& !has_text(dosage.dose_form_termid_version.as_deref()),
-	);
 	if let Some(path) = dosage_path(nested, "doseFormTermIdVersion") {
 		length(
 			issues,
@@ -1054,7 +1024,6 @@ fn g_k_4_r_11_1(
 	}
 }
 
-/// ICH.G.k.4.r.11.2a.REQUIRED
 /// ICH.G.k.4.r.11.2a.LENGTH.MAX
 fn g_k_4_r_11_2a(
 	_flat_idx: usize,
@@ -1062,20 +1031,6 @@ fn g_k_4_r_11_2a(
 	dosage: &DosageInformation,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let Some((drug_idx, idx)) = nested else {
-		return;
-	};
-	let required_path =
-		format!("drugs.{drug_idx}.dosageInformation.{idx}.parentRouteTermIdVersion");
-	reject_when(
-		issues,
-		"ICH.G.k.4.r.11.2a.REQUIRED",
-		&required_path,
-		SECTION,
-		"[G.k.4.r.11.2a] Parent route TermID version is required when [G.k.4.r.11.2b] is populated.",
-		has_text(dosage.parent_route_termid.as_deref())
-			&& !has_text(dosage.parent_route_termid_version.as_deref()),
-	);
 	if let Some(path) = dosage_path(nested, "parentRouteTermIdVersion") {
 		length(
 			issues,
@@ -1824,6 +1779,7 @@ fn fda_g_k_1_route(
 	let Some(first) = validation_ctx.drugs.first() else {
 		return;
 	};
+	let role = first.drug_characterization.trim();
 	let batch_receiver = validation_ctx
 		.message_header
 		.as_ref()
@@ -1832,9 +1788,12 @@ fn fda_g_k_1_route(
 		.message_header
 		.as_ref()
 		.map(|header| header.message_receiver_identifier.as_str());
-	let role = first.drug_characterization.trim();
 	if message_receiver == Some(crate::FDA_MSG_RECEIVER_CDER) {
-		if !matches!(role, "1" | "3" | "4") {
+		if !validation_ctx
+			.drugs
+			.iter()
+			.any(|drug| matches!(drug.drug_characterization.trim(), "1" | "3" | "4"))
+		{
 			crate::push_business_issue(
 				issues,
 				"FDA.R0069",
@@ -1854,15 +1813,17 @@ fn fda_g_k_1_route(
 		let rule = match message_receiver {
 			Some(
 				crate::FDA_MSG_RECEIVER_CDER_IND | crate::FDA_MSG_RECEIVER_CBER_IND,
-			) => Some(("FDA.R0070", &["1", "3"][..])),
+			) => Some(("FDA.R0070", &["1", "2", "3"][..], &["1", "3"][..])),
 			Some(crate::FDA_MSG_RECEIVER_CDER_IND_EXEMPT_BA_BE) => {
-				Some(("FDA.R0071", &["1", "3", "4"][..]))
+				Some(("FDA.R0071", &["1", "2", "3", "4"][..], &["1", "3", "4"][..]))
 			}
 			_ => None,
 		};
-		if let Some((code, allowed)) = rule {
+		if let Some((code, allowed, qualifying)) = rule {
+			let mut invalid_role = false;
 			for (idx, drug) in validation_ctx.drugs.iter().enumerate() {
 				if !allowed.contains(&drug.drug_characterization.trim()) {
+					invalid_role = true;
 					crate::push_business_issue(
 						issues,
 						code,
@@ -1870,6 +1831,17 @@ fn fda_g_k_1_route(
 						"Drug characterization is not valid for the selected FDA route.",
 					);
 				}
+			}
+			if !invalid_role
+				&& !validation_ctx.drugs.iter().any(|drug| {
+					qualifying.contains(&drug.drug_characterization.trim())
+				}) {
+				crate::push_business_issue(
+					issues,
+					code,
+					"drugs.0.drugCharacterization",
+					"At least one product must use a qualifying FDA drug characterization.",
+				);
 			}
 			return;
 		}
@@ -1943,13 +1915,26 @@ fn fda_g_k_9(
 		.drugs
 		.iter()
 		.position(|drug| drug.drug_characterization.trim() == "1");
-	if validation_ctx.drug_reaction_assessments.is_empty() {
+	if validation_ctx.drug_reaction_assessments.is_empty()
+		|| (first_suspect_idx.is_some()
+			&& !validation_ctx
+				.drug_reaction_assessments
+				.iter()
+				.any(|assessment| {
+					drug_indices.get(&assessment.drug_id).is_some_and(|idx| {
+						validation_ctx.drugs[*idx].drug_characterization.trim()
+							== "1"
+					})
+				})) {
 		let Some(drug_idx) = first_suspect_idx else {
 			return;
 		};
-		crate::push_business_issue(issues, "FDA.G.k.9.REQUIRED",
+		crate::push_business_issue(
+			issues,
+			"FDA.G.k.9.REQUIRED",
 			format!("drugs.{drug_idx}.drugReactionAssessments"),
-			"At least one drug-reaction assessment is required for an IND safety report.");
+			"At least one drug-reaction assessment is required for an IND safety report.",
+		);
 		return;
 	}
 	let relatedness_bases = assessment_row_offsets(validation_ctx);
@@ -2012,7 +1997,9 @@ fn fda_g_k_9(
 					crate::push_business_issue(
 						issues,
 						code,
-						format!("drugs.{drug_idx}.drugReactionAssessments.{relatedness_idx}.{field}"),
+						format!(
+							"drugs.{drug_idx}.drugReactionAssessments.{relatedness_idx}.{field}"
+						),
 						message,
 					);
 				}
@@ -2024,9 +2011,11 @@ fn fda_g_k_9(
 				("FDA.G.k.9.i.2.r.2.REQUIRED", "methodOfAssessment"),
 			] {
 				crate::push_business_issue(
-				issues,
-				code,
-				format!("drugs.{drug_idx}.drugReactionAssessments.{relatedness_base}.{field}"),
+					issues,
+					code,
+					format!(
+						"drugs.{drug_idx}.drugReactionAssessments.{relatedness_base}.{field}"
+					),
 					"A relatedness assessment value is required for an IND safety report.",
 				);
 			}
@@ -2038,7 +2027,7 @@ fn fda_g_k_9(
 			"FDA.G.k.9.i.2.r.3.REQUIRED",
 			first_suspect_result_path
 				.or(first_suspect_assessment_path)
-			.unwrap_or_else(|| "drugs".to_string()),
+				.unwrap_or_else(|| "drugs".to_string()),
 			"At least one suspect product must have a relatedness result for an IND safety report.",
 		);
 	}
@@ -2051,6 +2040,25 @@ pub(crate) async fn collect_fda_issues(
 	fda_ctx: Option<&FdaValidationContext>,
 	issues: &mut Vec<ValidationIssue>,
 ) -> Result<()> {
+	let mut devices = Vec::new();
+	let mut device_codes = Vec::new();
+	for drug in &validation_ctx.drugs {
+		let (mut drug_devices, mut drug_device_codes) =
+			list_fda_devices(ctx, mm, drug.id).await?;
+		devices.append(&mut drug_devices);
+		device_codes.append(&mut drug_device_codes);
+	}
+	collect_fda_rules(validation_ctx, fda_ctx, &devices, &device_codes, issues);
+	Ok(())
+}
+
+fn collect_fda_rules(
+	validation_ctx: &ValidationContext,
+	fda_ctx: Option<&FdaValidationContext>,
+	devices: &[FdaDeviceInformation],
+	device_codes: &[FdaDeviceCode],
+	issues: &mut Vec<ValidationIssue>,
+) {
 	let local_criteria = validation_ctx
 		.safety_report
 		.as_ref()
@@ -2095,17 +2103,20 @@ pub(crate) async fn collect_fda_issues(
 	});
 
 	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
-		let (devices, device_codes) = list_fda_devices(ctx, mm, drug.id).await?;
-		if !devices.is_empty() {
+		let drug_devices = devices
+			.iter()
+			.filter(|device| device.drug_id == drug.id)
+			.collect::<Vec<_>>();
+		if !drug_devices.is_empty() {
 			drugs_with_devices.insert(drug.id);
 		}
-		let malfunction_this_drug = devices
+		let malfunction_this_drug = drug_devices
 			.iter()
 			.any(|device| device.malfunction == Some(true));
 		if drug_idx == 0 {
 			first_product_malfunction = malfunction_this_drug;
 		}
-		for (device_idx, device) in devices.iter().enumerate() {
+		for (device_idx, device) in drug_devices.into_iter().enumerate() {
 			if !device_rules_apply {
 				continue;
 			}
@@ -2129,7 +2140,7 @@ pub(crate) async fn collect_fda_issues(
 				drug_idx,
 				device_idx,
 				device,
-				&device_codes,
+				device_codes,
 				local_criteria,
 				issues,
 			);
@@ -2185,50 +2196,18 @@ pub(crate) async fn collect_fda_issues(
 	}
 	fda_g_k_1_route(validation_ctx, first_product_malfunction, issues);
 	fda_g_k_9(validation_ctx, ind_number_present, issues);
-	Ok(())
 }
 
-/// MFDS.G.k.2.1.KR.1b.REQUIRED
 /// MFDS.G.k.2.1.KR.1b.VOCABULARY
-/// MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED
-/// MFDS.KR.FOREIGN.WHOMPID.REQUIRED
 fn mfds_g_k_2_1_kr_1b(
 	idx: usize,
 	value: Option<&str>,
 	version: Option<&str>,
 	receiver: Option<&str>,
-	product_code_required: bool,
-	domestic_product_code_required: bool,
-	foreign_product_code_required: bool,
 	vocabulary_ctx: &crate::context::VocabularyContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let path = format!("drugs.{idx}.mfdsMpid");
-	let present = has_text(value);
-	required_when(
-		issues,
-		"MFDS.G.k.2.1.KR.1b.REQUIRED",
-		&path,
-		"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver authorities.",
-		product_code_required,
-		present,
-	);
-	required_when(
-		issues,
-		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-		&path,
-		"MFDS domestic cases require KR product coding for the drug.",
-		domestic_product_code_required,
-		present,
-	);
-	required_when(
-		issues,
-		"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-		&path,
-		"MFDS foreign-use products must provide WHO MPID/KR product coding.",
-		foreign_product_code_required,
-		present,
-	);
 	vocabulary(
 		issues,
 		"MFDS.G.k.2.1.KR.1b.VOCABULARY",
@@ -2301,6 +2280,58 @@ fn mfds_g_k_2_3_r_2b(
 	);
 }
 
+/// MFDS.G.k.2.3.r.2a.REQUIRED
+fn mfds_g_k_2_3_r_2a(
+	drug_idx: usize,
+	idx: usize,
+	substance: &DrugActiveSubstance,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	required_when(
+		issues,
+		"MFDS.G.k.2.3.r.2a.REQUIRED",
+		&format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermIdVersion"),
+		"MFDS requires the substance TermID version when a substance TermID is provided.",
+		has_text(substance.substance_termid.as_deref()),
+		has_text(substance.substance_termid_version.as_deref()),
+	);
+}
+
+/// MFDS.G.k.4.r.9.2a.REQUIRED
+/// MFDS.G.k.4.r.10.2a.REQUIRED
+fn mfds_g_k_4_termid_versions(
+	drug_idx: usize,
+	idx: usize,
+	dosage: &DosageInformation,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	for (code, field, term_id, version, message) in [
+		(
+			"MFDS.G.k.4.r.9.2a.REQUIRED",
+			"doseFormTermIdVersion",
+			dosage.dose_form_termid.as_deref(),
+			dosage.dose_form_termid_version.as_deref(),
+			"MFDS requires the dose-form TermID version when a dose-form TermID is provided.",
+		),
+		(
+			"MFDS.G.k.4.r.10.2a.REQUIRED",
+			"routeTermIdVersion",
+			dosage.route_termid.as_deref(),
+			dosage.route_termid_version.as_deref(),
+			"MFDS requires the route TermID version when a route TermID is provided.",
+		),
+	] {
+		required_when(
+			issues,
+			code,
+			&format!("drugs.{drug_idx}.dosageInformation.{idx}.{field}"),
+			message,
+			has_text(term_id),
+			has_text(version),
+		);
+	}
+}
+
 /// MFDS.G.k.2.1.KR.1a.REQUIRED
 fn mfds_g_k_2_1_kr_1a(
 	idx: usize,
@@ -2318,7 +2349,6 @@ fn mfds_g_k_2_1_kr_1a(
 	);
 }
 
-/// MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED
 /// MFDS.G.k.2.3.r.1.KR.1b.REQUIRED
 fn mfds_g_k_2_3_r_1_kr_1b(
 	drug_idx: usize,
@@ -2326,20 +2356,11 @@ fn mfds_g_k_2_3_r_1_kr_1b(
 	value: Option<&str>,
 	version: Option<&str>,
 	receiver: Option<&str>,
-	domestic_ingredient_code_required: bool,
 	substance_code_required: bool,
 	vocabulary_ctx: &crate::context::VocabularyContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let path = format!("drugs.{drug_idx}.activeSubstances.{idx}.mfdsId");
-	reject_when(
-		issues,
-		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-		&path,
-		SECTION,
-		"MFDS domestic cases should provide KR ingredient coding for each active substance.",
-		domestic_ingredient_code_required && !has_text(value),
-	);
 	reject_when(
 		issues,
 		"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
@@ -2417,49 +2438,6 @@ fn mfds_g_k_9_i_2_r_2_kr_1(
 	);
 }
 
-/// MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED
-fn mfds_g_k_9_i_2_r_3_kr_1(
-	drug_idx: usize,
-	idx: usize,
-	value: Option<&str>,
-	null_flavor: Option<&str>,
-	method: Option<&str>,
-	required: bool,
-	issues: &mut Vec<ValidationIssue>,
-) {
-	let path = format!(
-		"drugs.{drug_idx}.drugReactionAssessments.{idx}.resultOfAssessmentKr1"
-	);
-	reject_when(
-		issues,
-		"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-		&path,
-		SECTION,
-		"MFDS requires WHO-UMC result when source is present and method is WHO-UMC (1).",
-		required && !has_text(value) && null_flavor.is_none(),
-	);
-	let invalid = method.map(str::trim) == Some("1")
-		&& value.map(str::trim).is_some_and(|code| {
-			!code.is_empty() && !matches!(code, "1" | "2" | "3" | "4" | "5" | "6")
-		});
-	reject_when(
-		issues,
-		"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-		&path,
-		SECTION,
-		"MFDS requires WHO-UMC result when source is present and method is WHO-UMC (1).",
-		invalid,
-	);
-}
-
-fn mfds_kr1_result_required(
-	receiver_is_kr: bool,
-	has_source: bool,
-	method_is_who_umc: bool,
-) -> bool {
-	receiver_is_kr && has_source && method_is_who_umc
-}
-
 /// MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED
 fn mfds_g_k_9_i_2_r_3_kr_2(
 	drug_idx: usize,
@@ -2475,7 +2453,7 @@ fn mfds_g_k_9_i_2_r_3_kr_2(
 			"drugs.{drug_idx}.drugReactionAssessments.{idx}.resultOfAssessmentKr2"
 		),
 		SECTION,
-		"MFDS requires KRCT result when source is present, method is KRCT (2), and report is clinical (CT/CU).",
+		"MFDS requires KRCT result when method is KRCT (2) for a CT/CU report.",
 		required && !has_text(value),
 	);
 }
@@ -2485,11 +2463,6 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let report_type_is_study = validation_ctx
-		.safety_report
-		.as_ref()
-		.and_then(|r| r.report_type.as_deref())
-		== Some("2");
 	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
@@ -2506,7 +2479,6 @@ pub(crate) fn collect_mfds_issues(
 	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)
 		|| is_mfds_compassionate_use_receiver(msg_receiver);
 
-	let mut domestic_drug_ids = HashSet::new();
 	let mut drug_index_by_id = HashMap::new();
 	let mut drug_has_mfds_mpid_by_id = HashMap::new();
 
@@ -2514,21 +2486,11 @@ pub(crate) fn collect_mfds_issues(
 		drug_index_by_id.insert(drug.id, idx);
 		let has_mfds_mpid = has_text(drug.mfds_mpid.as_deref());
 		drug_has_mfds_mpid_by_id.insert(drug.id, has_mfds_mpid);
-		let country = drug.obtain_drug_country.as_deref().map(str::trim);
-		let is_domestic_kr = matches!(country, Some("KR"));
-		let is_foreign_non_kr =
-			matches!(country, Some(other) if !other.is_empty() && other != "KR");
-		if is_domestic_kr {
-			domestic_drug_ids.insert(drug.id);
-		}
 		mfds_g_k_2_1_kr_1b(
 			idx,
 			drug.mfds_mpid.as_deref(),
 			drug.mfds_mpid_version.as_deref(),
 			vocabulary_receiver,
-			receiver_is_kr || receiver_is_fr,
-			is_domestic_kr,
-			is_foreign_non_kr,
 			&validation_ctx.vocabulary,
 			issues,
 		);
@@ -2570,7 +2532,6 @@ pub(crate) fn collect_mfds_issues(
 			substance.mfds_id.as_deref(),
 			substance.mfds_version.as_deref(),
 			vocabulary_receiver,
-			domestic_drug_ids.contains(&substance.drug_id),
 			(receiver_is_kr || receiver_is_fr) && !drug_has_mfds_mpid,
 			&validation_ctx.vocabulary,
 			issues,
@@ -2583,31 +2544,29 @@ pub(crate) fn collect_mfds_issues(
 			issues,
 		);
 		mfds_g_k_2_3_r_2b(drug_index, child_index, substance, issues);
+		mfds_g_k_2_3_r_2a(drug_index, child_index, substance, issues);
+	}
+	let mut mfds_dosage_indices = HashMap::new();
+	for dosage in &validation_ctx.dosages {
+		let Some(drug_index) = drug_index_by_id.get(&dosage.drug_id).copied() else {
+			continue;
+		};
+		let dosage_index = mfds_dosage_indices.entry(dosage.drug_id).or_insert(0);
+		mfds_g_k_4_termid_versions(drug_index, *dosage_index, dosage, issues);
+		*dosage_index += 1;
 	}
 	if receiver_is_kr || receiver_is_fr {
 		for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
 			if !has_text(drug.mfds_mpid.as_deref())
-				&& !mfds_ctx.active_substances.iter().any(|substance| {
-					substance.drug_id == drug.id
-						&& has_text(substance.mfds_id.as_deref())
-				}) {
-				if !mfds_ctx
+				&& !mfds_ctx
 					.active_substances
 					.iter()
 					.any(|row| row.drug_id == drug.id)
-				{
-					crate::push_business_issue(
-						issues,
-						"ICH.G.k.2.3.r.REQUIRED",
-						format!("drugs.{drug_idx}.activeSubstances"),
-						"At least one active substance is required.",
-					);
-					continue;
-				}
+			{
 				crate::push_business_issue(
 					issues,
 					"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-					format!("drugs.{drug_idx}.activeSubstances.0.mfdsId"),
+					format!("drugs.{drug_idx}.activeSubstances"),
 					"An MFDS ingredient code is required when the MFDS product code is unavailable.",
 				);
 			}
@@ -2629,14 +2588,10 @@ pub(crate) fn collect_mfds_issues(
 			.or_insert(0);
 		let child_index = base + *assessment_index;
 		*assessment_index += 1;
-		let has_source = has_text(r.source_of_assessment.as_deref());
 		let method_code = r.method_of_assessment_kr1.as_deref().map(str::trim);
-		let method_is_who_umc = method_code == Some("1");
 		let method_is_krct = method_code == Some("2");
-		let method_required_context = has_source || receiver_is_ct_or_cu;
-		let kr2_required_context = has_source
-			&& method_is_krct
-			&& (report_type_is_study || receiver_is_ct_or_cu);
+		let method_required_context = receiver_is_ct_or_cu;
+		let kr2_required_context = method_is_krct && receiver_is_ct_or_cu;
 		mfds_g_k_9_i_2_r_2_kr_1(
 			drug_index,
 			child_index,
@@ -2645,15 +2600,6 @@ pub(crate) fn collect_mfds_issues(
 			receiver_is_ct_or_cu,
 			receiver_is_kr,
 			receiver_is_fr,
-			issues,
-		);
-		mfds_g_k_9_i_2_r_3_kr_1(
-			drug_index,
-			child_index,
-			r.result_of_assessment_kr1.as_deref(),
-			r.result_of_assessment_kr1_null_flavor.as_deref(),
-			r.method_of_assessment_kr1.as_deref(),
-			mfds_kr1_result_required(receiver_is_kr, has_source, method_is_who_umc),
 			issues,
 		);
 		mfds_g_k_9_i_2_r_3_kr_2(

@@ -1477,7 +1477,7 @@
       "conformance": "conditional_mandatory",
       "data_type": "N",
       "max_length": "1",
-      "allowed_values": "1=Clinical trials  2=Individual patient use(e.g. 'compassionate use' or 'named patient basis') 3=Other studies (e.g. pharmacoepidemiology, pharmacoeconomics, intensive monitoring)",
+      "allowed_values": "1=Clinical trials  2=Individual patient use(e.g. 'compassionate use' or 'named patient basis') 3=Other studies (e.g. pharmacoepidemiology, pharmacoeconomics, intensive monitoring) 4=Patient Support Program 5=Market Research Program 6=Organised Data Collection System with source data from a digital platform",
       "oid": "2.16.840.1.113883.3.989.2.1.1.8",
       "profiles": {
         "mfds": "conditional_mandatory"
@@ -1493,10 +1493,14 @@
         "values": [
           "1",
           "2",
-          "3"
+          "3",
+          "4",
+          "5",
+          "6"
         ],
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "ICH E2D(R1) alignment (16 December 2025), section 3: https://www.fda.gov/media/195119/download?attachment=. FDA AEMS accepts codes 4-6; MFDS regional receiver rules retain codes 1-3."
     },
     {
       "code": "D.",

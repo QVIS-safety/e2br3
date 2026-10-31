@@ -40,7 +40,11 @@ def check_catalog(crate: Path = CRATE, root: Path = ROOT) -> set[str]:
         paths = rule["expectedIssuePaths"]
         if not paths or len(paths) != len(set(paths)) or any(not isinstance(p, str) or not p for p in paths):
             raise ValueError(f"rule requires unique tested field paths: {rule['ruleCode']}")
-        if rule["testModule"] not in {f"case::sections::{section}::rule_tests" for section in "cdefgh"}:
+        module = re.fullmatch(
+            r"case::sections::[cdefgh]::rule_tests::(ich|fda|mfds)",
+            rule["testModule"],
+        )
+        if module is None or module[1] != rule["ruleCode"].split(".", 1)[0].lower():
             raise ValueError(f"invalid Rust test module: {rule['ruleCode']}")
 
     editor_fields = set()

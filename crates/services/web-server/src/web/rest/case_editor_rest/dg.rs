@@ -228,7 +228,7 @@ async fn persist_active_substances(
 				})
 			})
 			.transpose()?;
-		let deleted = bool_field(row, &["deleted"]).unwrap_or(false);
+		let deleted = bool_field(row, &["deleted"]);
 
 		if let Some(id) = id {
 			let persisted = DrugActiveSubstanceBmc::get(ctx, mm, id).await?;
@@ -239,9 +239,12 @@ async fn persist_active_substances(
 					),
 				});
 			}
-			if deleted {
+			if deleted == Some(true) {
 				DrugActiveSubstanceBmc::delete(ctx, mm, id).await?;
 			} else {
+				if deleted == Some(false) && persisted.deleted {
+					DrugActiveSubstanceBmc::restore(ctx, mm, id).await?;
+				}
 				let clear_fields =
 					explicit_null_model_fields(row, ACTIVE_SUBSTANCE_ALIASES);
 				let model = row_model_value(
@@ -262,7 +265,7 @@ async fn persist_active_substances(
 				>(ctx, mm, id, update, &clear_fields)
 				.await?;
 			}
-		} else if !deleted {
+		} else if deleted != Some(true) {
 			let model = row_model_value(
 				"DG",
 				"activeSubstances[].",
@@ -335,7 +338,7 @@ macro_rules! persist_drug_children {
 						})
 					})
 					.transpose()?;
-				let deleted = bool_field(row, &["deleted"]).unwrap_or(false);
+				let deleted = bool_field(row, &["deleted"]);
 
 				if let Some(id) = id {
 					let persisted = $bmc::get(ctx, mm, id).await?;
@@ -347,9 +350,12 @@ macro_rules! persist_drug_children {
 							),
 						});
 					}
-					if deleted {
+					if deleted == Some(true) {
 						$bmc::delete(ctx, mm, id).await?;
 					} else {
+						if deleted == Some(false) && persisted.deleted {
+							$bmc::restore(ctx, mm, id).await?;
+						}
 						let clear_fields =
 							explicit_null_model_fields(row, $aliases);
 						let model = row_model_value(
@@ -370,7 +376,7 @@ macro_rules! persist_drug_children {
 						)
 						.await?;
 					}
-				} else if !deleted {
+				} else if deleted != Some(true) {
 					let model = row_model_value(
 						"DG",
 						concat!($key, "[]."),
@@ -453,7 +459,7 @@ async fn persist_drug_reaction_assessments(
 		})?;
 		let delete_assessment =
 			bool_field(row, &["_deleteAssessment"]).unwrap_or(false);
-		let deleted = bool_field(row, &["deleted"]).unwrap_or(false);
+		let deleted = bool_field(row, &["deleted"]);
 		let relatedness_id = string_field(row, &["id"])
 			.map(|value| {
 				Uuid::parse_str(&value).map_err(|_| Error::BadRequest {
@@ -463,7 +469,7 @@ async fn persist_drug_reaction_assessments(
 				})
 			})
 			.transpose()?;
-		if deleted && relatedness_id.is_none() && !delete_assessment {
+		if deleted == Some(true) && relatedness_id.is_none() && !delete_assessment {
 			return Err(Error::BadRequest {
 				message: format!(
 					"missing DG.drug.drugReactionAssessments[{index}].id for deletion"
@@ -480,7 +486,7 @@ async fn persist_drug_reaction_assessments(
 			})
 			.transpose()?;
 		if !delete_assessment
-			&& !deleted
+			&& deleted != Some(true)
 			&& assessment_id.is_none()
 			&& !child_row_has_content(row)
 		{
@@ -615,9 +621,13 @@ async fn persist_drug_reaction_assessments(
 					),
 				});
 			}
-			if deleted {
+			if deleted == Some(true) {
 				RelatednessAssessmentBmc::delete(ctx, mm, relatedness_id).await?;
 			} else {
+				if deleted == Some(false) && relatedness.deleted {
+					RelatednessAssessmentBmc::restore(ctx, mm, relatedness_id)
+						.await?;
+				}
 				let clear_fields =
 					explicit_null_model_fields(row, RELATEDNESS_ALIASES);
 				let model = row_model_value(
@@ -638,7 +648,7 @@ async fn persist_drug_reaction_assessments(
 				>(ctx, mm, relatedness_id, update, &clear_fields)
 				.await?;
 			}
-		} else if !deleted
+		} else if deleted != Some(true)
 			&& RELATEDNESS_ALIASES.iter().any(|(_, aliases)| {
 				aliases.iter().any(|alias| {
 					row.get(*alias).is_some_and(|value| !value.is_null())

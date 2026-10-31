@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +147,50 @@ def _validate_control(
         )
 
 
+def _validate_persistence(code: str, field: dict, result: Any) -> None:
+    if field.get("execution", {}).get("status") == "blocked":
+        return
+    persistence = field.get("persistence")
+    if not isinstance(persistence, dict) or set(persistence) != {"clear", "blank", "omission", "audit"}:
+        result.add(f"{code} requires explicit clear/blank/omission/audit persistence contract")
+        return
+    omission = persistence["omission"]
+    valid_omission = omission == "preserve" or isinstance(omission, dict) and (
+        set(omission) == {"effect", "value"} and omission["effect"] == "store" or
+        set(omission) == {"effect", "status", "error", "detail"} and omission["effect"] == "reject" and
+        omission["status"] == 400 and omission["error"] == "INVALID_REQUEST" and bool(omission["detail"])
+    )
+    if not valid_omission:
+        result.add(f"{code} omission requires preserve or an explicit replacement/rejection outcome")
+    for operation in ("clear", "blank"):
+        outcome = persistence[operation]
+        if not isinstance(outcome, dict):
+            result.add(f"{code} {operation} requires an explicit outcome")
+            continue
+        effect = outcome.get("effect")
+        keys = {"store": {"effect", "input", "value"}, "reject": {"effect", "input", "status", "ruleCode"},
+                "not_applicable": {"effect", "reason"}}
+        if effect not in keys or set(outcome) != keys[effect]:
+            result.add(f"{code} invalid {operation} outcome")
+        elif effect == "reject" and (outcome["status"] != 422 or not outcome["ruleCode"]):
+            result.add(f"{code} {operation} rejection requires 422 and a ruleCode")
+        elif effect == "not_applicable" and (operation != "blank" or not outcome["reason"] or isinstance(field.get("roundTripValue"), str)):
+            result.add(f"{code} only non-string blank input may be not_applicable with a reason")
+    audit = persistence["audit"]
+    if not isinstance(audit, dict) or set(audit) != {"table", "column", "record"}:
+        result.add(f"{code} audit requires table, column and record")
+        return
+    for key in ("table", "column"):
+        if not isinstance(audit[key], str) or not re.fullmatch(r"[a-z_][a-z0-9_]*", audit[key]):
+            result.add(f"{code} invalid audit {key}")
+    record = audit["record"]
+    if not isinstance(record, dict) or not (
+        record == {"source": "case"} or
+        set(record) == {"source", "path"} and record["source"] == "projection" and isinstance(record["path"], str) and record["path"]
+    ):
+        result.add(f"{code} audit requires a case ID or an explicit projection ID path")
+
+
 def validate_editor_contract(
     registry_rows: list[dict[str, Any]],
     contract: dict[str, Any],
@@ -180,6 +225,8 @@ def validate_editor_contract(
         fields_by_code[code] = field
         if "businessValidation" in field:
             result.add(f"{code} businessValidation belongs in the validator crate")
+        if page_id != "N":
+            _validate_persistence(code, field, result)
         _validate_control(
             code, field.get("control"), result, field.get("roundTripValue")
         )

@@ -300,7 +300,7 @@ pub async fn search_cases(
 				})
 				.await?;
 				let cached_totals = CaseValidationSummaryBmc::cached_totals_by_case(
-					ctx, mm, &case_ids, &request.validation.resolve()?,
+					ctx, mm, &case_ids, &request.validation.resolve()?, validator::VALIDATOR_REVISION,
 				)
 				.await?;
 				for item in &mut items {

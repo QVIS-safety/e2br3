@@ -16,6 +16,12 @@
       ]
     },
     {
+      "fieldPath": "patientInformation.concomitantTherapy",
+      "ruleCodes": [
+        "ICH.D.7.3.ALLOWED.VALUE"
+      ]
+    },
+    {
       "fieldPath": "patientInformation.death.autopsyCauses[].comments",
       "ruleCodes": [
         "ICH.D.9.4.r.2.REQUIRED"
@@ -31,6 +37,7 @@
     {
       "fieldPath": "patientInformation.death.autopsyCauses[].meddraVersion",
       "ruleCodes": [
+        "ICH.D.9.4.r.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.9.4.r.1a.REQUIRED",
         "ICH.D.9.4.r.1a.VOCABULARY"
       ]
@@ -64,6 +71,7 @@
     {
       "fieldPath": "patientInformation.death.reportedCauses[].meddraVersion",
       "ruleCodes": [
+        "ICH.D.9.2.r.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.9.2.r.1a.REQUIRED",
         "ICH.D.9.2.r.1a.VOCABULARY"
       ]
@@ -126,6 +134,7 @@
     {
       "fieldPath": "patientInformation.medicalHistory[].familyHistory",
       "ruleCodes": [
+        "ICH.D.7.1.r.6.ALLOWED.VALUE",
         "ICH.D.7.1.r.6.PARENT_DUPLICATE"
       ]
     },
@@ -140,6 +149,7 @@
       "fieldPath": "patientInformation.medicalHistory[].meddraVersion",
       "ruleCodes": [
         "ICH.D.7.1.r.1a.ALLOWED.VALUE",
+        "ICH.D.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.7.1.r.1a.REQUIRED",
         "ICH.D.7.1.r.1a.VOCABULARY"
       ]
@@ -173,6 +183,7 @@
       "fieldPath": "patientInformation.parents[].medicalHistory[].meddraVersion",
       "ruleCodes": [
         "ICH.D.10.7.1.r.1a.ALLOWED.VALUE",
+        "ICH.D.10.7.1.r.1a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.10.7.1.r.1a.REQUIRED",
         "ICH.D.10.7.1.r.1a.VOCABULARY"
       ]
@@ -186,6 +197,7 @@
     {
       "fieldPath": "patientInformation.parents[].parentAgeUnit",
       "ruleCodes": [
+        "ICH.D.10.2.2b.ALLOWED.VALUE",
         "ICH.D.10.2.2b.REQUIRED"
       ]
     },
@@ -212,6 +224,7 @@
     {
       "fieldPath": "patientInformation.parents[].pastDrugs[].indicationMeddraVersion",
       "ruleCodes": [
+        "ICH.D.10.8.r.6a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.10.8.r.6a.REQUIRED",
         "ICH.D.10.8.r.6a.VOCABULARY"
       ]
@@ -237,21 +250,9 @@
       ]
     },
     {
-      "fieldPath": "patientInformation.parents[].pastDrugs[].mpidVersion",
-      "ruleCodes": [
-        "ICH.D.10.8.r.2a.REQUIRED"
-      ]
-    },
-    {
       "fieldPath": "patientInformation.parents[].pastDrugs[].phpid",
       "ruleCodes": [
         "MFDS.D.10.8.r.3b.REQUIRED"
-      ]
-    },
-    {
-      "fieldPath": "patientInformation.parents[].pastDrugs[].phpidVersion",
-      "ruleCodes": [
-        "ICH.D.10.8.r.3a.REQUIRED"
       ]
     },
     {
@@ -264,6 +265,7 @@
     {
       "fieldPath": "patientInformation.parents[].pastDrugs[].reactionMeddraVersion",
       "ruleCodes": [
+        "ICH.D.10.8.r.7a.MEDDRA.VERSION.CONSISTENT",
         "ICH.D.10.8.r.7a.REQUIRED",
         "ICH.D.10.8.r.7a.VOCABULARY"
       ]
@@ -272,6 +274,12 @@
       "fieldPath": "patientInformation.parents[].sex",
       "ruleCodes": [
         "ICH.D.10.6.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "patientInformation.patientAgeGroup",
+      "ruleCodes": [
+        "MFDS.D.2.3.ALLOWED.VALUE"
       ]
     },
     {
@@ -298,7 +306,6 @@
     {
       "fieldPath": "patientInformation.patientStudyNumber",
       "ruleCodes": [
-        "ICH.D.1.1.4.REQUIRED",
         "MFDS.D.1.1.4.REQUIRED"
       ]
     },

@@ -71,7 +71,10 @@ pub(super) async fn apply_sd_page_rows_patch(
 	)?;
 	if let Some(sender) = optional_row_object(page_id, rows, "senderInformation")? {
 		let update = SenderInformationForUpdate {
-			source_sender_presave_id: uuid_field(sender, &["sourceSenderPresaveId"]),
+			source_sender_presave_id: uuid_field(
+				sender,
+				&["sourceSenderPresaveId"],
+			)?,
 			sender_type: string_field(sender, &["senderType"]),
 			health_professional_type_kr1: string_field(
 				sender,
@@ -119,7 +122,15 @@ pub(super) async fn apply_sd_page_rows_patch(
 		.await?
 		.first()
 		.map(|row| row.id);
-		if let Some(id) = uuid_field(sender, &["id"]).or(existing_sender_id) {
+		if let Some(id) = uuid_field(sender, &["id"])?.or(existing_sender_id) {
+			let current = SenderInformationBmc::get(ctx, mm, id).await?;
+			if current.case_id != case_id {
+				return Err(lib_core::model::Error::EntityUuidNotFound {
+					entity: "sender_information",
+					id,
+				}
+				.into());
+			}
 			let clear_fields =
 				explicit_null_model_fields(sender, SD_SENDER_PATCH_FIELDS);
 			lib_core::model::update_uuid_patch::<SenderInformationBmc, _>(

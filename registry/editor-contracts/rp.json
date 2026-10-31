@@ -18,7 +18,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterTitle",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterTitleNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterTitleNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_title", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.1.2",
@@ -36,7 +42,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterGivenName",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterGivenNameNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterGivenNameNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_given_name", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.1.3",
@@ -54,7 +66,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterMiddleName",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterMiddleNameNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterMiddleNameNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_middle_name", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.1.4",
@@ -72,7 +90,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterFamilyName",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterFamilyNameNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterFamilyNameNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_family_name", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.1",
@@ -90,7 +114,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterOrganization",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterOrganizationNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterOrganizationNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "organization", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.2",
@@ -108,7 +138,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterDepartment",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterDepartmentNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterDepartmentNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "department", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.3",
@@ -126,7 +162,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterStreet",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterStreetNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterStreetNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "street", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.4",
@@ -144,7 +186,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterCity",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterCityNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterCityNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "city", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.5",
@@ -162,7 +210,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterState",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterStateNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterStateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "state", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.6",
@@ -180,7 +234,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterPostcode",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterPostcodeNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterPostcodeNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "postcode", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.2.7",
@@ -198,7 +258,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterTelephone",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterTelephoneNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterTelephoneNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "telephone", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.3",
@@ -223,6 +289,12 @@
         "optionDataValue": "KR",
         "optionLabel": "KR",
         "selectedLabel": "KR"
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "country_code", "record": {"source": "projection", "path": "primarySources[].id"}}
       }
     },
     {
@@ -241,7 +313,13 @@
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "[].reporterEmail",
-      "nullFlavorPartnerCode": "C.2.r.local.reporterEmailNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.reporterEmailNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "email", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.4",
@@ -259,7 +337,13 @@
         "invalidValue": "0"
       },
       "payloadPath": "[].qualification",
-      "nullFlavorPartnerCode": "C.2.r.local.qualificationNullFlavor"
+      "nullFlavorPartnerCode": "C.2.r.local.qualificationNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "qualification", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.4.KR.1",
@@ -288,7 +372,13 @@
           "frontendPath": "primarySources[].qualification",
           "value": "3"
         }
-      ]
+      ],
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "qualification_kr1", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.5",
@@ -310,6 +400,12 @@
         "kind": "string_checkbox",
         "checkedValue": "1",
         "uncheckedValue": ""
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "primary_source_regulatory", "record": {"source": "projection", "path": "primarySources[].id"}}
       }
     },
     {
@@ -328,7 +424,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterTitleNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.1.1"
+      "nullFlavorPartnerCode": "C.2.r.1.1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_title_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterGivenNameNullFlavor",
@@ -346,7 +448,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterGivenNameNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.1.2"
+      "nullFlavorPartnerCode": "C.2.r.1.2",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_given_name_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterMiddleNameNullFlavor",
@@ -364,7 +472,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterMiddleNameNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.1.3"
+      "nullFlavorPartnerCode": "C.2.r.1.3",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_middle_name_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterFamilyNameNullFlavor",
@@ -382,7 +496,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterFamilyNameNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.1.4"
+      "nullFlavorPartnerCode": "C.2.r.1.4",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "reporter_family_name_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterOrganizationNullFlavor",
@@ -400,7 +520,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterOrganizationNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.1"
+      "nullFlavorPartnerCode": "C.2.r.2.1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "organization_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterDepartmentNullFlavor",
@@ -418,7 +544,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterDepartmentNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.2"
+      "nullFlavorPartnerCode": "C.2.r.2.2",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "department_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterStreetNullFlavor",
@@ -436,7 +568,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterStreetNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.3"
+      "nullFlavorPartnerCode": "C.2.r.2.3",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "street_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterCityNullFlavor",
@@ -454,7 +592,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterCityNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.4"
+      "nullFlavorPartnerCode": "C.2.r.2.4",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "city_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterStateNullFlavor",
@@ -472,7 +616,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterStateNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.5"
+      "nullFlavorPartnerCode": "C.2.r.2.5",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "state_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterPostcodeNullFlavor",
@@ -490,7 +640,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterPostcodeNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.6"
+      "nullFlavorPartnerCode": "C.2.r.2.6",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "postcode_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterTelephoneNullFlavor",
@@ -508,7 +664,13 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].reporterTelephoneNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.2.7"
+      "nullFlavorPartnerCode": "C.2.r.2.7",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "telephone_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.reporterEmailNullFlavor",
@@ -526,7 +688,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "[].reporterEmailNullFlavor",
-      "nullFlavorPartnerCode": "FDA.C.2.r.2.8"
+      "nullFlavorPartnerCode": "FDA.C.2.r.2.8",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "email_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     },
     {
       "code": "C.2.r.local.qualificationNullFlavor",
@@ -544,7 +712,51 @@
         "invalidValue": "NI"
       },
       "payloadPath": "[].qualificationNullFlavor",
-      "nullFlavorPartnerCode": "C.2.r.4"
+      "nullFlavorPartnerCode": "C.2.r.4",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "primary_sources", "column": "qualification_null_flavor", "record": {"source": "projection", "path": "primarySources[].id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [
+    {
+      "id": "reporter_title_can_be_cleared_without_changing_siblings",
+      "verifier": "fields::coupled_clear::reporter_title_can_be_cleared_without_changing_siblings",
+      "description": "reporter title can be cleared without changing siblings"
+    }
+  ],
+  "collections": [
+    {
+      "id": "reporters_remain_ordered_by_sequence_and_id_after_update",
+      "verifier": "rows::projection::reporters_remain_ordered_by_sequence_and_id_after_update",
+      "description": "reporters remain ordered by sequence and id after update"
+    }
+  ],
+  "relations": [
+    {
+      "id": "rejects_foreign_reporter_rows_without_mutation",
+      "verifier": "relations::scope::rejects_foreign_reporter_rows_without_mutation",
+      "description": "RP child ids from another case are rejected for update, delete, and explicit restore without changing either case or audit trail"
+    },
+    {
+      "id": "reporter_row_delete_restore_and_resave_is_stable",
+      "verifier": "relations::rp_rows::reporter_row_delete_restore_and_resave_is_stable",
+      "description": "RP reporter deletion is repeatable, omission and an empty list do not restore it, and explicit restore plus resave preserve its id and count"
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {
+    "primarySources[]": {
+      "requestPath": "primarySources.[]",
+      "keys": [
+        {
+          "name": "id",
+          "required": true
+        }
+      ]
+    }
+  }
 }

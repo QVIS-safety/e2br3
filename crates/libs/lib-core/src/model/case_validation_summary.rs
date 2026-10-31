@@ -2,6 +2,7 @@ use crate::ctx::Ctx;
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{Error, ModelManager, Result};
 use crate::validation_report::CaseValidationReport;
+use sha2::{Digest, Sha256};
 use sqlx::types::{time::OffsetDateTime, Uuid};
 use sqlx::FromRow;
 use std::collections::HashMap;
@@ -28,18 +29,33 @@ pub struct CaseValidationTotalRow {
 pub struct CaseValidationSummaryBmc;
 
 impl CaseValidationSummaryBmc {
+	pub async fn validation_revision(
+		mm: &ModelManager,
+		implementation: &str,
+	) -> Result<String> {
+		let releases: Vec<(String, String, String, String)> = mm.dbx().fetch_all(
+			sqlx::query_as("SELECT dictionary, version, language, updated_at::text FROM terminology_releases WHERE status = 'active' ORDER BY dictionary, version, language"),
+		).await?;
+		let source = serde_json::to_vec(&(implementation, releases))
+			.map_err(|error| Error::Store(error.to_string()))?;
+		Ok(format!("{:x}", Sha256::digest(source)))
+	}
+
 	pub async fn upsert_for_reports(
 		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 		reports: &[CaseValidationReport],
+		revision: &str,
 	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
 			let _ = mm.dbx().rollback_txn().await;
 			return Err(err);
 		}
-		if let Err(err) = Self::replace_for_reports(mm, case_id, reports).await {
+		if let Err(err) =
+			Self::replace_for_reports(mm, case_id, reports, revision).await
+		{
 			let _ = mm.dbx().rollback_txn().await;
 			return Err(err);
 		}
@@ -51,6 +67,7 @@ impl CaseValidationSummaryBmc {
 		mm: &ModelManager,
 		case_id: Uuid,
 		reports: &[CaseValidationReport],
+		revision: &str,
 	) -> Result<()> {
 		let appendices = reports
 			.iter()
@@ -77,6 +94,7 @@ impl CaseValidationSummaryBmc {
 				report.issue_count,
 				required_count_for_report(report, None),
 				issue_keys_for_report(report, None),
+				revision,
 			)
 			.await?;
 
@@ -89,6 +107,7 @@ impl CaseValidationSummaryBmc {
 					section.issue_count,
 					required_count_for_report(report, Some(&section.section)),
 					issue_keys_for_report(report, Some(&section.section)),
+					revision,
 				)
 				.await?;
 			}
@@ -105,6 +124,7 @@ impl CaseValidationSummaryBmc {
 		issue_count: usize,
 		required_count: usize,
 		issue_keys: serde_json::Value,
+		revision: &str,
 	) -> Result<()> {
 		let issue_count = count_as_i32(issue_count, "issue_count")?;
 		let required_count = count_as_i32(required_count, "required_count")?;
@@ -119,15 +139,17 @@ impl CaseValidationSummaryBmc {
 						issue_count,
 						required_count,
 						issue_keys,
+						validation_revision,
 						stale,
 						generated_at
 					)
-					VALUES ($1, $2, $3, $4, $5, $6, false, now())
+					VALUES ($1, $2, $3, $4, $5, $6, $7, false, now())
 					ON CONFLICT (case_id, appendix, page_id)
 					DO UPDATE SET
 						issue_count = EXCLUDED.issue_count,
 						required_count = EXCLUDED.required_count,
 						issue_keys = EXCLUDED.issue_keys,
+						validation_revision = EXCLUDED.validation_revision,
 						stale = false,
 						generated_at = now()
 					"#,
@@ -137,7 +159,8 @@ impl CaseValidationSummaryBmc {
 				.bind(page_id)
 				.bind(issue_count)
 				.bind(required_count)
-				.bind(issue_keys),
+				.bind(issue_keys)
+				.bind(revision),
 			)
 			.await?;
 		Ok(())
@@ -148,6 +171,7 @@ impl CaseValidationSummaryBmc {
 		mm: &ModelManager,
 		case_ids: &[Uuid],
 		authorities: &[crate::regulatory::RegulatoryAuthority],
+		implementation_revision: &str,
 	) -> Result<HashMap<Uuid, i64>> {
 		if case_ids.is_empty() || authorities.is_empty() {
 			return Ok(HashMap::new());
@@ -161,6 +185,14 @@ impl CaseValidationSummaryBmc {
 			let _ = mm.dbx().rollback_txn().await;
 			return Err(err);
 		}
+		let revision =
+			match Self::validation_revision(mm, implementation_revision).await {
+				Ok(revision) => revision,
+				Err(error) => {
+					let _ = mm.dbx().rollback_txn().await;
+					return Err(error);
+				}
+			};
 		let rows = match mm
 			.dbx()
 			.fetch_all(
@@ -175,6 +207,7 @@ impl CaseValidationSummaryBmc {
 					   AND page_id = $2
 					   AND stale = false
 					   AND appendix = ANY($3)
+					   AND validation_revision = $5
 					 GROUP BY case_id
 					HAVING COUNT(DISTINCT appendix) = $4
 					"#,
@@ -182,7 +215,8 @@ impl CaseValidationSummaryBmc {
 				.bind(case_ids)
 				.bind(ALL_PAGE_ID)
 				.bind(&appendices)
-				.bind(appendices.len() as i64),
+				.bind(appendices.len() as i64)
+				.bind(&revision),
 			)
 			.await
 		{

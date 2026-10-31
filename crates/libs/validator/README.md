@@ -1,7 +1,8 @@
 # Validator rule tests
 
-The agreed 298 baseline business rules each have a named Rust test under
-`src/case/sections/{c,d,e,f,g,h}/rule_tests.rs`. Each test runs the production
+Each implemented business rule in `rules.json` has one named Rust test under
+`src/case/sections/{c,d,e,f,g,h}/rule_tests/{ich,fda,mfds}.rs`.
+Each test runs the production
 validator against invalid and repaired inputs, then checks the issue code,
 all declared issue paths and removal of the error after repair. The shared
 assertion in `src/tests/rule_assertions.rs` reads `rules.json` directly; it does
@@ -22,40 +23,44 @@ src/case/sections/
   helpers/tests.rs                 # Shared helper tests
   {c,d,e,f,g,h}/
     *tests.rs                      # Existing section regression tests
-    rule_tests.rs                  # Named rule tests
-    rule_fixtures/                 # C/D/G inputs and production validator calls
+    rule_tests.rs                  # Shared assertions/imports and module declarations
+    rule_tests/
+      ich.rs                       # ICH named rules and their input cases
+      fda.rs                       # FDA named rules and their input cases, where present
+      mfds.rs                      # MFDS named rules and their input cases
+    rule_fixtures/common.rs        # D/G shared fixture constructors
 tests/allowed_value_representation.rs  # Public API integration test
 rules.json                         # Rule-to-test and expected-issue bindings
 field-rules/                       # Field-to-rule JSON metadata
 tools/                             # Catalog and execution checks
-fuzz/                              # Separate persisted API fuzzer
 ```
 
-C, D and G include their test setup and validation calls from
-`rule_fixtures/{ich,fda,mfds}.rs`. D and G share fixture constructors through
-`rule_fixtures/common.rs`. Section and policy regression tests use private
-`#[cfg(test)]` modules in separate files. These files preserve the existing
-Rust test names and do not expose production APIs.
+Every section separates named rule tests by authority. Each authority file
+contains its rule functions and existing input cases; shared assertions stay in
+the parent `rule_tests.rs`. D and G reuse `rule_fixtures/common.rs` constructors.
+F and H have no FDA-specific rules, so they have no empty FDA module.
+Existing section, cross-authority and policy regression tests remain in their
+private `#[cfg(test)]` modules. Rule test leaf names are preserved; their fully
+qualified names now include the authority. No production APIs are exposed.
 
-- `rules.json` binds baseline rule codes to Rust modules/test names and current
+- `rules.json` binds business rule codes to Rust modules/test names and current
   issue codes/paths. Twelve historical MedDRA codes explicitly map to the current
   shared `ICH.MEDDRA.VERSION.UNAVAILABLE` rule.
 - `field-rules/*.json` **fields** owns field-path-to-rule metadata.
   **editorMappings** preserves UI metadata for canonical inventory consumers;
   its historical statuses are not test results.
-- `tools/rule_inventory.py` discovers the agreed production-source baseline.
-  The fuzzer may import that inventory; rule tests do not depend on the fuzzer.
-- `fuzz/runner.py` separately owns real API save/readback/validation/audit checks.
-  The old script command forwards to it. Its inputs do not define rule-test
-  bindings or stand in for rule-test execution.
+- `tools/rule_inventory.py` discovers section and cross-section collector rules,
+  expands generated attachment/marker codes and reads the runtime retained-value
+  list, so business rules are not lost by a second allowlist.
 
 ```sh
 python3 -m unittest discover crates/libs/validator/tools/tests
-python3 -m unittest discover crates/libs/validator/fuzz/tests/unit
-# All named business-rule tests:
-cargo test -p validator '::rule_tests::rule_'
+# All rule test modules (including the existing FDA device regression):
+cargo test -p validator '::rule_tests::'
+# ICH rule tests across all sections:
+cargo test -p validator '::rule_tests::ich::rule_'
 # One business rule:
-cargo test -p validator case::sections::c::rule_tests::rule_ich_c_5_4_required -- --exact
+cargo test -p validator case::sections::c::rule_tests::ich::rule_ich_c_5_4_required -- --exact
 # Full CI gate:
 set -o pipefail
 cargo test -p validator --locked -- --color never | tee /tmp/validator-tests.log
@@ -66,30 +71,41 @@ When changing a rule or field mapping, update its production implementation,
 rule test, `rules.json` and the corresponding `field-rules` entry. CI checks
 source/catalog/field identity consistency and requires every fully qualified
 rule test to execute and pass exactly once. Missing, ignored, failed, duplicate,
-extra or wrongly located rule tests fail the gate. Each rule test itself checks
-the declared issue paths. The baseline is not an official-document completeness
+extra or wrongly located rule tests fail the gate. The catalog also rejects a
+test module whose authority differs from its rule code. Each rule test checks
+the declared issue paths. The catalog is not an official-document completeness
 claim.
 
 Business-rule assertions belong to this crate. The web-server integration suite
 keeps authority routing, DB projection-to-issue paths, cache invalidation and
 counts, authentication and submission gates. It does not repeat the individual
 rule fixtures. Editor persistence tests remain separate from validation tests;
-the RP collection/row and SI sequence-gap checks live in `case_validation_web.rs`.
+the RP collection/row and SI sequence-gap checks live in `crates/services/web-server/tests/api_cases/validation.rs`.
 Frontend integration tests cover scoped banners/dots, per-authority aggregation
 and stale validation responses, and run in the registry CI job.
+The frontend issue-path test reads this crate's `rules.json` directly; set
+`E2BR3_BACKEND_ROOT` to the backend checkout when running that test locally.
+It checks UI path resolution, not business-rule behavior.
+
+`build.rs` fingerprints validator implementation, shared context/model code,
+locked dependencies and embedded vocabularies. Validation summary caches also
+record the active terminology releases and their update timestamps. A mismatch
+or a legacy cache without a revision returns `Not checked` until revalidation.
+Apply `db/migrations/20261031_validation_revision.sql` before deploying this
+cache reader/writer. No background full-case validation is added.
 
 CI selects tests on `dev`/`main` pushes and PRs targeting either branch:
 
-| Changed files | Validator tests | Other backend/registry/audit tests |
+| Changed files | Validator tests | Other backend/registry tests |
 | --- | --- | --- |
 | Only `crates/libs/validator/**` | Run | Skip |
 | Unrelated backend files | Skip | Run |
 | Both areas or shared validator inputs | Run | Run |
 
 `scripts/ci_test_scope.py` lists shared inputs: transitive Rust dependencies,
-Cargo/toolchain configuration, the CI workflow/selector, registry metadata and
-the fuzzer's external helper files. Pushes compare the complete before/after
-range; PRs compare from the merge base. Deletions and both sides of renames are
+Cargo/toolchain configuration, the CI workflow/selector and registry metadata.
+Pushes compare the complete before/after range; PRs compare from the merge base.
+Deletions and both sides of renames are
 included. A new branch checks its complete tree; missing Git history fails the
 selection job instead of skipping tests. No changed files selects no test suite.
 

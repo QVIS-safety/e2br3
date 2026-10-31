@@ -291,6 +291,13 @@ class RegistryValidatorTests(unittest.TestCase):
             "projectionPath": "safetyReportIdentification.reportType",
             "patch": {"kind": "row", "owner": "safetyReportIdentification"},
             "roundTripValue": "2",
+            "persistence": {
+                "clear": {"effect": "store", "input": None, "value": None},
+                "blank": {"effect": "store", "input": "", "value": None},
+                "omission": "preserve",
+                "audit": {"table": "safety_report_identification", "column": "report_type",
+                          "record": {"source": "projection", "path": "safetyReportIdentification.id"}},
+            },
             "constraint": {
                 "status": "verified",
                 "ruleCode": "ICH.C.1.3.ALLOWED.VALUE",
@@ -307,6 +314,21 @@ class RegistryValidatorTests(unittest.TestCase):
         )
 
         self.assertEqual([], result.errors)
+
+    def test_persistence_contract_requires_explicit_boundaries_and_real_record_binding(self):
+        for mutation in ('missing', 'clear', 'omission', 'audit'):
+            field = self.editor_field()
+            if mutation == 'missing':
+                del field['persistence']
+            elif mutation == 'clear':
+                field['persistence']['clear'] = {'effect': 'not_applicable', 'reason': 'skip'}
+            elif mutation == 'omission':
+                field['persistence']['omission'] = 'clear'
+            else:
+                field['persistence']['audit']['record'] = {'source': 'projection'}
+            result = validate.ValidationResult()
+            editor_contract._validate_persistence(field['code'], field, result)
+            self.assertTrue(result.errors, mutation)
 
     def test_complete_editor_field_requires_manifest_entry(self):
         result = validate.ValidationResult()
@@ -2479,7 +2501,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: Prepare XML validation assets", workflow)
         self.assertLess(
             workflow.index("name: Prepare XML validation assets"),
-            workflow.index("name: Run remaining workspace tests"),
+            workflow.index("name: Run selected crate tests"),
         )
 
     def test_ci_serializes_workspace_tests_that_share_the_database(self):
@@ -2488,8 +2510,8 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1",
-            workflow,
+            "--test-threads=1",
+            (validate.ROOT.parent / "scripts/ci_test_plan.py").read_text(),
         )
 
     def test_ci_requires_api_tests_before_publishing_dev_image(self):
@@ -2499,14 +2521,16 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [test-plan, case-editor-audit, registry, fmt, clippy, validator, test]",
+            "needs: [test-plan, registry, fmt, clippy, validator, test]",
             deploy_job,
         )
         self.assertIn("needs.test-plan.result == 'success'", deploy_job)
-        self.assertIn("needs.test-plan.outputs.mode == 'full'", deploy_job)
-        self.assertIn("needs.registry.result == 'success' && needs.test.result == 'success'", deploy_job)
+        self.assertIn("needs.fmt.result == 'success' && needs.clippy.result == 'success'", deploy_job)
+        for output, job in (("registry", "registry"), ("validator", "validator"), ("backend", "test")):
+            self.assertIn(f"needs.test-plan.outputs.{output} == 'true' && needs.{job}.result == 'success'", deploy_job)
+            self.assertIn(f"needs.test-plan.outputs.{output} == 'false' && needs.{job}.result == 'skipped'", deploy_job)
 
-    def test_ci_shares_verified_inventory_and_checks_api_test_results(self):
+    def test_ci_keeps_full_inventory_and_independent_backend_result_gate(self):
         workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
             encoding="utf-8"
         )
@@ -2518,13 +2542,15 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("name: canonical-editor-inventory", registry_job)
         self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
         self.assertIn("needs: [registry, test-plan]", test_job)
-        self.assertIn("if: ${{ needs.test-plan.outputs.backend == 'true' && (needs.test-plan.outputs.mode == 'full' || needs.test-plan.outputs.mode == 'targeted') }}", test_job)
+        self.assertIn("if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}", test_job)
         self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
-        self.assertIn("uses: actions/download-artifact@v8", test_job)
-        self.assertIn("name: canonical-editor-inventory", test_job)
-        self.assertIn("path: ${{ runner.temp }}/editor-contract", test_job)
+        self.assertNotIn("actions/download-artifact", test_job)
+        self.assertIn("--registry-root registry", test_job)
         self.assertIn("set -o pipefail", test_job)
         self.assertIn("--backend-log \"$RUNNER_TEMP/workspace-tests.log\"", test_job)
+        plan_job = workflow.split("\n  test-plan:\n", 1)[1].split("\n  validator:\n", 1)[0]
+        self.assertIn("registry/tools/test_check_contract_test_results.py", plan_job)
+        self.assertNotIn("python3 -m unittest registry/tools/test_check_contract_test_results.py", registry_job)
 
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):

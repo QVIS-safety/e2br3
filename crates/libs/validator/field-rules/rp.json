@@ -19,7 +19,7 @@
       "ruleCodes": [
         "FDA.R0020",
         "ICH.C.2.r.4.REQUIRED",
-        "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT_CU",
+        "MFDS.C.2.r.4.NULLFLAVOR.FORBIDDEN.CT",
         "MFDS.C.2.r.4.REQUIRED"
       ]
     },
@@ -66,7 +66,6 @@
     {
       "fieldPath": "primarySources[].reporterOrganization",
       "ruleCodes": [
-        "ICH.C.2.r.2.1.REQUIRED",
         "MFDS.C.2.RECEIVER.REQUIRED"
       ]
     },

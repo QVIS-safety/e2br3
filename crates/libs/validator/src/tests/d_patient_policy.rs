@@ -39,7 +39,8 @@ fn empty_patient() -> PatientInformation {
 fn payload_detection_is_false_for_empty_patient() {
 	let patient = empty_patient();
 	assert!(!has_patient_payload(&patient));
-	assert!(!should_require_patient_initials(&patient));
+	assert!(should_require_patient_initials(&patient));
+	assert!(!has_patient_initials(&patient));
 }
 
 #[test]
@@ -47,5 +48,21 @@ fn payload_detection_is_false_when_only_sex_present() {
 	let mut patient = empty_patient();
 	patient.sex = Some("1".to_string());
 	assert!(has_patient_payload(&patient));
-	assert!(!should_require_patient_initials(&patient));
+	assert!(should_require_patient_initials(&patient));
+	assert!(!has_patient_initials(&patient));
+}
+
+#[test]
+fn patient_initials_accept_name_or_nonblank_null_flavor_presence() {
+	let mut patient = empty_patient();
+	patient.patient_initials = Some("AB".into());
+	assert!(has_patient_initials(&patient));
+
+	patient.patient_initials = None;
+	for null_flavor in ["MSK", "ASKU", "NASK", "UNK", "NA", "other"] {
+		patient.patient_initials_null_flavor = Some(null_flavor.into());
+		assert!(has_patient_initials(&patient));
+	}
+	patient.patient_initials_null_flavor = Some("  ".into());
+	assert!(!has_patient_initials(&patient));
 }

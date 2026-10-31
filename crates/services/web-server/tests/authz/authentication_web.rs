@@ -1,0 +1,450 @@
+use crate::common::create_empty_permission_profile;
+use crate::common::{
+	cookie_header, init_test_mm, seed_org_with_users, system_org_id, Result,
+};
+use axum::body::{to_bytes, Body};
+use axum::http::{Request, StatusCode};
+use hmac::{Hmac, Mac};
+use lib_auth::token::generate_web_token;
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
+use lib_core::model::store::set_full_context_dbx;
+use lib_utils::b64::{b64u_decode, b64u_encode};
+use serde_json::{json, Value};
+use serial_test::serial;
+use sha2::Sha512;
+use sqlx::query;
+use tower::ServiceExt;
+use uuid::Uuid;
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_refresh_logoff() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_email = seed.admin.email.clone();
+	let admin_salt = seed.admin.token_salt;
+
+	let app = web_server::app(mm.clone());
+	let login_body = json!({ "email": admin_email, "pwd": "adminpwd" });
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	if status != StatusCode::OK {
+		let err = res
+			.extensions()
+			.get::<std::sync::Arc<lib_web::Error>>()
+			.map(|e| format!("{e:?}"));
+		let body = to_bytes(res.into_body(), usize::MAX).await?;
+		return Err(format!(
+			"login status {} body {} err {:?}",
+			status,
+			String::from_utf8_lossy(&body),
+			err
+		)
+		.into());
+	}
+
+	let token = generate_web_token(&admin_email, admin_salt)?;
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/refresh")
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	if status != StatusCode::OK {
+		let err = res
+			.extensions()
+			.get::<std::sync::Arc<lib_web::Error>>()
+			.map(|e| format!("{e:?}"));
+		let body = to_bytes(res.into_body(), usize::MAX).await?;
+		return Err(format!(
+			"refresh status {} body {} err {:?}",
+			status,
+			String::from_utf8_lossy(&body),
+			err
+		)
+		.into());
+	}
+
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/logoff")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(r#"{"logoff":true}"#))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	if status != StatusCode::OK {
+		let err = res
+			.extensions()
+			.get::<std::sync::Arc<lib_web::Error>>()
+			.map(|e| format!("{e:?}"));
+		let body = to_bytes(res.into_body(), usize::MAX).await?;
+		return Err(format!(
+			"logoff status {} body {} err {:?}",
+			status,
+			String::from_utf8_lossy(&body),
+			err
+		)
+		.into());
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_wrong_password() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let app = web_server::app(mm);
+
+	let login_body = json!({ "email": seed.admin.email, "pwd": "wrongpwd" });
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	let body: Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	assert_eq!(
+		body.pointer("/error/message"),
+		Some(&json!("LOGIN_INVALID_CREDENTIALS")),
+	);
+	assert_eq!(body.pointer("/error/data/detail"), Some(&Value::Null));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_unknown_email() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let app = web_server::app(mm);
+
+	let login_body = json!({ "email": "missing@example.com", "pwd": "anypwd" });
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	let body: Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	assert_eq!(
+		body.pointer("/error/message"),
+		Some(&json!("LOGIN_INVALID_CREDENTIALS")),
+	);
+	assert_eq!(body.pointer("/error/data/detail"), Some(&Value::Null));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_user_with_nil_org_fails() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm.clone());
+	let suffix = Uuid::new_v4();
+	let email = format!("nil-org-login-{suffix}@example.com");
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("nil-org-login-{suffix}"),
+	)
+	.await?;
+
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": format!("nil_org_login_{suffix}"),
+			"pwd_clear": "NilOrgPwd123!-long",
+			"role": role_id
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	let create_status = create_res.status();
+	let create_body = to_bytes(create_res.into_body(), usize::MAX).await?;
+	assert_eq!(
+		create_status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&create_body)
+	);
+
+	// Simulate a legacy malformed row where organization_id is nil UUID.
+	let created: Value = serde_json::from_slice(&create_body)?;
+	let created_user_id = Uuid::parse_str(
+		created["data"]["id"]
+			.as_str()
+			.ok_or("missing created user id")?,
+	)?;
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	let root_ctx = Ctx::root_ctx();
+	set_full_context_dbx(
+		dbx,
+		root_ctx.user_id(),
+		root_ctx.organization_id(),
+		lib_core::ctx::ROLE_SYSTEM_ADMIN,
+	)
+	.await?;
+	dbx.execute(
+		query("UPDATE users SET organization_id = $1 WHERE id = $2")
+			.bind(system_org_id())
+			.bind(created_user_id),
+	)
+	.await?;
+	dbx.commit_txn().await?;
+
+	let login_body = json!({ "email": email, "pwd": "NilOrgPwd123!-long" });
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::FORBIDDEN);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_created_user_email_case_insensitive() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let mixed_case_email = format!("CaseMix-{suffix}@Example.COM");
+	let login_email = mixed_case_email.to_lowercase();
+	let password = "case-insensitive-password";
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("case-mix-{suffix}"),
+	)
+	.await?;
+
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": mixed_case_email,
+			"username": format!("case_mix_{suffix}"),
+			"role": role_id,
+			"pwd_clear": password
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+
+	let login_body = json!({ "email": login_email, "pwd": password });
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_created_user_uses_requested_initial_password() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let email = format!("initial-password-{suffix}@example.com");
+	let password = "InitialPwd123!-long";
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("initial-password-{suffix}"),
+	)
+	.await?;
+
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": format!("initial_password_{suffix}"),
+			"pwd_clear": password,
+			"role": role_id
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+
+	let login_body = json!({ "email": email, "pwd": password });
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_auth_login_upgrades_legacy_hash_for_non_admin_user() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm.clone());
+	let suffix = Uuid::new_v4();
+	let email = format!("legacy-user-{suffix}@example.com");
+	let password = "hello legacy world";
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("legacy-user-{suffix}"),
+	)
+	.await?;
+
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": format!("legacy_user_{suffix}"),
+			"pwd_clear": password,
+			"role": role_id
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+
+	// Force legacy scheme-01 hash for this user to exercise upgrade-on-login.
+	let legacy_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+	let pwd_key = std::env::var("SERVICE_PWD_KEY")?;
+	let pwd_key = b64u_decode(&pwd_key)?;
+	let mut hmac_sha512 = Hmac::<Sha512>::new_from_slice(&pwd_key)?;
+	hmac_sha512.update(password.as_bytes());
+	hmac_sha512.update(legacy_salt.as_bytes());
+	let legacy_hash =
+		format!("#01#{}", b64u_encode(hmac_sha512.finalize().into_bytes()));
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	let root_ctx = Ctx::root_ctx();
+	set_full_context_dbx(
+		dbx,
+		root_ctx.user_id(),
+		root_ctx.organization_id(),
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	dbx.execute(
+		query("UPDATE users SET pwd = $1, pwd_salt = $2 WHERE email = $3")
+			.bind(legacy_hash)
+			.bind(legacy_salt)
+			.bind(&email),
+	)
+	.await?;
+	dbx.commit_txn().await?;
+
+	let login_body = json!({ "email": email, "pwd": password });
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_middleware_requires_auth() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let app = web_server::app(mm);
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/users")
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_refresh_rejects_bad_token() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_email = seed.admin.email.clone();
+	let admin_salt = seed.admin.token_salt;
+	let mut token = generate_web_token(&admin_email, admin_salt)?.to_string();
+	token.pop();
+	token.push('x');
+
+	let app = web_server::app(mm);
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/refresh")
+		.header("cookie", cookie_header(&token))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_refresh_missing_token() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let app = web_server::app(mm);
+
+	let req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/refresh")
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	Ok(())
+}

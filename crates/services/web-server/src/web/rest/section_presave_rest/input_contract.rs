@@ -719,7 +719,7 @@ mod tests {
 		assert!(fda_ind_detail(
 			&StudyFdaCrossReportedIndNumberDetailsForUpdate {
 				id: None,
-				deleted: false,
+				deleted: Some(false),
 				sequence_number: Some(1),
 				ind_number: None,
 				ind_number_null_flavor: Some("NA".into()),

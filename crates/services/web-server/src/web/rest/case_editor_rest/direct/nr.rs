@@ -55,7 +55,7 @@ pub(super) async fn apply_nr_page_rows_patch(
 			source_narrative_presave_id: uuid_field(
 				narrative,
 				&["sourceNarrativePresaveId"],
-			),
+			)?,
 			case_narrative: case_narrative.clone(),
 			reporter_comments: string_field(narrative, &["reporterComments"]),
 			sender_comments: string_field(narrative, &["senderComments"]),
@@ -109,8 +109,8 @@ pub(super) async fn apply_nr_page_rows_patch(
 		})?;
 		for (index, value) in diagnoses.iter().enumerate() {
 			let diagnosis = as_object(page_id, "senderDiagnoses", value)?;
-			let id = uuid_field(diagnosis, &["id"]);
-			let deleted = bool_field(diagnosis, &["deleted"]).unwrap_or(false);
+			let id = uuid_field(diagnosis, &["id"])?;
+			let deleted = bool_field(diagnosis, &["deleted"]);
 			if let Some(id) = id {
 				let persisted = SenderDiagnosisBmc::get(ctx, mm, id).await?;
 				if persisted.narrative_id != narrative.id {
@@ -120,9 +120,12 @@ pub(super) async fn apply_nr_page_rows_patch(
 						),
 					});
 				}
-				if deleted {
+				if deleted == Some(true) {
 					SenderDiagnosisBmc::delete(ctx, mm, id).await?;
 				} else {
+					if deleted == Some(false) && persisted.deleted {
+						SenderDiagnosisBmc::restore(ctx, mm, id).await?;
+					}
 					let clear_fields = explicit_null_model_fields(
 						diagnosis,
 						NR_SENDER_DIAGNOSIS_PATCH_FIELDS,
@@ -145,7 +148,7 @@ pub(super) async fn apply_nr_page_rows_patch(
 					)
 					.await?;
 				}
-			} else if !deleted {
+			} else if deleted != Some(true) {
 				SenderDiagnosisBmc::create(
 					ctx,
 					mm,
@@ -184,8 +187,8 @@ pub(super) async fn apply_nr_page_rows_patch(
 		})?;
 		for (index, value) in summaries.iter().enumerate() {
 			let summary = as_object(page_id, "caseSummaryInformation", value)?;
-			let id = uuid_field(summary, &["id"]);
-			let deleted = bool_field(summary, &["deleted"]).unwrap_or(false);
+			let id = uuid_field(summary, &["id"])?;
+			let deleted = bool_field(summary, &["deleted"]);
 			if let Some(id) = id {
 				let persisted = CaseSummaryInformationBmc::get(ctx, mm, id).await?;
 				if persisted.narrative_id != narrative.id {
@@ -195,9 +198,12 @@ pub(super) async fn apply_nr_page_rows_patch(
 						),
 					});
 				}
-				if deleted {
+				if deleted == Some(true) {
 					CaseSummaryInformationBmc::delete(ctx, mm, id).await?;
 				} else {
+					if deleted == Some(false) && persisted.deleted {
+						CaseSummaryInformationBmc::restore(ctx, mm, id).await?;
+					}
 					let clear_fields = explicit_null_model_fields(
 						summary,
 						NR_CASE_SUMMARY_PATCH_FIELDS,
@@ -214,7 +220,7 @@ pub(super) async fn apply_nr_page_rows_patch(
 					)
 					.await?;
 				}
-			} else if !deleted {
+			} else if deleted != Some(true) {
 				CaseSummaryInformationBmc::create(
 					ctx,
 					mm,

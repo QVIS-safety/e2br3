@@ -30,6 +30,12 @@
         "sourceVersion": "2026-03",
         "sourceLanguage": "en",
         "selectedLabel": "Advanced Aspirin"
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "drug_name", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
     },
     {
@@ -47,7 +53,13 @@
         "ruleCode": "MFDS.D.8.r.1.KR.1a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "mfdsMedicinalProductVersion"
+      "payloadPath": "mfdsMedicinalProductVersion",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "mfds_medicinal_product_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.1.KR.1b",
@@ -64,7 +76,13 @@
         "ruleCode": "MFDS.D.8.r.1.KR.1b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "mfdsMedicinalProductId"
+      "payloadPath": "mfdsMedicinalProductId",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "mfds_medicinal_product_id", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.2a",
@@ -81,7 +99,13 @@
         "ruleCode": "ICH.D.8.r.2a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "mpidVersion"
+      "payloadPath": "mpidVersion",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "mpid_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.2b",
@@ -98,7 +122,13 @@
         "ruleCode": "ICH.D.8.r.2b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "mpid"
+      "payloadPath": "mpid",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "mpid", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.3a",
@@ -115,7 +145,13 @@
         "ruleCode": "ICH.D.8.r.3a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXX"
       },
-      "payloadPath": "phpidVersion"
+      "payloadPath": "phpidVersion",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "phpid_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.3b",
@@ -132,7 +168,13 @@
         "ruleCode": "ICH.D.8.r.3b.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "phpid"
+      "payloadPath": "phpid",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "phpid", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.4",
@@ -150,7 +192,13 @@
         "invalidValue": "not-a-date"
       },
       "payloadPath": "startDate",
-      "nullFlavorPartnerCode": "D.8.r.4.local.startDateNullFlavor"
+      "nullFlavorPartnerCode": "D.8.r.4.local.startDateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "start_date", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.5",
@@ -168,7 +216,13 @@
         "invalidValue": "not-a-date"
       },
       "payloadPath": "endDate",
-      "nullFlavorPartnerCode": "D.8.r.5.local.endDateNullFlavor"
+      "nullFlavorPartnerCode": "D.8.r.5.local.endDateNullFlavor",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "end_date", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.6a",
@@ -194,6 +248,12 @@
             "label": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "indication_meddra_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
     },
     {
@@ -228,6 +288,12 @@
             "value": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "indication_meddra_code", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
     },
     {
@@ -254,6 +320,12 @@
             "label": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "reaction_meddra_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
     },
     {
@@ -288,6 +360,12 @@
             "value": "28.1"
           }
         ]
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "reaction_meddra_code", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
     },
     {
@@ -306,7 +384,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "drugNameNullFlavor",
-      "nullFlavorPartnerCode": "D.8.r.1"
+      "nullFlavorPartnerCode": "D.8.r.1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "drug_name_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.4.local.startDateNullFlavor",
@@ -324,7 +408,13 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "startDateNullFlavor",
-      "nullFlavorPartnerCode": "D.8.r.4"
+      "nullFlavorPartnerCode": "D.8.r.4",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     },
     {
       "code": "D.8.r.5.local.endDateNullFlavor",
@@ -342,7 +432,57 @@
         "invalidValue": "ZZZ"
       },
       "payloadPath": "endDateNullFlavor",
-      "nullFlavorPartnerCode": "D.8.r.5"
+      "nullFlavorPartnerCode": "D.8.r.5",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "past_drug_history", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [],
+  "collections": [
+    {
+      "id": "page_projection_orders_past_drugs_by_sequence_then_id",
+      "verifier": "rows::projection::page_projection_orders_past_drugs_by_sequence_then_id",
+      "description": "page projection orders past drugs by sequence then id"
+    },
+    {
+      "id": "batched_rows_match_detail_and_require_auth",
+      "verifier": "rows::projection::batched_rows_match_detail_and_require_auth",
+      "description": "Empty and populated list batches match individual GET responses; unauthenticated access is forbidden."
+    }
+  ],
+  "relations": [
+    {
+      "id": "deleted_row_can_be_restored_and_edited_atomically",
+      "verifier": "relations::restore::atomic_restore",
+      "description": "deleted row can be restored and edited atomically",
+      "parameters": {
+        "owner": "pastDrugHistory",
+        "inputField": "drugName",
+        "column": "drug_name",
+        "initial": "Deleted prior drug",
+        "restored": "Restored and edited",
+        "conflicting": "Conflicting deleted drug",
+        "replacement": "Active replacement"
+      },
+      "audit": {
+        "table": "past_drug_history",
+        "column": "deleted",
+        "record": {
+          "source": "projection",
+          "path": "pastDrugHistory.id"
+        }
+      }
+    },
+    {
+      "id": "past_drug_creation_reuses_patient_parent",
+      "verifier": "relations::parents::past_drug_creation_reuses_patient_parent",
+      "description": "past drug creation reuses patient parent"
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {}
 }

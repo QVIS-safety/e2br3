@@ -91,7 +91,7 @@ pub async fn create_study_presave(
 				super::input_contract::study_create(&data.rows.study)?;
 				for row in &data.rows.products {
 					validate_study_product_detail_create(row)?;
-					if row.deleted {
+					if row.deleted == Some(true) {
 						return Err(Error::BadRequest {
 							message: "new study product cannot be deleted".into(),
 						});
@@ -101,7 +101,7 @@ pub async fn create_study_presave(
 				{
 					super::input_contract::registration_detail(row, index)?;
 					validate_study_registration_number_detail_create(row)?;
-					if row.deleted {
+					if row.deleted == Some(true) {
 						return Err(Error::BadRequest {
 							message:
 								"new study registration number cannot be deleted"
@@ -116,7 +116,7 @@ pub async fn create_study_presave(
 					if row.sequence_number.is_none()
 						|| (row.ind_number.is_none()
 							&& row.ind_number_null_flavor.is_none())
-						|| row.deleted
+						|| row.deleted == Some(true)
 					{
 						return Err(Error::BadRequest {
 							message: "invalid new FDA cross-reported IND".into(),
@@ -125,7 +125,7 @@ pub async fn create_study_presave(
 				}
 				for row in &data.rows.reporters {
 					validate_study_reporter_detail_create(row)?;
-					if row.deleted {
+					if row.deleted == Some(true) {
 						return Err(Error::BadRequest {
 							message: "new study reporter cannot be deleted".into(),
 						});
@@ -339,8 +339,7 @@ pub struct StudyPresaveRowsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StudyProductDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub product_presave_id: Option<Uuid>,
 	pub product_name: Option<String>,
@@ -352,7 +351,7 @@ impl StudyProductDetailsForUpdate {
 			sequence_number: self.sequence_number,
 			product_presave_id: self.product_presave_id,
 			product_name: self.product_name,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -379,8 +378,7 @@ impl StudyProductDetailsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StudyRegistrationNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub registration_number: Option<String>,
 	pub registration_number_null_flavor: Option<String>,
@@ -396,7 +394,7 @@ impl StudyRegistrationNumberDetailsForUpdate {
 			registration_number_null_flavor: self.registration_number_null_flavor,
 			country_code: self.country_code,
 			country_code_null_flavor: self.country_code_null_flavor,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -426,8 +424,7 @@ impl StudyRegistrationNumberDetailsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StudyFdaCrossReportedIndNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub ind_number: Option<String>,
 	pub ind_number_null_flavor: Option<String>,
@@ -439,7 +436,7 @@ impl StudyFdaCrossReportedIndNumberDetailsForUpdate {
 			sequence_number: self.sequence_number,
 			ind_number: self.ind_number,
 			ind_number_null_flavor: self.ind_number_null_flavor,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -467,8 +464,7 @@ impl StudyFdaCrossReportedIndNumberDetailsForUpdate {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StudyReporterDetailsForUpdate {
 	pub id: Option<Uuid>,
-	#[serde(default)]
-	pub deleted: bool,
+	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub reporter_presave_id: Option<Uuid>,
 	pub reporter_organization: Option<String>,
@@ -484,7 +480,7 @@ impl StudyReporterDetailsForUpdate {
 			reporter_organization: self.reporter_organization,
 			reporter_given_name: self.reporter_given_name,
 			reporter_qualification: self.reporter_qualification,
-			deleted: None,
+			deleted: self.deleted,
 		}
 	}
 
@@ -555,7 +551,7 @@ pub async fn update_study_presave_details(
 				}
 				if let Some(registrations) = &rows.registration_numbers {
 					for (index, registration) in registrations.iter().enumerate() {
-						if !registration.deleted {
+						if registration.deleted != Some(true) {
 							super::input_contract::registration_detail(
 								registration,
 								index,
@@ -565,7 +561,7 @@ pub async fn update_study_presave_details(
 				}
 				if let Some(items) = &rows.fda_cross_reported_inds {
 					for (index, item) in items.iter().enumerate() {
-						if !item.deleted {
+						if item.deleted != Some(true) {
 							super::input_contract::fda_ind_detail(item, index)?;
 						}
 					}
@@ -718,7 +714,7 @@ async fn preflight_study_product_detail(
 	study_id: Uuid,
 	product: &StudyProductDetailsForUpdate,
 ) -> Result<()> {
-	if product.deleted && product.id.is_none() {
+	if product.deleted == Some(true) && product.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "study product delete requires id".to_string(),
 		});
@@ -732,7 +728,7 @@ async fn preflight_study_product_detail(
 			"study",
 			"study_presave_products",
 		)?;
-	} else if !product.deleted {
+	} else if product.deleted != Some(true) {
 		validate_study_product_detail_create(product)?;
 	}
 	Ok(())
@@ -756,7 +752,8 @@ async fn preflight_study_registration_number_detail(
 	study_id: Uuid,
 	registration_number: &StudyRegistrationNumberDetailsForUpdate,
 ) -> Result<()> {
-	if registration_number.deleted && registration_number.id.is_none() {
+	if registration_number.deleted == Some(true) && registration_number.id.is_none()
+	{
 		return Err(Error::BadRequest {
 			message: "study registration number delete requires id".to_string(),
 		});
@@ -770,7 +767,7 @@ async fn preflight_study_registration_number_detail(
 			"study",
 			"study_presave_registration_numbers",
 		)?;
-	} else if !registration_number.deleted {
+	} else if registration_number.deleted != Some(true) {
 		validate_study_registration_number_detail_create(registration_number)?;
 	}
 	Ok(())
@@ -795,7 +792,7 @@ async fn preflight_study_fda_cross_reported_ind_number_detail(
 	study_id: Uuid,
 	item: &StudyFdaCrossReportedIndNumberDetailsForUpdate,
 ) -> Result<()> {
-	if item.deleted && item.id.is_none() {
+	if item.deleted == Some(true) && item.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "FDA cross-reported IND delete requires id".to_string(),
 		});
@@ -810,7 +807,7 @@ async fn preflight_study_fda_cross_reported_ind_number_detail(
 			"study",
 			"study_presave_fda_cross_reported_ind_numbers",
 		)?;
-	} else if !item.deleted
+	} else if item.deleted != Some(true)
 		&& (item.sequence_number.is_none()
 			|| (item.ind_number.is_none() && item.ind_number_null_flavor.is_none()))
 	{
@@ -827,7 +824,7 @@ async fn preflight_study_reporter_detail(
 	study_id: Uuid,
 	reporter: &StudyReporterDetailsForUpdate,
 ) -> Result<()> {
-	if reporter.deleted && reporter.id.is_none() {
+	if reporter.deleted == Some(true) && reporter.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "study reporter delete requires id".to_string(),
 		});
@@ -841,7 +838,7 @@ async fn preflight_study_reporter_detail(
 			"study",
 			"study_presave_reporters",
 		)?;
-	} else if !reporter.deleted {
+	} else if reporter.deleted != Some(true) {
 		validate_study_reporter_detail_create(reporter)?;
 	}
 	Ok(())
@@ -865,7 +862,7 @@ async fn upsert_study_product_detail(
 	study_id: Uuid,
 	product: StudyProductDetailsForUpdate,
 ) -> Result<()> {
-	if product.deleted && product.id.is_none() {
+	if product.deleted == Some(true) && product.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "study product delete requires id".to_string(),
 		});
@@ -879,7 +876,7 @@ async fn upsert_study_product_detail(
 			"study",
 			"study_presave_products",
 		)?;
-		if product.deleted {
+		if product.deleted == Some(true) {
 			StudyPresaveProductBmc::update(
 				ctx,
 				mm,
@@ -907,7 +904,8 @@ async fn upsert_study_registration_number_detail(
 	study_id: Uuid,
 	registration_number: StudyRegistrationNumberDetailsForUpdate,
 ) -> Result<()> {
-	if registration_number.deleted && registration_number.id.is_none() {
+	if registration_number.deleted == Some(true) && registration_number.id.is_none()
+	{
 		return Err(Error::BadRequest {
 			message: "study registration number delete requires id".to_string(),
 		});
@@ -921,7 +919,7 @@ async fn upsert_study_registration_number_detail(
 			"study",
 			"study_presave_registration_numbers",
 		)?;
-		if registration_number.deleted {
+		if registration_number.deleted == Some(true) {
 			StudyPresaveRegistrationNumberBmc::update(
 				ctx,
 				mm,
@@ -968,7 +966,7 @@ async fn upsert_study_fda_cross_reported_ind_number_detail(
 			"study",
 			"study_presave_fda_cross_reported_ind_numbers",
 		)?;
-		if item.deleted {
+		if item.deleted == Some(true) {
 			StudyPresaveFdaCrossReportedIndNumberBmc::update(
 				ctx,
 				mm,
@@ -988,7 +986,7 @@ async fn upsert_study_fda_cross_reported_ind_number_detail(
 			)
 			.await?;
 		}
-	} else if !item.deleted {
+	} else if item.deleted != Some(true) {
 		StudyPresaveFdaCrossReportedIndNumberBmc::create(
 			ctx,
 			mm,
@@ -1005,7 +1003,7 @@ async fn upsert_study_reporter_detail(
 	study_id: Uuid,
 	reporter: StudyReporterDetailsForUpdate,
 ) -> Result<()> {
-	if reporter.deleted && reporter.id.is_none() {
+	if reporter.deleted == Some(true) && reporter.id.is_none() {
 		return Err(Error::BadRequest {
 			message: "study reporter delete requires id".to_string(),
 		});
@@ -1019,7 +1017,7 @@ async fn upsert_study_reporter_detail(
 			"study",
 			"study_presave_reporters",
 		)?;
-		if reporter.deleted {
+		if reporter.deleted == Some(true) {
 			StudyPresaveReporterBmc::update(
 				ctx,
 				mm,

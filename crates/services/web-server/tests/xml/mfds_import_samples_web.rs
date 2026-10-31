@@ -2,6 +2,7 @@ use crate::common::{
 	cookie_header, create_test_import_product, init_test_mm, seed_org_with_users,
 	Result,
 };
+use crate::xml_support::{resolve_from_workspace, resolved_xsd_path};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
@@ -19,21 +20,6 @@ use xml::import_sections::g_drug::parse_g_drugs;
 use xml::import_sections::h_narrative::parse_h_narrative;
 use xml::validation::validate_e2b_xml;
 
-fn workspace_root() -> PathBuf {
-	PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-		.join("../../..")
-		.canonicalize()
-		.expect("workspace root")
-}
-
-fn resolve_from_workspace(path: PathBuf) -> PathBuf {
-	if path.is_absolute() {
-		path
-	} else {
-		workspace_root().join(path)
-	}
-}
-
 #[derive(Debug)]
 struct ExpectedCounts {
 	has_safety_report: bool,
@@ -44,33 +30,11 @@ struct ExpectedCounts {
 	test_results: usize,
 }
 
-fn mfds_examples_dir() -> Option<PathBuf> {
+fn mfds_examples_dir() -> PathBuf {
 	if let Ok(value) = std::env::var("E2BR3_MFDS_EXAMPLES_DIR") {
-		return Some(resolve_from_workspace(PathBuf::from(value)));
+		return resolve_from_workspace(PathBuf::from(value));
 	}
-	Some(workspace_root().join("docs/exporter/mfds"))
-}
-
-fn require_validation_ok() -> bool {
-	match std::env::var("E2BR3_MFDS_REQUIRE_VALIDATION_OK") {
-		Ok(value) => {
-			let value = value.trim().to_ascii_lowercase();
-			value == "1" || value == "true" || value == "yes"
-		}
-		Err(_) => false,
-	}
-}
-
-fn default_xsd_path() -> PathBuf {
-	workspace_root()
-		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
-}
-
-fn resolved_xsd_path() -> PathBuf {
-	match std::env::var("E2BR3_XSD_PATH") {
-		Ok(value) => resolve_from_workspace(PathBuf::from(value)),
-		Err(_) => default_xsd_path(),
-	}
+	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/xml/fixtures/mfds")
 }
 
 fn list_xml_files(dir: &Path) -> Result<Vec<PathBuf>> {
@@ -175,31 +139,31 @@ fn get_data_array_len(body: &Value) -> Result<usize> {
 
 fn import_case_id(body: &Value) -> Option<&str> {
 	body.get("data")
-		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
+		.and_then(|v| v.get("caseId"))
 		.and_then(Value::as_str)
 }
 
 #[serial]
 #[tokio::test]
 async fn test_mfds_samples_import_and_validate() -> Result<()> {
-	let dir = mfds_examples_dir().expect("MFDS examples directory");
+	let dir = mfds_examples_dir();
 	if !dir.is_dir() {
-		eprintln!(
-			"skipping MFDS sample import: fixture directory is absent: {}",
+		return Err(format!(
+			"MFDS sample fixture directory is required: {}",
 			dir.display()
-		);
-		return Ok(());
+		)
+		.into());
 	}
 	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 	// Always exercise real schema validation in this integration suite.
 
 	let xml_files = list_xml_files(&dir)?;
 	if xml_files.is_empty() {
-		eprintln!(
-			"skipping MFDS sample import: no XML fixtures found in {}",
+		return Err(format!(
+			"MFDS sample fixture directory contains no XML files: {}",
 			dir.display()
-		);
-		return Ok(());
+		)
+		.into());
 	}
 
 	// Align test expectations with importer section parsers.
@@ -218,13 +182,16 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 	let app = web_server::app(mm);
 
 	let mut failures: Vec<String> = Vec::new();
-	let require_ok = require_validation_ok();
-
 	for xml_path in xml_files {
 		let filename = xml_path
 			.file_name()
 			.and_then(|n| n.to_str())
-			.unwrap_or("unknown.xml")
+			.ok_or_else(|| {
+				format!(
+					"MFDS XML fixture has a non-UTF-8 filename: {}",
+					xml_path.display()
+				)
+			})?
 			.to_string();
 		let xml = fs::read(&xml_path)?;
 		let expected = expected_from_xml(&xml)?;
@@ -273,26 +240,48 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 				"safety-report",
 				format!("/api/cases/{case_id}/safety-report"),
 				expected.has_safety_report,
+				StatusCode::NOT_FOUND,
 			),
 			(
 				"patient",
 				format!("/api/cases/{case_id}/patient"),
 				expected.has_patient,
+				StatusCode::NOT_FOUND,
 			),
 			(
 				"narrative",
 				format!("/api/cases/{case_id}/narrative"),
 				expected.has_narrative,
+				StatusCode::OK,
 			),
 		];
-		for (name, uri, should_exist) in section_checks {
+		for (name, uri, should_exist, absent_status) in section_checks {
 			let (s, b) =
 				request_json(&app, &cookie, "GET", &uri, None, Body::empty())
 					.await?;
-			if should_exist && s != StatusCode::OK {
+			let expected_status = if should_exist {
+				StatusCode::OK
+			} else {
+				absent_status
+			};
+			if s != expected_status {
 				failures.push(format!(
-					"{filename}: expected {name} imported, got status {s}, body={b}"
+					"{filename}: {name} expected status {expected_status}, got {s}, body={b}"
 				));
+				continue;
+			}
+			if s == StatusCode::OK {
+				let Some(data) = b.get("data") else {
+					failures.push(format!(
+						"{filename}: {name} response missing data, body={b}"
+					));
+					continue;
+				};
+				if data.is_null() == should_exist {
+					failures.push(format!(
+						"{filename}: {name} presence mismatch expected={should_exist}, body={b}"
+					));
+				}
 			}
 		}
 
@@ -354,17 +343,20 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 			));
 			continue;
 		}
-		let ok = validation_body
+		let Some(ok) = validation_body
 			.get("data")
 			.and_then(|v| v.get("ok"))
 			.and_then(Value::as_bool)
-			.unwrap_or(false);
+		else {
+			failures.push(format!(
+				"{filename}: validation response missing data.ok boolean, body={validation_body}"
+			));
+			continue;
+		};
 		if !ok {
-			if require_ok {
-				failures.push(format!(
-					"{filename}: MFDS validation returned ok=false, body={validation_body}"
-				));
-			}
+			failures.push(format!(
+				"{filename}: MFDS validation returned ok=false, body={validation_body}"
+			));
 			continue;
 		}
 
@@ -372,7 +364,7 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 			&app,
 			&cookie,
 			"GET",
-			&format!("/api/cases/{case_id}/export/xml"),
+			&format!("/api/cases/{case_id}/export/xml?authority=mfds"),
 			None,
 			Body::empty(),
 		)

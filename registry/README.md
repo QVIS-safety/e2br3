@@ -68,6 +68,8 @@ currently lists them as `Conditional-Mandatory`: `C.2.r.2.5`, `D.8.r.2a`,
 Guide PDF `Conformance` rows state these elements are optional. Preserve these
 dictionary overrides if the source CSV is regenerated.
 
+C.5.4 includes codes 4–6 from the [ICH E2D(R1) alignment paper](https://www.fda.gov/media/195119/download?attachment=) (16 December 2025, section 3). The dictionary builder reapplies this amendment after reading the older CSV. FDA AEMS accepts these codes; MFDS recipient validation retains 1–3, with CT=1 and CU=2. Input contracts check the shared code format; regional eligibility stays in the validator.
+
 ICH `conditional_mandatory` entries may carry `condition_text` copied from the
 ICH E2B(R3) Implementation Guide PDF `Conformance` row. The source CSV does not
 consistently include these conditions in `ICH BUSINESS RULE`.
@@ -135,43 +137,115 @@ checks that explicit test declarations exist.
 Cargo output for backend generated/explicit tests, and Jest JSON for frontend
 payload/explicit tests plus each verified invalid-input case. Missing, skipped,
 failed, duplicate, or interrupted results fail the gate. Shared explicit tests
-are required once. The frontend registry job shares its checked canonical
-inventory with the API job, so both gates use the same field set. Dev image
-publication requires the API job to pass. These checks do not turn a blocked
+are required once. Backend requirements come directly from current registry
+bindings; the full frontend registry job checks their exact agreement with the
+extracted canonical inventory, globally and per target. Dev image
+publication requires the selected test jobs to pass. These checks do not turn a blocked
 generic contract or historical UI proof into a new UI passing result.
 
 ```sh
 python3 registry/tools/check_contract_test_results.py \
-  --inventory /tmp/canonical-ui-inventory.json --backend-log /tmp/workspace-tests.log
+  --registry-root registry --backend-log /tmp/workspace-tests.log
 python3 registry/tools/check_contract_test_results.py \
   --inventory /tmp/canonical-ui-inventory.json --frontend-root ../e2br3-frontend \
   --frontend-results /tmp/editor-contract-tests.json
 ```
 
-Backend page tests live in `tests/api/case_editor_contract/{page}.rs`, with
-generated field declarations under `generated/`. `support.rs` owns shared
-fixtures and generic contract verification; DM/AE-specific checks stay with
-their page tests. Frontend payload cases share one `it.each` harness, and
+Backend page registrations live in `tests/api_editor/pages/{page}.generated.rs`.
+Verification lives under `fields/`, `rows/`, `relations/`, and `audit/`, with
+shared fixtures in `support.rs`. Frontend payload cases share one `it.each` harness, and
 invalid-input cases also report individually by page, authority, code and path.
 
-Case API tests live in `tests/api/case_contract/`, grouped by review receivers,
+[API specifications and coverage](../crates/services/web-server/tests/api_specs/README.md)
+connect registered HTTP operations to request/response contracts, active test
+assertions, and gaps. The index describes source evidence, not test run results.
+
+Case API tests live in `tests/api_cases/contract/`, grouped by review receivers,
 list views, validation caching, saves, and deletion/restoration. Shared HTTP
 helpers stay in `support.rs`; feature-specific setup stays with its tests.
 
-CI first separates validator tests from the other backend suites by changed
-paths. Validator-only changes skip the registry/audit/database jobs; unrelated
-changes skip validator tests. Shared validator inputs run both. Formatting and
-workspace Clippy remain enabled. When backend suites are selected, `dev`/`main`
-pushes run the full remaining workspace and canonical backend execution check
-before publishing the backend image. PRs that change only
-known integration-test files run their complete Cargo test targets. Any API
-target run still requires all canonical field tests, including explicit RE/DG
-references. Documentation-only PRs skip the database test job; production,
-shared helpers, schema, registry, CI configuration and unknown paths require
-the full backend suite. Selected registry jobs include frontend contract checks.
-The selected scope appears in the Test Scope job summary. A targeted PR result
-does not stand for a full release validation. Test-only `authorization_kernel`
-changes include its compile-fail fixtures; full backend pushes run it too.
+CI uses the same complete diff selection for PRs and `dev`/`main` pushes.
+Production changes run the owning crate and its transitive consumers, using
+Cargo's workspace dependency metadata. For example, a web-server change runs
+web-server; a lib-core change also runs its consumers. Test-only edits run the
+owning integration target; shared test helpers run all tests in that crate.
+Renames include both old and new paths. Deleted targets select the remaining
+crate tests. Documentation-only changes skip Rust tests and lint jobs.
+DB changes select lib-core and its consumers; registry changes select input
+contracts, validator and their consumers. Unknown shared inputs select every
+crate and are listed as `full_reasons` in the Test Scope job summary.
+Formatting uses the selected crates. Clippy checks the owning integration targets
+for test-only edits; production changes retain `--all-targets` for the changed
+crates and their consumers. Validator retains its dedicated rule-binding gate.
+Each other selected crate runs sequentially against its own
+isolated PostgreSQL database. `api_editor`, `api_cases`, and `api_import` own
+canonical backend assertions. Selecting any of them requires registry/frontend
+inventory checks when production code or contract inputs change, and always
+requires passing results for every canonical assertion in the selected targets.
+Test-only changes skip the frontend/registry job and read backend requirements
+directly from current editor contracts and registry `automatedTests.backend`.
+The full registry job compares those requirements with the freshly extracted
+frontend inventory, both globally and per contract target, and retains its
+frontend tests, ledger checks and inventory artifact. Historical hints are not
+the backend requirement source. A whole-crate run requires every canonical assertion. The
+execution checker receives the same target selection as the test runner; a
+missing, ignored, failed, or duplicate required result still fails publication.
+A targeted run is not a full workspace validation.
+
+XML assets are prepared for the `xml` crate, whole web-server runs, and web
+`api_import`, `api_submission`, or `xml` targets. Other web integration targets
+skip the external sample/schema download. The CI plan and isolated database
+runner share this decision; `scripts/ci_test_plan.py xml-assets -- <cargo args>`
+prints it without running Cargo or creating a database. Whole workspace or
+ambiguous package selections prepare assets conservatively. Clippy shares the
+same asset flag, so XML-consuming integration targets still prepare their
+runtime assets before linting. Preparation checks the eight consumed FDA files
+and the root XSD before reuse and after extraction; this is a presence check,
+not a checksum verification of the complete schema tree.
+
+Web integration targets follow their directory names:
+
+| Cargo target | Responsibility |
+| --- | --- |
+| `api_cases` | Case lifecycle, validation, workflow, scopes, intake and child resources |
+| `api_editor` | Editor page save/readback, clear, identity and audit contracts |
+| `api_presave` | Presave HTTP CRUD and parent/child graph contracts |
+| `api_submission` | Dispatch, headers, history, idempotency, callbacks and reconcile |
+| `api_terminology` | Dictionary search/import/release and permission contracts |
+| `api_administration` | Settings, roles, memberships, branding and audit HTTP behavior |
+| `api_import` | XML upload settings, product linkage and import history HTTP behavior |
+| `xml` | XML import/export, schema validation and section roundtrips |
+| `authz` | Authentication, authorization and RLS through HTTP |
+
+Each target has `tests/<target>.rs` and a matching `tests/<target>/` directory.
+Its `support.rs` files contain shared fixtures/helpers, not test cases.
+Test-only changes under a directory select that target, including its helpers.
+`tests/common/` is shared by targets and selects the whole web crate. Keep
+canonical test references in the registry in sync when moving an assertion.
+
+Editor generated-page or contract JSON edits select that page. Changes to a leaf
+verifier in `fields/rows/relations/audit` select the corresponding category only
+on pages that bind that verifier in the registry. Shared helpers stay in the
+parent modules; changing those modules, or a leaf with no registered consumers,
+selects the full Editor target. Page/category prefixes are combined into one
+`api_editor` invocation with exclusions for unselected categories, so multiple
+prefixes share one isolated database setup. The two pure patch-builder checks
+also run. The execution checker still requires every selected registered
+contract result, exactly once; this selection does not claim a measured runtime
+improvement or full Editor coverage for a partial change.
+
+Pure SQL schema/migration and transaction tests live in
+`lib-core/tests/database/` and run with `--test database`; they do not require
+web-server. The core `--lib` target no longer contains the PostgreSQL transaction
+tests. Web-private reconcile-lock and bootstrap checks remain with their owning
+implementation; web `--lib`/`--bin` execution still requires the isolated DB runner.
+
+Model authorization storage, revisions, isolation, audit and snapshot tests live
+in `lib-core/tests/authorization/`, under the `authorization` Cargo target.
+HTTP authorization extraction and route behavior stay in web-server's `authz`
+target. Presave model tests live in `lib-core/tests/presave/`, grouped by schema,
+access, CRUD, validation, lifecycle, child rows and audit. They retain one
+`section_presave` target and share fixtures in its entrypoint.
 
 For a local preview (the base revision must exist):
 
@@ -193,6 +267,7 @@ replace the product's approved validation plan or its retained execution records
 | Frontend admin, DM, LR, NR and utility file-layout checks (14 cases) | Runtime role permissions, section save/readback and audit-access tests remain. Folder names and import spelling are not acceptance criteria. |
 | Frontend shared-audit implementation and DG layout checks (11 net cases) | Readonly audit access guard, field audit actions, DG receiver selection, NullFlavor and soft-delete wiring remain. LB/SI functional checks were retained when their layout assertions were removed. |
 | Backend minimal FDA validation response (1 case) | `case_contract_web::validation_cache::test_single_profile_validation_caches_each_profile` verifies FDA/MFDS responses, DB cache rows, list aggregation and invalidation after saves. |
+| Backend overlapping permission/setup checks and safety-report singleton (10 net cases) | Five create-permission tests retain the original minimal admin payload/201 and viewer payload/403 in one fixture each. Case create/201 remains in viewer-list setup. Stronger audit/organization tests retain the same role/status assertions; the singleton test verifies the repeated safety-report POST and GET return the first ID. |
 | Backend legacy authorization migration/source-shape checks (22 cases) | Runtime `authorization_snapshot`, `authorization_isolation`, `authorization_storage`, `rbac_*`, `rls_web`, role metadata/effective-access and compile-fail suites remain; permit/snapshot/organization binding and restore-action guards are retained. |
 
 Validate registry rows against extracted backend BMC fields:

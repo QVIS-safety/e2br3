@@ -1110,7 +1110,8 @@ impl DrugInformationBmc {
 		id: Uuid,
 		drug_u: DrugInformationForUpdate,
 	) -> Result<()> {
-		Self::update_in_case_patch(ctx, mm, case_id, id, drug_u, &[]).await
+		Self::update_in_case_patch_scoped(ctx, mm, case_id, id, drug_u, &[], false)
+			.await
 	}
 
 	pub async fn update_in_case_patch(
@@ -1120,6 +1121,27 @@ impl DrugInformationBmc {
 		id: Uuid,
 		drug_u: DrugInformationForUpdate,
 		clear_fields: &[&str],
+	) -> Result<()> {
+		Self::update_in_case_patch_scoped(
+			ctx,
+			mm,
+			case_id,
+			id,
+			drug_u,
+			clear_fields,
+			true,
+		)
+		.await
+	}
+
+	async fn update_in_case_patch_scoped(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+		drug_u: DrugInformationForUpdate,
+		clear_fields: &[&str],
+		allow_deleted: bool,
 	) -> Result<()> {
 		let clears: Vec<String> =
 			clear_fields.iter().map(|field| (*field).into()).collect();
@@ -1162,7 +1184,7 @@ impl DrugInformationBmc {
 			     source_product_presave_id = CASE WHEN 'source_product_presave_id' = ANY($34) THEN NULL ELSE COALESCE($35, source_product_presave_id) END,
 			     updated_at = now(),
 			     updated_by = $33
-			 WHERE id = $1 AND case_id = $2",
+			 WHERE id = $1 AND case_id = $2 AND ($36 OR deleted = false)",
 			Self::TABLE
 		);
 		let result = mm
@@ -1203,7 +1225,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.fda_other_characterization)
 					.bind(ctx.user_id())
 					.bind(clears)
-					.bind(drug_u.source_product_presave_id),
+					.bind(drug_u.source_product_presave_id)
+					.bind(allow_deleted),
 			)
 			.await?;
 		if result == 0 {

@@ -501,8 +501,23 @@ pub(super) fn parse_row_model<T: serde::de::DeserializeOwned>(
 pub(super) fn uuid_field(
 	map: &serde_json::Map<String, Value>,
 	aliases: &[&str],
-) -> Option<Uuid> {
-	string_field(map, aliases).and_then(|value| Uuid::parse_str(&value).ok())
+) -> Result<Option<Uuid>> {
+	for alias in aliases {
+		let Some(value) = map.get(*alias) else {
+			continue;
+		};
+		if value.is_null() {
+			return Ok(None);
+		}
+		let text = value.as_str().ok_or_else(|| Error::BadRequest {
+			message: format!("{alias} must be a UUID string or null"),
+		})?;
+		let id = Uuid::parse_str(text).map_err(|_| Error::BadRequest {
+			message: format!("{alias} must be a valid UUID"),
+		})?;
+		return Ok(Some(id));
+	}
+	Ok(None)
 }
 
 pub(super) fn ci_date(value: Option<sqlx::types::time::Date>) -> Option<String> {
@@ -649,6 +664,37 @@ pub(super) fn editor_page_row_response(
 #[cfg(test)]
 mod canonical_row_persistence_tests {
 	use super::*;
+
+	#[test]
+	fn malformed_row_identity_is_rejected_instead_of_becoming_a_create() {
+		for value in [
+			json!(""),
+			json!("not-a-uuid"),
+			json!(42),
+			json!([]),
+			json!({}),
+		] {
+			let row = json!({"id": value});
+			assert!(matches!(
+				uuid_field(row.as_object().expect("row object"), &["id"]),
+				Err(Error::BadRequest { .. })
+			));
+		}
+		for row in [json!({}), json!({"id": null})] {
+			assert_eq!(
+				uuid_field(row.as_object().expect("row object"), &["id"])
+					.expect("optional identity"),
+				None
+			);
+		}
+		let id = Uuid::from_u128(1);
+		let row = json!({"id": id});
+		assert_eq!(
+			uuid_field(row.as_object().expect("row object"), &["id"])
+				.expect("valid identity"),
+			Some(id)
+		);
+	}
 
 	#[test]
 	fn lb_split_null_flavor_is_mapped_directly() {

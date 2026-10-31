@@ -638,6 +638,7 @@ CREATE TABLE IF NOT EXISTS case_validation_summaries (
     page_id VARCHAR(16) NOT NULL,
     issue_count INTEGER NOT NULL DEFAULT 0,
     required_count INTEGER NOT NULL DEFAULT 0,
+    validation_revision TEXT,
     stale BOOLEAN NOT NULL DEFAULT FALSE,
     generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (case_id, appendix, page_id),

@@ -269,7 +269,7 @@ class AllowedValueConstraintTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        build_dictionary.apply_official_2025_null_flavor_overrides(
+        build_dictionary.apply_official_2025_amendments(
             source_entries, []
         )
         dictionary_entries = json.loads(
@@ -638,23 +638,26 @@ class ParseXpathCsvTests(unittest.TestCase):
         self.assertNotIn("xpath", entries[1])
 
 
-class OfficialNullFlavorOverrideTests(unittest.TestCase):
+class OfficialAmendmentTests(unittest.TestCase):
     def test_applies_ich_representation_and_fda_profile_overrides(self):
         ich = [
             {"code": "C.1.7", "null_flavors": ["NI"]},
             {"code": "C.2.r.3", "null_flavors": ["MSK"]},
             {"code": "D.9.3", "null_flavors": ["MSK"]},
             {"code": "F.r.3.2", "null_flavors": ["NINF", "PINF"]},
+            {"code": "C.5.4"},
         ]
         fda = [{"code": "FDA.placeholder"}]
 
-        build_dictionary.apply_official_2025_null_flavor_overrides(ich, fda)
+        build_dictionary.apply_official_2025_amendments(ich, fda)
 
         self.assertIn("E2B(R2)", ich[0]["null_flavor_condition"])
         self.assertNotIn("null_flavors", ich[1])
         self.assertEqual(["UNK", "ASKU", "NASK"], ich[2]["null_flavors"])
         self.assertNotIn("null_flavors", ich[3])
         self.assertEqual(["NINF", "PINF"], ich[3]["interval_bound_null_flavors"])
+        self.assertEqual(["1", "2", "3", "4", "5", "6"], ich[4]["allowed_value_constraint"]["values"])
+        self.assertIn("195119", ich[4]["notes"])
         self.assertEqual("FDA.D.1", fda[1]["code"])
         self.assertIn("NA", fda[1]["null_flavors"])
 

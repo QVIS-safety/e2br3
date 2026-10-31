@@ -31,6 +31,7 @@
       "fieldPath": "testResults[].testMeddraVersion",
       "ruleCodes": [
         "ICH.F.r.2.2a.ALLOWED.VALUE",
+        "ICH.F.r.2.2a.MEDDRA.VERSION.CONSISTENT",
         "ICH.F.r.2.2a.REQUIRED",
         "ICH.F.r.2.2a.VOCABULARY"
       ]

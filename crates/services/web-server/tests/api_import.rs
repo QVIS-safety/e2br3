@@ -1,0 +1,12 @@
+mod common;
+
+#[path = "api_import/import_contract_web.rs"]
+mod import_contract_web;
+#[path = "api_import/import_history_web.rs"]
+mod import_history_web;
+#[path = "api_import/import_settings_web.rs"]
+mod import_settings_web;
+#[path = "api_import/support.rs"]
+mod support;
+#[path = "api_import/validation_web.rs"]
+mod validation_web;

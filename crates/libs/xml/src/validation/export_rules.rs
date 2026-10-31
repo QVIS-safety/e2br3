@@ -1,6 +1,7 @@
 use crate::{Error, Result, XmlValidationError};
 use lib_core::regulatory::RegulatoryAuthority;
-use libxml::parser::Parser;
+use libxml::parser::{Parser, ParserOptions};
+use libxml::tree::Document;
 use libxml::xpath::Context;
 
 mod authority;
@@ -12,32 +13,72 @@ pub fn validate_export_rules(
 	xml: &[u8],
 	authority: RegulatoryAuthority,
 ) -> Result<Vec<XmlValidationError>> {
+	let (_document, mut xpath) = export_xpath(xml)?;
+	let mut errors = Vec::new();
+	ich::run(&mut xpath, authority, &mut errors);
+	authority::run(&mut xpath, authority, &mut errors);
+	Ok(errors)
+}
+
+/// Checks the generated envelope without requiring a submission-ready Case.
+pub fn validate_export_message_header(
+	xml: &[u8],
+	authority: RegulatoryAuthority,
+) -> Result<Vec<XmlValidationError>> {
+	let (_document, mut xpath) = export_xpath(xml)?;
+	let mut errors = Vec::new();
+	ich::n::run(&mut xpath, authority, &mut errors);
+	Ok(errors)
+}
+
+// XPath borrows the native document, so the caller must keep both alive.
+fn export_xpath(xml: &[u8]) -> Result<(Document, Context)> {
 	let xml = std::str::from_utf8(xml).map_err(|err| Error::InvalidXml {
 		message: format!("XML not valid UTF-8: {err}"),
 		line: None,
 		column: None,
 	})?;
-	let document =
-		Parser::default()
-			.parse_string(xml)
-			.map_err(|err| Error::InvalidXml {
-				message: format!("XML parse error: {err}"),
-				line: None,
-				column: None,
-			})?;
-	let mut xpath = Context::new(&document).map_err(|_| Error::InvalidXml {
+	let document = Parser::default()
+		.parse_string_with_options(
+			xml,
+			ParserOptions {
+				recover: false,
+				no_def_dtd: false,
+				no_error: true,
+				no_warning: true,
+				pedantic: false,
+				no_blanks: false,
+				no_net: true,
+				no_implied: false,
+				huge: false,
+				compact: false,
+				ignore_enc: false,
+				encoding: None,
+			},
+		)
+		.map_err(|err| Error::InvalidXml {
+			message: format!("XML parse error: {err}"),
+			line: None,
+			column: None,
+		})?;
+	let xpath = Context::new(&document).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let _ =
-		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-
-	let mut errors = Vec::new();
-	ich::run(&mut xpath, authority, &mut errors);
-	authority::run(&mut xpath, authority, &mut errors);
-	Ok(errors)
+	for (prefix, uri) in [
+		("hl7", "urn:hl7-org:v3"),
+		("xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+	] {
+		xpath
+			.register_namespace(prefix, uri)
+			.map_err(|_| Error::InvalidXml {
+				message: format!("Failed to register XML namespace {prefix}"),
+				line: None,
+				column: None,
+			})?;
+	}
+	Ok((document, xpath))
 }
 
 fn reject(
@@ -147,6 +188,8 @@ mod tests {
 			),
 			(RegulatoryAuthority::Fda, "ZZFDA_PREMKT", "CBER_IND"),
 			(RegulatoryAuthority::Fda, "ZZFDA", "CDER"),
+			(RegulatoryAuthority::Fda, "CBER VAERS", "CBER VAERS"),
+			(RegulatoryAuthority::Fda, "CBER_VAERS", "CBER_VAERS"),
 			(RegulatoryAuthority::Mfds, "MFDS-O-CT", "MFDS-O-CT"),
 			(RegulatoryAuthority::Mfds, "MFDS-O-CU", "MFDS-O-CU"),
 			(RegulatoryAuthority::Mfds, "MFDS-O-KR", "MFDS-O-KR"),
@@ -166,6 +209,11 @@ mod tests {
 			let errors =
 				validate_export_rules(candidate.as_bytes(), authority).unwrap();
 			assert!(
+				validate_export_message_header(candidate.as_bytes(), authority)
+					.unwrap()
+					.is_empty()
+			);
+			assert!(
 				!errors.iter().any(|error| {
 					error.code.as_deref().is_some_and(|code| {
 						code.contains(".N.")
@@ -177,6 +225,47 @@ mod tests {
 				"{authority:?} {batch_receiver}/{message_receiver}: {errors:?}"
 			);
 		}
+		let unknown = String::from_utf8(xml.to_vec())
+			.unwrap()
+			.replace("extension=\"ZZFDA\"", "extension=\"INVALID-ROUTE\"")
+			.replace("extension=\"CDER\"", "extension=\"INVALID-ROUTE\"");
+		for errors in [
+			validate_export_message_header(
+				unknown.as_bytes(),
+				RegulatoryAuthority::Fda,
+			)
+			.unwrap(),
+			validate_export_rules(unknown.as_bytes(), RegulatoryAuthority::Fda)
+				.unwrap(),
+		] {
+			assert!(errors
+				.iter()
+				.any(|error| error.code.as_deref() == Some("FDA.N.1.4.ROUTE")));
+			assert!(errors
+				.iter()
+				.any(|error| error.code.as_deref() == Some("FDA.N.2.r.3.ROUTE")));
+		}
+		// Download checks the envelope even when the Case is still a draft.
+		let draft = String::from_utf8(xml.to_vec())
+			.unwrap()
+			.replace("<text>Case narrative</text>", "");
+		assert!(validate_export_message_header(
+			draft.as_bytes(),
+			RegulatoryAuthority::Fda
+		)
+		.unwrap()
+		.is_empty());
+		assert!(
+			validate_export_rules(draft.as_bytes(), RegulatoryAuthority::Fda)
+				.unwrap()
+				.iter()
+				.any(|error| error.code.as_deref() == Some("H.1"))
+		);
+		assert!(validate_export_message_header(
+			b"not xml",
+			RegulatoryAuthority::Ich
+		)
+		.is_err());
 
 		let invalid_fda = String::from_utf8(xml.to_vec())
 			.unwrap()

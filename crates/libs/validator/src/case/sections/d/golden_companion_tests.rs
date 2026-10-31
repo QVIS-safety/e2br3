@@ -371,9 +371,7 @@ fn parent_child_companion_paths_use_the_owning_parent_index() {
 		.filter(|issue| {
 			matches!(
 				issue.code.as_str(),
-				"ICH.D.10.7.1.r.1a.REQUIRED"
-					| "ICH.D.10.8.r.2a.REQUIRED"
-					| "ICH.D.10.8.MPID_PHPID.EXCLUSIVE"
+				"ICH.D.10.7.1.r.1a.REQUIRED" | "ICH.D.10.8.MPID_PHPID.EXCLUSIVE"
 			)
 		})
 		.map(|issue| (issue.code, issue.path))
@@ -391,10 +389,6 @@ fn parent_child_companion_paths_use_the_owning_parent_index() {
 			(
 				"ICH.D.10.8.MPID_PHPID.EXCLUSIVE".to_string(),
 				"patientInformation.parents.1.pastDrugs.1.mpid".to_string()
-			),
-			(
-				"ICH.D.10.8.r.2a.REQUIRED".to_string(),
-				"patientInformation.parents.1.pastDrugs.0.mpidVersion".to_string()
 			),
 		]
 	);
@@ -1260,7 +1254,7 @@ fn mfds_past_drug_identifiers_and_versions_are_paired() {
 #[test]
 fn golden_d_issue_metadata() {
 	let mut issues = Vec::new();
-	d_1(None, false, &mut issues);
+	d_1(None, &mut issues);
 	let mut patient = patient();
 	patient.age_group = Some("9".to_string());
 	d_2_3(&patient, &mut issues);

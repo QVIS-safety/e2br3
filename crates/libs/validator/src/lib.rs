@@ -42,6 +42,8 @@ pub use mfds_context::{
 use sqlx::types::Uuid;
 use std::collections::BTreeMap;
 
+pub const VALIDATOR_REVISION: &str = env!("VALIDATOR_REVISION");
+
 pub fn has_text(value: Option<&str>) -> bool {
 	value.map(|v| !v.trim().is_empty()).unwrap_or(false)
 }

@@ -17,7 +17,13 @@
         "ruleCode": "ICH.C.3.1.ALLOWED.VALUE",
         "invalidValue": "0"
       },
-      "payloadPath": "senderType"
+      "payloadPath": "senderType",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "sender_type", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.1.KR.1",
@@ -34,7 +40,13 @@
         "ruleCode": "MFDS.C.3.1.KR.1.LENGTH.MAX",
         "invalidValue": "XX"
       },
-      "payloadPath": "healthProfessionalTypeKr1"
+      "payloadPath": "healthProfessionalTypeKr1",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "health_professional_type_kr1", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.2",
@@ -51,7 +63,13 @@
         "ruleCode": "ICH.C.3.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "organizationName"
+      "payloadPath": "organizationName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "organization_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.3.1",
@@ -68,7 +86,13 @@
         "ruleCode": "ICH.C.3.3.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "department"
+      "payloadPath": "department",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "department", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.3.2",
@@ -85,7 +109,13 @@
         "ruleCode": "ICH.C.3.3.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "personTitle"
+      "payloadPath": "personTitle",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "person_title", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.3.3",
@@ -102,7 +132,13 @@
         "ruleCode": "ICH.C.3.3.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "personGivenName"
+      "payloadPath": "personGivenName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "person_given_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.3.4",
@@ -119,7 +155,13 @@
         "ruleCode": "ICH.C.3.3.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "personMiddleName"
+      "payloadPath": "personMiddleName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "person_middle_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.3.5",
@@ -136,7 +178,13 @@
         "ruleCode": "ICH.C.3.3.5.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "personFamilyName"
+      "payloadPath": "personFamilyName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "person_family_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.1",
@@ -153,7 +201,13 @@
         "ruleCode": "ICH.C.3.4.1.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "streetAddress"
+      "payloadPath": "streetAddress",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "street_address", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.2",
@@ -170,7 +224,13 @@
         "ruleCode": "ICH.C.3.4.2.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "city"
+      "payloadPath": "city",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "city", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.3",
@@ -187,7 +247,13 @@
         "ruleCode": "ICH.C.3.4.3.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "state"
+      "payloadPath": "state",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "state", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.4",
@@ -204,7 +270,13 @@
         "ruleCode": "ICH.C.3.4.4.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "postcode"
+      "payloadPath": "postcode",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "postcode", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.5",
@@ -229,6 +301,12 @@
         "optionDataValue": "KR",
         "optionLabel": "KR",
         "selectedLabel": "KR"
+      },
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "country_code", "record": {"source": "projection", "path": "senderInformation.id"}}
       }
     },
     {
@@ -246,7 +324,13 @@
         "ruleCode": "ICH.C.3.4.6.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "telephone"
+      "payloadPath": "telephone",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "telephone", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.7",
@@ -263,7 +347,13 @@
         "ruleCode": "ICH.C.3.4.7.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
-      "payloadPath": "fax"
+      "payloadPath": "fax",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "fax", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "C.3.4.8",
@@ -280,7 +370,13 @@
         "ruleCode": "ICH.C.3.4.8.LENGTH.MAX",
         "invalidValue": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.test"
       },
-      "payloadPath": "email"
+      "payloadPath": "email",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "sender_information", "column": "email", "record": {"source": "projection", "path": "senderInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.1",
@@ -296,7 +392,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "organizationName"
+      "payloadPath": "organizationName",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "organization_name", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.2",
@@ -312,7 +414,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "receiverType"
+      "payloadPath": "receiverType",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "receiver_type", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.3",
@@ -328,7 +436,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "department"
+      "payloadPath": "department",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "department", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.4",
@@ -344,7 +458,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "streetAddress"
+      "payloadPath": "streetAddress",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "street_address", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.5",
@@ -360,7 +480,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "city"
+      "payloadPath": "city",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "city", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.6",
@@ -376,7 +502,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "stateProvince"
+      "payloadPath": "stateProvince",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "state_province", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.7",
@@ -392,7 +524,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "postcode"
+      "payloadPath": "postcode",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "postcode", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.country",
@@ -408,7 +546,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "countryCode"
+      "payloadPath": "countryCode",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "country_code", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.8",
@@ -424,7 +568,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "telephone"
+      "payloadPath": "telephone",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "telephone", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.9",
@@ -440,7 +590,13 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "fax"
+      "payloadPath": "fax",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "fax", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     },
     {
       "code": "local.receiver.10",
@@ -456,7 +612,24 @@
         "status": "not_applicable",
         "reason": "The local receiver master-data field has no Input Contract."
       },
-      "payloadPath": "email"
+      "payloadPath": "email",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "store", "input": "", "value": null},
+        "omission": "preserve",
+        "audit": {"table": "receiver_information", "column": "email", "record": {"source": "projection", "path": "receiverInformation.id"}}
+      }
     }
-  ]
+  ],
+  "fieldChecks": [],
+  "collections": [],
+  "relations": [
+    {
+      "id": "rejects_foreign_sender_without_mutation",
+      "verifier": "relations::scope::rejects_foreign_sender_without_mutation",
+      "description": "sender IDs from another case are rejected without changing either case or its audit trail"
+    }
+  ],
+  "auditChecks": [],
+  "rowIdentities": {}
 }

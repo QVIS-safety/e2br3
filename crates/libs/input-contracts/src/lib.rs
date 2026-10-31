@@ -46,6 +46,34 @@ mod tests {
 	use super::{generated, FieldInput, InputValue};
 
 	#[test]
+	fn study_type_accepts_e2d_r1_codes_but_not_unknown_codes() {
+		for value in ["1", "2", "3", "4", "5", "6", ""] {
+			assert!(
+				generated::c::c_5_4(FieldInput::new(
+					InputValue::String(value),
+					None
+				))
+				.is_empty(),
+				"{value}"
+			);
+		}
+		for value in [InputValue::Missing, InputValue::Null] {
+			assert!(generated::c::c_5_4(FieldInput::new(value, None)).is_empty());
+		}
+		for value in ["0", "7", "10"] {
+			assert!(
+				generated::c::c_5_4(FieldInput::new(
+					InputValue::String(value),
+					None
+				))
+				.iter()
+				.any(|issue| issue.code == "ICH.C.5.4.ALLOWED.VALUE"),
+				"{value}"
+			);
+		}
+	}
+
+	#[test]
 	fn f_r_2_1_blank_is_left_to_conditional_business_validator() {
 		assert!(
 			generated::f::f_r_2_1(FieldInput::new(InputValue::Null, None,))

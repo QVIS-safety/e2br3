@@ -39,6 +39,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:new:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let $crate::rest_params::ParamsForCreate { data } = params;
 			let mut data = data;
 			data.$parent_field = drug_id;
@@ -71,6 +75,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:list:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let mut filter: $filter = Default::default();
 			filter.$parent_field = Some(modql::filter::OpValsValue::from(vec![
 				modql::filter::OpValValue::Eq(
@@ -112,6 +120,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:{id}:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			$scope_fn(drug_id, entity.$parent_field, id, $entity_name)?;
 			Ok((
@@ -145,6 +157,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:{id}:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let $crate::rest_params::ParamsForUpdate { data } = params;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			$scope_fn(drug_id, entity.$parent_field, id, $entity_name)?;
@@ -175,6 +191,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:{id}:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			$scope_fn(drug_id, entity.$parent_field, id, $entity_name)?;
 			$bmc::delete(&ctx, &mm, id).await?;
@@ -203,6 +223,10 @@ macro_rules! generate_drug_child_rest_fns {
 				&ctx, &snapshot, &mm, case_id,
 				format!("{}:{id}:drug:{drug_id}", $entity_name),
 				move |ctx, mm| Box::pin(async move {
+			lib_core::model::drug::DrugInformationBmc::get_in_case(
+				ctx, mm, case_id, drug_id,
+			)
+			.await?;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			$scope_fn(drug_id, entity.$parent_field, id, $entity_name)?;
 			$bmc::restore(&ctx, &mm, id).await?;
@@ -550,7 +574,9 @@ macro_rules! generate_case_rest_fns {
                 );
                 let ParamsForUpdate { data } = params;
                 $bmc::update_in_case(&ctx, &mm, case_id, id, data).await?;
-                let entity = $bmc::get_in_case(&ctx, &mm, case_id, id).await?;
+                let entity = $bmc::get_in_case_with_deleted(
+                    &ctx, &mm, case_id, id, true,
+                ).await?;
                 Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
                     })
                 ).await

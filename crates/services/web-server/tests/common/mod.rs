@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+mod permission_profiles;
+
+pub use permission_profiles::create_empty_permission_profile;
+
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::_dev_utils;
 use lib_core::authorization::{
