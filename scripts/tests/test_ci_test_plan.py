@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ci_test_plan import commands_for, load_workspace, select_tests, target_for
+from ci_test_plan import commands_for, load_workspace, select_tests, target_for, xml_assets_for_cargo_args
 from generate_editor_contract_web_tests import expected_editor_tests
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,11 +86,11 @@ class TestPlanTests(unittest.TestCase):
             for path, target in files.items():
                 self.assertEqual(target_for(package, 'tests/' + path, self.workspace), target)
 
-    def test_api_execution_retains_contract_and_registry_gates(self):
+    def test_api_test_edits_keep_backend_results_without_frontend_rerun(self):
         for path in ('api_cases.rs', 'api_cases/contract/save.rs'):
             plan = self.plan('crates/services/web-server/tests/' + path)
             self.assertEqual(plan['selections'], {'web-server': ['api_cases']})
-            self.assertTrue(plan['registry'])
+            self.assertFalse(plan['registry'])
             self.assertTrue(plan['backend_contracts'])
         plan = self.plan('crates/services/web-server/tests/authz/authorization_snapshot.rs')
         self.assertEqual(plan['selections'], {'web-server': ['authz']})
@@ -104,17 +104,54 @@ class TestPlanTests(unittest.TestCase):
             self.assertEqual(plan['selections']['lib-core'], [])
             self.assertIn('web-server', plan['selections'])
 
-    def test_api_families_are_independent_and_only_contract_owners_require_inventory(self):
+    def test_api_families_are_independent_and_contract_owners_require_execution_results(self):
         for target in ('api_cases', 'api_editor', 'api_import', 'api_presave',
                        'api_submission', 'api_administration', 'api_terminology', 'xml'):
             plan = self.plan(f'crates/services/web-server/tests/{target}/support.rs')
             self.assertEqual(plan['selections'], {'web-server': [target]})
             required = target in ('api_cases', 'api_editor', 'api_import')
             self.assertEqual(plan['backend_contracts'], required)
-            self.assertEqual(plan['registry'], required)
+            self.assertFalse(plan['registry'])
         plan = self.plan('crates/libs/lib-core/tests/database/editor_storage.rs')
         self.assertEqual(plan['selections'], {'lib-core': ['database']})
         self.assertFalse(plan['registry'])
+
+    def test_contract_inputs_and_production_changes_keep_full_registry_gate(self):
+        test = 'crates/services/web-server/tests/api_editor/fields/null_flavor.rs'
+        for shared in ('registry/editor-contracts/dg.json', 'registry/sections/g-drug.json',
+                       'registry/tools/check_contract_test_results.py',
+                       'crates/services/web-server/src/lib.rs', 'crates/libs/lib-core/src/model.rs',
+                       '.github/workflows/ci.yml'):
+            for paths in ((test, shared), (shared, test)):
+                self.assertTrue(self.plan(*paths)['registry'], paths)
+        helpers = self.plan('crates/services/web-server/tests/common/mod.rs')
+        self.assertEqual(helpers['selections'], {'web-server': []})
+        self.assertTrue(helpers['backend_contracts'])
+        self.assertFalse(helpers['registry'])
+
+    def test_xml_assets_follow_consuming_targets_in_ci_and_local_runner(self):
+        for target in ('api_cases', 'api_editor', 'api_presave', 'api_administration',
+                       'api_terminology', 'authz', 'isolation_guard', 'api_import', 'api_submission', 'xml'):
+            required = target in ('api_import', 'api_submission', 'xml')
+            plan = self.plan(f'crates/services/web-server/tests/{target}.rs')
+            self.assertEqual(plan['xml_assets'], required, target)
+            self.assertEqual(xml_assets_for_cargo_args(['-p', 'web-server', '--test', target]), required)
+        for target in ('import', 'xml', 'validation_api'):
+            self.assertTrue(self.plan(f'crates/libs/xml/tests/{target}.rs')['xml_assets'])
+            self.assertTrue(xml_assets_for_cargo_args(['-p', 'xml', '--test', target]))
+        for args in ([], ['--workspace'], ['-p', 'web-server'], ['-p', 'xml'],
+                     ['--all', '-p', 'lib-core'],
+                     ['-p', 'web-server', '--test', 'api_editor', '--all-targets'],
+                     ['-p', 'web-server', '--test', 'api_editor', '--lib'],
+                     ['-p', 'web-server', '--test', 'api_editor', '--tests'],
+                     ['-p', 'web-*', '--test', 'api_editor'],
+                     ['-p', 'lib-core', '-p', 'xml', '--test', 'import'],
+                     ['-p', 'web-server', '--test', 'api_editor', '--test', 'api_import']):
+            self.assertTrue(xml_assets_for_cargo_args(args), args)
+        for args in (['--package=web-server', '--test=api_editor'],
+                     ['-pweb-server@0.1.0', '--test', 'authz'], ['-p', 'lib-core'],
+                     ['--', '-p', 'web-server', '--test', 'api_editor', '--', '--skip', 'xml']):
+            self.assertFalse(xml_assets_for_cargo_args(args), args)
 
     def test_every_api_and_xml_file_has_an_execution_owner(self):
         tests = ROOT / 'crates/services/web-server/tests'

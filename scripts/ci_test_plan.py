@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -24,6 +25,35 @@ CONTRACT_TARGETS = {'api_cases', 'api_editor', 'api_import'}
 EDITOR_GROUPS = {'fields': 'fieldChecks', 'rows': 'collections',
                  'relations': 'relations', 'audit': 'auditChecks'}
 REGISTRY_ROOT = Path(__file__).resolve().parents[1] / 'registry'
+
+
+def xml_assets_required(selections: dict) -> bool:
+    return 'xml' in selections or ('web-server' in selections and (
+        not selections['web-server'] or bool({'api_import', 'api_submission', 'xml'} & set(selections['web-server']))))
+
+
+def xml_assets_for_cargo_args(args: list[str]) -> bool:
+    # Parse only Cargo arguments; libtest filters after -- do not select build targets.
+    if args[:1] == ['--']:
+        args = args[1:]
+    if '--' in args:
+        args = args[:args.index('--')]
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('-p', '--package', action='append')
+    parser.add_argument('--test', action='append')
+    parser.add_argument('--workspace', '--all', action='store_true')
+    for option in ('--all-targets', '--tests', '--lib', '--bins', '--examples', '--benches', '--doc'):
+        parser.add_argument(option, action='store_true')
+    for option in ('--bin', '--example', '--bench'):
+        parser.add_argument(option, action='append')
+    parsed, _ = parser.parse_known_args(args)
+    if parsed.workspace or not parsed.package:
+        return True
+    if any(not re.fullmatch(r'[\w-]+(?:@[\w.+-]+)?', package) for package in parsed.package):
+        return True  # Package globs/URLs can include asset consumers.
+    other_targets = any(value for key, value in vars(parsed).items() if key not in ('package', 'test', 'workspace'))
+    targets = parsed.test if parsed.test and not other_targets else []
+    return xml_assets_required({package.split('@')[0]: targets for package in parsed.package})
 
 
 def load_workspace(root: Path) -> dict:
@@ -73,6 +103,7 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     full_reasons = []
     editor_filters = []
     editor_all = False
+    contract_inputs_changed = False
     for path in paths:
         if path == 'crates/services/web-server/tests/api_editor/API_SPEC.md':
             continue
@@ -80,6 +111,8 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
             continue
         if Path(path).name in ('README.md', 'AGENTS.md', 'subagent.md') or (path.startswith('docs/') and path.endswith('.md')):
             continue
+        if path.startswith(('registry/', 'scripts/case-editor-audit/')):
+            contract_inputs_changed = True
         if path.startswith('registry/editor-contracts/') and Path(path).stem.upper() in ACTIVE_PAGES and path.endswith('.json'):
             selected.setdefault('web-server', ['api_editor'])
             if selected['web-server'] and 'api_editor' not in selected['web-server']:
@@ -142,10 +175,10 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
         'editor_filters': [] if editor_all or 'web-server' in affected or selected.get('web-server') == [] else normalize_editor_filters(editor_filters),
         'validator': 'validator' in selected,
         'backend': any(name != 'validator' for name in selected),
-        'registry': backend_contracts,
+        'registry': backend_contracts and (contract_inputs_changed or 'web-server' in affected),
         'backend_contracts': backend_contracts,
         'rust': bool(selected),
-        'xml_assets': bool({'web-server', 'xml'} & selected.keys()),
+        'xml_assets': xml_assets_required(selected),
         'full_reasons': full_reasons,
     }
 
@@ -208,7 +241,12 @@ def main():
     run_parser.add_argument('--selections', required=True)
     run_parser.add_argument('--editor-filters', default='[]')
     run_parser.add_argument('--kind', choices=('tests', 'fmt', 'clippy'), default='tests')
+    assets_parser = subparsers.add_parser('xml-assets', help='preview asset requirements for isolated-runner Cargo arguments')
+    assets_parser.add_argument('cargo_args', nargs=argparse.REMAINDER)
     args = parser.parse_args()
+    if args.command == 'xml-assets':
+        print(json.dumps(xml_assets_for_cargo_args(args.cargo_args)))
+        return
     root = Path.cwd()
     workspace = load_workspace(root)
     if args.command == 'run':

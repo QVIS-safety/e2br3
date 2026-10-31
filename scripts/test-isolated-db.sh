@@ -4,18 +4,19 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 maintenance_url="${SERVICE_DB_URL:?SERVICE_DB_URL is required}"
 
-needs_xml_assets=0
-for arg in "$@"; do
-	case "$arg" in
-		--workspace|web-server)
-			needs_xml_assets=1
-			;;
-	esac
-done
-
-if [[ "$needs_xml_assets" -eq 1 ]]; then
-	"$repo_root/scripts/prepare-xml-assets.sh"
-fi
+needs_xml_assets="$(
+	python3 "$repo_root/scripts/ci_test_plan.py" xml-assets -- "$@"
+)"
+case "$needs_xml_assets" in
+	true)
+		"$repo_root/scripts/prepare-xml-assets.sh"
+		;;
+	false) ;;
+	*)
+		printf 'invalid XML asset selection: %s\n' "$needs_xml_assets" >&2
+		exit 2
+		;;
+esac
 
 for required_command in createdb psql dropdb cargo python3; do
 	if ! command -v "$required_command" >/dev/null 2>&1; then

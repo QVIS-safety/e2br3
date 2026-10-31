@@ -2525,7 +2525,7 @@ class DictionaryValidatorTests(unittest.TestCase):
             deploy_job,
         )
 
-    def test_ci_shares_verified_inventory_and_checks_api_test_results(self):
+    def test_ci_keeps_full_inventory_and_independent_backend_result_gate(self):
         workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
             encoding="utf-8"
         )
@@ -2539,11 +2539,13 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("needs: [registry, test-plan]", test_job)
         self.assertIn("if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}", test_job)
         self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
-        self.assertIn("uses: actions/download-artifact@v8", test_job)
-        self.assertIn("name: canonical-editor-inventory", test_job)
-        self.assertIn("path: ${{ runner.temp }}/editor-contract", test_job)
+        self.assertNotIn("actions/download-artifact", test_job)
+        self.assertIn("--registry-root registry", test_job)
         self.assertIn("set -o pipefail", test_job)
         self.assertIn("--backend-log \"$RUNNER_TEMP/workspace-tests.log\"", test_job)
+        plan_job = workflow.split("\n  test-plan:\n", 1)[1].split("\n  validator:\n", 1)[0]
+        self.assertIn("registry/tools/test_check_contract_test_results.py", plan_job)
+        self.assertNotIn("python3 -m unittest registry/tools/test_check_contract_test_results.py", registry_job)
 
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):

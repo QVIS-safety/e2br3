@@ -137,14 +137,15 @@ checks that explicit test declarations exist.
 Cargo output for backend generated/explicit tests, and Jest JSON for frontend
 payload/explicit tests plus each verified invalid-input case. Missing, skipped,
 failed, duplicate, or interrupted results fail the gate. Shared explicit tests
-are required once. The frontend registry job shares its checked canonical
-inventory with the API job, so both gates use the same field set. Dev image
+are required once. Backend requirements come directly from current registry
+bindings; the full frontend registry job checks their exact agreement with the
+extracted canonical inventory, globally and per target. Dev image
 publication requires the selected test jobs to pass. These checks do not turn a blocked
 generic contract or historical UI proof into a new UI passing result.
 
 ```sh
 python3 registry/tools/check_contract_test_results.py \
-  --inventory /tmp/canonical-ui-inventory.json --backend-log /tmp/workspace-tests.log
+  --registry-root registry --backend-log /tmp/workspace-tests.log
 python3 registry/tools/check_contract_test_results.py \
   --inventory /tmp/canonical-ui-inventory.json --frontend-root ../e2br3-frontend \
   --frontend-results /tmp/editor-contract-tests.json
@@ -179,11 +180,28 @@ crates and their consumers. Validator retains its dedicated rule-binding gate.
 Each other selected crate runs sequentially against its own
 isolated PostgreSQL database. `api_editor`, `api_cases`, and `api_import` own
 canonical backend assertions. Selecting any of them requires registry/frontend
-inventory checks and passing results for every canonical assertion in the
-selected targets. A whole-crate run requires every canonical assertion. The
+inventory checks when production code or contract inputs change, and always
+requires passing results for every canonical assertion in the selected targets.
+Test-only changes skip the frontend/registry job and read backend requirements
+directly from current editor contracts and registry `automatedTests.backend`.
+The full registry job compares those requirements with the freshly extracted
+frontend inventory, both globally and per contract target, and retains its
+frontend tests, ledger checks and inventory artifact. Historical hints are not
+the backend requirement source. A whole-crate run requires every canonical assertion. The
 execution checker receives the same target selection as the test runner; a
 missing, ignored, failed, or duplicate required result still fails publication.
 A targeted run is not a full workspace validation.
+
+XML assets are prepared for the `xml` crate, whole web-server runs, and web
+`api_import`, `api_submission`, or `xml` targets. Other web integration targets
+skip the external sample/schema download. The CI plan and isolated database
+runner share this decision; `scripts/ci_test_plan.py xml-assets -- <cargo args>`
+prints it without running Cargo or creating a database. Whole workspace or
+ambiguous package selections prepare assets conservatively. Clippy shares the
+same asset flag, so XML-consuming integration targets still prepare their
+runtime assets before linting. Preparation checks the eight consumed FDA files
+and the root XSD before reuse and after extraction; this is a presence check,
+not a checksum verification of the complete schema tree.
 
 Web integration targets follow their directory names:
 

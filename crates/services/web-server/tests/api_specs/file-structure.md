@@ -308,4 +308,6 @@ Editor는 scalar 365 + behavior 50 = 415개 계약 실행을 등록한다. 공�
 
 Editor는 registry의 verifier 연결에 따라 변경 leaf의 실제 사용 페이지·책임 범위를 선택한다. 여러 범위를 한 `api_editor` 실행과 한 DB 준비로 묶으며 공통 patch 생성기 자체 검사 2개도 실행한다. 공통 모듈·연결 없는 leaf 변경은 Editor 전체로 넓힌다. Clippy도 test-only 변경은 선택 integration target만, production 변경은 의존 crate의 전체 target을 검사한다.
 
+테스트만 수정하면 frontend/registry 전체 job은 생략하지만, backend 필수 계약은 현재 editor contract와 registry의 명시적 test 연결에서 읽어 실제 실행 로그와 대조한다. Production·계약 입력 변경 시에는 frontend 추출/테스트와 전체 registry 검증을 유지하고 두 계약 목록의 전체·target별 일치도 확인한다. XML 자산은 xml crate, web-server 전체 또는 api_import/api_submission/xml target에만 준비하며 CI와 로컬 격리 실행기가 같은 선택 규칙을 사용한다.
+
 Module 연결·파일 누락·명세 근거·이동 전후 선언 및 assertion을 정적으로 대조했다. 컴파일, SQL 실행, 전체 runtime PASS는 미확인이다. 모든 동작의 공백은 각 API 명세의 미단언 항목과 coverage.tsv의 gaps에 남긴다.

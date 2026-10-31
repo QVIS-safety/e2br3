@@ -1,10 +1,19 @@
 import copy
+import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_contract_test_results import check_backend_results, check_frontend_results, expected_tests
+from check_contract_test_results import (
+    backend_expected_tests,
+    check_backend_results,
+    check_frontend_results,
+    expected_tests,
+    require_backend_projection_parity,
+)
+from generate_editor_contract_web_tests import ACTIVE_PAGES, expected_editor_tests
 
 
 class ContractTestResultsTests(unittest.TestCase):
@@ -135,6 +144,119 @@ class ContractTestResultsTests(unittest.TestCase):
         self.assertEqual({'import_contract_web::persists_product'},
                          expected_tests(inventory, 'backend', {'api_import'}))
         self.assertEqual(3, len(expected_tests(inventory, 'backend')))
+
+    def test_real_registry_backend_projection_is_the_union_of_its_sources(self):
+        registry = Path(__file__).resolve().parents[1]
+        editor = expected_editor_tests(registry)
+        cases = backend_expected_tests(registry, {'api_cases'})
+        imports = backend_expected_tests(registry, {'api_import'})
+        self.assertEqual(editor, backend_expected_tests(registry, {'api_editor'}))
+        self.assertEqual(editor | cases | imports, backend_expected_tests(registry))
+        self.assertIn(
+            'case_contract_web::review_receivers::editor_shell_reads_saved_review_receivers_as_an_array',
+            cases,
+        )
+        self.assertIn(
+            'import_contract_web::test_import_selected_product_links_sender_without_overwriting_xml_sender',
+            imports,
+        )
+
+    def test_registry_projection_requires_real_qualified_targeted_test_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registry = root / 'registry'
+            section = registry / 'sections/contract.json'
+            section.parent.mkdir(parents=True)
+            (registry / 'index.json').write_text(json.dumps({
+                'sections': ['sections/contract.json'],
+            }))
+            source = root / 'tests/api_cases/contract.rs'
+            source.parent.mkdir(parents=True)
+            source.write_text('#[tokio::test]\nasync fn saves_receiver() {}\n')
+
+            def write_reference(file='tests/api_cases/contract.rs',
+                                test='contract_web::saves_receiver'):
+                section.write_text(json.dumps([{
+                    'automatedTests': {'backend': [{'file': file, 'test': test}]},
+                }]))
+
+            write_reference()
+            self.assertEqual(
+                {'contract_web::saves_receiver'},
+                backend_expected_tests(registry, {'api_cases'}, set()),
+            )
+            for file, test, error in [
+                ('tests/api_cases/missing.rs', 'contract_web::saves_receiver',
+                 'backend test file missing'),
+                ('tests/api_cases/contract.rs', 'saves_receiver',
+                 'full Rust module path'),
+                ('contract.rs', 'contract_web::saves_receiver',
+                 'tests/<target>/<file> path'),
+                ('tests/api_cases', 'contract_web::saves_receiver',
+                 'tests/<target>/<file> path'),
+                ('tests/api-cases/contract.rs', 'contract_web::saves_receiver',
+                 'valid Cargo test target'),
+                ('tests/api_cases/../api_import/contract.rs',
+                 'contract_web::saves_receiver', 'repository-relative file path'),
+                ('tests/api_cases/contract.rs', 'contract_web::renamed',
+                 'test declaration missing'),
+            ]:
+                write_reference(file, test)
+                with self.subTest(file=file, test=test), self.assertRaisesRegex(ValueError, error):
+                    backend_expected_tests(registry, {'api_cases'}, set())
+            for invalid in [None, {}, {'backend': None}]:
+                section.write_text(json.dumps([{'automatedTests': invalid}]))
+                with self.subTest(automatedTests=invalid), self.assertRaises(ValueError):
+                    backend_expected_tests(registry, {'api_cases'}, set())
+
+    def test_inventory_parity_checks_each_backend_target_not_only_the_union(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registry = root / 'registry'
+            section = registry / 'sections/contract.json'
+            section.parent.mkdir(parents=True)
+            (registry / 'index.json').write_text(json.dumps({
+                'sections': ['sections/contract.json'],
+            }))
+            references = [
+                {'file': 'tests/api_cases/cases.rs', 'test': 'case_contract_web::persists_case'},
+                {'file': 'tests/api_cases/review.rs', 'test': 'case_contract_web::persists_review'},
+                {'file': 'tests/api_import/import.rs', 'test': 'import_contract_web::persists_import'},
+            ]
+            for reference in references:
+                source = root / reference['file']
+                source.parent.mkdir(parents=True, exist_ok=True)
+                name = reference['test'].rsplit('::', 1)[-1]
+                source.write_text(f'#[test]\nfn {name}() {{}}\n')
+            section.write_text(json.dumps([{
+                'automatedTests': {'backend': references},
+            }]))
+            contracts = registry / 'editor-contracts'
+            contracts.mkdir()
+            for page in ACTIVE_PAGES:
+                fields = ([{'code': 'C.1.3'}] if page == 'CI' else [])
+                (contracts / f'{page.lower()}.json').write_text(json.dumps({
+                    'pageId': page,
+                    'fields': fields,
+                    'fieldChecks': [],
+                    'collections': [],
+                    'relations': [],
+                    'auditChecks': [],
+                }))
+            inventory = {'fields': [
+                {'identity': 'CI|ICH|C.1.3|reportType', 'page': 'CI', 'code': 'C.1.3',
+                 'authority': 'ICH', 'frontendPath': 'reportType', 'contractMetadata': None},
+                {'identity': 'RE|ICH|receiver|reviewReceivers[].receiver', 'page': 'RE',
+                 'code': 'receiver', 'authority': 'ICH',
+                 'frontendPath': 'reviewReceivers[].receiver', 'contractMetadata': None,
+                 'automatedTests': {'backend': copy.deepcopy(references)}},
+            ]}
+            require_backend_projection_parity(inventory, registry)
+            inventory['fields'][1]['automatedTests']['backend'][0]['file'] = (
+                'tests/api_import/cases.rs'
+            )
+            with self.assertRaisesRegex(ValueError, 'projection mismatch for api_cases'):
+                require_backend_projection_parity(inventory, registry)
 
 
 if __name__ == '__main__':

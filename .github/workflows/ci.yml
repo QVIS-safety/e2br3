@@ -32,7 +32,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify test selection
-        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py registry/tools/test_check_contract_test_results.py
       - name: Select affected crates and test targets
         id: plan
         shell: bash
@@ -116,7 +116,6 @@ jobs:
           python3 -m unittest registry/tools/test_build_dictionary.py
           python3 -m unittest registry/tools/test_extract_frontend_fields.py
           python3 -m unittest registry/tools/test_generate_editor_contract_web_tests.py
-          python3 -m unittest registry/tools/test_check_contract_test_results.py
           python3 registry/tools/generate_editor_contract_web_tests.py --check
           python3 registry/tools/validate.py
           python3 registry/tools/validate.py --strict-dictionary
@@ -137,7 +136,7 @@ jobs:
             --frontend-root "$E2BR3_FRONTEND_ROOT" \
             --frontend-results "$RUNNER_TEMP/editor-contract-tests.json"
 
-      - name: Share verified canonical inventory with API tests
+      - name: Retain verified canonical inventory
         uses: actions/upload-artifact@v7
         with:
           name: canonical-editor-inventory
@@ -180,7 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # XML fixture-backed tests are compiled by --all-targets.
+      # Prepare assets only for selected XML consumers or whole-crate checks.
       - name: Checkout XML validation assets
         if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
         uses: actions/checkout@v4
@@ -245,13 +244,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download verified canonical inventory
-        if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
-        uses: actions/download-artifact@v8
-        with:
-          name: canonical-editor-inventory
-          path: ${{ runner.temp }}/editor-contract
-
       # XML fixtures and schemas were intentionally removed from the release
       # tree, but the validation suites still exercise those canonical assets.
       - name: Checkout XML validation assets
@@ -301,7 +293,7 @@ jobs:
           EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
         run: |
           python3 registry/tools/check_contract_test_results.py \
-            --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
+            --registry-root registry \
             --backend-log "$RUNNER_TEMP/workspace-tests.log" \
             --backend-selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
 
