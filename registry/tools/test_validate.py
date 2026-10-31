@@ -2503,6 +2503,23 @@ class DictionaryValidatorTests(unittest.TestCase):
             deploy_job,
         )
 
+    def test_ci_shares_verified_inventory_and_checks_api_test_results(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+        registry_job = workflow.split("\n  registry:\n", 1)[1].split("\n  fmt:\n", 1)[0]
+        test_job = workflow.split("\n  test:\n", 1)[1].split("\n  deploy-dev:\n", 1)[0]
+
+        self.assertIn("--frontend-results \"$RUNNER_TEMP/editor-contract-tests.json\"", registry_job)
+        self.assertIn("uses: actions/upload-artifact@v7", registry_job)
+        self.assertIn("name: canonical-editor-inventory", registry_job)
+        self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
+        self.assertIn("needs: [registry]", test_job)
+        self.assertIn("uses: actions/download-artifact@v8", test_job)
+        self.assertIn("name: canonical-editor-inventory", test_job)
+        self.assertIn("path: ${{ runner.temp }}/editor-contract", test_job)
+        self.assertIn("set -o pipefail", test_job)
+        self.assertIn("--backend-log \"$RUNNER_TEMP/workspace-tests.log\"", test_job)
 
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):

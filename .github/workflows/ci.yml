@@ -96,7 +96,9 @@ jobs:
           E2BR3_BACKEND_ROOT: ${{ github.workspace }}
         run: |
           npm run check:editor-contracts
-          npm test -- __tests__/case-editor/editor-contract-snapshot.test.ts __tests__/input-contracts.test.ts --runInBand
+          npm run test:editor-contracts -- \
+            __tests__/input-contracts.test.ts __tests__/ui-binding/review-section.test.tsx \
+            --json --outputFile="$RUNNER_TEMP/editor-contract-tests.json"
           npm test -- __tests__/case-editor/validation-state.test.ts __tests__/case-editor/loadValidationForAuthorities.test.ts __tests__/case-editor/CaseValidationProvider.test.tsx __tests__/case-form/case-editor-route-loading.test.tsx __tests__/validation/backendFieldBanners.test.ts __tests__/validation/collection-field-error.test.tsx __tests__/api/case-list-validation.test.ts --runInBand
 
       - name: Validate registry
@@ -107,6 +109,7 @@ jobs:
           python3 -m unittest registry/tools/test_build_dictionary.py
           python3 -m unittest registry/tools/test_extract_frontend_fields.py
           python3 -m unittest registry/tools/test_generate_editor_contract_web_tests.py
+          python3 -m unittest registry/tools/test_check_contract_test_results.py
           python3 registry/tools/generate_editor_contract_web_tests.py --check
           python3 registry/tools/validate.py
           python3 registry/tools/validate.py --strict-dictionary
@@ -122,6 +125,18 @@ jobs:
             --execution-hints scripts/case-editor-audit/case-edit-persisted-field-inventory.json \
             --execution-ledger registry/execution-ledger.json \
             --out /tmp/canonical-ui-inventory.json --check
+          python3 registry/tools/check_contract_test_results.py \
+            --inventory /tmp/canonical-ui-inventory.json \
+            --frontend-root "$E2BR3_FRONTEND_ROOT" \
+            --frontend-results "$RUNNER_TEMP/editor-contract-tests.json"
+
+      - name: Share verified canonical inventory with API tests
+        uses: actions/upload-artifact@v7
+        with:
+          name: canonical-editor-inventory
+          path: /tmp/canonical-ui-inventory.json
+          if-no-files-found: error
+          retention-days: 7
 
   # ============================================
   # Job 1: Check code formatting
@@ -186,6 +201,7 @@ jobs:
   # ============================================
   test:
     name: Test
+    needs: [registry]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -208,6 +224,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download verified canonical inventory
+        uses: actions/download-artifact@v8
+        with:
+          name: canonical-editor-inventory
+          path: ${{ runner.temp }}/editor-contract
 
       # XML fixtures and schemas were intentionally removed from the release
       # tree, but the validation suites still exercise those canonical assets.
@@ -270,7 +292,13 @@ jobs:
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
           SERVICE_TOKEN_DURATION_SEC: "1800"
           SERVICE_WEB_FOLDER: "web-folder/"
-        run: scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1
+        shell: bash
+        run: |
+          set -o pipefail
+          scripts/test-isolated-db.sh --workspace --exclude lib-core --exclude validator -- --test-threads=1 --color never 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          python3 registry/tools/check_contract_test_results.py \
+            --inventory "$RUNNER_TEMP/editor-contract/canonical-ui-inventory.json" \
+            --backend-log "$RUNNER_TEMP/workspace-tests.log"
 
   deploy-dev:
     name: Publish Dev Backend Image

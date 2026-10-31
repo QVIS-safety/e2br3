@@ -2750,7 +2750,33 @@
       "evidence": "RE binds reviewReceivers[index].receiver to an editable input."
     },
     "action": "",
-    "notes": "App-local review workflow metadata; not an E2B XML element."
+    "notes": "App-local review workflow metadata; not an E2B XML element.",
+    "automatedTests": {
+      "backend": [
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::update_case_rejects_review_receiver_name_over_128_chars"
+        }
+      ],
+      "frontend": [
+        {
+          "file": "__tests__/ui-binding/review-section.test.tsx",
+          "test": "shows the receiver counter and appends a blank receiver row"
+        },
+        {
+          "file": "__tests__/ui-binding/review-section.test.tsx",
+          "test": "physically removes receiver rows because RE saves the complete array"
+        }
+      ]
+    }
   },
   {
     "id": "C.local.reviewReportDueDate",
@@ -2772,7 +2798,33 @@
       "evidence": "RE binds reviewReceivers[index].reportDueDate to an editable date input."
     },
     "action": "",
-    "notes": "App-local review workflow metadata; not an E2B XML element."
+    "notes": "App-local review workflow metadata; not an E2B XML element.",
+    "automatedTests": {
+      "backend": [
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::update_case_rejects_invalid_review_receiver_dates"
+        }
+      ],
+      "frontend": [
+        {
+          "file": "__tests__/input-contracts.test.ts",
+          "test": "validates local RE receiver dates at their input paths"
+        },
+        {
+          "file": "__tests__/ui-binding/review-section.test.tsx",
+          "test": "physically removes receiver rows because RE saves the complete array"
+        }
+      ]
+    }
   },
   {
     "id": "C.local.reviewReportedDate",
@@ -2794,7 +2846,33 @@
       "evidence": "RE binds reviewReceivers[index].reportedDate to an editable date input."
     },
     "action": "",
-    "notes": "App-local review workflow metadata; not an E2B XML element."
+    "notes": "App-local review workflow metadata; not an E2B XML element.",
+    "automatedTests": {
+      "backend": [
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::editor_shell_reads_saved_review_receivers_as_an_array"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::review_receiver_json_can_be_cleared_back_to_sql_null"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/case_contract_web.rs",
+          "test": "case_contract_web::update_case_rejects_invalid_review_receiver_dates"
+        }
+      ],
+      "frontend": [
+        {
+          "file": "__tests__/input-contracts.test.ts",
+          "test": "validates local RE receiver dates at their input paths"
+        },
+        {
+          "file": "__tests__/ui-binding/review-section.test.tsx",
+          "test": "physically removes receiver rows because RE saves the complete array"
+        }
+      ]
+    }
   },
   {
     "id": "C.5.1.r.1.local.registrationNumberNullFlavor",

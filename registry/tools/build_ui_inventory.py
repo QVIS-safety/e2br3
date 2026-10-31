@@ -34,6 +34,30 @@ def normalized(path: str) -> str:
     return re.sub(r'\.\d+(?=\.|$)', '', path.replace('[]', ''))
 
 
+def validate_automated_tests(tests: dict, backend_root: Path, frontend_root: Path) -> None:
+    if not isinstance(tests, dict) or not tests or set(tests) - {'backend', 'frontend'}:
+        raise ValueError('automatedTests must contain backend or frontend references')
+    for side, references in tests.items():
+        if not isinstance(references, list) or not references:
+            raise ValueError(f'automatedTests.{side} must be a nonempty array')
+        root = (backend_root if side == 'backend' else frontend_root).resolve()
+        for reference in references:
+            if (not isinstance(reference, dict) or set(reference) != {'file', 'test'}
+                    or any(not isinstance(value, str) or not value.strip()
+                           for value in reference.values())):
+                raise ValueError(f'automatedTests.{side} requires file/test strings')
+            path = (root / reference['file']).resolve()
+            if not path.is_relative_to(root) or not path.is_file():
+                raise ValueError(f'automated test file missing or outside repository: {path}')
+            name = re.escape(reference['test'].rsplit('::', 1)[-1]
+                             if side == 'backend' else reference['test'])
+            pattern = (rf'(?m)^\s*#\[(?:tokio::)?test\]\s*(?:async\s+)?fn\s+{name}\s*\('
+                       if side == 'backend' else
+                       rf'(?m)^\s*(?:it|test)\(\s*[\"\']{name}[\"\']\s*,')
+            if not re.search(pattern, path.read_text(encoding='utf-8')):
+                raise ValueError(f'automated test declaration missing: {path}: {reference["test"]}')
+
+
 def validate_execution_ledger(ledger: dict, inventory: dict) -> None:
     if ledger.get('schemaVersion') != 1:
         raise ValueError('execution ledger schemaVersion must be 1')
@@ -247,6 +271,9 @@ def build_inventory(registry_root: Path, frontend_root: Path,
                 'executionEvidence': 'NOT_RUN',
                 'contractMetadata': contract,
             })
+            if 'automatedTests' in row:
+                validate_automated_tests(row['automatedTests'], registry_root.parent, frontend_root)
+                field['automatedTests'] = copy.deepcopy(row['automatedTests'])
             blockers = []
             descriptor = field.get('verificationDescriptor')
             special_review = (page == 'RE' and field.get('category') == 'write_special_json'

@@ -1362,6 +1362,21 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let row_id = value["rowId"].as_str().ok_or("missing drug row id")?;
+	let (status, saved) = request_json(
+		&app,
+		"GET",
+		&editor_cookie,
+		format!("/api/cases/{assigned_case}/editor/pages/DG/rows/{row_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{saved:?}");
+	assert_eq!(
+		saved["data"]["drug"]["source_product_presave_id"],
+		json!(assigned_product),
+		"{saved:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,

@@ -42,6 +42,7 @@ ALLOWED_ROW_FIELDS = {
     "local_only",
     "editor_page",
     "editor_status",
+    "automatedTests",
 }
 DICTIONARY_KINDS = {"element", "group"}
 DICTIONARY_CONFORMANCES = {"mandatory", "conditional_mandatory", "optional", "required"}

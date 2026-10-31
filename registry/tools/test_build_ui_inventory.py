@@ -10,8 +10,10 @@ from build_ui_inventory import (
     REPEATABLE_PAGE_ROUTES,
     build_inventory,
     normalized,
+    validate_automated_tests,
     validate_execution_ledger,
 )
+from generate_editor_contract_web_tests import test_name
 
 
 class CanonicalUiInventoryTests(unittest.TestCase):
@@ -57,6 +59,54 @@ class CanonicalUiInventoryTests(unittest.TestCase):
                      'drugs.drugReactionAssessments.reactionId',
                      'testResults.testResultQualifier']:
             self.assertIn(path, paths)
+
+    def test_every_canonical_field_has_backend_and_frontend_test_links(self):
+        snapshots = json.loads((self.frontend / 'lib/case-editor/generated/editorContracts.json').read_text())
+        frontend_fields = {
+            f'{contract["pageId"]}|{field["authority"]}|{field["code"]}|{field["frontendPath"]}'
+            for contract in snapshots for field in contract['fields']
+        }
+        for field in self.document['fields']:
+            with self.subTest(identity=field['identity']):
+                references = field.get('automatedTests', {})
+                if 'frontend' not in references:
+                    self.assertIn(field['identity'], frontend_fields)
+                if 'backend' not in references:
+                    generated = (self.registry.parent / 'crates/services/web-server/tests/api/'
+                                 'case_editor_contract/generated' / f'{field["page"].lower()}_fields.rs')
+                    self.assertTrue(generated.is_file(), str(generated))
+                    declaration = f'field_contract_test!({test_name(field["code"])}, "{field["code"]}");'
+                    self.assertIn(declaration, generated.read_text())
+
+    def test_explicit_test_links_reject_missing_or_non_test_declarations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'contract.rs'
+            source.write_text('#[tokio::test]\nasync fn persists_field() {}\n')
+            references = {'backend': [{'file': 'contract.rs', 'test': 'contracts::persists_field'}]}
+            validate_automated_tests(references, root, self.frontend)
+            for text in ['async fn persists_field() {}', '#[tokio::test]\nasync fn renamed() {}',
+                         '// #[tokio::test]\nasync fn persists_field() {}']:
+                source.write_text(text)
+                with self.assertRaisesRegex(ValueError, 'test declaration missing'):
+                    validate_automated_tests(references, root, self.frontend)
+            source.unlink()
+            with self.assertRaisesRegex(ValueError, 'test file missing'):
+                validate_automated_tests(references, root, self.frontend)
+
+    def test_explicit_test_links_reject_missing_frontend_test_and_empty_refs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'contract.test.ts'
+            source.write_text('it("preserves field", () => {});\n')
+            references = {'frontend': [{'file': source.name, 'test': 'preserves field'}]}
+            validate_automated_tests(references, root, root)
+            source.write_text('it.skip("preserves field", () => {});\n')
+            with self.assertRaisesRegex(ValueError, 'test declaration missing'):
+                validate_automated_tests(references, root, root)
+            for invalid in [{}, {'backend': []}, {'frontend': [{'file': source.name}]}]:
+                with self.assertRaises(ValueError):
+                    validate_automated_tests(invalid, root, root)
 
     def test_required_conditions_are_sourced_and_routes_are_authority_neutral(self):
         fields = self.document['fields']

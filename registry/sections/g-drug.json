@@ -1862,7 +1862,15 @@
     },
     "action": "",
     "notes": "",
-    "editor_page": "DG"
+    "editor_page": "DG",
+    "automatedTests": {
+      "backend": [
+        {
+          "file": "crates/services/web-server/tests/api/case_editor_contract/dg.rs",
+          "test": "case_editor_contract_web::dg::relatedness_delete_preserves_sibling_and_parent_delete_removes_assessment"
+        }
+      ]
+    }
   },
   {
     "id": "G.k.9.i.2.r.1",
@@ -2641,7 +2649,19 @@
     "action": "",
     "notes": "Local Product master association persisted as a UUID; execution requires a real readable INFO ProductPresave selected through the picker.",
     "editor_page": "DG",
-    "editor_status": "incomplete"
+    "editor_status": "incomplete",
+    "automatedTests": {
+      "backend": [
+        {
+          "file": "crates/services/web-server/tests/api/scope_visibility_web.rs",
+          "test": "scope_visibility_web::test_case_editor_can_create_assigned_dg_but_denies_unassigned_product"
+        },
+        {
+          "file": "crates/services/web-server/tests/api/import_contract_web.rs",
+          "test": "import_contract_web::test_import_selected_product_links_sender_without_overwriting_xml_sender"
+        }
+      ]
+    }
   },
   {
     "id": "FDA.G.k.1.a",

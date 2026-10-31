@@ -123,6 +123,37 @@ an explicit reason when a stage is not applicable. Business-rule tests and
 field mappings are owned by the validator crate. The editor
 contract gate does not infer section-level completion.
 
+Canonical fields normally link to generated backend and frontend contract
+tests. RE's separate save workflow and DG's runtime relationship IDs use
+`automatedTests` on their registry rows, with repository-relative `file` and
+`test` references. Backend references use the full Rust module/test name;
+frontend references use the Jest title within the specified file.
+`test_build_ui_inventory.py` requires both sides for every canonical field and
+checks that explicit test declarations exist.
+
+`check_contract_test_results.py` separately requires actual passing results:
+Cargo output for backend generated/explicit tests, and Jest JSON for frontend
+payload/explicit tests plus each verified invalid-input case. Missing, skipped,
+failed, duplicate, or interrupted results fail the gate. Shared explicit tests
+are required once. The frontend registry job shares its checked canonical
+inventory with the API job, so both gates use the same field set. Dev image
+publication requires the API job to pass. These checks do not turn a blocked
+generic contract or historical UI proof into a new UI passing result.
+
+```sh
+python3 registry/tools/check_contract_test_results.py \
+  --inventory /tmp/canonical-ui-inventory.json --backend-log /tmp/workspace-tests.log
+python3 registry/tools/check_contract_test_results.py \
+  --inventory /tmp/canonical-ui-inventory.json --frontend-root ../e2br3-frontend \
+  --frontend-results /tmp/editor-contract-tests.json
+```
+
+Backend page tests live in `tests/api/case_editor_contract/{page}.rs`, with
+generated field declarations under `generated/`. `support.rs` owns shared
+fixtures and generic contract verification; DM/AE-specific checks stay with
+their page tests. Frontend payload cases share one `it.each` harness, and
+invalid-input cases also report individually by page, authority, code and path.
+
 Validate registry rows against extracted backend BMC fields:
 
 ```sh
