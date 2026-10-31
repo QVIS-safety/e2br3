@@ -325,7 +325,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [tests/database/reaction_term_highlight_migration.rs](../../../../libs/lib-core/tests/database/reaction_term_highlight_migration.rs) | Reaction highlight의 신규 varchar schema와 legacy boolean migration | DB migration | 138 | 2 | 0 |
 | [tests/database/submission_schema.rs](../../../../libs/lib-core/tests/database/submission_schema.rs) | 제출 dispatch state 감사 schema guard | DB schema | 75 | 1 | 0 |
 | [tests/database/transactions.rs](../../../../libs/lib-core/tests/database/transactions.rs) | Dbx nested commit/rollback·query 실패·취소 후 transaction 상태 | DB | 174 | 4 | 0 |
-| [tests/database/user_expiration.rs](../../../../libs/lib-core/tests/database/user_expiration.rs) | 관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회 | DB | 108 | 1 | 0 |
+| [tests/database/user_expiration.rs](../../../../libs/lib-core/tests/database/user_expiration.rs) | 관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회 | DB | 118 | 1 | 0 |
 
 ## Rust 외의 테스트 자산
 

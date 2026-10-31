@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ci_test_plan import commands_for, load_workspace, select_tests, target_for, xml_assets_for_cargo_args
+from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, xml_assets_for_cargo_args
 from generate_editor_contract_web_tests import expected_editor_execution_tests
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -292,9 +292,9 @@ class TestPlanTests(unittest.TestCase):
     def test_commands_are_per_crate_locked_and_serial_with_separate_rule_gate(self):
         selection = {'web-server': ['api_cases', 'authz'], 'lib-core': ['authorization'], 'validator': []}
         self.assertEqual(commands_for(selection, self.workspace), [
-            ['scripts/test-isolated-db.sh', '--locked', '-p', 'lib-core', '-j1', '--test', 'authorization',
+            ['scripts/test-isolated-db.sh', '--locked', '-p', 'lib-core', '-j1', '--no-fail-fast', '--test', 'authorization',
              '--', '--test-threads=1', '--color', 'never'],
-            ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--test', 'api_cases', '--test', 'authz',
+            ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--no-fail-fast', '--test', 'api_cases', '--test', 'authz',
              '--', '--test-threads=1', '--color', 'never'],
         ])
         for kind in ('fmt', 'clippy'):
@@ -306,6 +306,17 @@ class TestPlanTests(unittest.TestCase):
                         {'web-server': ['api_cases', 'api_cases']}, {'web-server': [None]}, {'web-server': 'api_cases'}):
             with self.assertRaises(ValueError):
                 commands_for(invalid, self.workspace)
+
+    def test_failed_command_does_not_hide_later_checks_or_return_success(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            marker = Path(temporary) / 'later-check'
+            result = run_commands([
+                [sys.executable, '-c', 'raise SystemExit(7)'],
+                [sys.executable, '-c', 'from pathlib import Path; import sys; Path(sys.argv[1]).write_text("ran")', str(marker)],
+            ])
+            self.assertEqual(result, 1)
+            self.assertEqual(marker.read_text(), 'ran')
+            self.assertEqual(run_commands([[sys.executable, '-c', 'pass']]), 0)
 
     def test_clippy_limits_test_only_edits_and_keeps_production_targets(self):
         selection = {'web-server': ['api_cases', 'authz'], 'lib-core': ['authorization'], 'validator': []}
