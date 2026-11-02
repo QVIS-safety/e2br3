@@ -20,17 +20,22 @@ pub(super) async fn read_json_state(
 ) -> Result<Vec<(StatusCode, Value)>> {
 	let mut state = Vec::with_capacity(paths.len());
 	for path in paths {
-		state.push(
-			request_json_with_reason(
-				app,
-				cookie,
-				"GET",
-				path.clone(),
-				None,
-				"read subresource state",
-			)
-			.await?,
-		);
+		let (status, mut value) = request_json_with_reason(
+			app,
+			cookie,
+			"GET",
+			path.clone(),
+			None,
+			"read subresource state",
+		)
+		.await?;
+		if let Some(data) = value
+			.pointer_mut("/error/data")
+			.and_then(Value::as_object_mut)
+		{
+			data.remove("req_uuid");
+		}
+		state.push((status, value));
 	}
 	Ok(state)
 }

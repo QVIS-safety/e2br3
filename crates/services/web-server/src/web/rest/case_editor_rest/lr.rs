@@ -1,8 +1,8 @@
 use super::common::{
 	editor_page_row_response, i32_field, json, query_authorities_csv,
 	repeatable_page_projection_response, repeatable_rows_with_details, uuid_eq,
-	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse, CtxW, Error,
-	Json, ListOptions, LiteratureReferenceBmc, LiteratureReferenceFilter,
+	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse, CtxW, Json,
+	ListOptions, LiteratureReferenceBmc, LiteratureReferenceFilter,
 	LiteratureReferenceForCreate, LiteratureReferenceForUpdate, ModelManager, Path,
 	Query, Result, State, Uuid, Value,
 };
@@ -111,10 +111,11 @@ async fn load_editor_lr_row(
 ) -> Result<lib_core::model::safety_report::LiteratureReference> {
 	let row = LiteratureReferenceBmc::get(ctx, mm, row_id).await?;
 	if row.case_id != case_id {
-		return Err(Error::BadRequest {
-			message: "LR literature reference does not belong to the current case"
-				.to_string(),
-		});
+		return Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "literature_references",
+			id: row_id,
+		}
+		.into());
 	}
 	Ok(row)
 }

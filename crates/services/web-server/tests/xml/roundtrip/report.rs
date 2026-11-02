@@ -9,10 +9,9 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 	let sentinel_null_reason = format!("RTCINULL-{}", Uuid::new_v4().simple());
 	let sentinel_batch = format!("RTSI-BATCH-{}", Uuid::new_v4().simple());
 	let sentinel_batch_sender = format!("RTSI-BS-{}", Uuid::new_v4().simple());
-	let sentinel_batch_receiver = format!("RTSI-BR-{}", Uuid::new_v4().simple());
+	let sentinel_batch_receiver = "ZZFDA";
 	let sentinel_msg_number = format!("RTSI-MSG-{}", Uuid::new_v4().simple());
-	let sentinel_msg_sender = format!("RTSI-MS-{}", Uuid::new_v4().simple());
-	let sentinel_msg_receiver = format!("RTSI-MR-{}", Uuid::new_v4().simple());
+	let sentinel_msg_receiver = "CDER";
 	let sentinel_study_type_reaction = "1";
 
 	let (status, body) = request_json(
@@ -56,7 +55,7 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 				"batch_receiver_identifier": sentinel_batch_receiver,
 				"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0],
 				"message_number": sentinel_msg_number,
-				"message_sender_identifier": sentinel_msg_sender,
+				"message_sender_identifier": sentinel_batch_sender,
 				"message_receiver_identifier": sentinel_msg_receiver,
 				"message_date": "20240601112233"
 			}
@@ -148,9 +147,8 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 		sentinel_null_reason.as_str(),
 		sentinel_batch.as_str(),
 		sentinel_batch_sender.as_str(),
-		sentinel_batch_receiver.as_str(),
-		sentinel_msg_sender.as_str(),
-		sentinel_msg_receiver.as_str(),
+		sentinel_batch_receiver,
+		sentinel_msg_receiver,
 	] {
 		assert!(
 			xml.contains(expected),

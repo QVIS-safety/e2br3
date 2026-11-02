@@ -22,6 +22,14 @@ fn generic_validation_api_is_owned_by_xml() {
 }
 
 #[test]
+fn malformed_xml_is_not_recovered_for_import_or_xsd_validation() {
+	let malformed = b"<root>";
+	assert!(normalize_e2b_xml_for_import(malformed).is_err());
+	let schema = default_xsd_path().expect("official ICH schema");
+	assert!(validate_e2b_xml_xsd(malformed, &schema).is_err());
+}
+
+#[test]
 fn import_normalization_treats_empty_c_1_8_1_extension_as_absent() {
 	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 		.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml");

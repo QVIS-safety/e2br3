@@ -548,7 +548,7 @@ async fn presave_parent_delete_is_repeatable_and_patch_restores_the_same_row(
 			format!("/api/presaves/senders/{sender_id}"),
 			"/data",
 			"/api/presaves/senders".to_string(),
-			"/id",
+			"/rows/sender/id",
 			sender_id,
 			json!({"data": {"deleted": false}}),
 		),

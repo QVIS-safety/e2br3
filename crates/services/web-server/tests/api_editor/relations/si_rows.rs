@@ -96,7 +96,7 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 			{"id":"not-a-uuid","registrationNumber":"INVALID"}
 		]}),
 		json!({"studyInformation":{"fdaCrossReportedIndNumbers":[
-			{"id":ind_id,"indNumber":"MUST ROLL BACK"},
+			{"id":ind_id,"indNumber":"ROLLBACK"},
 			{"id":"not-a-uuid","indNumber":"INVALID"}
 		]}}),
 	] {
@@ -160,7 +160,7 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 	}
 	let restored = json!({
 		"studyRegistrationNumbers":[{"id":registration_id,"deleted":false,"registrationNumber":"RESTORED","countryCode":"US"}],
-		"studyInformation":{"fdaCrossReportedIndNumbers":[{"id":ind_id,"deleted":false,"indNumber":"RESTORED-IND"}]}
+		"studyInformation":{"fdaCrossReportedIndNumbers":[{"id":ind_id,"deleted":false,"indNumber":"RESTORED"}]}
 	});
 	for attempt in 0..2 {
 		let (status, body) = patch_and_reload(
@@ -195,7 +195,7 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		assert_eq!(
 			body["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"][0]
 				["ind_number"],
-			"RESTORED-IND",
+			"RESTORED",
 			"{body}"
 		);
 		assert_eq!(

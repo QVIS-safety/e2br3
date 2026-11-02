@@ -246,7 +246,7 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 		format!("/api/presaves/studies/{study_id}/details"),
 		json!({"data":{"rows":{"fdaCrossReportedInds":[{
 			"sequenceNumber":1,
-			"indNumber":"AUDIT-IND-OLD"
+			"indNumber":"AUDIT-OLD"
 		}]}}}),
 	)
 	.await?;
@@ -280,7 +280,7 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 		(Method::PATCH, format!("/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"), json!({"data":{"registration_number":"AUDIT-REG-NEW"}})),
 		(Method::PATCH, format!("/api/presaves/studies/{study_id}/products/{study_product_id}"), json!({"data":{"product_name":"Audit Study Product New"}})),
 		(Method::PATCH, format!("/api/presaves/studies/{study_id}/reporters/{study_reporter_id}"), json!({"data":{"reporter_organization":"Audit Study Reporter New"}})),
-		(Method::PUT, format!("/api/presaves/studies/{study_id}/details"), json!({"data":{"rows":{"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-IND-NEW"}]}}})),
+		(Method::PUT, format!("/api/presaves/studies/{study_id}/details"), json!({"data":{"rows":{"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-NEW"}]}}})),
 		(Method::PATCH, format!("/api/presaves/narratives/{narrative_id}"), json!({"data":{"rows":{"narrative":{"caseNarrative":"Audit Narrative New"}}}})),
 		(Method::PUT, format!("/api/presaves/senders/{sender_id}/details"), json!({"data":{"rows":{
 			"sender":{"city":"Audit City New"},
@@ -301,7 +301,7 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 			"registrationNumbers":[{"id":registration_id,"registrationNumber":"AUDIT-REG-NEW"}],
 			"products":[{"id":study_product_id,"productName":"Audit Study Product New"}],
 			"reporters":[{"id":study_reporter_id,"reporterOrganization":"Audit Study Reporter New"}],
-			"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-IND-NEW"}]
+			"fdaCrossReportedInds":[{"id":fda_ind_id,"indNumber":"AUDIT-NEW"}]
 		}}})),
 	];
 	for (method, uri, body) in &operations {

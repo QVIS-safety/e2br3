@@ -149,7 +149,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		&format!("{base}/DG/rows"),
 		json!({"authorities":["fda"],"rows":{"drug":{
 			"drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
-			"fdaDevices":[{"deviceBrandName":"DEVICE-1","deviceUsage":"1","operatorOfDevice":"2","followUpTypes":[{"valueCode":"1"}],"remedialActions":[{"valueCode":"10"}],"deviceProblemCodes":[{"valueCode":"1234567"}]}]
+			"fdaDevices":[{"deviceBrandName":"DEVICE-1","deviceUsage":"1","operatorOfDevice":"2","followUpTypes":[{"valueCode":"1"}],"remedialActions":[{"valueCode":"1"}],"deviceProblemCodes":[{"valueCode":"1234567"}]}]
 		}}}),
 	)
 	.await?;
@@ -171,7 +171,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 	let full_replay = json!({"authorities":["fda"],"rows":{"drug":{"fdaDevices":[{
 		"id":original_device_id,"deviceBrandName":"DEVICE-1","deviceUsage":"1","operatorOfDevice":"2",
 		"followUpTypes":[{"id":original_code_id,"valueCode":"1"}],
-		"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+		"remedialActions":[{"id":remedial_id,"valueCode":"1"}],
 		"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 	}]}}});
 	let audit_before_replay =
@@ -192,7 +192,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		assert_eq!(device["device_brand_name"], "DEVICE-1");
 		for (owner, child_id, value) in [
 			("followUpTypes", &original_code_id, "1"),
-			("remedialActions", &remedial_id, "10"),
+			("remedialActions", &remedial_id, "1"),
 			("deviceProblemCodes", &problem_id, "1234567"),
 		] {
 			let rows = device[owner].as_array().ok_or("missing device code rows")?;
@@ -216,7 +216,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		json!({"authorities":["fda"],"rows":{"drug":{"fdaDevices":[{
 			"id":original_device_id,"deviceBrandName":"DEVICE-1","deviceUsage":"","operatorOfDevice":"",
 			"followUpTypes":[{"id":original_code_id,"valueCode":"1"}],
-			"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+			"remedialActions":[{"id":remedial_id,"valueCode":"1"}],
 			"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 		}]}}}),
 	)
@@ -248,7 +248,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 			"deviceBrandName":null,
 			"deviceBrandNameNullFlavor":null,
 			"followUpTypes":[{"id":original_code_id,"valueCode":"1"}],
-			"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+			"remedialActions":[{"id":remedial_id,"valueCode":"1"}],
 			"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 		}]}}}),
 	)
@@ -277,7 +277,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 			"deviceBrandName":null,
 			"deviceBrandNameNullFlavor":null,
 			"followUpTypes":[{"id":original_code_id,"valueCode":"2"}],
-			"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+			"remedialActions":[{"id":remedial_id,"valueCode":"1"}],
 			"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 		}]}}}),
 	)
@@ -295,7 +295,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 	let updated_replay = json!({"authorities":["fda"],"rows":{"drug":{"fdaDevices":[{
 		"id":original_device_id,"deviceBrandName":null,"deviceBrandNameNullFlavor":null,
 		"followUpTypes":[{"id":original_code_id,"valueCode":"2"}],
-		"remedialActions":[{"id":remedial_id,"valueCode":"10"}],
+		"remedialActions":[{"id":remedial_id,"valueCode":"1"}],
 		"deviceProblemCodes":[{"id":problem_id,"valueCode":"1234567"}]
 	}]}}});
 	let updated_audits =
@@ -327,7 +327,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		);
 		for (owner, child_id, value) in [
 			("followUpTypes", &original_code_id, "2"),
-			("remedialActions", &remedial_id, "10"),
+			("remedialActions", &remedial_id, "1"),
 			("deviceProblemCodes", &problem_id, "1234567"),
 		] {
 			let rows = device[owner].as_array().ok_or("missing device code rows")?;

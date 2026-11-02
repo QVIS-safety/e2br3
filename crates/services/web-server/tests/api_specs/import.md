@@ -47,7 +47,7 @@
 
 ## Validation
 
-`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. XML normalize 후 기본 10 MiB validator로 검사한다. 활성 assertion은 valid XML의 `200`, `ok:true`, root element와 빈 errors, malformed XML의 `400`과 XML 관련 오류 body, XSD-invalid XML의 `200`, `ok:false`와 비어 있지 않은 errors를 실제 endpoint에서 확인한다. 전후 `cases`와 `xml_import_history` row count도 같음을 확인한다(runtime NOT_RUN). 용량 boundary와 권한 거절은 남아 있다.
+`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. XML normalize 후 기본 10 MiB validator로 검사한다. Normalize와 XSD 문서 파서는 오류 복구와 네트워크 접근을 끄며, 닫히지 않은 XML을 보정하여 수용하지 않는다. 활성 assertion은 valid XML의 `200`, `ok:true`, root element와 빈 errors, malformed XML의 `400`과 XML 관련 오류 body, XSD-invalid XML의 `200`, `ok:false`와 비어 있지 않은 errors를 실제 endpoint에서 확인한다. 전후 `cases`와 `xml_import_history` row count도 같음을 확인한다(runtime NOT_RUN). 용량 boundary와 권한 거절은 남아 있다.
 
 <a id="history"></a>
 
@@ -83,5 +83,7 @@ ZIP batch의 부분 성공 원자성, 동시 import, 모든 duplicate branch의 
 [식약처 의약품안전나라 배포 게시물](https://nedrug.mfds.go.kr/bbs/34/19) `XML 파일 Reference(MFDS, Republic of Korea)-(업데이트, 2021.5.27.)`의 [XML 첨부](https://nedrug.mfds.go.kr/cmn/edms/down/1NdaMZ5p64i)를 2026-10-31에 내려받아 [kr-literature-initial-v1.0.xml](../xml/fixtures/mfds/kr-literature-initial-v1.0.xml)로 보존했다. 원래 첨부명은 `1-1_ExampleCase_literature_KR_initial_v1_0_샘플.xml`, 크기는 68,407 bytes, SHA-256은 `4125399a0b8c37f7bc3a2cdc518feb864fa0104eaed00b2fe224e96a9c868159`이다. 파일 내용은 수정하지 않았으며 Git의 줄바꿈 변환과 원본 공백 정리를 제외한다.
 
 MFDS 검사는 기본으로 이 추적된 디렉터리를 읽으므로 CI checkout에 포함된다. 별도 `E2BR3_MFDS_EXAMPLES_DIR`를 지정하면 그 디렉터리를 사용하며, 부재/빈 목록은 실패다. XSD와 FDA fixture 준비는 기존 `scripts/prepare-xml-assets.sh`와 CI 고정 자산 commit을 사용한다. 테스트 실행 중 외부 사이트에서 내려받지 않는다.
+
+2026-11-02 [CI 실행](https://github.com/QVIS-safety/e2br3/actions/runs/41375886947)에서는 이 원본의 import는 성공했지만 업무 검증은 실패했다. CI에 없는 MFDS 제품·성분 데이터와 constrained UCUM으로 7개, 라이선스 원본이 없는 MedDRA 22.1로 6개, HCP 보고의 E.i.8 전송과 현행 `ICH.E.i.8.HCP.OMIT` 규칙 충돌로 2개 문제가 보고됐다. 따라서 원본 샘플의 import 근거를 MFDS 업무 검증 PASS로 해석하면 안 된다. MedDRA 28.1로 대체하거나 용어를 가공하여 통과시키지 않으며, 실제 22.1 데이터 준비와 샘플·현행 규칙의 불일치 해결이 남아 있다.
 
 기존 로컬 `docs/exporter/mfds` 파일은 Git에서 제외됐고, 공식 원본과 달리 날짜 속성 두 곳 및 검사 `originalText` 요소 하나가 변경되어 있었다. 이를 공식 원본으로 채택하지 않았다. 2021년 배포 예제 하나의 확보는 최신 규칙 전체의 적합성이나 기관 접수를 증명하지 않는다. 현재 importer/validator와 원본 간 호환 여부는 실행하지 않았으며, 불일치를 만나면 샘플을 조용히 변조하거나 검사를 건너뛰지 않는다.

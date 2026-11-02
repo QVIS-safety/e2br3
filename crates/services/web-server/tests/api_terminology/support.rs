@@ -59,6 +59,7 @@ pub(super) async fn seed_active_terminology_rows(
 		 (item_seq, product_name_kr, product_name_en, manufacturer_name_kr, version, active)
 		 VALUES
 		 ('9000000001', '활성제품', 'Active MFDS Product', '활성제약', '2026-01', true),
+		 ('9000000999', '정렬제품', 'Sorted MFDS Fixture', '정렬제약', '2026-01', true),
 		 ('9000000002', '비활성제품', 'Inactive MFDS Product', '비활성제약', '2026-02', false)
 		 ON CONFLICT (item_seq, version)
 		 DO UPDATE SET

@@ -30,7 +30,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		&ctx,
 		&uri,
 		json!({"authorities":["fda"],"rows":{
-			"patientInformation":{"raceCodes":["1"]},
+			"patientInformation":{"raceCodes":["C16352"]},
 			"patientIdentifiers":[{"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
 			"medicalHistoryEpisodes":[{"sequenceNumber":1,"comments":"HISTORY"}],
 			"deathInfo":{"dateOfDeath":"20261001"},
@@ -65,7 +65,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 	let death_id = saved["deathInfo"]["id"].clone();
 	let patient_id = saved["patientInformation"]["id"].clone();
 	let replay = json!({
-		"patientInformation":{"id":patient_id,"raceCodes":["1"]},
+		"patientInformation":{"id":patient_id,"raceCodes":["C16352"]},
 		"patientIdentifiers":[{"id":owners[0].1,"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
 		"medicalHistoryEpisodes":[{"id":owners[1].1,"sequenceNumber":1,"comments":"HISTORY"}],
 		"deathInfo":{"id":death_id,"dateOfDeath":"20261001"},
@@ -121,7 +121,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		assert_eq!(after["rows"]["deathInfo"]["date_of_death"], "20261001");
 		assert_eq!(
 			after["rows"]["patientInformation"]["race_codes"],
-			json!(["1"])
+			json!(["C16352"])
 		);
 		assert_eq!(
 			super::case_audit_ids(&mm, &ctx, &case_id).await?,
@@ -129,7 +129,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		);
 	}
 	let changed_patient = json!({
-		"patientInformation":{"id":patient_id,"raceCodes":["2"]},
+		"patientInformation":{"id":patient_id,"raceCodes":["C41259"]},
 		"deathInfo":{"id":death_id,"dateOfDeath":"20261002"}
 	});
 	let (status, changed) = patch_and_reload(
@@ -145,7 +145,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 	assert_eq!(changed["rows"]["patientInformation"]["id"], patient_id);
 	assert_eq!(
 		changed["rows"]["patientInformation"]["race_codes"],
-		json!(["2"])
+		json!(["C41259"])
 	);
 	assert_eq!(changed["rows"]["deathInfo"]["id"], death_id);
 	assert_eq!(changed["rows"]["deathInfo"]["date_of_death"], "20261002");
@@ -168,7 +168,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		assert_eq!(replayed["rows"]["patientInformation"]["id"], patient_id);
 		assert_eq!(
 			replayed["rows"]["patientInformation"]["race_codes"],
-			json!(["2"])
+			json!(["C41259"])
 		);
 		assert_eq!(replayed["rows"]["deathInfo"]["id"], death_id);
 		assert_eq!(replayed["rows"]["deathInfo"]["date_of_death"], "20261002");
@@ -365,7 +365,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		(
 			"PATCH",
 			uri.clone(),
-			json!({"authorities":["fda"],"rows":{"patientInformation":{"raceCodes":["1"]}}}),
+			json!({"authorities":["fda"],"rows":{"patientInformation":{"raceCodes":["C16352"]}}}),
 		),
 		(
 			"PATCH",

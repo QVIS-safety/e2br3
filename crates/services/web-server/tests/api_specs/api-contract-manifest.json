@@ -26,7 +26,7 @@
     "crates/libs/lib-core/src/model/drug_reaction_assessment.rs": "3dbf112a10892c485fdb7e4c30591e5ebe7674de729bfa84f62b2cbf331fc5e7",
     "crates/libs/lib-core/src/model/message_header.rs": "c65c4ab568a8985abc8baff3935c7883b312e586724ddb9e16f0759003b44f01",
     "crates/libs/lib-core/src/model/narrative.rs": "3450d12f2444d32610638da833143fabd16361915488fd5444aedc062882312d",
-    "crates/libs/lib-core/src/model/organization.rs": "b115ac0cb6fc395a90e0a08afd75e6cadd5f6ad9213dc8fc9f9af8883f72b14b",
+    "crates/libs/lib-core/src/model/organization.rs": "b91a73e79a016f5041d52c8a076dc312eac1e90503e515c75de2709695e4e31e",
     "crates/libs/lib-core/src/model/parent_history.rs": "3560c52298ea8fa5db514e45f57b1f82a8866411c969c551f67a984583179222",
     "crates/libs/lib-core/src/model/patch.rs": "431dda3beb5797477f4010f8596eedcb6da90d29368db76624cd4b467eabd33a",
     "crates/libs/lib-core/src/model/patient.rs": "9d0e66757fc432c8c3bf2f32a71a3e533ecede6443297b39c7a4070c190809e2",
@@ -69,7 +69,7 @@
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/si.rs": "6786c46a6bfbefb8525653cf5f73e4fa03d1f835a8220578849a97354475571f",
     "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs": "1d2415a6f9bdece1ada6e94f8d8e6771e37c26654948b6853f68fe800ceb09df",
     "crates/services/web-server/src/web/rest/case_editor_rest/lb.rs": "faebbfd24bcffee8082e7c2beb406c33a20a2256162135b4785ce6edf03da683",
-    "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "b610dae503e152b90059ec40f96999c17361a7bcde0a00c1f9d33741ff84225c",
+    "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "6fa0b4297b232b4aae044c6cf9c5df7adfa5b029cd9f920d8c774a51609b44bf",
     "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "be6779c5daa74dad7ddce1aafd8d2929f956adad1ea2786c1baca0b7d277baf6",
     "crates/services/web-server/src/web/rest/case_export_rest.rs": "367f8f242839411f1cf1f75d492a4a7d4b618179cc445d4f6d01462ae4a49e84",
     "crates/services/web-server/src/web/rest/case_field_notation_rest.rs": "ec426889db77c8ef27a00b776cdf32a950ff6cf55f936a24b2e95cf634e58fa0",
@@ -90,8 +90,8 @@
     "crates/services/web-server/src/web/rest/mod.rs": "54cd20b47bccae5cc553a5f5a49b996794a1f844fccf1f1b946a98611b6e2313",
     "crates/services/web-server/src/web/rest/narrative_rest.rs": "65670121cd51fb588605dbc6f39d0b15de4a8019a38670c5d9471059f4b84667",
     "crates/services/web-server/src/web/rest/narrative_sub_rest.rs": "0bc9725597b2518ebf7bd8141c00c14aa2b4ac9562f66dc24ed292b89e07eab6",
-    "crates/services/web-server/src/web/rest/organization_rest.rs": "1113ed5cb27e15f52bb282b9c4a46689dd8e58876fd7eea19b5ddf65f49affda",
-    "crates/services/web-server/src/web/rest/parent_history_rest.rs": "5ecc6d362f029149f8177b2fc01d565e8df965648971f6877c4820aa1b1b7b52",
+    "crates/services/web-server/src/web/rest/organization_rest.rs": "2cd689e424b129e55669ed94604edbc3361cd2db3b8da2497c96418e65ee119c",
+    "crates/services/web-server/src/web/rest/parent_history_rest.rs": "95d4c9ff9b6f9dbe0f249d8f3393894fc96c67a6e65fc8f0615300e57b89f2d1",
     "crates/services/web-server/src/web/rest/patient_rest.rs": "60665d3ec4fd2f0978603a7c1a9ab66cab58a6fe4415c30e25accbbb97363d2a",
     "crates/services/web-server/src/web/rest/patient_sub_rest.rs": "ae7641ac27c316a4de4540085b17113dc77d95c8e13501383b033c4492bebe41",
     "crates/services/web-server/src/web/rest/permission_profile_rest.rs": "7c160626d31d4b379e3a29269a73034973c7fd2714c181f476a83dc1d84d45fa",
@@ -131,7 +131,7 @@
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0980cad0996aaf2a1ab68af4ba8fb8d5d5d4ecaee782dde365dcd5cba220643c",
     "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
-    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "2c124ca4ddfb29802160e1263205dc7cffa54093f7f59dabb465d68c1c706434",
+    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "d5aae8ea7a16a4a04d56cc6642073a6189cbbc3ec505fe268d7630bb7b824bd0",
     "crates/services/web-server/tests/api_administration/organizations/list_web.rs": "6d18d4ec465294bb3e006868b9a89ce9392296247cdd88869de2d42411a0cfb4",
     "crates/services/web-server/tests/api_administration/organizations/update_web.rs": "55eafb9d4a74491ab98a99dbc269f8c52eceda484d291aec52237c6128b8a03d",
     "crates/services/web-server/tests/api_administration/role_admin/crud_web.rs": "6a58a6f3e1efe8375bc08fd52b68a63ef39d9ead0a5b1855ec906ca87edb54b7",
@@ -164,7 +164,7 @@
     "crates/services/web-server/tests/api_cases/settings.rs": "d8d6dfffb2d712000cf09258f3384f10d7fb952f28a0be341abee78f51bb5c6f",
     "crates/services/web-server/tests/api_cases/subresources/drug.rs": "65b87197a7480a8fadb39dfc9c18254233f75445346b9ca7d837d1f23b377767",
     "crates/services/web-server/tests/api_cases/subresources/drug_scope.rs": "8e1525e316148721134bd8e3438f45f47bb784fe6e00076eaf65965726fc3523",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "6cf35ebd7ec4b2e234641146d663c336e6d639d57ac2abcfb20e1fc9ad328264",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "2633a3aacfe1e935d00b629617d6d2252b50166c445f0bdea1e8bace57487023",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs": "4da4ac80df6d6804f4b27113faef06f9746604a4dbe5ff8626e3c93301fe7d1d",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs": "16e366e6573a457c1c9bb8ade53b3b4f1ab7cd9324ed6b75c743695dbaaa38d3",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "9cb2cd0f3e2bd2b9bed0c093f4dbed7056da56f8cc46d91f65c7823003a2c4a0",
@@ -204,27 +204,27 @@
     "crates/services/web-server/tests/api_editor/pages/si.generated.rs": "2b141fbc63f9cd0e35f304aa3fc9b5f24f83e9db53e92daa7327aeeea4670b51",
     "crates/services/web-server/tests/api_import/import_contract_web.rs": "b822b941b47fee3fb48226f5b61c3cf33f9334c566d14b397a1811134b14aec7",
     "crates/services/web-server/tests/api_import/import_history_web.rs": "659b258b5d5ab5a80cb14fc857ae2426ad5c7aeb4445685d59fa5bc061147595",
-    "crates/services/web-server/tests/api_import/import_settings_web.rs": "0579b71d1c7b4675dc69d2095ea7d4b1007eb5a7a1ab9f5c04d256a1a8e2c353",
+    "crates/services/web-server/tests/api_import/import_settings_web.rs": "6920b7ebe899a12c9201cdbcfed7d5a29b503e795ca0aa3584c2ebc84ed69fab",
     "crates/services/web-server/tests/api_import/validation_web.rs": "aa2e36682c95051af7bd730c4f1600ec2d6862d0272388a71e3a3ebc085bbec8",
-    "crates/services/web-server/tests/api_presave/audit_web.rs": "14f4a8e0a117b5814608385dec3fc4c723a1ed03922f8c2c3dc5ddf27cf88972",
-    "crates/services/web-server/tests/api_presave/authorization_web.rs": "581e7983223736ec0db37e3ebc4ee4ff07e3f9a1b3f52324267689b56856ab50",
-    "crates/services/web-server/tests/api_presave/crud_matrix_web.rs": "6e192bb2f9176acd066682326943d8fb8118a2a1def1bd2f1cb7a8d45c7747eb",
+    "crates/services/web-server/tests/api_presave/audit_web.rs": "6ba2cef7eb70812833df7017108a55a32b564bdc366786ba21f4ca32b45d13ac",
+    "crates/services/web-server/tests/api_presave/authorization_web.rs": "2738f2df8ef40d1e40495147457df45572f754fa99443e58df7da915d34dcceb",
+    "crates/services/web-server/tests/api_presave/crud_matrix_web.rs": "53ca8f027b22e159f2444c33621e9b15fd763453833b217890a791c940e7d47a",
     "crates/services/web-server/tests/api_presave/delete_constraints_web.rs": "3e0c6d2dc6c1452cd2b3721b62386b13541fc5ef3dfbf3b1e966982357118ad3",
-    "crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs": "7226ae6cbabb8374c54f1ae289ddf2262b875317011f5f4ba43e82617bb033d9",
+    "crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs": "293b6bd2f2218f22062108480ea36b402e44f919447cdd4f4ffeb3ef80a6b9e0",
     "crates/services/web-server/tests/api_presave/narrative_web.rs": "c5818ebf72bf4d4ad67ce6fc7ef596f7621f56a644d2a48b57bb849a12d464b6",
     "crates/services/web-server/tests/api_presave/product_web.rs": "09fd3ee5221998bd7d514bd632d3f729a2042aba6cde95d81126e8554b46ffc3",
     "crates/services/web-server/tests/api_presave/receiver_web.rs": "43417715d9e390c5d60890743118abb6eea0c8aaa4920c57f9bb6cb11c4b40f4",
     "crates/services/web-server/tests/api_presave/reporter_web.rs": "0c252b15e3d74589013ae9890b08deb112495ef3e4916d5a072b902fbf43779a",
     "crates/services/web-server/tests/api_presave/sender_web.rs": "44ea3c965f2ffcbfe415c8bdf8d4fbf170f959343d042c685b33a28b79067c10",
     "crates/services/web-server/tests/api_presave/study_children_create_web.rs": "e423d02b36a86c432ca6976aa7c503fab7b3253f1735de367b4af8809653b615",
-    "crates/services/web-server/tests/api_presave/study_web.rs": "d9cba1e4e915828e2402d231c535acd5e539d3e7c5d5cf075ef57b4f19ba0be6",
-    "crates/services/web-server/tests/api_specs/administration.md": "4ff7f70f6bea5cdb291f046e66b1d54a6b29bf1d2dbd2d4747129eb05730e9ea",
-    "crates/services/web-server/tests/api_specs/cases.md": "9681f9da8c4d6d1006dcef49c152783499e7c63fec38372ed38d8f7a13a5d284",
+    "crates/services/web-server/tests/api_presave/study_web.rs": "396a9fbccc439604201a4b452c0563f01f85361ee78925f1fccfe4c3ced2eb12",
+    "crates/services/web-server/tests/api_specs/administration.md": "e128cf851ffe2df2931b0bd39b642292528a69f4cae8592aed762dc1bc1c90b5",
+    "crates/services/web-server/tests/api_specs/cases.md": "17b7c245bba7bc533c457fd55a8e2f272b34df5186640a3093b379ba1eb55d8e",
     "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "9ac5640cee8f041690cd3542ddc7786f7d850acec1d535897b632dd40a82695a",
-    "crates/services/web-server/tests/api_specs/coverage.tsv": "723411d6e35d5568f179cca8eba57fee6c1c1e90fb72f8b40b1bcb03b2488342",
+    "crates/services/web-server/tests/api_specs/coverage.tsv": "8c2a594c54c89257c4f0ea97f41e272543fba2c9dc8ee10a6c961134fc981b76",
     "crates/services/web-server/tests/api_specs/editor.md": "68e11bf65a8deec4ff22b07387996242207e141e80a28ad5b9c4e34eeb31fedd",
     "crates/services/web-server/tests/api_specs/export.md": "a1c8da782f26fe5433d1fabc543e64b05c03fb3049edfb48d3e87a42f2f931f7",
-    "crates/services/web-server/tests/api_specs/import.md": "80068926714771830b33c814abb1c9dcf5a7384ea15e278cc94b6e6b90a2489a",
+    "crates/services/web-server/tests/api_specs/import.md": "243aed04bbae1e2bea26e5bdc3e196bdc02f7bfa6c0866f2f9a644e2d305aee5",
     "crates/services/web-server/tests/api_specs/presave.md": "0291151cbe60f65ebef5461f6b980c0d78f16f986b15bbbfe4cb2444abff50b7",
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
@@ -14483,7 +14483,7 @@
         "signature": "pub async fn create_editor_lr_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path(case_id): axum::extract::Path<uuid::Uuid>, axum::Json(request): axum::Json<crate::web::rest::case_editor_dto::CaseEditorPagePatchRequest>, ) -> lib_rest_core::Result<(axum::http::StatusCode, axum::Json<serde_json::Value>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs",
-          "line": 154
+          "line": 155
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
@@ -14611,7 +14611,7 @@
         "signature": "pub async fn delete_editor_lr_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, row_id)): axum::extract::Path<(uuid::Uuid, uuid::Uuid)>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs",
-          "line": 185
+          "line": 186
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
@@ -14706,7 +14706,7 @@
         "signature": "pub async fn get_editor_lr_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, row_id)): axum::extract::Path<(uuid::Uuid, uuid::Uuid)>, axum::extract::Query(query): axum::extract::Query<crate::web::rest::case_editor_rest::common::CaseEditorPageProjectionQuery>, ) -> lib_rest_core::Result<(axum::http::StatusCode, axum::Json<serde_json::Value>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs",
-          "line": 149
+          "line": 150
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
@@ -14834,7 +14834,7 @@
         "signature": "pub async fn patch_editor_lr_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, row_id)): axum::extract::Path<(uuid::Uuid, uuid::Uuid)>, axum::Json(request): axum::Json<crate::web::rest::case_editor_dto::CaseEditorPagePatchRequest>, ) -> lib_rest_core::Result<(axum::http::StatusCode, axum::Json<serde_json::Value>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs",
-          "line": 172
+          "line": 173
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
@@ -24988,11 +24988,11 @@
         "signature": "pub async fn list_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id)): Path<(Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<ParentMedicalHistory>>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25121,11 +25121,11 @@
         "signature": "pub async fn create_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id)): Path<(Uuid, Uuid)>, Json(params): Json<ParamsForCreate<ParentMedicalHistoryForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25285,11 +25285,11 @@
         "signature": "pub async fn delete_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25395,11 +25395,11 @@
         "signature": "pub async fn get_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25524,11 +25524,11 @@
         "signature": "pub async fn update_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, Json(params): Json<ParamsForUpdate<ParentMedicalHistoryForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25688,11 +25688,11 @@
         "signature": "pub async fn restore_parent_medical_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 261
+          "line": 268
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25817,11 +25817,11 @@
         "signature": "pub async fn list_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id)): Path<(Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<ParentPastDrugHistory>>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -25950,11 +25950,11 @@
         "signature": "pub async fn create_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id)): Path<(Uuid, Uuid)>, Json(params): Json<ParamsForCreate<ParentPastDrugHistoryForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -26114,11 +26114,11 @@
         "signature": "pub async fn delete_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -26224,11 +26224,11 @@
         "signature": "pub async fn get_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -26353,11 +26353,11 @@
         "signature": "pub async fn update_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, Json(params): Json<ParamsForUpdate<ParentPastDrugHistoryForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -26517,11 +26517,11 @@
         "signature": "pub async fn restore_parent_past_drug_history( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 271
+          "line": 278
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/parent_history_rest.rs",
-          "line": 57
+          "line": 64
         },
         "macro_name": "parent_history_rest_fns"
       },
@@ -40191,8 +40191,8 @@
         "path": "/api/organizations/{id}",
         "status": "asserted",
         "spec": "administration.md#delete-api-organizations-id",
-        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_delete_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints;tests/api_administration/organizations/delete_web.rs::delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency",
-        "gaps": "runtime NOT_RUN; 기존 403과 204 hard delete·감사 및 FK 실패 rollback을 단언; 모든 종속 유형은 미검증",
+        "evidence": "tests/authz/rbac_organizations.rs::test_non_admin_cannot_delete_organization;tests/authz/rbac_organizations.rs::test_sponsor_admin_cannot_access_organization_admin_endpoints;tests/api_administration/organizations/delete_web.rs::delete_deactivates_and_preserves_tenant_data_with_single_update_audit",
+        "gaps": "runtime NOT_RUN; 기존 403과 204 비활성화·데이터 보존·admin 조회·member session 거절·선택 목록 제외·단일 UPDATE 감사·반복 요청·DELETE/PUT platform 조직 보호를 단언",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 321

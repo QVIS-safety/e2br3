@@ -26,6 +26,13 @@ async fn ensure_parent_case(
 	parent_id: Uuid,
 ) -> Result<()> {
 	let parent = ParentInformationBmc::get(ctx, mm, parent_id).await?;
+	if parent.deleted {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "parent_information",
+			id: parent_id,
+		}
+		.into());
+	}
 	let patient = PatientInformationBmc::get(ctx, mm, parent.patient_id).await?;
 	if patient.case_id != case_id {
 		return Err(model::Error::EntityUuidNotFound {
