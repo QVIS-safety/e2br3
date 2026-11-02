@@ -2,7 +2,6 @@ use super::*;
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires full section presave child schema and audit tables"]
 async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -500,10 +499,12 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires receiver presave route seed data"]
 async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), common::DEMO_ROLE).await?;
 
 	let routes: Vec<(
 		String,
@@ -534,8 +535,9 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 	)
 	.bind(demo_org_id())
 	.bind(&["MFDS", "FDA"])
-	.fetch_all(mm.dbx().db())
+	.fetch_all(&mut *tx)
 	.await?;
+	tx.rollback().await?;
 
 	let labels: HashSet<&str> = routes
 		.iter()
@@ -649,7 +651,6 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires receiver presave route schema"]
 async fn test_receiver_presave_route_bmc_crud() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;

@@ -40,7 +40,6 @@ fn schema_alignment_covers_auditor_access_and_reaction_language() {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires receiver presave route schema"]
 async fn section_presave_tables_exist() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -91,8 +90,7 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires legacy submission receiver route schema assumptions"]
-async fn submission_receiver_options_schema_exists_without_receiver_presave_routes(
+async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 ) -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -113,16 +111,43 @@ async fn submission_receiver_options_schema_exists_without_receiver_presave_rout
 	.fetch_one(mm.dbx().db())
 	.await?;
 	assert!(
-		!receiver_presave_routes_exists,
-		"receiver_presave_routes must not exist; receiver presave is parent plus consignees only"
+		receiver_presave_routes_exists,
+		"receiver_presave_routes must retain receiver-specific routing configuration"
 	);
+	for (table, column, parent) in [
+		(
+			"submission_receiver_options",
+			"organization_id",
+			"organizations",
+		),
+		(
+			"receiver_presave_routes",
+			"receiver_presave_id",
+			"receiver_presaves",
+		),
+	] {
+		let owns_route: bool = sqlx::query_scalar(
+			"SELECT EXISTS (
+				SELECT 1 FROM pg_constraint c
+				JOIN pg_attribute a ON a.attrelid = c.conrelid
+				 AND c.conkey = ARRAY[a.attnum]::smallint[]
+				WHERE c.contype = 'f' AND c.conrelid = $1::text::regclass
+				 AND a.attname = $2 AND c.confrelid = $3::text::regclass
+			)",
+		)
+		.bind(table)
+		.bind(column)
+		.bind(parent)
+		.fetch_one(mm.dbx().db())
+		.await?;
+		assert!(owns_route, "{table}.{column} must reference {parent}");
+	}
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires receiver presave route schema"]
 async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
@@ -183,6 +208,10 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"study_presave_registration_numbers",
 			"study_presave_registration_numbers_via_parent",
+		),
+		(
+			"study_presave_fda_cross_reported_ind_numbers",
+			"study_presave_fda_cross_reported_ind_numbers_via_parent",
 		),
 		(
 			"study_presave_products",
@@ -350,29 +379,39 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 	Ok(())
 }
 
-#[test]
-#[ignore = "requires legacy section presave compatibility block"]
-fn section_presave_compatibility_cleans_cross_org_links_before_composite_fks() {
-	let schema = include_str!("../../../../../db/bootstrap/01-safetydb-schema.sql");
-	let product_cleanup = schema
-		.find("UPDATE product_presaves p")
-		.expect("compatibility block must null cross-org product->sender links");
-	let product_fk = schema
-		.find("ALTER TABLE product_presaves\n            ADD CONSTRAINT product_presaves_sender_org_fk")
-		.expect("compatibility block must add product->sender composite FK");
-	let study_cleanup = schema
-		.find("UPDATE study_presaves s")
-		.expect("compatibility block must null cross-org study->product links");
-	let study_fk = schema
-		.find("ALTER TABLE study_presaves\n            ADD CONSTRAINT study_presaves_product_org_fk")
-		.expect("compatibility block must add study->product composite FK");
+#[serial]
+#[tokio::test]
+async fn section_presave_composite_fks_preserve_organization_on_parent_delete(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
 
-	assert!(
-		product_cleanup < product_fk,
-		"product->sender mismatch cleanup must run before adding the composite FK"
-	);
-	assert!(
-		study_cleanup < study_fk,
-		"study->product mismatch cleanup must run before adding the composite FK"
-	);
+	// SET NULL must clear only the link, never the tenant component of the FK.
+	for (table, constraint, link) in [
+		(
+			"product_presaves",
+			"product_presaves_sender_org_fk",
+			"sender_presave_id",
+		),
+		(
+			"study_presaves",
+			"study_presaves_product_org_fk",
+			"product_presave_id",
+		),
+	] {
+		let clears_only_link: bool = sqlx::query_scalar(
+			"SELECT c.confdeltype = 'n'
+			 AND c.confdelsetcols = ARRAY[a.attnum]::smallint[]
+			FROM pg_constraint c
+			JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attname = $3
+			WHERE c.contype = 'f' AND c.conrelid = $1::text::regclass AND c.conname = $2",
+		)
+		.bind(table)
+		.bind(constraint)
+		.bind(link)
+		.fetch_one(mm.dbx().db())
+		.await?;
+		assert!(clears_only_link, "{constraint} must clear only {link}");
+	}
+	Ok(())
 }

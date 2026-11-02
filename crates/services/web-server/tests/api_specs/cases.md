@@ -10,7 +10,7 @@
 
 handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통 CRUD handler의 소스상 collection/item 응답은 각각 `200 {"data": [...]}`, `200 {"data": {...}}`; create는 `201`, update와 restore는 `200`이다. soft-delete handler는 주로 `204`이고 기본 list에서 삭제 행을 숨기지만 patient identifier delete처럼 `200 {"data": {...}}`인 예외가 있다. 이 문단은 실행 결과가 아니며, 실제 assertion 여부는 operation별 coverage 상태로만 판단한다. update/delete handler는 기존 공통 audit reason 전달 규칙을 사용하며 Case 삭제는 body의 `reason_for_change`와 `e_signature {meaning,password}`를 요구한다. 필드 이름은 별도 표기가 없으면 DTO의 snake_case이며 Case 공개 create만 camelCase를 받는다.
 
-`registration_only`는 활성 [protected_inventory_matches_checked_in_snapshot](../authz/protected_route_inventory.rs)가 method/path 등록을 확인한다는 뜻이다. 같은 파일의 ignored dump test는 출력 도구일 뿐 행동·status 근거로 세지 않았다. fixture/setup 호출과 다른 endpoint를 준비하기 위한 helper도 대상 endpoint의 coverage로 세지 않았다.
+`registration_only`는 활성 [protected_inventory_matches_checked_in_snapshot](../authz/protected_route_inventory.rs)가 method/path 등록을 확인한다는 뜻이다. 스냅샷 후보 출력은 같은 활성 검사를 `--nocapture`로 실행해 확인하며 별도 ignored 테스트로 세지 않는다. fixture/setup 호출과 다른 endpoint를 준비하기 위한 helper도 대상 endpoint의 coverage로 세지 않았다.
 
 <a id="case-core"></a>
 ## Case core와 query

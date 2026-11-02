@@ -19,7 +19,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | `api_submission` | 12 | 29 | 0 | 1 |
 | `api_terminology` | 6 | 24 | 0 | 0 |
 | `api_administration` | 37 | 69 | 0 | 0 |
-| `authz` | 24 | 84 | 0 | 1 |
+| `authz` | 24 | 83 | 0 | 0 |
 | `xml` | 18 | 20 | 0 | 0 |
 
 ## web-server::api_cases
@@ -254,7 +254,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [authz.rs](../authz.rs) | authz Cargo integration target과 하위 모듈 연결 | target 등록 | 36 | 0 | 0 |
 | [authz/authentication_web.rs](../authz/authentication_web.rs) | login·refresh·logoff 상태, 잘못된 자격증명/token, 생성 사용자 로그인, legacy hash upgrade와 인증 middleware 거부를 검증한다. | HTTP 계약 | 450 | 10 | 0 |
 | [authz/authorization_snapshot.rs](../authz/authorization_snapshot.rs) | DB에서 repeatable-read로 적재한 authorization snapshot이 request-parts middleware extractor로 전달되고, 미부착 요청은 거부되는지 검증한다. | middleware component | 42 | 2 | 0 |
-| [authz/protected_route_inventory.rs](../authz/protected_route_inventory.rs) | source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다. | 소스 gate | 83 | 5 | 0 |
+| [authz/protected_route_inventory.rs](../authz/protected_route_inventory.rs) | source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다. | 소스 gate | 75 | 4 | 0 |
 | [authz/protected_route_parser.rs](../authz/protected_route_parser.rs) | Rust route 등록 source를 method/path/context inventory로 변환하는 parser와 괄호·인자 분리 로직을 단위 검증한다. | 소스 gate | 236 | 2 | 0 |
 | [authz/rbac_audit.rs](../authz/rbac_audit.rs) | audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다. | HTTP 계약 | 656 | 13 | 0 |
 | [authz/rbac_cases.rs](../authz/rbac_cases.rs) | 관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다. | HTTP 계약 | 86 | 2 | 0 |

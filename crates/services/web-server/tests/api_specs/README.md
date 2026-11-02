@@ -47,6 +47,19 @@ JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, gener
 
 `coverage.tsv`의 `method/path`는 router 원형, `spec`은 문서와 anchor, `evidence`는 `web-server` 기준 `tests/파일.rs::함수`(복수는 `;`), `gaps`는 직접 검사하지 않는 범위다. `evidence`는 근거 색인이며 모든 테스트의 역색인은 아니다. ignored/컴파일 제외·성공 조기 반환을 직접 행동 근거로 올리지 않는다.
 
+### 2026-11-02 ignored 정리
+
+`lib-core::section_presave`의 기존 ignored 7개를 일반 CI 대상으로 복구했다. [children.rs](../../../../libs/lib-core/tests/presave/children.rs)는 하위행 CRUD·감사, 실제 bootstrap seed의 수신 경로, 수신 경로 CRUD를 검사한다. seed 조회에도 사용자·조직 context를 설정해 RLS를 적용한다. [schema.rs](../../../../libs/lib-core/tests/presave/schema.rs)는 테이블, RLS·FK·감사 트리거, 제출 옵션의 조직 소속과 Presave 경로의 부모 소속, 복합 FK가 연결 ID만 NULL 처리하도록 정의됐는지를 검사한다. 현재 존재하는 경로 테이블을 금지하거나 제거된 bootstrap 호환 SQL 문자열을 찾던 두 검사는 현재 스키마 계약으로 교체했다. 이는 과거 DB 업그레이드 경로나 실제 hard-delete 동작의 검증 근거는 아니다.
+
+`authz`의 출력 전용 `dump_protected_inventory_snapshot` 선언은 제거했다. 기존 활성 `protected_inventory_matches_checked_in_snapshot`을 `--nocapture`로 실행하면 같은 후보 목록을 출력하고 일치 assertion도 수행한다.
+
+저장소에 남은 `#[ignore]`는 아래 **환경 의존 검사 2개**다. 일반 CI 성공에 포함하지 않으며, 명시적으로 실행했을 때만 별도 결과를 기록한다. 이 수정에서 새 ignore나 환경 부재 시 성공 반환을 추가하지 않았다.
+
+| 검사 | 명시적 실행 조건 | 일반 CI가 보장하지 않는 범위 |
+|---|---|---|
+| [test_real_java_submitter_integration_mfds](../api_submission/external.rs) | 실제 Java AS2 서비스, `REAL_AS2_SUBMITTER_URL`, `REAL_AS2_SUBMITTER_TOKEN`, `REAL_AS2_CALLBACK_TOKEN`, 서비스에서 테스트 callback으로의 접근, XML 자산 및 격리 테스트 DB. `api_submission` target에서 해당 이름과 `--ignored`를 선택 | 실제 Java 송신·ACK callback 연동. 실제 규제기관 접수 성공을 뜻하지 않음 |
+| [audit_field_labels_cover_live_schema_and_history](../../src/web/rest/audit_rest.rs) | 실제 감사 이력이 있는 전용 `e2br3_ui_*` DB의 `AUDIT_MAPPING_DATABASE_URL`과 읽기 권한. `web-server --lib`에서 해당 이름과 `--ignored`를 선택 | 해당 DB에 누적된 과거 감사 필드 전체의 표시 이름 매핑. 일반 감사 저장/조회 테스트와 별개 |
+
 ## 기준 변경군과 파일 책임
 
 기준 `2727d980`까지 Case 조회 4·legacy Editor GET 14·Presave study POST 3·XML validate 1·terminology 검색 3·administration/health 5개 API에 직접 동작 assertion을 연결했다. Case 부모 보존, Editor 혼합 valid/invalid 요청, Presave 동일 DTO graph 재저장 검사도 이 기준에 포함된다. 이번 변경은 기존 Editor·RE verifier에 ID 연결 재저장, 수정 재전송, 생략/빈 배열, 외부 ID 거절과 Case archive/restore assertion을 보강했다. 아래는 기준 검사와 함께 유지하는 파일 책임이다.
