@@ -16,6 +16,8 @@ parent 단일 행과 graph 생성 본문은 `{"data":{"rows":{...}}}`다. PATCH�
 
 부모6종의 HTTP DELETE는 `PresaveLifecycleService::archive`를 호출해 `UPDATE deleted=true`를 수행한다. 내부 BMC의 `delete`와 lifecycle `hard_delete`는 SQL DELETE 경로이므로 HTTP 계약의 근거로 혼용하지 않는다. 자식은 soft 6종(sender gateway/responsible person·study product/registration/reporter/FDA IND), hard 3종(product active substance·receiver consignee/route)으로 구분한다.
 
+2026-11-02 복구한 모델 검사에서 `StudyPresaveRegistrationNumberBmc::delete`가 Narrative 부모 삭제 서비스를 잘못 호출하는 결함을 확인해 해당 자식의 `base_uuid::delete`로 수정했다. [모델 CRUD 검사](../../../../libs/lib-core/tests/presave/children.rs)는 등록번호의 실제 삭제·재조회 not-found와 무관한 Narrative 값 보존을 확인한다. HTTP registration DELETE는 기존 `DeleteMode: soft`를 유지한다.
+
 <a id="sender"></a>
 
 ## Sender

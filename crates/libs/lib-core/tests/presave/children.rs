@@ -483,6 +483,18 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
+	assert!(matches!(
+		StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, registration_id).await,
+		Err(ModelError::EntityUuidNotFound { entity: "study_presave_registration_numbers", id })
+			if id == registration_id
+	));
+	assert_eq!(
+		NarrativePresaveBmc::get(&ctx, &mm, narrative_id)
+			.await?
+			.case_narrative,
+		Some(format!("Child narrative {suffix}")),
+		"deleting a study registration must preserve unrelated narrative presaves"
+	);
 	ProductPresaveActiveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
 	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, consignee_id).await?;
 	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, responsible_id).await?;
