@@ -225,8 +225,8 @@ jobs:
   # ============================================
   test:
     name: Test (${{ matrix.name }})
-    needs: [registry, test-plan]
-    if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}
+    needs: [test-plan]
+    if: ${{ needs.test-plan.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
