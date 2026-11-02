@@ -65,6 +65,223 @@ async fn study_presave_create_persists_all_canonical_rows_atomically() -> Result
 
 #[serial]
 #[tokio::test]
+async fn study_child_null_flavors_distinguish_omission_null_and_values() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let product_id = create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::POST,
+		"/api/presaves/studies".to_string(),
+		Some(json!({ "data": { "rows": {
+			"study": {
+				"productPresaveId": product_id,
+				"studyName": "Reject empty FDA child",
+				"sponsorStudyNumber": format!("STUDY-{}", Uuid::new_v4()),
+				"studyTypeReaction": "1"
+			},
+			"products": [],
+			"reporters": [],
+			"registrationNumbers": [],
+			"fdaCrossReportedInds": [{
+				"sequenceNumber": 1,
+				"indNumber": null,
+				"indNumberNullFlavor": null
+			}]
+		} } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	let study_id =
+		create_study_presave_for_product_via_api(&app, &cookie, product_id, "fda")
+			.await?;
+	let details_path = format!("/api/presaves/studies/{study_id}/details");
+
+	let seeded = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": {
+			"registrationNumbers": [{
+				"sequenceNumber": 1,
+				"registrationNumber": "REG-NF",
+				"countryCode": "US"
+			}],
+			"fdaCrossReportedInds": [{
+				"sequenceNumber": 1,
+				"indNumber": "1234567890"
+			}]
+		} } }),
+	)
+	.await?;
+	let registration_id = seeded["data"]["rows"]["registrationNumbers"][0]["id"]
+		.as_str()
+		.ok_or("missing registration id")?
+		.to_string();
+	let ind_id = seeded["data"]["rows"]["fdaCrossReportedInds"][0]["id"]
+		.as_str()
+		.ok_or("missing FDA IND id")?
+		.to_string();
+
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PUT,
+		details_path.clone(),
+		Some(json!({ "data": { "rows": {
+			"fdaCrossReportedInds": [{
+				"sequenceNumber": 2,
+				"indNumber": null,
+				"indNumberNullFlavor": null
+			}]
+		} } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let omitted = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": {
+			"registrationNumbers": [{ "id": registration_id }],
+			"fdaCrossReportedInds": [{ "id": ind_id }]
+		} } }),
+	)
+	.await?;
+	assert_eq!(
+		omitted["data"]["rows"]["registrationNumbers"][0]["registrationNumber"],
+		"REG-NF"
+	);
+	assert_eq!(
+		omitted["data"]["rows"]["registrationNumbers"][0]["countryCode"],
+		"US"
+	);
+	assert_eq!(
+		omitted["data"]["rows"]["fdaCrossReportedInds"][0]["indNumber"],
+		"1234567890"
+	);
+
+	let null_flavors = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": {
+			"registrationNumbers": [{
+				"id": registration_id,
+				"registrationNumber": null,
+				"registrationNumberNullFlavor": "ASKU",
+				"countryCode": null,
+				"countryCodeNullFlavor": "ASKU"
+			}],
+			"fdaCrossReportedInds": [{
+				"id": ind_id,
+				"indNumber": null,
+				"indNumberNullFlavor": "NA"
+			}]
+		} } }),
+	)
+	.await?;
+	assert_eq!(
+		null_flavors["data"]["rows"]["registrationNumbers"][0]["id"],
+		registration_id
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["registrationNumbers"][0]
+			["registrationNumberNullFlavor"],
+		"ASKU"
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["registrationNumbers"][0]
+			.get("registrationNumber"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["registrationNumbers"][0].get("countryCode"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["fdaCrossReportedInds"][0]["id"],
+		ind_id
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["fdaCrossReportedInds"][0]
+			["indNumberNullFlavor"],
+		"NA"
+	);
+	assert_eq!(
+		null_flavors["data"]["rows"]["fdaCrossReportedInds"][0].get("indNumber"),
+		Some(&serde_json::Value::Null)
+	);
+
+	let cleared = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": {
+			"registrationNumbers": [{
+				"id": registration_id,
+				"registrationNumberNullFlavor": null,
+				"countryCodeNullFlavor": null
+			}],
+			"fdaCrossReportedInds": [{
+				"id": ind_id,
+				"indNumberNullFlavor": null
+			}]
+		} } }),
+	)
+	.await?;
+	assert_eq!(
+		cleared["data"]["rows"]["registrationNumbers"][0]["id"],
+		registration_id
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["fdaCrossReportedInds"][0]["id"],
+		ind_id
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["registrationNumbers"][0]
+			.get("registrationNumberNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["registrationNumbers"][0]
+			.get("countryCodeNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["fdaCrossReportedInds"][0]
+			.get("indNumberNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+
+	let reloaded = get_json_ok(&app, &cookie, details_path).await?;
+	assert_eq!(
+		reloaded["data"]["rows"]["registrationNumbers"][0]
+			.get("registrationNumberNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		reloaded["data"]["rows"]["registrationNumbers"][0]
+			.get("countryCodeNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		reloaded["data"]["rows"]["fdaCrossReportedInds"][0]
+			.get("indNumberNullFlavor"),
+		Some(&serde_json::Value::Null)
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

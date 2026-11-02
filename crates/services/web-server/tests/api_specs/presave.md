@@ -54,6 +54,8 @@ parent 단일 행과 graph 생성 본문은 `{"data":{"rows":{...}}}`다. PATCH�
 
 receiver 대표 키는 `receiverType`(`Regulatory Authority` 또는 `Original Manufacturer`), `organizationName`, `description`, 기관별 timeline day count/not-applicable 쌍이다. consignee는 `sequence_number`, `name`, `email`, `phone`을 받는다. details source에는 route rows도 있지만 별도 route CRUD는 등록되지 않았다. route는 details PUT으로 hard delete되며 old ID replay는 404와 전체 graph rollback, 재생성은 새 ID와 정확한 count를 직접 검사한다.
 
+수신자 일수 네 필드의 PATCH/details PUT은 생략하면 기존 값을 유지하고, 명시적 `null`이면 지우며, `0`은 숫자로 보존한다. 해당 not-applicable을 `true`로 보내면 일수도 같은 UPDATE에서 지운다. [`receiver_details_distinguish_null_day_counts_from_omission`](../api_presave/receiver_web.rs)은 저장 후 별도 GET으로 삭제를 확인한다.
+
 <a id="product"></a>
 
 ## Product
@@ -70,6 +72,8 @@ receiver 대표 키는 `receiverType`(`Regulatory Authority` 또는 `Original Ma
 | `GET`, `PATCH`, `DELETE /api/presaves/products/{product_id}/active-substances/{id}` | child 조회/변경/hard delete | PATCH 값/감사, DELETE 204, GET·재DELETE 404, wrong-parent 404 |
 
 product create/PATCH와 graph의 canonical 요청 키는 `senderPresaveId`, `receiverPresaveId`, `productId`, `medicinalProduct`, `medicinalProductNotation`, `preApprovalIpName`, `drugBrandName`, `originalManufacturer`, `productDescription`, `mpid`, `mpidVersion`, `mfdsMpid`, `mfdsMpidVersion`, `phpid`, `phpidVersion`, `investigationalProductBlinded`, `obtainDrugCountry`, `drugAuthorizationNumber`, `drugAuthorizationCountry`, `drugAuthorizationHolder`, `holderApplicantNameNotation`다. identity에는 `productId` 또는 `preApprovalIpName` 중 하나가 필요하다. `brandName`은 canonical key가 아니며 unknown field로 거절된다. details graph 응답은 모두 camelCase다. 반면 direct product list/get/PATCH 응답은 model serialization을 그대로 써서 대다수 키가 snake_case이고 `preApprovalIpName`, `drugBrandName`, `mpidVersion`, `phpidVersion`만 명시적 serde 이름을 쓴다. substance graph 키는 `id`, `deleted`, `sequenceNumber`, `substanceName`, `substanceTermIdVersion`, `substanceTermId`, `mfdsVersion`, `mfdsId`, `substanceStrengthValue`, `substanceStrengthUnit`다. MFDS device rows와 과거 source 필드는 details 응답에 포함되지 않는다.
+
+제품 성분 함량은 details PUT의 `substanceStrengthValue`와 직접 child PATCH의 `strength_value` 모두 생략 시 유지, 명시적 `null` 시 삭제, `"0"` 저장을 지원한다. [`product_substance_strength_distinguishes_omission_null_and_zero`](../api_presave/product_web.rs)은 두 경로와 별도 GET에서 같은 child ID·이름 보존을 확인한다.
 
 <a id="reporter-narrative"></a>
 
@@ -101,6 +105,8 @@ reporter 대표 키는 `reporterTitle`, `reporterGivenName`, `reporterFamilyName
 | `GET`, `POST /api/presaves/studies/{study_id}/reporters` 및 `/{id}`의 `GET`, `PATCH`, `DELETE` | study-reporter 단건 CRUD | 반복 soft delete, GET/list 동일 ID·count, 명시 restore, PATCH 감사, wrong-parent 404 |
 
 study 대표 키는 `productPresaveId`, `studyName`, `studyNameNotation`, `sponsorStudyNumber`, `studyTypeReaction`이다. 자식은 공통으로 `id`, `deleted`, `sequenceNumber`를 사용하고 각각 `productPresaveId/productName`, `registrationNumber/countryCode`와 null-flavor, `reporterPresaveId/reporterOrganization/reporterGivenName/reporterQualification`을 더한다.
+
+Study details PUT의 등록번호·국가·FDA IND 값과 NullFlavor는 생략 시 유지, 명시적 `null` 시 삭제를 구분한다. [`study_child_null_flavors_distinguish_omission_null_and_values`](../api_presave/study_web.rs)은 값→NullFlavor→해제와 새 GET을 검사한다. 새 FDA IND 행의 값과 NullFlavor를 모두 `null`로 보내는 요청은 기존처럼 400이다.
 
 <a id="lifecycle-audit"></a>
 

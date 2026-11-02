@@ -449,7 +449,7 @@ pub(super) fn product_update(data: &ProductPresaveForUpdate) -> Result<()> {
 }
 
 macro_rules! substance {
-	($data:expr, $prefix:expr) => {{
+	($data:expr, $prefix:expr, $strength_value:expr) => {{
 		// ICH.G.k.2.3.r.1-3 / MFDS.G.k.2.3.r.1.KR.1
 		check(
 			&format!("{}.substanceName", $prefix),
@@ -483,7 +483,7 @@ macro_rules! substance {
 		)?;
 		decimal(
 			&format!("{}.substanceStrengthValue", $prefix),
-			$data.strength_value.as_ref(),
+			$strength_value,
 			input_contracts::generated::g::g_k_2_3_r_3a,
 		)?;
 		check(
@@ -500,19 +500,27 @@ pub(super) fn substance_detail(
 	data: &ProductActiveSubstanceDetailsForUpdate,
 	index: usize,
 ) -> Result<()> {
-	substance!(data, format!("activeSubstances.{index}"))
+	substance!(
+		data,
+		format!("activeSubstances.{index}"),
+		data.strength_value.as_ref().and_then(Option::as_ref)
+	)
 }
 
 pub(super) fn substance_create(
 	data: &super::product::ProductActiveSubstanceForRestCreate,
 ) -> Result<()> {
-	substance!(data, "activeSubstance")
+	substance!(data, "activeSubstance", data.strength_value.as_ref())
 }
 
 pub(super) fn substance_update(
 	data: &ProductPresaveActiveSubstanceForUpdate,
 ) -> Result<()> {
-	substance!(data, "activeSubstance")
+	substance!(
+		data,
+		"activeSubstance",
+		data.strength_value.as_ref().and_then(Option::as_ref)
+	)
 }
 
 macro_rules! study_parent {
@@ -589,10 +597,14 @@ pub(super) fn registration_detail(
 	index: usize,
 ) -> Result<()> {
 	registration_values(
-		data.registration_number.as_deref(),
-		data.registration_number_null_flavor.as_deref(),
-		data.country_code.as_deref(),
-		data.country_code_null_flavor.as_deref(),
+		data.registration_number.as_ref().and_then(Option::as_deref),
+		data.registration_number_null_flavor
+			.as_ref()
+			.and_then(Option::as_deref),
+		data.country_code.as_ref().and_then(Option::as_deref),
+		data.country_code_null_flavor
+			.as_ref()
+			.and_then(Option::as_deref),
 		&format!("registrationNumbers.{index}"),
 	)
 }
@@ -628,8 +640,10 @@ pub(super) fn fda_ind_detail(
 	// FDA.C.5.6.r
 	check(
 		&format!("fdaCrossReportedInds.{index}.indNumber"),
-		text(data.ind_number.as_deref()),
-		data.ind_number_null_flavor.as_deref(),
+		text(data.ind_number.as_ref().and_then(Option::as_deref)),
+		data.ind_number_null_flavor
+			.as_ref()
+			.and_then(Option::as_deref),
 		input_contracts::generated::c::fda_c_5_6_r,
 	)
 }
@@ -722,7 +736,7 @@ mod tests {
 				deleted: Some(false),
 				sequence_number: Some(1),
 				ind_number: None,
-				ind_number_null_flavor: Some("NA".into()),
+				ind_number_null_flavor: Some(Some("NA".into())),
 			},
 			0,
 		)

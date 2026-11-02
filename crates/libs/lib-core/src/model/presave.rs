@@ -26,7 +26,7 @@ fn clean_presave_text(value: Option<&str>) -> Option<String> {
 		.map(str::to_string)
 }
 
-fn deserialize_patch_option<'de, D, T>(
+pub fn deserialize_patch_option<'de, D, T>(
 	deserializer: D,
 ) -> std::result::Result<Option<Option<T>>, D::Error>
 where
@@ -107,6 +107,7 @@ macro_rules! impl_child_bmc {
 		$table:literal,
 		$parent_col:literal,
 		[$($text_field:ident),* $(,)?]
+		$(, Patch: $patch:expr)?
 	) => {
 		pub struct $bmc;
 
@@ -153,6 +154,7 @@ macro_rules! impl_child_bmc {
 				mut data: $update,
 			) -> Result<()> {
 				let clear_fields = clear_blank_patch_fields!(data, [$($text_field),*]);
+				$(let (data, clear_fields) = ($patch)(data, clear_fields);)?
 				base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 			}
 
@@ -800,7 +802,7 @@ impl IntoOrgScopedCreate for ReceiverPresaveForCreate {
 	}
 }
 
-#[derive(Default, Fields, Deserialize)]
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ReceiverPresaveForUpdate {
 	pub deleted: Option<bool>,
@@ -810,16 +812,37 @@ pub struct ReceiverPresaveForUpdate {
 	pub organization_name: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub day_count_rule: Option<String>,
-	pub nsae_solicited_day_count: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub nsae_solicited_day_count: Option<Option<i32>>,
 	pub nsae_solicited_not_applicable: Option<bool>,
-	pub nsae_non_solicited_day_count: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub nsae_non_solicited_day_count: Option<Option<i32>>,
 	pub nsae_non_solicited_not_applicable: Option<bool>,
-	pub sae_solicited_day_count: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub sae_solicited_day_count: Option<Option<i32>>,
 	pub sae_solicited_not_applicable: Option<bool>,
-	pub sae_non_solicited_day_count: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub sae_non_solicited_day_count: Option<Option<i32>>,
 	pub sae_non_solicited_not_applicable: Option<bool>,
 	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub description: Option<String>,
+}
+
+#[derive(Fields)]
+struct ReceiverPresavePatch {
+	deleted: Option<bool>,
+	receiver_type: Option<String>,
+	organization_name: Option<String>,
+	day_count_rule: Option<String>,
+	nsae_solicited_day_count: Option<i32>,
+	nsae_solicited_not_applicable: Option<bool>,
+	nsae_non_solicited_day_count: Option<i32>,
+	nsae_non_solicited_not_applicable: Option<bool>,
+	sae_solicited_day_count: Option<i32>,
+	sae_solicited_not_applicable: Option<bool>,
+	sae_non_solicited_day_count: Option<i32>,
+	sae_non_solicited_not_applicable: Option<bool>,
+	description: Option<String>,
 }
 
 pub struct ReceiverPresaveBmc;
@@ -904,7 +927,7 @@ impl ReceiverPresaveBmc {
 		id: Uuid,
 		mut data: ReceiverPresaveForUpdate,
 	) -> Result<()> {
-		let clear_fields = clear_blank_patch_fields!(
+		let mut clear_fields = clear_blank_patch_fields!(
 			data,
 			[
 				receiver_type,
@@ -940,18 +963,39 @@ impl ReceiverPresaveBmc {
 			)?;
 		}
 		let clear_nsae_non_solicited_day_count =
-			data.nsae_non_solicited_not_applicable == Some(true);
+			matches!(data.nsae_non_solicited_day_count, Some(None))
+				|| data.nsae_non_solicited_not_applicable == Some(true);
 		let clear_sae_non_solicited_day_count =
-			data.sae_non_solicited_not_applicable == Some(true);
+			matches!(data.sae_non_solicited_day_count, Some(None))
+				|| data.sae_non_solicited_not_applicable == Some(true);
 		let clear_nsae_solicited_day_count =
-			data.nsae_solicited_not_applicable == Some(true);
+			matches!(data.nsae_solicited_day_count, Some(None))
+				|| data.nsae_solicited_not_applicable == Some(true);
 		let clear_sae_solicited_day_count =
-			data.sae_solicited_not_applicable == Some(true);
+			matches!(data.sae_solicited_day_count, Some(None))
+				|| data.sae_solicited_not_applicable == Some(true);
+		for (clear, field) in [
+			(
+				clear_nsae_non_solicited_day_count,
+				"nsae_non_solicited_day_count",
+			),
+			(
+				clear_sae_non_solicited_day_count,
+				"sae_non_solicited_day_count",
+			),
+			(clear_nsae_solicited_day_count, "nsae_solicited_day_count"),
+			(clear_sae_solicited_day_count, "sae_solicited_day_count"),
+		] {
+			if clear {
+				clear_fields.push(field);
+			}
+		}
 		Self::validate_timeline(
 			if clear_nsae_non_solicited_day_count {
 				None
 			} else {
 				data.nsae_non_solicited_day_count
+					.flatten()
 					.or(current.nsae_non_solicited_day_count)
 			},
 			data.nsae_non_solicited_not_applicable
@@ -960,6 +1004,7 @@ impl ReceiverPresaveBmc {
 				None
 			} else {
 				data.sae_non_solicited_day_count
+					.flatten()
 					.or(current.sae_non_solicited_day_count)
 			},
 			data.sae_non_solicited_not_applicable
@@ -968,6 +1013,7 @@ impl ReceiverPresaveBmc {
 				None
 			} else {
 				data.nsae_solicited_day_count
+					.flatten()
 					.or(current.nsae_solicited_day_count)
 			},
 			data.nsae_solicited_not_applicable
@@ -976,23 +1022,46 @@ impl ReceiverPresaveBmc {
 				None
 			} else {
 				data.sae_solicited_day_count
+					.flatten()
 					.or(current.sae_solicited_day_count)
 			},
 			data.sae_solicited_not_applicable
 				.or(current.sae_solicited_not_applicable),
 		)?;
 		Self::ensure_unique_identity(ctx, mm, Some(id), organization_name).await?;
+		let data = ReceiverPresavePatch {
+			deleted: data.deleted,
+			receiver_type: data.receiver_type,
+			organization_name: data.organization_name,
+			day_count_rule: data.day_count_rule,
+			nsae_solicited_day_count: if clear_nsae_solicited_day_count {
+				None
+			} else {
+				data.nsae_solicited_day_count.flatten()
+			},
+			nsae_solicited_not_applicable: data.nsae_solicited_not_applicable,
+			nsae_non_solicited_day_count: if clear_nsae_non_solicited_day_count {
+				None
+			} else {
+				data.nsae_non_solicited_day_count.flatten()
+			},
+			nsae_non_solicited_not_applicable: data
+				.nsae_non_solicited_not_applicable,
+			sae_solicited_day_count: if clear_sae_solicited_day_count {
+				None
+			} else {
+				data.sae_solicited_day_count.flatten()
+			},
+			sae_solicited_not_applicable: data.sae_solicited_not_applicable,
+			sae_non_solicited_day_count: if clear_sae_non_solicited_day_count {
+				None
+			} else {
+				data.sae_non_solicited_day_count.flatten()
+			},
+			sae_non_solicited_not_applicable: data.sae_non_solicited_not_applicable,
+			description: data.description,
+		};
 		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await?;
-		Self::clear_not_applicable_day_counts(
-			ctx,
-			mm,
-			id,
-			clear_nsae_non_solicited_day_count,
-			clear_sae_non_solicited_day_count,
-			clear_nsae_solicited_day_count,
-			clear_sae_solicited_day_count,
-		)
-		.await?;
 		Ok(())
 	}
 
@@ -1128,66 +1197,6 @@ impl ReceiverPresaveBmc {
 		} else {
 			Ok(())
 		}
-	}
-
-	async fn clear_not_applicable_day_counts(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-		clear_nsae_non_solicited_day_count: bool,
-		clear_sae_non_solicited_day_count: bool,
-		clear_nsae_solicited_day_count: bool,
-		clear_sae_solicited_day_count: bool,
-	) -> Result<()> {
-		if !clear_nsae_non_solicited_day_count
-			&& !clear_sae_non_solicited_day_count
-			&& !clear_nsae_solicited_day_count
-			&& !clear_sae_solicited_day_count
-		{
-			return Ok(());
-		}
-
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
-		let result = dbx
-			.execute(
-				sqlx::query(
-					"UPDATE receiver_presaves SET \
-					 nsae_non_solicited_day_count = CASE WHEN $2 THEN NULL ELSE nsae_non_solicited_day_count END, \
-					 sae_non_solicited_day_count = CASE WHEN $3 THEN NULL ELSE sae_non_solicited_day_count END, \
-					 nsae_solicited_day_count = CASE WHEN $4 THEN NULL ELSE nsae_solicited_day_count END, \
-					 sae_solicited_day_count = CASE WHEN $5 THEN NULL ELSE sae_solicited_day_count END, \
-					 updated_by = $6, updated_at = NOW() \
-					 WHERE id = $1",
-				)
-				.bind(id)
-				.bind(clear_nsae_non_solicited_day_count)
-				.bind(clear_sae_non_solicited_day_count)
-				.bind(clear_nsae_solicited_day_count)
-				.bind(clear_sae_solicited_day_count)
-				.bind(ctx.user_id()),
-			)
-			.await;
-		let count = match result {
-			Ok(count) => count,
-			Err(err) => {
-				dbx.rollback_txn().await?;
-				return Err(err.into());
-			}
-		};
-		if count == 0 {
-			dbx.rollback_txn().await?;
-			return Err(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			});
-		}
-		dbx.commit_txn().await?;
-		Ok(())
 	}
 }
 
@@ -1807,7 +1816,7 @@ pub struct ProductPresaveActiveSubstanceForCreate {
 	pub strength_unit: Option<String>,
 }
 
-#[derive(Default, Fields, Deserialize)]
+#[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProductPresaveActiveSubstanceForUpdate {
 	pub sequence_number: Option<i32>,
@@ -1821,9 +1830,22 @@ pub struct ProductPresaveActiveSubstanceForUpdate {
 	pub mfds_version: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_id: Option<String>,
-	pub strength_value: Option<Decimal>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub strength_value: Option<Option<Decimal>>,
 	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub strength_unit: Option<String>,
+}
+
+#[derive(Fields)]
+struct ProductPresaveActiveSubstancePatch {
+	sequence_number: Option<i32>,
+	substance_name: Option<String>,
+	substance_termid_version: Option<String>,
+	substance_termid: Option<String>,
+	mfds_version: Option<String>,
+	mfds_id: Option<String>,
+	strength_value: Option<Decimal>,
+	strength_unit: Option<String>,
 }
 
 impl_child_bmc!(
@@ -1840,7 +1862,26 @@ impl_child_bmc!(
 		mfds_version,
 		mfds_id,
 		strength_unit
-	]
+	],
+	Patch: |data: ProductPresaveActiveSubstanceForUpdate,
+			mut clear_fields: Vec<&'static str>| {
+		if matches!(data.strength_value, Some(None)) {
+			clear_fields.push("strength_value");
+		}
+		(
+			ProductPresaveActiveSubstancePatch {
+				sequence_number: data.sequence_number,
+				substance_name: data.substance_name,
+				substance_termid_version: data.substance_termid_version,
+				substance_termid: data.substance_termid,
+				mfds_version: data.mfds_version,
+				mfds_id: data.mfds_id,
+				strength_value: data.strength_value.flatten(),
+				strength_unit: data.strength_unit,
+			},
+			clear_fields,
+		)
+	}
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]

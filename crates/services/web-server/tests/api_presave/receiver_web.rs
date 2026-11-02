@@ -2,7 +2,7 @@ use super::helpers::*;
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::{Method, StatusCode};
 use lib_auth::token::generate_web_token;
-use serde_json::json;
+use serde_json::{json, Value};
 use serial_test::serial;
 
 #[serial]
@@ -56,6 +56,116 @@ async fn receiver_details_accept_canonical_camel_case_rows() -> Result<()> {
 		.await?;
 		assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{value:?}");
 	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn receiver_details_distinguish_null_day_counts_from_omission() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
+	let path = format!("/api/presaves/receivers/{receiver_id}/details");
+
+	put_json_ok(
+		&app,
+		&cookie,
+		path.clone(),
+		json!({ "data": { "rows": { "receiver": {
+			"nsaeNonSolicitedDayCount": 7,
+			"saeNonSolicitedDayCount": 15,
+			"nsaeSolicitedDayCount": 21,
+			"saeSolicitedDayCount": 30
+		} } } }),
+	)
+	.await?;
+
+	let omitted = put_json_ok(
+		&app,
+		&cookie,
+		path.clone(),
+		json!({ "data": { "rows": { "receiver": {
+			"description": "day counts retained"
+		} } } }),
+	)
+	.await?;
+	assert_eq!(
+		omitted["data"]["rows"]["receiver"]["nsaeNonSolicitedDayCount"],
+		7
+	);
+	assert_eq!(
+		omitted["data"]["rows"]["receiver"]["saeNonSolicitedDayCount"],
+		15
+	);
+	assert_eq!(
+		omitted["data"]["rows"]["receiver"]["nsaeSolicitedDayCount"],
+		21
+	);
+	assert_eq!(
+		omitted["data"]["rows"]["receiver"]["saeSolicitedDayCount"],
+		30
+	);
+
+	let cleared = put_json_ok(
+		&app,
+		&cookie,
+		path.clone(),
+		json!({ "data": { "rows": { "receiver": {
+			"nsaeNonSolicitedDayCount": null,
+			"saeNonSolicitedDayCount": null,
+			"nsaeSolicitedDayCount": null,
+			"saeSolicitedDayCount": null
+		} } } }),
+	)
+	.await?;
+	for field in [
+		"nsaeNonSolicitedDayCount",
+		"saeNonSolicitedDayCount",
+		"nsaeSolicitedDayCount",
+		"saeSolicitedDayCount",
+	] {
+		assert_eq!(
+			cleared["data"]["rows"]["receiver"].get(field),
+			Some(&Value::Null)
+		);
+	}
+	let reloaded = get_json_ok(&app, &cookie, path).await?;
+	for field in [
+		"nsaeNonSolicitedDayCount",
+		"saeNonSolicitedDayCount",
+		"nsaeSolicitedDayCount",
+		"saeSolicitedDayCount",
+	] {
+		assert_eq!(
+			reloaded["data"]["rows"]["receiver"].get(field),
+			Some(&Value::Null)
+		);
+	}
+
+	let not_applicable = put_json_ok(
+		&app,
+		&cookie,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		json!({ "data": { "rows": { "receiver": {
+			"nsaeNonSolicitedDayCount": 7,
+			"nsaeNonSolicitedNotApplicable": true
+		} } } }),
+	)
+	.await?;
+	assert_eq!(
+		not_applicable["data"]["rows"]["receiver"].get("nsaeNonSolicitedDayCount"),
+		Some(&Value::Null)
+	);
+	assert_eq!(
+		not_applicable["data"]["rows"]["receiver"]
+			.get("nsaeNonSolicitedNotApplicable")
+			.and_then(Value::as_bool),
+		Some(true)
+	);
+
 	Ok(())
 }
 

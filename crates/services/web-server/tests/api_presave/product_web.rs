@@ -76,6 +76,163 @@ async fn product_presave_details_accept_case_editor_rows_contract() -> Result<()
 
 #[serial]
 #[tokio::test]
+async fn product_substance_strength_distinguishes_omission_null_and_zero(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let product_id = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let details_path = format!("/api/presaves/products/{product_id}/details");
+
+	let seeded = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": { "activeSubstances": [{
+			"sequenceNumber": 1,
+			"substanceName": "Strength sibling",
+			"substanceStrengthValue": "7.5",
+			"substanceStrengthUnit": "mg"
+		}] } } }),
+	)
+	.await?;
+	let substance_id = seeded["data"]["rows"]["activeSubstances"][0]["id"]
+		.as_str()
+		.ok_or("missing active substance id")?
+		.to_string();
+
+	let omitted = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": { "activeSubstances": [{
+			"id": substance_id,
+			"substanceName": "Strength sibling"
+		}] } } }),
+	)
+	.await?;
+	assert_eq!(
+		omitted["data"]["rows"]["activeSubstances"][0]["substanceStrengthValue"],
+		"7.50000"
+	);
+
+	let cleared = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": { "activeSubstances": [{
+			"id": substance_id,
+			"substanceStrengthValue": null
+		}] } } }),
+	)
+	.await?;
+	assert_eq!(
+		cleared["data"]["rows"]["activeSubstances"][0].get("substanceStrengthValue"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["activeSubstances"][0]["id"],
+		substance_id
+	);
+	assert_eq!(
+		cleared["data"]["rows"]["activeSubstances"][0]["substanceName"],
+		"Strength sibling"
+	);
+	let reloaded_clear = get_json_ok(&app, &cookie, details_path.clone()).await?;
+	assert_eq!(
+		reloaded_clear["data"]["rows"]["activeSubstances"][0]
+			.get("substanceStrengthValue"),
+		Some(&serde_json::Value::Null)
+	);
+	assert_eq!(
+		reloaded_clear["data"]["rows"]["activeSubstances"][0]["id"],
+		substance_id
+	);
+	assert_eq!(
+		reloaded_clear["data"]["rows"]["activeSubstances"][0]["substanceName"],
+		"Strength sibling"
+	);
+
+	let zero = put_json_ok(
+		&app,
+		&cookie,
+		details_path.clone(),
+		json!({ "data": { "rows": { "activeSubstances": [{
+			"id": substance_id,
+			"substanceStrengthValue": "0"
+		}] } } }),
+	)
+	.await?;
+	assert_eq!(
+		zero["data"]["rows"]["activeSubstances"][0]["substanceStrengthValue"],
+		"0"
+	);
+
+	let standalone_path = format!(
+		"/api/presaves/products/{product_id}/active-substances/{substance_id}"
+	);
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		standalone_path.clone(),
+		Some(json!({ "data": { "strength_value": "3" } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		standalone_path.clone(),
+		Some(json!({ "data": { "substance_name": "Strength sibling" } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let retained = get_json_ok(&app, &cookie, details_path.clone()).await?;
+	assert_eq!(
+		retained["data"]["rows"]["activeSubstances"][0]["substanceStrengthValue"],
+		"3.00000"
+	);
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		standalone_path.clone(),
+		Some(json!({ "data": { "strength_value": null } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let standalone_cleared =
+		get_json_ok(&app, &cookie, details_path.clone()).await?;
+	assert_eq!(
+		standalone_cleared["data"]["rows"]["activeSubstances"][0]
+			.get("substanceStrengthValue"),
+		Some(&serde_json::Value::Null)
+	);
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		standalone_path,
+		Some(json!({ "data": { "strength_value": "0" } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let standalone_zero = get_json_ok(&app, &cookie, details_path).await?;
+	assert_eq!(
+		standalone_zero["data"]["rows"]["activeSubstances"][0]
+			["substanceStrengthValue"],
+		"0"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn product_presave_create_persists_complete_rows_atomically() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
