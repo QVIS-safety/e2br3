@@ -2872,8 +2872,7 @@ impl StudyPresaveRegistrationNumberBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Narrative, id)
-			.await
+		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
 	pub async fn list_by_parent(

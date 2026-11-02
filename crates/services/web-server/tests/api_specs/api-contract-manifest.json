@@ -30,7 +30,7 @@
     "crates/libs/lib-core/src/model/parent_history.rs": "3560c52298ea8fa5db514e45f57b1f82a8866411c969c551f67a984583179222",
     "crates/libs/lib-core/src/model/patch.rs": "431dda3beb5797477f4010f8596eedcb6da90d29368db76624cd4b467eabd33a",
     "crates/libs/lib-core/src/model/patient.rs": "9d0e66757fc432c8c3bf2f32a71a3e533ecede6443297b39c7a4070c190809e2",
-    "crates/libs/lib-core/src/model/presave.rs": "6664f0827e0f041aa2c39227a6f6a2890ace01a19530547e45ebb440d5643b56",
+    "crates/libs/lib-core/src/model/presave.rs": "9ae947a0206a1b4511aa837fee9300e1befe0dd4b71d55bade97284df2774786",
     "crates/libs/lib-core/src/model/reaction.rs": "adb8293500d4c013c6f8df599152321f5a80ce14c895509a04f5fe142cbbe8a3",
     "crates/libs/lib-core/src/model/receiver.rs": "00ee7ab5d964a42d7588d078bdae5c79fb12411bf7e38b4dc092e90e430f4461",
     "crates/libs/lib-core/src/model/safety_report.rs": "e40fe94d5a96e14adbd4bbb65fd926803626e5b948b63d1741a342103eaed7b6",
@@ -225,7 +225,7 @@
     "crates/services/web-server/tests/api_specs/editor.md": "68e11bf65a8deec4ff22b07387996242207e141e80a28ad5b9c4e34eeb31fedd",
     "crates/services/web-server/tests/api_specs/export.md": "ce80cafacf75a3a79e3cad99827b98e1f0602500177309d169e424953ca1a7b9",
     "crates/services/web-server/tests/api_specs/import.md": "e25322b80a073112ace58720af6707832825ef79879b92b8744ff7ae8b247ec0",
-    "crates/services/web-server/tests/api_specs/presave.md": "0291151cbe60f65ebef5461f6b980c0d78f16f986b15bbbfe4cb2444abff50b7",
+    "crates/services/web-server/tests/api_specs/presave.md": "335a12bf2455d5e396ea7aef7e29865626d53f8d8ce829d09c5ed34c6acc2a43",
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
     "crates/services/web-server/tests/api_submission/callbacks.rs": "f1a9b4cc8e67d262ba4e90fbc4afbdfd273330098abdc47ed36877eacab477a9",
@@ -47744,7 +47744,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3017:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
         }
       ]
     },
@@ -47900,7 +47900,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3017:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
         }
       ]
     },
@@ -48135,7 +48135,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3017:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
         }
       ]
     },
@@ -48259,7 +48259,7 @@
             {
               "rust_type": "StudyPresaveProductForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3040:StudyPresaveProductForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3039:StudyPresaveProductForUpdate"
             }
           ]
         }
@@ -48291,7 +48291,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3017:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
         }
       ]
     },
@@ -49100,7 +49100,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3059:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
         }
       ]
     },
@@ -49256,7 +49256,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3059:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
         }
       ]
     },
@@ -49491,7 +49491,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3059:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
         }
       ]
     },
@@ -49615,7 +49615,7 @@
             {
               "rust_type": "StudyPresaveReporterForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3086:StudyPresaveReporterForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3085:StudyPresaveReporterForUpdate"
             }
           ]
         }
@@ -49647,7 +49647,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3059:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
         }
       ]
     },
@@ -73974,7 +73974,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3017
+        "line": 3016
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -74043,7 +74043,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3017:StudyPresaveProduct",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -74139,7 +74139,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3040
+        "line": 3039
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -74176,7 +74176,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3040:StudyPresaveProductForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3039:StudyPresaveProductForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -74222,7 +74222,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3059
+        "line": 3058
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -74303,7 +74303,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3059:StudyPresaveReporter",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -74704,7 +74704,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3086
+        "line": 3085
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -74761,7 +74761,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3086:StudyPresaveReporterForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3085:StudyPresaveReporterForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -74823,7 +74823,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3114
+        "line": 3113
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -74901,7 +74901,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3114:NarrativePresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3113:NarrativePresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -75004,7 +75004,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3130
+        "line": 3129
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -75040,7 +75040,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3130:NarrativePresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3129:NarrativePresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -75081,7 +75081,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3162
+        "line": 3161
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]",
@@ -75139,7 +75139,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3162:NarrativePresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3161:NarrativePresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -97211,7 +97211,7 @@
         {
           "rust_type": "NarrativePresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3130:NarrativePresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3129:NarrativePresaveForCreate"
         }
       ]
     },
@@ -97277,7 +97277,7 @@
         {
           "rust_type": "NarrativePresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3114:NarrativePresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3113:NarrativePresave"
         }
       ]
     },
@@ -97349,7 +97349,7 @@
         {
           "rust_type": "NarrativePresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3162:NarrativePresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3161:NarrativePresaveForUpdate"
         }
       ]
     },
