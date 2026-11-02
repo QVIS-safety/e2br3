@@ -78,7 +78,7 @@ resolver는 `x-e2br3-reason-for-change`, `x-e2br3-change-category`를 percent-de
 - 공지는 writer 이메일과 CREATE/UPDATE old/new title을 확인한다. [`test_dashboard_notices_are_org_scoped_and_audited`](../api_administration/admin_settings/notices_web.rs).
 - editor 변경 reason이 case audit projection의 `reason`과 field row에 나타나는 것은 [`fda_device_scalar_editor_save_projects_audit_trail`](../api_editor/audit/projection.rs)에서 확인한다.
 
-설정/공지 테스트의 DB 직접 query는 audit 조회 API 권한을 증명하지 않는다. 반대로 audit API 테스트는 모든 mutation이 감사된다는 전수 증명이 아니다. category header, percent-decoding 오류, IP/user-agent, e-signature, 실패 mutation의 무감사, 손상된 감사 chain의 HTTP 보고 분기는 남은 공백이다. 정상 chain report와 viewer 403는 [감사 API 명세](administration.md#get-api-audit-logs-verify-integrity)에 연결했다.
+설정/공지 테스트의 DB 직접 query는 audit 조회 API 권한을 증명하지 않는다. 반대로 audit API 테스트는 모든 mutation이 감사된다는 전수 증명이 아니다. category header, percent-decoding 오류, IP/user-agent, e-signature, 실패 mutation의 무감사는 남은 공백이다. 정상·부분·손상 chain report, query validation과 viewer 403는 [감사 API 명세](administration.md#get-api-audit-logs-verify-integrity)에 연결했다.
 
 <a id="error-contract"></a>
 ## 오류 계약과 정보 은닉

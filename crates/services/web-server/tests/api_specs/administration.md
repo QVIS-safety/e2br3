@@ -215,8 +215,9 @@
 <a id="get-api-audit-logs"></a>
 ### `GET /api/audit-logs` — asserted
 
-- 쿼리: `filters[table_name]`, `filters[action]`, `list_options.*`. 성공 `200 {"data":[{"id", "organization_id","table_name","record_id","action","user_id","reason_for_change","change_category","e_signature_id","user_display","changed_fields","old_values","new_values","ip_address","user_agent","prev_hash","entry_hash","created_at"},...]}`.
+- 쿼리: `filters[table_name]`, `filters[action]`, `list_options.*`. 성공 `200 {"data":[{"id", "organization_id","table_name","record_id","action","user_id","reason_for_change","change_category","e_signature_id","user_display","changed_fields","old_values","new_values","ip_address","user_agent","prev_hash","entry_hash","hash_version","created_at"},...]}`.
 - 직접 단언: admin `200`, viewer/user/권한 없는 custom manager `403`, sponsor admin은 자신의 조직만, system admin은 교차 조직 행도 조회. 사용자·role 변경 감사 내용도 실제 API로 조회한다. [`rbac_audit.rs`](../authz/rbac_audit.rs).
+- 각 row는 `prev_hash`, `entry_hash`, `hash_version`을 함께 반환해 해당 버전의 canonical payload로 검증할 수 있다.
 - 미단언: 필터/정렬/페이지의 전체 조합과 chain hash 필드 노출 제한.
 
 <a id="get-api-audit-logs-by-record"></a>
@@ -237,10 +238,11 @@
 <a id="get-api-audit-logs-verify-integrity"></a>
 ### `GET /api/audit-logs/verify-integrity` — asserted
 
-- 구현은 audit collection 권한 뒤 hash chain을 검사하고 `200 {"data":{"total_rows":number,"verified_ok_rows":number,"broken_rows":number,"first_broken_id":number|null,"first_broken_reason":string|null,"checked_at":"RFC3339"}}`를 반환한다.
-- [`test_audit_integrity_reports_healthy_chain_and_requires_permission`](../api_administration/audit_web.rs)는 admin GET 200, 비어 있지 않은 정상 chain의 total=verified·broken=0·최초 손상 필드 null·RFC3339 checked_at, viewer GET 403와 보고서 비노출을 검사한다.
+- audit collection 권한 뒤 선택 `since_id`, `until_id`(포함 범위), `limit`(기본 1000, 1..10000)으로 고정 snapshot의 hash chain page를 검사한다. 명시한 `until_id`는 실제 행이어야 하며 음수 ID, 역전 범위, 범위 밖 limit, 존재하지 않는 `until_id`는 `400`이다.
+- 성공 `200`의 기존 count/first-broken/`checked_at` 외에 `checked_from_id`, `checked_through_id`, `snapshot_head_id`, `snapshot_head_hash`, `next_since_id`, `has_more`, `legacy_rows`, `checkpoint_status`가 있다. 다음 page는 `next_since_id`를 포함 `since_id`로, 최초 응답의 `snapshot_head_id`를 `until_id`로 전달한다. `has_more=false`는 요청한 DB snapshot 범위를 소진했다는 뜻일 뿐 전체 이력의 진위나 suffix 삭제 방지 증명이 아니다. 독립 checkpoint는 별도 operator CLI가 보관된 head와 전체 prefix를 검증하며 이 API는 실행하지 않으므로 `checkpoint_status`는 `not_checked`다. `legacy_rows`는 검사 page의 v1 hash 행 수다.
+- [`test_audit_integrity_reports_healthy_chain_and_requires_permission`](../api_administration/audit_web.rs)는 정상 기본 bounded page, limit 1 불완전 page와 고정 snapshot, 단일 경계, head 뒤 빈 범위, 잘못된 query와 존재하지 않는 `until_id` SQLSTATE `22023`의 `400`, viewer `403`와 보고서 비노출을 검사한다. [`test_audit_integrity_reports_first_broken_row_and_reason`](../api_administration/audit_web.rs)는 실제 저장 hash를 손상시켜 first broken ID/reason HTTP 응답을 확인하고 원값을 복구한다.
 - [`test_audit_chain_preserves_id_order_with_waiting_writer`](../../../../libs/lib-core/tests/database/audit_chain.rs)는 별도 lib-core/database 검사다. 실제 advisory lock 대기 중인 writer를 만들어 ID 순서와 hash chain을 검증하며 HTTP 근거로 계산하지 않는다.
-- 손상 chain의 first_broken_id/reason 반환과 다른 권한 조합은 미단언이다. SQL 함수가 전체 chain을 검사하므로 이 보고서는 조직별 row 필터 결과가 아니다.
+- SQL 함수는 전역 chain을 검사하므로 이 보고서는 조직별 row 필터 결과가 아니다. 모든 legacy/v2 혼합 조합과 동시 page 사이 append는 직접 단언하지 않는다.
 
 ## 인증과 health
 

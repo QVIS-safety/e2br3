@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify test selection
-        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py scripts/tests/test_ci_terminology.py registry/tools/test_check_contract_test_results.py
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py scripts/tests/test_ci_terminology.py scripts/tests/test_audit_checkpoint.py registry/tools/test_check_contract_test_results.py
       - name: Verify API specification matches source
         run: python3 crates/services/web-server/tests/api_specs/check_api_contract_manifest.py
       - name: Select affected crates and test targets

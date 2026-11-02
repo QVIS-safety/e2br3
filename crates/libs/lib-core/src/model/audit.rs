@@ -63,6 +63,7 @@ pub struct AuditLog {
 	pub prev_hash: Option<String>,
 	#[sqlx(default)]
 	pub entry_hash: Option<String>,
+	pub hash_version: i16,
 	#[serde(with = "time::serde::rfc3339")]
 	pub created_at: OffsetDateTime,
 }
@@ -82,6 +83,25 @@ pub struct AuditChainVerificationReport {
 	pub first_broken_reason: Option<String>,
 	#[serde(with = "time::serde::rfc3339")]
 	pub checked_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct AuditChainRangeVerificationReport {
+	pub total_rows: i64,
+	pub verified_ok_rows: i64,
+	pub broken_rows: i64,
+	pub first_broken_id: Option<i64>,
+	pub first_broken_reason: Option<String>,
+	#[serde(with = "time::serde::rfc3339")]
+	pub checked_at: OffsetDateTime,
+	pub checked_from_id: Option<i64>,
+	pub checked_through_id: Option<i64>,
+	pub snapshot_head_id: Option<i64>,
+	pub snapshot_head_hash: Option<String>,
+	pub next_since_id: Option<i64>,
+	pub has_more: bool,
+	pub legacy_rows: i64,
+	pub checkpoint_status: String,
 }
 
 const LIST_LIMIT_DEFAULT: i64 = 1000;
@@ -105,6 +125,7 @@ enum AuditLogIden {
 	UserAgent,
 	PrevHash,
 	EntryHash,
+	HashVersion,
 	CreatedAt,
 }
 
@@ -255,6 +276,7 @@ impl AuditLogBmc {
 				AuditLogIden::UserAgent,
 				AuditLogIden::PrevHash,
 				AuditLogIden::EntryHash,
+				AuditLogIden::HashVersion,
 				AuditLogIden::CreatedAt,
 			])
 			.expr_as(
@@ -425,6 +447,58 @@ impl AuditLogBmc {
 			Err(err) => {
 				dbx.rollback_txn().await?;
 				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(report)
+	}
+
+	pub async fn verify_hash_chain_range(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		since_id: Option<i64>,
+		until_id: Option<i64>,
+		limit: i32,
+	) -> Result<AuditChainRangeVerificationReport> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_dbx(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let report = match dbx
+			.fetch_one(
+				sqlx::query_as::<_, AuditChainRangeVerificationReport>(
+					"SELECT report.*, 'not_checked'::TEXT AS checkpoint_status FROM verify_audit_log_hash_chain_range($1, $2, $3) report",
+				)
+				.bind(since_id)
+				.bind(until_id)
+				.bind(limit),
+			)
+			.await
+		{
+			Ok(report) => report,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				let err = crate::model::Error::from(err);
+				if err
+					.as_database_error()
+					.and_then(|db_error| db_error.code())
+					.as_deref()
+					== Some("22023")
+				{
+					return Err(crate::model::Error::Validation {
+						message: "invalid audit integrity range".to_string(),
+					});
+				}
+				return Err(err);
 			}
 		};
 		dbx.commit_txn().await?;
