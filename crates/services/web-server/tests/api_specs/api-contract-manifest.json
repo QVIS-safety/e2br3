@@ -42,20 +42,20 @@
     "crates/libs/lib-core/src/model/xml_import_history.rs": "5a0244d556f2016b26d895622bbbcb2b2582af059500198ec89a08428915deec",
     "crates/libs/lib-core/src/regulatory.rs": "6a79d13ede1e614721f43397fe98081f371444cc955dbc5ecc89a10ee5efb0dd",
     "crates/libs/lib-core/src/validation_report.rs": "739f12bc738307db600be04e70cd40aeac6d13df3ecf732ffd3193ff3eb8a3b8",
-    "crates/libs/lib-rest-core/src/lib.rs": "195208e586bc4b2062740ab8436c2182f0f965d1b91a8d4273df6250d755bcf3",
+    "crates/libs/lib-rest-core/src/lib.rs": "862f996ce205140aba089434457e3838de32bd73b3ee83936c3a3d9c16e03459",
     "crates/libs/lib-rest-core/src/rest_params.rs": "bc1dc560eb2699346eb469e060b9074379e432a2574e12761352628c15596c9a",
     "crates/libs/lib-rest-core/src/rest_result.rs": "aae7ac102c9a89ebcd0e3064f7bc40f704cfc84b4ed91b90afab255f3a32f476",
     "crates/libs/lib-rest-core/src/utils/macro_utils.rs": "c6888ae4e53a45df15b1cabdf733ff0156504aabf3aa10d8bc74258b125c1ee1",
     "crates/libs/lib-web/src/handlers/handlers_login.rs": "2197a76be210bf9888cf613234fe651129113b538c1c92b86299126d9c748c33",
     "crates/libs/lib-web/src/middleware/mw_db_ctx.rs": "6f1f95f7b14ecf78b43c9205fefb067f0ade97409f62a19d4337126678a873bd",
-    "crates/libs/lib-web/src/middleware/mw_res_map.rs": "165ce704d151067f00694d1f87b5cd844171948e9d4a92ef47577c53f944855a",
+    "crates/libs/lib-web/src/middleware/mw_res_map.rs": "ff5dc122386b44a2531c9b5b908f3258f756209838d94a4129c5427c8102f8eb",
     "crates/libs/xml/src/types.rs": "2cba32adecc06ec8408518a5399a97409e62328a6bf082e7a65ab7f5c48f79f5",
     "crates/services/web-server/src/lib.rs": "db35bccb68d978f2ae97a7b6403a5fbe739dc84c8a6fee5757b2dd725480d5d2",
     "crates/services/web-server/src/submission/types.rs": "465234223378d9ccdb49f58c50e4c30e41a1e64c8cbe44a99fb3d3311d713dd1",
-    "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "824172f0482e144e537750644cfe27483b4706770036405ad72dd79978c2c4ce",
+    "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "190ee254b4d4ad798a0fd096442434b33e2250967e623e546ba993dbcd06ef4e",
     "crates/services/web-server/src/web/rest/app_branding_rest.rs": "aea11d052d444bdbe0a32965792537b90185363a8f3cf2559b8a01c4a531c03b",
     "crates/services/web-server/src/web/rest/audit_rest.rs": "83e1d8862999a7a4c6c6b0e642e7c32874a4df0c0714cc4b64ce394565dcf536",
-    "crates/services/web-server/src/web/rest/case_editor_dto.rs": "cf94544dd05576c5c09b6ce7f56b9009f91e5863e969cb4d5f01dc634115bea7",
+    "crates/services/web-server/src/web/rest/case_editor_dto.rs": "3d06d4c937501a102ea96cf0fce3446ba9c44302cdc73aaf67b8b2c14d2fce16",
     "crates/services/web-server/src/web/rest/case_editor_rest/ae.rs": "bf5dd5fa50ac7c1a0ce3bca26b8d96fb1cbda060586def892361997ed666f0e1",
     "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "16b61c23523eb8e78478e151fde9485d95bf79ea3699e9b755f7a0beb7e6bf97",
     "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "4440a772e30bf3776c687cb7cb77c98b787040488a0708031f62a840abc2b127",
@@ -70,8 +70,8 @@
     "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs": "1d2415a6f9bdece1ada6e94f8d8e6771e37c26654948b6853f68fe800ceb09df",
     "crates/services/web-server/src/web/rest/case_editor_rest/lb.rs": "faebbfd24bcffee8082e7c2beb406c33a20a2256162135b4785ce6edf03da683",
     "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "6fa0b4297b232b4aae044c6cf9c5df7adfa5b029cd9f920d8c774a51609b44bf",
-    "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "be6779c5daa74dad7ddce1aafd8d2929f956adad1ea2786c1baca0b7d277baf6",
-    "crates/services/web-server/src/web/rest/case_export_rest.rs": "c1a9a6d7aa1b38bda0278b21d4a47abfe5335430a82fc5d75085a31756aec03a",
+    "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "c1cd233831c1c09c1ecbc3786aaffc7dda3dca5ecde297ed866a98aa6403cb2c",
+    "crates/services/web-server/src/web/rest/case_export_rest.rs": "14dd92e2aab253e868c5b8c10c671a63a3974b5e0c10be7d93caad768f56013f",
     "crates/services/web-server/src/web/rest/case_field_notation_rest.rs": "ec426889db77c8ef27a00b776cdf32a950ff6cf55f936a24b2e95cf634e58fa0",
     "crates/services/web-server/src/web/rest/case_identifiers_rest.rs": "8d24c719154b4e95e5bb2c6d657780a45b9fcdfdfe7929ffeeba9629f3772946",
     "crates/services/web-server/src/web/rest/case_intake_rest.rs": "911dd220ea1ec297f35432092faf2d84dbab32fbe7ab0d39ae565089708ddb95",
@@ -124,7 +124,7 @@
     "crates/services/web-server/tests/api_administration/admin_settings/appendices_web.rs": "c30a90e656432c9c8234b40df069a44bc411812641172f359a7f68fdea6c86e0",
     "crates/services/web-server/tests/api_administration/admin_settings/audit_web.rs": "23a381d46f869681fe97db4fe6f80d1731beeb5ef0ef8a45066768c871a21a0f",
     "crates/services/web-server/tests/api_administration/admin_settings/notices_web.rs": "2a1d90e7cf2f1f193a0157bcc2961d24dfb068d71277a39685e0b049819c5ef5",
-    "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "21dc52e94ea2104d349c15553b7c10cd40d24345b106d432b2ed08fe1d96b1b2",
+    "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "581b489e97e5f557a0db079f84cc43997e6f1a43e29c6ea3a9d558dd38c5d32b",
     "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "e0426b823408f32359ebf1770688967cd6dd311570ac0bb947c27b47a749a71c",
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "990c3f092cd27d73c1436068f6effb3fc40a050155f0328dc1360e43abaf3bd0",
     "crates/services/web-server/tests/api_administration/audit_web.rs": "2386b2ef0695ca91ea6df7a14237a3fc825df3907fb4e9e077953b75fbb4604c",
@@ -229,7 +229,7 @@
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
     "crates/services/web-server/tests/api_submission/callbacks.rs": "4d69031b8c7ded5d3a4a6ae294b8696f28c6d60d4860dd6e0f26a138ab35159d",
-    "crates/services/web-server/tests/api_submission/dispatch.rs": "cc5b7db5f3da350b52e3d215a9d4048ead6fabfb0cc1ce3211f5c291069428a7",
+    "crates/services/web-server/tests/api_submission/dispatch.rs": "09ba9632cc5c8acf753479d9c98b2872c925d652d3a241ddee42a4083a90f623",
     "crates/services/web-server/tests/api_submission/headers.rs": "aa695e6f18c2f55700e9ca0982823e24cdfc5b14a708508ae629638ef745438c",
     "crates/services/web-server/tests/api_submission/history.rs": "6851a814e8c02c0e403b018878430fd59468fd836bca3d3530eb0e159a9a8ebc",
     "crates/services/web-server/tests/api_submission/idempotency.rs": "aa48a53f214b93e55f077a1f4370bc469965d4c72332a087b0ebe96faaba5d7b",
@@ -250,7 +250,7 @@
     "crates/services/web-server/tests/authz/rbac_users/rls_scope_web.rs": "6a6a52e5e20263ac1bf8e25254389fb58a2c6f5d04f0db95911408c6f8065fd4",
     "crates/services/web-server/tests/authz/rbac_users/role_update_web.rs": "80ec7860549cb856db9e5507a0d5bc83e58d963f47d28c849db5e34818b7f2d4",
     "crates/services/web-server/tests/authz/rls_web.rs": "c1956a839192ac889022a952a4c08bdc7137ad55c8b0a4e6b06b8d7e0ac394e7",
-    "crates/services/web-server/tests/xml/import_export/rejections.rs": "63e041d4eb18f0bf8fd0deb09cafbbaa87eadc2acbab8808a74b41d95d39f290"
+    "crates/services/web-server/tests/xml/import_export/rejections.rs": "bc3f771422619b1cfe6e8357a3a1c1a5aefc4f18628e6189d4b7d7534d6b7606"
   },
   "shared_contracts": {
     "root-request-context": {
@@ -353,7 +353,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1103
+          "line": 1155
         },
         "signature": "pub async fn update_admin_notices( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(payload): Json< lib_rest_core::rest_params::ParamsForUpdate<AdminNoticesUpdateBody>, >, ) -> Result<(StatusCode, Json<AdminNoticesPayload>)>",
         "name": "update_admin_notices"
@@ -1201,7 +1201,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1055
+          "line": 1107
         },
         "signature": "pub async fn get_admin_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<(StatusCode, Json<AdminSettingsPayload>)>",
         "name": "get_admin_settings"
@@ -1285,7 +1285,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1075
+          "line": 1127
         },
         "signature": "pub async fn update_admin_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(payload): Json< lib_rest_core::rest_params::ParamsForUpdate<AdminSettingsUpdateBody>, >, ) -> Result<(StatusCode, Json<AdminSettingsPayload>)>",
         "name": "update_admin_settings"
@@ -2277,7 +2277,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 262
+          "line": 265
         },
         "signature": "pub async fn export_cases_zip( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, axum::Json(input): axum::Json<BulkXmlExportInput>, ) -> Result<Response>",
         "name": "export_cases_zip"
@@ -37317,7 +37317,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 458
+          "line": 464
         },
         "signature": "pub async fn list_case_xml_export_history( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>, )>",
         "name": "list_case_xml_export_history"
@@ -39394,7 +39394,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 427
+          "line": 433
         },
         "signature": "pub async fn list_xml_export_history( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>, )>",
         "name": "list_xml_export_history"
@@ -39478,7 +39478,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 492
+          "line": 498
         },
         "signature": "pub async fn download_xml_export_history_error( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<Response>",
         "name": "download_xml_export_history_error"
@@ -49707,7 +49707,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1019
+          "line": 1071
         },
         "signature": "pub async fn get_runtime_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<(StatusCode, Json<RuntimeSettingsPayload>)>",
         "name": "get_runtime_settings"
@@ -53156,7 +53156,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:512:RoutingProfile"
         }
       ]
     },
@@ -53263,7 +53263,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:512:RoutingProfile"
         }
       ]
     },
@@ -87482,7 +87482,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 484
+        "line": 485
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87542,7 +87542,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:484:RoutingSenderOption",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:485:RoutingSenderOption",
       "nested_type_refs": [
         {
           "rust_type": "String",
@@ -87591,7 +87591,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 498
+        "line": 499
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87651,7 +87651,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:498:EffectiveScopeSummary",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:499:EffectiveScopeSummary",
       "nested_type_refs": [
         {
           "rust_type": "Vec",
@@ -87707,7 +87707,7 @@
           "canonical_type": "sqlx::types::time::OffsetDateTime",
           "import": {
             "source": "crates/libs/lib-rest-core/src/lib.rs",
-            "line": 80
+            "line": 81
           }
         },
         {
@@ -87720,7 +87720,7 @@
           "canonical_type": "sqlx::types::time::OffsetDateTime",
           "import": {
             "source": "crates/libs/lib-rest-core/src/lib.rs",
-            "line": 80
+            "line": 81
           }
         }
       ]
@@ -87730,7 +87730,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 511
+        "line": 512
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87778,7 +87778,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:512:RoutingProfile",
       "nested_type_refs": [
         {
           "rust_type": "String",
@@ -87807,12 +87807,12 @@
         {
           "rust_type": "RoutingSenderOption",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:484:RoutingSenderOption"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:485:RoutingSenderOption"
         },
         {
           "rust_type": "EffectiveScopeSummary",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:498:EffectiveScopeSummary"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:499:EffectiveScopeSummary"
         }
       ]
     },
@@ -92448,17 +92448,21 @@
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\")]"
       ],
-      "raw": "struct CaseEditorShellMessageHeaderDto {\n\tpub message_receiver_identifier: String,\n}",
+      "raw": "struct CaseEditorShellMessageHeaderDto {\n\tpub message_receiver_identifier: Option<String>,\n}",
       "fields": [
         {
           "name": "message_receiver_identifier",
-          "type": "String",
+          "type": "Option<String>",
           "attributes": [],
           "serde_attributes": []
         }
       ],
       "id": "crates/services/web-server/src/web/rest/case_editor_dto.rs:43:CaseEditorShellMessageHeaderDto",
       "nested_type_refs": [
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
         {
           "rust_type": "String",
           "origin": "primitive"
@@ -102782,7 +102786,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:512:RoutingProfile"
         },
         {
           "rust_type": "Vec",
@@ -104426,7 +104430,7 @@
       "canonical_type": "sqlx::types::time::OffsetDateTime",
       "import": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 80
+        "line": 81
       }
     },
     {

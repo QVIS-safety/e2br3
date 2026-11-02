@@ -83,7 +83,8 @@ impl Error {
 				)
 			}
 			xml::Error::Model(error) => XmlClientClassification::Model(error),
-			xml::Error::NotImplemented { .. }
+			xml::Error::MissingExportField { .. }
+			| xml::Error::NotImplemented { .. }
 			| xml::Error::Io(_)
 			| xml::Error::SerdeJson(_) => XmlClientClassification::Internal,
 		})
@@ -115,6 +116,7 @@ fn xml_error_type(error: &xml::Error) -> String {
 		xml::Error::UnsupportedRoot { .. } => "UnsupportedRoot".into(),
 		xml::Error::NotImplemented { .. } => "NotImplemented".into(),
 		xml::Error::InvalidImportRequest { .. } => "InvalidImportRequest".into(),
+		xml::Error::MissingExportField { .. } => "MissingExportField".into(),
 		xml::Error::Io(_) => "Io".into(),
 		xml::Error::SerdeJson(_) => "SerdeJson".into(),
 		xml::Error::Model(_) => "Model".into(),

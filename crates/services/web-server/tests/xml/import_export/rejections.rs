@@ -261,8 +261,9 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 			"{}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body)
-			.contains("N.1.4 Batch Receiver Identifier is required"));
+		assert!(String::from_utf8_lossy(&body).contains(
+			"N.1.4 Batch Receiver Identifier is required before XML export"
+		));
 	}
 	let (status, body) = request_json(
 		&app,
@@ -295,7 +296,13 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 			"{}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body).contains("export task failed"));
+		let body: Value = serde_json::from_slice(&body)?;
+		assert_eq!(body["error"]["message"], "INVALID_REQUEST", "{body}");
+		assert_eq!(
+			body["error"]["data"]["detail"],
+			"D Patient Information is required for export.",
+			"{body}"
+		);
 	}
 	let (status, body) = request_json(
 		&app,
@@ -313,12 +320,20 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 	assert_eq!(items.len(), 4);
 	assert!(items.iter().all(|item| item["status"] == "error"));
 	assert!(items.iter().all(|item| item["caseId"] == case_id && item["exportedBy"] == seed.admin.id.to_string()), "history must survive the failed export's outer transaction with the original user and case");
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| {
+				item["errorMessage"]
+					== "N.1.4 Batch Receiver Identifier is required before XML export"
+			})
+			.count(),
+		2
+	);
 	let fda_errors: Vec<_> = items
 		.iter()
 		.filter(|item| {
-			item["errorMessage"]
-				.as_str()
-				.is_some_and(|message| message.contains("export task failed"))
+			item["errorMessage"] == "D Patient Information is required for export."
 		})
 		.collect();
 	assert_eq!(fda_errors.len(), 2);

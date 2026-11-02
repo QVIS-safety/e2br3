@@ -76,16 +76,15 @@ pub(crate) fn apply_section_n(
 	Ok(())
 }
 
-fn required_outbound_value(field: &str, value: Option<&str>) -> Result<String> {
+fn required_outbound_value(
+	field: &'static str,
+	value: Option<&str>,
+) -> Result<String> {
 	value
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.map(str::to_string)
-		.ok_or_else(|| Error::InvalidXml {
-			message: format!("outbound message header {field} is missing"),
-			line: None,
-			column: None,
-		})
+		.ok_or(Error::MissingExportField { field })
 }
 
 /// e2b:N.1.1

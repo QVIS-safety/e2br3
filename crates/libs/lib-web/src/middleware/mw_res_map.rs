@@ -164,6 +164,13 @@ fn map_rest_error_to_client(
 			ClientError::CONFIGURATION_ERROR,
 			None,
 		),
+		lib_rest_core::Error::Export(
+			lib_rest_core::XmlError::MissingExportField { field },
+		) => (
+			StatusCode::BAD_REQUEST,
+			ClientError::INVALID_REQUEST,
+			Some(json!(format!("{field} is required for export."))),
+		),
 		lib_rest_core::Error::Service { .. }
 		| lib_rest_core::Error::Export(_)
 		| lib_rest_core::Error::Internal { .. } => (
@@ -380,6 +387,38 @@ mod tests {
 			map_rest_error_to_client(&lib_rest_core::Error::Service {
 				operation: "test.operation",
 			});
+		assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+		assert_eq!(error.as_ref(), "SERVICE_ERROR");
+		assert_eq!(detail, None);
+	}
+
+	#[test]
+	fn missing_export_fields_are_safe_client_errors() {
+		let (status, error, detail) =
+			map_rest_error_to_client(&lib_rest_core::Error::Export(
+				lib_rest_core::XmlError::MissingExportField {
+					field: "N.1.4 Batch Receiver Identifier",
+				},
+			));
+		assert_eq!(status, StatusCode::BAD_REQUEST);
+		assert_eq!(error.as_ref(), "INVALID_REQUEST");
+		assert_eq!(
+			detail,
+			Some(json!(
+				"N.1.4 Batch Receiver Identifier is required for export."
+			))
+		);
+	}
+
+	#[test]
+	fn internal_export_xml_errors_remain_server_errors() {
+		let (status, error, detail) = map_rest_error_to_client(
+			&lib_rest_core::Error::Export(lib_rest_core::XmlError::InvalidXml {
+				message: "private template failure".into(),
+				line: None,
+				column: None,
+			}),
+		);
 		assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
 		assert_eq!(error.as_ref(), "SERVICE_ERROR");
 		assert_eq!(detail, None);

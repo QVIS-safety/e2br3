@@ -867,6 +867,58 @@ async fn load_admin_settings_payload(
 	})
 }
 
+async fn load_runtime_admin_settings_payload(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<AdminSettingsPayload> {
+	let value = AdminSettingsBmc::get(ctx, mm, SETTINGS_KEY)
+		.await
+		.map_err(Error::Model)?;
+	runtime_settings::RuntimeSettings::from_value(value.as_ref())?;
+	let value = value.as_ref().ok_or_else(|| Error::Configuration {
+		key: "admin_settings",
+		message: "admin settings record is missing".to_string(),
+	})?;
+	let mut projected = Map::new();
+	for key in [
+		"timezone",
+		"meddra_language",
+		"meddra_version",
+		"orientation",
+		"data_ordering",
+		"notation",
+		"apply_sender_info_to_imported_cases",
+		"import_date_update",
+		"appendices",
+		"idle_session_minutes",
+		"session_warning_minutes",
+	] {
+		if let Some(field) = value.get(key) {
+			projected.insert(key.to_string(), field.clone());
+		}
+	}
+	let payload = serde_json::from_value::<AdminSettingsPayload>(Value::Object(projected))
+		.map_err(|error| Error::Configuration {
+			key: "admin_settings",
+			message: format!("stored runtime settings are invalid: {error}"),
+		})?;
+	let idle = payload.idle_session_minutes.ok_or_else(|| Error::Configuration {
+		key: "idle_session_minutes",
+		message: "idle_session_minutes is required".to_string(),
+	})?;
+	let warning = payload.session_warning_minutes.ok_or_else(|| Error::Configuration {
+		key: "session_warning_minutes",
+		message: "session_warning_minutes is required".to_string(),
+	})?;
+	if idle < 5 || warning < 1 || warning >= idle {
+		return Err(Error::Configuration {
+			key: "session_timeout",
+			message: "stored session timeout settings are invalid".to_string(),
+		});
+	}
+	Ok(payload)
+}
+
 fn active_notices(
 	notices: Vec<DashboardNoticePayload>,
 	timezone: &str,
@@ -1022,7 +1074,7 @@ pub async fn get_runtime_settings(
 	snapshot: AuthorizationSnapshotW,
 ) -> Result<(StatusCode, Json<RuntimeSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	let payload = load_admin_settings_payload(&ctx, &mm).await?;
+	let payload = load_runtime_admin_settings_payload(&ctx, &mm).await?;
 	let notices = if notice_update_allowed(&snapshot) {
 		load_notices(&ctx, &mm).await?
 	} else if notice_read_allowed(&snapshot) {

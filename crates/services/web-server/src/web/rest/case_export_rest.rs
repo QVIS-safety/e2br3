@@ -206,6 +206,9 @@ async fn export_case_authorized(
 			let error_message = match &err {
 				Error::BadRequest { message } => message.clone(),
 				Error::ConstraintViolation(detail) => detail.message.clone(),
+				Error::Export(xml::Error::MissingExportField { field }) => {
+					format!("{field} is required for export.")
+				}
 				_ => err.diagnostic_type(),
 			};
 			if let Err(record_err) = XmlExportHistoryBmc::record(
@@ -338,6 +341,9 @@ async fn export_cases_zip_authorized(
 							Error::ConstraintViolation(detail) => {
 								detail.message.clone()
 							}
+							Error::Export(xml::Error::MissingExportField {
+								field,
+							}) => format!("{field} is required for export."),
 							_ => err.diagnostic_type(),
 						};
 						if let Err(record_err) = XmlExportHistoryBmc::record(

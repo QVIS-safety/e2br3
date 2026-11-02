@@ -30,6 +30,7 @@ pub use authorization::{
 };
 pub use rest_params::*;
 pub use rest_result::*;
+pub use xml::Error as XmlError;
 
 use lib_core::model::store::set_full_context_dbx;
 

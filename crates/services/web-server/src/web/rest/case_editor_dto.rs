@@ -41,14 +41,14 @@ pub struct CaseEditorShellSafetyReportDto {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorShellMessageHeaderDto {
-	pub message_receiver_identifier: String,
+	pub message_receiver_identifier: Option<String>,
 }
 
 impl CaseEditorShellDto {
 	pub fn from_case_read_result(
 		value: CaseReadResult,
 		safety_report_id: String,
-		message_receiver_identifier: String,
+		message_receiver_identifier: Option<String>,
 	) -> serde_json::Result<Self> {
 		let review_receivers = value
 			.case

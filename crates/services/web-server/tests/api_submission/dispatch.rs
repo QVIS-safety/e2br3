@@ -23,8 +23,8 @@ async fn test_submission_rejects_enabled_esg_without_base_url() -> Result<()> {
 		valid_compliance_payload(),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body.to_string().contains("FDA_ESG_BASE_URL"), "{body:?}");
+	assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body:?}");
+	assert_eq!(body["error"]["message"], "CONFIGURATION_ERROR", "{body:?}");
 	clear_esg_env();
 	Ok(())
 }
