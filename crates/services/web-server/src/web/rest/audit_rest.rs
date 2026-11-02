@@ -4,7 +4,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::audit::{
-	AuditChainVerificationReport, AuditLog, AuditLogBmc, AuditLogFilter,
+	AuditChainRangeVerificationReport, AuditLog, AuditLogBmc, AuditLogFilter,
 	CaseVersion, CaseVersionBmc,
 };
 use lib_core::model::ModelManager;
@@ -26,6 +26,16 @@ use uuid::Uuid;
 pub struct AuditRecordQuery {
 	pub field: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct AuditIntegrityQuery {
+	pub since_id: Option<i64>,
+	pub until_id: Option<i64>,
+	pub limit: Option<i32>,
+}
+
+const AUDIT_INTEGRITY_LIMIT_DEFAULT: i32 = 1000;
+const AUDIT_INTEGRITY_LIMIT_MAX: i32 = 10000;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1413,18 +1423,49 @@ pub async fn verify_audit_log_integrity(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	snapshot: AuthorizationSnapshotW,
+	Query(query): Query<AuditIntegrityQuery>,
 ) -> Result<(
 	StatusCode,
-	Json<DataRestResult<AuditChainVerificationReport>>,
+	Json<DataRestResult<AuditChainRangeVerificationReport>>,
 )> {
 	let ctx = ctx_w.0;
 	tracing::debug!("{:<12} - rest verify_audit_log_integrity", "HANDLER");
 
-	with_authorized_audit_log_collection(&ctx, &snapshot, &mm, |ctx, mm| {
+	with_authorized_audit_log_collection(&ctx, &snapshot, &mm, move |ctx, mm| {
 		Box::pin(async move {
-			let report = AuditLogBmc::verify_hash_chain(ctx, mm)
-				.await
-				.map_err(Error::Model)?;
+			let limit = match query.limit {
+				Some(limit) => limit,
+				None => AUDIT_INTEGRITY_LIMIT_DEFAULT,
+			};
+			if !(1..=AUDIT_INTEGRITY_LIMIT_MAX).contains(&limit) {
+				return Err(Error::BadRequest {
+					message: format!(
+						"audit integrity limit must be between 1 and {AUDIT_INTEGRITY_LIMIT_MAX}"
+					),
+				});
+			}
+			if query.since_id.is_some_and(|id| id < 0)
+				|| query.until_id.is_some_and(|id| id < 0)
+			{
+				return Err(Error::BadRequest {
+					message: "audit integrity range IDs must be non-negative".to_string(),
+				});
+			}
+			if matches!((query.since_id, query.until_id), (Some(since), Some(until)) if since > until)
+			{
+				return Err(Error::BadRequest {
+					message: "audit integrity since_id must not exceed until_id".to_string(),
+				});
+			}
+			let report = AuditLogBmc::verify_hash_chain_range(
+				ctx,
+				mm,
+				query.since_id,
+				query.until_id,
+				limit,
+			)
+			.await
+			.map_err(Error::Model)?;
 			Ok((StatusCode::OK, Json(DataRestResult { data: report })))
 		})
 	})
@@ -1462,6 +1503,7 @@ mod tests {
 			user_agent: None,
 			prev_hash: None,
 			entry_hash: None,
+			hash_version: 2,
 			created_at: OffsetDateTime::UNIX_EPOCH,
 		}
 	}

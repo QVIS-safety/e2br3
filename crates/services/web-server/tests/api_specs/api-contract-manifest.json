@@ -16,7 +16,7 @@
   "content_hashes": {
     "crates/libs/lib-core/src/authorization/ids.rs": "50cac5a9d5289bee59f60a3c662f0c043b36605d5a849f18176ff7fc3d5c0ac3",
     "crates/libs/lib-core/src/authorization/menu_privileges.rs": "bfbc25ef28d9bf6e22ca240eba2a15b2264362f528c7f1a2e75ce40cb0a46465",
-    "crates/libs/lib-core/src/model/audit.rs": "b1bfe2d804d3d93191686e7bec67ec64fc0dcaa07fe94d7d92b88c5f653552a1",
+    "crates/libs/lib-core/src/model/audit.rs": "6c05632a59f8e8e4536882027ac739353060a9a3e268159dfc04b2e161f835d1",
     "crates/libs/lib-core/src/model/case.rs": "e19ac8ab0d3f283c66c7f4e670d8cda812382d7d65b703c792c8b758f2552d38",
     "crates/libs/lib-core/src/model/case_duplicate.rs": "9162670459b867f1a6d7f0a9081357ab41e7483b44450af1445cd87222a28930",
     "crates/libs/lib-core/src/model/case_identifiers.rs": "d85046a721797616473cf367308e23d0aa7e2a743c90e0b5ef511d37522ef19a",
@@ -54,7 +54,7 @@
     "crates/services/web-server/src/submission/types.rs": "465234223378d9ccdb49f58c50e4c30e41a1e64c8cbe44a99fb3d3311d713dd1",
     "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "824172f0482e144e537750644cfe27483b4706770036405ad72dd79978c2c4ce",
     "crates/services/web-server/src/web/rest/app_branding_rest.rs": "aea11d052d444bdbe0a32965792537b90185363a8f3cf2559b8a01c4a531c03b",
-    "crates/services/web-server/src/web/rest/audit_rest.rs": "800c7d49efa9871fc33f6478de7e927e7f55d58b85d2ad8883877e6906d01e61",
+    "crates/services/web-server/src/web/rest/audit_rest.rs": "83e1d8862999a7a4c6c6b0e642e7c32874a4df0c0714cc4b64ce394565dcf536",
     "crates/services/web-server/src/web/rest/case_editor_dto.rs": "cf94544dd05576c5c09b6ce7f56b9009f91e5863e969cb4d5f01dc634115bea7",
     "crates/services/web-server/src/web/rest/case_editor_rest/ae.rs": "bf5dd5fa50ac7c1a0ce3bca26b8d96fb1cbda060586def892361997ed666f0e1",
     "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "16b61c23523eb8e78478e151fde9485d95bf79ea3699e9b755f7a0beb7e6bf97",
@@ -127,7 +127,7 @@
     "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "21dc52e94ea2104d349c15553b7c10cd40d24345b106d432b2ed08fe1d96b1b2",
     "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "e0426b823408f32359ebf1770688967cd6dd311570ac0bb947c27b47a749a71c",
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "990c3f092cd27d73c1436068f6effb3fc40a050155f0328dc1360e43abaf3bd0",
-    "crates/services/web-server/tests/api_administration/audit_web.rs": "1bba65c9031fb71402048449c9fd876db7f482153273ba63324b3d521d15054c",
+    "crates/services/web-server/tests/api_administration/audit_web.rs": "2386b2ef0695ca91ea6df7a14237a3fc825df3907fb4e9e077953b75fbb4604c",
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0980cad0996aaf2a1ab68af4ba8fb8d5d5d4ecaee782dde365dcd5cba220643c",
     "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
@@ -218,10 +218,10 @@
     "crates/services/web-server/tests/api_presave/sender_web.rs": "44ea3c965f2ffcbfe415c8bdf8d4fbf170f959343d042c685b33a28b79067c10",
     "crates/services/web-server/tests/api_presave/study_children_create_web.rs": "e423d02b36a86c432ca6976aa7c503fab7b3253f1735de367b4af8809653b615",
     "crates/services/web-server/tests/api_presave/study_web.rs": "396a9fbccc439604201a4b452c0563f01f85361ee78925f1fccfe4c3ced2eb12",
-    "crates/services/web-server/tests/api_specs/administration.md": "c0b5fe1588e2c734606f7dbd50b33a261a44ae8db22bdfa113d679cec7a81888",
+    "crates/services/web-server/tests/api_specs/administration.md": "8c0b465873339173ff79959dffb493c64c23fc69010b5d00a87ced58427f38e0",
     "crates/services/web-server/tests/api_specs/cases.md": "272470da8a3501fdc8bffd7c75cf54a2a4a47c644774f7d59b07949f8a1e8147",
     "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "9ac5640cee8f041690cd3542ddc7786f7d850acec1d535897b632dd40a82695a",
-    "crates/services/web-server/tests/api_specs/coverage.tsv": "8c2a594c54c89257c4f0ea97f41e272543fba2c9dc8ee10a6c961134fc981b76",
+    "crates/services/web-server/tests/api_specs/coverage.tsv": "4c1f451f70e89ae9cf2ed5232ff427f4d97241e6ce0162083815c7f364c2618a",
     "crates/services/web-server/tests/api_specs/editor.md": "68e11bf65a8deec4ff22b07387996242207e141e80a28ad5b9c4e34eeb31fedd",
     "crates/services/web-server/tests/api_specs/export.md": "ce80cafacf75a3a79e3cad99827b98e1f0602500177309d169e424953ca1a7b9",
     "crates/services/web-server/tests/api_specs/import.md": "e25322b80a073112ace58720af6707832825ef79879b92b8744ff7ae8b247ec0",
@@ -1469,7 +1469,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-          "line": 1204
+          "line": 1214
         },
         "signature": "pub async fn list_audit_logs( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, axum::extract::RawQuery(raw_query): axum::extract::RawQuery, ) -> Result<(StatusCode, Json<DataRestResult<Vec<AuditLog>>>)>",
         "name": "list_audit_logs"
@@ -1566,7 +1566,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-          "line": 1231
+          "line": 1241
         },
         "signature": "pub async fn list_audit_logs_by_record( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((table_name, record_id)): Path<(String, Uuid)>, Query(query): Query<AuditRecordQuery>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<AuditLog>>>)>",
         "name": "list_audit_logs_by_record"
@@ -1718,8 +1718,8 @@
         "path": "/api/audit-logs/verify-integrity",
         "status": "asserted",
         "spec": "administration.md#get-api-audit-logs-verify-integrity",
-        "evidence": "tests/api_administration/audit_web.rs::test_audit_integrity_reports_healthy_chain_and_requires_permission",
-        "gaps": "정상 chain report·viewer 403만 단언; 손상 chain의 first_broken_id/reason·다른 권한 조합 미단언",
+        "evidence": "tests/api_administration/audit_web.rs::test_audit_integrity_reports_healthy_chain_and_requires_permission;tests/api_administration/audit_web.rs::test_audit_integrity_reports_first_broken_row_and_reason",
+        "gaps": "정상 완료·부분 page/snapshot·경계/빈 범위·query 400·손상 first_broken_id/reason·viewer 403 단언; 모든 legacy/v2 혼합·동시 append·다른 권한 조합 미단언",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
           "line": 13
@@ -1729,9 +1729,9 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-          "line": 1412
+          "line": 1422
         },
-        "signature": "pub async fn verify_audit_log_integrity( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<( StatusCode, Json<DataRestResult<AuditChainVerificationReport>>, )>",
+        "signature": "pub async fn verify_audit_log_integrity( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Query(query): Query<AuditIntegrityQuery>, ) -> Result<( StatusCode, Json<DataRestResult<AuditChainRangeVerificationReport>>, )>",
         "name": "verify_audit_log_integrity"
       },
       "parameters": [
@@ -1746,10 +1746,19 @@
         {
           "pattern": "snapshot",
           "type": "AuthorizationSnapshotW"
+        },
+        {
+          "pattern": "Query(query)",
+          "type": "Query<AuditIntegrityQuery>"
         }
       ],
-      "wire_request_parameters": [],
-      "declared_response": "Result<( StatusCode, Json<DataRestResult<AuditChainVerificationReport>>, )>",
+      "wire_request_parameters": [
+        {
+          "pattern": "Query(query)",
+          "type": "Query<AuditIntegrityQuery>"
+        }
+      ],
+      "declared_response": "Result<( StatusCode, Json<DataRestResult<AuditChainRangeVerificationReport>>, )>",
       "shared_contract_refs": [
         "root-request-context",
         "result-error-map",
@@ -1758,7 +1767,30 @@
       ],
       "type_resolution_source": "crates/services/web-server/src/web/rest/audit_rest.rs",
       "dynamic_value_note": null,
-      "wire_request_type_refs": [],
+      "wire_request_type_refs": [
+        {
+          "parameter": {
+            "pattern": "Query(query)",
+            "type": "Query<AuditIntegrityQuery>"
+          },
+          "refs": [
+            {
+              "rust_type": "Query",
+              "origin": "external_import_alias",
+              "canonical_type": "axum::extract::Query",
+              "import": {
+                "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
+                "line": 3
+              }
+            },
+            {
+              "rust_type": "AuditIntegrityQuery",
+              "origin": "in_repo_declaration",
+              "declaration_id": "crates/services/web-server/src/web/rest/audit_rest.rs:31:AuditIntegrityQuery"
+            }
+          ]
+        }
+      ],
       "response_type_refs": [
         {
           "rust_type": "lib_rest_core::Result",
@@ -1788,9 +1820,9 @@
           "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
         },
         {
-          "rust_type": "AuditChainVerificationReport",
+          "rust_type": "AuditChainRangeVerificationReport",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/audit.rs:77:AuditChainVerificationReport"
+          "declaration_id": "crates/libs/lib-core/src/model/audit.rs:89:AuditChainRangeVerificationReport"
         }
       ]
     },
@@ -2988,7 +3020,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-          "line": 1273
+          "line": 1283
         },
         "signature": "pub async fn list_case_audit_trail( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(case_id): Path<Uuid>, axum::extract::RawQuery(raw_query): axum::extract::RawQuery, ) -> Result<(StatusCode, Json<DataRestResult<Vec<CaseAuditTrailRow>>>)>",
         "name": "list_case_audit_trail"
@@ -3093,7 +3125,7 @@
         {
           "rust_type": "CaseAuditTrailRow",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/audit_rest.rs:32:CaseAuditTrailRow"
+          "declaration_id": "crates/services/web-server/src/web/rest/audit_rest.rs:42:CaseAuditTrailRow"
         }
       ]
     },
@@ -36479,7 +36511,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-          "line": 1385
+          "line": 1395
         },
         "signature": "pub async fn list_case_versions( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<CaseVersion>>>)>",
         "name": "list_case_versions"
@@ -54522,7 +54554,7 @@
         "#[derive(Debug, Clone, FromRow, Serialize)]"
       ],
       "serde_attributes": [],
-      "raw": "struct AuditLog {\n\tpub id: i64,\n\tpub organization_id: Uuid,\n\tpub table_name: String,\n\tpub record_id: Uuid,\n\tpub action: String, // CREATE, UPDATE, DELETE, SUBMIT, NULLIFY\n\tpub user_id: Uuid,\n\t#[sqlx(default)]\n\tpub reason_for_change: Option<String>,\n\t#[sqlx(default)]\n\tpub change_category: Option<String>,\n\t#[sqlx(default)]\n\tpub e_signature_id: Option<Uuid>,\n\t#[sqlx(default)]\n\tpub user_display: Option<String>,\n\t#[sqlx(default)]\n\tpub changed_fields: Option<JsonValue>,\n\tpub old_values: Option<JsonValue>,\n\tpub new_values: Option<JsonValue>,\n\tpub ip_address: Option<String>, // Stored as TEXT in DB\n\tpub user_agent: Option<String>,\n\t#[sqlx(default)]\n\tpub prev_hash: Option<String>,\n\t#[sqlx(default)]\n\tpub entry_hash: Option<String>,\n\t#[serde(with = \"time::serde::rfc3339\")]\n\tpub created_at: OffsetDateTime,\n}",
+      "raw": "struct AuditLog {\n\tpub id: i64,\n\tpub organization_id: Uuid,\n\tpub table_name: String,\n\tpub record_id: Uuid,\n\tpub action: String, // CREATE, UPDATE, DELETE, SUBMIT, NULLIFY\n\tpub user_id: Uuid,\n\t#[sqlx(default)]\n\tpub reason_for_change: Option<String>,\n\t#[sqlx(default)]\n\tpub change_category: Option<String>,\n\t#[sqlx(default)]\n\tpub e_signature_id: Option<Uuid>,\n\t#[sqlx(default)]\n\tpub user_display: Option<String>,\n\t#[sqlx(default)]\n\tpub changed_fields: Option<JsonValue>,\n\tpub old_values: Option<JsonValue>,\n\tpub new_values: Option<JsonValue>,\n\tpub ip_address: Option<String>, // Stored as TEXT in DB\n\tpub user_agent: Option<String>,\n\t#[sqlx(default)]\n\tpub prev_hash: Option<String>,\n\t#[sqlx(default)]\n\tpub entry_hash: Option<String>,\n\tpub hash_version: i16,\n\t#[serde(with = \"time::serde::rfc3339\")]\n\tpub created_at: OffsetDateTime,\n}",
       "fields": [
         {
           "name": "id",
@@ -54626,6 +54658,12 @@
           "attributes": [
             "#[sqlx(default)]"
           ],
+          "serde_attributes": []
+        },
+        {
+          "name": "hash_version",
+          "type": "i16",
+          "attributes": [],
           "serde_attributes": []
         },
         {
@@ -54772,6 +54810,10 @@
           "origin": "primitive"
         },
         {
+          "rust_type": "i16",
+          "origin": "primitive"
+        },
+        {
           "rust_type": "OffsetDateTime",
           "origin": "external_import_alias",
           "canonical_type": "sqlx::types::time::OffsetDateTime",
@@ -54783,17 +54825,17 @@
       ]
     },
     {
-      "name": "AuditChainVerificationReport",
+      "name": "AuditChainRangeVerificationReport",
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/audit.rs",
-        "line": 77
+        "line": 89
       },
       "attributes": [
         "#[derive(Debug, Clone, FromRow, Serialize)]"
       ],
       "serde_attributes": [],
-      "raw": "struct AuditChainVerificationReport {\n\tpub total_rows: i64,\n\tpub verified_ok_rows: i64,\n\tpub broken_rows: i64,\n\tpub first_broken_id: Option<i64>,\n\tpub first_broken_reason: Option<String>,\n\t#[serde(with = \"time::serde::rfc3339\")]\n\tpub checked_at: OffsetDateTime,\n}",
+      "raw": "struct AuditChainRangeVerificationReport {\n\tpub total_rows: i64,\n\tpub verified_ok_rows: i64,\n\tpub broken_rows: i64,\n\tpub first_broken_id: Option<i64>,\n\tpub first_broken_reason: Option<String>,\n\t#[serde(with = \"time::serde::rfc3339\")]\n\tpub checked_at: OffsetDateTime,\n\tpub checked_from_id: Option<i64>,\n\tpub checked_through_id: Option<i64>,\n\tpub snapshot_head_id: Option<i64>,\n\tpub snapshot_head_hash: Option<String>,\n\tpub next_since_id: Option<i64>,\n\tpub has_more: bool,\n\tpub legacy_rows: i64,\n\tpub checkpoint_status: String,\n}",
       "fields": [
         {
           "name": "total_rows",
@@ -54834,9 +54876,57 @@
           "serde_attributes": [
             "#[serde(with = \"time::serde::rfc3339\")]"
           ]
+        },
+        {
+          "name": "checked_from_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "checked_through_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "snapshot_head_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "snapshot_head_hash",
+          "type": "Option<String>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "next_since_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "has_more",
+          "type": "bool",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "legacy_rows",
+          "type": "i64",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "checkpoint_status",
+          "type": "String",
+          "attributes": [],
+          "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/audit.rs:77:AuditChainVerificationReport",
+      "id": "crates/libs/lib-core/src/model/audit.rs:89:AuditChainRangeVerificationReport",
       "nested_type_refs": [
         {
           "rust_type": "i64",
@@ -54874,6 +54964,58 @@
             "source": "crates/libs/lib-core/src/model/audit.rs",
             "line": 13
           }
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "String",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "bool",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "String",
+          "origin": "primitive"
         }
       ]
     },
@@ -90339,11 +90481,71 @@
       ]
     },
     {
+      "name": "AuditIntegrityQuery",
+      "kind": "struct",
+      "declaration": {
+        "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
+        "line": 31
+      },
+      "attributes": [
+        "#[derive(Debug, Deserialize)]"
+      ],
+      "serde_attributes": [],
+      "raw": "struct AuditIntegrityQuery {\n\tpub since_id: Option<i64>,\n\tpub until_id: Option<i64>,\n\tpub limit: Option<i32>,\n}",
+      "fields": [
+        {
+          "name": "since_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "until_id",
+          "type": "Option<i64>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "limit",
+          "type": "Option<i32>",
+          "attributes": [],
+          "serde_attributes": []
+        }
+      ],
+      "id": "crates/services/web-server/src/web/rest/audit_rest.rs:31:AuditIntegrityQuery",
+      "nested_type_refs": [
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i64",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "i32",
+          "origin": "primitive"
+        }
+      ]
+    },
+    {
       "name": "CaseAuditTrailRow",
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/audit_rest.rs",
-        "line": 32
+        "line": 42
       },
       "attributes": [
         "#[derive(Debug, Serialize)]",
@@ -90443,7 +90645,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/audit_rest.rs:32:CaseAuditTrailRow",
+      "id": "crates/services/web-server/src/web/rest/audit_rest.rs:42:CaseAuditTrailRow",
       "nested_type_refs": [
         {
           "rust_type": "i64",
@@ -104551,6 +104753,10 @@
     },
     {
       "rust_type": "bool",
+      "origin": "primitive"
+    },
+    {
+      "rust_type": "i16",
       "origin": "primitive"
     },
     {

@@ -117,20 +117,52 @@ pub(super) async fn assert_case_soft_parent_preserves_rows(
 		.ok_or("missing e-signature audit")?;
 	assert_eq!(signature_audit.record_id, signature_id);
 	assert_eq!(signature_audit.action, "CREATE");
+	let appended_ids = deleted_audit
+		.iter()
+		.filter(|row| !case_audit.iter().any(|previous| previous.id == row.id))
+		.map(|row| row.id)
+		.collect::<Vec<_>>();
 	let mut audit_tx = mm.dbx().db().begin().await?;
 	sqlx::query("SET ROLE e2br3_auditor_role")
 		.execute(&mut *audit_tx)
 		.await?;
-	let signature_ids = sqlx::query_scalar::<_, Option<Uuid>>(
-		"SELECT e_signature_id FROM audit_logs WHERE table_name = 'cases' AND record_id = $1 AND action = 'UPDATE' AND changed_fields->'status'->>'old' = 'draft' AND changed_fields->'status'->>'new' = 'deleted' AND reason_for_change = $2",
+	let appended_kinds = sqlx::query_as::<_, (String, String)>(
+		"SELECT table_name, action FROM audit_logs WHERE id = ANY($1) ORDER BY table_name",
 	)
+	.bind(&appended_ids)
+	.fetch_all(&mut *audit_tx)
+	.await?;
+	assert_eq!(
+		appended_kinds,
+		vec![
+			("cases".to_string(), "UPDATE".to_string()),
+			("e_signatures".to_string(), "CREATE".to_string()),
+		]
+	);
+	let case_signature_ids = sqlx::query_scalar::<_, Option<Uuid>>(
+		"SELECT e_signature_id FROM audit_logs WHERE id = ANY($1) AND table_name = 'cases' AND record_id = $2 AND action = 'UPDATE' AND changed_fields->'status'->>'old' = 'draft' AND changed_fields->'status'->>'new' = 'deleted' AND reason_for_change = $3",
+	)
+	.bind(&appended_ids)
 	.bind(case_id)
 	.bind("verify parent preserves children")
 	.fetch_all(&mut *audit_tx)
 	.await?;
+	assert_eq!(case_signature_ids, vec![Some(signature_id)]);
+	let signature_audit_values = sqlx::query_as::<_, (Uuid, Option<String>, String, String, String)>(
+		"SELECT record_id, reason_for_change, new_values->>'case_id', new_values->>'action', new_values->>'reason' FROM audit_logs WHERE id = ANY($1) AND table_name = 'e_signatures' AND action = 'CREATE'",
+	)
+	.bind(&appended_ids)
+	.fetch_one(&mut *audit_tx)
+	.await?;
 	audit_tx.rollback().await?;
-	assert_eq!(signature_ids.len(), 1);
-	assert!(signature_ids[0].is_some());
+	assert_eq!(signature_audit_values.0, signature_id);
+	assert_eq!(
+		signature_audit_values.1.as_deref(),
+		Some("verify case parent delete")
+	);
+	assert_eq!(signature_audit_values.2, case_id.to_string());
+	assert_eq!(signature_audit_values.3, "CASE_STATUS_TRANSITION");
+	assert_eq!(signature_audit_values.4, "verify parent preserves children");
 
 	for (contract, before, audit) in &row_state {
 		assert_eq!(
