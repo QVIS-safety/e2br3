@@ -64,9 +64,9 @@ principal. Enable and retain those data events under the organization's audit po
 
 ## Administrator handoff
 
-The current AWS login succeeds, but all 11 visible buckets deny
-`s3:GetBucketObjectLockConfiguration`; the user has confirmed they cannot grant the missing access.
-No existing bucket is therefore approved or known to satisfy Object Lock. An AWS administrator must:
+The initial 2026-11-02 inspection denied `s3:GetBucketObjectLockConfiguration` on all 11 visible
+buckets. That is a historical result, not evidence of current permissions after subsequent access
+changes. No successful Object Lock enrollment has been recorded. Before enrollment, an administrator must:
 
 1. choose or create an Object-Lock-enabled, versioned bucket and its owning account;
 2. obtain the record owner's COMPLIANCE retention duration in days;
@@ -109,35 +109,70 @@ version 2. Confirm `audit_logs_hash_version_valid` is validated, then replace th
 build and perform the independent checkpoint enrollment below. Do not enroll a baseline before the
 migration or report this sequence as deployed until those production checks pass.
 
-### Current enrollment blocker
+### Historical link failures and authorized removal (2026-11-02)
 
 The read-only production-data clone check found 34 existing `prev_hash` link failures among 6,327,905
-rows (633 pages), first at audit ID 13788833. The same 34 failures exist in the original database, while
-their stored row payload hashes verify; the affected rows have `created_at` dates of 2026-10-17 and
+rows (633 pages), first at audit ID 13788833. The same 34 failures were confirmed in the original database,
+while their stored row payload hashes verified; the affected rows have `created_at` dates of 2026-10-17 and
 2026-10-20. The preserved graph confirms 17 historical forks: each affected row is a leaf, its stored
 predecessor has both that leaf and the next ID as children, and the following row skips the leaf. This
 matches the reproduced legacy concurrency mechanism: concurrent inserts received IDs before serialization,
 then acquired the hash-chain lock in a different order. A four-row legacy-writer reproduction produced two
 broken links where zero were expected, while the current writer passed all 10 database tests. The private
-evidence is retained in `historical-fork-graph.json`, `legacy-order.log`, and `database.log`. The authorized
-qualified disposition below preserves those failures and starts a separately reported version-2 epoch; it
-does not repair or authenticate the earlier history.
-Preserve the query results and affected rows as evidence. Do not enroll the current chain as healthy, and
-do not rehash, backfill, suppress, or bypass these failures to manufacture a pass. Enrollment requires
-authentic recovery or the authorized qualified disposition below, which preserves the historical evidence.
-S3 Object Lock inspection also remains blocked by `AccessDenied` as documented above.
+evidence is retained in `historical-fork-graph.json`, `legacy-order.log`, and `database.log`. The initial
+qualified disposition preserved those failures; it remains evidence of the state before removal.
+
+Under subsequent explicit user authorization, a one-time cleanup was applied **only** to the Oracle AS2
+database `e2br3_ui_as2_transport_20260924`. The 34 reported failures comprised 17 late leaf rows and their
+17 valid successors. Deleting all 34 would also remove a signature-linked audit row and cause 17 new
+link failures. After a fresh full database backup and an exact private export, only the 17 leaves were
+removed. They had no hash children or electronic-signature references. The 17 successors, including the
+signature-linked row, matched the preserved original payloads after cleanup. Surviving hashes were not
+rewritten, and business records and electronic signatures were preserved.
+
+The guarded maintenance transaction recorded and verified:
+
+- 6,328,613 audit rows before cleanup, minus 17 removed rows, plus one version-2 maintenance event;
+- all 6,328,597 resulting rows across 633 pages: 6,328,298 version-1 rows and 299 version-2 rows,
+  with zero payload-hash or predecessor-link failures before commit;
+- maintenance audit ID `14161459`, table `audit_log_maintenance`, operation
+  `4f05c410-8557-44a1-a84b-f3b3939e34ec`, recording authorization and archive/backup digests;
+- frozen head hash `f9a66d09ac3ff157e89186144666907f524d148277ec24ed2b80f93aa5495325`;
+- all four audit protection triggers restored and direct application INSERT/UPDATE/DELETE/TRUNCATE
+  privileges denied. Postcommit authenticated API checks passed all 17 affected regions and the then-current
+  301-row version-2 suffix through ID `14161461`; API health was 204 and frontend health was 200.
+
+Private evidence is retained on the Oracle host under `/home/opc/e2br3/audit-prune-20261102/`:
+`result.json`, `execution-result.json`, `postflight-db.private.json`, `postflight-api.private.json`, the
+exact removed-row archive and full database backup. The removed-row archive SHA-256 is
+`124e64358b10984d1e4ce0525ed3dc2ec2f27c994031cd79135e34302d3f3ba8`. Original 67-row forensic evidence
+and earlier fullscan results remain unchanged under `audit-integrity-20261102/`. Raw rows, credentials,
+backup contents and the private one-time execution script are not repository artifacts.
+
+This verifies the surviving chain, not the completeness or authenticity of the original history:
+17 audit rows were deliberately removed. The old canonical baseline and qualified disposition describe
+the pre-removal state and must not be reused or edited to conceal that difference. Any future enrollment
+of this database must derive a fresh baseline from its actual state and retain the cleanup authorization
+and evidence provenance alongside the independent checkpoint. S3 enrollment has not been performed.
+The backup archive was fully readable; a full database restore rehearsal was not performed for this cleanup.
+
+This was database maintenance, not a migration for other databases. Pushing this document does not repeat
+the deletion on EC2 or another database. A database retaining the original failures must still fail strict
+verification; do not suppress errors, rewrite hashes, or reuse the target IDs as a generic repair.
 
 ### Qualified post-boundary enrollment
 
-The opt-in format-2 checkpoint preserves the legacy failures instead of treating them as valid. Its
+For a database retaining documented legacy failures, the opt-in format-2 checkpoint preserves those
+failures instead of treating them as valid. It does not apply the cleanup above. Its
 retained disposition says `historical_status: "known_broken_preserved"`, embeds the exact ordered defect
 records and their digest, the full version-1 canonical baseline, cutoff ID/hash, root-cause statement,
 evidence SHA-256 and migration SHA-256. Every run recomputes every version-1 payload hash, baseline and
 link defect, requires the exact retained defect set, rejects version interleaving across the cutoff, and
 verifies a nonempty continuous version-2 suffix linked through the cutoff row. Results always use
 `verified: false` and report `post_boundary_verified: true`; they never describe the historical chain as
-healthy. The ordinary format-1 mode remains strict and continues to reject the existing failures. The
-database verifier and audit API are not relaxed and continue to report the preserved historical breaks.
+healthy. The ordinary format-1 mode remains strict and rejects any existing failures. The database verifier
+and audit API are not relaxed. Do not supply the pre-removal `--legacy-disposition` for the cleaned AS2
+database; its actual rows no longer match that disposition.
 
 After migration and at least one version-2 audit append, an operator can generate the private manifest
 through the same bounded, repeatable-read path without printing row payloads. The helper creates a new
@@ -226,6 +261,7 @@ independent proof.
 Before enabling the schedule, use the verifier identity to inspect `list-object-versions` and
 `get-object-retention` for the prefix, confirm the bucket owner and writer ARN, and perform two real runs
 with a real intervening audit append. Confirm sequences 1 and 2, active COMPLIANCE retention, distinct
-VersionIds, the second object's prior link, and a forced stale concurrent writer failure. Production
-verification is pending: the AWS login succeeds, but the current identity cannot inspect Object Lock on
-any of the 11 visible buckets and no approved checkpoint bucket or dedicated writer is available.
+VersionIds, the second object's prior link, and a forced stale concurrent writer failure. Independent
+enrollment and this two-run verification remain unperformed for the cleaned AS2 database. Check the actual
+AWS identity, approved bucket, dedicated writer and retention configuration before attempting enrollment;
+the historical inspection result above does not establish their current state.
