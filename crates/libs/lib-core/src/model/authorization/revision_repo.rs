@@ -17,7 +17,7 @@ impl RevisionRepository {
 		organization_id: Uuid,
 	) -> Result<AuthorizationRevisions, sqlx::Error> {
 		let (organization, principal) = sqlx::query_as::<_, (i64, i64)>(
-			"SELECT o.revision, p.revision FROM organization_policy_state o JOIN principal_authorization_state p ON p.organization_id = o.organization_id WHERE o.organization_id = $1 AND p.user_id = $2",
+			include_str!("../sql/authorization/load_policy_revisions.sql"),
 		)
 		.bind(organization_id)
 		.bind(user_id)
@@ -35,7 +35,7 @@ impl RevisionRepository {
 		organization_id: Uuid,
 	) -> Result<AuthorizationRevisions, sqlx::Error> {
 		let (organization, principal) = sqlx::query_as::<_, (i64, i64)>(
-			"SELECT o.revision, p.revision FROM organization_policy_state o JOIN principal_authorization_state p ON p.organization_id = o.organization_id WHERE o.organization_id = $1 AND p.user_id = $2 FOR UPDATE OF o, p",
+			include_str!("../sql/authorization/lock_policy_revisions.sql"),
 		)
 		.bind(organization_id)
 		.bind(user_id)
@@ -57,9 +57,15 @@ impl RevisionRepository {
 				InvalidationDomain::Principal => "principal",
 			};
 			let trigger_name = format!("authz_revision_{domain}_{}", fact.table);
-			let (definition, columns, trigger_type, enabled, function_name, security_definer) =
-				sqlx::query_as::<_, (String, Vec<String>, i16, String, String, bool)>(
-					"SELECT pg_get_triggerdef(t.oid), ARRAY(SELECT a.attname FROM unnest(t.tgattr::smallint[]) WITH ORDINALITY AS trigger_column(attnum, ordinal) JOIN pg_attribute a ON a.attrelid = t.tgrelid AND a.attnum = trigger_column.attnum ORDER BY trigger_column.ordinal), t.tgtype, t.tgenabled::text, p.proname, p.prosecdef FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_proc p ON p.oid = t.tgfoid WHERE n.nspname = current_schema() AND c.relname = $1 AND t.tgname = $2 AND NOT t.tgisinternal",
+			let (
+				definition,
+				columns,
+				trigger_type,
+				enabled,
+				function_name,
+				security_definer,
+			) = sqlx::query_as::<_, (String, Vec<String>, i16, String, String, bool)>(
+				include_str!("../sql/authorization/load_revision_trigger.sql"),
 			)
 			.bind(&fact.table)
 			.bind(&trigger_name)
@@ -111,9 +117,9 @@ impl RevisionRepository {
 				"authz_initialize_membership_revision",
 			),
 		] {
-			let valid = sqlx::query_scalar::<_, bool>(
-				"SELECT EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_proc p ON p.oid = t.tgfoid WHERE n.nspname = current_schema() AND c.relname = $1 AND t.tgname = $2 AND NOT t.tgisinternal AND t.tgenabled = 'O' AND p.proname = $2 AND p.prosecdef AND (t.tgtype & 1) = 1 AND (t.tgtype & 4) = 4)",
-			)
+			let valid = sqlx::query_scalar::<_, bool>(include_str!(
+				"../sql/authorization/revision_initializer_exists.sql"
+			))
 			.bind(table)
 			.bind(trigger_name)
 			.fetch_one(pool)

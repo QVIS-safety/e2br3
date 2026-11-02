@@ -130,37 +130,14 @@ impl CaseValidationSummaryBmc {
 		let required_count = count_as_i32(required_count, "required_count")?;
 		mm.dbx()
 			.execute(
-				sqlx::query(
-					r#"
-					INSERT INTO case_validation_summaries (
-						case_id,
-						appendix,
-						page_id,
-						issue_count,
-						required_count,
-						issue_keys,
-						validation_revision,
-						stale,
-						generated_at
-					)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, false, now())
-					ON CONFLICT (case_id, appendix, page_id)
-					DO UPDATE SET
-						issue_count = EXCLUDED.issue_count,
-						required_count = EXCLUDED.required_count,
-						issue_keys = EXCLUDED.issue_keys,
-						validation_revision = EXCLUDED.validation_revision,
-						stale = false,
-						generated_at = now()
-					"#,
-				)
-				.bind(case_id)
-				.bind(appendix)
-				.bind(page_id)
-				.bind(issue_count)
-				.bind(required_count)
-				.bind(issue_keys)
-				.bind(revision),
+				sqlx::query(include_str!("sql/case_validation/upsert_summary.sql"))
+					.bind(case_id)
+					.bind(appendix)
+					.bind(page_id)
+					.bind(issue_count)
+					.bind(required_count)
+					.bind(issue_keys)
+					.bind(revision),
 			)
 			.await?;
 		Ok(())
@@ -196,22 +173,9 @@ impl CaseValidationSummaryBmc {
 		let rows = match mm
 			.dbx()
 			.fetch_all(
-				sqlx::query_as::<_, CaseValidationTotalRow>(
-					r#"
-					SELECT case_id,
-					       COUNT(DISTINCT issue_key.value)::bigint
-					           AS total_count
-					  FROM case_validation_summaries
-					  LEFT JOIN LATERAL jsonb_array_elements(issue_keys) AS issue_key(value) ON true
-					 WHERE case_id = ANY($1)
-					   AND page_id = $2
-					   AND stale = false
-					   AND appendix = ANY($3)
-					   AND validation_revision = $5
-					 GROUP BY case_id
-					HAVING COUNT(DISTINCT appendix) = $4
-					"#,
-				)
+				sqlx::query_as::<_, CaseValidationTotalRow>(include_str!(
+					"sql/case_validation/cached_totals.sql"
+				))
 				.bind(case_ids)
 				.bind(ALL_PAGE_ID)
 				.bind(&appendices)
