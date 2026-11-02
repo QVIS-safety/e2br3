@@ -156,6 +156,40 @@ impl OrganizationBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		if let Err(err) = dbx
+			.execute(
+				sqlx::query("DELETE FROM app_settings WHERE organization_id = $1")
+					.bind(id),
+			)
+			.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+		let count = match dbx
+			.execute(sqlx::query("DELETE FROM organizations WHERE id = $1").bind(id))
+			.await
+		{
+			Ok(count) => count,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		if count == 0 {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		dbx.commit_txn().await?;
+		Ok(())
 	}
 }

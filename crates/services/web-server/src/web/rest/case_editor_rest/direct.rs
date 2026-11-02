@@ -1,8 +1,9 @@
 use super::common::{
-	direct_page_projection_response, mark_editor_validation_summary_stale,
-	validate_direct_rows, validate_request_projection_context, BTreeMap,
-	CaseEditorPagePatchRequest, CaseEditorPageProjectionResponse, CtxW, Error, Json,
-	ModelManager, Path, Result, State, Uuid, Value,
+	bool_field, direct_page_projection_response,
+	mark_editor_validation_summary_stale, validate_direct_rows,
+	validate_request_projection_context, BTreeMap, CaseEditorPagePatchRequest,
+	CaseEditorPageProjectionResponse, CtxW, Error, Json, ModelManager, Path,
+	PatientIdentifierBmc, PatientInformationBmc, Result, State, Uuid, Value,
 };
 
 mod ci;
@@ -199,6 +200,8 @@ pub(crate) async fn apply_editor_direct_page_patch(
 			study.remove("study_type_reaction_kr1");
 		}
 	}
+	resolve_dm_identifier_types(ctx, mm, case_id, page_id, &mut request.rows)
+		.await?;
 	validate_direct_rows(page_id, &request.rows, fda)?;
 	if !request.rows.is_empty() {
 		if page_id == "CI" {
@@ -209,6 +212,87 @@ pub(crate) async fn apply_editor_direct_page_patch(
 		}
 	}
 	Ok(requested_authorities)
+}
+
+async fn resolve_dm_identifier_types(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &str,
+	rows: &mut BTreeMap<String, Value>,
+) -> Result<()> {
+	if page_id != "DM" {
+		return Ok(());
+	}
+	let Some(identifiers) = rows
+		.get_mut("patientIdentifiers")
+		.and_then(Value::as_array_mut)
+	else {
+		return Ok(());
+	};
+	for value in identifiers {
+		let identifier = value.as_object_mut().ok_or_else(|| Error::BadRequest {
+			message: format!("{page_id}.patientIdentifiers must contain objects"),
+		})?;
+		if !identifier.contains_key("deleted") {
+			if let Some(deleted) = identifier.get("_delete").and_then(Value::as_bool)
+			{
+				identifier.insert("deleted".into(), Value::Bool(deleted));
+			}
+		}
+		let deleted = bool_field(identifier, &["deleted", "_delete"]) == Some(true);
+		let id = super::common::uuid_field(identifier, &["id"])?;
+		if deleted && id.is_none() {
+			continue;
+		}
+		let supplied_type = identifier
+			.get("identifierTypeCode")
+			.or_else(|| identifier.get("identifier_type_code"))
+			.cloned();
+		if !deleted {
+			if let Some(value) =
+				supplied_type.as_ref().filter(|value| !value.is_null())
+			{
+				if !matches!(value.as_str(), Some("1" | "2" | "3" | "4")) {
+					return Err(Error::BadRequest {
+						message: format!(
+							"{page_id}.patientIdentifiers.identifierTypeCode must be one of 1, 2, 3, or 4"
+						),
+					});
+				}
+				identifier.insert("identifierTypeCode".into(), value.clone());
+			}
+		}
+		let needs_type =
+			!deleted && supplied_type.as_ref().is_none_or(Value::is_null);
+		let Some(id) = id else {
+			if needs_type {
+				return Err(Error::BadRequest {
+					message: format!(
+						"{page_id}.patientIdentifiers.identifierTypeCode is required"
+					),
+				});
+			}
+			continue;
+		};
+		let current = PatientIdentifierBmc::get(ctx, mm, id).await?;
+		let patient =
+			PatientInformationBmc::get(ctx, mm, current.patient_id).await?;
+		if patient.case_id != case_id {
+			return Err(lib_core::model::Error::EntityUuidNotFound {
+				entity: "patient_identifiers",
+				id,
+			}
+			.into());
+		}
+		if needs_type {
+			identifier.insert(
+				"identifierTypeCode".into(),
+				Value::String(current.identifier_type_code),
+			);
+		}
+	}
+	Ok(())
 }
 
 async fn apply_direct_page_rows_patch(

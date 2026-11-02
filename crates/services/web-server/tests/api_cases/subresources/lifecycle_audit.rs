@@ -6,9 +6,12 @@ use lib_core::model::ModelManager;
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct AuditSnapshot {
 	pub id: i64,
+	pub table_name: String,
+	pub record_id: Uuid,
 	pub organization_id: Uuid,
 	pub user_id: Uuid,
 	pub action: String,
+	pub e_signature_id: Option<Uuid>,
 	pub reason: Option<String>,
 	pub category: Option<String>,
 	pub changed_fields: Option<Value>,
@@ -35,9 +38,12 @@ pub(super) async fn audit_rows(
 		.into_iter()
 		.map(|row| AuditSnapshot {
 			id: row.id,
+			table_name: row.table_name,
+			record_id: row.record_id,
 			organization_id: row.organization_id,
 			user_id: row.user_id,
 			action: row.action,
+			e_signature_id: row.e_signature_id,
 			reason: row.reason_for_change,
 			category: row.change_category,
 			changed_fields: row.changed_fields,

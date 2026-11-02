@@ -827,21 +827,30 @@ pub(super) fn validate_direct_rows(
 					}) else {
 						continue;
 					};
+					let mut identifier_normalized = Map::new();
 					if let Some(value) = row
 						.get("identifierValue")
 						.or_else(|| row.get("identifier_value"))
 						.filter(|value| !value.is_null())
 					{
-						normalized.insert(target.to_string(), value.clone());
+						identifier_normalized
+							.insert(target.to_string(), value.clone());
 					}
 					if let Some(value) = row
 						.get("identifierValueNullFlavor")
 						.or_else(|| row.get("identifier_value_null_flavor"))
 						.filter(|value| !value.is_null())
 					{
-						normalized
+						identifier_normalized
 							.insert(format!("{target}NullFlavor"), value.clone());
 					}
+					validate_section_fields(
+						section,
+						&identifier_normalized,
+						None,
+						&[],
+						fda,
+					)?;
 				}
 			}
 			if let Some(value) = rows.get("medicalHistoryEpisodes") {
@@ -1804,6 +1813,22 @@ mod input_contract_save_tests {
 			detail.path,
 			"patientInformation.investigationNumberNullFlavor"
 		);
+
+		let rows = BTreeMap::from([
+			("patientInformation".to_string(), json!({})),
+			(
+				"patientIdentifiers".to_string(),
+				json!([
+					{"identifierTypeCode":"1", "identifierValue":"X".repeat(101)},
+					{"identifierTypeCode":"1", "identifierValue":"VALID"}
+				]),
+			),
+		]);
+		let detail = constraint_violation(
+			validate_direct_rows("DM", &rows, false).unwrap_err(),
+		);
+		assert_eq!(detail.rule_code, "ICH.D.1.1.1.LENGTH.MAX");
+		assert_eq!(detail.path, "patientInformation.gpMedicalRecordNumber");
 	}
 
 	#[test]

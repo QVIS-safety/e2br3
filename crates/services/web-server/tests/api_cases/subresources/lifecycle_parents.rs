@@ -93,7 +93,30 @@ pub(super) async fn assert_case_soft_parent_preserves_rows(
 		Some(("status", json!("draft"), json!("deleted"))),
 	)
 	.await?;
-	assert_eq!(deleted_audit.len(), case_audit.len() + 1);
+	let appended = deleted_audit
+		.iter()
+		.filter(|row| !case_audit.iter().any(|before| before.id == row.id))
+		.collect::<Vec<_>>();
+	assert_eq!(
+		appended.len(),
+		2,
+		"unexpected recursive Case delete audit: {appended:?}"
+	);
+	let case_status_audit = appended
+		.iter()
+		.find(|row| row.table_name == "cases")
+		.ok_or("missing Case status audit")?;
+	assert_eq!(case_status_audit.record_id, case_id);
+	assert_eq!(case_status_audit.action, "UPDATE");
+	let signature_id = case_status_audit
+		.e_signature_id
+		.ok_or("Case status audit is missing its e-signature")?;
+	let signature_audit = appended
+		.iter()
+		.find(|row| row.table_name == "e_signatures")
+		.ok_or("missing e-signature audit")?;
+	assert_eq!(signature_audit.record_id, signature_id);
+	assert_eq!(signature_audit.action, "CREATE");
 	let mut audit_tx = mm.dbx().db().begin().await?;
 	sqlx::query("SET ROLE e2br3_auditor_role")
 		.execute(&mut *audit_tx)

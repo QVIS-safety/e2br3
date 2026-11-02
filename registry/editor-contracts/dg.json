@@ -1863,7 +1863,7 @@
       "payloadPath": "fdaDevices[].operatorOfDevice",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "store", "input": "", "value": null},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "operator_of_device", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -2263,7 +2263,7 @@
       "payloadPath": "fdaDevices[].deviceUsage",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "store", "input": "", "value": null},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_usage", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }

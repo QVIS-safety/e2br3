@@ -827,11 +827,11 @@ pub(super) async fn apply_ci_rows_patch(
 			if let Some(id) = patch.id {
 				let current = SourceDocumentBmc::get(ctx, mm, id).await?;
 				if current.case_id != case_id {
-					return Err(Error::BadRequest {
-						message: format!(
-							"CI.sourceDocuments row '{id}' belongs to another case"
-						),
-					});
+					return Err(lib_core::model::Error::EntityUuidNotFound {
+						entity: "source_documents",
+						id,
+					}
+					.into());
 				}
 				let clear_fields = explicit_null_model_fields(
 					raw_patch

@@ -28,6 +28,46 @@ class TestPlanTests(unittest.TestCase):
         self.assertTrue(plan['backend_contracts'])
         self.assertFalse(plan['validator'])
 
+    def test_matrix_preserves_every_web_target_and_unit_doc_tests(self):
+        jobs = self.plan('crates/services/web-server/src/lib.rs')['test_matrix']['include']
+        integrations = [job for job in jobs if job['selections']['web-server']]
+        targets = [job['selections']['web-server'][0] for job in integrations]
+        self.assertCountEqual(targets, self.workspace['web-server']['targets'])
+        unit = [job for job in jobs if not job['selections']['web-server']]
+        self.assertEqual(len(unit), 1)
+        self.assertIn('--lib', unit[0]['commands'][0])
+        self.assertIn('--bins', unit[0]['commands'][0])
+        self.assertIn('--examples', unit[0]['commands'][0])
+        self.assertIn('--doc', unit[0]['commands'][1])
+        self.assertFalse(unit[0]['backend_contracts'])
+        for job in integrations:
+            target = job['selections']['web-server'][0]
+            self.assertEqual(job['backend_contracts'], target in ('api_cases', 'api_editor', 'api_import'))
+            self.assertEqual(job['xml_assets'], target in ('api_import', 'api_submission', 'xml'))
+            self.assertEqual(job['commands'], commands_for(job['selections'], self.workspace))
+
+    def test_matrix_preserves_partial_selection_and_editor_filters(self):
+        plan = self.plan('crates/services/web-server/tests/api_editor/relations/restore.rs',
+                         'crates/services/web-server/tests/api_cases/contract/save.rs',
+                         'crates/libs/lib-core/tests/presave/audit.rs')
+        jobs = plan['test_matrix']['include']
+        self.assertEqual([job['name'] for job in jobs],
+                         ['libraries', 'web-server-api_cases', 'web-server-api_editor'])
+        self.assertEqual(jobs[0]['selections'], {'lib-core': ['section_presave']})
+        self.assertEqual(jobs[1]['editor_filters'], [])
+        self.assertEqual(jobs[2]['editor_filters'], plan['editor_filters'])
+        self.assertEqual(jobs[2]['commands'], commands_for(
+            jobs[2]['selections'], self.workspace, editor_filters=plan['editor_filters']))
+
+    def test_matrix_isolates_xml_and_leaves_validator_to_its_job(self):
+        plan = self.plan('Cargo.toml')
+        jobs = plan['test_matrix']['include']
+        owners = [package for job in jobs for package in job['selections'] if package != 'web-server']
+        self.assertCountEqual(owners, set(self.workspace) - {'web-server', 'validator'})
+        self.assertEqual(len({job['name'] for job in jobs}), len(jobs))
+        self.assertEqual(self.plan('crates/libs/validator/tools/check_rule_tests.py')['test_matrix'], {'include': []})
+        self.assertEqual(self.plan('README.md')['test_matrix'], {'include': []})
+
     def test_core_source_runs_consumers_but_not_its_dependencies(self):
         plan = self.plan('crates/libs/lib-core/src/model.rs')
         self.assertEqual(set(plan['selections']), {

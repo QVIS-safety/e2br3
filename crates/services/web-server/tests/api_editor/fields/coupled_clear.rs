@@ -609,6 +609,20 @@ pub(crate) async fn blank_test_name_keeps_meddra_selection(
 		saved["data"]["testResult"]["test_meddra_code"], "10088978",
 		"{saved}"
 	);
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&detail,
+		json!({"authorities":["ich"],"rows":{"testResult":{"testName":null}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (_, saved) = get_json(&app, &cookie, &detail).await?;
+	assert_eq!(saved["data"]["testResult"]["test_name"], "", "{saved}");
+	assert_eq!(
+		saved["data"]["testResult"]["test_meddra_code"], "10088978",
+		"{saved}"
+	);
 
 	Ok(())
 }

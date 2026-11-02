@@ -468,6 +468,7 @@ pub struct CaseLinkOption {
 	pub safety_report_id: String,
 	pub version: i32,
 	pub transmission_date: Option<String>,
+	#[serde(with = "time::serde::rfc3339")]
 	pub created_at: OffsetDateTime,
 }
 

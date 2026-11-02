@@ -28,6 +28,7 @@ jobs:
       rust: ${{ steps.plan.outputs.rust }}
       xml_assets: ${{ steps.plan.outputs.xml_assets }}
       backend_contracts: ${{ steps.plan.outputs.backend_contracts }}
+      test_matrix: ${{ steps.plan.outputs.test_matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,7 +89,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: QVIS-safety/e2br3-frontend
-          ref: ${{ (github.base_ref == 'dev' || github.ref_name == 'dev') && 'dev' || 'main' }}
+          ref: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'main' || 'dev' }}
           path: frontend/E2BR3-frontend
           token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
 
@@ -223,11 +224,16 @@ jobs:
   # Job 3: Run tests with PostgreSQL
   # ============================================
   test:
-    name: Test
+    name: Test (${{ matrix.name }})
     needs: [registry, test-plan]
     if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJSON(needs.test-plan.outputs.test_matrix) }}
 
     # Spin up PostgreSQL for integration tests
     services:
@@ -252,7 +258,7 @@ jobs:
       # XML fixtures and schemas were intentionally removed from the release
       # tree, but the validation suites still exercise those canonical assets.
       - name: Checkout XML validation assets
-        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
+        if: ${{ matrix.xml_assets }}
         uses: actions/checkout@v4
         with:
           ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
@@ -262,7 +268,7 @@ jobs:
             docs/refs/instances
 
       - name: Prepare XML validation assets
-        if: ${{ needs.test-plan.outputs.xml_assets == 'true' }}
+        if: ${{ matrix.xml_assets }}
         run: |
           mkdir -p docs/exporter
           cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
@@ -279,8 +285,7 @@ jobs:
 
       - name: Run selected crate tests
         env:
-          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
-          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+          TEST_COMMANDS: ${{ toJSON(matrix.commands) }}
           SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
           SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
@@ -289,18 +294,34 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python3 scripts/ci_test_plan.py run --selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS" 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          python3 - <<'PY' 2>&1 | tee "$RUNNER_TEMP/workspace-tests.log"
+          import json
+          import os
+          import sys
+          sys.path.insert(0, 'scripts')
+          from ci_test_plan import run_commands
+          sys.exit(run_commands(json.loads(os.environ['TEST_COMMANDS'])))
+          PY
 
       - name: Require selected backend contract execution
-        if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}
+        if: ${{ always() && matrix.backend_contracts }}
         env:
-          SELECTED_TESTS: ${{ needs.test-plan.outputs.selections }}
-          EDITOR_FILTERS: ${{ needs.test-plan.outputs.editor_filters }}
+          SELECTED_TESTS: ${{ toJSON(matrix.selections) }}
+          EDITOR_FILTERS: ${{ toJSON(matrix.editor_filters) }}
         run: |
           python3 registry/tools/check_contract_test_results.py \
             --registry-root registry \
             --backend-log "$RUNNER_TEMP/workspace-tests.log" \
             --backend-selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
+
+      - name: Retain test output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: tests-${{ matrix.name }}
+          path: ${{ runner.temp }}/workspace-tests.log
+          if-no-files-found: error
+          retention-days: 7
 
   deploy-dev:
     name: Publish Dev Backend Image

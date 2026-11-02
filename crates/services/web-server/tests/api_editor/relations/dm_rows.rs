@@ -16,7 +16,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm.clone());
 	let case_id =
-		create_case_for_editor(&app, &cookie, "DM-LIFECYCLE", &["ich"]).await?;
+		create_case_for_editor(&app, &cookie, "DM-LIFECYCLE", &["fda"]).await?;
 	let ctx = Ctx::new(
 		seed.admin.id,
 		seed.org_id,
@@ -29,7 +29,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		&mm,
 		&ctx,
 		&uri,
-		json!({"authorities":["ich"],"rows":{
+		json!({"authorities":["fda"],"rows":{
 			"patientInformation":{"raceCodes":["1"]},
 			"patientIdentifiers":[{"sequenceNumber":1,"identifierTypeCode":"1","identifierValue":"PATIENT-ID"}],
 			"medicalHistoryEpisodes":[{"sequenceNumber":1,"comments":"HISTORY"}],
@@ -83,7 +83,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":replay.clone()}),
+			json!({"authorities":["fda"],"rows":replay.clone()}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "replay {attempt}: {after}");
@@ -138,7 +138,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		&mm,
 		&ctx,
 		&uri,
-		json!({"authorities":["ich"],"rows":changed_patient.clone()}),
+		json!({"authorities":["fda"],"rows":changed_patient.clone()}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{changed}");
@@ -157,7 +157,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":changed_patient.clone()}),
+			json!({"authorities":["fda"],"rows":changed_patient.clone()}),
 		)
 		.await?;
 		assert_eq!(
@@ -200,7 +200,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		json!({"deathInfo":{"id":"not-a-uuid","dateOfDeath":"20261002"},"patientInformation":{"id":saved["patientInformation"]["id"],"patientInitials":"MUST ROLL BACK"}}),
 	] {
 		assert_malformed_row_id_rejected_without_mutation(
-			&app, &cookie, &mm, &ctx, &uri, &case_id, "ich", rows,
+			&app, &cookie, &mm, &ctx, &uri, &case_id, "fda", rows,
 		)
 		.await?;
 	}
@@ -215,7 +215,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":deleted_rows}),
+			json!({"authorities":["fda"],"rows":deleted_rows}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "delete attempt {attempt}: {body}");
@@ -246,7 +246,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":rows}),
+			json!({"authorities":["fda"],"rows":rows}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
@@ -271,7 +271,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":restored_rows}),
+			json!({"authorities":["fda"],"rows":restored_rows}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "restore attempt {attempt}: {body}");
@@ -291,7 +291,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":parent_delete}),
+			json!({"authorities":["fda"],"rows":parent_delete}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "parent delete {attempt}: {body}");
@@ -308,7 +308,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":rows}),
+			json!({"authorities":["fda"],"rows":rows}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
@@ -324,7 +324,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			&mm,
 			&ctx,
 			&uri,
-			json!({"authorities":["ich"],"rows":parent_restore}),
+			json!({"authorities":["fda"],"rows":parent_restore}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "parent restore {attempt}: {body}");
@@ -349,7 +349,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			);
 		}
 	}
-	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "ich", 7)
+	super::assert_child_mutation_guards(&app, &cookie, &mm, &seed, &uri, "fda", 7)
 		.await?;
 	let (status, saved) = super::get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{saved}");
@@ -360,7 +360,7 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 		(
 			"PATCH",
 			uri.clone(),
-			json!({"authorities":["ich"],"rows":{"deathInfo":{"id":death_id,"dateOfDeath":"20261002"}}}),
+			json!({"authorities":["fda"],"rows":{"deathInfo":{"id":death_id,"dateOfDeath":"20261002"}}}),
 		),
 		(
 			"PATCH",

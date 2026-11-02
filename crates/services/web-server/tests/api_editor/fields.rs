@@ -301,7 +301,34 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 			projection_path,
 			&contract["rowIdentities"],
 		)?;
-		case.check_patch(invalid, &json!({"effect":"reject", "status":422, "ruleCode":field["constraint"]["ruleCode"], "issuePath":field["constraint"]["issuePath"]}), "invalid", &mut projection).await?;
+		if spec.page_id == "DM" && owner == "patientIdentifiers" {
+			assert!(invalid[owner][0].get("id").is_some());
+			assert!(invalid[owner][0].get("identifierTypeCode").is_none());
+		}
+		let invalid_outcome = json!({"effect":"reject", "status":422, "ruleCode":field["constraint"]["ruleCode"], "issuePath":field["constraint"]["issuePath"]});
+		case.check_patch(
+			invalid.clone(),
+			&invalid_outcome,
+			"invalid",
+			&mut projection,
+		)
+		.await?;
+		if spec.page_id == "DM" && owner == "patientIdentifiers" {
+			for (key, operation) in [
+				("identifierTypeCode", "invalid-camel-null-type"),
+				("identifier_type_code", "invalid-snake-null-type"),
+			] {
+				let mut explicit_null = invalid.clone();
+				explicit_null[owner][0][key] = Value::Null;
+				case.check_patch(
+					explicit_null,
+					&invalid_outcome,
+					operation,
+					&mut projection,
+				)
+				.await?;
+			}
+		}
 	}
 	assert_eq!(
 		case_status(&mm, seed.admin.id, seed.org_id, &case_id).await?,
