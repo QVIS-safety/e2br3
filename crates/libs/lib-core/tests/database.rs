@@ -30,6 +30,8 @@ async fn init_test_mm() -> Result<lib_core::model::ModelManager> {
 	if actual != expected {
 		return Err("database does not match E2BR3_TEST_DATABASE_NAME".into());
 	}
-	lib_core::_dev_utils::init_dev().await;
+	lib_core::_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	Ok(mm)
 }

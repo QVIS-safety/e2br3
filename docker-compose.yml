@@ -6,19 +6,21 @@ services:
   # PostgreSQL Database
   # ============================================
   postgres:
-    image: postgres:16
+    build: ./deploy/docker/postgres-init
+    image: e2br3-postgres-dev:16
     container_name: e2br3-postgres
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: dev_only_pwd
       POSTGRES_DB: app_db
+      E2BR3_INIT_INCLUDE_SEED: "1"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Mount SQL init scripts (runs on first startup only)
       - ./db:/db:ro
-      - ./scripts/db/list_init_sql.sh:/app-scripts/list_init_sql.sh:ro
+      - ./deploy/ec2/migrate-rds.py:/app-scripts/migrate-rds.py:ro
       - ./deploy/docker/postgres-init/01-run-all.sh:/docker-entrypoint-initdb.d/01-run-all.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app_user -d app_db"]

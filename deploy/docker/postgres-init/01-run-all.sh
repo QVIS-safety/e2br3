@@ -2,19 +2,14 @@
 set -eu
 
 DB_DIR="${E2BR3_INIT_DB_DIR:-/db}"
-LIST_SCRIPT="${E2BR3_INIT_SQL_LIST_SCRIPT:-/app-scripts/list_init_sql.sh}"
-INCLUDE_SEED="${E2BR3_INIT_INCLUDE_SEED:-1}"
-APP_DB_USER="${POSTGRES_USER:?POSTGRES_USER is required}"
-
-if [ ! -f "${LIST_SCRIPT}" ]; then
-  echo "Missing SQL list helper: ${LIST_SCRIPT}"
-  exit 1
-fi
-
-echo "Applying init SQL from ${DB_DIR}"
-sh "${LIST_SCRIPT}" "${DB_DIR}" "${INCLUDE_SEED}" |
-while IFS= read -r file; do
-  echo "==> ${file}"
-  psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
-    -v "app_db_user=${APP_DB_USER}" -f "${DB_DIR}/${file}"
-done
+INCLUDE_SEED="${E2BR3_INIT_INCLUDE_SEED:-0}"
+export APP_DB_USER="${POSTGRES_USER:?POSTGRES_USER is required}"
+export PGUSER="${POSTGRES_USER}"
+export PGDATABASE="${POSTGRES_DB:?POSTGRES_DB is required}"
+export PGHOST=/var/run/postgresql
+case "${INCLUDE_SEED}" in
+  0) set -- ;;
+  1) set -- --seed ;;
+  *) echo "E2BR3_INIT_INCLUDE_SEED must be 0 or 1" >&2; exit 1 ;;
+esac
+exec python3 /app-scripts/migrate-rds.py --db-dir "${DB_DIR}" --initialize "$@"

@@ -5,7 +5,7 @@ set -eu
 # Usage:
 #   DATABASE_URL='postgres://user:pwd@host:5432/app_db?sslmode=require' ./deploy/ec2/init-rds.sh
 # Optional:
-#   INCLUDE_SEED=0 ./deploy/ec2/init-rds.sh   # skip db/seed/*.sql
+#   INCLUDE_SEED=1 ./deploy/ec2/init-rds.sh   # explicitly load development seed
 #   RESET_DB=1 ROOT_DATABASE_URL='postgres://admin:pwd@host:5432/postgres?sslmode=require' \
 #     DATABASE_URL='postgres://app_user:pwd@host:5432/app_db?sslmode=require' ./deploy/ec2/init-rds.sh
 #   RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=0 ... ./deploy/ec2/init-rds.sh   # destructive terminology reset
@@ -14,10 +14,10 @@ set -eu
 DATABASE_URL="${DATABASE_URL:-}"
 ROOT_DATABASE_URL="${ROOT_DATABASE_URL:-${SERVICE_DB_ROOT_URL:-}}"
 PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
-INCLUDE_SEED="${INCLUDE_SEED:-1}"
+INCLUDE_SEED="${INCLUDE_SEED:-0}"
 RESET_DB="${RESET_DB:-0}"
 RESET_PRESERVE_TERMINOLOGY="${RESET_PRESERVE_TERMINOLOGY:-1}"
-LIST_SQL_SCRIPT="${PROJECT_DIR}/scripts/db/list_init_sql.sh"
+MIGRATE_SCRIPT="${PROJECT_DIR}/deploy/ec2/migrate-rds.sh"
 DB_DIR="${PROJECT_DIR}/db"
 SQL_EXEC_URL=""
 APP_USER_PASSWORD=""
@@ -53,11 +53,18 @@ if [ ! -d "${DB_DIR}" ]; then
   exit 1
 fi
 
-if [ ! -f "${LIST_SQL_SCRIPT}" ]; then
-  echo "SQL list helper not found: ${LIST_SQL_SCRIPT}"
+if [ ! -f "${MIGRATE_SCRIPT}" ]; then
+  echo "Migration runner not found: ${MIGRATE_SCRIPT}"
   echo "Set PROJECT_DIR to your repository root."
   exit 1
 fi
+
+if [ "${INCLUDE_SEED}" != "0" ] && [ "${INCLUDE_SEED}" != "1" ]; then
+  echo "INCLUDE_SEED must be 0 or 1" >&2
+  exit 1
+fi
+
+sh "${MIGRATE_SCRIPT}" --db-dir "${DB_DIR}" --validate-only
 
 SQL_EXEC_URL="${DATABASE_URL}"
 if [ -n "${ROOT_DATABASE_URL}" ]; then
@@ -218,28 +225,23 @@ PY
     -f "${recreate_path}"
 fi
 
-echo "Applying SQL files to: ${SQL_EXEC_URL}"
+echo "Initializing database with verified migration history"
 
 if [ "${RESET_DB}" = "1" ] && [ "${RESET_PRESERVE_TERMINOLOGY}" = "1" ] && [ -n "${TERMINOLOGY_DUMP_FILE}" ] && [ -s "${TERMINOLOGY_DUMP_FILE}" ]; then
-  apply_sql_group "bootstrap"
-  apply_sql_group "migrations"
-
+  DATABASE_URL="${SQL_EXEC_URL}" APP_DB_USER="${APP_DB_USER}" \
+    sh "${MIGRATE_SCRIPT}" --db-dir "${DB_DIR}" --initialize
   restore_terminology_tables
-
   if [ "${INCLUDE_SEED}" = "1" ]; then
     apply_sql_group "seed"
   fi
 else
-  sh "${LIST_SQL_SCRIPT}" "${DB_DIR}" "${INCLUDE_SEED}" |
-  while IFS= read -r f; do
-    path="${DB_DIR}/${f}"
-    if [ ! -f "${path}" ]; then
-      echo "Missing file: ${path}"
-      exit 1
-    fi
-    echo "==> ${f}"
-    psql "${SQL_EXEC_URL}" -v ON_ERROR_STOP=1 -v "app_db_user=${APP_DB_USER}" -f "${path}"
-  done
+  if [ "${INCLUDE_SEED}" = "1" ]; then
+    set -- --seed
+  else
+    set --
+  fi
+  DATABASE_URL="${SQL_EXEC_URL}" APP_DB_USER="${APP_DB_USER}" \
+    sh "${MIGRATE_SCRIPT}" --db-dir "${DB_DIR}" --initialize "$@"
 fi
 
 echo "RDS bootstrap complete."

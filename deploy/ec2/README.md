@@ -112,16 +112,91 @@ RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 When `ROOT_DATABASE_URL` is available, it derives an admin connection to the target app database
 and uses that for applying `db/bootstrap/*.sql` and `db/seed/*.sql`. This avoids role/GRANT failures
 when `SERVICE_DB_URL` points at the lower-privilege `app_user`.
-It applies `db/bootstrap/*.sql`, then `db/migrations/*.sql`, and finally `db/seed/*.sql`
-when `INCLUDE_SEED=1`. Both clean initialization and upgrades therefore use the same ordered
-authorization migrations.
+Initialization requires an empty public schema. It uses the common migration runner for
+`bootstrap`, every migration with its original SHA-256 history, and optional development
+seed data. `INCLUDE_SEED` defaults to `0`; use `INCLUDE_SEED=1` only for development fixtures.
+The Docker development image explicitly enables seed and installs Python 3 for the same runner.
 
-To skip dev seed data (`db/seed/*.sql`):
+For an existing database, use the migration credential and the exact deployed image's SQL:
 
 ```sh
-INCLUDE_SEED=0 DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?sslmode=require' \
-./deploy/ec2/init-rds.sh
+SERVICE_MIGRATION_DB_URL='postgres://<migration-user>:<password>@<host>/<db>?sslmode=require' \
+  ./deploy/ec2/migrate-rds.sh --check
+SERVICE_MIGRATION_DB_URL='postgres://<migration-user>:<password>@<host>/<db>?sslmode=require' \
+  ./deploy/ec2/migrate-rds.sh
 ```
+
+The runner requires Python 3.9+ and psql 13+. `--check` uses a read-only transaction.
+Before writes, the runner takes a database session advisory lock and verifies the complete
+history. Unknown, modified or out-of-order migrations stop execution. Each pending file
+and its history row commit together. A failed file rolls back; earlier committed files
+remain applied and are skipped on retry. Lock acquisition fails immediately when another
+runner is active; DDL lock waits are bounded to 5 seconds and statements to 15 minutes.
+
+Five historical files contain transaction wrappers. Their original bytes and SHA-256
+remain unchanged. Only the reviewed filename/hash pairs may have those exact wrapper
+lines removed from a private execution copy; the runner logs that transformation.
+New migrations must not contain transaction-control or psql commands. File validation
+runs in CI, and the executed SQL is the same snapshot that was checksummed.
+
+Missing or empty history on an existing database is an error. `BASELINE` and
+`BASELINE_IF_EMPTY` cannot mark unexecuted files as applied. Reconcile such a database
+separately using its actual release artifacts, schema/data evidence and backups; do not
+infer historical data changes from current schema alone. Existing UI databases and cloned
+terminology templates follow the same requirement. No automatic reset or seed occurs on
+upgrade. Application startup requires `SKIP_DEV_INIT=1`; it never recreates a database.
+
+Before adopting an existing database without history:
+
+1. Pin the running binary/image and its source commit, hash the exact SQL artifacts,
+   and verify available backups and deployment logs. A file present in a release
+   does not prove that it ran against this database.
+2. Capture the live catalogs read-only: columns/defaults, constraints, indexes,
+   functions/configuration, triggers, RLS policies, owners and grants. Compare them
+   with a fresh initialization from the pinned candidate. Compare catalog definitions
+   as well as dumps: dump rendering and column order can differ without a contract change.
+3. Check data-changing migrations against actual data and retained before/after
+   evidence. Classify each file's execution evidence separately from its current
+   effects; absent effects may also reflect a later replacement. Preserve intentional
+   local differences until their policy and provenance are resolved.
+4. Rehearse the reviewed reconciliation on an isolated full-data restore, retaining
+   data checksums/counts and rollback/retry evidence. A schema-only restore proves DDL
+   compatibility and guard behavior only. Do not populate history while any required
+   evidence or reconciliation remains unresolved, and do not replay all historical SQL.
+
+New migration filenames must sort after the last migration in the comparison base;
+CI rejects backdated additions before image publication. For a backdated file already
+present in a release, preserve its bytes and handle its ordering explicitly in the
+database-specific reconciliation. Renaming historical files or inserting an unverified
+history row is not an ordering fix. The runner has no automatic adoption override.
+
+`20261102_reconcile_runtime_schema.sql` repairs the confirmed runtime omissions:
+WHODrug search and its restricted owner grants, Unicode audit comparisons, FDA device
+and source-document audit triggers, the Foetus/Drug Not Administered codes, and nullable
+validation revisions. It also preserves MFDS `MSK` alongside `UNK` for test dates.
+It requires the same superuser migration credential as the WHODrug migration and the
+known patient-age/test-date constraints; an unexpected schema fails instead of being
+silently accepted. Existing audit rows are not rewritten or backfilled, and unchanged
+code-list entries do not generate additional audit events on replay.
+
+On a database with verified migration history, apply it through the normal runner.
+For the existing AS2 database without history, this file is a reconciliation candidate,
+not a baseline or an automatic upgrade path. The isolated rehearsal covered the actual
+schema and 16 complete selected tables, including their foreign-key dependencies and
+WHODrug releases/products; it did not restore the full audit history or all database data.
+The full-data restore and history-adoption requirements above still apply.
+
+Migration regression tests create and clean up only their own named databases:
+
+```sh
+python3 -m unittest discover -s deploy/ec2 -p 'test_migrations.py'
+MIGRATION_TEST_ADMIN_URL='postgres://<admin>:<password>@<host>/postgres' \
+  python3 -m unittest discover -s deploy/ec2 -p 'test_migrations_postgres.py' -v
+```
+
+These verify real PostgreSQL transaction/history/concurrency behavior, fresh installation
+and incremental schema equivalence. Deterministic failure probes are isolated test logic;
+they do not establish a successful deployment against production data.
 
 ## Recovering login after changing `SERVICE_PWD_KEY`
 

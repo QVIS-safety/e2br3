@@ -3,7 +3,9 @@ use super::*;
 #[serial]
 #[tokio::test]
 async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -512,7 +514,9 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, demo_user_id()).await?;
@@ -664,7 +668,9 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 #[serial]
 #[tokio::test]
 async fn test_receiver_presave_route_bmc_crud() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
