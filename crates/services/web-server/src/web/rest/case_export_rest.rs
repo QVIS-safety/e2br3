@@ -49,12 +49,14 @@ pub struct XmlExportHistoryList {
 
 // -- Helpers
 
-fn required_env_identifier(name: &str) -> Result<String> {
-	let value = std::env::var(name).map_err(|_| Error::BadRequest {
+fn required_env_identifier(name: &'static str) -> Result<String> {
+	let value = std::env::var(name).map_err(|_| Error::Configuration {
+		key: name,
 		message: format!("{name} must be configured"),
 	})?;
 	if value.trim().is_empty() {
-		return Err(Error::BadRequest {
+		return Err(Error::Configuration {
+			key: name,
 			message: format!("{name} must not be empty"),
 		});
 	}
@@ -138,14 +140,10 @@ async fn generate_case_xml_for_authority(
 	};
 	let xml = export_case_xml_with_options(ctx, mm, id, options)
 		.await
-		.map_err(|err| Error::BadRequest {
-			message: format!("export task failed: {err}"),
-		})?;
+		.map_err(Error::Export)?;
 	let errors =
 		xml::validation::validate_export_message_header(xml.as_bytes(), authority)
-			.map_err(|err| Error::BadRequest {
-			message: format!("export header validation failed: {err}"),
-		})?;
+			.map_err(Error::Export)?;
 	if !errors.is_empty() {
 		return Err(Error::BadRequest {
 			message: format!(
@@ -205,7 +203,11 @@ async fn export_case_authorized(
 	{
 		Ok(result) => result,
 		Err(err) => {
-			let error_message = err.to_string();
+			let error_message = match &err {
+				Error::BadRequest { message } => message.clone(),
+				Error::ConstraintViolation(detail) => detail.message.clone(),
+				_ => err.diagnostic_type(),
+			};
 			if let Err(record_err) = XmlExportHistoryBmc::record(
 				mm,
 				ctx,
@@ -248,8 +250,9 @@ async fn export_case_authorized(
 		header::HeaderValue::from_str(&format!(
 			"attachment; filename=\"{file_name}\""
 		))
-		.map_err(|err| Error::BadRequest {
-			message: format!("invalid export filename header: {err}"),
+		.map_err(|source| Error::Internal {
+			operation: "export.content_disposition",
+			source: Box::new(source),
 		})?,
 	);
 	Ok(response)
@@ -330,7 +333,13 @@ async fn export_cases_zip_authorized(
 				{
 					Ok(result) => result,
 					Err(err) => {
-						let error_message = err.to_string();
+						let error_message = match &err {
+							Error::BadRequest { message } => message.clone(),
+							Error::ConstraintViolation(detail) => {
+								detail.message.clone()
+							}
+							_ => err.diagnostic_type(),
+						};
 						if let Err(record_err) = XmlExportHistoryBmc::record(
 							mm,
 							ctx,
@@ -349,16 +358,15 @@ async fn export_cases_zip_authorized(
 						return Err(err);
 					}
 				};
-				zip.start_file(file_name.clone(), options).map_err(|err| {
-					Error::BadRequest {
-						message: format!("failed to start zip entry: {err}"),
-					}
-				})?;
-				xml_bytes = xml_bytes.checked_add(xml.len()).ok_or_else(|| {
-					Error::BadRequest {
-						message: "bulk export size overflow".to_string(),
-					}
-				})?;
+				zip.start_file(file_name.clone(), options)
+					.map_err(|source| Error::Internal {
+						operation: "export.zip.start_file",
+						source: Box::new(source),
+					})?;
+				xml_bytes =
+					xml_bytes.checked_add(xml.len()).ok_or(Error::Service {
+						operation: "export.size_overflow",
+					})?;
 				if xml_bytes > MAX_BULK_XML_BYTES {
 					return Err(Error::BadRequest {
 						message: format!(
@@ -367,8 +375,9 @@ async fn export_cases_zip_authorized(
 					});
 				}
 				zip.write_all(xml.as_bytes())
-					.map_err(|err| Error::BadRequest {
-						message: format!("failed to write zip entry: {err}"),
+					.map_err(|source| Error::Internal {
+						operation: "export.zip.write",
+						source: Box::new(source),
 					})?;
 				if let Err(err) = XmlExportHistoryBmc::record(
 					mm,
@@ -385,8 +394,9 @@ async fn export_cases_zip_authorized(
 				}
 			}
 		}
-		zip.finish().map_err(|err| Error::BadRequest {
-			message: format!("failed to finalize zip export: {err}"),
+		zip.finish().map_err(|source| Error::Internal {
+			operation: "export.zip.finish",
+			source: Box::new(source),
 		})?;
 	}
 
@@ -405,8 +415,9 @@ async fn export_cases_zip_authorized(
 		header::HeaderValue::from_str(&format!(
 			"attachment; filename=\"{file_name}\""
 		))
-		.map_err(|err| Error::BadRequest {
-			message: format!("invalid export filename header: {err}"),
+		.map_err(|source| Error::Internal {
+			operation: "export.content_disposition",
+			source: Box::new(source),
 		})?,
 	);
 	Ok(response)

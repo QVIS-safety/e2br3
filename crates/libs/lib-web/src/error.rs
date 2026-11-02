@@ -61,12 +61,14 @@ pub enum Error {
 	// -- External Modules
 	#[from]
 	SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
+	#[from]
+	TimeFormat(#[serde_as(as = "DisplayFromStr")] time::error::Format),
 }
 
 // region:    --- Axum IntoResponse
 impl IntoResponse for Error {
 	fn into_response(self) -> Response {
-		debug!("{:<12} - model::Error {self:?}", "INTO_RES");
+		debug!(error_type = self.as_ref(), "INTO_RES");
 
 		// Create a placeholder Axum reponse.
 		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
@@ -120,7 +122,17 @@ impl Error {
 			CtxExt(middleware::mw_auth::CtxExtError::PasswordChangeRequired) => {
 				(StatusCode::FORBIDDEN, ClientError::PASSWORD_CHANGE_REQUIRED)
 			}
-			CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
+			CtxExt(
+				middleware::mw_auth::CtxExtError::TokenNotInCookie
+				| middleware::mw_auth::CtxExtError::TokenWrongFormat
+				| middleware::mw_auth::CtxExtError::TokenExpiryWrongFormat
+				| middleware::mw_auth::CtxExtError::UserNotFound
+				| middleware::mw_auth::CtxExtError::FailValidate,
+			) => (StatusCode::UNAUTHORIZED, ClientError::NO_AUTH),
+			CtxExt(_) => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				ClientError::SERVICE_ERROR,
+			),
 
 			// -- Authorization
 			AccessDenied { required_role } => (
@@ -143,17 +155,12 @@ impl Error {
 			),
 
 			// -- Model
-			Model(model::Error::EntityNotFound { entity, id }) => (
-				StatusCode::BAD_REQUEST,
-				ClientError::ENTITY_NOT_FOUND { entity, id: *id },
-			),
-			Model(model::Error::EntityUuidNotFound { entity, id }) => (
-				StatusCode::BAD_REQUEST,
-				ClientError::ENTITY_UUID_NOT_FOUND {
-					entity,
-					id: id.to_string(),
-				},
-			),
+			Model(model::Error::EntityNotFound { .. }) => {
+				(StatusCode::NOT_FOUND, ClientError::ENTITY_NOT_FOUND)
+			}
+			Model(model::Error::EntityUuidNotFound { .. }) => {
+				(StatusCode::NOT_FOUND, ClientError::ENTITY_UUID_NOT_FOUND)
+			}
 
 			// -- Fallback.
 			_ => (
@@ -176,10 +183,13 @@ pub enum ClientError {
 	ACCESS_DENIED { required_role: String },
 	PERMISSION_DENIED { required_permission: String },
 	ORGANIZATION_ACCESS_DENIED,
-	ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
-	ENTITY_UUID_NOT_FOUND { entity: &'static str, id: String },
+	ENTITY_NOT_FOUND,
+	ENTITY_UUID_NOT_FOUND,
 	CONSTRAINT_VIOLATION,
 	INVALID_REQUEST,
+	CONFLICT,
+	CASE_STATE_CONFLICT,
+	CONFIGURATION_ERROR,
 	SERVICE_ERROR,
 }
 // endregion: --- Client Error

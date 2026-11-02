@@ -224,11 +224,8 @@ async fn test_validator_endpoint_requires_token() -> Result<()> {
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
 		validator_mark_validated(&app, &cookie, case_id, None).await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body["error"]["data"]["detail"]
-		.as_str()
-		.unwrap_or_default()
-		.contains("invalid validator token"));
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	Ok(())
 }
 

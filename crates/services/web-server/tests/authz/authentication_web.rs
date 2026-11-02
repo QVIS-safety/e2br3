@@ -407,7 +407,11 @@ async fn test_middleware_requires_auth() -> Result<()> {
 		.uri("/api/users")
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	let status = res.status();
+	let body: Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	Ok(())
 }
 
@@ -429,7 +433,11 @@ async fn test_refresh_rejects_bad_token() -> Result<()> {
 		.header("cookie", cookie_header(&token))
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	let status = res.status();
+	let body: Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	Ok(())
 }
 
@@ -445,6 +453,10 @@ async fn test_refresh_missing_token() -> Result<()> {
 		.uri("/auth/v1/refresh")
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	let status = res.status();
+	let body: Value =
+		serde_json::from_slice(&to_bytes(res.into_body(), usize::MAX).await?)?;
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	Ok(())
 }

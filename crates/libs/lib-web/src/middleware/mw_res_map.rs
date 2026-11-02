@@ -27,17 +27,6 @@ fn normalize_detail_for_client(detail: serde_json::Value) -> serde_json::Value {
 	}
 }
 
-fn is_login_error(error: &Error) -> bool {
-	matches!(
-		error,
-		Error::LoginFailUsernameNotFound
-			| Error::LoginFailEmailNotFound
-			| Error::LoginFailUserHasNoPwd { .. }
-			| Error::LoginFailPwdNotMatching { .. }
-			| Error::LoginFailUserCtxCreate { .. }
-	)
-}
-
 fn map_pg_constraint(code: &str) -> Option<(StatusCode, String)> {
 	// Postgres SQLSTATE reference:
 	// - 23502: not_null_violation
@@ -72,33 +61,27 @@ fn map_pg_constraint(code: &str) -> Option<(StatusCode, String)> {
 
 fn map_model_error_to_client(
 	model_err: &model::Error,
-	debug_errors: bool,
 ) -> (StatusCode, ClientError, Option<serde_json::Value>) {
 	// Prefer stable, user-facing 4xx responses for predictable errors.
 	match model_err {
-		model::Error::EntityNotFound { entity, id } => (
+		model::Error::EntityNotFound { .. } => {
+			(StatusCode::NOT_FOUND, ClientError::ENTITY_NOT_FOUND, None)
+		}
+		model::Error::EntityUuidNotFound { .. } => (
 			StatusCode::NOT_FOUND,
-			ClientError::ENTITY_NOT_FOUND { entity, id: *id },
-			None,
-		),
-		model::Error::EntityUuidNotFound { entity, id } => (
-			StatusCode::NOT_FOUND,
-			ClientError::ENTITY_UUID_NOT_FOUND {
-				entity,
-				id: id.to_string(),
-			},
+			ClientError::ENTITY_UUID_NOT_FOUND,
 			None,
 		),
 		model::Error::UserAlreadyExists { .. } => (
 			StatusCode::CONFLICT,
-			ClientError::INVALID_REQUEST,
+			ClientError::CONFLICT,
 			Some(serde_json::Value::String(
 				"A user with that email already exists.".to_string(),
 			)),
 		),
 		model::Error::UniqueViolation { .. } => (
 			StatusCode::CONFLICT,
-			ClientError::INVALID_REQUEST,
+			ClientError::CONFLICT,
 			Some(serde_json::Value::String(
 				"Duplicate value: a record with the same key already exists."
 					.to_string(),
@@ -111,58 +94,114 @@ fn map_model_error_to_client(
 		),
 		model::Error::Conflict { message } => (
 			StatusCode::CONFLICT,
-			ClientError::INVALID_REQUEST,
+			ClientError::CONFLICT,
 			Some(serde_json::Value::String(message.clone())),
 		),
+		model::Error::CaseStateConflict => {
+			(StatusCode::CONFLICT, ClientError::CASE_STATE_CONFLICT, None)
+		}
 		_ => {
 			if let Some(db_err) = model_err.as_database_error() {
-				let code = db_err.code().map(|c| c.to_string()).unwrap_or_default();
-				if let Some((status, detail)) = map_pg_constraint(code.as_str()) {
+				if let Some((status, detail)) = db_err
+					.code()
+					.and_then(|code| map_pg_constraint(code.as_ref()))
+				{
 					return (
 						status,
-						ClientError::INVALID_REQUEST,
-						Some(serde_json::Value::String(detail)),
-					);
-				}
-				if debug_errors {
-					let mut detail = format!(
-						"db_error code={} message={}",
-						code,
-						db_err.message()
-					);
-					if let Some(constraint) = db_err.constraint() {
-						detail.push_str(&format!(" constraint={constraint}"));
-					}
-					if let Some(table) = db_err.table() {
-						detail.push_str(&format!(" table={table}"));
-					}
-					return (
-						StatusCode::BAD_REQUEST,
-						ClientError::INVALID_REQUEST,
+						if status == StatusCode::CONFLICT {
+							ClientError::CONFLICT
+						} else {
+							ClientError::INVALID_REQUEST
+						},
 						Some(serde_json::Value::String(detail)),
 					);
 				}
 				return (
-					StatusCode::BAD_REQUEST,
-					ClientError::INVALID_REQUEST,
-					Some(serde_json::Value::String(
-						"Invalid input: the server rejected one or more fields."
-							.to_string(),
-					)),
+					StatusCode::INTERNAL_SERVER_ERROR,
+					ClientError::SERVICE_ERROR,
+					None,
 				);
 			}
-
-			let detail = if debug_errors {
-				Some(serde_json::Value::String(format!("{model_err:?}")))
-			} else {
-				None
-			};
 			(
 				StatusCode::INTERNAL_SERVER_ERROR,
 				ClientError::SERVICE_ERROR,
-				detail,
+				None,
 			)
 		}
+	}
+}
+
+fn map_rest_error_to_client(
+	error: &lib_rest_core::Error,
+) -> (StatusCode, ClientError, Option<serde_json::Value>) {
+	match error {
+		lib_rest_core::Error::AccessDenied { required_role } => (
+			StatusCode::FORBIDDEN,
+			ClientError::ACCESS_DENIED {
+				required_role: required_role.clone(),
+			},
+			None,
+		),
+		lib_rest_core::Error::PermissionDenied {
+			required_permission,
+		} => (
+			StatusCode::FORBIDDEN,
+			ClientError::PERMISSION_DENIED {
+				required_permission: required_permission.clone(),
+			},
+			None,
+		),
+		lib_rest_core::Error::BadRequest { message } => (
+			StatusCode::BAD_REQUEST,
+			ClientError::INVALID_REQUEST,
+			Some(serde_json::Value::String(message.clone())),
+		),
+		lib_rest_core::Error::Authentication => {
+			(StatusCode::UNAUTHORIZED, ClientError::NO_AUTH, None)
+		}
+		lib_rest_core::Error::Configuration { .. } => (
+			StatusCode::SERVICE_UNAVAILABLE,
+			ClientError::CONFIGURATION_ERROR,
+			None,
+		),
+		lib_rest_core::Error::Service { .. }
+		| lib_rest_core::Error::Export(_)
+		| lib_rest_core::Error::Internal { .. } => (
+			StatusCode::INTERNAL_SERVER_ERROR,
+			ClientError::SERVICE_ERROR,
+			None,
+		),
+		lib_rest_core::Error::ConstraintViolation(detail) => (
+			StatusCode::UNPROCESSABLE_ENTITY,
+			ClientError::CONSTRAINT_VIOLATION,
+			Some(
+				to_value(detail)
+					.expect("constraint violation detail must serialize"),
+			),
+		),
+		lib_rest_core::Error::Xml(_) => match error.xml_client_classification() {
+			Some(lib_rest_core::XmlClientClassification::InvalidInput(message)) => (
+				StatusCode::BAD_REQUEST,
+				ClientError::INVALID_REQUEST,
+				Some(json!(message)),
+			),
+			Some(lib_rest_core::XmlClientClassification::Model(model_error)) => {
+				map_model_error_to_client(model_error)
+			}
+			Some(lib_rest_core::XmlClientClassification::Internal) | None => (
+				StatusCode::INTERNAL_SERVER_ERROR,
+				ClientError::SERVICE_ERROR,
+				None,
+			),
+		},
+		lib_rest_core::Error::Model(model_error) => {
+			map_model_error_to_client(model_error)
+		}
+		lib_rest_core::Error::SerdeJson(_) => (
+			StatusCode::INTERNAL_SERVER_ERROR,
+			ClientError::SERVICE_ERROR,
+			None,
+		),
 	}
 }
 
@@ -185,80 +224,16 @@ pub async fn mw_response_map(
 		.extensions()
 		.get::<Arc<lib_rest_core::Error>>()
 		.map(Arc::as_ref);
-	let debug_errors = std::env::var("E2BR3_DEBUG_ERRORS")
-		.map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-		.unwrap_or(false);
 	let mut debug_detail: Option<serde_json::Value> = None;
 	let client_status_error = if let Some(err) = web_error {
 		// web::Error often wraps model errors directly (e.g. /api/users).
 		// Map predictable DB/model failures to stable 4xx responses with a safe detail.
 		let (status_code, client_error, detail_override) = match err {
-			Error::Model(model_err) => {
-				map_model_error_to_client(model_err, debug_errors)
-			}
-			Error::Rest(rest_err) => {
-				// Prefer the same mapping logic as the rest_error branch below.
-				// We keep this lightweight: status and client_error come from existing
-				// patterns; detail is populated for BadRequest/Xml similarly.
-				match rest_err {
-					lib_rest_core::Error::AccessDenied { required_role } => (
-						StatusCode::FORBIDDEN,
-						ClientError::ACCESS_DENIED {
-							required_role: required_role.clone(),
-						},
-						None,
-					),
-					lib_rest_core::Error::PermissionDenied {
-						required_permission,
-					} => (
-						StatusCode::FORBIDDEN,
-						ClientError::PERMISSION_DENIED {
-							required_permission: required_permission.clone(),
-						},
-						None,
-					),
-					lib_rest_core::Error::ConstraintViolation(detail) => {
-						(
-							StatusCode::UNPROCESSABLE_ENTITY,
-							ClientError::CONSTRAINT_VIOLATION,
-							Some(to_value(detail).expect(
-								"constraint violation detail must serialize",
-							)),
-						)
-					}
-					lib_rest_core::Error::BadRequest { message } => (
-						StatusCode::BAD_REQUEST,
-						ClientError::INVALID_REQUEST,
-						Some(serde_json::Value::String(message.clone())),
-					),
-					lib_rest_core::Error::Xml(err) => (
-						StatusCode::BAD_REQUEST,
-						ClientError::SERVICE_ERROR,
-						Some(serde_json::Value::String(format!("{err:?}"))),
-					),
-					lib_rest_core::Error::Model(model_err) => {
-						map_model_error_to_client(model_err, debug_errors)
-					}
-					_ => (
-						StatusCode::INTERNAL_SERVER_ERROR,
-						ClientError::SERVICE_ERROR,
-						if debug_errors {
-							Some(serde_json::Value::String(format!("{rest_err:?}")))
-						} else {
-							None
-						},
-					),
-				}
-			}
+			Error::Model(model_err) => map_model_error_to_client(model_err),
+			Error::Rest(rest_err) => map_rest_error_to_client(rest_err),
 			_ => {
-				// Keep existing behavior for auth/permission/etc.
 				let (status, client) = err.client_status_and_error();
-				let detail = if debug_errors && !is_login_error(err) {
-					Some(serde_json::Value::String(format!("{err:?}")))
-				} else {
-					None
-				};
-				(status, client, detail)
+				(status, client, None)
 			}
 		};
 
@@ -267,72 +242,8 @@ pub async fn mw_response_map(
 		}
 		Some((status_code, client_error))
 	} else if let Some(err) = rest_error {
-		if debug_errors {
-			debug_detail = Some(serde_json::Value::String(format!("{err:?}")));
-		}
-		let (status_code, client_error) = match err {
-			lib_rest_core::Error::AccessDenied { required_role } => (
-				StatusCode::FORBIDDEN,
-				ClientError::ACCESS_DENIED {
-					required_role: required_role.clone(),
-				},
-			),
-			lib_rest_core::Error::PermissionDenied {
-				required_permission,
-			} => (
-				StatusCode::FORBIDDEN,
-				ClientError::PERMISSION_DENIED {
-					required_permission: required_permission.clone(),
-				},
-			),
-			lib_rest_core::Error::BadRequest { message } => {
-				debug_detail = Some(serde_json::Value::String(message.clone()));
-				(StatusCode::BAD_REQUEST, ClientError::INVALID_REQUEST)
-			}
-			lib_rest_core::Error::ConstraintViolation(detail) => {
-				debug_detail = Some(
-					to_value(detail)
-						.expect("constraint violation detail must serialize"),
-				);
-				(
-					StatusCode::UNPROCESSABLE_ENTITY,
-					ClientError::CONSTRAINT_VIOLATION,
-				)
-			}
-			lib_rest_core::Error::Xml(err) => {
-				debug_detail = Some(serde_json::Value::String(format!("{err:?}")));
-				(StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR)
-			}
-			lib_rest_core::Error::Model(model::Error::EntityNotFound {
-				entity,
-				id,
-			}) => (
-				StatusCode::NOT_FOUND,
-				ClientError::ENTITY_NOT_FOUND { entity, id: *id },
-			),
-			lib_rest_core::Error::Model(model::Error::EntityUuidNotFound {
-				entity,
-				id,
-			}) => (
-				StatusCode::NOT_FOUND,
-				ClientError::ENTITY_UUID_NOT_FOUND {
-					entity,
-					id: id.to_string(),
-				},
-			),
-			lib_rest_core::Error::Model(model_err) => {
-				let (status, client, detail) =
-					map_model_error_to_client(model_err, debug_errors);
-				if detail.is_some() {
-					debug_detail = detail;
-				}
-				(status, client)
-			}
-			lib_rest_core::Error::SerdeJson(_) => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				ClientError::SERVICE_ERROR,
-			),
-		};
+		let (status_code, client_error, detail) = map_rest_error_to_client(err);
+		debug_detail = detail;
 		Some((status_code, client_error))
 	} else {
 		None
@@ -396,6 +307,7 @@ pub async fn mw_response_map(
 		ctx,
 		response_status,
 		web_error,
+		rest_error,
 		client_error,
 	)
 	.await
@@ -427,15 +339,50 @@ mod tests {
 
 	#[test]
 	fn validation_errors_are_identifiable_client_errors() {
-		let (status, error, detail) = map_model_error_to_client(
-			&model::Error::Validation {
+		let (status, error, detail) =
+			map_model_error_to_client(&model::Error::Validation {
 				message: "invalid field".into(),
-			},
-			false,
-		);
+			});
 		assert_eq!(status, StatusCode::BAD_REQUEST);
 		assert_eq!(error.as_ref(), "INVALID_REQUEST");
 		assert_eq!(detail, Some(json!("invalid field")));
+	}
+
+	#[test]
+	fn conflicts_have_stable_public_codes() {
+		let (status, error, detail) =
+			map_model_error_to_client(&model::Error::Conflict {
+				message: "presave is in use".into(),
+			});
+		assert_eq!(status, StatusCode::CONFLICT);
+		assert_eq!(error.as_ref(), "CONFLICT");
+		assert_eq!(detail, Some(json!("presave is in use")));
+
+		let (status, error, detail) =
+			map_model_error_to_client(&model::Error::CaseStateConflict);
+		assert_eq!(status, StatusCode::CONFLICT);
+		assert_eq!(error.as_ref(), "CASE_STATE_CONFLICT");
+		assert_eq!(detail, None);
+	}
+
+	#[test]
+	fn infrastructure_errors_do_not_expose_details() {
+		let (status, error, detail) =
+			map_rest_error_to_client(&lib_rest_core::Error::Configuration {
+				key: "SECRET_SETTING",
+				message: "SECRET_SETTING is missing".into(),
+			});
+		assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+		assert_eq!(error.as_ref(), "CONFIGURATION_ERROR");
+		assert_eq!(detail, None);
+
+		let (status, error, detail) =
+			map_rest_error_to_client(&lib_rest_core::Error::Service {
+				operation: "test.operation",
+			});
+		assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+		assert_eq!(error.as_ref(), "SERVICE_ERROR");
+		assert_eq!(detail, None);
 	}
 
 	#[tokio::test]

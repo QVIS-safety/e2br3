@@ -132,11 +132,8 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-	assert!(
-		value.to_string().contains("missing x-callback-token"),
-		"{value:?}"
-	);
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{value:?}");
+	assert_eq!(value["error"]["message"], "NO_AUTH", "{value:?}");
 
 	let req = Request::builder()
 		.method("POST")
@@ -155,11 +152,8 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-	assert!(
-		value.to_string().contains("invalid x-callback-token"),
-		"{value:?}"
-	);
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{value:?}");
+	assert_eq!(value["error"]["message"], "NO_AUTH", "{value:?}");
 
 	let req = Request::builder()
 		.method("POST")
@@ -170,11 +164,8 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-	assert!(
-		value.to_string().contains("missing x-reconcile-token"),
-		"{value:?}"
-	);
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{value:?}");
+	assert_eq!(value["error"]["message"], "NO_AUTH", "{value:?}");
 
 	let req = Request::builder()
 		.method("GET")
@@ -185,9 +176,54 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-	assert!(
-		value.to_string().contains("invalid x-reconcile-token"),
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{value:?}");
+	assert_eq!(value["error"]["message"], "NO_AUTH", "{value:?}");
+
+	std::env::remove_var("AS2_CALLBACK_TOKEN");
+	let req = Request::builder()
+		.method("POST")
+		.uri("/internal/submissions/callbacks/ack")
+		.header("content-type", "application/json")
+		.header("x-callback-token", "callback-secret")
+		.body(Body::from(
+			json!({
+				"remote_submission_id": "AS2-X",
+				"ack_level": 1,
+				"success": true
+			})
+			.to_string(),
+		))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{value:?}");
+	assert_eq!(
+		value["error"]["message"], "CONFIGURATION_ERROR",
+		"{value:?}"
+	);
+
+	std::env::set_var("AS2_CALLBACK_TOKEN", "   ");
+	let req = Request::builder()
+		.method("POST")
+		.uri("/internal/submissions/callbacks/ack")
+		.header("content-type", "application/json")
+		.header("x-callback-token", "   ")
+		.body(Body::from(
+			json!({
+				"remote_submission_id": "AS2-X",
+				"ack_level": 1,
+				"success": true
+			})
+			.to_string(),
+		))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{value:?}");
+	assert_eq!(
+		value["error"]["message"], "CONFIGURATION_ERROR",
 		"{value:?}"
 	);
 

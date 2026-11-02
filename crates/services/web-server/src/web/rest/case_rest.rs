@@ -1765,18 +1765,24 @@ pub async fn mark_case_validated_by_validator(
 	headers: axum::http::HeaderMap,
 ) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
-	let required_token =
-		std::env::var("E2BR3_VALIDATOR_TOKEN").map_err(|_| Error::BadRequest {
+	let required_token = std::env::var("E2BR3_VALIDATOR_TOKEN").map_err(|_| {
+		Error::Configuration {
+			key: "E2BR3_VALIDATOR_TOKEN",
 			message: "validator token is not configured".to_string(),
-		})?;
+		}
+	})?;
+	if required_token.trim().is_empty() {
+		return Err(Error::Configuration {
+			key: "E2BR3_VALIDATOR_TOKEN",
+			message: "validator token must not be empty".to_string(),
+		});
+	}
 	let provided_token = headers
 		.get("x-validator-token")
 		.and_then(|value| value.to_str().ok())
-		.unwrap_or_default();
+		.ok_or(Error::Authentication)?;
 	if provided_token != required_token {
-		return Err(Error::BadRequest {
-			message: "invalid validator token".to_string(),
-		});
+		return Err(Error::Authentication);
 	}
 	lib_rest_core::with_authorized_case_mutation(
 		&ctx,

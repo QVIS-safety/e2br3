@@ -17,7 +17,7 @@
     "crates/libs/lib-core/src/authorization/ids.rs": "50cac5a9d5289bee59f60a3c662f0c043b36605d5a849f18176ff7fc3d5c0ac3",
     "crates/libs/lib-core/src/authorization/menu_privileges.rs": "bfbc25ef28d9bf6e22ca240eba2a15b2264362f528c7f1a2e75ce40cb0a46465",
     "crates/libs/lib-core/src/model/audit.rs": "ed9d137fd92356702f715e9e5bce4e996ed7fae6f4e0ce5d063eb4cf00ee3647",
-    "crates/libs/lib-core/src/model/case.rs": "e19ac8ab0d3f283c66c7f4e670d8cda812382d7d65b703c792c8b758f2552d38",
+    "crates/libs/lib-core/src/model/case.rs": "1f4409703ab1cbc8cd25247a6aa29b7549ab6a3b0a29e232ed69e4bf86574e49",
     "crates/libs/lib-core/src/model/case_duplicate.rs": "9162670459b867f1a6d7f0a9081357ab41e7483b44450af1445cd87222a28930",
     "crates/libs/lib-core/src/model/case_identifiers.rs": "d85046a721797616473cf367308e23d0aa7e2a743c90e0b5ef511d37522ef19a",
     "crates/libs/lib-core/src/model/case_query.rs": "bd65ea30390bc4dc451d8897055320d75f797f1d36faea7002c8cd1317d72fb4",
@@ -42,13 +42,13 @@
     "crates/libs/lib-core/src/model/xml_import_history.rs": "5a0244d556f2016b26d895622bbbcb2b2582af059500198ec89a08428915deec",
     "crates/libs/lib-core/src/regulatory.rs": "6a79d13ede1e614721f43397fe98081f371444cc955dbc5ecc89a10ee5efb0dd",
     "crates/libs/lib-core/src/validation_report.rs": "739f12bc738307db600be04e70cd40aeac6d13df3ecf732ffd3193ff3eb8a3b8",
-    "crates/libs/lib-rest-core/src/lib.rs": "e051e5c6093e0a2c121447b2f118e7ce309189ebadbb64be3361f654d5c7f4c2",
+    "crates/libs/lib-rest-core/src/lib.rs": "195208e586bc4b2062740ab8436c2182f0f965d1b91a8d4273df6250d755bcf3",
     "crates/libs/lib-rest-core/src/rest_params.rs": "bc1dc560eb2699346eb469e060b9074379e432a2574e12761352628c15596c9a",
     "crates/libs/lib-rest-core/src/rest_result.rs": "aae7ac102c9a89ebcd0e3064f7bc40f704cfc84b4ed91b90afab255f3a32f476",
     "crates/libs/lib-rest-core/src/utils/macro_utils.rs": "c6888ae4e53a45df15b1cabdf733ff0156504aabf3aa10d8bc74258b125c1ee1",
-    "crates/libs/lib-web/src/handlers/handlers_login.rs": "dc61406fc48748d5632f8d4cacd569649260fe5e2dbf02863bbb9766eb7c2fff",
+    "crates/libs/lib-web/src/handlers/handlers_login.rs": "2197a76be210bf9888cf613234fe651129113b538c1c92b86299126d9c748c33",
     "crates/libs/lib-web/src/middleware/mw_db_ctx.rs": "6f1f95f7b14ecf78b43c9205fefb067f0ade97409f62a19d4337126678a873bd",
-    "crates/libs/lib-web/src/middleware/mw_res_map.rs": "fdf6457e6e3a8596564ad7ed529c8ddd3e0a5cfad98b58558b2c47d0321a67c1",
+    "crates/libs/lib-web/src/middleware/mw_res_map.rs": "165ce704d151067f00694d1f87b5cd844171948e9d4a92ef47577c53f944855a",
     "crates/libs/xml/src/types.rs": "2cba32adecc06ec8408518a5399a97409e62328a6bf082e7a65ab7f5c48f79f5",
     "crates/services/web-server/src/lib.rs": "db35bccb68d978f2ae97a7b6403a5fbe739dc84c8a6fee5757b2dd725480d5d2",
     "crates/services/web-server/src/submission/types.rs": "465234223378d9ccdb49f58c50e4c30e41a1e64c8cbe44a99fb3d3311d713dd1",
@@ -71,12 +71,12 @@
     "crates/services/web-server/src/web/rest/case_editor_rest/lb.rs": "faebbfd24bcffee8082e7c2beb406c33a20a2256162135b4785ce6edf03da683",
     "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "6fa0b4297b232b4aae044c6cf9c5df7adfa5b029cd9f920d8c774a51609b44bf",
     "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "be6779c5daa74dad7ddce1aafd8d2929f956adad1ea2786c1baca0b7d277baf6",
-    "crates/services/web-server/src/web/rest/case_export_rest.rs": "367f8f242839411f1cf1f75d492a4a7d4b618179cc445d4f6d01462ae4a49e84",
+    "crates/services/web-server/src/web/rest/case_export_rest.rs": "c1a9a6d7aa1b38bda0278b21d4a47abfe5335430a82fc5d75085a31756aec03a",
     "crates/services/web-server/src/web/rest/case_field_notation_rest.rs": "ec426889db77c8ef27a00b776cdf32a950ff6cf55f936a24b2e95cf634e58fa0",
     "crates/services/web-server/src/web/rest/case_identifiers_rest.rs": "8d24c719154b4e95e5bb2c6d657780a45b9fcdfdfe7929ffeeba9629f3772946",
     "crates/services/web-server/src/web/rest/case_intake_rest.rs": "911dd220ea1ec297f35432092faf2d84dbab32fbe7ab0d39ae565089708ddb95",
     "crates/services/web-server/src/web/rest/case_query_catalog_rest.rs": "9044a08ceb3016730baa0a5692b0fe44ee382e59a82e31143d7a663b89680234",
-    "crates/services/web-server/src/web/rest/case_rest.rs": "c59932b56d072e6147aa1791ab137a949e873ccab4dc3b5fab1f53bb3eac32c7",
+    "crates/services/web-server/src/web/rest/case_rest.rs": "ea11cfa5e8ba4564c016871adb9f9502faa69c9771f07d9a250a139dfc38f0d8",
     "crates/services/web-server/src/web/rest/case_validation_rest.rs": "b0fac4155af9eaa8d24b89ab9aad092e42ab4833a7b0aa0df89132604e898dff",
     "crates/services/web-server/src/web/rest/case_workflow_rest.rs": "cc33b94ad73daf353575c6fa23eb76903e48c1cf3649f97543bd91afd63dec89",
     "crates/services/web-server/src/web/rest/cioms_export_rest/build.rs": "41e3b6f7ed95f26e9af3633a30bbaff2665d70475e8811707b053b52d69e1ccd",
@@ -113,7 +113,7 @@
     "crates/services/web-server/src/web/rest/section_presave_rest/sender.rs": "3d6c07eb573a31a59cf03c2fecb91218ad84c90edc54fcb4a542cdfb5139469a",
     "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs": "c02a09c13bca5a4d002f1c6955150aa0bb63592b4e26e4440f9de7ecfb5bd2e2",
     "crates/services/web-server/src/web/rest/section_presave_rest/study.rs": "90ab0895ff40951d80777d9c42818931386514ac0bf2ad34520e5a0372cfbcd6",
-    "crates/services/web-server/src/web/rest/submission_rest.rs": "a2cfc68986d9269bb21471b7089060ed2155d6480ee19fe2668a23b21ff82432",
+    "crates/services/web-server/src/web/rest/submission_rest.rs": "6ab388700c46a11c8bd347040bdcda2bf158c6e5309e385ab3cfdbecacc9f6f9",
     "crates/services/web-server/src/web/rest/terminology_rest.rs": "dcb8c1cfbbac38789ebcd57775593dbb7cead22f8d6ff050e8a5146d64ab3691",
     "crates/services/web-server/src/web/rest/test_result_rest.rs": "1fd428328c50d5405e498bc0e95a42f22a2e3f144f5b71bfda4299dfc6645e64",
     "crates/services/web-server/src/web/rest/user_rest/dto.rs": "fc849b55927c12f384bdd24cac7eec9d53b1d5bd8b5338a2e8ccd95d5720e794",
@@ -128,7 +128,7 @@
     "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "e0426b823408f32359ebf1770688967cd6dd311570ac0bb947c27b47a749a71c",
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "990c3f092cd27d73c1436068f6effb3fc40a050155f0328dc1360e43abaf3bd0",
     "crates/services/web-server/tests/api_administration/audit_web.rs": "2386b2ef0695ca91ea6df7a14237a3fc825df3907fb4e9e077953b75fbb4604c",
-    "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0980cad0996aaf2a1ab68af4ba8fb8d5d5d4ecaee782dde365dcd5cba220643c",
+    "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "cff0ec52ac25d6866c0777c5a9d98e25a348e61422098d4e249d8c59baeaf635",
     "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
     "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "d5aae8ea7a16a4a04d56cc6642073a6189cbbc3ec505fe268d7630bb7b824bd0",
@@ -156,7 +156,7 @@
     "crates/services/web-server/tests/api_cases/intake/duplicates.rs": "dabe01b3be5625fdccd04d60f987ab7a85306d06cc0fcf1ff131b8b94e47bef2",
     "crates/services/web-server/tests/api_cases/intake/input.rs": "17f383de000840ee68f348d89facf2a9fccc2f60755a5029d96c25a983f27f23",
     "crates/services/web-server/tests/api_cases/lifecycle.rs": "05f154a4bce870c6b8e641dd8c002e45cfe102be47fccae62fa3cedac90c5745",
-    "crates/services/web-server/tests/api_cases/locking.rs": "a5a89486bd7d40f6061c84151d9339616319a86ce47762b625ac64e10300d2fa",
+    "crates/services/web-server/tests/api_cases/locking.rs": "cd7d3887e77cac44fa8d7d7c28f665d77a5f2cb950d6b494d774603c8c3c4dd5",
     "crates/services/web-server/tests/api_cases/scope/assignments.rs": "62aba92cb53da2ea763728910d1fe7e2ba643f64e272e4f94c04228faf82874b",
     "crates/services/web-server/tests/api_cases/scope/cases.rs": "f0213e3994fcc85fddcbca35d939ac0f6ab5278df51c316bfda4a30d2a4d8dee",
     "crates/services/web-server/tests/api_cases/scope/histories.rs": "af036b41cb69f56cae877b56f16e3be354bfe016034b98f1b874eab09f983793",
@@ -177,7 +177,7 @@
     "crates/services/web-server/tests/api_cases/subresources/singleton.rs": "f36f1958a79aaadf49fcfa6438b2c45bbc78dead9c0413057e837859d6f0cb5d",
     "crates/services/web-server/tests/api_cases/subresources/study.rs": "fef3f0e41916e64606bbd325fadb242604d1dd07181d3df9e0394c27fd35c760",
     "crates/services/web-server/tests/api_cases/subresources/test_result.rs": "553efa4a8fd9537c27b00f55f9388dfa99f74603b7b748b46c9bf5ca88ac76a3",
-    "crates/services/web-server/tests/api_cases/validation.rs": "2082dade95f831d9113ca78e5709060750d590c053b65d6f0a8581964ae6c904",
+    "crates/services/web-server/tests/api_cases/validation.rs": "9429601b1b3a941666a1dfd09450bbba1f56069764fc05fa771cafbc97b8295f",
     "crates/services/web-server/tests/api_cases/versions.rs": "41e287798feaf5c5962572ebe7f2cc9360773a99af4e7c59cd6dfbbe9a39c9fa",
     "crates/services/web-server/tests/api_cases/workflow.rs": "7092ad81152716eab644dc3c9fa13df24e3be108a5aa4eb39e046adff192213d",
     "crates/services/web-server/tests/api_editor/legacy_reads/ae.rs": "75de27b41ffa1b4e891bff5d6b60f65b756e5f83a148f285ad35f56e2c3d5605",
@@ -228,7 +228,7 @@
     "crates/services/web-server/tests/api_specs/presave.md": "f448bda7a9c546d4b16e8391ed9beb86aec18074119eab0a59f2b9b38f9bf2e6",
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
-    "crates/services/web-server/tests/api_submission/callbacks.rs": "f1a9b4cc8e67d262ba4e90fbc4afbdfd273330098abdc47ed36877eacab477a9",
+    "crates/services/web-server/tests/api_submission/callbacks.rs": "4d69031b8c7ded5d3a4a6ae294b8696f28c6d60d4860dd6e0f26a138ab35159d",
     "crates/services/web-server/tests/api_submission/dispatch.rs": "cc5b7db5f3da350b52e3d215a9d4048ead6fabfb0cc1ce3211f5c291069428a7",
     "crates/services/web-server/tests/api_submission/headers.rs": "aa695e6f18c2f55700e9ca0982823e24cdfc5b14a708508ae629638ef745438c",
     "crates/services/web-server/tests/api_submission/history.rs": "6851a814e8c02c0e403b018878430fd59468fd836bca3d3530eb0e159a9a8ebc",
@@ -239,7 +239,7 @@
     "crates/services/web-server/tests/api_terminology/permissions.rs": "be1e39ded889e9ca7740984c0e549764d5cf49a17a6213ea18253396322d423a",
     "crates/services/web-server/tests/api_terminology/releases.rs": "d01d0f9a9ed4778560296127ad27ef81bf2a8d9eb4c9413639f9f8b128108836",
     "crates/services/web-server/tests/api_terminology/search.rs": "c90dd46736ddd66624cd9363b1de8670f5143915e3216b272dcac24f01f5c7a3",
-    "crates/services/web-server/tests/authz/authentication_web.rs": "1250feff04411f57d5803358fc0434eeade238ab159d1632aa5c275d0b5f9bea",
+    "crates/services/web-server/tests/authz/authentication_web.rs": "765f0b42520133b37d7bc10dfde02ee7f431e1d632f12404bda033e4a763512a",
     "crates/services/web-server/tests/authz/protected_route_inventory.rs": "54285c501faccb8305d322df6139638dc42ad1feccd3e2e4bea352299a62a4e6",
     "crates/services/web-server/tests/authz/protected_route_inventory.snapshot": "a1bf0054e466a281134a3d24df5ef1c712c491af8dfe62865f81272224448a0c",
     "crates/services/web-server/tests/authz/rbac_audit.rs": "bee6da50ec2e7cf853aa1f910587a4f71984d03a79709b316bbbfb7d99102136",
@@ -2277,7 +2277,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 259
+          "line": 262
         },
         "signature": "pub async fn export_cases_zip( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, axum::Json(input): axum::Json<BulkXmlExportInput>, ) -> Result<Response>",
         "name": "export_cases_zip"
@@ -2616,7 +2616,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-          "line": 1930
+          "line": 1936
         },
         "signature": "pub async fn list_case_link_options( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<CaseLinkOptionList>>, )>",
         "name": "list_case_link_options"
@@ -37181,7 +37181,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 167
+          "line": 165
         },
         "signature": "pub async fn export_case( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, Query(query): Query<ExportCaseQuery>, ) -> Result<Response>",
         "name": "export_case"
@@ -37317,7 +37317,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 447
+          "line": 458
         },
         "signature": "pub async fn list_case_xml_export_history( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>, )>",
         "name": "list_case_xml_export_history"
@@ -37437,7 +37437,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-          "line": 1837
+          "line": 1843
         },
         "signature": "pub async fn get_case_lifecycle( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<CaseLifecycleResult>>, )>",
         "name": "get_case_lifecycle"
@@ -39394,7 +39394,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 416
+          "line": 427
         },
         "signature": "pub async fn list_xml_export_history( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<( axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>, )>",
         "name": "list_xml_export_history"
@@ -39478,7 +39478,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_export_rest.rs",
-          "line": 481
+          "line": 492
         },
         "signature": "pub async fn download_xml_export_history_error( State(mm): State<lib_core::model::ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<Response>",
         "name": "download_xml_export_history_error"
@@ -50486,7 +50486,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-          "line": 610
+          "line": 616
         },
         "signature": "pub async fn download_submission_xml( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<Response>",
         "name": "download_submission_xml"
@@ -53156,7 +53156,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:498:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
         }
       ]
     },
@@ -53263,7 +53263,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:498:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
         }
       ]
     },
@@ -54117,7 +54117,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-          "line": 538
+          "line": 541
         },
         "signature": "pub async fn post_reconcile_due_submissions( State(mm): State<ModelManager>, headers: HeaderMap, payload: Option<Json<ReconcileRequestInput>>, ) -> Result<(StatusCode, Json<DataRestResult<SubmissionReconcileData>>)>",
         "name": "post_reconcile_due_submissions"
@@ -54258,7 +54258,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-          "line": 555
+          "line": 558
         },
         "signature": "pub async fn get_reconcile_status( headers: HeaderMap, ) -> Result<( StatusCode, Json<DataRestResult<SubmissionReconcileStatusData>>, )>",
         "name": "get_reconcile_status"
@@ -87482,7 +87482,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 471
+        "line": 484
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87542,7 +87542,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:471:RoutingSenderOption",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:484:RoutingSenderOption",
       "nested_type_refs": [
         {
           "rust_type": "String",
@@ -87591,7 +87591,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 485
+        "line": 498
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87651,7 +87651,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:485:EffectiveScopeSummary",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:498:EffectiveScopeSummary",
       "nested_type_refs": [
         {
           "rust_type": "Vec",
@@ -87730,7 +87730,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-rest-core/src/lib.rs",
-        "line": 498
+        "line": 511
       },
       "attributes": [
         "#[derive(Debug, Clone, Serialize)]",
@@ -87778,7 +87778,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-rest-core/src/lib.rs:498:RoutingProfile",
+      "id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile",
       "nested_type_refs": [
         {
           "rust_type": "String",
@@ -87807,12 +87807,12 @@
         {
           "rust_type": "RoutingSenderOption",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:471:RoutingSenderOption"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:484:RoutingSenderOption"
         },
         {
           "rust_type": "EffectiveScopeSummary",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:485:EffectiveScopeSummary"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:498:EffectiveScopeSummary"
         }
       ]
     },
@@ -102782,7 +102782,7 @@
         {
           "rust_type": "lib_rest_core::RoutingProfile",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:498:RoutingProfile"
+          "declaration_id": "crates/libs/lib-rest-core/src/lib.rs:511:RoutingProfile"
         },
         {
           "rust_type": "Vec",
