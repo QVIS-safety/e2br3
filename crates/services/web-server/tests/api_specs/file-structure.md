@@ -138,7 +138,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_editor/relations/si_rows.rs](../api_editor/relations/si_rows.rs) | SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변 | HTTP 계약 | 214 | 0 | 0 |
 | [api_editor/rows.rs](../api_editor/rows.rs) | api_editor 하위 책임 모듈 등록 | 모듈 등록 | 3 | 0 | 0 |
 | [api_editor/rows/creation.rs](../api_editor/rows/creation.rs) | 빈 collection/child 객체 생성 의미·draft 행·빈 product 거절 | HTTP 계약 | 157 | 0 | 0 |
-| [api_editor/rows/identity.rs](../api_editor/rows/identity.rs) | Drug device·code 3종 재조회/교체·생성 ID 연결 및 수정 재전송의 ID/값/감사 보존 | HTTP 계약 | 536 | 0 | 0 |
+| [api_editor/rows/identity.rs](../api_editor/rows/identity.rs) | Drug device·code 3종 재조회/교체·생성 ID 연결 및 수정 재전송의 ID/값/감사 보존 | HTTP 계약 | 546 | 0 | 0 |
 | [api_editor/rows/projection.rs](../api_editor/rows/projection.rs) | 반복행 정렬·목록 필드·일괄 상세 일치·인증 | HTTP 계약 | 293 | 0 | 0 |
 | [api_editor/support.rs](../api_editor/support.rs) | Editor HTTP·행 ID·registry behavior 조회·fixture helper | helper | 324 | 0 | 0 |
 
@@ -148,12 +148,12 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 |---|---|---|---:|---:|---:|
 | [api_presave.rs](../api_presave.rs) | api_presave Cargo integration target과 하위 모듈 연결 | target 등록 | 4 | 0 | 0 |
 | [api_presave/audit_web.rs](../api_presave/audit_web.rs) | 부모/자식 15종 HTTP 수정의 actor/org/reason/category/old/new 감사 | HTTP 계약 | 616 | 1 | 0 |
-| [api_presave/authorization_web.rs](../api_presave/authorization_web.rs) | 부모/자식 15종 read-only/조직 경계와 거절 후 상태·감사 불변 | HTTP 계약 | 680 | 1 | 0 |
+| [api_presave/authorization_web.rs](../api_presave/authorization_web.rs) | 부모/자식 15종 read-only/조직 경계와 거절 후 상태·감사 불변 | HTTP 계약 | 685 | 1 | 0 |
 | [api_presave/crud_matrix_web.rs](../api_presave/crud_matrix_web.rs) | Sender/receiver/product/reporter 공통 aggregate CRUD와 생략/null/blank 저장 | HTTP 계약 | 648 | 3 | 0 |
 | [api_presave/delete_constraints_web.rs](../api_presave/delete_constraints_web.rs) | 참조 중인 Presave 부모 삭제 제약과 product soft-delete scope | HTTP 계약 | 162 | 2 | 0 |
 | [api_presave/helpers.rs](../api_presave/helpers.rs) | Presave HTTP와 부모·자식·Info editor fixture helper | helper | 649 | 0 | 0 |
 | [api_presave/legacy_routes_web.rs](../api_presave/legacy_routes_web.rs) | 제거한 legacy presave templates URL의 404 | HTTP 계약 | 27 | 1 | 0 |
-| [api_presave/lifecycle_matrix_web.rs](../api_presave/lifecycle_matrix_web.rs) | 반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback | HTTP 계약 | 875 | 4 | 0 |
+| [api_presave/lifecycle_matrix_web.rs](../api_presave/lifecycle_matrix_web.rs) | 반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback | HTTP 계약 | 880 | 4 | 0 |
 | [api_presave/mod.rs](../api_presave/mod.rs) | api_presave 하위 책임 모듈 등록 | 모듈 등록 | 14 | 0 | 0 |
 | [api_presave/narrative_web.rs](../api_presave/narrative_web.rs) | Narrative Presave CRUD·모든 parent/child 필드 저장 | HTTP 계약 | 158 | 1 | 0 |
 | [api_presave/product_web.rs](../api_presave/product_web.rs) | Product 정체성·기관 공통 값·scope와 details graph 원자 저장/삭제/오류 | HTTP 계약 | 886 | 10 | 0 |
@@ -202,7 +202,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_terminology/permissions.rs](../api_terminology/permissions.rs) | viewer·operational user의 용어 조회 권한과 import/release mutation 거부를 검증한다. | HTTP 계약 | 113 | 3 | 0 |
 | [api_terminology/releases.rs](../api_terminology/releases.rs) | 사전 release 승인·활성화·rollback·언어 전환·재import와 활성 사전 변경 후 Case 경고 cache 무효화 | HTTP 계약 | 756 | 7 | 0 |
 | [api_terminology/search.rs](../api_terminology/search.rs) | 국가·code list·MedDRA·WHODrug·활성 MFDS product/substance 검색 응답을 검증한다. | HTTP 계약 | 252 | 6 | 0 |
-| [api_terminology/support.rs](../api_terminology/support.rs) | terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다. | fixture/helper | 416 | 0 | 0 |
+| [api_terminology/support.rs](../api_terminology/support.rs) | terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다. | fixture/helper | 418 | 0 | 0 |
 
 ## web-server::api_administration
 
@@ -318,14 +318,14 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 
 | 파일 | 책임 | 종류 | 줄 | 직접 선언 | scalar 등록 |
 |---|---|---|---:|---:|---:|
-| [tests/database.rs](../../../../libs/lib-core/tests/database.rs) | database 모듈 등록과 실제 DB 이름이 전용 e2br3_test_ 이름인지 확인 | 모듈 등록/격리 guard | 32 | 0 | 0 |
+| [tests/database.rs](../../../../libs/lib-core/tests/database.rs) | database 모듈 등록과 실제 DB 이름이 전용 e2br3_test_ 이름인지 확인 | 모듈 등록/격리 guard | 35 | 0 | 0 |
 | [tests/database/audit_chain.rs](../../../../libs/lib-core/tests/database/audit_chain.rs) | 감사 hash-chain 동시성 순서와 JSONB native 비교 11개 의미 | DB | 100 | 2 | 0 |
-| [tests/database/device_rls.rs](../../../../libs/lib-core/tests/database/device_rls.rs) | Device/code/characteristic BMC의 tenant 본인 행 허용·타 조직 은닉 | DB | 238 | 1 | 0 |
+| [tests/database/device_rls.rs](../../../../libs/lib-core/tests/database/device_rls.rs) | Device/code/characteristic BMC의 tenant 격리·부모 hard cascade 시 characteristic 감사 소속 보존 | DB | 286 | 1 | 0 |
 | [tests/database/editor_storage.rs](../../../../libs/lib-core/tests/database/editor_storage.rs) | Editor 값/NullFlavor DB 컬럼 쌍과 mutual-exclusion constraint 존재 | DB schema | 140 | 1 | 0 |
 | [tests/database/reaction_term_highlight_migration.rs](../../../../libs/lib-core/tests/database/reaction_term_highlight_migration.rs) | Reaction highlight의 신규 varchar schema와 legacy boolean migration | DB migration | 138 | 2 | 0 |
 | [tests/database/submission_schema.rs](../../../../libs/lib-core/tests/database/submission_schema.rs) | 제출 dispatch state 감사 schema guard | DB schema | 75 | 1 | 0 |
 | [tests/database/transactions.rs](../../../../libs/lib-core/tests/database/transactions.rs) | Dbx nested commit/rollback·query 실패·취소 후 transaction 상태 | DB | 174 | 4 | 0 |
-| [tests/database/user_expiration.rs](../../../../libs/lib-core/tests/database/user_expiration.rs) | 관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회 | DB | 118 | 1 | 0 |
+| [tests/database/user_expiration.rs](../../../../libs/lib-core/tests/database/user_expiration.rs) | 관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회 | DB | 119 | 1 | 0 |
 
 ## Rust 외의 테스트 자산
 

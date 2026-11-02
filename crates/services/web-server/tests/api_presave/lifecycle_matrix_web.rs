@@ -643,7 +643,12 @@ async fn direct_and_graph_children_reject_wrong_parent_without_state_change(
 			"sequenceNumber":1,
 			"authority":"fda",
 			"receiverLabel":"Wrong Parent Route",
-			"messageReceiverIdentifier":"CBER_IND"
+			"messageReceiverIdentifier":"CBER_IND",
+			"conditionPage":"CI",
+			"conditionFieldCode":"FDA_REPORT_TYPE",
+			"conditionOperator":"Equal",
+			"conditionValueCode":"3",
+			"conditionValueLabel":"CBER IND"
 		}]}}}),
 	)
 	.await?;

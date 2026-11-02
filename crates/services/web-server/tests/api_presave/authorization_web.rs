@@ -57,7 +57,12 @@ async fn create_fixture(app: &axum::Router, cookie: &str) -> Result<PresaveFixtu
 			"sequenceNumber": 1,
 			"authority": "fda",
 			"receiverLabel": "Authorization route",
-			"messageReceiverIdentifier": "CBER_IND"
+			"messageReceiverIdentifier": "CBER_IND",
+			"conditionPage": "CI",
+			"conditionFieldCode": "FDA_REPORT_TYPE",
+			"conditionOperator": "Equal",
+			"conditionValueCode": "3",
+			"conditionValueLabel": "CBER IND"
 		}] } } }),
 	)
 	.await?;

@@ -166,6 +166,9 @@ CREATE TRIGGER update_drug_info_updated_at BEFORE UPDATE ON drug_information
 CREATE TRIGGER update_dosage_information_updated_at BEFORE UPDATE ON dosage_information
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_drug_device_characteristics_updated_at BEFORE UPDATE ON drug_device_characteristics
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_narrative_information_updated_at BEFORE UPDATE ON narrative_information
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -373,6 +376,7 @@ DECLARE
     v_org_id UUID;
     v_case_id UUID;
     v_submission_id UUID;
+    v_drug_id UUID;
 BEGIN
     IF p_table_name = 'organizations' THEN
         RETURN p_record_id;
@@ -405,6 +409,44 @@ BEGIN
         IF v_org_id IS NOT NULL THEN
             RETURN v_org_id;
         END IF;
+    END IF;
+
+    IF p_table_name = 'drug_device_characteristics' THEN
+        v_drug_id := NULLIF(v_values->>'drug_id', '')::UUID;
+        SELECT c.organization_id INTO v_org_id
+        FROM drug_information d
+        JOIN cases c ON c.id = d.case_id
+        WHERE d.id = v_drug_id;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+
+        -- A cascading DELETE can remove the parent before this AFTER trigger
+        -- runs. Resolve only from immutable parent audits written while the
+        -- live parent chain still established the tenant.
+        IF p_new_values IS NULL AND p_old_values IS NOT NULL THEN
+            SELECT a.organization_id INTO v_org_id
+            FROM audit_logs a
+            WHERE a.table_name = 'drug_information'
+              AND a.record_id = v_drug_id
+              AND a.action IN ('CREATE', 'UPDATE')
+            ORDER BY a.id DESC
+            LIMIT 1;
+
+            IF v_org_id IS NOT NULL THEN
+                RETURN v_org_id;
+            END IF;
+        END IF;
+
+        RAISE EXCEPTION USING
+            ERRCODE = '23503',
+            MESSAGE = 'drug device characteristic audit parent is missing',
+            DETAIL = format(
+                'drug_device_characteristics:%s drug_id:%s',
+                p_record_id,
+                COALESCE(v_values->>'drug_id', '<missing>')
+            );
     END IF;
 
     IF p_table_name IN (
@@ -801,6 +843,9 @@ CREATE TRIGGER audit_fda_device_information AFTER INSERT OR UPDATE OR DELETE ON 
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_fda_device_codes AFTER INSERT OR UPDATE OR DELETE ON fda_device_codes
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_drug_device_characteristics AFTER INSERT OR UPDATE OR DELETE ON drug_device_characteristics
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_drug_active_substances AFTER INSERT OR UPDATE OR DELETE ON drug_active_substances

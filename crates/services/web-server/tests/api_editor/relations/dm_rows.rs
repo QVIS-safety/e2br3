@@ -102,8 +102,8 @@ pub(crate) async fn patient_rows_delete_restore_and_resave_are_stable(
 			after["rows"]["medicalHistoryEpisodes"][0]["comments"],
 			"HISTORY"
 		);
-		assert_eq!(after["rows"]["reportedCauses"][0]["cause_text"], "REPORTED");
-		assert_eq!(after["rows"]["autopsyCauses"][0]["cause_text"], "AUTOPSY");
+		assert_eq!(after["rows"]["reportedCauses"][0]["comments"], "REPORTED");
+		assert_eq!(after["rows"]["autopsyCauses"][0]["comments"], "AUTOPSY");
 		assert_eq!(
 			after["rows"]["parentMedicalHistory"][0]["comments"],
 			"PARENT-HISTORY"
