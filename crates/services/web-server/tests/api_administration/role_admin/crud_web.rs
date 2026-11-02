@@ -288,6 +288,7 @@ async fn test_users_list_survives_inactive_assigned_custom_role() -> Result<()> 
 	let (status, body) =
 		request_json(&app, "GET", &custom_cookie, "/api/cases".to_string(), None)
 			.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	Ok(())
 }

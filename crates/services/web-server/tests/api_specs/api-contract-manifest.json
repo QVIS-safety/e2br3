@@ -52,7 +52,7 @@
     "crates/libs/xml/src/types.rs": "2cba32adecc06ec8408518a5399a97409e62328a6bf082e7a65ab7f5c48f79f5",
     "crates/services/web-server/src/lib.rs": "db35bccb68d978f2ae97a7b6403a5fbe739dc84c8a6fee5757b2dd725480d5d2",
     "crates/services/web-server/src/submission/types.rs": "465234223378d9ccdb49f58c50e4c30e41a1e64c8cbe44a99fb3d3311d713dd1",
-    "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "190ee254b4d4ad798a0fd096442434b33e2250967e623e546ba993dbcd06ef4e",
+    "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "febf3bf5b7402d4c2bdd785b2397093d0f5df89e40f7a5416f8c8484af3a0b08",
     "crates/services/web-server/src/web/rest/app_branding_rest.rs": "aea11d052d444bdbe0a32965792537b90185363a8f3cf2559b8a01c4a531c03b",
     "crates/services/web-server/src/web/rest/audit_rest.rs": "83e1d8862999a7a4c6c6b0e642e7c32874a4df0c0714cc4b64ce394565dcf536",
     "crates/services/web-server/src/web/rest/case_editor_dto.rs": "3d06d4c937501a102ea96cf0fce3446ba9c44302cdc73aaf67b8b2c14d2fce16",
@@ -124,24 +124,24 @@
     "crates/services/web-server/tests/api_administration/admin_settings/appendices_web.rs": "c30a90e656432c9c8234b40df069a44bc411812641172f359a7f68fdea6c86e0",
     "crates/services/web-server/tests/api_administration/admin_settings/audit_web.rs": "23a381d46f869681fe97db4fe6f80d1731beeb5ef0ef8a45066768c871a21a0f",
     "crates/services/web-server/tests/api_administration/admin_settings/notices_web.rs": "2a1d90e7cf2f1f193a0157bcc2961d24dfb068d71277a39685e0b049819c5ef5",
-    "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "581b489e97e5f557a0db079f84cc43997e6f1a43e29c6ea3a9d558dd38c5d32b",
+    "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "933c392cca8cf6a6538a1f8ced92e0738704343784af9cf485223c4906a42d83",
     "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "e0426b823408f32359ebf1770688967cd6dd311570ac0bb947c27b47a749a71c",
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "990c3f092cd27d73c1436068f6effb3fc40a050155f0328dc1360e43abaf3bd0",
     "crates/services/web-server/tests/api_administration/audit_web.rs": "2386b2ef0695ca91ea6df7a14237a3fc825df3907fb4e9e077953b75fbb4604c",
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "cff0ec52ac25d6866c0777c5a9d98e25a348e61422098d4e249d8c59baeaf635",
     "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
-    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "d5aae8ea7a16a4a04d56cc6642073a6189cbbc3ec505fe268d7630bb7b824bd0",
+    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "bc94f191cd2571349b461e657e1f9ed210db21f31f5dd374b8541eef5cd99af6",
     "crates/services/web-server/tests/api_administration/organizations/list_web.rs": "6d18d4ec465294bb3e006868b9a89ce9392296247cdd88869de2d42411a0cfb4",
     "crates/services/web-server/tests/api_administration/organizations/update_web.rs": "55eafb9d4a74491ab98a99dbc269f8c52eceda484d291aec52237c6128b8a03d",
-    "crates/services/web-server/tests/api_administration/role_admin/crud_web.rs": "6a58a6f3e1efe8375bc08fd52b68a63ef39d9ead0a5b1855ec906ca87edb54b7",
+    "crates/services/web-server/tests/api_administration/role_admin/crud_web.rs": "88abe6f9a990f93cc8453c5e7e47832df570e1ac840137aa2930c8e7a80b47e5",
     "crates/services/web-server/tests/api_administration/role_admin/effective_access/administration_web.rs": "4b346e0e096ff9caf90433d4c075dc25c3b6ad3b21a43808d05210255e1e7ad7",
     "crates/services/web-server/tests/api_administration/role_admin/effective_access/information_web.rs": "6e965f5f41c60014ab6a16a00a6a82beddbecfa65f58881c901e2f71d5558312",
     "crates/services/web-server/tests/api_administration/role_admin/effective_access/transfer_web.rs": "25747299bb1c9e1a887fcc985c8a35509e543485e1781d6620ffa2624d6d6c3b",
     "crates/services/web-server/tests/api_administration/role_admin/metadata_web.rs": "171c562ae977a1f9a12588b35beaea67505d548166be7bc1df3eb34444ef7956",
     "crates/services/web-server/tests/api_administration/role_admin/validation_web.rs": "2aab47d4e518fb7dd8101ed07723a0a7d641ff65723ce01e3095059815bb8569",
     "crates/services/web-server/tests/api_administration/user_organization_membership_web.rs": "c6e057192e0df0b4fdb1d64364ba218de2f6afe0bdedf8b2c80da8694489df7b",
-    "crates/services/web-server/tests/api_administration/users/access_web.rs": "a9c260950adda69a4d7a076282f736035cc6092e7ad6c12bd76f766cdf6bf471",
+    "crates/services/web-server/tests/api_administration/users/access_web.rs": "59d1d47d4dca4808addf18920f4d1394862b1dbd2365142bb11fa2d70bbef53f",
     "crates/services/web-server/tests/api_administration/users/create_web.rs": "9976ba229071985a1e5a1a6b0d465d29ff5fca23a2c2b09f5f8408af890a3270",
     "crates/services/web-server/tests/api_administration/users/update_web.rs": "bcd331479a724c110fc8a175477f671eedeb9233314949c5041e2ae60db9bd23",
     "crates/services/web-server/tests/api_administration/users/workflow_options_web.rs": "6700a00550e69bb300df8ce6bee096b723d640b67a3eafc41f77d47a90ecd186",
@@ -353,7 +353,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1155
+          "line": 1161
         },
         "signature": "pub async fn update_admin_notices( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(payload): Json< lib_rest_core::rest_params::ParamsForUpdate<AdminNoticesUpdateBody>, >, ) -> Result<(StatusCode, Json<AdminNoticesPayload>)>",
         "name": "update_admin_notices"
@@ -1201,7 +1201,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1107
+          "line": 1113
         },
         "signature": "pub async fn get_admin_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<(StatusCode, Json<AdminSettingsPayload>)>",
         "name": "get_admin_settings"
@@ -1285,7 +1285,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1127
+          "line": 1133
         },
         "signature": "pub async fn update_admin_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(payload): Json< lib_rest_core::rest_params::ParamsForUpdate<AdminSettingsUpdateBody>, >, ) -> Result<(StatusCode, Json<AdminSettingsPayload>)>",
         "name": "update_admin_settings"
@@ -49707,7 +49707,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/admin_settings_rest.rs",
-          "line": 1071
+          "line": 1077
         },
         "signature": "pub async fn get_runtime_settings( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, ) -> Result<(StatusCode, Json<RuntimeSettingsPayload>)>",
         "name": "get_runtime_settings"

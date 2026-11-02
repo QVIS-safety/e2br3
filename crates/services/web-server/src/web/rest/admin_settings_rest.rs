@@ -897,19 +897,25 @@ async fn load_runtime_admin_settings_payload(
 			projected.insert(key.to_string(), field.clone());
 		}
 	}
-	let payload = serde_json::from_value::<AdminSettingsPayload>(Value::Object(projected))
-		.map_err(|error| Error::Configuration {
-			key: "admin_settings",
-			message: format!("stored runtime settings are invalid: {error}"),
+	let payload =
+		serde_json::from_value::<AdminSettingsPayload>(Value::Object(projected))
+			.map_err(|error| Error::Configuration {
+				key: "admin_settings",
+				message: format!("stored runtime settings are invalid: {error}"),
+			})?;
+	let idle = payload
+		.idle_session_minutes
+		.ok_or_else(|| Error::Configuration {
+			key: "idle_session_minutes",
+			message: "idle_session_minutes is required".to_string(),
 		})?;
-	let idle = payload.idle_session_minutes.ok_or_else(|| Error::Configuration {
-		key: "idle_session_minutes",
-		message: "idle_session_minutes is required".to_string(),
-	})?;
-	let warning = payload.session_warning_minutes.ok_or_else(|| Error::Configuration {
-		key: "session_warning_minutes",
-		message: "session_warning_minutes is required".to_string(),
-	})?;
+	let warning =
+		payload
+			.session_warning_minutes
+			.ok_or_else(|| Error::Configuration {
+				key: "session_warning_minutes",
+				message: "session_warning_minutes is required".to_string(),
+			})?;
 	if idle < 5 || warning < 1 || warning >= idle {
 		return Err(Error::Configuration {
 			key: "session_timeout",

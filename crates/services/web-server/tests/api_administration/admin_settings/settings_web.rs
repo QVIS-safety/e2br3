@@ -16,7 +16,8 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 #[tokio::test]
-async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result<()> {
+async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let ctx = Ctx::new(
@@ -27,35 +28,30 @@ async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result
 	let mut settings = AdminSettingsBmc::get(&ctx, &mm, "system")
 		.await?
 		.ok_or("missing test organization settings")?;
-	settings.as_object_mut().ok_or("settings must be an object")?.extend([
-		("meddra_language".to_string(), Value::Null),
-		("meddra_version".to_string(), Value::Null),
-		("workflow_enabled".to_string(), Value::Null),
-		("workflow".to_string(), json!("invalid unrelated workflow")),
-		("case_number_padding".to_string(), json!("invalid unrelated padding")),
-		("future_admin_field".to_string(), json!({ "nested": true })),
-	]);
-	AdminSettingsBmc::upsert(
-		&ctx,
-		&mm,
-		"system",
-		&settings,
-		Some(seed.admin.id),
-	)
-	.await?;
+	settings
+		.as_object_mut()
+		.ok_or("settings must be an object")?
+		.extend([
+			("meddra_language".to_string(), Value::Null),
+			("meddra_version".to_string(), Value::Null),
+			("workflow_enabled".to_string(), Value::Null),
+			("workflow".to_string(), json!("invalid unrelated workflow")),
+			(
+				"case_number_padding".to_string(),
+				json!("invalid unrelated padding"),
+			),
+			("future_admin_field".to_string(), json!({ "nested": true })),
+		]);
+	AdminSettingsBmc::upsert(&ctx, &mm, "system", &settings, Some(seed.admin.id))
+		.await?;
 
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let app = web_server::app(mm);
-	let (status, value) = request_json(
-		&app,
-		"GET",
-		&viewer_cookie,
-		"/api/settings/runtime",
-		None,
-	)
-	.await?;
+	let (status, value) =
+		request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+			.await?;
 
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["notation"], settings["notation"]);
@@ -65,7 +61,8 @@ async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result
 }
 
 #[tokio::test]
-async fn test_runtime_settings_reject_invalid_required_runtime_fields() -> Result<()> {
+async fn test_runtime_settings_reject_invalid_required_runtime_fields() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let ctx = Ctx::new(
@@ -84,45 +81,27 @@ async fn test_runtime_settings_reject_invalid_required_runtime_fields() -> Resul
 	for field in ["notation", "timezone"] {
 		let mut invalid = original.clone();
 		invalid[field] = Value::Null;
-		AdminSettingsBmc::upsert(
-			&ctx,
-			&mm,
-			"system",
-			&invalid,
-			Some(seed.admin.id),
-		)
-		.await?;
-		let (status, value) = request_json(
-			&app,
-			"GET",
-			&viewer_cookie,
-			"/api/settings/runtime",
-			None,
-		)
-		.await?;
-		assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{field}: {value:?}");
+		AdminSettingsBmc::upsert(&ctx, &mm, "system", &invalid, Some(seed.admin.id))
+			.await?;
+		let (status, value) =
+			request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+				.await?;
+		assert_eq!(
+			status,
+			StatusCode::SERVICE_UNAVAILABLE,
+			"{field}: {value:?}"
+		);
 		assert_eq!(value["error"]["message"], "CONFIGURATION_ERROR");
 	}
 	for (idle, warning) in [(4, 1), (10, 10)] {
 		let mut invalid = original.clone();
 		invalid["idle_session_minutes"] = json!(idle);
 		invalid["session_warning_minutes"] = json!(warning);
-		AdminSettingsBmc::upsert(
-			&ctx,
-			&mm,
-			"system",
-			&invalid,
-			Some(seed.admin.id),
-		)
-		.await?;
-		let (status, value) = request_json(
-			&app,
-			"GET",
-			&viewer_cookie,
-			"/api/settings/runtime",
-			None,
-		)
-		.await?;
+		AdminSettingsBmc::upsert(&ctx, &mm, "system", &invalid, Some(seed.admin.id))
+			.await?;
+		let (status, value) =
+			request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+				.await?;
 		assert_eq!(
 			status,
 			StatusCode::SERVICE_UNAVAILABLE,

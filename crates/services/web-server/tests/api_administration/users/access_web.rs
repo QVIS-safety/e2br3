@@ -2,10 +2,10 @@ use crate::common::{
 	cookie_header, create_empty_permission_profile, init_test_mm,
 	seed_org_with_users, Result,
 };
-use axum::body::Body;
+use axum::body::{to_bytes, Body};
 use axum::http::{header, Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use serde_json::json;
+use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -129,7 +129,11 @@ async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> 
 		.header("cookie", auth_cookie.as_str())
 		.body(Body::empty())?;
 	let stale_session_res = app.clone().oneshot(stale_session_req).await?;
-	assert_eq!(stale_session_res.status(), StatusCode::FORBIDDEN);
+	assert_eq!(stale_session_res.status(), StatusCode::UNAUTHORIZED);
+	let stale_session_body: Value = serde_json::from_slice(
+		&to_bytes(stale_session_res.into_body(), usize::MAX).await?,
+	)?;
+	assert_eq!(stale_session_body["error"]["message"], "NO_AUTH");
 
 	let old_login_body = json!({
 		"email": email,
