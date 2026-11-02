@@ -21,6 +21,109 @@ async fn audit_admin_pool() -> Result<PgPool> {
 
 #[serial]
 #[tokio::test]
+async fn case_audit_record_traversal_is_cycle_safe_and_tenant_scoped() -> Result<()>
+{
+	use lib_core::ctx::{Ctx, ROLE_SYSTEM_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+	use lib_core::model::audit::AuditLogBmc;
+	use lib_core::model::store::set_full_context_dbx;
+	use serde_json::json;
+
+	let mm = init_test_mm().await?;
+	super::common::ensure_fixed_platform_assignment().await?;
+	let user_id = uuid::Uuid::parse_str(SYSTEM_USER_ID)?;
+	let system_org_id = uuid::Uuid::parse_str(SYSTEM_ORG_ID)?;
+	let case_org_id = super::common::demo_org_id();
+	let case_id = uuid::Uuid::new_v4();
+	let child_id = uuid::Uuid::new_v4();
+	let grandchild_id = uuid::Uuid::new_v4();
+	let cross_tenant_id = uuid::Uuid::new_v4();
+	let rows = [
+		("cases", case_id, case_org_id, json!({})),
+		(
+			"case_child",
+			child_id,
+			case_org_id,
+			json!({"case_id":case_id}),
+		),
+		(
+			"case_child_duplicate",
+			child_id,
+			case_org_id,
+			json!({"case_id":case_id}),
+		),
+		(
+			"case_grandchild",
+			grandchild_id,
+			case_org_id,
+			json!({"parent_id":child_id}),
+		),
+		(
+			"case_cycle",
+			case_id,
+			case_org_id,
+			json!({"parent_id":grandchild_id}),
+		),
+		(
+			"cross_tenant_child",
+			cross_tenant_id,
+			system_org_id,
+			json!({"case_id":case_id}),
+		),
+	];
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(mm.dbx(), user_id, system_org_id, ROLE_SYSTEM_ADMIN)
+		.await?;
+	for (table_name, record_id, organization_id, new_values) in rows {
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"SELECT append_audit_log($1, $2, $3, 'CREATE', NULL, $4, NULL)",
+				)
+				.bind(table_name)
+				.bind(record_id)
+				.bind(organization_id)
+				.bind(new_values),
+			)
+			.await?;
+	}
+	mm.dbx().commit_txn().await?;
+
+	let ctx = Ctx::new(user_id, system_org_id, ROLE_SYSTEM_ADMIN.to_string())?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(mm.dbx(), user_id, system_org_id, ROLE_SYSTEM_ADMIN)
+		.await?;
+	mm.dbx()
+		.fetch_one(sqlx::query_as::<_, (i32,)>("SELECT 1"))
+		.await?;
+	assert_eq!(mm.dbx().transaction_depth().await?, 1);
+	let logs = AuditLogBmc::list_by_record(&ctx, &mm, "cases", case_id).await?;
+	assert_eq!(mm.dbx().transaction_depth().await?, 1);
+	assert_eq!(logs.len(), 5, "unexpected case audit traversal: {logs:?}");
+	let tables = logs
+		.iter()
+		.map(|row| row.table_name.as_str())
+		.collect::<Vec<_>>();
+	assert!(tables.contains(&"cases"));
+	assert!(tables.contains(&"case_child"));
+	assert!(tables.contains(&"case_child_duplicate"));
+	assert!(tables.contains(&"case_grandchild"));
+	assert!(tables.contains(&"case_cycle"));
+	assert!(logs.iter().all(|row| row.organization_id == case_org_id));
+	assert!(logs.iter().all(|row| row.record_id != cross_tenant_id));
+	assert!(logs
+		.windows(2)
+		.all(|pair| pair[0].created_at >= pair[1].created_at));
+	let unknown =
+		AuditLogBmc::list_by_record(&ctx, &mm, "cases", uuid::Uuid::new_v4())
+			.await?;
+	assert!(unknown.is_empty());
+	assert_eq!(mm.dbx().transaction_depth().await?, 1);
+	mm.dbx().commit_txn().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_audit_chain_preserves_id_order_with_waiting_writer() -> Result<()> {
 	use lib_core::ctx::{ROLE_SYSTEM_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
 	use lib_core::model::store::set_full_context_dbx;

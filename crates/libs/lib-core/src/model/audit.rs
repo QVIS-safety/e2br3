@@ -344,33 +344,15 @@ impl AuditLogBmc {
 			return Err(err);
 		}
 		let logs = if table_name == "cases" {
-			let sql = format!(
-				"WITH RECURSIVE case_org AS (
-					SELECT DISTINCT organization_id
-					  FROM {0}
-					 WHERE table_name = 'cases'
-					   AND record_id = $1
-				 ),
-				 records(record_id) AS (
-					VALUES ($1::uuid)
-					UNION
-					SELECT child.record_id
-					  FROM {0} child
-					 CROSS JOIN case_org
-					  JOIN records parent ON child.parent_record_ids
-						@> ARRAY[parent.record_id]
-					 WHERE child.organization_id = case_org.organization_id
-				 )
-				 SELECT l.*, audit_user_display(l.user_id) AS user_display
-				   FROM {0} l
-				  CROSS JOIN case_org
-				  WHERE l.organization_id = case_org.organization_id
-				    AND l.record_id IN (SELECT record_id FROM records)
-				  ORDER BY l.created_at DESC",
-				Self::TABLE
-			);
 			match dbx
-				.fetch_all(sqlx::query_as::<_, AuditLog>(&sql).bind(record_id))
+				.fetch_all(
+					sqlx::query_as::<_, AuditLog>(
+						"SELECT l.*, audit_user_display(l.user_id) AS user_display
+						   FROM public.list_case_audit_logs($1) AS l
+						  ORDER BY l.created_at DESC",
+					)
+					.bind(record_id),
+				)
 				.await
 			{
 				Ok(logs) => logs,

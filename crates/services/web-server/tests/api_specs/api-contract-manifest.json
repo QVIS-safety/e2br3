@@ -16,7 +16,7 @@
   "content_hashes": {
     "crates/libs/lib-core/src/authorization/ids.rs": "50cac5a9d5289bee59f60a3c662f0c043b36605d5a849f18176ff7fc3d5c0ac3",
     "crates/libs/lib-core/src/authorization/menu_privileges.rs": "bfbc25ef28d9bf6e22ca240eba2a15b2264362f528c7f1a2e75ce40cb0a46465",
-    "crates/libs/lib-core/src/model/audit.rs": "6c05632a59f8e8e4536882027ac739353060a9a3e268159dfc04b2e161f835d1",
+    "crates/libs/lib-core/src/model/audit.rs": "ed9d137fd92356702f715e9e5bce4e996ed7fae6f4e0ce5d063eb4cf00ee3647",
     "crates/libs/lib-core/src/model/case.rs": "e19ac8ab0d3f283c66c7f4e670d8cda812382d7d65b703c792c8b758f2552d38",
     "crates/libs/lib-core/src/model/case_duplicate.rs": "9162670459b867f1a6d7f0a9081357ab41e7483b44450af1445cd87222a28930",
     "crates/libs/lib-core/src/model/case_identifiers.rs": "d85046a721797616473cf367308e23d0aa7e2a743c90e0b5ef511d37522ef19a",
