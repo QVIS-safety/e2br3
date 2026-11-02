@@ -80,13 +80,14 @@ def load(snapshot, manifest, url, database):
     for table, columns in COLUMNS.items():
         statements.append(insert_sql(table, columns, snapshot['tables'][table]))
     result = subprocess.run(
-        ['psql', '-X', '-q', '--single-transaction', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate'],
-        env={**os.environ, 'PGDATABASE': url}, input='\n'.join(statements), text=True, capture_output=True,
+        ['psql', '-X', '-q', '--dbname', url, '--single-transaction',
+         '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate'],
+        input='\n'.join(statements), text=True, capture_output=True,
     )
     if result.returncode:
         # PostgreSQL details may contain licensed row values; expose SQLSTATE only.
         states = re.findall(r'ERROR:\s+([0-9A-Z]{5})\b', result.stderr)
-        raise ValueError(f'Oracle terminology import failed (psql exit {result.returncode}, SQLSTATE {states}); transaction rolled back')
+        raise ValueError(f'Oracle terminology import failed (psql exit {result.returncode}, SQLSTATE {states})')
     print('Loaded verified Oracle terminology subset into isolated XML test database')
 
 
