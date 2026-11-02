@@ -30,7 +30,7 @@
     "crates/libs/lib-core/src/model/parent_history.rs": "3560c52298ea8fa5db514e45f57b1f82a8866411c969c551f67a984583179222",
     "crates/libs/lib-core/src/model/patch.rs": "431dda3beb5797477f4010f8596eedcb6da90d29368db76624cd4b467eabd33a",
     "crates/libs/lib-core/src/model/patient.rs": "9d0e66757fc432c8c3bf2f32a71a3e533ecede6443297b39c7a4070c190809e2",
-    "crates/libs/lib-core/src/model/presave.rs": "9ae947a0206a1b4511aa837fee9300e1befe0dd4b71d55bade97284df2774786",
+    "crates/libs/lib-core/src/model/presave.rs": "0493f45f48db49aa33aa7944627b1c1a51a674c5e2e237f418ea7d9cb43aa296",
     "crates/libs/lib-core/src/model/reaction.rs": "adb8293500d4c013c6f8df599152321f5a80ce14c895509a04f5fe142cbbe8a3",
     "crates/libs/lib-core/src/model/receiver.rs": "00ee7ab5d964a42d7588d078bdae5c79fb12411bf7e38b4dc092e90e430f4461",
     "crates/libs/lib-core/src/model/safety_report.rs": "e40fe94d5a96e14adbd4bbb65fd926803626e5b948b63d1741a342103eaed7b6",
@@ -107,12 +107,12 @@
     "crates/services/web-server/src/web/rest/safety_report_rest.rs": "57a5e8cee43186a1e9157aeb0b1c1eef96fc6bd4372f192c279d46c9cb2eae84",
     "crates/services/web-server/src/web/rest/safety_report_sub_rest.rs": "f663d7c0626622e33cee9ce5960152e7d87dabda361d7d49c4c9654bfb6e5f1a",
     "crates/services/web-server/src/web/rest/section_presave_rest/narrative.rs": "53bf3d03b049da2c460cb9ce7beae424e26f2d3302d8902cbb76523d3c6ecf28",
-    "crates/services/web-server/src/web/rest/section_presave_rest/product.rs": "6c8a628463aa19c924416575e22239cd55766be241c843e63f04c46b6fdfe398",
+    "crates/services/web-server/src/web/rest/section_presave_rest/product.rs": "98c17a49955044d7a62614efc953cad485c318e809ec65a9c55fcf8a1dc133a0",
     "crates/services/web-server/src/web/rest/section_presave_rest/receiver.rs": "038f757825069ed99cc17e71bed26feff1bf73a6b700f7cd0195602eb91ac9d2",
     "crates/services/web-server/src/web/rest/section_presave_rest/reporter.rs": "f4d0f9d3ef173f875cae210fb8f3319c870bd2c78a81bf85c7197f6cf7ddb5bb",
     "crates/services/web-server/src/web/rest/section_presave_rest/sender.rs": "3d6c07eb573a31a59cf03c2fecb91218ad84c90edc54fcb4a542cdfb5139469a",
     "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs": "c02a09c13bca5a4d002f1c6955150aa0bb63592b4e26e4440f9de7ecfb5bd2e2",
-    "crates/services/web-server/src/web/rest/section_presave_rest/study.rs": "478303141188592d75ac77b36a18ef55c274278d97ff8eeb7621f712bfcd68d9",
+    "crates/services/web-server/src/web/rest/section_presave_rest/study.rs": "90ab0895ff40951d80777d9c42818931386514ac0bf2ad34520e5a0372cfbcd6",
     "crates/services/web-server/src/web/rest/submission_rest.rs": "a2cfc68986d9269bb21471b7089060ed2155d6480ee19fe2668a23b21ff82432",
     "crates/services/web-server/src/web/rest/terminology_rest.rs": "dcb8c1cfbbac38789ebcd57775593dbb7cead22f8d6ff050e8a5146d64ab3691",
     "crates/services/web-server/src/web/rest/test_result_rest.rs": "1fd428328c50d5405e498bc0e95a42f22a2e3f144f5b71bfda4299dfc6645e64",
@@ -212,12 +212,12 @@
     "crates/services/web-server/tests/api_presave/delete_constraints_web.rs": "3e0c6d2dc6c1452cd2b3721b62386b13541fc5ef3dfbf3b1e966982357118ad3",
     "crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs": "56917a9c284cd8049cc0cdb70c7f4e809e2e7eebe0b7315ae31e2ef4d6093204",
     "crates/services/web-server/tests/api_presave/narrative_web.rs": "c5818ebf72bf4d4ad67ce6fc7ef596f7621f56a644d2a48b57bb849a12d464b6",
-    "crates/services/web-server/tests/api_presave/product_web.rs": "09fd3ee5221998bd7d514bd632d3f729a2042aba6cde95d81126e8554b46ffc3",
-    "crates/services/web-server/tests/api_presave/receiver_web.rs": "43417715d9e390c5d60890743118abb6eea0c8aaa4920c57f9bb6cb11c4b40f4",
+    "crates/services/web-server/tests/api_presave/product_web.rs": "7bf4299e5a1fb8d87fdcf71b09d373d877d0f6105643a349b99040bb1009fd95",
+    "crates/services/web-server/tests/api_presave/receiver_web.rs": "d0abeee3e6f4a5836be29509fe11b89bc8ea91c3ab48805332fdce4772b1c490",
     "crates/services/web-server/tests/api_presave/reporter_web.rs": "0c252b15e3d74589013ae9890b08deb112495ef3e4916d5a072b902fbf43779a",
     "crates/services/web-server/tests/api_presave/sender_web.rs": "44ea3c965f2ffcbfe415c8bdf8d4fbf170f959343d042c685b33a28b79067c10",
     "crates/services/web-server/tests/api_presave/study_children_create_web.rs": "e423d02b36a86c432ca6976aa7c503fab7b3253f1735de367b4af8809653b615",
-    "crates/services/web-server/tests/api_presave/study_web.rs": "396a9fbccc439604201a4b452c0563f01f85361ee78925f1fccfe4c3ced2eb12",
+    "crates/services/web-server/tests/api_presave/study_web.rs": "c6be1a164dc4c122f8c256cf7a857004edc6ec499b51281512c213665664be8a",
     "crates/services/web-server/tests/api_specs/administration.md": "8c0b465873339173ff79959dffb493c64c23fc69010b5d00a87ced58427f38e0",
     "crates/services/web-server/tests/api_specs/cases.md": "272470da8a3501fdc8bffd7c75cf54a2a4a47c644774f7d59b07949f8a1e8147",
     "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "9ac5640cee8f041690cd3542ddc7786f7d850acec1d535897b632dd40a82695a",
@@ -225,7 +225,7 @@
     "crates/services/web-server/tests/api_specs/editor.md": "68e11bf65a8deec4ff22b07387996242207e141e80a28ad5b9c4e34eeb31fedd",
     "crates/services/web-server/tests/api_specs/export.md": "ce80cafacf75a3a79e3cad99827b98e1f0602500177309d169e424953ca1a7b9",
     "crates/services/web-server/tests/api_specs/import.md": "e25322b80a073112ace58720af6707832825ef79879b92b8744ff7ae8b247ec0",
-    "crates/services/web-server/tests/api_specs/presave.md": "335a12bf2455d5e396ea7aef7e29865626d53f8d8ce829d09c5ed34c6acc2a43",
+    "crates/services/web-server/tests/api_specs/presave.md": "f448bda7a9c546d4b16e8391ed9beb86aec18074119eab0a59f2b9b38f9bf2e6",
     "crates/services/web-server/tests/api_specs/submission.md": "e32e4413f97af21c6a3a42f360875ecbcef661e59bd803a1747baf80029ba151",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
     "crates/services/web-server/tests/api_submission/callbacks.rs": "f1a9b4cc8e67d262ba4e90fbc4afbdfd273330098abdc47ed36877eacab477a9",
@@ -41231,7 +41231,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 73
+          "line": 74
         },
         "signature": "pub async fn list_product_presaves( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Query(query): Query<ProductPresaveListQuery>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<ProductPresave>>>)>",
         "name": "list_product_presaves"
@@ -41283,7 +41283,7 @@
             {
               "rust_type": "ProductPresaveListQuery",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:69:ProductPresaveListQuery"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:70:ProductPresaveListQuery"
             }
           ]
         }
@@ -41313,7 +41313,7 @@
         {
           "rust_type": "ProductPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1299:ProductPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1308:ProductPresave"
         }
       ]
     },
@@ -41341,7 +41341,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 5
+          "line": 6
         },
         "signature": "pub async fn create_product_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(params): Json<ParamsForCreate<ProductPresaveRowsForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveDetails>>)>",
         "name": "create_product_presave"
@@ -41398,7 +41398,7 @@
             {
               "rust_type": "ProductPresaveRowsForCreate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:55:ProductPresaveRowsForCreate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:56:ProductPresaveRowsForCreate"
             }
           ]
         }
@@ -41424,7 +41424,7 @@
         {
           "rust_type": "ProductPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:205:ProductPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:206:ProductPresaveDetails"
         }
       ]
     },
@@ -41452,7 +41452,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 180
+          "line": 181
         },
         "signature": "pub async fn delete_product_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<StatusCode>",
         "name": "delete_product_presave"
@@ -41544,7 +41544,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 122
+          "line": 123
         },
         "signature": "pub async fn get_product_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresave>>)>",
         "name": "get_product_presave"
@@ -41622,7 +41622,7 @@
         {
           "rust_type": "ProductPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1299:ProductPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1308:ProductPresave"
         }
       ]
     },
@@ -41650,7 +41650,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 144
+          "line": 145
         },
         "signature": "pub async fn update_product_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, Json(params): Json<ParamsForUpdate<ProductPresaveForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresave>>)>",
         "name": "update_product_presave"
@@ -41732,7 +41732,7 @@
             {
               "rust_type": "ProductPresaveForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1423:ProductPresaveForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1432:ProductPresaveForUpdate"
             }
           ]
         }
@@ -41758,7 +41758,7 @@
         {
           "rust_type": "ProductPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1299:ProductPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1308:ProductPresave"
         }
       ]
     },
@@ -41786,7 +41786,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 287
+          "line": 289
         },
         "signature": "pub async fn get_product_presave_details( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveDetails>>)>",
         "name": "get_product_presave_details"
@@ -41864,7 +41864,7 @@
         {
           "rust_type": "ProductPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:205:ProductPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:206:ProductPresaveDetails"
         }
       ]
     },
@@ -41892,7 +41892,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 309
+          "line": 311
         },
         "signature": "pub async fn update_product_presave_details( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, Json(params): Json<ParamsForUpdate<ProductPresaveDetailsForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveDetails>>)>",
         "name": "update_product_presave_details"
@@ -41974,7 +41974,7 @@
             {
               "rust_type": "ProductPresaveDetailsForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:218:ProductPresaveDetailsForUpdate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:219:ProductPresaveDetailsForUpdate"
             }
           ]
         }
@@ -42000,7 +42000,7 @@
         {
           "rust_type": "ProductPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:205:ProductPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:206:ProductPresaveDetails"
         }
       ]
     },
@@ -42029,7 +42029,7 @@
         "signature": "pub async fn list_product_active_substances( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<ProductPresaveActiveSubstance>>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 563
+          "line": 565
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -42129,7 +42129,7 @@
         {
           "rust_type": "ProductPresaveActiveSubstance",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1779:ProductPresaveActiveSubstance"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1788:ProductPresaveActiveSubstance"
         }
       ]
     },
@@ -42158,7 +42158,7 @@
         "signature": "pub async fn create_product_active_substance( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, Json(params): Json<ParamsForCreate<ProductActiveSubstanceForRestCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveActiveSubstance>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 563
+          "line": 565
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -42253,7 +42253,7 @@
             {
               "rust_type": "ProductActiveSubstanceForRestCreate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:533:ProductActiveSubstanceForRestCreate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:535:ProductActiveSubstanceForRestCreate"
             }
           ]
         }
@@ -42285,7 +42285,7 @@
         {
           "rust_type": "ProductPresaveActiveSubstance",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1779:ProductPresaveActiveSubstance"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1788:ProductPresaveActiveSubstance"
         }
       ]
     },
@@ -42314,7 +42314,7 @@
         "signature": "pub async fn delete_product_active_substance( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 563
+          "line": 565
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -42424,7 +42424,7 @@
         "signature": "pub async fn get_product_active_substance( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveActiveSubstance>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 563
+          "line": 565
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -42520,7 +42520,7 @@
         {
           "rust_type": "ProductPresaveActiveSubstance",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1779:ProductPresaveActiveSubstance"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1788:ProductPresaveActiveSubstance"
         }
       ]
     },
@@ -42549,7 +42549,7 @@
         "signature": "pub async fn update_product_active_substance( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, Json(params): Json<ParamsForUpdate<ProductPresaveActiveSubstanceForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveActiveSubstance>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-          "line": 563
+          "line": 565
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -42644,7 +42644,7 @@
             {
               "rust_type": "ProductPresaveActiveSubstanceForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1812:ProductPresaveActiveSubstanceForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1821:ProductPresaveActiveSubstanceForUpdate"
             }
           ]
         }
@@ -42676,7 +42676,7 @@
         {
           "rust_type": "ProductPresaveActiveSubstance",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1779:ProductPresaveActiveSubstance"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1788:ProductPresaveActiveSubstance"
         }
       ]
     },
@@ -42759,7 +42759,7 @@
         {
           "rust_type": "ReceiverPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:724:ReceiverPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:726:ReceiverPresave"
         }
       ]
     },
@@ -43068,7 +43068,7 @@
         {
           "rust_type": "ReceiverPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:724:ReceiverPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:726:ReceiverPresave"
         }
       ]
     },
@@ -43178,7 +43178,7 @@
             {
               "rust_type": "ReceiverPresaveForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:805:ReceiverPresaveForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:807:ReceiverPresaveForUpdate"
             }
           ]
         }
@@ -43204,7 +43204,7 @@
         {
           "rust_type": "ReceiverPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:724:ReceiverPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:726:ReceiverPresave"
         }
       ]
     },
@@ -43575,7 +43575,7 @@
         {
           "rust_type": "ReceiverPresaveConsignee",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1195:ReceiverPresaveConsignee"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1204:ReceiverPresaveConsignee"
         }
       ]
     },
@@ -43731,7 +43731,7 @@
         {
           "rust_type": "ReceiverPresaveConsignee",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1195:ReceiverPresaveConsignee"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1204:ReceiverPresaveConsignee"
         }
       ]
     },
@@ -43966,7 +43966,7 @@
         {
           "rust_type": "ReceiverPresaveConsignee",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1195:ReceiverPresaveConsignee"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1204:ReceiverPresaveConsignee"
         }
       ]
     },
@@ -44090,7 +44090,7 @@
             {
               "rust_type": "ReceiverPresaveConsigneeForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1218:ReceiverPresaveConsigneeForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1227:ReceiverPresaveConsigneeForUpdate"
             }
           ]
         }
@@ -44122,7 +44122,7 @@
         {
           "rust_type": "ReceiverPresaveConsignee",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1195:ReceiverPresaveConsignee"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1204:ReceiverPresaveConsignee"
         }
       ]
     },
@@ -45120,7 +45120,7 @@
         {
           "rust_type": "SenderPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:307:SenderPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:309:SenderPresave"
         }
       ]
     },
@@ -45230,7 +45230,7 @@
             {
               "rust_type": "SenderPresaveForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:387:SenderPresaveForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:389:SenderPresaveForUpdate"
             }
           ]
         }
@@ -45256,7 +45256,7 @@
         {
           "rust_type": "SenderPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:307:SenderPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:309:SenderPresave"
         }
       ]
     },
@@ -45627,7 +45627,7 @@
         {
           "rust_type": "SenderPresaveGateway",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:597:SenderPresaveGateway"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:599:SenderPresaveGateway"
         }
       ]
     },
@@ -45783,7 +45783,7 @@
         {
           "rust_type": "SenderPresaveGateway",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:597:SenderPresaveGateway"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:599:SenderPresaveGateway"
         }
       ]
     },
@@ -46018,7 +46018,7 @@
         {
           "rust_type": "SenderPresaveGateway",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:597:SenderPresaveGateway"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:599:SenderPresaveGateway"
         }
       ]
     },
@@ -46142,7 +46142,7 @@
             {
               "rust_type": "SenderPresaveGatewayForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:628:SenderPresaveGatewayForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:630:SenderPresaveGatewayForUpdate"
             }
           ]
         }
@@ -46174,7 +46174,7 @@
         {
           "rust_type": "SenderPresaveGateway",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:597:SenderPresaveGateway"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:599:SenderPresaveGateway"
         }
       ]
     },
@@ -46303,7 +46303,7 @@
         {
           "rust_type": "SenderPresaveResponsiblePerson",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:659:SenderPresaveResponsiblePerson"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:661:SenderPresaveResponsiblePerson"
         }
       ]
     },
@@ -46459,7 +46459,7 @@
         {
           "rust_type": "SenderPresaveResponsiblePerson",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:659:SenderPresaveResponsiblePerson"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:661:SenderPresaveResponsiblePerson"
         }
       ]
     },
@@ -46694,7 +46694,7 @@
         {
           "rust_type": "SenderPresaveResponsiblePerson",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:659:SenderPresaveResponsiblePerson"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:661:SenderPresaveResponsiblePerson"
         }
       ]
     },
@@ -46818,7 +46818,7 @@
             {
               "rust_type": "SenderPresaveResponsiblePersonForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:690:SenderPresaveResponsiblePersonForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:692:SenderPresaveResponsiblePersonForUpdate"
             }
           ]
         }
@@ -46850,7 +46850,7 @@
         {
           "rust_type": "SenderPresaveResponsiblePerson",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:659:SenderPresaveResponsiblePerson"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:661:SenderPresaveResponsiblePerson"
         }
       ]
     },
@@ -46878,7 +46878,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 192
+          "line": 199
         },
         "signature": "pub async fn list_study_presaves( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Query(query): Query<StudyPresaveListQuery>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresave>>>)>",
         "name": "list_study_presaves"
@@ -46930,7 +46930,7 @@
             {
               "rust_type": "StudyPresaveListQuery",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:188:StudyPresaveListQuery"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:195:StudyPresaveListQuery"
             }
           ]
         }
@@ -46960,7 +46960,7 @@
         {
           "rust_type": "StudyPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2394:StudyPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2435:StudyPresave"
         }
       ]
     },
@@ -46988,7 +46988,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 76
+          "line": 77
         },
         "signature": "pub async fn create_study_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Json(params): Json<ParamsForCreate<StudyPresaveRowsForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveDetails>>)>",
         "name": "create_study_presave"
@@ -47045,7 +47045,7 @@
             {
               "rust_type": "StudyPresaveRowsForCreate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:168:StudyPresaveRowsForCreate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:175:StudyPresaveRowsForCreate"
             }
           ]
         }
@@ -47071,7 +47071,7 @@
         {
           "rust_type": "StudyPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:307:StudyPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:314:StudyPresaveDetails"
         }
       ]
     },
@@ -47099,7 +47099,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 282
+          "line": 289
         },
         "signature": "pub async fn delete_study_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<StatusCode>",
         "name": "delete_study_presave"
@@ -47191,7 +47191,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 224
+          "line": 231
         },
         "signature": "pub async fn get_study_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresave>>)>",
         "name": "get_study_presave"
@@ -47269,7 +47269,7 @@
         {
           "rust_type": "StudyPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2394:StudyPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2435:StudyPresave"
         }
       ]
     },
@@ -47297,7 +47297,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 246
+          "line": 253
         },
         "signature": "pub async fn update_study_presave( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, Json(params): Json<ParamsForUpdate<StudyPresaveForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresave>>)>",
         "name": "update_study_presave"
@@ -47379,7 +47379,7 @@
             {
               "rust_type": "StudyPresaveForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2492:StudyPresaveForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2533:StudyPresaveForUpdate"
             }
           ]
         }
@@ -47405,7 +47405,7 @@
         {
           "rust_type": "StudyPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2394:StudyPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2435:StudyPresave"
         }
       ]
     },
@@ -47433,7 +47433,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 509
+          "line": 548
         },
         "signature": "pub async fn get_study_presave_details( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveDetails>>)>",
         "name": "get_study_presave_details"
@@ -47511,7 +47511,7 @@
         {
           "rust_type": "StudyPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:307:StudyPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:314:StudyPresaveDetails"
         }
       ]
     },
@@ -47539,7 +47539,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 531
+          "line": 570
         },
         "signature": "pub async fn update_study_presave_details( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(id): Path<Uuid>, Json(params): Json<ParamsForUpdate<StudyPresaveDetailsForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveDetails>>)>",
         "name": "update_study_presave_details"
@@ -47621,7 +47621,7 @@
             {
               "rust_type": "StudyPresaveDetailsForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:323:StudyPresaveDetailsForUpdate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:330:StudyPresaveDetailsForUpdate"
             }
           ]
         }
@@ -47647,7 +47647,7 @@
         {
           "rust_type": "StudyPresaveDetails",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:307:StudyPresaveDetails"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:314:StudyPresaveDetails"
         }
       ]
     },
@@ -47676,7 +47676,7 @@
         "signature": "pub async fn list_study_products( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveProduct>>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1060
+          "line": 1104
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -47776,7 +47776,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3057:StudyPresaveProduct"
         }
       ]
     },
@@ -47805,7 +47805,7 @@
         "signature": "pub async fn create_study_product( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, Json(params): Json<ParamsForCreate<StudyProductForRestCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1060
+          "line": 1104
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -47900,7 +47900,7 @@
             {
               "rust_type": "StudyProductForRestCreate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:33:StudyProductForRestCreate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:34:StudyProductForRestCreate"
             }
           ]
         }
@@ -47932,7 +47932,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3057:StudyPresaveProduct"
         }
       ]
     },
@@ -47961,7 +47961,7 @@
         "signature": "pub async fn delete_study_product( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1060
+          "line": 1104
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -48071,7 +48071,7 @@
         "signature": "pub async fn get_study_product( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1060
+          "line": 1104
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -48167,7 +48167,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3057:StudyPresaveProduct"
         }
       ]
     },
@@ -48196,7 +48196,7 @@
         "signature": "pub async fn update_study_product( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, Json(params): Json<ParamsForUpdate<StudyPresaveProductForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1060
+          "line": 1104
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -48291,7 +48291,7 @@
             {
               "rust_type": "StudyPresaveProductForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3039:StudyPresaveProductForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3080:StudyPresaveProductForUpdate"
             }
           ]
         }
@@ -48323,7 +48323,7 @@
         {
           "rust_type": "StudyPresaveProduct",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3057:StudyPresaveProduct"
         }
       ]
     },
@@ -49032,7 +49032,7 @@
         "signature": "pub async fn list_study_reporters( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveReporter>>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1078
+          "line": 1122
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -49132,7 +49132,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3099:StudyPresaveReporter"
         }
       ]
     },
@@ -49161,7 +49161,7 @@
         "signature": "pub async fn create_study_reporter( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path(parent_id): Path<Uuid>, Json(params): Json<ParamsForCreate<StudyReporterForRestCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1078
+          "line": 1122
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -49256,7 +49256,7 @@
             {
               "rust_type": "StudyReporterForRestCreate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:53:StudyReporterForRestCreate"
+              "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:54:StudyReporterForRestCreate"
             }
           ]
         }
@@ -49288,7 +49288,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3099:StudyPresaveReporter"
         }
       ]
     },
@@ -49317,7 +49317,7 @@
         "signature": "pub async fn delete_study_reporter( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1078
+          "line": 1122
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -49427,7 +49427,7 @@
         "signature": "pub async fn get_study_reporter( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1078
+          "line": 1122
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -49523,7 +49523,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3099:StudyPresaveReporter"
         }
       ]
     },
@@ -49552,7 +49552,7 @@
         "signature": "pub async fn update_study_reporter( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: AuthorizationSnapshotW, Path((parent_id, id)): Path<(Uuid, Uuid)>, Json(params): Json<ParamsForUpdate<StudyPresaveReporterForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-          "line": 1078
+          "line": 1122
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs",
@@ -49647,7 +49647,7 @@
             {
               "rust_type": "StudyPresaveReporterForUpdate",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3085:StudyPresaveReporterForUpdate"
+              "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3126:StudyPresaveReporterForUpdate"
             }
           ]
         }
@@ -49679,7 +49679,7 @@
         {
           "rust_type": "StudyPresaveReporter",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3099:StudyPresaveReporter"
         }
       ]
     },
@@ -70018,7 +70018,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1195
+        "line": 1204
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -70087,7 +70087,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1195:ReceiverPresaveConsignee",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1204:ReceiverPresaveConsignee",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -70182,7 +70182,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1218
+        "line": 1227
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -70227,7 +70227,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1218:ReceiverPresaveConsigneeForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1227:ReceiverPresaveConsigneeForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -70268,7 +70268,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1299
+        "line": 1308
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -70461,7 +70461,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1299:ProductPresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1308:ProductPresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -70710,7 +70710,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1336
+        "line": 1345
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -70864,7 +70864,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1336:ProductPresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1345:ProductPresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -71051,7 +71051,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1423
+        "line": 1432
       },
       "attributes": [
         "#[derive(Default, Deserialize)]",
@@ -71283,7 +71283,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1423:ProductPresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1432:ProductPresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -71478,7 +71478,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1779
+        "line": 1788
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -71571,7 +71571,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1779:ProductPresaveActiveSubstance",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1788:ProductPresaveActiveSubstance",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -71703,16 +71703,16 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1812
+        "line": 1821
       },
       "attributes": [
-        "#[derive(Default, Fields, Deserialize)]",
+        "#[derive(Default, Deserialize)]",
         "#[serde(deny_unknown_fields)]"
       ],
       "serde_attributes": [
         "#[serde(deny_unknown_fields)]"
       ],
-      "raw": "struct ProductPresaveActiveSubstanceForUpdate {\n\tpub sequence_number: Option<i32>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_name: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_termid_version: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_termid: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub mfds_version: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub mfds_id: Option<String>,\n\tpub strength_value: Option<Decimal>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub strength_unit: Option<String>,\n}",
+      "raw": "struct ProductPresaveActiveSubstanceForUpdate {\n\tpub sequence_number: Option<i32>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_name: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_termid_version: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub substance_termid: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub mfds_version: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub mfds_id: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub strength_value: Option<Option<Decimal>>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub strength_unit: Option<String>,\n}",
       "fields": [
         {
           "name": "sequence_number",
@@ -71772,9 +71772,13 @@
         },
         {
           "name": "strength_value",
-          "type": "Option<Decimal>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<Decimal>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "strength_unit",
@@ -71787,7 +71791,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1812:ProductPresaveActiveSubstanceForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1821:ProductPresaveActiveSubstanceForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -71865,7 +71869,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1848
+        "line": 1889
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -72087,7 +72091,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1848:ReporterPresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1889:ReporterPresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -72382,7 +72386,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1890
+        "line": 1931
       },
       "attributes": [
         "#[derive(Default, Deserialize)]",
@@ -72562,7 +72566,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1890:ReporterPresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:1931:ReporterPresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -72795,7 +72799,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 1998
+        "line": 2039
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]",
@@ -73093,7 +73097,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:1998:ReporterPresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:2039:ReporterPresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -73334,7 +73338,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 2394
+        "line": 2435
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -73466,7 +73470,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:2394:StudyPresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:2435:StudyPresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -73646,7 +73650,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 2419
+        "line": 2460
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -73736,7 +73740,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:2419:StudyPresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:2460:StudyPresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -73854,7 +73858,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 2492
+        "line": 2533
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]",
@@ -73990,7 +73994,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:2492:StudyPresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:2533:StudyPresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -74116,7 +74120,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3016
+        "line": 3057
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -74185,7 +74189,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3016:StudyPresaveProduct",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3057:StudyPresaveProduct",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -74281,7 +74285,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3039
+        "line": 3080
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -74318,7 +74322,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3039:StudyPresaveProductForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3080:StudyPresaveProductForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -74364,7 +74368,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3058
+        "line": 3099
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -74445,7 +74449,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3058:StudyPresaveReporter",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3099:StudyPresaveReporter",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -74557,7 +74561,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 307
+        "line": 309
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -74683,7 +74687,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:307:SenderPresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:309:SenderPresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -74846,7 +74850,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3085
+        "line": 3126
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -74903,7 +74907,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3085:StudyPresaveReporterForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3126:StudyPresaveReporterForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -74965,7 +74969,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3113
+        "line": 3154
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -75043,7 +75047,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3113:NarrativePresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3154:NarrativePresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -75146,7 +75150,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3129
+        "line": 3170
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -75182,7 +75186,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3129:NarrativePresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3170:NarrativePresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -75223,7 +75227,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 3161
+        "line": 3202
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]",
@@ -75281,7 +75285,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:3161:NarrativePresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:3202:NarrativePresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -75330,7 +75334,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 331
+        "line": 333
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -75414,7 +75418,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:331:SenderPresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:333:SenderPresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -75519,7 +75523,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 387
+        "line": 389
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]",
@@ -75653,7 +75657,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:387:SenderPresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:389:SenderPresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -75766,7 +75770,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 597
+        "line": 599
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -75859,7 +75863,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:597:SenderPresaveGateway",
+      "id": "crates/libs/lib-core/src/model/presave.rs:599:SenderPresaveGateway",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -75974,7 +75978,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 628
+        "line": 630
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -76047,7 +76051,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:628:SenderPresaveGatewayForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:630:SenderPresaveGatewayForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -76120,7 +76124,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 659
+        "line": 661
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
@@ -76213,7 +76217,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:659:SenderPresaveResponsiblePerson",
+      "id": "crates/libs/lib-core/src/model/presave.rs:661:SenderPresaveResponsiblePerson",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -76332,7 +76336,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 690
+        "line": 692
       },
       "attributes": [
         "#[derive(Default, Fields, Deserialize)]"
@@ -76409,7 +76413,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:690:SenderPresaveResponsiblePersonForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:692:SenderPresaveResponsiblePersonForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -76482,7 +76486,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 724
+        "line": 726
       },
       "attributes": [
         "#[derive(Debug, Clone, Fields, FromRow, Serialize)]",
@@ -76608,7 +76612,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:724:ReceiverPresave",
+      "id": "crates/libs/lib-core/src/model/presave.rs:726:ReceiverPresave",
       "nested_type_refs": [
         {
           "rust_type": "Uuid",
@@ -76775,7 +76779,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 748
+        "line": 750
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -76859,7 +76863,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:748:ReceiverPresaveForCreate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:750:ReceiverPresaveForCreate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -76964,16 +76968,16 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/presave.rs",
-        "line": 805
+        "line": 807
       },
       "attributes": [
-        "#[derive(Default, Fields, Deserialize)]",
+        "#[derive(Default, Deserialize)]",
         "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]"
       ],
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]"
       ],
-      "raw": "struct ReceiverPresaveForUpdate {\n\tpub deleted: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub receiver_type: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub organization_name: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub day_count_rule: Option<String>,\n\tpub nsae_solicited_day_count: Option<i32>,\n\tpub nsae_solicited_not_applicable: Option<bool>,\n\tpub nsae_non_solicited_day_count: Option<i32>,\n\tpub nsae_non_solicited_not_applicable: Option<bool>,\n\tpub sae_solicited_day_count: Option<i32>,\n\tpub sae_solicited_not_applicable: Option<bool>,\n\tpub sae_non_solicited_day_count: Option<i32>,\n\tpub sae_non_solicited_not_applicable: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub description: Option<String>,\n}",
+      "raw": "struct ReceiverPresaveForUpdate {\n\tpub deleted: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub receiver_type: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub organization_name: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub day_count_rule: Option<String>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub nsae_solicited_day_count: Option<Option<i32>>,\n\tpub nsae_solicited_not_applicable: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub nsae_non_solicited_day_count: Option<Option<i32>>,\n\tpub nsae_non_solicited_not_applicable: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub sae_solicited_day_count: Option<Option<i32>>,\n\tpub sae_solicited_not_applicable: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub sae_non_solicited_day_count: Option<Option<i32>>,\n\tpub sae_non_solicited_not_applicable: Option<bool>,\n\t#[serde(default, deserialize_with = \"deserialize_clearable_text\")]\n\tpub description: Option<String>,\n}",
       "fields": [
         {
           "name": "deleted",
@@ -77013,9 +77017,13 @@
         },
         {
           "name": "nsae_solicited_day_count",
-          "type": "Option<i32>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<i32>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "nsae_solicited_not_applicable",
@@ -77025,9 +77033,13 @@
         },
         {
           "name": "nsae_non_solicited_day_count",
-          "type": "Option<i32>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<i32>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "nsae_non_solicited_not_applicable",
@@ -77037,9 +77049,13 @@
         },
         {
           "name": "sae_solicited_day_count",
-          "type": "Option<i32>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<i32>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "sae_solicited_not_applicable",
@@ -77049,9 +77065,13 @@
         },
         {
           "name": "sae_non_solicited_day_count",
-          "type": "Option<i32>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<i32>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "sae_non_solicited_not_applicable",
@@ -77070,7 +77090,7 @@
           ]
         }
       ],
-      "id": "crates/libs/lib-core/src/model/presave.rs:805:ReceiverPresaveForUpdate",
+      "id": "crates/libs/lib-core/src/model/presave.rs:807:ReceiverPresaveForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -97413,7 +97433,7 @@
         {
           "rust_type": "NarrativePresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3129:NarrativePresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3170:NarrativePresaveForCreate"
         }
       ]
     },
@@ -97479,7 +97499,7 @@
         {
           "rust_type": "NarrativePresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3113:NarrativePresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3154:NarrativePresave"
         }
       ]
     },
@@ -97551,7 +97571,7 @@
         {
           "rust_type": "NarrativePresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3161:NarrativePresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:3202:NarrativePresaveForUpdate"
         }
       ]
     },
@@ -97560,7 +97580,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 205
+        "line": 206
       },
       "attributes": [
         "#[derive(Debug, Serialize)]"
@@ -97575,12 +97595,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:205:ProductPresaveDetails",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:206:ProductPresaveDetails",
       "nested_type_refs": [
         {
           "rust_type": "ProductPresaveRows",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:211:ProductPresaveRows"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:212:ProductPresaveRows"
         }
       ]
     },
@@ -97589,7 +97609,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 211
+        "line": 212
       },
       "attributes": [
         "#[derive(Debug, Serialize)]",
@@ -97613,7 +97633,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:211:ProductPresaveRows",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:212:ProductPresaveRows",
       "nested_type_refs": [
         {
           "rust_type": "Value",
@@ -97621,7 +97641,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-            "line": 3
+            "line": 4
           }
         },
         {
@@ -97634,7 +97654,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-            "line": 3
+            "line": 4
           }
         }
       ]
@@ -97644,7 +97664,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 218
+        "line": 219
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -97662,12 +97682,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:218:ProductPresaveDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:219:ProductPresaveDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "ProductPresaveRowsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:224:ProductPresaveRowsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:225:ProductPresaveRowsForUpdate"
         }
       ]
     },
@@ -97676,7 +97696,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 224
+        "line": 225
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -97700,7 +97720,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:224:ProductPresaveRowsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:225:ProductPresaveRowsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -97709,7 +97729,7 @@
         {
           "rust_type": "ProductPresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1423:ProductPresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1432:ProductPresaveForUpdate"
         },
         {
           "rust_type": "Option",
@@ -97722,7 +97742,7 @@
         {
           "rust_type": "ProductActiveSubstanceDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:231:ProductActiveSubstanceDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:232:ProductActiveSubstanceDetailsForUpdate"
         }
       ]
     },
@@ -97731,7 +97751,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 231
+        "line": 232
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -97740,7 +97760,7 @@
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]"
       ],
-      "raw": "struct ProductActiveSubstanceDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\t#[serde(default)]\n\tpub deleted: bool,\n\tpub sequence_number: Option<i32>,\n\tpub substance_name: Option<String>,\n\t#[serde(rename = \"substanceTermIdVersion\")]\n\tpub substance_termid_version: Option<String>,\n\t#[serde(rename = \"substanceTermId\")]\n\tpub substance_termid: Option<String>,\n\tpub mfds_version: Option<String>,\n\tpub mfds_id: Option<String>,\n\t#[serde(rename = \"substanceStrengthValue\")]\n\tpub strength_value: Option<rust_decimal::Decimal>,\n\t#[serde(rename = \"substanceStrengthUnit\")]\n\tpub strength_unit: Option<String>,\n}",
+      "raw": "struct ProductActiveSubstanceDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\t#[serde(default)]\n\tpub deleted: bool,\n\tpub sequence_number: Option<i32>,\n\tpub substance_name: Option<String>,\n\t#[serde(rename = \"substanceTermIdVersion\")]\n\tpub substance_termid_version: Option<String>,\n\t#[serde(rename = \"substanceTermId\")]\n\tpub substance_termid: Option<String>,\n\tpub mfds_version: Option<String>,\n\tpub mfds_id: Option<String>,\n\t#[serde(rename = \"substanceStrengthValue\")]\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub strength_value: Option<Option<rust_decimal::Decimal>>,\n\t#[serde(rename = \"substanceStrengthUnit\")]\n\tpub strength_unit: Option<String>,\n}",
       "fields": [
         {
           "name": "id",
@@ -97804,12 +97824,14 @@
         },
         {
           "name": "strength_value",
-          "type": "Option<rust_decimal::Decimal>",
+          "type": "Option<Option<rust_decimal::Decimal>>",
           "attributes": [
-            "#[serde(rename = \"substanceStrengthValue\")]"
+            "#[serde(rename = \"substanceStrengthValue\")]",
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
           ],
           "serde_attributes": [
-            "#[serde(rename = \"substanceStrengthValue\")]"
+            "#[serde(rename = \"substanceStrengthValue\")]",
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
           ]
         },
         {
@@ -97823,7 +97845,7 @@
           ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:231:ProductActiveSubstanceDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:232:ProductActiveSubstanceDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -97909,7 +97931,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 533
+        "line": 535
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -97969,7 +97991,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:533:ProductActiveSubstanceForRestCreate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:535:ProductActiveSubstanceForRestCreate",
       "nested_type_refs": [
         {
           "rust_type": "i32",
@@ -98038,7 +98060,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 55
+        "line": 56
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -98056,12 +98078,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:55:ProductPresaveRowsForCreate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:56:ProductPresaveRowsForCreate",
       "nested_type_refs": [
         {
           "rust_type": "ProductPresaveCreateRows",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:61:ProductPresaveCreateRows"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:62:ProductPresaveCreateRows"
         }
       ]
     },
@@ -98070,7 +98092,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 61
+        "line": 62
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -98098,12 +98120,12 @@
           ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:61:ProductPresaveCreateRows",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:62:ProductPresaveCreateRows",
       "nested_type_refs": [
         {
           "rust_type": "ProductPresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1336:ProductPresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1345:ProductPresaveForCreate"
         },
         {
           "rust_type": "Vec",
@@ -98112,7 +98134,7 @@
         {
           "rust_type": "ProductActiveSubstanceDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:231:ProductActiveSubstanceDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:232:ProductActiveSubstanceDetailsForUpdate"
         }
       ]
     },
@@ -98121,7 +98143,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 69
+        "line": 70
       },
       "attributes": [
         "#[derive(Debug, Deserialize, Default)]",
@@ -98139,7 +98161,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:69:ProductPresaveListQuery",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs:70:ProductPresaveListQuery",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -98327,7 +98349,7 @@
         {
           "rust_type": "ReceiverPresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:805:ReceiverPresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:807:ReceiverPresaveForUpdate"
         },
         {
           "rust_type": "Option",
@@ -98803,7 +98825,7 @@
         {
           "rust_type": "ReceiverPresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:748:ReceiverPresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:750:ReceiverPresaveForCreate"
         },
         {
           "rust_type": "Vec",
@@ -98893,7 +98915,7 @@
         {
           "rust_type": "ReporterPresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1890:ReporterPresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1931:ReporterPresaveForCreate"
         }
       ]
     },
@@ -98959,7 +98981,7 @@
         {
           "rust_type": "ReporterPresave",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1848:ReporterPresave"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1889:ReporterPresave"
         }
       ]
     },
@@ -99031,7 +99053,7 @@
         {
           "rust_type": "ReporterPresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:1998:ReporterPresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2039:ReporterPresaveForUpdate"
         }
       ]
     },
@@ -99214,7 +99236,7 @@
         {
           "rust_type": "SenderPresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:387:SenderPresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:389:SenderPresaveForUpdate"
         },
         {
           "rust_type": "Option",
@@ -99840,7 +99862,7 @@
         {
           "rust_type": "SenderPresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:331:SenderPresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:333:SenderPresaveForCreate"
         },
         {
           "rust_type": "Vec",
@@ -99916,7 +99938,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 168
+        "line": 175
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -99934,12 +99956,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:168:StudyPresaveRowsForCreate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:175:StudyPresaveRowsForCreate",
       "nested_type_refs": [
         {
           "rust_type": "StudyPresaveCreateRows",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:174:StudyPresaveCreateRows"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:181:StudyPresaveCreateRows"
         }
       ]
     },
@@ -99948,7 +99970,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 174
+        "line": 181
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -100006,12 +100028,12 @@
           ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:174:StudyPresaveCreateRows",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:181:StudyPresaveCreateRows",
       "nested_type_refs": [
         {
           "rust_type": "StudyPresaveForCreate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2419:StudyPresaveForCreate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2460:StudyPresaveForCreate"
         },
         {
           "rust_type": "Vec",
@@ -100020,7 +100042,7 @@
         {
           "rust_type": "StudyProductDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:340:StudyProductDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:347:StudyProductDetailsForUpdate"
         },
         {
           "rust_type": "Vec",
@@ -100029,7 +100051,7 @@
         {
           "rust_type": "StudyReporterDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:465:StudyReporterDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:504:StudyReporterDetailsForUpdate"
         },
         {
           "rust_type": "Vec",
@@ -100038,7 +100060,7 @@
         {
           "rust_type": "StudyRegistrationNumberDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:379:StudyRegistrationNumberDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:386:StudyRegistrationNumberDetailsForUpdate"
         },
         {
           "rust_type": "Vec",
@@ -100047,7 +100069,7 @@
         {
           "rust_type": "StudyFdaCrossReportedIndNumberDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:425:StudyFdaCrossReportedIndNumberDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:454:StudyFdaCrossReportedIndNumberDetailsForUpdate"
         }
       ]
     },
@@ -100056,7 +100078,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 188
+        "line": 195
       },
       "attributes": [
         "#[derive(Debug, Deserialize, Default)]",
@@ -100074,7 +100096,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:188:StudyPresaveListQuery",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:195:StudyPresaveListQuery",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100091,7 +100113,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 307
+        "line": 314
       },
       "attributes": [
         "#[derive(Debug, Serialize)]"
@@ -100106,12 +100128,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:307:StudyPresaveDetails",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:314:StudyPresaveDetails",
       "nested_type_refs": [
         {
           "rust_type": "StudyPresaveRows",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:313:StudyPresaveRows"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:320:StudyPresaveRows"
         }
       ]
     },
@@ -100120,7 +100142,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 313
+        "line": 320
       },
       "attributes": [
         "#[derive(Debug, Serialize)]",
@@ -100162,7 +100184,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:313:StudyPresaveRows",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:320:StudyPresaveRows",
       "nested_type_refs": [
         {
           "rust_type": "Value",
@@ -100170,7 +100192,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-            "line": 3
+            "line": 4
           }
         },
         {
@@ -100183,7 +100205,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-            "line": 3
+            "line": 4
           }
         },
         {
@@ -100196,7 +100218,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-            "line": 3
+            "line": 4
           }
         },
         {
@@ -100209,7 +100231,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-            "line": 3
+            "line": 4
           }
         },
         {
@@ -100222,7 +100244,7 @@
           "canonical_type": "serde_json::Value",
           "import": {
             "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-            "line": 3
+            "line": 4
           }
         }
       ]
@@ -100232,7 +100254,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 323
+        "line": 330
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -100250,12 +100272,12 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:323:StudyPresaveDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:330:StudyPresaveDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "StudyPresaveRowsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:329:StudyPresaveRowsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:336:StudyPresaveRowsForUpdate"
         }
       ]
     },
@@ -100264,7 +100286,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 329
+        "line": 336
       },
       "attributes": [
         "#[derive(Deserialize)]",
@@ -100306,7 +100328,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:329:StudyPresaveRowsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:336:StudyPresaveRowsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100315,7 +100337,7 @@
         {
           "rust_type": "StudyPresaveForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2492:StudyPresaveForUpdate"
+          "declaration_id": "crates/libs/lib-core/src/model/presave.rs:2533:StudyPresaveForUpdate"
         },
         {
           "rust_type": "Option",
@@ -100328,7 +100350,7 @@
         {
           "rust_type": "StudyProductDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:340:StudyProductDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:347:StudyProductDetailsForUpdate"
         },
         {
           "rust_type": "Option",
@@ -100341,7 +100363,7 @@
         {
           "rust_type": "StudyRegistrationNumberDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:379:StudyRegistrationNumberDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:386:StudyRegistrationNumberDetailsForUpdate"
         },
         {
           "rust_type": "Option",
@@ -100354,7 +100376,7 @@
         {
           "rust_type": "StudyFdaCrossReportedIndNumberDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:425:StudyFdaCrossReportedIndNumberDetailsForUpdate"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:454:StudyFdaCrossReportedIndNumberDetailsForUpdate"
         },
         {
           "rust_type": "Option",
@@ -100367,78 +100389,7 @@
         {
           "rust_type": "StudyReporterDetailsForUpdate",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:465:StudyReporterDetailsForUpdate"
-        }
-      ]
-    },
-    {
-      "name": "StudyProductForRestCreate",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 33
-      },
-      "attributes": [
-        "#[derive(Debug, Deserialize)]"
-      ],
-      "serde_attributes": [],
-      "raw": "struct StudyProductForRestCreate {\n\tpub sequence_number: i32,\n\tpub product_presave_id: Option<Uuid>,\n\tpub product_name: Option<String>,\n\tpub deleted: Option<bool>,\n}",
-      "fields": [
-        {
-          "name": "sequence_number",
-          "type": "i32",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "product_presave_id",
-          "type": "Option<Uuid>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "product_name",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "deleted",
-          "type": "Option<bool>",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:33:StudyProductForRestCreate",
-      "nested_type_refs": [
-        {
-          "rust_type": "i32",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_prelude_type",
-          "canonical_type": "uuid::Uuid"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "bool",
-          "origin": "primitive"
+          "declaration_id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:504:StudyReporterDetailsForUpdate"
         }
       ]
     },
@@ -100447,7 +100398,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 340
+        "line": 347
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -100489,7 +100440,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:340:StudyProductDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:347:StudyProductDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100536,11 +100487,82 @@
       ]
     },
     {
+      "name": "StudyProductForRestCreate",
+      "kind": "struct",
+      "declaration": {
+        "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
+        "line": 34
+      },
+      "attributes": [
+        "#[derive(Debug, Deserialize)]"
+      ],
+      "serde_attributes": [],
+      "raw": "struct StudyProductForRestCreate {\n\tpub sequence_number: i32,\n\tpub product_presave_id: Option<Uuid>,\n\tpub product_name: Option<String>,\n\tpub deleted: Option<bool>,\n}",
+      "fields": [
+        {
+          "name": "sequence_number",
+          "type": "i32",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "product_presave_id",
+          "type": "Option<Uuid>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "product_name",
+          "type": "Option<String>",
+          "attributes": [],
+          "serde_attributes": []
+        },
+        {
+          "name": "deleted",
+          "type": "Option<bool>",
+          "attributes": [],
+          "serde_attributes": []
+        }
+      ],
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:34:StudyProductForRestCreate",
+      "nested_type_refs": [
+        {
+          "rust_type": "i32",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Uuid",
+          "origin": "external_prelude_type",
+          "canonical_type": "uuid::Uuid"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "String",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "Option",
+          "origin": "primitive"
+        },
+        {
+          "rust_type": "bool",
+          "origin": "primitive"
+        }
+      ]
+    },
+    {
       "name": "StudyRegistrationNumberDetailsForUpdate",
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 379
+        "line": 386
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -100549,7 +100571,7 @@
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]"
       ],
-      "raw": "struct StudyRegistrationNumberDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\tpub deleted: Option<bool>,\n\tpub sequence_number: Option<i32>,\n\tpub registration_number: Option<String>,\n\tpub registration_number_null_flavor: Option<String>,\n\tpub country_code: Option<String>,\n\tpub country_code_null_flavor: Option<String>,\n}",
+      "raw": "struct StudyRegistrationNumberDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\tpub deleted: Option<bool>,\n\tpub sequence_number: Option<i32>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub registration_number: Option<Option<String>>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub registration_number_null_flavor: Option<Option<String>>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub country_code: Option<Option<String>>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub country_code_null_flavor: Option<Option<String>>,\n}",
       "fields": [
         {
           "name": "id",
@@ -100571,30 +100593,46 @@
         },
         {
           "name": "registration_number",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "registration_number_null_flavor",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "country_code",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "country_code_null_flavor",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:379:StudyRegistrationNumberDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:386:StudyRegistrationNumberDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100660,7 +100698,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 425
+        "line": 454
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -100669,7 +100707,7 @@
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]"
       ],
-      "raw": "struct StudyFdaCrossReportedIndNumberDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\tpub deleted: Option<bool>,\n\tpub sequence_number: Option<i32>,\n\tpub ind_number: Option<String>,\n\tpub ind_number_null_flavor: Option<String>,\n}",
+      "raw": "struct StudyFdaCrossReportedIndNumberDetailsForUpdate {\n\tpub id: Option<Uuid>,\n\tpub deleted: Option<bool>,\n\tpub sequence_number: Option<i32>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub ind_number: Option<Option<String>>,\n\t#[serde(default, deserialize_with = \"deserialize_patch_option\")]\n\tpub ind_number_null_flavor: Option<Option<String>>,\n}",
       "fields": [
         {
           "name": "id",
@@ -100691,18 +100729,26 @@
         },
         {
           "name": "ind_number",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         },
         {
           "name": "ind_number_null_flavor",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
+          "type": "Option<Option<String>>",
+          "attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(default, deserialize_with = \"deserialize_patch_option\")]"
+          ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:425:StudyFdaCrossReportedIndNumberDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:454:StudyFdaCrossReportedIndNumberDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100752,7 +100798,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 465
+        "line": 504
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]",
@@ -100806,7 +100852,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:465:StudyReporterDetailsForUpdate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:504:StudyReporterDetailsForUpdate",
       "nested_type_refs": [
         {
           "rust_type": "Option",
@@ -100873,7 +100919,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 53
+        "line": 54
       },
       "attributes": [
         "#[derive(Debug, Deserialize)]"
@@ -100918,7 +100964,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:53:StudyReporterForRestCreate",
+      "id": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs:54:StudyReporterForRestCreate",
       "nested_type_refs": [
         {
           "rust_type": "i32",
@@ -103960,15 +104006,6 @@
       "origin": "external_import_alias",
       "canonical_type": "serde_json::Value",
       "import": {
-        "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
-        "line": 3
-      }
-    },
-    {
-      "rust_type": "Value",
-      "origin": "external_import_alias",
-      "canonical_type": "serde_json::Value",
-      "import": {
         "source": "crates/services/web-server/src/web/rest/section_presave_rest/receiver.rs",
         "line": 3
       }
@@ -103987,8 +104024,8 @@
       "origin": "external_import_alias",
       "canonical_type": "serde_json::Value",
       "import": {
-        "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
-        "line": 3
+        "source": "crates/services/web-server/src/web/rest/case_editor_dto.rs",
+        "line": 4
       }
     },
     {
@@ -103996,7 +104033,16 @@
       "origin": "external_import_alias",
       "canonical_type": "serde_json::Value",
       "import": {
-        "source": "crates/services/web-server/src/web/rest/case_editor_dto.rs",
+        "source": "crates/services/web-server/src/web/rest/section_presave_rest/product.rs",
+        "line": 4
+      }
+    },
+    {
+      "rust_type": "Value",
+      "origin": "external_import_alias",
+      "canonical_type": "serde_json::Value",
+      "import": {
+        "source": "crates/services/web-server/src/web/rest/section_presave_rest/study.rs",
         "line": 4
       }
     },

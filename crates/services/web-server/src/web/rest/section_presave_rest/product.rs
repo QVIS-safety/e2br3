@@ -1,5 +1,6 @@
 use super::rows::camelize_value;
 use super::shared::*;
+use lib_core::model::presave::deserialize_patch_option;
 use serde_json::{json, Value};
 
 pub async fn create_product_presave(
@@ -241,7 +242,8 @@ pub struct ProductActiveSubstanceDetailsForUpdate {
 	pub mfds_version: Option<String>,
 	pub mfds_id: Option<String>,
 	#[serde(rename = "substanceStrengthValue")]
-	pub strength_value: Option<rust_decimal::Decimal>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub strength_value: Option<Option<rust_decimal::Decimal>>,
 	#[serde(rename = "substanceStrengthUnit")]
 	pub strength_unit: Option<String>,
 }
@@ -278,7 +280,7 @@ impl ProductActiveSubstanceDetailsForUpdate {
 			substance_termid: self.substance_termid,
 			mfds_version: self.mfds_version,
 			mfds_id: self.mfds_id,
-			strength_value: self.strength_value,
+			strength_value: self.strength_value.flatten(),
 			strength_unit: self.strength_unit,
 		})
 	}

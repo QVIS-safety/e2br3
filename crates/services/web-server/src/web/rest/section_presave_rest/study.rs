@@ -1,5 +1,6 @@
 use super::rows::{camelize_rows, camelize_value};
 use super::shared::*;
+use lib_core::model::presave::deserialize_patch_option;
 use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
@@ -114,9 +115,15 @@ pub async fn create_study_presave(
 				{
 					super::input_contract::fda_ind_detail(row, index)?;
 					if row.sequence_number.is_none()
-						|| (row.ind_number.is_none()
-							&& row.ind_number_null_flavor.is_none())
-						|| row.deleted == Some(true)
+						|| (row
+							.ind_number
+							.as_ref()
+							.and_then(Option::as_ref)
+							.is_none() && row
+							.ind_number_null_flavor
+							.as_ref()
+							.and_then(Option::as_ref)
+							.is_none()) || row.deleted == Some(true)
 					{
 						return Err(Error::BadRequest {
 							message: "invalid new FDA cross-reported IND".into(),
@@ -380,20 +387,40 @@ pub struct StudyRegistrationNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
 	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
-	pub registration_number: Option<String>,
-	pub registration_number_null_flavor: Option<String>,
-	pub country_code: Option<String>,
-	pub country_code_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub registration_number: Option<Option<String>>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub registration_number_null_flavor: Option<Option<String>>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub country_code: Option<Option<String>>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub country_code_null_flavor: Option<Option<String>>,
 }
 
 impl StudyRegistrationNumberDetailsForUpdate {
 	fn into_update(self) -> StudyPresaveRegistrationNumberForUpdate {
 		StudyPresaveRegistrationNumberForUpdate {
 			sequence_number: self.sequence_number,
-			registration_number: self.registration_number,
-			registration_number_null_flavor: self.registration_number_null_flavor,
-			country_code: self.country_code,
-			country_code_null_flavor: self.country_code_null_flavor,
+			registration_number: self.registration_number.map(|value| match value {
+				Some(value) => value,
+				None => String::new(),
+			}),
+			registration_number_null_flavor: self
+				.registration_number_null_flavor
+				.map(|value| match value {
+					Some(value) => value,
+					None => String::new(),
+				}),
+			country_code: self.country_code.map(|value| match value {
+				Some(value) => value,
+				None => String::new(),
+			}),
+			country_code_null_flavor: self.country_code_null_flavor.map(|value| {
+				match value {
+					Some(value) => value,
+					None => String::new(),
+				}
+			}),
 			deleted: self.deleted,
 		}
 	}
@@ -411,10 +438,12 @@ impl StudyRegistrationNumberDetailsForUpdate {
 							.to_string(),
 				}
 			})?,
-			registration_number: self.registration_number,
-			registration_number_null_flavor: self.registration_number_null_flavor,
-			country_code: self.country_code,
-			country_code_null_flavor: self.country_code_null_flavor,
+			registration_number: self.registration_number.flatten(),
+			registration_number_null_flavor: self
+				.registration_number_null_flavor
+				.flatten(),
+			country_code: self.country_code.flatten(),
+			country_code_null_flavor: self.country_code_null_flavor.flatten(),
 			deleted: None,
 		})
 	}
@@ -426,16 +455,26 @@ pub struct StudyFdaCrossReportedIndNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
 	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
-	pub ind_number: Option<String>,
-	pub ind_number_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub ind_number: Option<Option<String>>,
+	#[serde(default, deserialize_with = "deserialize_patch_option")]
+	pub ind_number_null_flavor: Option<Option<String>>,
 }
 
 impl StudyFdaCrossReportedIndNumberDetailsForUpdate {
 	fn into_update(self) -> StudyPresaveFdaCrossReportedIndNumberForUpdate {
 		StudyPresaveFdaCrossReportedIndNumberForUpdate {
 			sequence_number: self.sequence_number,
-			ind_number: self.ind_number,
-			ind_number_null_flavor: self.ind_number_null_flavor,
+			ind_number: self.ind_number.map(|value| match value {
+				Some(value) => value,
+				None => String::new(),
+			}),
+			ind_number_null_flavor: self.ind_number_null_flavor.map(|value| {
+				match value {
+					Some(value) => value,
+					None => String::new(),
+				}
+			}),
 			deleted: self.deleted,
 		}
 	}
@@ -453,8 +492,8 @@ impl StudyFdaCrossReportedIndNumberDetailsForUpdate {
 							.to_string(),
 				}
 			})?,
-			ind_number: self.ind_number,
-			ind_number_null_flavor: self.ind_number_null_flavor,
+			ind_number: self.ind_number.flatten(),
+			ind_number_null_flavor: self.ind_number_null_flavor.flatten(),
 			deleted: None,
 		})
 	}
@@ -809,7 +848,12 @@ async fn preflight_study_fda_cross_reported_ind_number_detail(
 		)?;
 	} else if item.deleted != Some(true)
 		&& (item.sequence_number.is_none()
-			|| (item.ind_number.is_none() && item.ind_number_null_flavor.is_none()))
+			|| (item.ind_number.as_ref().and_then(Option::as_ref).is_none()
+				&& item
+					.ind_number_null_flavor
+					.as_ref()
+					.and_then(Option::as_ref)
+					.is_none()))
 	{
 		return Err(Error::BadRequest {
 			message: "FDA cross-reported IND create requires sequence_number and ind_number or nullFlavor".to_string(),
