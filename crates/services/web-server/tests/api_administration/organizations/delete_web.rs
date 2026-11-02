@@ -98,6 +98,17 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 			.bind(dependent.org_id),
 		)
 		.await?;
+	let (deleted_settings_exist, dependent_settings_exist) = dbx
+		.fetch_one(
+			sqlx::query_as::<_, (bool, bool)>(
+				"SELECT
+					EXISTS(SELECT 1 FROM app_settings WHERE organization_id = $1),
+					EXISTS(SELECT 1 FROM app_settings WHERE organization_id = $2)",
+			)
+			.bind(deleted_id)
+			.bind(dependent.org_id),
+		)
+		.await?;
 	set_full_context_dbx(
 		dbx,
 		dependent.admin.id,
@@ -122,7 +133,9 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 	let delete_audits = sqlx::query_as::<_, (Uuid, String)>("SELECT record_id, action FROM audit_logs WHERE table_name = 'organizations' AND record_id = ANY($1) AND action = 'DELETE'").bind(vec![deleted_id, dependent.org_id]).fetch_all(&mut *tx).await?;
 	tx.rollback().await?;
 	assert!(!deleted_exists);
+	assert!(!deleted_settings_exist);
 	assert!(dependent_exists);
+	assert!(dependent_settings_exist);
 	assert!(user_exists);
 	assert_eq!(delete_audits, vec![(deleted_id, "DELETE".to_string())]);
 	Ok(())

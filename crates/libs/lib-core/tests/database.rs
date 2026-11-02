@@ -1,3 +1,6 @@
+#[allow(dead_code)]
+#[path = "common/mod.rs"]
+mod common;
 #[path = "database/device_rls.rs"]
 mod device_rls;
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;

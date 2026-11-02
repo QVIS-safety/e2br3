@@ -270,6 +270,9 @@ pub(crate) async fn persist_editor_fda_devices(
 		} = device;
 		let brand_nf = normalized_null_flavor(device_brand_name_null_flavor);
 		let common_nf = normalized_null_flavor(common_device_name_null_flavor);
+		let device_usage = device_usage.filter(|value| !value.trim().is_empty());
+		let operator_of_device =
+			operator_of_device.filter(|value| !value.trim().is_empty());
 		let device_id = if let Some(id) = id {
 			if !retained.insert(id) {
 				return Err(Error::BadRequest {

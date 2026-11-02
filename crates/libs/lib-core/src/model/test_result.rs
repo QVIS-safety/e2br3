@@ -216,7 +216,7 @@ impl TestResultBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET test_name = CASE WHEN 'test_name' = ANY($17) THEN NULL ELSE COALESCE($2, test_name) END,
+			 SET test_name = CASE WHEN 'test_name' = ANY($17) THEN '' ELSE COALESCE($2, test_name) END,
 				     test_date = CASE WHEN 'test_date' = ANY($17) THEN NULL ELSE CASE WHEN $3 IS NOT NULL THEN $3 ELSE CASE WHEN $4 IS NOT NULL THEN NULL ELSE test_date END END END,
 				     test_date_null_flavor = CASE WHEN 'test_date_null_flavor' = ANY($17) THEN NULL ELSE CASE WHEN $3 IS NOT NULL THEN NULL ELSE COALESCE($4, test_date_null_flavor) END END,
 				     test_meddra_version = CASE WHEN 'test_meddra_version' = ANY($17) THEN NULL ELSE COALESCE($5, test_meddra_version) END,
@@ -407,7 +407,7 @@ impl TestResultBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET test_name = CASE WHEN 'test_name' = ANY($18) THEN NULL ELSE COALESCE($3, test_name) END,
+			 SET test_name = CASE WHEN 'test_name' = ANY($18) THEN '' ELSE COALESCE($3, test_name) END,
 				     test_date = CASE WHEN 'test_date' = ANY($18) THEN NULL ELSE CASE WHEN $4 IS NOT NULL THEN $4 ELSE CASE WHEN $5 IS NOT NULL THEN NULL ELSE test_date END END END,
 				     test_date_null_flavor = CASE WHEN 'test_date_null_flavor' = ANY($18) THEN NULL ELSE CASE WHEN $4 IS NOT NULL THEN NULL ELSE COALESCE($5, test_date_null_flavor) END END,
 				     test_meddra_version = CASE WHEN 'test_meddra_version' = ANY($18) THEN NULL ELSE COALESCE($6, test_meddra_version) END,

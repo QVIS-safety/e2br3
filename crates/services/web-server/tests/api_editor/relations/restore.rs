@@ -102,44 +102,42 @@ pub(crate) async fn atomic_restore(
 			initial_audits
 		);
 	}
-	let collection_owner = match page_id {
-		"DH" => "pastDrugHistory",
-		"LR" => "literatureReferences",
-		_ => return Err("unexpected restore page".into()),
-	};
-	for rows in [json!({}), json!({collection_owner:[]})] {
-		let (status, _) = patch_json(
-			&app,
-			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
-			json!({"authorities":["ich"],"rows":rows}),
+	let page_uri = format!("/api/cases/{case_id}/editor/pages/{page_id}");
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("PATCH")
+				.uri(&page_uri)
+				.header("cookie", &cookie)
+				.body(Body::empty())?,
 		)
 		.await?;
-		assert_eq!(status, StatusCode::OK);
-		let (fresh_status, fresh) = get_json(&app, &cookie, &row_uri).await?;
-		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
-		assert_eq!(fresh["data"][owner]["id"], row_id);
-		assert_eq!(fresh["data"][owner][column], initial);
-		let (page_status, page) = get_json(
-			&app,
-			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
-		)
-		.await?;
-		assert_eq!(page_status, StatusCode::OK, "{page}");
-		let listed = page["rows"]["rows"]
-			.as_array()
-			.ok_or("missing repeatable rows")?;
-		assert_eq!(listed.len(), 1, "{page}");
-		assert_eq!(listed[0]["id"], row_id, "{page}");
-		assert_eq!(
-			crate::case_editor_contract_web::audit::case_audit_ids(
-				&mm, &ctx, &case_id
-			)
+	assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+	let (status, _) = patch_json(
+		&app,
+		&cookie,
+		&row_uri,
+		json!({"authorities":["ich"],"rows":{owner:{}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let (fresh_status, fresh) = get_json(&app, &cookie, &row_uri).await?;
+	assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+	assert_eq!(fresh["data"][owner]["id"], row_id);
+	assert_eq!(fresh["data"][owner][column], initial);
+	let (page_status, page) = get_json(&app, &cookie, &page_uri).await?;
+	assert_eq!(page_status, StatusCode::OK, "{page}");
+	let listed = page["rows"]["rows"]
+		.as_array()
+		.ok_or("missing repeatable rows")?;
+	assert_eq!(listed.len(), 1, "{page}");
+	assert_eq!(listed[0]["id"], row_id, "{page}");
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
 			.await?,
-			initial_audits
-		);
-	}
+		initial_audits
+	);
 	let foreign_case_id = create_case_for_editor(
 		&app,
 		&cookie,

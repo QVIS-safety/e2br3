@@ -4,9 +4,11 @@ use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
 };
 use lib_core::model::ModelManager;
+use sqlx::postgres::PgPoolOptions;
 use sqlx::types::Uuid;
 
-pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> =
+	core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 /// Default demo role for testing (sponsor admin CRO has in-database full access)
 #[allow(dead_code)]
@@ -16,7 +18,52 @@ pub fn system_user_id() -> Uuid {
 	uuid::uuid!("00000000-0000-0000-0000-000000000001")
 }
 
+pub async fn ensure_fixed_platform_assignment() -> Result<u64> {
+	let expected_database = std::env::var("E2BR3_TEST_DATABASE_NAME")?;
+	if !expected_database.starts_with("e2br3_test_") {
+		return Err(
+			"platform assignment seed requires an isolated e2br3_test_ database"
+				.into(),
+		);
+	}
+	let pool = PgPoolOptions::new()
+		.max_connections(1)
+		.connect(&std::env::var("SERVICE_MIGRATION_DB_URL")?)
+		.await?;
+	let database: String = sqlx::query_scalar("SELECT current_database()")
+		.fetch_one(&pool)
+		.await?;
+	if database != expected_database {
+		pool.close().await;
+		return Err(
+			format!("refusing to seed platform assignment in {database}").into(),
+		);
+	}
+	let result = sqlx::query(
+		"INSERT INTO user_role_assignments (user_id, organization_id, role_id, active)
+		 SELECT $1, '00000000-0000-0000-0000-000000000000'::uuid, role.id, true
+		 FROM authorization_roles role
+		 WHERE role.id = '00000000-0000-0000-0000-000000000101'::uuid
+		   AND role.identity_kind = 'platform_administrator'
+		   AND role.active
+		   AND role.deleted_at IS NULL
+		   AND EXISTS (
+			 SELECT 1 FROM user_organization_memberships membership
+			 WHERE membership.user_id = $1
+			   AND membership.organization_id = '00000000-0000-0000-0000-000000000000'::uuid
+			   AND membership.active
+		   )
+		 ON CONFLICT (user_id, organization_id) DO UPDATE SET role_id = EXCLUDED.role_id, active = true",
+	)
+	.bind(system_user_id())
+	.execute(&pool)
+	.await?;
+	pool.close().await;
+	Ok(result.rows_affected())
+}
+
 async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
+	ensure_fixed_platform_assignment().await?;
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, system_user_id()).await?;
 	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;

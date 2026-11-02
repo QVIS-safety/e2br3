@@ -179,9 +179,11 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
             raise ValueError('changed editor verifier has no registered contract checks')
     backend_contracts = 'web-server' in selected and (
         not selected['web-server'] or bool(CONTRACT_TARGETS.intersection(selected['web-server'])))
+    filters = [] if editor_all or 'web-server' in affected or selected.get('web-server') == [] else normalize_editor_filters(editor_filters)
     return {
         'selections': selected,
-        'editor_filters': [] if editor_all or 'web-server' in affected or selected.get('web-server') == [] else normalize_editor_filters(editor_filters),
+        'editor_filters': filters,
+        'test_matrix': test_matrix(selected, workspace, filters),
         'validator': 'validator' in selected,
         'backend': any(name != 'validator' for name in selected),
         'registry': backend_contracts and (contract_inputs_changed or 'web-server' in affected),
@@ -249,6 +251,38 @@ def run_commands(commands: list[list[str]]) -> int:
     if failed:
         print(f'{failed} selected check command(s) failed', file=sys.stderr)
     return 1 if failed else 0
+
+
+def test_matrix(selections: dict, workspace: dict, editor_filters: list[str]) -> dict:
+    jobs = []
+
+    def add(name, selected, filters, commands=None):
+        jobs.append({
+            'name': name, 'selections': selected, 'editor_filters': filters,
+            'commands': commands if commands is not None else commands_for(selected, workspace, editor_filters=filters),
+            'xml_assets': xml_assets_required(selected),
+            'backend_contracts': 'web-server' in selected and bool(CONTRACT_TARGETS.intersection(selected['web-server'])),
+        })
+
+    libraries = {name: targets for name, targets in selections.items()
+                 if name not in ('validator', 'xml', 'web-server')}
+    if libraries:
+        add('libraries', libraries, [])
+    if 'xml' in selections:
+        add('xml', {'xml': selections['xml']}, [])
+    if 'web-server' in selections:
+        targets = selections['web-server']
+        if not targets:
+            # Integration targets run separately; keep unit/binary/example/doc targets too.
+            args = ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--no-fail-fast']
+            libtest = ['--', '--test-threads=1', '--color', 'never']
+            add('web-server-unit-doc', {'web-server': []}, [],
+                [args + ['--lib', '--bins', '--examples'] + libtest, args + ['--doc'] + libtest])
+            targets = sorted(workspace['web-server']['targets'])
+        for target in targets:
+            filters = editor_filters if target == 'api_editor' else []
+            add(f'web-server-{target}', {'web-server': [target]}, filters)
+    return {'include': jobs}
 
 
 def main():

@@ -117,37 +117,40 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 			initial_audits
 		);
 	}
-	for rows in [json!({}), json!({"drugs":[]})] {
-		let (status, _) = patch_json(
-			&app,
-			&admin_cookie,
-			&format!("/api/cases/{case_id}/editor/pages/DG"),
-			json!({"authorities":["ich"],"rows":rows}),
+	let page_uri = format!("/api/cases/{case_id}/editor/pages/DG");
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("PATCH")
+				.uri(&page_uri)
+				.header("cookie", &admin_cookie)
+				.body(Body::empty())?,
 		)
 		.await?;
-		assert_eq!(status, StatusCode::OK);
-		let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
-		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
-		assert_eq!(fresh["data"]["drug"]["id"], row_id);
-		assert_eq!(fresh["data"]["drug"]["medicinal_product"], "Deleted drug");
-		let (page_status, page) = get_json(
-			&app,
-			&admin_cookie,
-			&format!("/api/cases/{case_id}/editor/pages/DG"),
-		)
-		.await?;
-		assert_eq!(page_status, StatusCode::OK, "{page}");
-		let listed = page["rows"]["rows"].as_array().ok_or("missing DG rows")?;
-		assert_eq!(listed.len(), 1, "{page}");
-		assert_eq!(listed[0]["id"], row_id, "{page}");
-		assert_eq!(
-			crate::case_editor_contract_web::audit::case_audit_ids(
-				&mm, &ctx, &case_id
-			)
+	assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+	let (status, _) = patch_json(
+		&app,
+		&admin_cookie,
+		&row_uri,
+		json!({"authorities":["ich"],"rows":{"drug":{}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+	assert_eq!(fresh["data"]["drug"]["id"], row_id);
+	assert_eq!(fresh["data"]["drug"]["medicinal_product"], "Deleted drug");
+	let (page_status, page) = get_json(&app, &admin_cookie, &page_uri).await?;
+	assert_eq!(page_status, StatusCode::OK, "{page}");
+	let listed = page["rows"]["rows"].as_array().ok_or("missing DG rows")?;
+	assert_eq!(listed.len(), 1, "{page}");
+	assert_eq!(listed[0]["id"], row_id, "{page}");
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
 			.await?,
-			initial_audits
-		);
-	}
+		initial_audits
+	);
 	let (status, audit_before) = get_json(&app, &admin_cookie, &row_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{audit_before}");
 	let delete_before = crate::case_editor_contract_web::audit::capture(

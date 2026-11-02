@@ -172,7 +172,7 @@ async fn test_cioms_export_enforces_permission_scope_and_case_existence(
 
 	let (cross_org_status, _, _) =
 		get_cioms(&app, &owner_admin_cookie, other_case).await?;
-	assert_eq!(cross_org_status, StatusCode::FORBIDDEN);
+	assert_eq!(cross_org_status, StatusCode::NOT_FOUND);
 
 	let (missing_status, _, _) =
 		get_cioms(&app, &owner_admin_cookie, Uuid::new_v4()).await?;

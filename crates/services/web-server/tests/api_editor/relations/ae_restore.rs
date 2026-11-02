@@ -93,40 +93,43 @@ pub(crate) async fn deleted_reaction_can_be_read_and_restored_with_case_and_auth
 			initial_audits
 		);
 	}
-	for rows in [json!({}), json!({"reactions":[]})] {
-		let (status, _) = patch_json(
-			&app,
-			&admin_cookie,
-			&format!("/api/cases/{case_id}/editor/pages/AE"),
-			json!({"authorities":["ich"],"rows":rows}),
+	let page_uri = format!("/api/cases/{case_id}/editor/pages/AE");
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("PATCH")
+				.uri(&page_uri)
+				.header("cookie", &admin_cookie)
+				.body(Body::empty())?,
 		)
 		.await?;
-		assert_eq!(status, StatusCode::OK);
-		let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
-		assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
-		assert_eq!(fresh["data"]["reaction"]["id"], row_id);
-		assert_eq!(
-			fresh["data"]["reaction"]["primary_source_reaction"],
-			"Deleted reaction"
-		);
-		let (page_status, page) = get_json(
-			&app,
-			&admin_cookie,
-			&format!("/api/cases/{case_id}/editor/pages/AE"),
-		)
-		.await?;
-		assert_eq!(page_status, StatusCode::OK, "{page}");
-		let listed = page["rows"]["rows"].as_array().ok_or("missing AE rows")?;
-		assert_eq!(listed.len(), 1, "{page}");
-		assert_eq!(listed[0]["id"], row_id, "{page}");
-		assert_eq!(
-			crate::case_editor_contract_web::audit::case_audit_ids(
-				&mm, &ctx, &case_id
-			)
+	assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+	let (status, _) = patch_json(
+		&app,
+		&admin_cookie,
+		&row_uri,
+		json!({"authorities":["ich"],"rows":{"reaction":{}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let (fresh_status, fresh) = get_json(&app, &admin_cookie, &row_uri).await?;
+	assert_eq!(fresh_status, StatusCode::OK, "{fresh}");
+	assert_eq!(fresh["data"]["reaction"]["id"], row_id);
+	assert_eq!(
+		fresh["data"]["reaction"]["primary_source_reaction"],
+		"Deleted reaction"
+	);
+	let (page_status, page) = get_json(&app, &admin_cookie, &page_uri).await?;
+	assert_eq!(page_status, StatusCode::OK, "{page}");
+	let listed = page["rows"]["rows"].as_array().ok_or("missing AE rows")?;
+	assert_eq!(listed.len(), 1, "{page}");
+	assert_eq!(listed[0]["id"], row_id, "{page}");
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
 			.await?,
-			initial_audits
-		);
-	}
+		initial_audits
+	);
 	let (status, audit_before) = get_json(&app, &admin_cookie, &row_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{audit_before}");
 	let delete_before = crate::case_editor_contract_web::audit::capture(

@@ -17,7 +17,7 @@
     "crates/libs/lib-core/src/authorization/ids.rs": "50cac5a9d5289bee59f60a3c662f0c043b36605d5a849f18176ff7fc3d5c0ac3",
     "crates/libs/lib-core/src/authorization/menu_privileges.rs": "bfbc25ef28d9bf6e22ca240eba2a15b2264362f528c7f1a2e75ce40cb0a46465",
     "crates/libs/lib-core/src/model/audit.rs": "b1bfe2d804d3d93191686e7bec67ec64fc0dcaa07fe94d7d92b88c5f653552a1",
-    "crates/libs/lib-core/src/model/case.rs": "e5430cd13c7fc87b52ca9c111d71266a9d2965e3489b243fcf200c550af3b847",
+    "crates/libs/lib-core/src/model/case.rs": "e19ac8ab0d3f283c66c7f4e670d8cda812382d7d65b703c792c8b758f2552d38",
     "crates/libs/lib-core/src/model/case_duplicate.rs": "9162670459b867f1a6d7f0a9081357ab41e7483b44450af1445cd87222a28930",
     "crates/libs/lib-core/src/model/case_identifiers.rs": "d85046a721797616473cf367308e23d0aa7e2a743c90e0b5ef511d37522ef19a",
     "crates/libs/lib-core/src/model/case_query.rs": "bd65ea30390bc4dc451d8897055320d75f797f1d36faea7002c8cd1317d72fb4",
@@ -26,10 +26,10 @@
     "crates/libs/lib-core/src/model/drug_reaction_assessment.rs": "3dbf112a10892c485fdb7e4c30591e5ebe7674de729bfa84f62b2cbf331fc5e7",
     "crates/libs/lib-core/src/model/message_header.rs": "c65c4ab568a8985abc8baff3935c7883b312e586724ddb9e16f0759003b44f01",
     "crates/libs/lib-core/src/model/narrative.rs": "3450d12f2444d32610638da833143fabd16361915488fd5444aedc062882312d",
-    "crates/libs/lib-core/src/model/organization.rs": "a2908df02e5b9131f620da7742d0e640469deae8fd0c23c6d96ffee46ef1650d",
+    "crates/libs/lib-core/src/model/organization.rs": "b115ac0cb6fc395a90e0a08afd75e6cadd5f6ad9213dc8fc9f9af8883f72b14b",
     "crates/libs/lib-core/src/model/parent_history.rs": "3560c52298ea8fa5db514e45f57b1f82a8866411c969c551f67a984583179222",
     "crates/libs/lib-core/src/model/patch.rs": "431dda3beb5797477f4010f8596eedcb6da90d29368db76624cd4b467eabd33a",
-    "crates/libs/lib-core/src/model/patient.rs": "fe64c3ff4b278dc99c5822dd04821d8def2e512ebde2d2836431350e3b85cb8b",
+    "crates/libs/lib-core/src/model/patient.rs": "9d0e66757fc432c8c3bf2f32a71a3e533ecede6443297b39c7a4070c190809e2",
     "crates/libs/lib-core/src/model/presave.rs": "6664f0827e0f041aa2c39227a6f6a2890ace01a19530547e45ebb440d5643b56",
     "crates/libs/lib-core/src/model/reaction.rs": "adb8293500d4c013c6f8df599152321f5a80ce14c895509a04f5fe142cbbe8a3",
     "crates/libs/lib-core/src/model/receiver.rs": "00ee7ab5d964a42d7588d078bdae5c79fb12411bf7e38b4dc092e90e430f4461",
@@ -37,7 +37,7 @@
     "crates/libs/lib-core/src/model/submission_receiver_option.rs": "91e03af4bfc124305d8de0500f432667189f6ab0f245f1724fbb6550dec338a5",
     "crates/libs/lib-core/src/model/terminology.rs": "d1179d7a965a57b6870b2388b9761844aa7e4aa737525406b4a65a6c73d31c03",
     "crates/libs/lib-core/src/model/terminology_import.rs": "3b5dea31683f5d94135bc17639682918afa6984f8ff493b568b1a96e069e8298",
-    "crates/libs/lib-core/src/model/test_result.rs": "e797ca5a0c9f1fcf29767cfa91249b3dce5f10677f1106836448f2f7adbda25f",
+    "crates/libs/lib-core/src/model/test_result.rs": "9f4a4c58cc3806cb3a45e254493bae8dad37fde878bf7d2a6d7ecbbaa0f1acc3",
     "crates/libs/lib-core/src/model/xml_export_history.rs": "68a3ed9f65cc5173d5cee76017ff9eda284d227300898210c03fe7af2801626d",
     "crates/libs/lib-core/src/model/xml_import_history.rs": "5a0244d556f2016b26d895622bbbcb2b2582af059500198ec89a08428915deec",
     "crates/libs/lib-core/src/regulatory.rs": "6a79d13ede1e614721f43397fe98081f371444cc955dbc5ecc89a10ee5efb0dd",
@@ -60,8 +60,8 @@
     "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "16b61c23523eb8e78478e151fde9485d95bf79ea3699e9b755f7a0beb7e6bf97",
     "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "4440a772e30bf3776c687cb7cb77c98b787040488a0708031f62a840abc2b127",
     "crates/services/web-server/src/web/rest/case_editor_rest/dh.rs": "0cba9c69d6e564788ab9d846fc680ca3f3ecd6386cf63af5decc9b517e183ece",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs": "59277cfc7db698218d9fb046f1461f9da10330d59c141bf84209698fb41ad2de",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct/ci.rs": "b992a88439d8867c4ff628d1dc85d8e61193be58cc6165dc11a1932752cfcb92",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs": "e792b23d8a74049b667ac6c289bef08af18bb12cd969cb62adf80ace3a21867e",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct/ci.rs": "6aff40a6702c53484e1b736a86807c2c67f40cb3d11cc953661cb8b7552e6659",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/dm.rs": "372cf015d25e63731defe0d51061067ae0b3bfb677850055e9670a3ac3c4b452",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/nr.rs": "1538d7a04b850bc1983f3c5679cda1a01e72d836d77e314d70419e72fb256bf1",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/rp.rs": "d0ab2f27248ff313ddf32555b6163edda85a77d93eb151b266d1d7a3f6977d36",
@@ -84,7 +84,7 @@
     "crates/services/web-server/src/web/rest/compliance.rs": "a24d86c085e6c6566e7e4298febbe9b078c960902e79fdd24c38942f65aa8338",
     "crates/services/web-server/src/web/rest/drug_reaction_assessment_rest.rs": "5fac400679cb053c427f82b5d8dc844641cf383e01940a2d7cc68c0cb98be91d",
     "crates/services/web-server/src/web/rest/drug_rest.rs": "2308d4030fd54e0cb321d9ae5f7a20111b453e6771978a5fbb64fe2e563eb7d7",
-    "crates/services/web-server/src/web/rest/drug_sub_rest.rs": "6537aaeb976e434b9a96038d39cdcaf7f7aeb9a996525857f97f2a71d2e7dc68",
+    "crates/services/web-server/src/web/rest/drug_sub_rest.rs": "d2573662619feb1cf9a0ebb5278cd5170022f4f5b5dacbf5b7ba84a237d2c45c",
     "crates/services/web-server/src/web/rest/import_rest.rs": "4f025b6c1b61ba9fe630e05ca3d7ec1bea62df6ab09b80e556b90c350283835c",
     "crates/services/web-server/src/web/rest/message_header_rest.rs": "e5224c8599d8b8ef9b0915acdc36bc384e5946fba06a61a9845c11b8249e6cb5",
     "crates/services/web-server/src/web/rest/mod.rs": "54cd20b47bccae5cc553a5f5a49b996794a1f844fccf1f1b946a98611b6e2313",
@@ -131,7 +131,7 @@
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0980cad0996aaf2a1ab68af4ba8fb8d5d5d4ecaee782dde365dcd5cba220643c",
     "crates/services/web-server/tests/api_administration/health_web.rs": "6a8494b1247bfde30c21a6a17f8eea71cea6fa95c5ca8db4d0547a60386da481",
     "crates/services/web-server/tests/api_administration/middleware_ctx.rs": "50aea4c8ad1288c2e9f939b5ed841d9811cb23d04c7c51aaa3b482cde3691b5f",
-    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "6ae4d2194604d8b7a2411fcd27d067638897b5f3d18da09216b72e21c3c77ecd",
+    "crates/services/web-server/tests/api_administration/organizations/delete_web.rs": "2c124ca4ddfb29802160e1263205dc7cffa54093f7f59dabb465d68c1c706434",
     "crates/services/web-server/tests/api_administration/organizations/list_web.rs": "6d18d4ec465294bb3e006868b9a89ce9392296247cdd88869de2d42411a0cfb4",
     "crates/services/web-server/tests/api_administration/organizations/update_web.rs": "55eafb9d4a74491ab98a99dbc269f8c52eceda484d291aec52237c6128b8a03d",
     "crates/services/web-server/tests/api_administration/role_admin/crud_web.rs": "6a58a6f3e1efe8375bc08fd52b68a63ef39d9ead0a5b1855ec906ca87edb54b7",
@@ -144,8 +144,8 @@
     "crates/services/web-server/tests/api_administration/users/access_web.rs": "a9c260950adda69a4d7a076282f736035cc6092e7ad6c12bd76f766cdf6bf471",
     "crates/services/web-server/tests/api_administration/users/create_web.rs": "9976ba229071985a1e5a1a6b0d465d29ff5fca23a2c2b09f5f8408af890a3270",
     "crates/services/web-server/tests/api_administration/users/update_web.rs": "bcd331479a724c110fc8a175477f671eedeb9233314949c5041e2ae60db9bd23",
-    "crates/services/web-server/tests/api_administration/users/workflow_options_web.rs": "e548a40da18be9546ef8ef4a78b4575dc4f8912f35dd24414510d769d53c8d21",
-    "crates/services/web-server/tests/api_cases/cioms_export.rs": "d27150dcf98693e58c544675c36e5099b245367137364c491523cb327cb177c7",
+    "crates/services/web-server/tests/api_administration/users/workflow_options_web.rs": "6700a00550e69bb300df8ce6bee096b723d640b67a3eafc41f77d47a90ecd186",
+    "crates/services/web-server/tests/api_cases/cioms_export.rs": "97a3dd8549064b91b2ad34c4be8c98b6b448d1806948f3b6759a481d9e94ebd7",
     "crates/services/web-server/tests/api_cases/contract/audit.rs": "a16a248b7b8f247685b6946f82ec5a7918c11480bd94e200f1578a41a4840c5e",
     "crates/services/web-server/tests/api_cases/contract/delete.rs": "bc20149b1460ab7e2b92fe6946801820590660ee9edd7b1431b4400458fdb221",
     "crates/services/web-server/tests/api_cases/contract/link_options.rs": "fabfe0f9b8fec1732b1dfc55723aa00031c5b0e9ed0c59616701421a85713a7a",
@@ -163,8 +163,8 @@
     "crates/services/web-server/tests/api_cases/scope/sender_options.rs": "84ac4127c0fd021344aec64519341e270b8b77ae5f9ff410e1f243334186e6d0",
     "crates/services/web-server/tests/api_cases/settings.rs": "d8d6dfffb2d712000cf09258f3384f10d7fb952f28a0be341abee78f51bb5c6f",
     "crates/services/web-server/tests/api_cases/subresources/drug.rs": "65b87197a7480a8fadb39dfc9c18254233f75445346b9ca7d837d1f23b377767",
-    "crates/services/web-server/tests/api_cases/subresources/drug_scope.rs": "1344fc05923c4272ff981a0e467efaa0766f3c2fb0fc3ae8d308cfbaea7bc898",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "dfb1dc9f078516fe556d6c00622cbca784209bb0d245dbee346d4cabda12f947",
+    "crates/services/web-server/tests/api_cases/subresources/drug_scope.rs": "8e1525e316148721134bd8e3438f45f47bb784fe6e00076eaf65965726fc3523",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "6cf35ebd7ec4b2e234641146d663c336e6d639d57ac2abcfb20e1fc9ad328264",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs": "4da4ac80df6d6804f4b27113faef06f9746604a4dbe5ff8626e3c93301fe7d1d",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs": "16e366e6573a457c1c9bb8ade53b3b4f1ab7cd9324ed6b75c743695dbaaa38d3",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "9cb2cd0f3e2bd2b9bed0c093f4dbed7056da56f8cc46d91f65c7823003a2c4a0",
@@ -3376,7 +3376,7 @@
         "signature": "pub async fn list_drug_active_substances( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<DrugActiveSubstance>>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -3489,7 +3489,7 @@
         "signature": "pub async fn create_drug_active_substance( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<DrugActiveSubstanceForCreate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugActiveSubstance>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -3628,7 +3628,7 @@
         "signature": "pub async fn delete_drug_active_substance( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -3723,7 +3723,7 @@
         "signature": "pub async fn get_drug_active_substance( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugActiveSubstance>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -3832,7 +3832,7 @@
         "signature": "pub async fn update_drug_active_substance( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<DrugActiveSubstanceForUpdate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugActiveSubstance>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -3971,7 +3971,7 @@
         "signature": "pub async fn restore_drug_active_substance( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugActiveSubstance>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 806
+          "line": 809
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4080,7 +4080,7 @@
         "signature": "pub async fn list_drug_device_characteristics( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<DrugDeviceCharacteristic>>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4193,7 +4193,7 @@
         "signature": "pub async fn create_drug_device_characteristic( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<DrugDeviceCharacteristicForCreate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugDeviceCharacteristic>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4332,7 +4332,7 @@
         "signature": "pub async fn delete_drug_device_characteristic( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4427,7 +4427,7 @@
         "signature": "pub async fn get_drug_device_characteristic( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugDeviceCharacteristic>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4536,7 +4536,7 @@
         "signature": "pub async fn update_drug_device_characteristic( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<DrugDeviceCharacteristicForUpdate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugDeviceCharacteristic>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4675,7 +4675,7 @@
         "signature": "pub async fn restore_drug_device_characteristic( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugDeviceCharacteristic>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 863
+          "line": 866
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4784,7 +4784,7 @@
         "signature": "pub async fn list_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<FdaDeviceInformation>>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -4897,7 +4897,7 @@
         "signature": "pub async fn create_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<FdaDeviceInformationForCreate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -5035,7 +5035,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 493
+          "line": 496
         },
         "signature": "pub async fn replace_fda_devices( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<(Uuid, Uuid)>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<ReplaceFdaDevicesInput>, >, ) -> Result<( axum::http::StatusCode, axum::Json< lib_rest_core::rest_result::DataRestResult<Vec<FdaDeviceInformation>>, >, )>",
         "name": "replace_fda_devices"
@@ -5121,7 +5121,7 @@
             {
               "rust_type": "ReplaceFdaDevicesInput",
               "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/drug_sub_rest.rs:410:ReplaceFdaDevicesInput"
+              "declaration_id": "crates/services/web-server/src/web/rest/drug_sub_rest.rs:413:ReplaceFdaDevicesInput"
             }
           ]
         }
@@ -5179,7 +5179,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 608
+          "line": 611
         },
         "signature": "pub async fn list_fda_device_codes( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id)): axum::extract::Path<( Uuid, Uuid, Uuid, )>, ) -> Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<FdaDeviceCode>>>, )>",
         "name": "list_fda_device_codes"
@@ -5293,7 +5293,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 568
+          "line": 571
         },
         "signature": "pub async fn create_fda_device_code( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id)): axum::extract::Path<( Uuid, Uuid, Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<FdaDeviceCodeForCreate>, >, ) -> Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceCode>>, )>",
         "name": "create_fda_device_code"
@@ -5434,11 +5434,11 @@
         "signature": "pub async fn delete_fda_device_code( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id, id)): axum::extract::Path<( Uuid, Uuid, Uuid, Uuid, )>, ) -> Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 801
+          "line": 804
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 768
+          "line": 771
         },
         "macro_name": "fda_device_code_delete_handler"
       },
@@ -5533,7 +5533,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 674
+          "line": 677
         },
         "signature": "pub async fn get_fda_device_code( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id, id)): axum::extract::Path<( Uuid, Uuid, Uuid, Uuid, )>, ) -> Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceCode>>, )>",
         "name": "get_fda_device_code"
@@ -5643,7 +5643,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 710
+          "line": 713
         },
         "signature": "pub async fn update_fda_device_code( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id, id)): axum::extract::Path<( Uuid, Uuid, Uuid, Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<FdaDeviceCodeForUpdate>, >, ) -> Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceCode>>, )>",
         "name": "update_fda_device_code"
@@ -5784,11 +5784,11 @@
         "signature": "pub async fn restore_fda_device_code( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, device_id, id)): axum::extract::Path<( Uuid, Uuid, Uuid, Uuid, )>, ) -> Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 802
+          "line": 805
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 768
+          "line": 771
         },
         "macro_name": "fda_device_code_delete_handler"
       },
@@ -5884,7 +5884,7 @@
         "signature": "pub async fn delete_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -5979,7 +5979,7 @@
         "signature": "pub async fn get_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6088,7 +6088,7 @@
         "signature": "pub async fn update_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<FdaDeviceInformationForUpdate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6227,7 +6227,7 @@
         "signature": "pub async fn restore_fda_device_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<FdaDeviceInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 532
+          "line": 535
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6336,7 +6336,7 @@
         "signature": "pub async fn list_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<DosageInformation>>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6449,7 +6449,7 @@
         "signature": "pub async fn create_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<DosageInformationForCreate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DosageInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6588,7 +6588,7 @@
         "signature": "pub async fn delete_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6683,7 +6683,7 @@
         "signature": "pub async fn get_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DosageInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6792,7 +6792,7 @@
         "signature": "pub async fn update_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<DosageInformationForUpdate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DosageInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -6931,7 +6931,7 @@
         "signature": "pub async fn restore_dosage_information( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DosageInformation>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 825
+          "line": 828
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7040,7 +7040,7 @@
         "signature": "pub async fn list_drug_indications( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<Vec<DrugIndication>>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7153,7 +7153,7 @@
         "signature": "pub async fn create_drug_indication( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForCreate<DrugIndicationForCreate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugIndication>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7292,7 +7292,7 @@
         "signature": "pub async fn delete_drug_indication( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7387,7 +7387,7 @@
         "signature": "pub async fn get_drug_indication( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugIndication>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7496,7 +7496,7 @@
         "signature": "pub async fn update_drug_indication( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, axum::Json(params): axum::Json< lib_rest_core::rest_params::ParamsForUpdate<DrugIndicationForUpdate>, >, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugIndication>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -7635,7 +7635,7 @@
         "signature": "pub async fn restore_drug_indication( axum::extract::State(mm): axum::extract::State< lib_core::model::ModelManager, >, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, drug_id, id)): axum::extract::Path<( uuid::Uuid, uuid::Uuid, uuid::Uuid, )>, ) -> lib_rest_core::Result<( axum::http::StatusCode, axum::Json<lib_rest_core::rest_result::DataRestResult<DrugIndication>>, )>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-          "line": 844
+          "line": 847
         },
         "macro": {
           "source": "crates/libs/lib-rest-core/src/utils/macro_utils.rs",
@@ -13522,7 +13522,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs",
-          "line": 70
+          "line": 71
         },
         "signature": "pub async fn patch_editor_dm_page_projection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(request): Json<CaseEditorPagePatchRequest>, ) -> Result<( axum::http::StatusCode, Json<CaseEditorPageProjectionResponse>, )>",
         "name": "patch_editor_dm_page_projection"
@@ -15090,7 +15090,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs",
-          "line": 83
+          "line": 84
         },
         "signature": "pub async fn patch_editor_nr_page_projection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(request): Json<CaseEditorPagePatchRequest>, ) -> Result<( axum::http::StatusCode, Json<CaseEditorPageProjectionResponse>, )>",
         "name": "patch_editor_nr_page_projection"
@@ -15345,7 +15345,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs",
-          "line": 31
+          "line": 32
         },
         "signature": "pub async fn patch_editor_rp_page_projection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(request): Json<CaseEditorPagePatchRequest>, ) -> Result<( axum::http::StatusCode, Json<CaseEditorPageProjectionResponse>, )>",
         "name": "patch_editor_rp_page_projection"
@@ -15600,7 +15600,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs",
-          "line": 44
+          "line": 45
         },
         "signature": "pub async fn patch_editor_sd_page_projection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(request): Json<CaseEditorPagePatchRequest>, ) -> Result<( axum::http::StatusCode, Json<CaseEditorPageProjectionResponse>, )>",
         "name": "patch_editor_sd_page_projection"
@@ -15855,7 +15855,7 @@
         "kind": "direct",
         "declaration": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs",
-          "line": 57
+          "line": 58
         },
         "signature": "pub async fn patch_editor_si_page_projection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(request): Json<CaseEditorPagePatchRequest>, ) -> Result<( axum::http::StatusCode, Json<CaseEditorPageProjectionResponse>, )>",
         "name": "patch_editor_si_page_projection"
@@ -55214,7 +55214,7 @@
       "serde_attributes": [
         "#[serde(rename_all = \"camelCase\")]"
       ],
-      "raw": "struct CaseLinkOption {\n\tpub case_id: Uuid,\n\tpub safety_report_id: String,\n\tpub version: i32,\n\tpub transmission_date: Option<String>,\n\tpub created_at: OffsetDateTime,\n}",
+      "raw": "struct CaseLinkOption {\n\tpub case_id: Uuid,\n\tpub safety_report_id: String,\n\tpub version: i32,\n\tpub transmission_date: Option<String>,\n\t#[serde(with = \"time::serde::rfc3339\")]\n\tpub created_at: OffsetDateTime,\n}",
       "fields": [
         {
           "name": "case_id",
@@ -55243,8 +55243,12 @@
         {
           "name": "created_at",
           "type": "OffsetDateTime",
-          "attributes": [],
-          "serde_attributes": []
+          "attributes": [
+            "#[serde(with = \"time::serde::rfc3339\")]"
+          ],
+          "serde_attributes": [
+            "#[serde(with = \"time::serde::rfc3339\")]"
+          ]
         }
       ],
       "id": "crates/libs/lib-core/src/model/case.rs:466:CaseLinkOption",
@@ -55290,7 +55294,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/case.rs",
-        "line": 476
+        "line": 477
       },
       "attributes": [
         "#[derive(Debug, Serialize, FromRow)]",
@@ -55332,7 +55336,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/case.rs:476:CaseStatusSummary",
+      "id": "crates/libs/lib-core/src/model/case.rs:477:CaseStatusSummary",
       "nested_type_refs": [
         {
           "rust_type": "i64",
@@ -55361,7 +55365,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/libs/lib-core/src/model/case.rs",
-        "line": 486
+        "line": 487
       },
       "attributes": [
         "#[derive(Debug, Serialize, FromRow)]",
@@ -55547,7 +55551,7 @@
           "serde_attributes": []
         }
       ],
-      "id": "crates/libs/lib-core/src/model/case.rs:486:CaseListViewRow",
+      "id": "crates/libs/lib-core/src/model/case.rs:487:CaseListViewRow",
       "nested_type_refs": [
         {
           "rust_type": "i64",
@@ -93733,7 +93737,7 @@
         {
           "rust_type": "CaseListViewRow",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/case.rs:486:CaseListViewRow"
+          "declaration_id": "crates/libs/lib-core/src/model/case.rs:487:CaseListViewRow"
         },
         {
           "rust_type": "Vec",
@@ -94251,12 +94255,12 @@
         {
           "rust_type": "CaseListViewRow",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/case.rs:486:CaseListViewRow"
+          "declaration_id": "crates/libs/lib-core/src/model/case.rs:487:CaseListViewRow"
         },
         {
           "rust_type": "CaseStatusSummary",
           "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/case.rs:476:CaseStatusSummary"
+          "declaration_id": "crates/libs/lib-core/src/model/case.rs:477:CaseStatusSummary"
         }
       ]
     },
@@ -95803,7 +95807,7 @@
       "kind": "struct",
       "declaration": {
         "source": "crates/services/web-server/src/web/rest/drug_sub_rest.rs",
-        "line": 410
+        "line": 413
       },
       "attributes": [
         "#[derive(Deserialize)]"
@@ -95822,7 +95826,7 @@
           ]
         }
       ],
-      "id": "crates/services/web-server/src/web/rest/drug_sub_rest.rs:410:ReplaceFdaDevicesInput",
+      "id": "crates/services/web-server/src/web/rest/drug_sub_rest.rs:413:ReplaceFdaDevicesInput",
       "nested_type_refs": [
         {
           "rust_type": "Vec",

@@ -299,7 +299,7 @@ async fn fda_device_code_routes_reject_a_matching_drug_from_a_different_case(
 			"device_id": device_id,
 			"element": "device_problem",
 			"sequence_number": 1,
-			"value_code": "ORIGINAL"
+			"value_code": "ORIG001"
 		}}),
 	)
 	.await?;
@@ -349,7 +349,7 @@ async fn fda_device_code_routes_reject_a_matching_drug_from_a_different_case(
 	let (status, body) = get_json(&app, &cookie, correct_item.clone()).await?;
 	assert_eq!(status, StatusCode::OK);
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(value["data"]["value_code"], "ORIGINAL");
+	assert_eq!(value["data"]["value_code"], "ORIG001");
 	assert_eq!(value["data"]["deleted"], false);
 
 	let (status, body) = delete_json(&app, &cookie, correct_item.clone()).await?;
@@ -436,7 +436,7 @@ async fn fda_device_code_routes_reject_a_matching_drug_from_a_different_case(
 	assert_eq!(status, StatusCode::OK);
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["id"], code_id.to_string());
-	assert_eq!(value["data"]["value_code"], "ORIGINAL");
+	assert_eq!(value["data"]["value_code"], "ORIG001");
 	assert_eq!(value["data"]["deleted"], false);
 	let (status, body) = get_json(&app, &cookie, correct_collection).await?;
 	assert_eq!(status, StatusCode::OK);

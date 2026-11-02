@@ -1,4 +1,4 @@
-use super::{init_test_mm, Result};
+use super::{common::ensure_fixed_platform_assignment, init_test_mm, Result};
 use lib_core::authorization::policy_registry;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER};
 use lib_core::model::authorization::AuthorizationMigrationService;
@@ -29,6 +29,7 @@ async fn test_expired_user_is_soft_deactivated() -> Result<()> {
 	)
 	.await?;
 	migration_pool.close().await;
+	assert_eq!(ensure_fixed_platform_assignment().await?, 1);
 
 	let root_ctx = Ctx::root_ctx();
 	let suffix = Uuid::new_v4();
