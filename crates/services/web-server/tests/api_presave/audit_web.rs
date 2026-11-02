@@ -419,8 +419,8 @@ async fn presave_parent_and_child_http_updates_record_complete_audit_rows(
 				table_name: "study_presave_fda_cross_reported_ind_numbers",
 				record_id: fda_ind_id,
 				field: "ind_number",
-				old: json!("AUDIT-IND-OLD"),
-				new: json!("AUDIT-IND-NEW"),
+				old: json!("AUDIT-OLD"),
+				new: json!("AUDIT-NEW"),
 			},
 			ExpectedAudit {
 				table_name: "narrative_presaves",

@@ -20,7 +20,7 @@ fn uuid_filter(id: Uuid) -> Option<OpValsValue> {
 
 #[serial]
 #[tokio::test(flavor = "multi_thread")]
-async fn device_bmcs_enforce_tenant_scope() -> Result<()> {
+async fn device_bmcs_and_cascade_audits_enforce_tenant_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let system_user_id = Uuid::parse_str(SYSTEM_USER_ID)?;
 	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
@@ -33,6 +33,8 @@ async fn device_bmcs_enforce_tenant_scope() -> Result<()> {
 	let other_drug_id = Uuid::new_v4();
 	let tenant_device_id = Uuid::new_v4();
 	let other_device_id = Uuid::new_v4();
+	let tenant_characteristic_id = Uuid::new_v4();
+	let other_characteristic_id = Uuid::new_v4();
 
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, system_user_id).await?;
@@ -143,7 +145,11 @@ async fn device_bmcs_enforce_tenant_scope() -> Result<()> {
 				created_by
 			 ) VALUES ($1, $2, 1, $3, 'ST', 'device characteristic', $4)",
 		)
-		.bind(Uuid::new_v4())
+		.bind(if drug_id == tenant_drug_id {
+			tenant_characteristic_id
+		} else {
+			other_characteristic_id
+		})
 		.bind(drug_id)
 		.bind(if drug_id == tenant_drug_id {
 			"TENANT.CHAR"
@@ -233,6 +239,48 @@ async fn device_bmcs_enforce_tenant_scope() -> Result<()> {
 	)
 	.await?
 	.is_empty());
+
+	// Platform cleanup must retain the actual tenant even after cascaded parents disappear.
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+	sqlx::query("DELETE FROM drug_information WHERE id = $1")
+		.bind(tenant_drug_id)
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DELETE FROM cases WHERE id = $1")
+		.bind(other_case_id)
+		.execute(&mut *tx)
+		.await?;
+	for (id, org_id) in [
+		(tenant_characteristic_id, tenant_org_id),
+		(other_characteristic_id, other_org_id),
+	] {
+		let remaining: i64 = sqlx::query_scalar(
+			"SELECT count(*) FROM drug_device_characteristics WHERE id = $1",
+		)
+		.bind(id)
+		.fetch_one(&mut *tx)
+		.await?;
+		assert_eq!(remaining, 0, "parent deletion must cascade to its child");
+		let logs: Vec<(String, Uuid, Uuid)> = sqlx::query_as(
+			"SELECT action, organization_id, user_id FROM audit_logs
+			 WHERE table_name = 'drug_device_characteristics' AND record_id = $1
+			 ORDER BY id",
+		)
+		.bind(id)
+		.fetch_all(&mut *tx)
+		.await?;
+		assert_eq!(
+			logs,
+			vec![
+				("CREATE".to_string(), org_id, system_user_id),
+				("DELETE".to_string(), org_id, system_user_id),
+			],
+			"cascade audit must use the owning tenant, not the platform actor's organization"
+		);
+	}
+	tx.commit().await?;
 
 	Ok(())
 }

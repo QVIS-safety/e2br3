@@ -107,13 +107,15 @@ pub(super) async fn seed_active_terminology_rows(
 	.execute(&mut *tx)
 	.await?;
 
+	// Reserved negative fixture IDs avoid invoking the production-owned BIGSERIAL
+	// sequence from this unprivileged application connection.
 	sqlx::query(
 		"INSERT INTO fda_hierarchical_code_lists
-		 (list_name, ncit_concept_code, level1_term, level2_term, level3_term, fda_code, imdrf_code)
+		 (id, list_name, ncit_concept_code, level1_term, level2_term, level3_term, fda_code, imdrf_code)
 		 VALUES
-		 ('test_device_problem', 'TEST-CODE-2', 'Boundary Alpha', 'Second', NULL, 'T2', 'I2'),
-		 ('test_device_problem', 'TEST-CODE-1', 'Boundary Alpha', 'First', NULL, 'T1', 'I1'),
-		 ('other_test_list', 'TEST-CODE-3', 'Boundary Alpha', NULL, NULL, 'T3', 'I3')
+		 (-9000002, 'test_device_problem', 'TEST-CODE-2', 'Boundary Alpha', 'Second', NULL, 'T2', 'I2'),
+		 (-9000001, 'test_device_problem', 'TEST-CODE-1', 'Boundary Alpha', 'First', NULL, 'T1', 'I1'),
+		 (-9000003, 'other_test_list', 'TEST-CODE-3', 'Boundary Alpha', NULL, NULL, 'T3', 'I3')
 		 ON CONFLICT (list_name, ncit_concept_code) DO UPDATE SET
 		 level1_term=EXCLUDED.level1_term, level2_term=EXCLUDED.level2_term",
 	)

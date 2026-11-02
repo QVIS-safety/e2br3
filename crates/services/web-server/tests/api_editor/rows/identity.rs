@@ -341,6 +341,11 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 			updated_audits
 		);
 	}
+	let (status, duplicate_code_before) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{duplicate_code_before}");
+	let duplicate_code_audits_before =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+			.await?;
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
@@ -356,7 +361,12 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
 	let (_, duplicate_code_unchanged) = get_json(&app, &cookie, &uri).await?;
-	assert_eq!(duplicate_code_unchanged, code_edited);
+	assert_eq!(duplicate_code_unchanged, duplicate_code_before);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &id)
+			.await?,
+		duplicate_code_audits_before
+	);
 
 	let (status, body) = patch_json(
 		&app,
