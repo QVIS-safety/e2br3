@@ -157,14 +157,8 @@ trap 'forward_signal TERM 143' TERM
 printf 'Creating isolated test database %s\n' "$database_name"
 create_database
 
-sql_list="$("$repo_root/scripts/db/list_init_sql.sh" "$repo_root/db" 1)"
-while IFS= read -r sql_file; do
-	if [[ -n "$sql_file" ]]; then
-		run_interruptible \
-			psql "$test_url" -v ON_ERROR_STOP=1 -v "app_db_user=${app_db_user}" \
-				-f "$repo_root/db/$sql_file"
-	fi
-done <<<"$sql_list"
+run_interruptible env DATABASE_URL="$test_url" APP_DB_USER="$app_db_user" \
+	"$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db" --initialize --seed
 
 export SERVICE_DB_URL="$test_url"
 export SERVICE_MIGRATION_DB_URL="$test_url"

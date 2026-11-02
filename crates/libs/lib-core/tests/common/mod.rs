@@ -120,7 +120,9 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 
 #[allow(dead_code)]
 pub async fn init_test_mm() -> ModelManager {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await.unwrap();
 	ensure_demo_seed(&mm)
 		.await

@@ -23,8 +23,10 @@ async fn main() -> Result<()> {
 		.with_env_filter(EnvFilter::from_default_env())
 		.init();
 
-	// -- FOR DEV ONLY (skips automatically if SKIP_DEV_INIT=1)
-	_dev_utils::init_dev().await;
+	// Database migrations run explicitly before the application starts.
+	_dev_utils::init_dev()
+		.await
+		.map_err(|error| Error::Config(error.to_string()))?;
 	web_server::config::validate_submission_runtime_config()
 		.map_err(Error::Config)?;
 

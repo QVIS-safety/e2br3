@@ -36,7 +36,9 @@ jobs:
       - name: Verify test selection
         run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py scripts/tests/test_ci_terminology.py scripts/tests/test_audit_checkpoint.py registry/tools/test_check_contract_test_results.py
       - name: Verify staging deployment guards
-        run: python3 -m unittest discover -s deploy/ec2 -p 'test_update_dev.py'
+        run: |
+          python3 -m unittest discover -s deploy/ec2 -p 'test_update_dev.py'
+          python3 -m unittest discover -s deploy/ec2 -p 'test_migrations.py'
       - name: Verify API specification matches source
         run: python3 crates/services/web-server/tests/api_specs/check_api_contract_manifest.py
       - name: Select affected crates and test targets
@@ -361,11 +363,35 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  migration-tests:
+    name: PostgreSQL migration runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app_user
+          POSTGRES_PASSWORD: dev_only_pwd
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app_user -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Verify actual migrations, rollback, history and concurrency
+        env:
+          MIGRATION_TEST_ADMIN_URL: postgres://app_user:dev_only_pwd@localhost:5432/postgres
+        run: python3 -m unittest discover -s deploy/ec2 -p 'test_migrations_postgres.py' -v
+
   deploy-dev:
     name: Publish Dev Backend Image
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && github.ref_name == 'dev' &&
-          needs.test-plan.result == 'success' &&
+          needs.test-plan.result == 'success' && needs.migration-tests.result == 'success' &&
           needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
           ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
            (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
@@ -373,7 +399,7 @@ jobs:
            (needs.test-plan.outputs.registry == 'false' && needs.registry.result == 'skipped')) &&
           ((needs.test-plan.outputs.backend == 'true' && needs.test.result == 'success') ||
            (needs.test-plan.outputs.backend == 'false' && needs.test.result == 'skipped')) }}
-    needs: [test-plan, registry, fmt, clippy, validator, test]
+    needs: [test-plan, registry, fmt, clippy, validator, test, migration-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

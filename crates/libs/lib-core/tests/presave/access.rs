@@ -4,7 +4,9 @@ use super::*;
 #[tokio::test]
 async fn sponsor_company_sender_presave_limited_to_one_active_record() -> Result<()>
 {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let org_id = create_acl_test_org(&mm, "company-sender-limit").await?;
 	let ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_COMPANY);
@@ -42,7 +44,9 @@ async fn sponsor_company_sender_presave_limited_to_one_active_record() -> Result
 #[serial]
 #[tokio::test]
 async fn sponsor_cro_sender_presave_allows_multiple_active_records() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let org_id = create_acl_test_org(&mm, "cro-sender-limit").await?;
 	let ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_CRO);
@@ -66,7 +70,9 @@ async fn sponsor_cro_sender_presave_allows_multiple_active_records() -> Result<(
 #[serial]
 #[tokio::test]
 async fn sponsor_company_can_set_product_presave_sender_in_own_org() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let org_id = create_acl_test_org(&mm, "company-product-sender").await?;
 	let cro_ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_CRO);
@@ -124,7 +130,9 @@ async fn sponsor_company_can_set_product_presave_sender_in_own_org() -> Result<(
 #[serial]
 #[tokio::test]
 async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let org_a_id = Uuid::new_v4();
 	let org_b_id = Uuid::new_v4();

@@ -3,7 +3,9 @@ use super::*;
 #[serial]
 #[tokio::test]
 async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let sender_id = SenderPresaveBmc::create(
@@ -97,7 +99,9 @@ async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn study_presave_round_trips_fda_regional_numbers() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let sender_id = SenderPresaveBmc::create(
@@ -133,7 +137,9 @@ async fn study_presave_round_trips_fda_regional_numbers() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();

@@ -1,34 +1,19 @@
 // region:    --- Modules
 
-mod dev_db;
-
 use crate::model::ModelManager;
 use tokio::sync::OnceCell;
-use tracing::info;
 
 // endregion: --- Modules
 
-/// Initialize environment for local development.
-/// (for early development, will be called from main()).
-/// Skip if SKIP_DEV_INIT=1 (e.g., when using Docker PostgreSQL).
-pub async fn init_dev() {
-	// Skip if using Docker PostgreSQL (already initialized)
-	if std::env::var("SKIP_DEV_INIT").unwrap_or_default() == "1" {
-		info!(
-			"{:<12} - init_dev() SKIPPED (SKIP_DEV_INIT=1)",
-			"FOR-DEV-ONLY"
-		);
-		return;
+/// Database setup is explicit: use the shared migration runner before startup.
+pub async fn init_dev() -> std::io::Result<()> {
+	match std::env::var("SKIP_DEV_INIT").as_deref() {
+		Ok("1") => Ok(()),
+		_ => Err(std::io::Error::new(
+			std::io::ErrorKind::InvalidInput,
+			"Automatic database initialization is disabled. Run deploy/ec2/migrate-rds.sh for an existing database, or --initialize for an empty database, then set SKIP_DEV_INIT=1.",
+		)),
 	}
-
-	static INIT: OnceCell<()> = OnceCell::const_new();
-
-	INIT.get_or_init(|| async {
-		info!("{:<12} - init_dev_all()", "FOR-DEV-ONLY");
-
-		dev_db::init_dev_db().await.unwrap();
-	})
-	.await;
 }
 
 /// Initialize test environment.
@@ -37,7 +22,9 @@ pub async fn init_test() -> ModelManager {
 
 	let mm = INIT
 		.get_or_init(|| async {
-			init_dev().await;
+			init_dev()
+				.await
+				.expect("database initialization must be explicit");
 			// NOTE: Rare occasion where unwrap is kind of ok.
 			ModelManager::new().await.unwrap()
 		})

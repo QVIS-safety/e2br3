@@ -467,7 +467,9 @@ mod tests {
 		std::env::set_var("SERVICE_PWD_KEY", "ZmFrZV9rZXk");
 		std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 		std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
-		_dev_utils::init_dev().await;
+		_dev_utils::init_dev()
+			.await
+			.expect("database initialization must be explicit");
 		let mm = ModelManager::new().await.expect("test model manager");
 		web_server::initialize_authorization_storage()
 			.await

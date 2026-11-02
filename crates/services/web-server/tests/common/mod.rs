@@ -137,8 +137,10 @@ pub async fn init_test_env() -> Result<()> {
 
 pub async fn init_test_mm() -> Result<ModelManager> {
 	init_test_env().await?;
-	_dev_utils::init_dev().await;
-	apply_test_authorization_isolation_migration().await?;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
+	reconcile_test_authorization_storage().await?;
 	let mm = ModelManager::new().await?;
 	mm.dbx()
 		.execute(sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
@@ -146,83 +148,55 @@ pub async fn init_test_mm() -> Result<ModelManager> {
 	Ok(mm)
 }
 
-async fn apply_test_authorization_isolation_migration() -> Result<()> {
+async fn reconcile_test_authorization_storage() -> Result<()> {
 	static APPLIED: OnceCell<()> = OnceCell::const_new();
 	APPLIED
 		.get_or_try_init(|| async {
 			let database_url = std::env::var("SERVICE_MIGRATION_DB_URL")
-				.or_else(|_| std::env::var("SERVICE_DB_URL"))
 				.map_err(|error| sqlx::Error::Configuration(Box::new(error)))?;
 			let pool = PgPoolOptions::new()
 				.max_connections(1)
 				.connect(&database_url)
 				.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260720_authorization_kernel.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260720_authorization_revisions.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260724_authorization_fact_locks.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260724_authorization_direct_grant_actions.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260724_authorization_operational_grant_actions.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260724_authorization_workflow_config_action.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260725_authorization_export_history_actions.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260725_authorization_built_in_role_assignment_actions.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260725_authorization_home_workflow_case_read.sql"
-			))
-			.execute(&pool)
-			.await?;
+			let expected_database = std::env::var("E2BR3_TEST_DATABASE_NAME")
+				.map_err(|error| sqlx::Error::Configuration(Box::new(error)))?;
+			let database: String = sqlx::query_scalar("SELECT current_database()")
+				.fetch_one(&pool)
+				.await?;
+			if !expected_database.starts_with("e2br3_test_")
+				|| database != expected_database
+			{
+				return Err(sqlx::Error::Protocol(format!(
+					"refusing to initialize test authorization in {database}"
+				)));
+			}
 			AuthorizationMigrationService::reconcile_registry_storage(
 				&pool,
 				policy_registry(),
 			)
 			.await
 			.map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260722_authorization_isolation_audit.sql"
-			))
+			// Registry roles are created after SQL migrations; seed this test principal explicitly.
+			let assignment = sqlx::query(
+				"INSERT INTO user_role_assignments (user_id, organization_id, role_id, active)
+				 SELECT $1, $2, role.id, true
+				 FROM authorization_roles role
+				 JOIN user_organization_memberships membership
+				   ON membership.user_id = $1 AND membership.organization_id = $2 AND membership.active
+				 WHERE role.id = '00000000-0000-0000-0000-000000000101'::uuid
+				   AND role.identity_kind = 'platform_administrator'
+				   AND role.active AND role.deleted_at IS NULL
+				 ON CONFLICT (user_id, organization_id) DO UPDATE SET role_id = EXCLUDED.role_id, active = true",
+			)
+			.bind(system_user_id())
+			.bind(system_org_id())
 			.execute(&pool)
 			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260808_users_org_scoped_identity.sql"
-			))
-			.execute(&pool)
-			.await?;
-			sqlx::raw_sql(include_str!(
-				"../../../../../db/migrations/20260810_global_user_identity.sql"
-			))
-			.execute(&pool)
-			.await?;
+			if assignment.rows_affected() != 1 {
+				return Err(sqlx::Error::Protocol(
+					"test system principal requires an active membership and fixed platform role".into(),
+				));
+			}
 			pool.close().await;
 			Ok::<(), sqlx::Error>(())
 		})

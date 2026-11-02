@@ -41,7 +41,9 @@ fn schema_alignment_covers_auditor_access_and_reaction_language() {
 #[serial]
 #[tokio::test]
 async fn section_presave_tables_exist() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	for table in SECTION_PRESAVE_TABLES {
@@ -63,7 +65,9 @@ async fn section_presave_tables_exist() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let columns: Vec<String> = sqlx::query_scalar(
@@ -92,7 +96,9 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 #[tokio::test]
 async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 ) -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let submission_options_exists: bool = sqlx::query_scalar(
@@ -149,7 +155,9 @@ async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 #[serial]
 #[tokio::test]
 async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let rls_rows: Vec<(String, bool, bool)> = sqlx::query_as(
@@ -383,7 +391,9 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 #[tokio::test]
 async fn section_presave_composite_fks_preserve_organization_on_parent_delete(
 ) -> Result<()> {
-	_dev_utils::init_dev().await;
+	_dev_utils::init_dev()
+		.await
+		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	// SET NULL must clear only the link, never the tenant component of the FK.

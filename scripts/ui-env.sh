@@ -99,9 +99,8 @@ elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
 else
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" "$database_name"
 	: >"$log_dir/init.log"
-	while IFS= read -r sql_file; do
-		psql "$admin_ui_url" -v ON_ERROR_STOP=1 -v "app_db_user=$app_db_user" -f "$repo_root/db/$sql_file" >>"$log_dir/init.log" 2>&1
-	done < <("$repo_root/scripts/db/list_init_sql.sh" "$repo_root/db" 1)
+	DATABASE_URL="$admin_ui_url" APP_DB_USER="$app_db_user" \
+		"$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db" --initialize --seed >>"$log_dir/init.log" 2>&1
 	psql "$admin_ui_url" -v ON_ERROR_STOP=1 -v "app_db_user=$app_db_user" <<'SQL'
 GRANT USAGE ON SCHEMA public TO :"app_db_user";
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :"app_db_user";
@@ -112,16 +111,7 @@ SQL
 fi
 
 if [[ "$upgrade_reused_database" -eq 1 ]]; then
-	for migration in \
-		db/migrations/20260920_preserve_test_date_precision.sql \
-		db/migrations/20260921_fda_device_audit_triggers.sql \
-		db/migrations/20261007_drug_not_administered_terminology.sql \
-		db/migrations/20261031_validation_revision.sql; do
-		if ! psql "$admin_ui_url" -v ON_ERROR_STOP=1 -f "$repo_root/$migration"; then
-			printf 'Failed to upgrade UI database %s with %s.\n' "$database_name" "$migration" >&2
-			exit 2
-		fi
-	done
+	DATABASE_URL="$admin_ui_url" "$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db"
 fi
 
 export SERVICE_DB_URL="$ui_url"

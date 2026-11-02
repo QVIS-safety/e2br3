@@ -13,6 +13,8 @@ added_migration=0
 baseline_change=0
 errors=
 changes=$(git diff --name-status --no-renames "${BASE_REF}" "${HEAD_REF}" -- db)
+base_migrations=$(git ls-tree -r --name-only "${BASE_REF}" -- db/migrations)
+last_migration=$(printf '%s\n' "$base_migrations" | sed -n '\|^db/migrations/[^/]*\.sql$|p' | LC_ALL=C sort | tail -n 1)
 
 while IFS="$(printf '\t')" read -r status path; do
 	[ -n "${path}" ] || continue
@@ -21,6 +23,10 @@ while IFS="$(printf '\t')" read -r status path; do
 		db/migrations/*.sql)
 			if [ "${status}" = "A" ]; then
 				added_migration=1
+				if [ -n "$last_migration" ] && \
+					[ "$(printf '%s\n%s\n' "$path" "$last_migration" | LC_ALL=C sort | head -n 1)" = "$path" ]; then
+					errors="${errors}\nNew migrations must sort after ${last_migration}: ${path}"
+				fi
 			else
 				errors="${errors}\nMigration files are append-only: ${status} ${path}"
 			fi
@@ -43,4 +49,5 @@ if [ "${baseline_change}" = "1" ] && [ "${added_migration}" = "0" ]; then
 	exit 1
 fi
 
+python3 deploy/ec2/migrate-rds.py --validate-only
 echo "Database migration check passed."

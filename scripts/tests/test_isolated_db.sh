@@ -28,6 +28,7 @@ cat >"$fake_bin/psql" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >>"$FAKE_LOG_DIR/psql.args"
+cat >"$FAKE_LOG_DIR/psql.stdin"
 if [[ "${FAKE_PSQL_WAIT:-0}" -eq 1 ]]; then
 	printf '%s\n' "$$" >"$FAKE_LOG_DIR/psql.pid"
 	trap 'printf "TERM\n" >"$FAKE_LOG_DIR/psql.signal"; exit 143' TERM
@@ -95,12 +96,9 @@ assert_success_contract() {
 	grep -F -- "$database_name" "$case_dir/createdb.args" >/dev/null
 	grep -F -- "$database_name" "$case_dir/dropdb.args" >/dev/null
 
-	local expected_psql_args="$case_dir/psql.expected"
-	while IFS= read -r sql_file; do
-		printf '%s -v ON_ERROR_STOP=1 -v app_db_user=user -f %s/db/%s\n' \
-			"$test_url" "$repo_root" "$sql_file" >>"$expected_psql_args"
-	done < <("$repo_root/scripts/db/list_init_sql.sh" "$repo_root/db" 1)
-	diff -u "$expected_psql_args" "$case_dir/psql.args"
+	grep -Fx -- "-X -w -d $test_url -v ON_ERROR_STOP=1 -f - -v app_db_user=user" "$case_dir/psql.args" >/dev/null
+	grep -F -- 'CREATE TABLE public.schema_migrations' "$case_dir/psql.stdin" >/dev/null
+	grep -F -- 'pg_try_advisory_lock' "$case_dir/psql.stdin" >/dev/null
 
 	if grep -F -- 'user:secret' "$case_dir/stdout" "$case_dir/stderr" >/dev/null; then
 		printf 'runner leaked database credentials\n' >&2
@@ -109,10 +107,8 @@ assert_success_contract() {
 }
 
 assert_bootstrap_role_wiring() {
-	grep -F -- '-v "app_db_user=${APP_DB_USER}"' \
-		"$repo_root/deploy/docker/postgres-init/01-run-all.sh" >/dev/null
-	grep -F -- '-v "app_db_user=${APP_DB_USER}"' \
-		"$repo_root/.github/workflows/ci.yml" >/dev/null
+	grep -F -- 'migrate-rds.py' "$repo_root/deploy/docker/postgres-init/01-run-all.sh" >/dev/null
+	grep -F -- 'app_db_user=' "$repo_root/deploy/ec2/migrate-rds.py" >/dev/null
 	grep -F -- 'GRANT e2br3_app_role TO :"app_db_user";' \
 		"$repo_root/db/bootstrap/01-safetydb-schema.sql" >/dev/null
 	grep -F -- 'GRANT e2br3_auditor_role TO :"app_db_user";' \
@@ -310,8 +306,8 @@ assert_initialization_failure_preserves_status_and_cleans_up() {
 }
 
 assert_repository_wiring() {
-	[[ "$(grep -c 'scripts/test-isolated-db.sh' \
-		"$repo_root/.github/workflows/ci.yml")" -eq 2 ]]
+	grep -F -- 'scripts/test-isolated-db.sh' "$repo_root/scripts/ci_test_plan.py" >/dev/null
+	grep -F -- 'from ci_test_plan import run_commands' "$repo_root/.github/workflows/ci.yml" >/dev/null
 }
 
 write_fake_commands
