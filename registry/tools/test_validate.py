@@ -2485,7 +2485,7 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "ref: ${{ (github.base_ref == 'dev' || github.ref_name == 'dev') && 'dev' || 'main' }}",
+            "ref: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'main' || 'dev' }}",
             workflow,
         )
 
@@ -2536,9 +2536,13 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("uses: actions/upload-artifact@v7", registry_job)
         self.assertIn("name: canonical-editor-inventory", registry_job)
         self.assertIn("path: /tmp/canonical-ui-inventory.json", registry_job)
-        self.assertIn("needs: [registry, test-plan]", test_job)
-        self.assertIn("if: ${{ !cancelled() && needs.test-plan.result == 'success' && needs.test-plan.outputs.backend == 'true' && (needs.registry.result == 'success' || needs.registry.result == 'skipped') }}", test_job)
-        self.assertIn("if: ${{ needs.test-plan.outputs.backend_contracts == 'true' }}", test_job)
+        self.assertIn("needs: [test-plan]", test_job)
+        self.assertIn("if: ${{ needs.test-plan.outputs.backend == 'true' }}", test_job)
+        self.assertNotIn("needs.registry.result", test_job)
+        self.assertIn("if: ${{ always() && matrix.backend_contracts }}", test_job)
+        self.assertIn("SELECTED_TESTS: ${{ toJSON(matrix.selections) }}", test_job)
+        self.assertIn("EDITOR_FILTERS: ${{ toJSON(matrix.editor_filters) }}", test_job)
+        self.assertIn("fail-fast: false", test_job)
         self.assertNotIn("actions/download-artifact", test_job)
         self.assertIn("--registry-root registry", test_job)
         self.assertIn("set -o pipefail", test_job)
