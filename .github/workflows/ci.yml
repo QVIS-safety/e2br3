@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify test selection
-        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py registry/tools/test_check_contract_test_results.py
+        run: python3 -m unittest scripts/tests/test_ci_test_plan.py scripts/tests/test_ci_test_scope.py scripts/tests/test_ci_terminology.py registry/tools/test_check_contract_test_results.py
       - name: Verify API specification matches source
         run: python3 crates/services/web-server/tests/api_specs/check_api_contract_manifest.py
       - name: Select affected crates and test targets
@@ -281,6 +281,40 @@ jobs:
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install -y postgresql-client libxml2-dev pkg-config
 
+      - name: Require trusted ref for licensed Oracle terminology
+        if: ${{ matrix.terminology_snapshot }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+        run: |
+          if [[ "$EVENT_NAME" == pull_request || ( "$REF_NAME" != refs/heads/dev && "$REF_NAME" != refs/heads/main ) ]]; then
+            echo '::error::MFDS XML tests require the private Oracle snapshot on a trusted dev/main push or manual run. Licensed data is not supplied to PR code.'
+            exit 1
+          fi
+
+      - name: Prepare private Oracle terminology snapshot
+        if: ${{ matrix.terminology_snapshot }}
+        env:
+          ORACLE_CI_TERMINOLOGY_SNAPSHOT: ${{ secrets.ORACLE_CI_TERMINOLOGY_20261102 }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          data = os.environ['ORACLE_CI_TERMINOLOGY_SNAPSHOT'].encode('utf-8')
+          if not data:
+              raise SystemExit('Required repository secret ORACLE_CI_TERMINOLOGY_20261102 is missing')
+          manifest = json.loads(Path('scripts/db/ci-terminology-manifest.json').read_text())
+          if hashlib.sha256(data).hexdigest() != manifest['sha256']:
+              raise SystemExit('Oracle terminology snapshot SHA-256 differs from pinned manifest')
+          path = Path(os.environ['RUNNER_TEMP']) / 'oracle-ci-terminology.json'
+          with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'wb') as stream:
+              stream.write(data)
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              stream.write(f'E2BR3_CI_TERMINOLOGY_SNAPSHOT={path}\n')
+          PY
+
       - name: Run selected crate tests
         env:
           TEST_COMMANDS: ${{ toJSON(matrix.commands) }}
@@ -311,6 +345,10 @@ jobs:
             --registry-root registry \
             --backend-log "$RUNNER_TEMP/workspace-tests.log" \
             --backend-selections "$SELECTED_TESTS" --editor-filters "$EDITOR_FILTERS"
+
+      - name: Remove private terminology snapshot
+        if: ${{ always() && matrix.terminology_snapshot }}
+        run: rm -f "$RUNNER_TEMP/oracle-ci-terminology.json"
 
       - name: Retain test output
         if: ${{ always() }}

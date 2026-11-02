@@ -221,7 +221,7 @@ crates/services/web-server/tests/xml/import_export/mod.rs	web-server::xml	모듈
 crates/services/web-server/tests/xml/import_export/nullflavor.rs	web-server::xml	HTTP/XML 통합	XML F/E nullFlavor를 import한 뒤 test-result와 reaction API readback에 보존되는지 검증한다.	103	2	0	0
 crates/services/web-server/tests/xml/import_export/rejections.rs	web-server::xml	HTTP/XML 통합	필수 header·기관별 N 수신처 위반의 단건/ZIP 거절과 정상 draft 다운로드·오류 이력 계약을 검증한다.	381	2	0	0
 crates/services/web-server/tests/xml/import_export/support.rs	web-server::xml	helper	XML fixture 변형·고유 report ID 생성과 multipart import/case-id 추출 helper를 제공한다.	98	0	0	0
-crates/services/web-server/tests/xml/mfds_import_samples_web.rs	web-server::xml	HTTP/XML 통합	MFDS example XML들을 HTTP import하고 case 각 section·validation·재export 및 XML schema 결과를 검증한다.	398	1	0	0
+crates/services/web-server/tests/xml/mfds_import_samples_web.rs	web-server::xml	HTTP/XML 통합	Oracle 활성 사전 기반 MFDS 파생 XML의 HTTP import·section·validation·재export·XSD 검증; 공식 원본은 별도 보존.	398	1	0	0
 crates/services/web-server/tests/xml/roundtrip/drug.rs	web-server::xml	HTTP/XML 통합	D/G drug·active substance·dosage·indication 잔여 필드를 HTTP 편집 후 XML export round-trip으로 검증한다.	219	1	0	0
 crates/services/web-server/tests/xml/roundtrip/mod.rs	web-server::xml	모듈 등록	XML roundtrip의 drug·narrative·patient·reaction·report·schema 모듈과 support를 등록한다.	8	0	0	0
 crates/services/web-server/tests/xml/roundtrip/narrative.rs	web-server::xml	HTTP/XML 통합	N/R narrative와 summary 필드를 HTTP 편집 후 XML export round-trip으로 검증한다.	121	1	0	0

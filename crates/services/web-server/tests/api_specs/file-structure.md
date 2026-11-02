@@ -288,7 +288,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [xml/import_export/nullflavor.rs](../xml/import_export/nullflavor.rs) | XML F/E nullFlavor를 import한 뒤 test-result와 reaction API readback에 보존되는지 검증한다. | HTTP/XML 통합 | 103 | 2 | 0 |
 | [xml/import_export/rejections.rs](../xml/import_export/rejections.rs) | 필수 header·기관별 N 수신처 위반의 단건/ZIP 거절과 정상 draft 다운로드·오류 이력 계약을 검증한다. | HTTP/XML 통합 | 381 | 2 | 0 |
 | [xml/import_export/support.rs](../xml/import_export/support.rs) | XML fixture 변형·고유 report ID 생성과 multipart import/case-id 추출 helper를 제공한다. | helper | 98 | 0 | 0 |
-| [xml/mfds_import_samples_web.rs](../xml/mfds_import_samples_web.rs) | MFDS example XML들을 HTTP import하고 case 각 section·validation·재export 및 XML schema 결과를 검증한다. | HTTP/XML 통합 | 398 | 1 | 0 |
+| [xml/mfds_import_samples_web.rs](../xml/mfds_import_samples_web.rs) | Oracle 활성 사전 기반 MFDS 파생 XML의 HTTP import·section·validation·재export·XSD 검증; 공식 원본은 별도 보존. | HTTP/XML 통합 | 398 | 1 | 0 |
 | [xml/roundtrip/drug.rs](../xml/roundtrip/drug.rs) | D/G drug·active substance·dosage·indication 잔여 필드를 HTTP 편집 후 XML export round-trip으로 검증한다. | HTTP/XML 통합 | 219 | 1 | 0 |
 | [xml/roundtrip/mod.rs](../xml/roundtrip/mod.rs) | XML roundtrip의 drug·narrative·patient·reaction·report·schema 모듈과 support를 등록한다. | 모듈 등록 | 8 | 0 | 0 |
 | [xml/roundtrip/narrative.rs](../xml/roundtrip/narrative.rs) | N/R narrative와 summary 필드를 HTTP 편집 후 XML export round-trip으로 검증한다. | HTTP/XML 통합 | 121 | 1 | 0 |
@@ -337,7 +337,8 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [`registry/tools/check_contract_test_results.py`](../../../../../registry/tools/check_contract_test_results.py) | 필요한 Editor 결과의 missing·ignored·failed·duplicate를 거절; legacy read도 같은 결과 gate에 포함 |
 | [`scripts/ci_test_plan.py`](../../../../../scripts/ci_test_plan.py) | 변경 파일의 integration target 및 Editor page/category/legacy prefix 선택 |
 | [authz/protected_route_inventory.snapshot](../authz/protected_route_inventory.snapshot) | 보호 API 429개 등록 inventory 기준; 동작 검사가 아님 |
-| [xml/fixtures/mfds/kr-literature-initial-v1.0.xml](../xml/fixtures/mfds/kr-literature-initial-v1.0.xml) | MFDS 공식 sample 원본; 출처와 사용 제한은 Import 명세 참조 |
+| [xml/fixtures/mfds/official/kr-literature-initial-v1.0.xml](../xml/fixtures/mfds/official/kr-literature-initial-v1.0.xml) | MFDS 공식 sample 원본; 출처와 사용 제한은 Import 명세 참조 |
+| [xml/fixtures/mfds/derived/kr-literature-initial-v1.0-meddra-28.1.xml](../xml/fixtures/mfds/derived/kr-literature-initial-v1.0-meddra-28.1.xml) | 실제 Oracle 활성 사전에 맞춘 CI 파생본; 변경 범위는 Import 명세 참조 |
 | [xml/fixtures/mfds/.gitattributes](../xml/fixtures/mfds/.gitattributes) | XML 원본 byte/개행 보존 |
 
 ## 경계를 유지하는 이유

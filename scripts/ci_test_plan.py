@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 from pathlib import Path
 import re
@@ -25,6 +26,12 @@ CONTRACT_TARGETS = {'api_cases', 'api_editor', 'api_import'}
 EDITOR_GROUPS = {'fields': 'fieldChecks', 'rows': 'collections',
                  'relations': 'relations', 'audit': 'auditChecks'}
 REGISTRY_ROOT = Path(__file__).resolve().parents[1] / 'registry'
+CI_TERMINOLOGY_INPUTS = {
+    'scripts/load-ci-terminology.py',
+    'scripts/db/ci-terminology-manifest.json',
+    'scripts/db/export-ci-terminology.sql',
+    'scripts/tests/test_ci_terminology.py',
+}
 
 
 def xml_assets_required(selections: dict) -> bool:
@@ -32,7 +39,12 @@ def xml_assets_required(selections: dict) -> bool:
         not selections['web-server'] or bool({'api_import', 'api_submission', 'xml'} & set(selections['web-server']))))
 
 
-def xml_assets_for_cargo_args(args: list[str]) -> bool:
+def terminology_snapshot_required(selections: dict) -> bool:
+    return 'web-server' in selections and (
+        not selections['web-server'] or 'xml' in selections['web-server'])
+
+
+def _cargo_arguments(args: list[str]) -> argparse.Namespace:
     # Parse only Cargo arguments; libtest filters after -- do not select build targets.
     if args[:1] == ['--']:
         args = args[1:]
@@ -46,14 +58,47 @@ def xml_assets_for_cargo_args(args: list[str]) -> bool:
         parser.add_argument(option, action='store_true')
     for option in ('--bin', '--example', '--bench'):
         parser.add_argument(option, action='append')
+    parser.add_argument('--no-run', action='store_true')
     parsed, _ = parser.parse_known_args(args)
+    return parsed
+
+
+def _cargo_selections(parsed: argparse.Namespace) -> dict | None:
     if parsed.workspace or not parsed.package:
-        return True
+        return None
     if any(not re.fullmatch(r'[\w-]+(?:@[\w.+-]+)?', package) for package in parsed.package):
-        return True  # Package globs/URLs can include asset consumers.
-    other_targets = any(value for key, value in vars(parsed).items() if key not in ('package', 'test', 'workspace'))
+        return None  # Package globs/URLs can include asset consumers.
+    other_targets = any(value for key, value in vars(parsed).items()
+                        if key not in ('package', 'test', 'workspace', 'no_run'))
     targets = parsed.test if parsed.test and not other_targets else []
-    return xml_assets_required({package.split('@')[0]: targets for package in parsed.package})
+    return {package.split('@')[0]: targets for package in parsed.package}
+
+
+def xml_assets_for_cargo_args(args: list[str]) -> bool:
+    selections = _cargo_selections(_cargo_arguments(args))
+    return True if selections is None else xml_assets_required(selections)
+
+
+def terminology_snapshot_for_cargo_args(args: list[str]) -> bool:
+    parsed = _cargo_arguments(args)
+    if parsed.no_run:
+        return False
+    packages = parsed.package or []
+    web_server_possible = (parsed.workspace or not packages or any(
+        package.split('@')[0] == 'web-server' or
+        not re.fullmatch(r'[\w-]+(?:@[\w.+-]+)?', package)
+        for package in packages
+    ))
+    if not web_server_possible:
+        return False
+    if parsed.all_targets or parsed.tests:
+        return True
+    if parsed.test:
+        return any(fnmatch.fnmatchcase('xml', pattern) for pattern in parsed.test)
+    if any((parsed.lib, parsed.bins, parsed.examples, parsed.benches, parsed.doc,
+            parsed.bin, parsed.example, parsed.bench)):
+        return False
+    return True
 
 
 def load_workspace(root: Path) -> dict:
@@ -105,6 +150,12 @@ def select_tests(paths: list[str], workspace: dict) -> dict:
     editor_all = False
     contract_inputs_changed = False
     for path in paths:
+        if path in CI_TERMINOLOGY_INPUTS:
+            if 'web-server' not in selected:
+                selected['web-server'] = ['xml']
+            elif selected['web-server'] and 'xml' not in selected['web-server']:
+                selected['web-server'].append('xml')
+            continue
         if path == 'crates/services/web-server/tests/api_editor/API_SPEC.md':
             continue
         if path.startswith('crates/services/web-server/tests/api_specs/') and (
@@ -256,11 +307,13 @@ def run_commands(commands: list[list[str]]) -> int:
 def test_matrix(selections: dict, workspace: dict, editor_filters: list[str]) -> dict:
     jobs = []
 
-    def add(name, selected, filters, commands=None):
+    def add(name, selected, filters, commands=None, terminology_snapshot=None):
         jobs.append({
             'name': name, 'selections': selected, 'editor_filters': filters,
             'commands': commands if commands is not None else commands_for(selected, workspace, editor_filters=filters),
             'xml_assets': xml_assets_required(selected),
+            'terminology_snapshot': (terminology_snapshot_required(selected)
+                                     if terminology_snapshot is None else terminology_snapshot),
             'backend_contracts': 'web-server' in selected and bool(CONTRACT_TARGETS.intersection(selected['web-server'])),
         })
 
@@ -277,7 +330,8 @@ def test_matrix(selections: dict, workspace: dict, editor_filters: list[str]) ->
             args = ['scripts/test-isolated-db.sh', '--locked', '-p', 'web-server', '-j1', '--no-fail-fast']
             libtest = ['--', '--test-threads=1', '--color', 'never']
             add('web-server-unit-doc', {'web-server': []}, [],
-                [args + ['--lib', '--bins', '--examples'] + libtest, args + ['--doc'] + libtest])
+                [args + ['--lib', '--bins', '--examples'] + libtest, args + ['--doc'] + libtest],
+                terminology_snapshot=False)
             targets = sorted(workspace['web-server']['targets'])
         for target in targets:
             filters = editor_filters if target == 'api_editor' else []
@@ -299,9 +353,16 @@ def main():
     run_parser.add_argument('--kind', choices=('tests', 'fmt', 'clippy'), default='tests')
     assets_parser = subparsers.add_parser('xml-assets', help='preview asset requirements for isolated-runner Cargo arguments')
     assets_parser.add_argument('cargo_args', nargs=argparse.REMAINDER)
+    terminology_parser = subparsers.add_parser(
+        'terminology-snapshot',
+        help='preview terminology snapshot requirements for isolated-runner Cargo arguments')
+    terminology_parser.add_argument('cargo_args', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.command == 'xml-assets':
         print(json.dumps(xml_assets_for_cargo_args(args.cargo_args)))
+        return
+    if args.command == 'terminology-snapshot':
+        print(json.dumps(terminology_snapshot_for_cargo_args(args.cargo_args)))
         return
     root = Path.cwd()
     workspace = load_workspace(root)

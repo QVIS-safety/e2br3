@@ -1,2 +1,3 @@
-# Preserve the official attachment bytes, including its whitespace.
-kr-literature-initial-v1.0.xml -text -whitespace
+# Preserve official and derived fixture bytes, including source whitespace.
+official/kr-literature-initial-v1.0.xml -text -whitespace
+derived/kr-literature-initial-v1.0-meddra-28.1.xml -text -whitespace

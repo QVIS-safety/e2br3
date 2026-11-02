@@ -1,0 +1,36 @@
+{
+  "source": "Oracle server PostgreSQL, e2br3_ui_as2_transport_20260924 (read-only export)",
+  "captured_at": "2026-11-02T03:42:38.240172+00:00",
+  "sha256": "047443e4189d608c50429df1d3f9829f9a107412963fc9e4dc08483e81cf0e95",
+  "bytes": 3274,
+  "rows": {
+    "meddra_terms": 6,
+    "mfds_products": 3,
+    "mfds_product_substances": 2,
+    "controlled_terminology_terms": 1
+  },
+  "releases": [
+    {
+      "dictionary": "ich_constrained_ucum",
+      "version": "2.2",
+      "language": "en",
+      "subset_rows": 1,
+      "source_rows": 345
+    },
+    {
+      "dictionary": "meddra",
+      "version": "28.1",
+      "language": "en",
+      "subset_rows": 6,
+      "source_rows": 92574
+    },
+    {
+      "dictionary": "mfds_product",
+      "version": "2026-10-01",
+      "language": "ko",
+      "subset_rows": 5,
+      "source_rows": 136518
+    }
+  ],
+  "secret": "ORACLE_CI_TERMINOLOGY_20261102"
+}
