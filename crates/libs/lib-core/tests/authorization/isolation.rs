@@ -87,6 +87,15 @@ async fn audit_rls_does_not_recompute_permissions_from_a_role_label() -> Result<
 #[tokio::test]
 async fn clean_bootstrap_has_no_role_label_based_rls_policy() -> Result<()> {
 	let database = init_clean_bootstrap_authorization_test_db().await?;
+	let public_audit_mutable = sqlx::query_scalar::<_, bool>(
+		"SELECT has_table_privilege('e2br3_app_role', 'public.audit_logs', 'INSERT,UPDATE,DELETE,TRUNCATE')",
+	)
+	.fetch_one(database.pool())
+	.await?;
+	assert!(
+		!public_audit_mutable,
+		"isolated bootstrap must preserve public audit mutation restrictions"
+	);
 	let role_dependent_policies = sqlx::query_scalar::<_, i64>(
 		"SELECT count(*) FROM pg_policies WHERE schemaname = current_schema() AND COALESCE(qual, '') LIKE '%current_user_role%'",
 	)

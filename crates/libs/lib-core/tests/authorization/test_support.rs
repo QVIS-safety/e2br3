@@ -152,7 +152,11 @@ pub async fn init_clean_bootstrap_authorization_test_db(
 				!line.starts_with('\\') && !line.contains(":\"app_db_user\"")
 			})
 			.collect::<Vec<_>>()
-			.join("\n");
+			.join("\n")
+			.replace(
+				"IN SCHEMA public",
+				&format!("IN SCHEMA \"{}\"", database.schema),
+			);
 	sqlx::raw_sql(&bootstrap).execute(database.pool()).await?;
 	apply_authorization_migrations(&database).await?;
 	Ok(database)
