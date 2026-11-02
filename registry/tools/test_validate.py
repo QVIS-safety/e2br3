@@ -2521,10 +2521,11 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [test-plan, registry, fmt, clippy, validator, test]",
+            "needs: [test-plan, registry, fmt, clippy, validator, test, migration-tests]",
             deploy_job,
         )
         self.assertIn("needs.test-plan.result == 'success'", deploy_job)
+        self.assertIn("needs.migration-tests.result == 'success'", deploy_job)
         self.assertIn("needs.fmt.result == 'success' && needs.clippy.result == 'success'", deploy_job)
         for output, job in (("registry", "registry"), ("validator", "validator"), ("backend", "test")):
             self.assertIn(f"needs.test-plan.outputs.{output} == 'true' && needs.{job}.result == 'success'", deploy_job)
