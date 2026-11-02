@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, xml_assets_for_cargo_args
+from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, terminology_snapshot_for_cargo_args, xml_assets_for_cargo_args
 from generate_editor_contract_web_tests import expected_editor_execution_tests
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,7 +44,9 @@ class TestPlanTests(unittest.TestCase):
             target = job['selections']['web-server'][0]
             self.assertEqual(job['backend_contracts'], target in ('api_cases', 'api_editor', 'api_import'))
             self.assertEqual(job['xml_assets'], target in ('api_import', 'api_submission', 'xml'))
+            self.assertEqual(job['terminology_snapshot'], target == 'xml')
             self.assertEqual(job['commands'], commands_for(job['selections'], self.workspace))
+        self.assertFalse(unit[0]['terminology_snapshot'])
 
     def test_matrix_preserves_partial_selection_and_editor_filters(self):
         plan = self.plan('crates/services/web-server/tests/api_editor/relations/restore.rs',
@@ -105,6 +107,17 @@ class TestPlanTests(unittest.TestCase):
                 self.assertEqual(self.plan(*paths)['selections'], {package: []})
         self.assertEqual(self.plan('crates/services/web-server/tests/api_cases/validation_common.rs')['selections'],
                          {'web-server': ['api_cases']})
+
+    def test_ci_terminology_inputs_select_only_web_server_xml(self):
+        for path in (
+            'scripts/load-ci-terminology.py',
+            'scripts/db/ci-terminology-manifest.json',
+            'scripts/db/export-ci-terminology.sql',
+            'scripts/tests/test_ci_terminology.py',
+        ):
+            plan = self.plan(path)
+            self.assertEqual(plan['selections'], {'web-server': ['xml']}, path)
+            self.assertTrue(plan['test_matrix']['include'][0]['terminology_snapshot'])
 
     def test_every_cargo_target_and_nested_family_resolves(self):
         for package, data in self.workspace.items():
@@ -192,6 +205,46 @@ class TestPlanTests(unittest.TestCase):
                      ['-pweb-server@0.1.0', '--test', 'authz'], ['-p', 'lib-core'],
                      ['--', '-p', 'web-server', '--test', 'api_editor', '--', '--skip', 'xml']):
             self.assertFalse(xml_assets_for_cargo_args(args), args)
+
+    def test_terminology_input_does_not_narrow_shared_web_helpers(self):
+        inputs = ['crates/services/web-server/tests/common/mod.rs', 'scripts/db/ci-terminology-manifest.json']
+        for paths in (inputs, inputs[::-1]):
+            self.assertEqual(self.plan(*paths)['selections'], {'web-server': []})
+
+    def test_terminology_snapshot_is_limited_to_executed_web_server_xml_tests(self):
+        for target in ('api_import', 'api_submission', 'api_terminology', 'xml'):
+            required = target == 'xml'
+            plan = self.plan(f'crates/services/web-server/tests/{target}.rs')
+            job = plan['test_matrix']['include'][0]
+            self.assertEqual(job['terminology_snapshot'], required, target)
+            self.assertEqual(
+                terminology_snapshot_for_cargo_args(
+                    ['-p', 'web-server', '--test', target]),
+                required,
+            )
+        for args in (
+            [],
+            ['--workspace'],
+            ['-p', 'web-server'],
+            ['-p', 'web-server', '--all-targets'],
+            ['-p', 'web-server', '--test', 'xml', '--all-targets'],
+            ['-p', 'web-server', '--test', 'api_import', '--all-targets'],
+            ['-p', 'web-server', '--test', 'x*'],
+            ['-p', 'web-*', '--test', 'xml'],
+        ):
+            self.assertTrue(terminology_snapshot_for_cargo_args(args), args)
+        for args in (
+            ['-p', 'xml'],
+            ['-p', 'xml', '--test', 'xml'],
+            ['-p', 'web-server', '--lib'],
+            ['--workspace', '--lib'],
+            ['--workspace', '--doc'],
+            ['--lib'],
+            ['-p', 'web-server', '--test', 'api_import'],
+            ['-p', 'web-server', '--test', 'api_submission'],
+            ['-p', 'web-server', '--test', 'xml', '--no-run'],
+        ):
+            self.assertFalse(terminology_snapshot_for_cargo_args(args), args)
 
     def test_every_api_and_xml_file_has_an_execution_owner(self):
         tests = ROOT / 'crates/services/web-server/tests'

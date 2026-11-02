@@ -48,7 +48,7 @@
 - 공통 HTTP 준비·경로·반응 언어·message header는 [xml/support.rs](../xml/support.rs)에서 공유한다. field roundtrip의 실제 device 준비는 그 모듈에 남긴다. validator가 읽지 않는 legacy device-characteristics를 쓰던 별도 준비는 수동 export와 무관해 제거했다.
 - fixture 누락, setup/import/export 실패, malformed 필수 응답은 성공으로 끝내지 않는다. 감사 실패/deadlock의 테스트 내부 재시도를 제거했다. 수동 export에 불필요한 `mark-validated` 준비도 제거했다. 제출 검증과 export의 필수값/XSD 검사는 각자의 책임에 남는다.
 - [CI/SI roundtrip](../xml/roundtrip/report.rs)은 study type의 XML 반영을 확인한다. N.2.r.1/N.2.r.4는 C.1.1/C.1.2에서 파생되므로 별도 message-header의 legacy number/date를 export 기대값으로 사용하지 않는다.
-- [MFDS samples](../xml/mfds_import_samples_web.rs)는 공식 원본 fixture가 필요하며 디렉터리 부재/빈 목록도 실패다. [Import 명세](import.md)에 공식 첨부 URL·SHA-256·CI checkout 경로를 기록했다.
+- [MFDS samples](../xml/mfds_import_samples_web.rs)는 운영 사전과 현행 규칙을 명시한 파생 fixture를 사용하며 디렉터리 부재/빈 목록도 실패다. 공식 원본은 수정 없이 별도 보존하고, [Import 명세](import.md)에 원본 URL·SHA-256과 파생 범위 및 실제 사전 subset 조건을 기록했다.
 - `xml`의 `fda_export_reads_persisted_sections_through_rls`, `fresh_full_build_validates_for_all_authorities` 등 직접 모델/XML 호출 검사는 저장·XML 계층 근거다. API method/path별 HTTP 검증으로 중복 집계하지 않는다.
 
 위 변경의 실행 결과는 **NOT_RUN**이다. 조기 성공 제거는 검사 코드의 신뢰성을 개선하지만, 실제 XML·DB·기관 검증 통과를 증명하지 않는다.

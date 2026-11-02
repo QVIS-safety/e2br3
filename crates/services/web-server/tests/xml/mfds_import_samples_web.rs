@@ -34,7 +34,7 @@ fn mfds_examples_dir() -> PathBuf {
 	if let Ok(value) = std::env::var("E2BR3_MFDS_EXAMPLES_DIR") {
 		return resolve_from_workspace(PathBuf::from(value));
 	}
-	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/xml/fixtures/mfds")
+	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/xml/fixtures/mfds/derived")
 }
 
 fn list_xml_files(dir: &Path) -> Result<Vec<PathBuf>> {

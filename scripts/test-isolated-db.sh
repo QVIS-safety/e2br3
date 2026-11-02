@@ -171,4 +171,11 @@ export SERVICE_MIGRATION_DB_URL="$test_url"
 export SKIP_DEV_INIT=1
 export E2BR3_TEST_DATABASE_NAME="$database_name"
 
+needs_terminology="$(python3 "$repo_root/scripts/ci_test_plan.py" terminology-snapshot -- "$@")"
+case "$needs_terminology" in
+	true) run_interruptible python3 "$repo_root/scripts/load-ci-terminology.py" ;;
+	false) ;;
+	*) printf 'invalid terminology snapshot selection: %s\n' "$needs_terminology" >&2; exit 2 ;;
+esac
+
 run_interruptible cargo test "$@"
