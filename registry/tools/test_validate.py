@@ -2521,9 +2521,10 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [test-plan, registry, fmt, clippy, validator, test]",
+            "needs: [test-plan, registry, fmt, clippy, validator, test, migration-tests]",
             deploy_job,
         )
+        self.assertIn("needs.migration-tests.result == 'success'", deploy_job)
 
     def test_ci_keeps_full_inventory_and_independent_backend_result_gate(self):
         workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
