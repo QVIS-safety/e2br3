@@ -31,12 +31,12 @@ crates/services/web-server/tests/api_cases/scope/support.rs	web-server::api_case
 crates/services/web-server/tests/api_cases/settings.rs	web-server::api_cases	HTTP 계약	Workflow config 응답과 관리자 case-number 설정의 Case 생성 결과	124	2	0	0
 crates/services/web-server/tests/api_cases/subresources/drug.rs	web-server::api_cases	HTTP 계약	Drug와 하위 substance/dosage/device/relatedness CRUD·삭제/복원·원자성; 소속 경계는 drug_scope	708	8	0	0
 crates/services/web-server/tests/api_cases/subresources/drug_scope.rs	web-server::api_cases	HTTP 계약	legacy Drug 자식의 Case/부모 소속·삭제된 부모 접근 거절·부모 복원 후 자식 ID/count	489	4	0	0
-crates/services/web-server/tests/api_cases/subresources/lifecycle_audit.rs	web-server::api_cases	공통 검증 helper	감사 행 조회와 actor/org/reason/old/new/changed_fields 검증	185	0	0	0
+crates/services/web-server/tests/api_cases/subresources/lifecycle_audit.rs	web-server::api_cases	공통 검증 helper	감사 행 조회와 actor/org/reason/old/new/changed_fields 검증	191	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs	web-server::api_cases	HTTP 계약	Drug와 자식 9종의 재저장·삭제/복원·소속·권한·잠금·감사	352	1	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs	web-server::api_cases	HTTP 계약	Narrative·linked report·reaction·test result 6종과 field notation lifecycle	555	2	0	0
-crates/services/web-server/tests/api_cases/subresources/lifecycle_parents.rs	web-server::api_cases	공통 검증 helper	Case·하위 부모 soft 삭제·복원과 자식 ID·값·감사 보존	333	0	0	0
+crates/services/web-server/tests/api_cases/subresources/lifecycle_parents.rs	web-server::api_cases	공통 검증 helper	Case·하위 부모 soft 삭제·복원과 자식 ID·값·감사 보존	356	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs	web-server::api_cases	HTTP 계약	Patient와 자식 10종의 재저장·삭제/복원·소속·권한·잠금·감사	417	1	0	0
-crates/services/web-server/tests/api_cases/subresources/lifecycle_policy.rs	web-server::api_cases	공통 검증 helper	viewer·다른 조직/부모·Case 잠금 거절과 상태·감사 불변	210	0	0	0
+crates/services/web-server/tests/api_cases/subresources/lifecycle_policy.rs	web-server::api_cases	공통 검증 helper	viewer·다른 조직/부모·Case 잠금 거절과 상태·감사 불변	215	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs	web-server::api_cases	HTTP 계약	Report·sender·study·source document·header·receiver 12종 lifecycle	457	1	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_singleton.rs	web-server::api_cases	공통 검증 helper	Singleton 갱신·동일 저장·hard delete/재생성 계약	282	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_support.rs	web-server::api_cases	공통 검증 helper	기존 행 계약·새 GET/list·soft/hard 삭제/복원 재호출 공통 assertion	601	0	0	0
@@ -59,8 +59,8 @@ crates/services/web-server/tests/api_editor.rs	web-server::api_editor	target 등
 crates/services/web-server/tests/api_editor/audit.rs	web-server::api_editor	helper	Editor 전후 값·감사 snapshot 비교와 거절 후 불변 공통 assertion	249	0	0	0
 crates/services/web-server/tests/api_editor/audit/assessment.rs	web-server::api_editor	HTTP 계약	인과성 assessment 저장 값과 단일 감사 entry	130	0	0	0
 crates/services/web-server/tests/api_editor/audit/projection.rs	web-server::api_editor	HTTP 계약	FDA device scalar 저장의 감사 API projection	105	0	0	0
-crates/services/web-server/tests/api_editor/fields.rs	web-server::api_editor	HTTP 계약	Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사	625	2	0	0
-crates/services/web-server/tests/api_editor/fields/coupled_clear.rs	web-server::api_editor	HTTP 계약	연결 필드 clear·생략 구분·sibling 유지·행 재조회	614	0	0	0
+crates/services/web-server/tests/api_editor/fields.rs	web-server::api_editor	HTTP 계약	Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사	652	2	0	0
+crates/services/web-server/tests/api_editor/fields/coupled_clear.rs	web-server::api_editor	HTTP 계약	연결 필드 clear·생략 구분·sibling 유지·행 재조회	628	0	0	0
 crates/services/web-server/tests/api_editor/fields/message_header.rs	web-server::api_editor	HTTP 계약	N registry 항목의 전용 message-header POST/PUT/GET 저장·거절·감사 불변 검사	181	0	0	0
 crates/services/web-server/tests/api_editor/fields/null_flavor.rs	web-server::api_editor	HTTP 계약	값↔NullFlavor 전이·동시 값 거절·부모/등록번호 관계	566	0	0	0
 crates/services/web-server/tests/api_editor/fields/required_values.rs	web-server::api_editor	HTTP 계약	필수 값 blank/잘못된 report year 거절과 저장 값·자식 보존	209	0	0	0
@@ -89,34 +89,34 @@ crates/services/web-server/tests/api_editor/pages/rp.generated.rs	web-server::ap
 crates/services/web-server/tests/api_editor/pages/sd.generated.rs	web-server::api_editor	생성된 실행 등록	SD registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유	45	1	27	0
 crates/services/web-server/tests/api_editor/pages/si.generated.rs	web-server::api_editor	생성된 실행 등록	SI registry의 scalar 및 behavior 검사 실행 등록; 검사 구현은 fields/rows/relations/audit 공유	57	6	14	0
 crates/services/web-server/tests/api_editor/relations.rs	web-server::api_editor	모듈 등록	관계 모듈 등록·바깥 행 5종 재호출·PATCH→GET·감사와 viewer/조직/잠금/Case archive 공통 검증	621	0	0	0
-crates/services/web-server/tests/api_editor/relations/ae_restore.rs	web-server::api_editor	HTTP 계약	AE 삭제 행 read/restore와 case·권한 경계	369	0	0	0
+crates/services/web-server/tests/api_editor/relations/ae_restore.rs	web-server::api_editor	HTTP 계약	AE 삭제 행 read/restore와 case·권한 경계	372	0	0	0
 crates/services/web-server/tests/api_editor/relations/ci_rows.rs	web-server::api_editor	HTTP 계약	CI soft 자식 3종 삭제/복원/재저장·ID/count·소속·감사·rollback	239	0	0	0
 crates/services/web-server/tests/api_editor/relations/device_children.rs	web-server::api_editor	HTTP 계약	Device 목록 교체 시 제거된 부모의 하위행 삭제	263	0	0	0
-crates/services/web-server/tests/api_editor/relations/dg_restore.rs	web-server::api_editor	HTTP 계약	Drug 삭제/복원 시 자식과 case·권한 경계	401	0	0	0
+crates/services/web-server/tests/api_editor/relations/dg_restore.rs	web-server::api_editor	HTTP 계약	Drug 삭제/복원 시 자식과 case·권한 경계	404	0	0	0
 crates/services/web-server/tests/api_editor/relations/dg_rows.rs	web-server::api_editor	HTTP 계약	DG 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변	216	0	0	0
 crates/services/web-server/tests/api_editor/relations/dm_rows.rs	web-server::api_editor	HTTP 계약	DM 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변	379	0	0	0
 crates/services/web-server/tests/api_editor/relations/documents.rs	web-server::api_editor	HTTP 계약	Source document ID 재저장·수정 재전송·생략/빈 배열·외부 ID rollback·hard 삭제	228	0	0	0
-crates/services/web-server/tests/api_editor/relations/lb_restore.rs	web-server::api_editor	HTTP 계약	LB 삭제 행 read/restore와 case·권한 경계	355	0	0	0
+crates/services/web-server/tests/api_editor/relations/lb_restore.rs	web-server::api_editor	HTTP 계약	LB 삭제 행 read/restore와 case·권한 경계	358	0	0	0
 crates/services/web-server/tests/api_editor/relations/nr_rows.rs	web-server::api_editor	HTTP 계약	NR 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변	183	0	0	0
 crates/services/web-server/tests/api_editor/relations/parents.rs	web-server::api_editor	HTTP 계약	부모 자동 생성/재사용·자식 수정의 부모 ID 유지	236	0	0	0
 crates/services/web-server/tests/api_editor/relations/relatedness.rs	web-server::api_editor	HTTP 계약	Assessment/relatedness ID 재저장·수정 재전송·소속 rollback·soft 복원/hard 부모 삭제 구분	590	0	0	0
-crates/services/web-server/tests/api_editor/relations/restore.rs	web-server::api_editor	HTTP 계약	DH/LR 생성 ID 재저장·생략/빈 배열·다른 Case 행 거절·soft 삭제/복원 원자성	412	0	0	0
+crates/services/web-server/tests/api_editor/relations/restore.rs	web-server::api_editor	HTTP 계약	DH/LR 생성 ID 재저장·생략/빈 배열·다른 Case 행 거절·soft 삭제/복원 원자성	410	0	0	0
 crates/services/web-server/tests/api_editor/relations/rp_rows.rs	web-server::api_editor	HTTP 계약	RP 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변	142	0	0	0
 crates/services/web-server/tests/api_editor/relations/scope.rs	web-server::api_editor	HTTP 계약	RP/DM/SI/SD 소속 검증·NR 2종/DG 3종 외부 ID 혼합 거절과 양쪽 상태/감사 불변	913	0	0	0
 crates/services/web-server/tests/api_editor/relations/si_rows.rs	web-server::api_editor	HTTP 계약	SI 하위 행 삭제·일반 재저장·명시 복원·반복 요청·ID/count·새 GET·malformed ID 불변	214	0	0	0
 crates/services/web-server/tests/api_editor/rows.rs	web-server::api_editor	모듈 등록	api_editor 하위 책임 모듈 등록	3	0	0	0
 crates/services/web-server/tests/api_editor/rows/creation.rs	web-server::api_editor	HTTP 계약	빈 collection/child 객체 생성 의미·draft 행·빈 product 거절	157	0	0	0
-crates/services/web-server/tests/api_editor/rows/identity.rs	web-server::api_editor	HTTP 계약	Drug device·code 3종 재조회/교체·생성 ID 연결 및 수정 재전송의 ID/값/감사 보존	503	0	0	0
+crates/services/web-server/tests/api_editor/rows/identity.rs	web-server::api_editor	HTTP 계약	Drug device·code 3종 재조회/교체·생성 ID 연결 및 수정 재전송의 ID/값/감사 보존	536	0	0	0
 crates/services/web-server/tests/api_editor/rows/projection.rs	web-server::api_editor	HTTP 계약	반복행 정렬·목록 필드·일괄 상세 일치·인증	293	0	0	0
 crates/services/web-server/tests/api_editor/support.rs	web-server::api_editor	helper	Editor HTTP·행 ID·registry behavior 조회·fixture helper	324	0	0	0
 crates/services/web-server/tests/api_presave.rs	web-server::api_presave	target 등록	api_presave Cargo integration target과 하위 모듈 연결	4	0	0	0
 crates/services/web-server/tests/api_presave/audit_web.rs	web-server::api_presave	HTTP 계약	부모/자식 15종 HTTP 수정의 actor/org/reason/category/old/new 감사	616	1	0	0
-crates/services/web-server/tests/api_presave/authorization_web.rs	web-server::api_presave	HTTP 계약	부모/자식 15종 read-only/조직 경계와 거절 후 상태·감사 불변	679	1	0	0
+crates/services/web-server/tests/api_presave/authorization_web.rs	web-server::api_presave	HTTP 계약	부모/자식 15종 read-only/조직 경계와 거절 후 상태·감사 불변	680	1	0	0
 crates/services/web-server/tests/api_presave/crud_matrix_web.rs	web-server::api_presave	HTTP 계약	Sender/receiver/product/reporter 공통 aggregate CRUD와 생략/null/blank 저장	648	3	0	0
 crates/services/web-server/tests/api_presave/delete_constraints_web.rs	web-server::api_presave	HTTP 계약	참조 중인 Presave 부모 삭제 제약과 product soft-delete scope	162	2	0	0
 crates/services/web-server/tests/api_presave/helpers.rs	web-server::api_presave	helper	Presave HTTP와 부모·자식·Info editor fixture helper	649	0	0	0
 crates/services/web-server/tests/api_presave/legacy_routes_web.rs	web-server::api_presave	HTTP 계약	제거한 legacy presave templates URL의 404	27	1	0	0
-crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs	web-server::api_presave	HTTP 계약	반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback	874	4	0	0
+crates/services/web-server/tests/api_presave/lifecycle_matrix_web.rs	web-server::api_presave	HTTP 계약	반복 삭제/복원·부모 보관 시 자식 ID 보존·부모 소속과 rollback	875	4	0	0
 crates/services/web-server/tests/api_presave/mod.rs	web-server::api_presave	모듈 등록	api_presave 하위 책임 모듈 등록	14	0	0	0
 crates/services/web-server/tests/api_presave/narrative_web.rs	web-server::api_presave	HTTP 계약	Narrative Presave CRUD·모든 parent/child 필드 저장	158	1	0	0
 crates/services/web-server/tests/api_presave/product_web.rs	web-server::api_presave	HTTP 계약	Product 정체성·기관 공통 값·scope와 details graph 원자 저장/삭제/오류	886	10	0	0
@@ -150,7 +150,7 @@ crates/services/web-server/tests/api_terminology/mod.rs	web-server::api_terminol
 crates/services/web-server/tests/api_terminology/permissions.rs	web-server::api_terminology	HTTP 계약	viewer·operational user의 용어 조회 권한과 import/release mutation 거부를 검증한다.	113	3	0	0
 crates/services/web-server/tests/api_terminology/releases.rs	web-server::api_terminology	HTTP 계약	사전 release 승인·활성화·rollback·언어 전환·재import와 활성 사전 변경 후 Case 경고 cache 무효화	756	7	0	0
 crates/services/web-server/tests/api_terminology/search.rs	web-server::api_terminology	HTTP 계약	국가·code list·MedDRA·WHODrug·활성 MFDS product/substance 검색 응답을 검증한다.	252	6	0	0
-crates/services/web-server/tests/api_terminology/support.rs	web-server::api_terminology	fixture/helper	terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다.	415	0	0	0
+crates/services/web-server/tests/api_terminology/support.rs	web-server::api_terminology	fixture/helper	terminology 관리자·활성 release seed, MedDRA/WHODrug/C3 archive·multipart 생성, persistence 조회와 HTTP 요청 helper를 제공한다.	416	0	0	0
 crates/services/web-server/tests/api_administration.rs	web-server::api_administration	target 등록	api_administration Cargo integration target과 하위 모듈 연결	26	0	0	0
 crates/services/web-server/tests/api_administration/admin_settings/appendices_web.rs	web-server::api_administration	HTTP 계약	관리자 설정의 appendices 저장·조회와 빈 값 거부 계약을 HTTP로 검증한다.	53	1	0	0
 crates/services/web-server/tests/api_administration/admin_settings/audit_web.rs	web-server::api_administration	HTTP 계약	관리자 설정 변경 시 변경 필드가 감사 로그에 기록되는지 HTTP 응답과 저장 감사 행으로 검증한다.	171	1	0	0
@@ -163,7 +163,7 @@ crates/services/web-server/tests/api_administration/audit_web.rs	web-server::api
 crates/services/web-server/tests/api_administration/error_mapping_web.rs	web-server::api_administration	HTTP 계약	사용자 API의 잘못된 UUID는 400, 존재하지 않는 UUID는 404로 매핑되는지 검증한다.	44	2	0	0
 crates/services/web-server/tests/api_administration/health_web.rs	web-server::api_administration	HTTP 계약	공개 health의 204·빈 body·무인증 호출	15	1	0	0
 crates/services/web-server/tests/api_administration/middleware_ctx.rs	web-server::api_administration	HTTP 계약	인증 middleware가 사용자 context를 해석하고 연속 요청 사이에 context를 누출하지 않는지 검증한다.	80	2	0	0
-crates/services/web-server/tests/api_administration/organizations/delete_web.rs	web-server::api_administration	HTTP 계약	조직 hard delete·감사와 FK 종속 실패 rollback	129	1	0	0
+crates/services/web-server/tests/api_administration/organizations/delete_web.rs	web-server::api_administration	HTTP 계약	조직 비활성화·tenant 데이터 보존·member 접근 차단·단일 UPDATE 감사·반복 요청과 platform 조직 보호	181	1	0	0
 crates/services/web-server/tests/api_administration/organizations/list_web.rs	web-server::api_administration	HTTP 계약	System admin 교차 tenant 조직 filter·정렬·limit·DTO	94	1	0	0
 crates/services/web-server/tests/api_administration/organizations/mod.rs	web-server::api_administration	모듈 등록	조직 목록·수정·삭제 계약 모듈 등록	3	0	0	0
 crates/services/web-server/tests/api_administration/organizations/update_web.rs	web-server::api_administration	HTTP 계약	조직 type 정규화·fresh GET·감사와 invalid rollback	97	1	0	0
@@ -188,7 +188,7 @@ crates/services/web-server/tests/api_administration/users/access_web.rs	web-serv
 crates/services/web-server/tests/api_administration/users/create_web.rs	web-server::api_administration	HTTP 계약	관리자 사용자 생성, 기본 역할·선택 필드 기본값, 중복 email과 길이 제한 오류를 검증한다.	258	5	0	0
 crates/services/web-server/tests/api_administration/users/mod.rs	web-server::api_administration	모듈 등록	사용자 생성·수정·접근 수명주기 테스트 모듈을 등록한다.	4	0	0	0
 crates/services/web-server/tests/api_administration/users/update_web.rs	web-server::api_administration	HTTP 계약	관리자 사용자 수정, 빈 이름 거부·시작일 제거와 username/email 길이 제한을 검증한다.	119	3	0	0
-crates/services/web-server/tests/api_administration/users/workflow_options_web.rs	web-server::api_administration	HTTP 계약	Workflow 사용자 option의 활성·동일 조직·정렬·limit·DTO	97	1	0	0
+crates/services/web-server/tests/api_administration/users/workflow_options_web.rs	web-server::api_administration	HTTP 계약	Workflow 사용자 option의 활성·동일 조직·정렬·limit·DTO	89	1	0	0
 crates/services/web-server/tests/authz.rs	web-server::authz	target 등록	authz Cargo integration target과 하위 모듈 연결	36	0	0	0
 crates/services/web-server/tests/authz/authentication_web.rs	web-server::authz	HTTP 계약	login·refresh·logoff 상태, 잘못된 자격증명/token, 생성 사용자 로그인, legacy hash upgrade와 인증 middleware 거부를 검증한다.	450	10	0	0
 crates/services/web-server/tests/authz/authorization_snapshot.rs	web-server::authz	middleware component	DB에서 repeatable-read로 적재한 authorization snapshot이 request-parts middleware extractor로 전달되고, 미부착 요청은 거부되는지 검증한다.	42	2	0	0
@@ -227,7 +227,7 @@ crates/services/web-server/tests/xml/roundtrip/mod.rs	web-server::xml	모듈 등
 crates/services/web-server/tests/xml/roundtrip/narrative.rs	web-server::xml	HTTP/XML 통합	N/R narrative와 summary 필드를 HTTP 편집 후 XML export round-trip으로 검증한다.	121	1	0	0
 crates/services/web-server/tests/xml/roundtrip/patient.rs	web-server::xml	HTTP/XML 통합	D/M patient·parent·past-drug 필드와 parent nullFlavor를 HTTP/API 및 serializer round-trip으로 검증한다.	242	2	0	0
 crates/services/web-server/tests/xml/roundtrip/reaction.rs	web-server::xml	HTTP/XML 통합	E adverse-event와 sender diagnosis 전체 필드를 HTTP persistence와 XML export round-trip으로 검증한다.	635	2	0	0
-crates/services/web-server/tests/xml/roundtrip/report.rs	web-server::xml	HTTP/XML 통합	C/I report identification·message header 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다.	312	2	0	0
+crates/services/web-server/tests/xml/roundtrip/report.rs	web-server::xml	HTTP/XML 통합	C/I report identification·message header 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다.	310	2	0	0
 crates/services/web-server/tests/xml/roundtrip/schema.rs	web-server::xml	HTTP/XML 통합	persisted section의 RLS export, authority별 full-build schema/rule 검증과 빈 autopsy parent 출력 구조를 검증한다.	538	3	0	0
 crates/services/web-server/tests/xml/roundtrip/support.rs	web-server::xml	helper	roundtrip fixture import, FDA device 보정, authority header와 HTTP XML export helper를 제공한다.	239	0	0	0
 crates/services/web-server/tests/xml/roundtrip_profiles_web.rs	web-server::xml	HTTP/XML 통합	ICH/FDA/MFDS fixture를 HTTP import·validate·export하고 원본/재export XML을 schema 재검증한다.	276	1	0	0
@@ -236,11 +236,11 @@ crates/services/web-server/tests/xml/targeted_device_export.rs	web-server::xml	X
 crates/services/web-server/tests/common/mod.rs	web-server::shared	공유 준비	공통 DB 격리 guard·환경·조직/사용자/role/Case fixture; 각 target이 필요한 함수만 사용	831	0	0	0
 crates/services/web-server/tests/common/permission_profiles.rs	web-server::shared	공유 helper	실제 permission-profiles HTTP 요청으로 빈 권한 profile 생성	32	0	0	0
 crates/services/web-server/tests/isolation_guard.rs	web-server::isolation_guard	격리 guard	공유 개발 DB를 통합 테스트 대상으로 사용하는 경로 거절	18	1	0	0
-crates/libs/lib-core/tests/database.rs	lib-core::database	모듈 등록/격리 guard	database 모듈 등록과 실제 DB 이름이 전용 e2br3_test_ 이름인지 확인	32	0	0	0
+crates/libs/lib-core/tests/database.rs	lib-core::database	모듈 등록/격리 guard	database 모듈 등록과 실제 DB 이름이 전용 e2br3_test_ 이름인지 확인	35	0	0	0
 crates/libs/lib-core/tests/database/audit_chain.rs	lib-core::database	DB	감사 hash-chain 동시성 순서와 JSONB native 비교 11개 의미	100	2	0	0
 crates/libs/lib-core/tests/database/device_rls.rs	lib-core::database	DB	Device/code/characteristic BMC의 tenant 본인 행 허용·타 조직 은닉	238	1	0	0
 crates/libs/lib-core/tests/database/editor_storage.rs	lib-core::database	DB schema	Editor 값/NullFlavor DB 컬럼 쌍과 mutual-exclusion constraint 존재	140	1	0	0
 crates/libs/lib-core/tests/database/reaction_term_highlight_migration.rs	lib-core::database	DB migration	Reaction highlight의 신규 varchar schema와 legacy boolean migration	138	2	0	0
 crates/libs/lib-core/tests/database/submission_schema.rs	lib-core::database	DB schema	제출 dispatch state 감사 schema guard	75	1	0	0
 crates/libs/lib-core/tests/database/transactions.rs	lib-core::database	DB	Dbx nested commit/rollback·query 실패·취소 후 transaction 상태	174	4	0	0
-crates/libs/lib-core/tests/database/user_expiration.rs	lib-core::database	DB	관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회	118	1	0	0
+crates/libs/lib-core/tests/database/user_expiration.rs	lib-core::database	DB	관리자 UserBmc update→만료 사용자 비활성화→같은 조직 재조회	119	1	0	0

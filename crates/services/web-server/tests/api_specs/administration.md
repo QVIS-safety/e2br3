@@ -130,7 +130,7 @@
 <a id="delete-api-organizations-id"></a>
 ### `DELETE /api/organizations/{id}` — asserted
 
-- 구현 성공은 모델 delete 후 `204`다. 기존 manager/user/viewer 및 sponsor admin의 `403`에 더해 fresh GET 404인 hard delete와 DELETE 감사, FK 종속 실패의 조직·감사 불변을 단언한다. [`test_non_admin_cannot_delete_organization`](../authz/rbac_organizations.rs), [`test_sponsor_admin_cannot_access_organization_admin_endpoints`](../authz/rbac_organizations.rs), [`delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency`](../api_administration/organizations/delete_web.rs). 모든 종속 유형은 남아 있다(runtime NOT_RUN).
+- 구현 성공은 조직을 비활성화하고 `204`를 반환한다. 조직·설정·사용자·membership·감사 이력은 유지하며, platform admin의 조직 GET/list는 `active=false` 상태를 조회해 감사·재활성화에 사용할 수 있다. 비활성 조직의 member session은 거절되고 활성 조직 profile의 선택 목록에서도 제외된다. 반복 요청은 `204`이고 최초 상태 변경만 UPDATE 감사로 기록하며 platform 조직은 DELETE와 `active=false` PUT 모두 `400`으로 보호한다. 기존 manager/user/viewer 및 sponsor admin의 `403`도 유지한다. [`test_non_admin_cannot_delete_organization`](../authz/rbac_organizations.rs), [`test_sponsor_admin_cannot_access_organization_admin_endpoints`](../authz/rbac_organizations.rs), [`delete_deactivates_and_preserves_tenant_data_with_single_update_audit`](../api_administration/organizations/delete_web.rs) (runtime NOT_RUN).
 
 ## 권한 프로필
 

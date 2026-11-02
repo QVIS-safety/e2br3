@@ -168,7 +168,7 @@ async fn drug_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Result
 		&app,
 		&cookie,
 		&code_collection,
-		json!({"data":{"device_id":device_id,"sequence_number":1,"element":"FDA.G.k.2.3.r.1","value_code":"LIFE001"}}),
+		json!({"data":{"device_id":device_id,"sequence_number":1,"element":"device_problem","value_code":"LIFE001"}}),
 		"FDA device code",
 	)
 	.await?;

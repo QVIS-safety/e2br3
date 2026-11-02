@@ -1,6 +1,6 @@
 use crate::{Error, Result, XmlValidationError, XmlValidationReport};
 use lib_core::regulatory::RegulatoryAuthority;
-use libxml::parser::Parser;
+use libxml::parser::{Parser, ParserOptions};
 use libxml::schemas::{SchemaParserContext, SchemaValidationContext};
 use quick_xml::events::Event;
 use quick_xml::Reader;
@@ -38,6 +38,14 @@ pub fn default_xsd_path() -> Option<PathBuf> {
 		.find(|candidate| candidate.exists())
 }
 
+fn strict_parser_options() -> ParserOptions<'static> {
+	ParserOptions {
+		recover: false,
+		no_net: true,
+		..Default::default()
+	}
+}
+
 /// Treat supported empty optional XML attributes as absent before validating
 /// or persisting an imported document.
 pub fn normalize_e2b_xml_for_import(xml: &[u8]) -> Result<Vec<u8>> {
@@ -48,7 +56,7 @@ pub fn normalize_e2b_xml_for_import(xml: &[u8]) -> Result<Vec<u8>> {
 	})?;
 	let parser = Parser::default();
 	let doc = parser
-		.parse_string(xml_str)
+		.parse_string_with_options(xml_str, strict_parser_options())
 		.map_err(|err| Error::InvalidXml {
 			message: format!("XML parse error: {err}"),
 			line: None,
@@ -294,7 +302,7 @@ pub fn validate_e2b_xml_xsd(
 	})?;
 	let parser = Parser::default();
 	let doc = parser
-		.parse_string(xml_str)
+		.parse_string_with_options(xml_str, strict_parser_options())
 		.map_err(|err| Error::InvalidXml {
 			message: format!("XML parse error: {err}"),
 			line: None,

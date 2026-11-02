@@ -1,19 +1,19 @@
 use crate::administration_support::request_json;
 use crate::common::{
-	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
-	system_user_id, Result,
+	cookie_header, init_test_mm, insert_user, insert_user_organization_membership,
+	seed_org_with_all_roles, system_user_id, Result,
 };
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::{ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER};
+use lib_core::ctx::{ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID};
 use lib_core::model::store::set_full_context_dbx;
-use serde_json::json;
+use serde_json::{json, Value};
 use serial_test::serial;
 use uuid::Uuid;
 
 #[serial]
 #[tokio::test]
-async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
+async fn delete_deactivates_and_preserves_tenant_data_with_single_update_audit(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
@@ -35,93 +35,121 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 		"POST",
 		&cookie,
 		"/api/organizations",
-		Some(
-			json!({"data": {"name": format!("Delete {}", Uuid::new_v4()), "type": "CRO"}}),
-		),
+		Some(json!({"data": {"name": format!("Deactivate {}", Uuid::new_v4()), "type": "CRO"}})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{created:?}");
-	let deleted_id = Uuid::parse_str(
+	let organization_id = Uuid::parse_str(
 		created["data"]["id"]
 			.as_str()
 			.ok_or("missing organization id")?,
 	)?;
-	let (status, body) = request_json(
-		&app,
-		"DELETE",
-		&cookie,
-		format!("/api/organizations/{deleted_id}"),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::NO_CONTENT, "{body:?}");
+	let member =
+		insert_user(&mm, organization_id, ROLE_USER, system_user_id(), None).await?;
+	let member_cookie = cookie_header(
+		&generate_web_token(&member.email, member.token_salt)?.to_string(),
+	);
+	insert_user_organization_membership(&mm, admin.id, organization_id).await?;
+	let (status, member_profile) =
+		request_json(&app, "GET", &member_cookie, "/api/users/me/profile", None)
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{member_profile:?}");
+	assert_eq!(
+		member_profile["data"]["activeOrganization"]["id"],
+		organization_id.to_string()
+	);
+	let (status, profile) =
+		request_json(&app, "GET", &cookie, "/api/users/me/profile", None).await?;
+	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	assert!(
+		profile["data"]["availableOrganizations"]
+			.as_array()
+			.ok_or("missing availableOrganizations")?
+			.iter()
+			.any(|organization| organization["id"] == organization_id.to_string()),
+		"{profile:?}"
+	);
+
+	for _ in 0..2 {
+		let (status, body) = request_json(
+			&app,
+			"DELETE",
+			&cookie,
+			format!("/api/organizations/{organization_id}"),
+			None,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{body:?}");
+	}
 	let (status, body) = request_json(
 		&app,
 		"GET",
 		&cookie,
-		format!("/api/organizations/{deleted_id}"),
+		format!("/api/organizations/{organization_id}"),
 		None,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::NOT_FOUND, "{body:?}");
-
-	let dependent = seed_org_with_all_roles(&mm).await?;
-	let dependent_user =
-		insert_user(&mm, dependent.org_id, ROLE_USER, system_user_id(), None)
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["active"], json!(false));
+	let (status, body) =
+		request_json(&app, "GET", &member_cookie, "/api/users/me/profile", None)
 			.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	let (status, profile) =
+		request_json(&app, "GET", &cookie, "/api/users/me/profile", None).await?;
+	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	assert!(
+		profile["data"]["availableOrganizations"]
+			.as_array()
+			.ok_or("missing availableOrganizations")?
+			.iter()
+			.all(|organization| organization["id"] != organization_id.to_string()),
+		"{profile:?}"
+	);
+
+	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
 	let (status, body) = request_json(
 		&app,
 		"DELETE",
 		&cookie,
-		format!("/api/organizations/{}", dependent.org_id),
+		format!("/api/organizations/{system_org_id}"),
 		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	let (status, body) = request_json(
+		&app,
+		"PUT",
+		&cookie,
+		format!("/api/organizations/{system_org_id}"),
+		Some(json!({"data": {"active": false}})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
 
 	let dbx = mm.dbx();
 	dbx.begin_txn().await?;
-	set_full_context_dbx(dbx, admin.id, seed.org_id, ROLE_SYSTEM_ADMIN).await?;
-	let (deleted_exists,) = dbx
+	set_full_context_dbx(dbx, admin.id, organization_id, ROLE_SYSTEM_ADMIN).await?;
+	let (active, settings_exist, user_exists, membership_exists) = dbx
 		.fetch_one(
-			sqlx::query_as::<_, (bool,)>(
-				"SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)",
-			)
-			.bind(deleted_id),
-		)
-		.await?;
-	let (dependent_exists,) = dbx
-		.fetch_one(
-			sqlx::query_as::<_, (bool,)>(
-				"SELECT EXISTS(SELECT 1 FROM organizations WHERE id = $1)",
-			)
-			.bind(dependent.org_id),
-		)
-		.await?;
-	let (deleted_settings_exist, dependent_settings_exist) = dbx
-		.fetch_one(
-			sqlx::query_as::<_, (bool, bool)>(
+			sqlx::query_as::<_, (bool, bool, bool, bool)>(
 				"SELECT
+					active,
 					EXISTS(SELECT 1 FROM app_settings WHERE organization_id = $1),
-					EXISTS(SELECT 1 FROM app_settings WHERE organization_id = $2)",
+					EXISTS(SELECT 1 FROM users WHERE id = $2),
+					EXISTS(SELECT 1 FROM user_organization_memberships WHERE organization_id = $1 AND user_id = $2)
+				 FROM organizations WHERE id = $1",
 			)
-			.bind(deleted_id)
-			.bind(dependent.org_id),
+			.bind(organization_id)
+			.bind(member.id),
 		)
 		.await?;
-	set_full_context_dbx(
-		dbx,
-		dependent.admin.id,
-		dependent.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	let (user_exists,) = dbx
+	let (system_active,) = dbx
 		.fetch_one(
 			sqlx::query_as::<_, (bool,)>(
-				"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)",
+				"SELECT active FROM organizations WHERE id = $1",
 			)
-			.bind(dependent_user.id),
+			.bind(system_org_id),
 		)
 		.await?;
 	dbx.rollback_txn().await?;
@@ -130,13 +158,24 @@ async fn delete_hard_deletes_and_audits_or_rolls_back_on_foreign_key_dependency(
 	sqlx::query("SET ROLE e2br3_auditor_role")
 		.execute(&mut *tx)
 		.await?;
-	let delete_audits = sqlx::query_as::<_, (Uuid, String)>("SELECT record_id, action FROM audit_logs WHERE table_name = 'organizations' AND record_id = ANY($1) AND action = 'DELETE'").bind(vec![deleted_id, dependent.org_id]).fetch_all(&mut *tx).await?;
+	let audits = sqlx::query_as::<_, (String, Value)>(
+		"SELECT action, changed_fields FROM audit_logs
+		 WHERE table_name = 'organizations' AND record_id = $1
+		   AND action IN ('UPDATE', 'DELETE') ORDER BY created_at",
+	)
+	.bind(organization_id)
+	.fetch_all(&mut *tx)
+	.await?;
 	tx.rollback().await?;
-	assert!(!deleted_exists);
-	assert!(!deleted_settings_exist);
-	assert!(dependent_exists);
-	assert!(dependent_settings_exist);
+
+	assert!(!active);
+	assert!(settings_exist);
 	assert!(user_exists);
-	assert_eq!(delete_audits, vec![(deleted_id, "DELETE".to_string())]);
+	assert!(membership_exists);
+	assert!(system_active);
+	assert_eq!(audits.len(), 1, "{audits:?}");
+	assert_eq!(audits[0].0, "UPDATE");
+	assert_eq!(audits[0].1["active"]["old"], json!(true));
+	assert_eq!(audits[0].1["active"]["new"], json!(false));
 	Ok(())
 }

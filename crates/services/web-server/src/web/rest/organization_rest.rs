@@ -163,6 +163,6 @@ pub async fn delete_organization(
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
-	OrganizationBmc::delete(&db_ctx, &mm, id).await?;
+	OrganizationBmc::deactivate(&db_ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

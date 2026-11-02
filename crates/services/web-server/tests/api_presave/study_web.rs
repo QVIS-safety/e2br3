@@ -521,7 +521,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		(
 			"fdaCrossReportedInds",
 			fda_ind_id.clone(),
-			json!({"id": fda_ind_id, "indNumber": "UPDATED-WHILE-DELETED"}),
+			json!({"id": fda_ind_id, "indNumber": "UPD-DELETE"}),
 			1,
 		),
 	] {

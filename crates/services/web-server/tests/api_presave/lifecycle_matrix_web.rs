@@ -509,7 +509,7 @@ async fn parent_archive_restore_preserves_hard_soft_and_graph_only_children(
 		format!("/api/presaves/studies/{study_id}/details"),
 		json!({ "data": { "rows": { "fdaCrossReportedInds": [{
 			"sequenceNumber": 1,
-			"indNumber": "PARENT-LIFECYCLE-IND"
+			"indNumber": "PARENT-IND"
 		}] } } }),
 	)
 	.await?;
@@ -642,7 +642,8 @@ async fn direct_and_graph_children_reject_wrong_parent_without_state_change(
 		json!({"data":{"rows":{"routes":[{
 			"sequenceNumber":1,
 			"authority":"fda",
-			"receiverLabel":"Wrong Parent Route"
+			"receiverLabel":"Wrong Parent Route",
+			"messageReceiverIdentifier":"CBER_IND"
 		}]}}}),
 	)
 	.await?;
@@ -706,7 +707,7 @@ async fn direct_and_graph_children_reject_wrong_parent_without_state_change(
 		format!("/api/presaves/studies/{study_b}/details"),
 		json!({"data":{"rows":{"fdaCrossReportedInds":[{
 			"sequenceNumber":1,
-			"indNumber":"WRONG-PARENT-IND"
+			"indNumber":"WRONG-IND"
 		}]}}}),
 	)
 	.await?;

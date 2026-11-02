@@ -104,7 +104,7 @@ async fn test_import_settings_update_enabled_c1_dates() -> Result<()> {
 		);
 	}
 	assert_eq!(
-		row.1, "20140614",
+		row.1, "20140614151617-0500",
 		"disabled report_first_received_date setting must preserve the source C.1.4 value"
 	);
 

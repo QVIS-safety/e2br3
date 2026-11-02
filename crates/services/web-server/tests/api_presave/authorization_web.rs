@@ -56,7 +56,8 @@ async fn create_fixture(app: &axum::Router, cookie: &str) -> Result<PresaveFixtu
 		json!({ "data": { "rows": { "routes": [{
 			"sequenceNumber": 1,
 			"authority": "fda",
-			"receiverLabel": "Authorization route"
+			"receiverLabel": "Authorization route",
+			"messageReceiverIdentifier": "CBER_IND"
 		}] } } }),
 	)
 	.await?;
