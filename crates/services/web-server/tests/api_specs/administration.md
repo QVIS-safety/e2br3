@@ -274,7 +274,7 @@
 
 ## 비활성·간접 증거와 남은 공백
 
-- [`dump_protected_inventory_snapshot`](../authz/protected_route_inventory.rs)은 `#[ignore]`이며 수동 snapshot 생성기다. 활성 inventory 테스트도 라우터 소스와 snapshot 문자열을 비교할 뿐 HTTP 인증을 단언하지 않는다.
+- [`protected_inventory_matches_checked_in_snapshot`](../authz/protected_route_inventory.rs)은 `--nocapture`로 스냅샷 후보를 출력한다. 라우터 소스와 snapshot 문자열을 비교할 뿐 HTTP 인증을 단언하지 않는다. 별도 ignored 출력 테스트는 없다.
 - [`authorization_snapshot.rs`](../authz/authorization_snapshot.rs)는 extractor 단위 테스트다. snapshot attach 성공/누락을 확인하지만 위 34개 경로 중 어느 하나의 HTTP 허용을 대신하지 않는다.
 - [`lib.rs`](../../src/lib.rs)의 CSRF 테스트는 origin 판정 helper만 호출한다. 실제 state-changing `/api` 요청의 `403`과 login/logoff/refresh의 CSRF 경계는 단언하지 않는다.
 - 조직 목록·수정·삭제, workflow options와 health에는 위 범위의 직접 HTTP assertion이 추가되었다(runtime NOT_RUN). 기존 권한 거절 근거도 유지한다. Audit integrity는 정상 chain report와 viewer `403`까지 활성 HTTP 단언이 있고, 손상 chain 보고 분기가 남아 있다.

@@ -69,15 +69,7 @@ fn protected_inventory_matches_checked_in_snapshot() {
 		.collect::<Vec<_>>()
 		.join("\n");
 	let expected = include_str!("protected_route_inventory.snapshot").trim();
+	// Use --nocapture to inspect the candidate snapshot when updating routes.
+	println!("RBAC_ROUTE_SNAPSHOT_BEGIN\n{actual}\nRBAC_ROUTE_SNAPSHOT_END");
 	assert_eq!(actual, expected);
-}
-
-#[test]
-#[ignore]
-fn dump_protected_inventory_snapshot() {
-	println!("RBAC_ROUTE_SNAPSHOT_BEGIN");
-	for row in protected_route_inventory() {
-		println!("{} {}", row.method, row.path);
-	}
-	println!("RBAC_ROUTE_SNAPSHOT_END");
 }

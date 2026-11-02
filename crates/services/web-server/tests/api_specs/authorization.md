@@ -36,7 +36,7 @@ snapshot은 principal, active organization, identity/grants, 조직 policy revis
 - [`protected_snapshot_extractor_reads_the_attached_snapshot`](../authz/authorization_snapshot.rs)는 직접 붙인 snapshot의 principal/organization을 읽는 helper-level 검증이다.
 - [`protected_snapshot_extractor_fails_when_middleware_did_not_attach_one`](../authz/authorization_snapshot.rs)는 extension 누락 오류만 확인한다.
 - [`protected_inventory_matches_checked_in_snapshot`](../authz/protected_route_inventory.rs)는 라우터 등록 문자열을 snapshot 파일과 비교한다. HTTP 요청, cookie, 정책 허용/거부를 수행하지 않으므로 route authorization 증거가 아니다.
-- `dump_protected_inventory_snapshot`은 `#[ignore]`인 수동 생성기다.
+- 스냅샷 후보는 `protected_inventory_matches_checked_in_snapshot`을 `--nocapture`로 실행해 확인한다. 출력만 하는 별도 ignored 테스트는 없다.
 
 스냅샷 로드 중 정책 revision 변경, 인증 만료 경계, 한 요청 도중 grant 변경의 격리, 응답 헤더 revision과 profile body `policyVersion`의 일치는 활성 HTTP 테스트에서 직접 단언되지 않는다.
 

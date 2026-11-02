@@ -192,7 +192,7 @@ crates/services/web-server/tests/api_administration/users/workflow_options_web.r
 crates/services/web-server/tests/authz.rs	web-server::authz	target 등록	authz Cargo integration target과 하위 모듈 연결	36	0	0	0
 crates/services/web-server/tests/authz/authentication_web.rs	web-server::authz	HTTP 계약	login·refresh·logoff 상태, 잘못된 자격증명/token, 생성 사용자 로그인, legacy hash upgrade와 인증 middleware 거부를 검증한다.	450	10	0	0
 crates/services/web-server/tests/authz/authorization_snapshot.rs	web-server::authz	middleware component	DB에서 repeatable-read로 적재한 authorization snapshot이 request-parts middleware extractor로 전달되고, 미부착 요청은 거부되는지 검증한다.	42	2	0	0
-crates/services/web-server/tests/authz/protected_route_inventory.rs	web-server::authz	소스 gate	source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다.	83	5	0	1
+crates/services/web-server/tests/authz/protected_route_inventory.rs	web-server::authz	소스 gate	source parser가 만든 보호 route inventory의 대표 context·중복·family·checked-in snapshot 일치를 검사한다; HTTP 요청 검사는 아니다.	75	4	0	0
 crates/services/web-server/tests/authz/protected_route_parser.rs	web-server::authz	소스 gate	Rust route 등록 source를 method/path/context inventory로 변환하는 parser와 괄호·인자 분리 로직을 단위 검증한다.	236	2	0	0
 crates/services/web-server/tests/authz/rbac_audit.rs	web-server::authz	HTTP 계약	audit 목록·record 조회·case trail의 역할/조직 범위, pagination, hard-delete와 field filter 권한을 HTTP로 검증한다.	656	13	0	0
 crates/services/web-server/tests/authz/rbac_cases.rs	web-server::authz	HTTP 계약	관리자 case 생성과 viewer 생성 거부·목록 허용을 검증한다.	86	2	0	0
