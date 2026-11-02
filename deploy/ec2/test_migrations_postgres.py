@@ -56,7 +56,7 @@ class PostgresMigrations(unittest.TestCase):
         (self.db_dir / 'migrations' / name).write_text(sql)
 
     def sql(self, sql):
-        result = subprocess.run(['psql', '-XAtw', '-d', self.env['PGDATABASE'], '-v', 'ON_ERROR_STOP=1', '-c', sql], env=self.env, capture_output=True, text=True)
+        result = subprocess.run(['psql', '-XqAtw', '-d', self.env['PGDATABASE'], '-v', 'ON_ERROR_STOP=1', '-c', sql], env=self.env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         return result.stdout.strip()
 
