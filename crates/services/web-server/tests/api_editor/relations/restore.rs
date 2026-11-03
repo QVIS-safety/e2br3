@@ -274,6 +274,49 @@ pub(crate) async fn atomic_restore(
 		crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
 	)
 	.await?;
+	let deleted_audits =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	let deleted_list = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+	)
+	.await?;
+	for deleted_flag in [None, Some(true)] {
+		let mut stale_row = json!({"id": row_id, input_field: conflicting});
+		if let Some(flag) = deleted_flag {
+			stale_row["deleted"] = json!(flag);
+		}
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&row_uri,
+			json!({"authorities": ["ich"], "rows": {owner: stale_row}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{body}");
+		assert_eq!(
+			get_json(&app, &cookie, &row_uri).await?,
+			(StatusCode::OK, audit_deleted.clone())
+		);
+		assert_eq!(
+			get_json(
+				&app,
+				&cookie,
+				&format!("/api/cases/{case_id}/editor/pages/{page_id}"),
+			)
+			.await?,
+			deleted_list
+		);
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			deleted_audits,
+		);
+	}
 	let restore_before = crate::case_editor_contract_web::audit::capture(
 		&mm,
 		&ctx,
@@ -406,5 +449,24 @@ pub(crate) async fn atomic_restore(
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["data"][owner]["deleted"], false, "{body}");
 	assert_eq!(body["data"][owner][column], replacement, "{body}");
+	// Only LR exposes sequence_number in its update model.
+	if page_id == "LR" {
+		// The submitted final state can resolve a restore-time sequence conflict.
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&deleted_uri,
+			json!({"authorities": ["ich"], "rows": {owner: {
+				"id": deleted_id, "deleted": false, "sequenceNumber": 3, input_field: restored
+			}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		let (status, body) = get_json(&app, &cookie, &deleted_uri).await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_eq!(body["data"][owner]["deleted"], false, "{body}");
+		assert_eq!(body["data"][owner]["sequence_number"], 3, "{body}");
+		assert_eq!(body["data"][owner][column], restored, "{body}");
+	}
 	Ok(())
 }

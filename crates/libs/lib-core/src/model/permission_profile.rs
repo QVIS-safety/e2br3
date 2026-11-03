@@ -58,6 +58,22 @@ pub struct PermissionProfileBmc;
 const MAX_ACTIVE_CUSTOM_ROLES_PER_ORG: i64 = 20;
 
 impl PermissionProfileBmc {
+	async fn lock_organization_revision(
+		dbx: &crate::model::store::dbx::Dbx,
+		ctx: &Ctx,
+	) -> Result<()> {
+		// Match Case mutations: lock the organization revision before audited writes.
+		let _: (i64,) = dbx
+			.fetch_one(
+				sqlx::query_as::<_, (i64,)>(
+					"SELECT authz_lock_organization_policy_revision($1)",
+				)
+				.bind(ctx.organization_id()),
+			)
+			.await?;
+		Ok(())
+	}
+
 	async fn enforce_active_custom_role_limit(
 		dbx: &crate::model::store::dbx::Dbx,
 		organization_id: Uuid,
@@ -296,6 +312,10 @@ impl PermissionProfileBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
+		if let Err(err) = Self::lock_organization_revision(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
 		if data.active {
 			if let Err(err) = Self::enforce_active_custom_role_limit(
 				dbx,
@@ -367,6 +387,10 @@ impl PermissionProfileBmc {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		if let Err(err) = Self::lock_organization_revision(dbx, ctx).await {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}

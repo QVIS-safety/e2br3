@@ -1247,13 +1247,18 @@ pub async fn patch_editor_dg_page_row(
 				let requested_authorities = validate_request_projection_context(
 					request.authorities.as_deref(),
 				)?;
-				DrugInformationBmc::get_in_case_with_deleted(
+				let current = DrugInformationBmc::get_in_case_with_deleted(
 					ctx, mm, case_id, row_id, true,
 				)
 				.await?;
 
 				let row = required_row_object("DG", &request.rows, "drug")?;
 				validate_row_payload("DG", "drug", row, None)?;
+				if current.deleted && row.get("deleted").and_then(Value::as_bool) != Some(false) {
+					return Err(lib_core::model::Error::Conflict {
+						message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
+					}.into());
+				}
 
 				let model = row_model_value("DG", "", row, DRUG_ROW_ALIASES, &[]);
 				let update = parse_row_model::<DrugInformationForUpdate>(
@@ -1287,6 +1292,7 @@ pub async fn patch_editor_dg_page_row(
 						.await?;
 					}
 				}
+
 				mark_editor_validation_summary_stale(
 					ctx,
 					mm,

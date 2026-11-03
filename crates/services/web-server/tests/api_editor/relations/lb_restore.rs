@@ -164,6 +164,49 @@ pub(crate) async fn deleted_test_result_can_be_read_and_restored_with_case_and_a
 		crate::case_editor_contract_web::support::ROW_CHANGE_REASON,
 	)
 	.await?;
+	let deleted_audits =
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?;
+	let deleted_list = get_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB"),
+	)
+	.await?;
+	for deleted_flag in [None, Some(true)] {
+		let mut stale_row = json!({"id": row_id, "testName": "Stale edit"});
+		if let Some(flag) = deleted_flag {
+			stale_row["deleted"] = json!(flag);
+		}
+		let (status, body) = patch_json(
+			&app,
+			&admin_cookie,
+			&row_uri,
+			json!({"authorities": ["ich"], "rows": {"testResult": stale_row}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{body}");
+		assert_eq!(
+			get_json(&app, &admin_cookie, &row_uri).await?,
+			(StatusCode::OK, audit_deleted.clone())
+		);
+		assert_eq!(
+			get_json(
+				&app,
+				&admin_cookie,
+				&format!("/api/cases/{case_id}/editor/pages/LB")
+			)
+			.await?,
+			deleted_list
+		);
+		assert_eq!(
+			crate::case_editor_contract_web::audit::case_audit_ids(
+				&mm, &ctx, &case_id
+			)
+			.await?,
+			deleted_audits
+		);
+	}
 	let restore_before = crate::case_editor_contract_web::audit::capture(
 		&mm,
 		&ctx,

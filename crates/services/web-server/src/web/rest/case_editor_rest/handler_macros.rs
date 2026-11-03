@@ -161,6 +161,24 @@ macro_rules! repeatable_page_row_create_handler {
 }
 
 macro_rules! repeatable_page_row_patch_handler {
+	(@guard [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {};
+	(@guard [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {
+		let current = $bmc::get($ctx, $mm, $row_id).await?;
+		if current.deleted && $row.get("deleted").and_then(serde_json::Value::as_bool) != Some(false) {
+			return Err(lib_core::model::Error::Conflict {
+				message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
+			}.into());
+		}
+	};
+	(@guard_in_case [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {};
+	(@guard_in_case [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {
+		let current = $bmc::get_in_case_with_deleted($ctx, $mm, $case_id, $row_id, true).await?;
+		if current.deleted && $row.get("deleted").and_then(serde_json::Value::as_bool) != Some(false) {
+			return Err(lib_core::model::Error::Conflict {
+				message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
+			}.into());
+		}
+	};
 	(@restore [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {};
 	(@restore [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {
 		if $row.get("deleted").and_then(serde_json::Value::as_bool) == Some(false) {
@@ -214,6 +232,9 @@ macro_rules! repeatable_page_row_patch_handler {
 					let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
 					let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
 					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
+					repeatable_page_row_patch_handler!(
+						@guard [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+					);
 					lib_core::model::update_uuid_patch::<$bmc, $model>(
 						ctx,
 						mm,
@@ -273,6 +294,12 @@ macro_rules! repeatable_page_row_patch_handler {
 					let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
 					let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
 					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
+					repeatable_page_row_patch_handler!(
+						@guard [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+					);
+					repeatable_page_row_patch_handler!(
+						@guard_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
+					);
 					$bmc::update_patch(ctx, mm, row_id, update, &clear_fields)
 					.await?;
 					repeatable_page_row_patch_handler!(
@@ -281,6 +308,7 @@ macro_rules! repeatable_page_row_patch_handler {
 					repeatable_page_row_patch_handler!(
 						@restore_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
 					);
+
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(
 						ctx, mm, case_id, requested_authorities.clone(),
 					)

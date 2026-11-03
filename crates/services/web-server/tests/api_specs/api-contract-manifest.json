@@ -58,7 +58,7 @@
     "crates/services/web-server/src/web/rest/case_editor_dto.rs": "3d06d4c937501a102ea96cf0fce3446ba9c44302cdc73aaf67b8b2c14d2fce16",
     "crates/services/web-server/src/web/rest/case_editor_rest/ae.rs": "bf5dd5fa50ac7c1a0ce3bca26b8d96fb1cbda060586def892361997ed666f0e1",
     "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "16b61c23523eb8e78478e151fde9485d95bf79ea3699e9b755f7a0beb7e6bf97",
-    "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "4440a772e30bf3776c687cb7cb77c98b787040488a0708031f62a840abc2b127",
+    "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "55139fccce6b367e2909e94ed11cf35e8ba4d72085c9c71a1bb0f30d4a1ba6a2",
     "crates/services/web-server/src/web/rest/case_editor_rest/dh.rs": "0cba9c69d6e564788ab9d846fc680ca3f3ecd6386cf63af5decc9b517e183ece",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs": "e792b23d8a74049b667ac6c289bef08af18bb12cd969cb62adf80ace3a21867e",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/ci.rs": "6aff40a6702c53484e1b736a86807c2c67f40cb3d11cc953661cb8b7552e6659",
@@ -67,7 +67,7 @@
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/rp.rs": "d0ab2f27248ff313ddf32555b6163edda85a77d93eb151b266d1d7a3f6977d36",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/sd.rs": "74eaa08d2bd3885165d42bde93eddaf1912bbd2d8d9c6cc8d1549ac39bdb2eb2",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/si.rs": "6786c46a6bfbefb8525653cf5f73e4fa03d1f835a8220578849a97354475571f",
-    "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs": "1d2415a6f9bdece1ada6e94f8d8e6771e37c26654948b6853f68fe800ceb09df",
+    "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs": "45e4bf14a94b3e1c77c6a5b560a9302ec6edaedf140e275e9f292676afcd065a",
     "crates/services/web-server/src/web/rest/case_editor_rest/lb.rs": "faebbfd24bcffee8082e7c2beb406c33a20a2256162135b4785ce6edf03da683",
     "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "6fa0b4297b232b4aae044c6cf9c5df7adfa5b029cd9f920d8c774a51609b44bf",
     "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "c1cd233831c1c09c1ecbc3786aaffc7dda3dca5ecde297ed866a98aa6403cb2c",
@@ -246,7 +246,7 @@
     "crates/services/web-server/tests/authz/rbac_cases.rs": "767494c28a422d24a262f0434dc9bd461b0af2ec1c7650e9999cffbec638c0ea",
     "crates/services/web-server/tests/authz/rbac_organizations.rs": "1c3fd77a2f4a2512819b7fac930d9e911be9cfb9eaf2c97086683710d9f535ac",
     "crates/services/web-server/tests/authz/rbac_users/non_admin_forbidden_web.rs": "60db935a4a06ec819b812344d88b5bb0eec76ddeabb6e7dd7cea35803ec5cb70",
-    "crates/services/web-server/tests/authz/rbac_users/permission_profiles_web.rs": "7b0ae8fea8f4f3723cfa6026c337be028718873b5e665fa9f383050c231b9ddb",
+    "crates/services/web-server/tests/authz/rbac_users/permission_profiles_web.rs": "2d4d5b5cc7d8e9a0714ac736d744c984c720303a3b3908e24a99873504f47bf2",
     "crates/services/web-server/tests/authz/rbac_users/rls_scope_web.rs": "6a6a52e5e20263ac1bf8e25254389fb58a2c6f5d04f0db95911408c6f8065fd4",
     "crates/services/web-server/tests/authz/rbac_users/role_update_web.rs": "80ec7860549cb856db9e5507a0d5bc83e58d963f47d28c849db5e34818b7f2d4",
     "crates/services/web-server/tests/authz/rls_web.rs": "c1956a839192ac889022a952a4c08bdc7137ad55c8b0a4e6b06b8d7e0ac394e7",
@@ -9717,7 +9717,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 377
+          "line": 405
         },
         "macro_name": "repeatable_list_handler"
       },
@@ -10028,7 +10028,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 377
+          "line": 405
         },
         "macro_name": "repeatable_list_handler"
       },
@@ -10238,7 +10238,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 377
+          "line": 405
         },
         "macro_name": "repeatable_list_handler"
       },
@@ -10549,7 +10549,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 377
+          "line": 405
         },
         "macro_name": "repeatable_list_handler"
       },
@@ -11417,7 +11417,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -11768,7 +11768,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -12371,11 +12371,11 @@
         "signature": "pub async fn delete_editor_dg_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, row_id)): axum::extract::Path<(uuid::Uuid, uuid::Uuid)>, ) -> lib_rest_core::Result<axum::http::StatusCode>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs",
-          "line": 1312
+          "line": 1318
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -12720,11 +12720,11 @@
         "signature": "pub async fn restore_editor_dg_page_row( axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>, ctx_w: lib_web::middleware::mw_auth::CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, axum::extract::Path((case_id, row_id)): axum::extract::Path<(uuid::Uuid, uuid::Uuid)>, ) -> lib_rest_core::Result<(axum::http::StatusCode, axum::Json<serde_json::Value>)>",
         "invocation": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs",
-          "line": 1312
+          "line": 1318
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -13081,7 +13081,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 346
+          "line": 374
         },
         "macro_name": "repeatable_page_row_delete_handler"
       },
@@ -13430,7 +13430,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 504
+          "line": 532
         },
         "macro_name": "direct_page_projection_handler"
       },
@@ -13939,7 +13939,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -14290,7 +14290,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 447
+          "line": 475
         },
         "macro_name": "repeatable_page_row_delete_restore_handlers"
       },
@@ -14647,7 +14647,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 346
+          "line": 374
         },
         "macro_name": "repeatable_page_row_delete_handler"
       },
@@ -14998,7 +14998,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 504
+          "line": 532
         },
         "macro_name": "direct_page_projection_handler"
       },
@@ -15253,7 +15253,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 504
+          "line": 532
         },
         "macro_name": "direct_page_projection_handler"
       },
@@ -15508,7 +15508,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 504
+          "line": 532
         },
         "macro_name": "direct_page_projection_handler"
       },
@@ -15763,7 +15763,7 @@
         },
         "macro": {
           "source": "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs",
-          "line": 504
+          "line": 532
         },
         "macro_name": "direct_page_projection_handler"
       },
