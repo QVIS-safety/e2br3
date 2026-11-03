@@ -19,6 +19,7 @@ fn export_g_drug_basic() {
 		id: drug_id,
 		case_id,
 		source_product_presave_id: None,
+		source_product_id: None,
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Drug A".to_string(),

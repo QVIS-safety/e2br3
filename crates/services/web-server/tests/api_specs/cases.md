@@ -238,7 +238,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - [tests/api_cases/subresources/test_result.rs::test_test_results_support_50_character_normal_ranges](../api_cases/subresources/test_result.rs)
 - [tests/api_cases/subresources/lifecycle_general.rs::general_case_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_general.rs)
 - [tests/api_editor/pages/lb.generated.rs::list_projection_includes_displayed_result_columns](../api_editor/pages/lb.generated.rs)
-- [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_and_export_but_blocks_submission](../api_submission/validation.rs)
+- [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_but_blocks_export_and_submission](../api_submission/validation.rs)
 
 <a id="patient"></a>
 ## Patient와 하위 리소스

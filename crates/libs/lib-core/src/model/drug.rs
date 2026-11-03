@@ -23,6 +23,7 @@ pub struct DrugInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
 	pub source_product_presave_id: Option<Uuid>,
+	pub source_product_id: Option<String>,
 	pub sequence_number: i32,
 
 	// G.k.1 - Drug role (MANDATORY)
@@ -91,6 +92,7 @@ pub struct DrugInformation {
 pub struct DrugInformationForCreate {
 	pub case_id: Uuid,
 	pub source_product_presave_id: Option<Uuid>,
+	pub source_product_id: Option<String>,
 	pub sequence_number: i32,
 	#[serde(default)]
 	pub drug_characterization: String,
@@ -128,6 +130,7 @@ pub struct DrugInformationForCreate {
 #[derive(Deserialize)]
 pub struct DrugInformationForUpdate {
 	pub source_product_presave_id: Option<Uuid>,
+	pub source_product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub drug_authorization_number: Option<String>,
@@ -765,7 +768,7 @@ impl DrugInformationBmc {
 
 		let sql = format!(
 				"INSERT INTO {} (
-				     case_id, source_product_presave_id, sequence_number, drug_characterization, medicinal_product,
+				     case_id, source_product_presave_id, source_product_id, sequence_number, drug_characterization, medicinal_product,
 				     drug_authorization_number, manufacturer_name, manufacturer_country,
 				     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
 				     gestation_period_exposure_value, gestation_period_exposure_unit,
@@ -778,7 +781,7 @@ impl DrugInformationBmc {
 			     created_at, updated_at, created_by
 				 )
 				 VALUES (
-				     $1, $2, $3, $4, $5,
+				     $1, $2, $37, $3, $4, $5,
 				     $7, $9, $10,
 				     $11, $12, $13,
 				     $14, $15, $17,
@@ -831,7 +834,8 @@ impl DrugInformationBmc {
 					.bind(drug_c.fda_other_characterization)
 					.bind(drug_c.mpid_source_code_system)
 					.bind(drug_c.mpid_source_code_system_version)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(drug_c.source_product_id),
 			)
 			.await?;
 
@@ -933,6 +937,7 @@ impl DrugInformationBmc {
 			     drug_additional_information = CASE WHEN 'drug_additional_information' = ANY($36) THEN NULL ELSE COALESCE($29, drug_additional_information) END,
 			     fda_specialized_product_category = CASE WHEN 'fda_specialized_product_category' = ANY($36) THEN NULL ELSE COALESCE($30, fda_specialized_product_category) END,
 			     source_product_presave_id = CASE WHEN 'source_product_presave_id' = ANY($36) THEN NULL ELSE COALESCE($31, source_product_presave_id) END,
+			     source_product_id = CASE WHEN 'source_product_id' = ANY($36) THEN NULL ELSE COALESCE($37, source_product_id) END,
 				     fda_other_characterization = CASE WHEN 'fda_other_characterization' = ANY($36) THEN NULL ELSE COALESCE($32, fda_other_characterization) END,
 				     mpid_source_code_system = CASE WHEN 'mpid_source_code_system' = ANY($36) OR (($18 IS NOT NULL OR $19 IS NOT NULL) AND $33 IS NULL AND $34 IS NULL) THEN NULL ELSE COALESCE($33, mpid_source_code_system) END,
 				     mpid_source_code_system_version = CASE WHEN 'mpid_source_code_system_version' = ANY($36) OR (($18 IS NOT NULL OR $19 IS NOT NULL) AND $33 IS NULL AND $34 IS NULL) THEN NULL ELSE COALESCE($34, mpid_source_code_system_version) END,
@@ -980,7 +985,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.mpid_source_code_system)
 					.bind(drug_u.mpid_source_code_system_version)
 					.bind(ctx.user_id())
-					.bind(clears),
+					.bind(clears)
+					.bind(drug_u.source_product_id),
 			)
 			.await?;
 		if result == 0 {
@@ -1182,6 +1188,7 @@ impl DrugInformationBmc {
 			     fda_specialized_product_category = CASE WHEN 'fda_specialized_product_category' = ANY($34) THEN NULL ELSE COALESCE($31, fda_specialized_product_category) END,
 			     fda_other_characterization = CASE WHEN 'fda_other_characterization' = ANY($34) THEN NULL ELSE COALESCE($32, fda_other_characterization) END,
 			     source_product_presave_id = CASE WHEN 'source_product_presave_id' = ANY($34) THEN NULL ELSE COALESCE($35, source_product_presave_id) END,
+			     source_product_id = CASE WHEN 'source_product_id' = ANY($34) THEN NULL ELSE COALESCE($37, source_product_id) END,
 			     updated_at = now(),
 			     updated_by = $33
 			 WHERE id = $1 AND case_id = $2 AND ($36 OR deleted = false)",
@@ -1226,7 +1233,8 @@ impl DrugInformationBmc {
 					.bind(ctx.user_id())
 					.bind(clears)
 					.bind(drug_u.source_product_presave_id)
-					.bind(allow_deleted),
+					.bind(allow_deleted)
+					.bind(drug_u.source_product_id),
 			)
 			.await?;
 		if result == 0 {

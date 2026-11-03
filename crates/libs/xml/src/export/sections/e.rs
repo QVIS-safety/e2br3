@@ -303,9 +303,12 @@ fn write_fda_e_i_3_2h(value: Option<bool>, null_flavor: Option<&str>) -> String 
 			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"7\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.3\"/><value xsi:type=\"BL\" value=\"{value}\"/></observation></outboundRelationship2>"
 		);
 	}
+	let Some(null_flavor) = null_flavor else {
+		return String::new();
+	};
 	format!(
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"7\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.3\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></outboundRelationship2>",
-		xml_escape(null_flavor.unwrap_or("NI"))
+		xml_escape(null_flavor)
 	)
 }
 
@@ -417,15 +420,15 @@ fn write_e_i_3_2(
 	value: Option<bool>,
 	null_flavor: Option<&str>,
 ) -> String {
-	let value = value.filter(|value| *value);
 	match (value, null_flavor) {
 		(Some(value), None) => format!(
 			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{value}\"/></observation></outboundRelationship2>"
 		),
-		(None, null_flavor) => format!(
+		(None, Some(null_flavor)) => format!(
 			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></outboundRelationship2>",
-			xml_escape(null_flavor.unwrap_or("NI"))
+			xml_escape(null_flavor)
 		),
+		(None, None) => String::new(),
 		(Some(_), Some(_)) => unreachable!(
 			"database invariant forbids a reaction criterion value and NullFlavor together"
 		),
@@ -459,7 +462,7 @@ fn write_e_i_4_or_5(
 
 #[cfg(test)]
 mod split_null_flavor_tests {
-	use super::{write_e_i_7, write_fda_e_i_3_2h};
+	use super::{write_e_i_3_2, write_e_i_7, write_fda_e_i_3_2h};
 
 	#[test]
 	fn exports_unknown_reaction_outcome_as_code_zero() {
@@ -481,6 +484,13 @@ mod split_null_flavor_tests {
 		let xml = write_fda_e_i_3_2h(None, Some("NI"));
 		assert!(xml.contains("xsi:type=\"BL\" nullFlavor=\"NI\""));
 		assert!(!xml.contains(" value=\""));
+	}
+
+	#[test]
+	fn does_not_invent_reaction_null_flavors() {
+		assert!(write_e_i_3_2("1", None, None).is_empty());
+		assert!(write_fda_e_i_3_2h(None, None).is_empty());
+		assert!(write_e_i_3_2("1", Some(false), None).contains("value=\"false\""));
 	}
 }
 

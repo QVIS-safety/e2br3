@@ -6,6 +6,7 @@ CREATE TABLE drug_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
     source_product_presave_id UUID REFERENCES product_presaves(id) ON DELETE SET NULL,
+    source_product_id VARCHAR(255),
     sequence_number INTEGER NOT NULL,  -- k value (drug index)
 
     -- G.k.1 - Characterization of Drug Role (MANDATORY - E2B(R3) codes)

@@ -7,7 +7,7 @@ use axum::Json;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::safety_report::SafetyReportIdentificationBmc;
 use lib_core::model::xml_export_history::{
-	XmlExportHistoryBmc, XmlExportHistoryRecord,
+	XmlExportHistoryBmc, XmlExportHistoryCreate, XmlExportHistoryRecord,
 };
 use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::prelude::*;
@@ -116,6 +116,20 @@ fn export_file_name(
 	format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
 }
 
+fn export_client_error(error: Error) -> Error {
+	match error {
+		Error::BadRequest { message }
+			if message.starts_with("export header validation failed:") =>
+		{
+			Error::BadRequest {
+				message: "XML export header validation failed. Review export history for details."
+					.to_string(),
+			}
+		}
+		other => other,
+	}
+}
+
 async fn generate_case_xml_for_authority(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
@@ -153,6 +167,16 @@ async fn generate_case_xml_for_authority(
 					.map(|error| error.message.as_str())
 					.collect::<Vec<_>>()
 					.join("; ")
+			),
+		});
+	}
+	let validation =
+		validator::validate_case_for_authority(ctx, mm, id, authority).await?;
+	if !validation.ok {
+		return Err(Error::BadRequest {
+			message: format!(
+				"Cannot export: {} validation issue(s). Correct the highlighted case fields.",
+				validation.issue_count
 			),
 		});
 	}
@@ -226,10 +250,10 @@ async fn export_case_authorized(
 					"failed to record xml export error history: {record_err}"
 				);
 			}
-			return Err(err);
+			return Err(export_client_error(err));
 		}
 	};
-	if let Err(err) = XmlExportHistoryBmc::record(
+	XmlExportHistoryBmc::record(
 		mm,
 		ctx,
 		id,
@@ -238,10 +262,7 @@ async fn export_case_authorized(
 		"success",
 		None,
 	)
-	.await
-	{
-		tracing::warn!("failed to record xml export history: {err}");
-	}
+	.await?;
 
 	let mut response = (axum::http::StatusCode::OK, xml).into_response();
 	response.headers_mut().insert(
@@ -316,6 +337,7 @@ async fn export_cases_zip_authorized(
 		SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 	let mut xml_bytes = 0usize;
 	let mut settings = None;
+	let mut history = Vec::with_capacity(unique_case_ids.len());
 	{
 		let mut zip = ZipWriter::new(&mut cursor);
 		for case_id in unique_case_ids {
@@ -361,7 +383,7 @@ async fn export_cases_zip_authorized(
 								"failed to record xml export error history: {record_err}"
 							);
 						}
-						return Err(err);
+						return Err(export_client_error(err));
 					}
 				};
 				zip.start_file(file_name.clone(), options)
@@ -385,19 +407,13 @@ async fn export_cases_zip_authorized(
 						operation: "export.zip.write",
 						source: Box::new(source),
 					})?;
-				if let Err(err) = XmlExportHistoryBmc::record(
-					mm,
-					ctx,
+				history.push(XmlExportHistoryCreate {
 					case_id,
-					Some(safety_report_id.as_str()),
-					&file_name,
-					"success",
-					None,
-				)
-				.await
-				{
-					tracing::warn!("failed to record xml export history: {err}");
-				}
+					case_number: Some(safety_report_id),
+					file_name,
+					status: "success".to_string(),
+					error_message: None,
+				});
 			}
 		}
 		zip.finish().map_err(|source| Error::Internal {
@@ -405,6 +421,7 @@ async fn export_cases_zip_authorized(
 			source: Box::new(source),
 		})?;
 	}
+	XmlExportHistoryBmc::record_many(mm, ctx, &history).await?;
 
 	let bytes = cursor.into_inner();
 	let file_name = format!(

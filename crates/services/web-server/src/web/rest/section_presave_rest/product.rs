@@ -150,7 +150,7 @@ pub async fn update_product_presave(
 	Json(params): Json<ParamsForUpdate<ProductPresaveForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<ProductPresave>>)> {
 	let ctx = ctx_w.0;
-	with_authorized_presave_update(
+	with_authorized_presave_atomic_update(
 		&ctx,
 		&snapshot,
 		&mm,

@@ -176,6 +176,13 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			failures.push(format!("{}: {err}", fixture.filename));
 			continue;
 		}
+		crate::xml_support::set_export_receivers(
+			&app,
+			&cookie,
+			case_id,
+			fixture.authority,
+		)
+		.await?;
 		let (validation_status, validation_body) = request_json(
 			&app,
 			&cookie,
@@ -195,26 +202,17 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			));
 			continue;
 		}
-		if validation_body
+		let Some(validation_ok) = validation_body
 			.get("data")
 			.and_then(|v| v.get("ok"))
 			.and_then(Value::as_bool)
-			.is_none()
-		{
+		else {
 			failures.push(format!(
 				"{}: validation response missing data.ok boolean: {}",
 				fixture.filename, validation_body
 			));
 			continue;
-		}
-		// Manual export is independent of workflow/business-validation status.
-		crate::xml_support::set_export_receivers(
-			&app,
-			&cookie,
-			case_id,
-			fixture.authority,
-		)
-		.await?;
+		};
 
 		let (export_status, export_bytes) = request_raw(
 			&app,
@@ -228,6 +226,15 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			Body::empty(),
 		)
 		.await?;
+		if !validation_ok {
+			if export_status != StatusCode::BAD_REQUEST {
+				failures.push(format!(
+					"{}: invalid case export returned {}",
+					fixture.filename, export_status
+				));
+			}
+			continue;
+		}
 		if export_status != StatusCode::OK {
 			failures.push(format!(
 				"{}: export failed {} {}",

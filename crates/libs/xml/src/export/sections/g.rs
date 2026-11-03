@@ -568,9 +568,9 @@ fn write_fda_g_k_12_device(
 			out.push_str("<name>");
 			out.push_str(&xml_escape(value));
 			out.push_str("</name>");
-		} else {
+		} else if let Some(null_flavor) = null_flavor {
 			out.push_str("<name nullFlavor=\"");
-			out.push_str(null_flavor.unwrap_or("NI"));
+			out.push_str(&xml_escape(null_flavor));
 			out.push_str("\"/>");
 		}
 	}
@@ -1755,6 +1755,7 @@ mod tests {
 			id,
 			case_id,
 			source_product_presave_id: None,
+			source_product_id: None,
 			sequence_number: 1,
 			deleted: false,
 			drug_characterization: "1".to_string(),
@@ -2338,6 +2339,11 @@ mod tests {
 		};
 		let first = make_device(1, "Device A");
 		let second = make_device(2, "Device B");
+		let mut unnamed = make_device(3, "unused");
+		unnamed.device_brand_name = None;
+		unnamed.common_device_name = None;
+		assert!(!write_fda_g_k_12_device(&unnamed, &[])
+			.contains("<name nullFlavor=\"NI\"/>"));
 		let codes = [
 			FdaDeviceCode {
 				id: Uuid::new_v4(),

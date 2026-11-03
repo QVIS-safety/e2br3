@@ -82,6 +82,7 @@ pub(super) fn drug() -> DrugInformation {
 		id: Uuid::nil(),
 		case_id: Uuid::nil(),
 		source_product_presave_id: None,
+		source_product_id: None,
 		sequence_number: 1,
 		drug_characterization: String::new(),
 		medicinal_product: String::new(),

@@ -38,6 +38,14 @@ pub struct XmlExportHistoryErrorRow {
 	pub error_message: Option<String>,
 }
 
+pub struct XmlExportHistoryCreate {
+	pub case_id: Uuid,
+	pub case_number: Option<String>,
+	pub file_name: String,
+	pub status: String,
+	pub error_message: Option<String>,
+}
+
 // -- XmlExportHistoryBmc
 
 pub struct XmlExportHistoryBmc;
@@ -53,6 +61,25 @@ impl XmlExportHistoryBmc {
 		status: &str,
 		error_message: Option<&str>,
 	) -> Result<()> {
+		Self::record_many(
+			mm,
+			ctx,
+			&[XmlExportHistoryCreate {
+				case_id,
+				case_number: case_number.map(str::to_owned),
+				file_name: file_name.to_owned(),
+				status: status.to_owned(),
+				error_message: error_message.map(str::to_owned),
+			}],
+		)
+		.await
+	}
+
+	pub async fn record_many(
+		mm: &ModelManager,
+		ctx: &Ctx,
+		records: &[XmlExportHistoryCreate],
+	) -> Result<()> {
 		let mut tx = mm
 			.dbx()
 			.db()
@@ -61,8 +88,9 @@ impl XmlExportHistoryBmc {
 			.map_err(|err| Error::Store(err.to_string()))?;
 		set_user_context(&mut tx, ctx.user_id()).await?;
 		set_org_context(&mut tx, ctx.organization_id(), ctx.role()).await?;
-		sqlx::query(
-			"INSERT INTO xml_export_history (
+		for record in records {
+			sqlx::query(
+				"INSERT INTO xml_export_history (
 					case_id,
 					case_number,
 					file_name,
@@ -70,16 +98,17 @@ impl XmlExportHistoryBmc {
 					error_message,
 					exported_by
 				) VALUES ($1, $2, $3, $4, $5, $6)",
-		)
-		.bind(case_id)
-		.bind(case_number)
-		.bind(file_name)
-		.bind(status)
-		.bind(error_message)
-		.bind(ctx.user_id())
-		.execute(&mut *tx)
-		.await
-		.map_err(|err| Error::Store(err.to_string()))?;
+			)
+			.bind(record.case_id)
+			.bind(record.case_number.as_deref())
+			.bind(&record.file_name)
+			.bind(&record.status)
+			.bind(record.error_message.as_deref())
+			.bind(ctx.user_id())
+			.execute(&mut *tx)
+			.await
+			.map_err(|err| Error::Store(err.to_string()))?;
+		}
 		tx.commit()
 			.await
 			.map_err(|err| Error::Store(err.to_string()))?;

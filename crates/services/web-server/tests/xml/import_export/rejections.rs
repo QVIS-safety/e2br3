@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
+async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -104,39 +104,21 @@ async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
 			] {
 				let (status, bytes) =
 					request_json(&app, &cookie, method, path, body).await?;
+				assert_eq!(
+					status,
+					StatusCode::BAD_REQUEST,
+					"{authority} {method}: {}",
+					String::from_utf8_lossy(&bytes)
+				);
+				let error: Value = serde_json::from_slice(&bytes)?;
+				let message = error["error"]["data"]["detail"]
+					.as_str()
+					.ok_or("missing export error")?;
 				if valid {
-					assert_eq!(
-						status,
-						StatusCode::OK,
-						"{authority} {method}: {}",
-						String::from_utf8_lossy(&bytes)
-					);
-					if method == "GET" {
-						assert!(std::str::from_utf8(&bytes)?.contains(batch));
-					} else {
-						let mut zip = zip::ZipArchive::new(Cursor::new(bytes))?;
-						assert_eq!(zip.len(), 1);
-						let mut xml = String::new();
-						zip.by_index(0)?.read_to_string(&mut xml)?;
-						assert!(xml.contains(batch));
-					}
+					assert!(message.contains("Correct the highlighted case fields"));
 				} else {
-					assert_eq!(
-						status,
-						StatusCode::BAD_REQUEST,
-						"{authority} {method}: {}",
-						String::from_utf8_lossy(&bytes)
-					);
-					let error: Value = serde_json::from_slice(&bytes)?;
-					let message = error["error"]["data"]["detail"]
-						.as_str()
-						.ok_or("missing export error")?;
 					assert!(
-						message.contains("export header validation failed"),
-						"{error}"
-					);
-					assert!(
-						message.contains("N.1.4") && message.contains("N.2.r.3"),
+						message.contains("Review export history for details"),
 						"{error}"
 					);
 				}
@@ -161,14 +143,18 @@ async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
 			.iter()
 			.filter(|item| item["status"] == "error")
 			.count(),
+		10
+	);
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "error")
+			.filter(|item| item["errorMessage"].as_str().is_some_and(|message| {
+				message.contains("export header validation failed")
+			}))
+			.count(),
 		4
 	);
-	assert!(items
-		.iter()
-		.filter(|item| item["status"] == "error")
-		.all(|item| item["errorMessage"].as_str().is_some_and(
-			|message| message.contains("export header validation failed")
-		)));
 	Ok(())
 }
 

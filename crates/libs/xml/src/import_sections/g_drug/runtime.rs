@@ -56,6 +56,7 @@ async fn import_drugs(
 				case_id,
 				source_product_presave_id: (index == 0)
 					.then_some(product_presave_id),
+				source_product_id: None,
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
@@ -71,6 +72,7 @@ async fn import_drugs(
 			DrugInformationForUpdate {
 				source_product_presave_id: (index == 0)
 					.then_some(product_presave_id),
+				source_product_id: None,
 				medicinal_product: Some(drug.medicinal_product),
 				drug_characterization: Some(drug.drug_characterization),
 				// FDA.G.k.2.2.1 intentionally unsupported until a verified

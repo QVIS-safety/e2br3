@@ -20,7 +20,7 @@
 - [idempotency](../api_submission/idempotency.rs): `test_submission_idempotency_key_reuses_submission_when_enabled`, `test_submission_idempotency_key_parallel_requests_single_submission` — 응답 ID 동등성·GET 목록 1개.
 - [dispatch](../api_submission/dispatch.rs): `test_submission_esg_transport_sends_expected_headers_and_payload` — 대역으로 보내는 bearer/API-key와 비어 있지 않은 XML; `test_submission_esg_non_success_preserves_unknown_without_resend` — 502에도 재전송 없이 unknown·한 번의 전송·retry 없음·오류 보존; `test_submission_retains_unknown_when_as2_submitter_unreachable` — 미접속 상태·ACK1~4 null·동일 키 재사용.
 - 같은 파일의 `test_submission_rejects_enabled_esg_without_base_url` — 400 및 누락 설정명. `test_submission_accepts_mfds_route_for_mfds_profile`, `test_submission_uses_request_authority_not_case_appendices` — MFDS 요청 기관 처리.
-- [validation](../api_submission/validation.rs): `test_submission_rejects_case_validation_before_routing_or_dispatch` — 변경으로 캐시가 무효화되고 FDA/MFDS 둘 다 400 + validation issue; `test_unavailable_meddra_allows_save_and_export_but_blocks_submission` — 사전 버전 문제는 저장/수동 export를 허용해도 제출은 400. `test_submission_does_not_require_case_validated_status` — Case status 문자열만으로 사전 차단하지 않음.
+- [validation](../api_submission/validation.rs): `test_submission_rejects_case_validation_before_routing_or_dispatch` — 변경으로 캐시가 무효화되고 FDA/MFDS 둘 다 400 + validation issue; `test_unavailable_meddra_allows_save_but_blocks_export_and_submission` — 사전 버전 문제는 저장을 허용하지만 수동 export와 제출은 400. `test_submission_does_not_require_case_validated_status` — Case status 문자열만으로 사전 차단하지 않음.
 
 공백: 외부 규제기관 ACK 수용, 실제 transport 전 구간, 키의 모든 충돌/사용자·기관 조합, 서명 실패 후 모든 테이블·감사의 원자적 불변을 이 목록만으로 보증하지 않는다. [external](../api_submission/external.rs)의 `test_real_java_submitter_integration_mfds`는 `#[ignore]`이며 일반 CI 실행 증거가 아니다.
 

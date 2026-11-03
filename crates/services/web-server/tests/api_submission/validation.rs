@@ -102,7 +102,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 
 #[serial]
 #[tokio::test]
-async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
+async fn test_unavailable_meddra_allows_save_but_blocks_export_and_submission(
 ) -> Result<()> {
 	clear_esg_env();
 	let mm = init_test_mm().await?;
@@ -179,14 +179,15 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 			)
 			.await?;
 		let status = response.status();
-		let xml = to_bytes(response.into_body(), usize::MAX).await?;
+		let body = to_bytes(response.into_body(), usize::MAX).await?;
 		assert_eq!(
 			status,
-			StatusCode::OK,
+			StatusCode::BAD_REQUEST,
 			"{authority}: {}",
-			String::from_utf8_lossy(&xml)
+			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&xml).contains("12.0"));
+		assert!(String::from_utf8_lossy(&body)
+			.contains("Correct the highlighted case fields"));
 		if authority != "ich" {
 			let (status, error) = post_json(
 				&app,
@@ -202,6 +203,88 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 			);
 		}
 	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
+	clear_esg_env();
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
+
+	let (status, created) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB/rows"),
+		json!({"authorities":["fda"],"rows":{"testResult":{
+			"sequenceNumber":1,"testName":"NullFlavor persistence",
+			"testDate":null,"testDateNullFlavor":"UNK"
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{created}");
+	let row_id = created["rowId"]
+		.as_str()
+		.ok_or("missing LB rowId")?
+		.to_string();
+	let request = Request::builder()
+		.method("PATCH")
+		.uri(format!(
+			"/api/cases/{case_id}/editor/pages/LB/rows/{row_id}"
+		))
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({"authorities":["fda"],"rows":{"testResult":{
+				"testDate":null,"testDateNullFlavor":"NASK"
+			}}})
+			.to_string(),
+		))?;
+	let response = app.clone().oneshot(request).await?;
+	let status = response.status();
+	let body = to_bytes(response.into_body(), usize::MAX).await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let stored: (Option<String>, Option<String>) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as(
+				"SELECT test_date, test_date_null_flavor FROM test_results WHERE id = $1",
+			)
+			.bind(Uuid::parse_str(&row_id)?),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	assert_eq!(stored, (None, Some("NASK".to_string())));
+
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri(format!("/api/cases/{case_id}/export/xml?authority=fda"))
+				.header("cookie", &cookie)
+				.body(Body::empty())?,
+		)
+		.await?;
+	let status = response.status();
+	let xml = to_bytes(response.into_body(), usize::MAX).await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&xml));
+	assert!(String::from_utf8_lossy(&xml)
+		.contains("<effectiveTime nullFlavor=\"NASK\"/>"));
 	Ok(())
 }
 
