@@ -7,7 +7,7 @@
 use crate::authorization::EnforcedScopeFilter;
 use crate::ctx::Ctx;
 use crate::model::case::case_scope_where;
-use crate::model::store::{set_full_context_dbx, set_full_context_dbx_or_rollback};
+use crate::model::store::set_full_context_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use serde::Serialize;
@@ -78,9 +78,8 @@ pub struct XmlImportHistoryErrorRow {
 pub struct XmlImportHistoryBmc;
 
 impl XmlImportHistoryBmc {
-	/// Record a single XML import audit entry (begins and commits its own transaction).
-	pub async fn record(
-		mm: &ModelManager,
+	pub async fn record_in_txn(
+		dbx: &crate::model::store::dbx::Dbx,
 		ctx: &Ctx,
 		uploaded_file_name: &str,
 		source_file_name: &str,
@@ -89,15 +88,8 @@ impl XmlImportHistoryBmc {
 		status: XmlImportHistoryStatus,
 		error_message: Option<&str>,
 	) -> Result<()> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			dbx,
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
+			.await?;
 		dbx.execute(
 			sqlx::query(
 				"INSERT INTO xml_import_history (
@@ -119,6 +111,37 @@ impl XmlImportHistoryBmc {
 			.bind(ctx.user_id()),
 		)
 		.await?;
+		Ok(())
+	}
+
+	/// Record a single XML import audit entry (begins and commits its own transaction).
+	pub async fn record(
+		mm: &ModelManager,
+		ctx: &Ctx,
+		uploaded_file_name: &str,
+		source_file_name: &str,
+		case_id: Option<Uuid>,
+		case_number: Option<&str>,
+		status: XmlImportHistoryStatus,
+		error_message: Option<&str>,
+	) -> Result<()> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(error) = Self::record_in_txn(
+			dbx,
+			ctx,
+			uploaded_file_name,
+			source_file_name,
+			case_id,
+			case_number,
+			status,
+			error_message,
+		)
+		.await
+		{
+			let _ = dbx.rollback_txn().await;
+			return Err(error);
+		}
 		dbx.commit_txn().await?;
 		Ok(())
 	}
