@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "target": "Case editor state resilience across every section",
+  "productionOnly": true,
+  "requiredOracles": [
+    "headed UI state",
+    "canonical editor API readback",
+    "real PostgreSQL row state",
+    "audit changed_fields and reason",
+    "reload readback",
+    "logout/login readback",
+    "audit hash-chain integrity"
+  ],
+  "transitions": [
+    "baseline -> direct value -> save -> reload",
+    "value -> allowed NullFlavor -> save -> reload",
+    "NullFlavor -> cleared or original value -> save -> reload",
+    "live repeatable row -> UI delete -> save -> absent from live list",
+    "delete one row -> preserve sibling identity and values",
+    "saved state -> logout -> login -> reread"
+  ],
+  "adaptiveMutations": [
+    {
+      "trigger": "UI exposes a value that the frontend contract rejects",
+      "evolution": "compare rendered options, frontend generated allowed set, backend acceptance, and persisted readback independently"
+    },
+    {
+      "trigger": "authority route fails before the form renders",
+      "evolution": "derive the UI route token separately from API validation authorities and fail before mutation on unknown routes"
+    },
+    {
+      "trigger": "repeatable create collides with an existing sequence",
+      "evolution": "read the live collection and allocate an explicit unused sequence before creating verification rows"
+    },
+    {
+      "trigger": "a run stops after a committed mutation",
+      "evolution": "perform bounded recovery, verify the original state, and retain both failure and recovery evidence"
+    },
+    {
+      "trigger": "a UI save is blocked before an HTTP write",
+      "evolution": "classify it separately from server rejection and require captured UI error text plus zero mutation requests"
+    },
+    {
+      "trigger": "navigation begins while the previous document is still complete",
+      "evolution": "require the expected URL and the destination section shell together before locating controls"
+    }
+  ],
+  "coveragePolicy": {
+    "singletonSection": "direct save, NullFlavor when a rendered control exists, reload, relogin, database and audit",
+    "repeatableSection": "create owned target and sibling, direct save, NullFlavor when supported, UI delete target, sibling preservation, reload, relogin, database and audit",
+    "completion": "do not count a section unless every applicable transition has a terminal oracle"
+  }
+}

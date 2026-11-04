@@ -1,0 +1,21 @@
+{
+  "version": 4,
+  "target": "Case editor terminal UI and lost-response resilience",
+  "productionOnly": true,
+  "inherits": "adaptive-case-edit-grammar-v3.json",
+  "newTerminalOracles": [
+    "a closed save dialog must be absent from the DOM, not only data-state=closed",
+    "a lost write response must be resolved by canonical API, database and audit reread before retry",
+    "a committed lost-response write must have exactly one audit mutation"
+  ],
+  "adaptiveRules": [
+    "classify a committed write with a retained dialog as a UI terminal-state defect",
+    "record dialog data-state and DOM presence separately",
+    "never retry an interrupted write when canonical reread already shows the intended value"
+  ],
+  "remainingTransitions": [
+    "UI Add creation for RP, SI, NR and DG nested repeatables",
+    "FDA and MFDS regional field matrix for CI, AE and DG",
+    "selection-to-save source mutation for Receiver, Reporter, Product, Study and Narrative"
+  ]
+}

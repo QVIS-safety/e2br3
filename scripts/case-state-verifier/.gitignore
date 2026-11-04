@@ -1,0 +1,12 @@
+*-error.png
+*-final.png
+*-result.json
+*-roundtrip.json
+*-trace*.json
+browser-final.png
+persistence-oracles.json
+remaining-sections-v2-*.json
+seed-result.json
+source-mutation-independence.json
+ui-controls.json
+__pycache__/

@@ -1,0 +1,37 @@
+{
+  "version": 5,
+  "method": "stateful model-based resilience testing",
+  "explicitlyNot": "fuzzing",
+  "productionOnly": true,
+  "inherits": "adaptive-case-edit-grammar-v4.json",
+  "model": {
+    "state": [
+      "rendered headed-browser form",
+      "canonical editor projection",
+      "PostgreSQL rows",
+      "audit-log chain",
+      "authenticated session and authority"
+    ],
+    "transitionSelection": "choose the next transition from uncovered state edges and the last observed mismatch",
+    "terminalRule": "count only transitions with matching UI, API, database, audit and reload or relogin oracles"
+  },
+  "nextTransitions": [
+    "RP reporter UI Add -> populate -> save -> reload -> delete -> reload",
+    "SI registration UI Add -> populate -> save -> reload -> delete -> reload",
+    "NR diagnosis and summary UI Add -> populate -> save -> reload -> delete -> reload",
+    "CI AE DG FDA and MFDS regional controls -> save -> canonical readback -> reload -> restore",
+    "Receiver Reporter Product Study Narrative select -> mutate source -> save -> snapshot readback",
+    "API process interruption after request receipt -> restart -> canonical outcome -> bounded retry decision"
+  ],
+  "evolutionRules": [
+    "promote every confirmed mismatch to a permanent regression transition",
+    "distinguish an invalid harness transition from a product-state mismatch",
+    "recover owned verification data before selecting the next transition"
+  ],
+  "locatorGrammar": [
+    "native fields: stable name attribute",
+    "FormAutocomplete fields: aria-label combobox -> dialog search combobox -> re-query current DOM for a matching option on every poll",
+    "repeatable deletion: persisted identifying value -> owning table row -> Remove row action",
+    "never derive rendered repeatable indexes from canonical arrays containing deleted rows"
+  ]
+}

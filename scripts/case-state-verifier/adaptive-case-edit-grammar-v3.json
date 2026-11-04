@@ -1,0 +1,59 @@
+{
+  "version": 3,
+  "target": "Case editor resilience beyond representative section roundtrips",
+  "productionOnly": true,
+  "inherits": "adaptive-case-edit-grammar-v2.json",
+  "requiredOracles": [
+    "headed Firefox state for every authenticated actor",
+    "canonical editor API readback",
+    "real PostgreSQL row state",
+    "audit changed_fields, user and reason",
+    "reload and logout/login readback",
+    "audit hash-chain integrity"
+  ],
+  "priorityTransitions": [
+    {
+      "priority": "P0",
+      "name": "concurrent-scalar-edit",
+      "transition": "two users read the same revision -> user A saves -> user B saves stale state",
+      "oracle": "no silent loss outside the explicitly edited field; both outcomes and audit actors are exact"
+    },
+    {
+      "priority": "P0",
+      "name": "concurrent-edit-delete",
+      "transition": "two users read the same repeatable row -> user A edits -> user B deletes stale row",
+      "oracle": "terminal row state and audit order are deterministic; sibling rows remain unchanged"
+    },
+    {
+      "priority": "P0",
+      "name": "interrupted-write",
+      "transition": "authenticated save -> transport or process interruption before response -> reread and bounded retry",
+      "oracle": "one committed state and one audit mutation, or a clear failure with no mutation"
+    },
+    {
+      "priority": "P1",
+      "name": "ui-repeatable-create",
+      "transition": "UI Add -> populate -> Save -> reload -> relogin -> UI delete",
+      "targets": ["RP reporter", "SI registration", "NR diagnosis and summary", "DG substance, dosage, indication and assessment"]
+    },
+    {
+      "priority": "P1",
+      "name": "authority-matrix",
+      "transition": "FDA and MFDS regional control -> Save -> canonical readback -> reload",
+      "targets": ["CI", "AE", "DG"]
+    },
+    {
+      "priority": "P1",
+      "name": "presave-selection-race",
+      "transition": "select source -> mutate source -> save Case",
+      "targets": ["receiver", "reporter", "product", "study", "narrative"]
+    }
+  ],
+  "adaptiveRules": [
+    "classify stale-write acceptance separately from rejected conflicts",
+    "never infer failure from a lost browser response; read API, database and audit before retry",
+    "create verification rows through the rendered Add control when testing UI creation",
+    "preserve an owned sibling for every repeatable-row mutation",
+    "stop and recover before widening scope when a committed mutation has no terminal oracle"
+  ]
+}
