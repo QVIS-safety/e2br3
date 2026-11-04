@@ -884,6 +884,7 @@ async fn import_c_6_receiver_information(
 			mm,
 			case_id,
 			ReceiverInformationForUpdate {
+				source_receiver_presave_id: None,
 				receiver_type,
 				organization_name,
 				department,
@@ -904,6 +905,7 @@ async fn import_c_6_receiver_information(
 			mm,
 			ReceiverInformationForCreate {
 				case_id,
+				source_receiver_presave_id: None,
 				receiver_type,
 				organization_name,
 				department,

@@ -259,6 +259,54 @@ pub struct CaseEditorPagePatchRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CaseEditorPageRowBatchRequest {
+	pub authorities: Option<Vec<String>>,
+	pub operations: Vec<CaseEditorPageRowBatchOperation>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(
+	tag = "operation",
+	rename_all = "camelCase",
+	rename_all_fields = "camelCase",
+	deny_unknown_fields
+)]
+pub enum CaseEditorPageRowBatchOperation {
+	Create {
+		client_row_index: usize,
+		#[serde(default)]
+		rows: BTreeMap<String, Value>,
+	},
+	Update {
+		row_id: Uuid,
+		client_row_index: usize,
+		#[serde(default)]
+		rows: BTreeMap<String, Value>,
+	},
+	Delete {
+		row_id: Uuid,
+		client_row_index: usize,
+	},
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPageRowBatchResponse {
+	pub case_id: Uuid,
+	pub page_id: &'static str,
+	pub results: Vec<CaseEditorPageRowBatchResult>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPageRowBatchResult {
+	pub operation: &'static str,
+	pub client_row_index: usize,
+	pub row_id: Uuid,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CaseFollowUpRowPatchRequest {
 	pub client_row_id: Option<String>,
 	pub request: CaseEditorPagePatchRequest,

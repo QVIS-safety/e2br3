@@ -1226,6 +1226,59 @@ pub async fn create_editor_dg_page_row(
 	.await
 }
 
+pub(crate) async fn apply_editor_dg_page_row_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+	request: &CaseEditorPagePatchRequest,
+) -> Result<Option<String>> {
+	let requested_authorities =
+		validate_request_projection_context(request.authorities.as_deref())?;
+	let current =
+		DrugInformationBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true)
+			.await?;
+	let row = required_row_object("DG", &request.rows, "drug")?;
+	validate_row_payload("DG", "drug", row, None)?;
+	if current.deleted && row.get("deleted").and_then(Value::as_bool) != Some(false)
+	{
+		return Err(lib_core::model::Error::Conflict {
+			message:
+				"This row was deleted. Restore it explicitly before saving changes."
+					.to_string(),
+		}
+		.into());
+	}
+
+	let model = row_model_value("DG", "", row, DRUG_ROW_ALIASES, &[]);
+	let update = parse_row_model::<DrugInformationForUpdate>("DG", "drug", model)?;
+	let clear_fields = explicit_null_model_fields(row, DRUG_ROW_ALIASES);
+	DrugInformationBmc::update_in_case_patch(
+		ctx,
+		mm,
+		case_id,
+		row_id,
+		update,
+		&clear_fields,
+	)
+	.await?;
+	persist_active_substances(ctx, mm, row_id, row).await?;
+	persist_dosage_information(ctx, mm, row_id, row).await?;
+	persist_indications(ctx, mm, row_id, row).await?;
+	persist_drug_reaction_assessments(ctx, mm, case_id, row_id, row).await?;
+	devices::persist_devices(ctx, mm, row_id, row).await?;
+	if row.get("deleted").and_then(Value::as_bool) == Some(false) {
+		let current = DrugInformationBmc::get_in_case_with_deleted(
+			ctx, mm, case_id, row_id, true,
+		)
+		.await?;
+		if current.deleted {
+			DrugInformationBmc::restore_in_case(ctx, mm, case_id, row_id).await?;
+		}
+	}
+	Ok(requested_authorities)
+}
+
 pub async fn patch_editor_dg_page_row(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -1242,54 +1295,10 @@ pub async fn patch_editor_dg_page_row(
 		"editor/DG/drug",
 		move |ctx, mm| {
 			Box::pin(async move {
-				let requested_authorities = validate_request_projection_context(
-					request.authorities.as_deref(),
-				)?;
-				let current = DrugInformationBmc::get_in_case_with_deleted(
-					ctx, mm, case_id, row_id, true,
+				let requested_authorities = apply_editor_dg_page_row_patch(
+					ctx, mm, case_id, row_id, &request,
 				)
 				.await?;
-
-				let row = required_row_object("DG", &request.rows, "drug")?;
-				validate_row_payload("DG", "drug", row, None)?;
-				if current.deleted && row.get("deleted").and_then(Value::as_bool) != Some(false) {
-					return Err(lib_core::model::Error::Conflict {
-						message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
-					}.into());
-				}
-
-				let model = row_model_value("DG", "", row, DRUG_ROW_ALIASES, &[]);
-				let update = parse_row_model::<DrugInformationForUpdate>(
-					"DG", "drug", model,
-				)?;
-				let clear_fields = explicit_null_model_fields(row, DRUG_ROW_ALIASES);
-				DrugInformationBmc::update_in_case_patch(
-					ctx,
-					mm,
-					case_id,
-					row_id,
-					update,
-					&clear_fields,
-				)
-				.await?;
-				persist_active_substances(ctx, mm, row_id, row).await?;
-				persist_dosage_information(ctx, mm, row_id, row).await?;
-				persist_indications(ctx, mm, row_id, row).await?;
-				persist_drug_reaction_assessments(ctx, mm, case_id, row_id, row)
-					.await?;
-				devices::persist_devices(ctx, mm, row_id, row).await?;
-				if row.get("deleted").and_then(Value::as_bool) == Some(false) {
-					let current = DrugInformationBmc::get_in_case_with_deleted(
-						ctx, mm, case_id, row_id, true,
-					)
-					.await?;
-					if current.deleted {
-						DrugInformationBmc::restore_in_case(
-							ctx, mm, case_id, row_id,
-						)
-						.await?;
-					}
-				}
 
 				mark_editor_validation_summary_stale(
 					ctx,
@@ -1315,6 +1324,7 @@ pub async fn patch_editor_dg_page_row(
 
 repeatable_page_row_delete_restore_handlers!(
 	delete: delete_editor_dg_page_row,
+	apply_delete: apply_editor_dg_page_row_delete,
 	restore: restore_editor_dg_page_row,
 	bmc: DrugInformationBmc,
 	build_response: build_editor_dg_page_row_response,

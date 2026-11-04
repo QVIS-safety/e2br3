@@ -351,6 +351,7 @@ CREATE UNIQUE INDEX idx_primary_sources_active_sequence_unique
 CREATE TABLE receiver_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE SET NULL,
 
     -- A.1.4 - Receiver Type
     receiver_type VARCHAR(1) CHECK (receiver_type IN ('1', '2', '3', '4', '5', '6')),
@@ -397,6 +398,7 @@ CREATE TABLE receiver_information (
 );
 
 CREATE INDEX idx_receiver_info_case ON receiver_information(case_id);
+CREATE INDEX idx_receiver_info_source_presave ON receiver_information(source_receiver_presave_id);
 
 -- ============================================================================
 -- C.1.9.r: Other Case Identifiers (Repeating)

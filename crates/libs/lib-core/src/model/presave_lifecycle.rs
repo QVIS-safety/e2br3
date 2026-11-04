@@ -163,7 +163,8 @@ impl PresaveLifecycleService {
 				None,
 			),
 			PresaveKind::Receiver => (
-				"SELECT EXISTS (
+				"SELECT EXISTS (SELECT 1 FROM receiver_information WHERE source_receiver_presave_id = $1)
+				OR EXISTS (
 					SELECT 1 FROM product_presaves
 					WHERE deleted = false AND (
 						receiver_presave_id = $1 OR (

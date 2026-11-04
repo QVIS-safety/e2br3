@@ -57,7 +57,7 @@ pub struct AuditLog {
 	pub changed_fields: Option<JsonValue>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
-	pub ip_address: Option<String>, // Stored as TEXT in DB
+	pub ip_address: Option<std::net::IpAddr>,
 	pub user_agent: Option<String>,
 	#[sqlx(default)]
 	pub prev_hash: Option<String>,

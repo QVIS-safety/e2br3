@@ -202,6 +202,7 @@ repeatable_page_row_create_handler!(
 
 repeatable_page_row_patch_handler!(
 	patch_editor_lb_page_row,
+	apply: apply_editor_lb_page_row_patch,
 	section: "LB",
 	row_key: "testResult",
 	bmc: TestResultBmc,
@@ -214,6 +215,7 @@ repeatable_page_row_patch_handler!(
 
 repeatable_page_row_delete_restore_handlers!(
 	delete: delete_editor_lb_page_row,
+	apply_delete: apply_editor_lb_page_row_delete,
 	restore: restore_editor_lb_page_row,
 	bmc: TestResultBmc,
 	build_response: build_editor_lb_page_row_response,
