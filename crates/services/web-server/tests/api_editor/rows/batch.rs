@@ -133,10 +133,11 @@ async fn repeatable_row_batch_rejects_the_whole_batch_for_permission_and_lifecyc
 
 	let (status, body) =
 		patch_json(&app, &admin_cookie, &batch_uri, request).await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
-	assert_eq!(body["error"]["message"], "INVALID_REQUEST", "{body}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
+	assert_eq!(body["error"]["message"], "PERMISSION_DENIED", "{body}");
 	assert_eq!(
-		body["error"]["data"]["detail"], "locked cases are read-only",
+		body["error"]["data"]["detail"]["requiredPermission"],
+		"case.child.update (IncompatibleLifecycle)",
 		"{body}"
 	);
 	let (_, after) = get_json(&app, &admin_cookie, &row_uri).await?;
@@ -231,12 +232,13 @@ async fn repeatable_row_batch_commits_all_operations_together() -> Result<()> {
 		created["data"]["reaction"]["primary_source_reaction"],
 		"batch create"
 	);
-	let (status, _) = get_json(
+	let (status, deleted) = get_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{deleted_id}"),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::NOT_FOUND);
+	assert_eq!(status, StatusCode::OK, "{deleted}");
+	assert_eq!(deleted["data"]["reaction"]["deleted"], true, "{deleted}");
 	Ok(())
 }
