@@ -40,7 +40,7 @@ async fn repeatable_row_batch_rolls_back_data_and_audit_on_validation_failure(
 					"operation": "update",
 					"rowId": row_id,
 					"clientRowIndex": 0,
-					"rows": {"reaction": {"reactionPrimarySourceNative": "must roll back"}}
+					"rows": {"reaction": {"primarySourceReaction": "must roll back"}}
 				},
 				{
 					"operation": "create",
@@ -97,7 +97,7 @@ async fn repeatable_row_batch_rejects_the_whole_batch_for_permission_and_lifecyc
 			"operation": "update",
 			"rowId": row_id,
 			"clientRowIndex": 0,
-			"rows": {"reaction": {"reactionPrimarySourceNative": "must not persist"}}
+			"rows": {"reaction": {"primarySourceReaction": "must not persist"}}
 		}]
 	});
 	let (_, before) = get_json(&app, &admin_cookie, &row_uri).await?;
@@ -108,7 +108,7 @@ async fn repeatable_row_batch_rejects_the_whole_batch_for_permission_and_lifecyc
 	let (status, body) =
 		patch_json(&app, &viewer_cookie, &batch_uri, request.clone()).await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
-	assert_eq!(body["error"]["message"], "ACCESS_DENIED", "{body}");
+	assert_eq!(body["error"]["message"], "PERMISSION_DENIED", "{body}");
 	let (_, after) = get_json(&app, &admin_cookie, &row_uri).await?;
 	assert_eq!(after, before);
 	assert_eq!(
@@ -187,7 +187,7 @@ async fn repeatable_row_batch_commits_all_operations_together() -> Result<()> {
 					"operation": "update",
 					"rowId": row_id,
 					"clientRowIndex": 0,
-					"rows": {"reaction": {"reactionPrimarySourceNative": "batch update"}}
+					"rows": {"reaction": {"primarySourceReaction": "batch update"}}
 				},
 				{
 					"operation": "delete",
@@ -197,7 +197,7 @@ async fn repeatable_row_batch_commits_all_operations_together() -> Result<()> {
 				{
 					"operation": "create",
 					"clientRowIndex": 2,
-					"rows": {"reaction": {"sequenceNumber": 3, "reactionPrimarySourceNative": "batch create"}}
+					"rows": {"reaction": {"sequenceNumber": 3, "primarySourceReaction": "batch create"}}
 				}
 			]
 		}),
