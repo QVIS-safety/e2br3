@@ -278,6 +278,19 @@ fn validation_error(message: &str) -> crate::model::Error {
 	}
 }
 
+fn ensure_parent_update_allowed(
+	current_deleted: bool,
+	requested_deleted: Option<bool>,
+) -> Result<()> {
+	if current_deleted && requested_deleted != Some(false) {
+		return Err(crate::model::Error::Conflict {
+			message: "archived presave must be restored before it can be updated"
+				.to_string(),
+		});
+	}
+	Ok(())
+}
+
 fn validate_null_flavor_set(
 	field: &str,
 	value: Option<&str>,
@@ -512,6 +525,7 @@ impl SenderPresaveBmc {
 			));
 		}
 		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		let sender_type = patched_text(
 			&data.sender_type,
 			&current.sender_type,
@@ -942,6 +956,7 @@ impl ReceiverPresaveBmc {
 			));
 		}
 		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		let receiver_type = if clear_fields.contains(&"receiver_type") {
 			None
 		} else {
@@ -1627,6 +1642,8 @@ impl ProductPresaveBmc {
 				"presave deletion must use lifecycle service",
 			));
 		}
+		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		Self::ensure_sender_assignment_allowed(ctx, mm, data.sender_presave_id)
 			.await?;
 		Self::ensure_receiver_assignment_allowed(
@@ -1636,7 +1653,6 @@ impl ProductPresaveBmc {
 		)
 		.await?;
 		{
-			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
 				data.sender_presave_id.or(current.sender_presave_id);
 			let product_id = patched_text(
@@ -2252,6 +2268,8 @@ impl ReporterPresaveBmc {
 				"presave deletion must use lifecycle service",
 			));
 		}
+		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		Self::validate_null_flavors(
 			data.reporter_title_null_flavor.as_deref(),
 			data.reporter_given_name_null_flavor.as_deref(),
@@ -2268,7 +2286,6 @@ impl ReporterPresaveBmc {
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		if data.deleted != Some(true) {
-			let current = Self::get(ctx, mm, id).await?;
 			let reporter_given_name = patched_text(
 				&data.reporter_given_name,
 				&current.reporter_given_name,
@@ -2681,8 +2698,9 @@ impl StudyPresaveBmc {
 				"presave deletion must use lifecycle service",
 			));
 		}
+		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		if data.deleted != Some(true) {
-			let current = Self::get(ctx, mm, id).await?;
 			let product_presave_id =
 				data.product_presave_id.or(current.product_presave_id);
 			let sponsor_study_number = patched_text(
@@ -3288,8 +3306,9 @@ impl NarrativePresaveBmc {
 				"presave deletion must use lifecycle service",
 			));
 		}
+		let current = Self::get(ctx, mm, id).await?;
+		ensure_parent_update_allowed(current.deleted, data.deleted)?;
 		if data.deleted != Some(true) {
-			let current = Self::get(ctx, mm, id).await?;
 			let case_narrative = patched_text(
 				&data.case_narrative,
 				&current.case_narrative,

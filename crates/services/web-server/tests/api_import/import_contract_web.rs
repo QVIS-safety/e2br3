@@ -230,3 +230,75 @@ async fn test_import_selected_product_links_sender_without_overwriting_xml_sende
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn test_import_history_failure_rolls_back_case_and_audit() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/presaves/senders",
+		json!({
+			"data": { "rows": {
+				"sender": {
+					"senderType": "2",
+					"organizationName": "Atomic Import Sender"
+				},
+				"gateways": [], "responsiblePersons": []
+			} }
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let sender_id = body["data"]["rows"]["sender"]["id"]
+		.as_str()
+		.ok_or("missing sender id")?;
+	let product_id =
+		create_product_presave(&app, &cookie, sender_id, "ATOMIC-IMPORT-PRODUCT")
+			.await?;
+
+	async fn counts(
+		mm: &lib_core::model::ModelManager,
+		user_id: uuid::Uuid,
+		organization_id: uuid::Uuid,
+	) -> Result<(i64, i64, i64)> {
+		let mut tx = mm.dbx().db().begin().await?;
+		set_user_context(&mut tx, user_id).await?;
+		set_org_context(&mut tx, organization_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+		let counts = sqlx::query_as(
+			"SELECT (SELECT COUNT(*) FROM cases),
+			        (SELECT COUNT(*) FROM audit_logs),
+			        (SELECT COUNT(*) FROM xml_import_history)",
+		)
+		.fetch_one(&mut *tx)
+		.await?;
+		tx.rollback().await?;
+		Ok(counts)
+	}
+	let before = counts(&mm, seed.admin.id, seed.org_id).await?;
+
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.join("../../..")
+		.canonicalize()?;
+	let xml = scenario6(&root)?.replace(
+		"US-APHARMA-8744554B",
+		&format!("US-ATOMIC-HISTORY-{}", uuid::Uuid::new_v4()),
+	);
+	let result = import_xml_fixture_with_product(
+		&app,
+		&cookie,
+		&format!("{}.xml", "a".repeat(252)),
+		xml.as_bytes(),
+		&product_id,
+	)
+	.await;
+	let (status, body) = result?;
+	assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{body:?}");
+	assert_eq!(counts(&mm, seed.admin.id, seed.org_id).await?, before);
+	Ok(())
+}

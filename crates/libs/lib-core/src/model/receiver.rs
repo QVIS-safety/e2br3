@@ -20,6 +20,7 @@ use sqlx::FromRow;
 pub struct ReceiverInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_receiver_presave_id: Option<Uuid>,
 
 	// A.1.4 - Receiver Type
 	pub receiver_type: Option<String>, // 1-6 (same codes as sender_type)
@@ -64,6 +65,7 @@ pub struct ReceiverInformation {
 #[derive(Fields, Deserialize)]
 pub struct ReceiverInformationForCreate {
 	pub case_id: Uuid,
+	pub source_receiver_presave_id: Option<Uuid>,
 	pub receiver_type: Option<String>,
 	pub organization_name: Option<String>,
 	pub department: Option<String>,
@@ -79,6 +81,7 @@ pub struct ReceiverInformationForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct ReceiverInformationForUpdate {
+	pub source_receiver_presave_id: Option<Uuid>,
 	pub receiver_type: Option<String>,
 	pub organization_name: Option<String>,
 	pub department: Option<String>,
@@ -117,6 +120,7 @@ impl ReceiverInformationBmc {
 		let sql = format!(
 			"INSERT INTO {} (
 				case_id,
+				source_receiver_presave_id,
 				receiver_type,
 				organization_name,
 				department,
@@ -132,7 +136,7 @@ impl ReceiverInformationBmc {
 				updated_at,
 				created_by
 			)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), now(), $13)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now(), now(), $14)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -141,6 +145,7 @@ impl ReceiverInformationBmc {
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
+					.bind(data.source_receiver_presave_id)
 					.bind(data.receiver_type)
 					.bind(data.organization_name)
 					.bind(data.department)
@@ -251,8 +256,9 @@ impl ReceiverInformationBmc {
 			     telephone = COALESCE($10, telephone),
 			     fax = COALESCE($11, fax),
 			     email = COALESCE($12, email),
+			     source_receiver_presave_id = COALESCE($13, source_receiver_presave_id),
 			     updated_at = now(),
-			     updated_by = $13
+			     updated_by = $14
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -272,6 +278,7 @@ impl ReceiverInformationBmc {
 					.bind(data.telephone)
 					.bind(data.fax)
 					.bind(data.email)
+					.bind(data.source_receiver_presave_id)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -305,18 +312,19 @@ impl ReceiverInformationBmc {
 		let clears: Vec<String> =
 			clear_fields.iter().map(|field| (*field).into()).collect();
 		let sql = format!("UPDATE {} SET
-			receiver_type = CASE WHEN 'receiver_type' = ANY($14) THEN NULL ELSE COALESCE($2, receiver_type) END,
-			organization_name = CASE WHEN 'organization_name' = ANY($14) THEN NULL ELSE COALESCE($3, organization_name) END,
-			department = CASE WHEN 'department' = ANY($14) THEN NULL ELSE COALESCE($4, department) END,
-			street_address = CASE WHEN 'street_address' = ANY($14) THEN NULL ELSE COALESCE($5, street_address) END,
-			city = CASE WHEN 'city' = ANY($14) THEN NULL ELSE COALESCE($6, city) END,
-			state_province = CASE WHEN 'state_province' = ANY($14) THEN NULL ELSE COALESCE($7, state_province) END,
-			postcode = CASE WHEN 'postcode' = ANY($14) THEN NULL ELSE COALESCE($8, postcode) END,
-			country_code = CASE WHEN 'country_code' = ANY($14) THEN NULL ELSE COALESCE($9, country_code) END,
-			telephone = CASE WHEN 'telephone' = ANY($14) THEN NULL ELSE COALESCE($10, telephone) END,
-			fax = CASE WHEN 'fax' = ANY($14) THEN NULL ELSE COALESCE($11, fax) END,
-			email = CASE WHEN 'email' = ANY($14) THEN NULL ELSE COALESCE($12, email) END,
-			updated_at = now(), updated_by = $13 WHERE case_id = $1", Self::TABLE);
+			receiver_type = CASE WHEN 'receiver_type' = ANY($15) THEN NULL ELSE COALESCE($2, receiver_type) END,
+			organization_name = CASE WHEN 'organization_name' = ANY($15) THEN NULL ELSE COALESCE($3, organization_name) END,
+			department = CASE WHEN 'department' = ANY($15) THEN NULL ELSE COALESCE($4, department) END,
+			street_address = CASE WHEN 'street_address' = ANY($15) THEN NULL ELSE COALESCE($5, street_address) END,
+			city = CASE WHEN 'city' = ANY($15) THEN NULL ELSE COALESCE($6, city) END,
+			state_province = CASE WHEN 'state_province' = ANY($15) THEN NULL ELSE COALESCE($7, state_province) END,
+			postcode = CASE WHEN 'postcode' = ANY($15) THEN NULL ELSE COALESCE($8, postcode) END,
+			country_code = CASE WHEN 'country_code' = ANY($15) THEN NULL ELSE COALESCE($9, country_code) END,
+			telephone = CASE WHEN 'telephone' = ANY($15) THEN NULL ELSE COALESCE($10, telephone) END,
+			fax = CASE WHEN 'fax' = ANY($15) THEN NULL ELSE COALESCE($11, fax) END,
+			email = CASE WHEN 'email' = ANY($15) THEN NULL ELSE COALESCE($12, email) END,
+			source_receiver_presave_id = CASE WHEN 'source_receiver_presave_id' = ANY($15) THEN NULL ELSE COALESCE($13, source_receiver_presave_id) END,
+			updated_at = now(), updated_by = $14 WHERE case_id = $1", Self::TABLE);
 		let result = mm
 			.dbx()
 			.execute(
@@ -333,6 +341,7 @@ impl ReceiverInformationBmc {
 					.bind(data.telephone)
 					.bind(data.fax)
 					.bind(data.email)
+					.bind(data.source_receiver_presave_id)
 					.bind(ctx.user_id())
 					.bind(clears),
 			)

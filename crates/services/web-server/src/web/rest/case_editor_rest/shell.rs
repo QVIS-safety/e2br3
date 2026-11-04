@@ -32,9 +32,13 @@ pub async fn get_editor_shell(
 							),
 						})?;
 				let message_receiver_identifier =
-					MessageHeaderBmc::get_by_case(ctx, mm, case_id)
-						.await?
-						.message_receiver_identifier;
+					match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+						Ok(header) => Some(header.message_receiver_identifier),
+						Err(lib_core::model::Error::EntityUuidNotFound {
+							..
+						}) => None,
+						Err(error) => return Err(error.into()),
+					};
 				Ok((
 					axum::http::StatusCode::OK,
 					Json(CaseEditorShellDto::from_case_read_result(

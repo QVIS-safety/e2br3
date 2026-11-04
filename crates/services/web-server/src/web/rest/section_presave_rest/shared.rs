@@ -248,7 +248,7 @@ macro_rules! generate_single_row_presave_rest_fns {
 			Json(params): Json<ParamsForUpdate<$update_request>>,
 		) -> Result<(StatusCode, Json<DataRestResult<$details>>)> {
 			let ctx = ctx_w.0;
-			with_authorized_presave_update(
+			with_authorized_presave_atomic_update(
 				&ctx,
 				&snapshot,
 				&mm,
@@ -355,7 +355,7 @@ macro_rules! generate_presave_child_rest_fns {
 			Json(params): Json<ParamsForCreate<$rest_create>>,
 		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
 			let ctx = ctx_w.0;
-			with_authorized_presave_update(
+			with_authorized_presave_atomic_update(
 				&ctx,
 				&snapshot,
 				&mm,
@@ -364,6 +364,13 @@ macro_rules! generate_presave_child_rest_fns {
 				move |ctx, mm| {
 					Box::pin(async move {
 						let ParamsForCreate { data } = params;
+						super::shared::ensure_presave_parent_active(
+							ctx,
+							mm,
+							PresaveAuthorizationKind::$parent_kind,
+							parent_id,
+						)
+						.await?;
 						$validate_create(&data)?;
 						let id =
 							$bmc::create(ctx, mm, data.into_core(parent_id)).await?;
@@ -498,6 +505,41 @@ macro_rules! generate_presave_child_rest_fns {
 }
 
 pub(super) use generate_presave_child_rest_fns;
+
+pub(super) async fn ensure_presave_parent_active(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	kind: PresaveAuthorizationKind,
+	id: Uuid,
+) -> Result<()> {
+	let deleted = match kind {
+		PresaveAuthorizationKind::Sender => {
+			SenderPresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+		PresaveAuthorizationKind::Receiver => {
+			ReceiverPresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+		PresaveAuthorizationKind::Product => {
+			ProductPresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+		PresaveAuthorizationKind::Reporter => {
+			ReporterPresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+		PresaveAuthorizationKind::Study => {
+			StudyPresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+		PresaveAuthorizationKind::Narrative => {
+			NarrativePresaveBmc::get(ctx, mm, id).await?.deleted
+		}
+	};
+	if deleted {
+		return Err(lib_core::model::Error::Conflict {
+			message: "archived presave cannot accept new child rows".to_string(),
+		}
+		.into());
+	}
+	Ok(())
+}
 
 pub(super) fn no_input_contract<T>(_: &T) -> Result<()> {
 	Ok(())

@@ -289,6 +289,7 @@ repeatable_page_row_create_handler!(
 
 repeatable_page_row_patch_handler!(
 	patch_editor_dh_page_row,
+	apply: apply_editor_dh_page_row_patch,
 	section: "DH",
 	row_key: "pastDrugHistory",
 	bmc: PastDrugHistoryBmc,
@@ -301,6 +302,7 @@ repeatable_page_row_patch_handler!(
 
 repeatable_page_row_delete_handler!(
 	delete_editor_dh_page_row,
+	apply: apply_editor_dh_page_row_delete,
 	bmc: PastDrugHistoryBmc,
 	verify: verify_editor_dh_page_row,
 );

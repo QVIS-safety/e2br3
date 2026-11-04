@@ -96,7 +96,11 @@ pub async fn import_e2b_xml(
 	}
 }
 
-async fn import_e2b_xml_in_txn(
+/// Imports one XML document using the caller's transaction.
+///
+/// The supplied `ModelManager` must own an open transaction. This function
+/// neither commits nor rolls it back; the caller must finish the transaction.
+pub async fn import_e2b_xml_in_txn(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	req: XmlImportRequest,

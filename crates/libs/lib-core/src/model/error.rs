@@ -41,6 +41,7 @@ pub enum Error {
 	Conflict {
 		message: String,
 	},
+	CaseStateConflict,
 
 	// -- ModelManager
 	CantCreateModelManagerProvider(String),

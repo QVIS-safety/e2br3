@@ -172,6 +172,7 @@ repeatable_page_row_create_handler!(
 
 repeatable_page_row_patch_handler!(
 	patch_editor_lr_page_row,
+	apply: apply_editor_lr_page_row_patch,
 	section: "LR",
 	row_key: "literatureReference",
 	bmc: LiteratureReferenceBmc,
@@ -185,6 +186,7 @@ repeatable_page_row_patch_handler!(
 
 repeatable_page_row_delete_handler!(
 	delete_editor_lr_page_row,
+	apply: apply_editor_lr_page_row_delete,
 	bmc: LiteratureReferenceBmc,
 	verify: verify_editor_lr_page_row,
 );

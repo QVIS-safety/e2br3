@@ -239,12 +239,17 @@ GET /api/users/me/profile
 GET /api/users/me/routing
 GET /api/users/workflow-options
 GET /api/users/{id}
+PATCH /api/cases/{case_id}/editor/pages/AE/rows
 PATCH /api/cases/{case_id}/editor/pages/AE/rows/{row_id}
 PATCH /api/cases/{case_id}/editor/pages/CI
+PATCH /api/cases/{case_id}/editor/pages/DG/rows
 PATCH /api/cases/{case_id}/editor/pages/DG/rows/{row_id}
+PATCH /api/cases/{case_id}/editor/pages/DH/rows
 PATCH /api/cases/{case_id}/editor/pages/DH/rows/{row_id}
 PATCH /api/cases/{case_id}/editor/pages/DM
+PATCH /api/cases/{case_id}/editor/pages/LB/rows
 PATCH /api/cases/{case_id}/editor/pages/LB/rows/{row_id}
+PATCH /api/cases/{case_id}/editor/pages/LR/rows
 PATCH /api/cases/{case_id}/editor/pages/LR/rows/{row_id}
 PATCH /api/cases/{case_id}/editor/pages/NR
 PATCH /api/cases/{case_id}/editor/pages/RP

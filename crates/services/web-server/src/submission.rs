@@ -334,11 +334,19 @@ fn required_header_value(field: &str, value: Option<&str>) -> Result<String> {
 		})
 }
 
-fn required_env_identifier(name: &str) -> Result<String> {
-	let value = std::env::var(name).map_err(|_| Error::BadRequest {
+fn required_env_identifier(name: &'static str) -> Result<String> {
+	let value = std::env::var(name).map_err(|_| Error::Configuration {
+		key: name,
 		message: format!("{name} must be configured before XML export"),
 	})?;
-	required_header_value(name, Some(&value))
+	let value = value.trim();
+	if value.is_empty() {
+		return Err(Error::Configuration {
+			key: name,
+			message: format!("{name} must not be empty"),
+		});
+	}
+	Ok(value.to_string())
 }
 
 #[cfg(test)]

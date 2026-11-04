@@ -55,7 +55,8 @@ pub(super) async fn submit_to_gateway(
 	}
 
 	if !is_esg_enabled() {
-		return Err(Error::BadRequest {
+		return Err(Error::Configuration {
+			key: "submission_transport",
 			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
 		});
 	}
@@ -68,7 +69,8 @@ pub(super) async fn submit_to_gateway(
 	}
 
 	let base_url =
-		std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::BadRequest {
+		std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::Configuration {
+			key: "FDA_ESG_BASE_URL",
 			message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
 		})?;
 	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH")
@@ -89,14 +91,17 @@ pub(super) async fn submit_to_gateway(
 	let mut headers = HeaderMap::new();
 	if let Ok(token) = std::env::var("FDA_ESG_BEARER_TOKEN") {
 		let value = format!("Bearer {}", token.trim());
-		let hv = HeaderValue::from_str(&value).map_err(|_| Error::BadRequest {
-			message: "invalid FDA_ESG_BEARER_TOKEN".to_string(),
-		})?;
+		let hv =
+			HeaderValue::from_str(&value).map_err(|_| Error::Configuration {
+				key: "FDA_ESG_BEARER_TOKEN",
+				message: "invalid FDA_ESG_BEARER_TOKEN".to_string(),
+			})?;
 		headers.insert(AUTHORIZATION, hv);
 	}
 	if let Ok(api_key) = std::env::var("FDA_ESG_API_KEY") {
 		let hv = HeaderValue::from_str(api_key.trim()).map_err(|_| {
-			Error::BadRequest {
+			Error::Configuration {
+				key: "FDA_ESG_API_KEY",
 				message: "invalid FDA_ESG_API_KEY".to_string(),
 			}
 		})?;
@@ -146,7 +151,8 @@ pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<Stri
 		return Ok(format!("as2-submitter-http-{}", authority.as_str()));
 	}
 	if !is_esg_enabled() {
-		return Err(Error::BadRequest {
+		return Err(Error::Configuration {
+			key: "submission_transport",
 			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
 		});
 	}
@@ -157,7 +163,8 @@ pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<Stri
 					.to_string(),
 		});
 	}
-	let _ = std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::BadRequest {
+	let _ = std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::Configuration {
+		key: "FDA_ESG_BASE_URL",
 		message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
 	})?;
 	Ok("fda-esg-nextgen-api".to_string())
@@ -336,11 +343,13 @@ impl As2GatewaySubmitResponse {
 
 pub(super) fn as2_submitter_token() -> Result<String> {
 	let token =
-		std::env::var("AS2_SUBMITTER_TOKEN").map_err(|_| Error::BadRequest {
+		std::env::var("AS2_SUBMITTER_TOKEN").map_err(|_| Error::Configuration {
+			key: "AS2_SUBMITTER_TOKEN",
 			message: "AS2_SUBMITTER_TOKEN is required".into(),
 		})?;
 	if token.trim().is_empty() {
-		return Err(Error::BadRequest {
+		return Err(Error::Configuration {
+			key: "AS2_SUBMITTER_TOKEN",
 			message: "AS2_SUBMITTER_TOKEN is empty".into(),
 		});
 	}

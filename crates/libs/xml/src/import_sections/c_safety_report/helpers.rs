@@ -1928,6 +1928,7 @@ pub(crate) fn parse_receiver_information(
 	}
 
 	Ok(Some(ReceiverInformationForUpdate {
+		source_receiver_presave_id: None,
 		receiver_type: normalize_code(
 			read_receiver_type(&mut xpath),
 			&["1", "2", "3", "4", "5", "6"],

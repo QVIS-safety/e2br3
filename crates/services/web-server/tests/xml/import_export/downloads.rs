@@ -306,8 +306,9 @@ async fn test_import_then_export_xml() -> Result<()> {
 		("POST", "/api/cases/export/xml".to_string(), Some(serde_json::json!({ "case_ids": [case_id, second_id], "authority": "fda" }))),
 	] {
 		let (status, body) = request_json(&app, &cookie, method, uri, input).await?;
-		assert_eq!(status, StatusCode::BAD_REQUEST, "{}", String::from_utf8_lossy(&body));
-		assert!(String::from_utf8_lossy(&body).contains("admin settings field 'timezone' is required"));
+		assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{}", String::from_utf8_lossy(&body));
+		let body: Value = serde_json::from_slice(&body)?;
+		assert_eq!(body["error"]["message"], "CONFIGURATION_ERROR", "{body}");
 	}
 	let (status, body) = request_json(
 		&app,

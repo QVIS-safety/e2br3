@@ -515,20 +515,23 @@ pub async fn post_gateway_ack_callback(
 	Json(input): Json<GatewayAckCallbackInput>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let expected =
-		std::env::var("AS2_CALLBACK_TOKEN").map_err(|_| Error::BadRequest {
+		std::env::var("AS2_CALLBACK_TOKEN").map_err(|_| Error::Configuration {
+			key: "AS2_CALLBACK_TOKEN",
 			message: "AS2_CALLBACK_TOKEN is required for gateway callback endpoint"
 				.to_string(),
 		})?;
+	if expected.trim().is_empty() {
+		return Err(Error::Configuration {
+			key: "AS2_CALLBACK_TOKEN",
+			message: "AS2_CALLBACK_TOKEN must not be empty".to_string(),
+		});
+	}
 	let incoming = headers
 		.get("x-callback-token")
 		.and_then(header_to_str)
-		.ok_or(Error::BadRequest {
-			message: "missing x-callback-token".to_string(),
-		})?;
+		.ok_or(Error::Authentication)?;
 	if !tokens_equal(&expected, &incoming) {
-		return Err(Error::BadRequest {
-			message: "invalid x-callback-token".to_string(),
-		});
+		return Err(Error::Authentication);
 	}
 	let record = apply_gateway_ack_by_remote(&mm, input).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
@@ -574,22 +577,25 @@ fn header_to_str(value: &HeaderValue) -> Option<String> {
 
 fn validate_internal_token(headers: &HeaderMap) -> Result<()> {
 	let expected = std::env::var("SUBMISSION_RECONCILE_TOKEN").map_err(|_| {
-		Error::BadRequest {
+		Error::Configuration {
+			key: "SUBMISSION_RECONCILE_TOKEN",
 			message:
 				"SUBMISSION_RECONCILE_TOKEN is required for reconcile endpoints"
 					.to_string(),
 		}
 	})?;
+	if expected.trim().is_empty() {
+		return Err(Error::Configuration {
+			key: "SUBMISSION_RECONCILE_TOKEN",
+			message: "SUBMISSION_RECONCILE_TOKEN must not be empty".to_string(),
+		});
+	}
 	let incoming = headers
 		.get("x-reconcile-token")
 		.and_then(header_to_str)
-		.ok_or(Error::BadRequest {
-			message: "missing x-reconcile-token".to_string(),
-		})?;
+		.ok_or(Error::Authentication)?;
 	if !tokens_equal(&expected, &incoming) {
-		return Err(Error::BadRequest {
-			message: "invalid x-reconcile-token".to_string(),
-		});
+		return Err(Error::Authentication);
 	}
 	Ok(())
 }

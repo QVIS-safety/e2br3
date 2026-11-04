@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
+async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -104,39 +104,21 @@ async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
 			] {
 				let (status, bytes) =
 					request_json(&app, &cookie, method, path, body).await?;
+				assert_eq!(
+					status,
+					StatusCode::BAD_REQUEST,
+					"{authority} {method}: {}",
+					String::from_utf8_lossy(&bytes)
+				);
+				let error: Value = serde_json::from_slice(&bytes)?;
+				let message = error["error"]["data"]["detail"]
+					.as_str()
+					.ok_or("missing export error")?;
 				if valid {
-					assert_eq!(
-						status,
-						StatusCode::OK,
-						"{authority} {method}: {}",
-						String::from_utf8_lossy(&bytes)
-					);
-					if method == "GET" {
-						assert!(std::str::from_utf8(&bytes)?.contains(batch));
-					} else {
-						let mut zip = zip::ZipArchive::new(Cursor::new(bytes))?;
-						assert_eq!(zip.len(), 1);
-						let mut xml = String::new();
-						zip.by_index(0)?.read_to_string(&mut xml)?;
-						assert!(xml.contains(batch));
-					}
+					assert!(message.contains("Correct the highlighted case fields"));
 				} else {
-					assert_eq!(
-						status,
-						StatusCode::BAD_REQUEST,
-						"{authority} {method}: {}",
-						String::from_utf8_lossy(&bytes)
-					);
-					let error: Value = serde_json::from_slice(&bytes)?;
-					let message = error["error"]["data"]["detail"]
-						.as_str()
-						.ok_or("missing export error")?;
 					assert!(
-						message.contains("export header validation failed"),
-						"{error}"
-					);
-					assert!(
-						message.contains("N.1.4") && message.contains("N.2.r.3"),
+						message.contains("Review export history for details"),
 						"{error}"
 					);
 				}
@@ -161,14 +143,18 @@ async fn test_manual_export_checks_n_routes_without_blocking_draft_cases(
 			.iter()
 			.filter(|item| item["status"] == "error")
 			.count(),
+		10
+	);
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "error")
+			.filter(|item| item["errorMessage"].as_str().is_some_and(|message| {
+				message.contains("export header validation failed")
+			}))
+			.count(),
 		4
 	);
-	assert!(items
-		.iter()
-		.filter(|item| item["status"] == "error")
-		.all(|item| item["errorMessage"].as_str().is_some_and(
-			|message| message.contains("export header validation failed")
-		)));
 	Ok(())
 }
 
@@ -261,8 +247,9 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 			"{}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body)
-			.contains("N.1.4 Batch Receiver Identifier is required"));
+		assert!(String::from_utf8_lossy(&body).contains(
+			"N.1.4 Batch Receiver Identifier is required before XML export"
+		));
 	}
 	let (status, body) = request_json(
 		&app,
@@ -295,7 +282,13 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 			"{}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body).contains("export task failed"));
+		let body: Value = serde_json::from_slice(&body)?;
+		assert_eq!(body["error"]["message"], "INVALID_REQUEST", "{body}");
+		assert_eq!(
+			body["error"]["data"]["detail"],
+			"D Patient Information is required for export.",
+			"{body}"
+		);
 	}
 	let (status, body) = request_json(
 		&app,
@@ -313,12 +306,20 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 	assert_eq!(items.len(), 4);
 	assert!(items.iter().all(|item| item["status"] == "error"));
 	assert!(items.iter().all(|item| item["caseId"] == case_id && item["exportedBy"] == seed.admin.id.to_string()), "history must survive the failed export's outer transaction with the original user and case");
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| {
+				item["errorMessage"]
+					== "N.1.4 Batch Receiver Identifier is required before XML export"
+			})
+			.count(),
+		2
+	);
 	let fda_errors: Vec<_> = items
 		.iter()
 		.filter(|item| {
-			item["errorMessage"]
-				.as_str()
-				.is_some_and(|message| message.contains("export task failed"))
+			item["errorMessage"] == "D Patient Information is required for export."
 		})
 		.collect();
 	assert_eq!(fda_errors.len(), 2);

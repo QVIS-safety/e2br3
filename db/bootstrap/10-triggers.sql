@@ -55,6 +55,13 @@ FOR EACH ROW EXECUTE FUNCTION require_active_presave_reference(
     'sender_presaves', 'source_sender_presave_id', 'case'
 );
 
+DROP TRIGGER IF EXISTS guard_receiver_information_source_receiver_presave ON receiver_information;
+CREATE TRIGGER guard_receiver_information_source_receiver_presave
+BEFORE INSERT OR UPDATE OF source_receiver_presave_id ON receiver_information
+FOR EACH ROW EXECUTE FUNCTION require_active_presave_reference(
+    'receiver_presaves', 'source_receiver_presave_id', 'case'
+);
+
 DROP TRIGGER IF EXISTS guard_drug_information_source_product_presave ON drug_information;
 CREATE TRIGGER guard_drug_information_source_product_presave
 BEFORE INSERT OR UPDATE OF source_product_presave_id ON drug_information

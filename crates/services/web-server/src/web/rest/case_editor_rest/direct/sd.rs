@@ -45,6 +45,7 @@ const SD_SENDER_PATCH_FIELDS: &[(&str, &[&str])] = &[
 	("email", &["email"]),
 ];
 const SD_RECEIVER_PATCH_FIELDS: &[(&str, &[&str])] = &[
+	("source_receiver_presave_id", &["sourceReceiverPresaveId"]),
 	("receiver_type", &["receiverType"]),
 	("organization_name", &["organizationName"]),
 	("department", &["department"]),
@@ -181,6 +182,10 @@ pub(super) async fn apply_sd_page_rows_patch(
 		optional_row_object(page_id, rows, "receiverInformation")?
 	{
 		let update = ReceiverInformationForUpdate {
+			source_receiver_presave_id: uuid_field(
+				receiver,
+				&["sourceReceiverPresaveId"],
+			)?,
 			receiver_type: string_field(receiver, &["receiverType"]),
 			organization_name: string_field(receiver, &["organizationName"]),
 			department: string_field(receiver, &["department"]),
@@ -213,6 +218,7 @@ pub(super) async fn apply_sd_page_rows_patch(
 				mm,
 				ReceiverInformationForCreate {
 					case_id,
+					source_receiver_presave_id: update.source_receiver_presave_id,
 					receiver_type: update.receiver_type,
 					organization_name: update.organization_name,
 					department: update.department,
@@ -273,6 +279,7 @@ pub(super) async fn load_editor_sd_data(
 		})),
 		"receiverInformation": receiver.map(|row| json!({
 			"id": row.id,
+			"sourceReceiverPresaveId": row.source_receiver_presave_id,
 			"receiverType": row.receiver_type,
 			"organizationName": row.organization_name,
 			"department": row.department,

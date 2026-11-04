@@ -94,7 +94,8 @@ async fn delete_deactivates_and_preserves_tenant_data_with_single_update_audit(
 	let (status, body) =
 		request_json(&app, "GET", &member_cookie, "/api/users/me/profile", None)
 			.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
 	let (status, profile) =
 		request_json(&app, "GET", &cookie, "/api/users/me/profile", None).await?;
 	assert_eq!(status, StatusCode::OK, "{profile:?}");

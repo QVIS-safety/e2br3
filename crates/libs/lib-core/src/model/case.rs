@@ -862,11 +862,7 @@ impl CaseBmc {
 		};
 		if !status.trim().eq_ignore_ascii_case(expected_status.trim()) {
 			dbx.rollback_txn().await?;
-			return Err(crate::model::Error::Conflict {
-				message:
-					"case status changed in another session; refresh and try again"
-						.to_string(),
-			});
+			return Err(crate::model::Error::CaseStateConflict);
 		}
 		let next = match status.trim().to_ascii_lowercase().as_str() {
 			"draft" => "reviewed",
@@ -938,11 +934,7 @@ impl CaseBmc {
 		};
 		if !status.trim().eq_ignore_ascii_case(expected_status.trim()) {
 			dbx.rollback_txn().await?;
-			return Err(crate::model::Error::Conflict {
-				message:
-					"case status changed in another session; refresh and try again"
-						.to_string(),
-			});
+			return Err(crate::model::Error::CaseStateConflict);
 		}
 		let normalized = status.trim().to_ascii_lowercase();
 		let (next, remembered): (String, Option<String>) = match normalized.as_str()

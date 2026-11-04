@@ -11,9 +11,15 @@ pub(crate) async fn export_patch(
 	case_id: sqlx::types::Uuid,
 	raw_xml: &[u8],
 ) -> Result<String> {
-	let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::from)?;
+	let patient = match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(patient) => patient,
+		Err(model::Error::EntityUuidNotFound { .. }) => {
+			return Err(Error::MissingExportField {
+				field: "D Patient Information",
+			});
+		}
+		Err(error) => return Err(Error::from(error)),
+	};
 	let death_info = fetch_death_info(mm, patient.id).await?;
 	let reported_causes =
 		fetch_reported_causes(mm, death_info.as_ref().map(|death| death.id)).await?;

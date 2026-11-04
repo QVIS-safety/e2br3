@@ -316,7 +316,28 @@ async fn test_lifecycle_toggle_rejects_stale_screen_status() -> Result<()> {
 			json!({"data":{"expected_status":"draft"}}).to_string(),
 		))?;
 	let stale_lock_res = app.clone().oneshot(stale_lock_req).await?;
-	assert_eq!(stale_lock_res.status(), StatusCode::CONFLICT);
+	let status = stale_lock_res.status();
+	let body: Value = serde_json::from_slice(
+		&to_bytes(stale_lock_res.into_body(), usize::MAX).await?,
+	)?;
+	assert_eq!(status, StatusCode::CONFLICT, "{body:?}");
+	assert_eq!(body["error"]["message"], "CASE_STATE_CONFLICT", "{body:?}");
+
+	let stale_review_req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/review/toggle"))
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({"data":{"expected_status":"draft"}}).to_string(),
+		))?;
+	let stale_review_res = app.clone().oneshot(stale_review_req).await?;
+	let status = stale_review_res.status();
+	let body: Value = serde_json::from_slice(
+		&to_bytes(stale_review_res.into_body(), usize::MAX).await?,
+	)?;
+	assert_eq!(status, StatusCode::CONFLICT, "{body:?}");
+	assert_eq!(body["error"]["message"], "CASE_STATE_CONFLICT", "{body:?}");
 
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");

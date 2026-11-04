@@ -36,7 +36,7 @@ use xml::import_sections::{
 };
 use xml::validation::{normalize_e2b_xml_for_import, validate_e2b_xml_for_import};
 use xml::{
-	extract_safety_report_id_from_xml, import_e2b_xml, CImportSettings,
+	extract_safety_report_id_from_xml, import_e2b_xml_in_txn, CImportSettings,
 	XmlImportRequest, XmlValidationReport,
 };
 use zip::ZipArchive;
@@ -400,9 +400,16 @@ async fn import_single_xml(
 		}
 	}
 
-	let import_result = import_e2b_xml(
+	let import_mm = mm.new_with_txn().map_err(Error::Model)?;
+	import_mm
+		.dbx()
+		.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)
+		.map_err(Error::Model)?;
+	let import_result = import_e2b_xml_in_txn(
 		ctx,
-		mm,
+		&import_mm,
 		XmlImportRequest {
 			xml,
 			c_settings,
@@ -413,32 +420,57 @@ async fn import_single_xml(
 	.await;
 	match import_result {
 		Ok(result) => {
-			let case_number =
-				result
-					.case_number
-					.clone()
-					.ok_or_else(|| Error::BadRequest {
+			let case_number = match result.case_number.clone() {
+				Some(case_number) => case_number,
+				None => {
+					let _ = import_mm.dbx().rollback_txn().await;
+					return Err(Error::BadRequest {
 						message: "imported case has no case number".to_string(),
-					})?;
-			let case_id = result
-				.case_id
-				.as_deref()
-				.and_then(|value| Uuid::parse_str(value).ok());
+					});
+				}
+			};
+			let case_id = match result.case_id.as_deref() {
+				Some(value) => match Uuid::parse_str(value) {
+					Ok(case_id) => case_id,
+					Err(_) => {
+						let _ = import_mm.dbx().rollback_txn().await;
+						return Err(Error::Service {
+							operation: "resolve imported case identity",
+						});
+					}
+				},
+				None => {
+					let _ = import_mm.dbx().rollback_txn().await;
+					return Err(Error::Service {
+						operation: "resolve imported case identity",
+					});
+				}
+			};
 			if result.skipped {
 				let message =
 					"Existing case has the same C.1.1 and C.1.2; import skipped."
 						.to_string();
-				record_import_history(
+				if let Err(error) = XmlImportHistoryBmc::record_in_txn(
+					import_mm.dbx(),
 					ctx,
-					mm,
 					uploaded_file_name,
 					&filename,
-					case_id,
+					Some(case_id),
 					Some(case_number.as_str()),
 					XmlImportHistoryStatus::Skipped,
 					Some(&message),
 				)
-				.await?;
+				.await
+				{
+					let _ = import_mm.dbx().rollback_txn().await;
+					return Err(Error::Model(error));
+				}
+				import_mm
+					.dbx()
+					.commit_txn()
+					.await
+					.map_err(lib_core::model::Error::from)
+					.map_err(Error::Model)?;
 				return Ok(ImportedCaseSummary {
 					case_number: Some(case_number),
 					status: XmlImportHistoryStatus::Skipped,
@@ -447,7 +479,7 @@ async fn import_single_xml(
 					case_version: None,
 					decision: Some("skip"),
 					source_file_name: Some(filename),
-					matched_case_id: case_id.map(|id| id.to_string()),
+					matched_case_id: Some(case_id.to_string()),
 					matched_case_number: result.case_number,
 					matched_case_version: result
 						.case_version
@@ -467,12 +499,12 @@ async fn import_single_xml(
 			} else {
 				None
 			};
-			record_import_history(
+			if let Err(error) = XmlImportHistoryBmc::record_in_txn(
+				import_mm.dbx(),
 				ctx,
-				mm,
 				uploaded_file_name,
 				&filename,
-				case_id,
+				Some(case_id),
 				result.case_number.as_deref(),
 				status,
 				if potential_duplicate {
@@ -481,7 +513,17 @@ async fn import_single_xml(
 					None
 				},
 			)
-			.await?;
+			.await
+			{
+				let _ = import_mm.dbx().rollback_txn().await;
+				return Err(Error::Model(error));
+			}
+			import_mm
+				.dbx()
+				.commit_txn()
+				.await
+				.map_err(lib_core::model::Error::from)
+				.map_err(Error::Model)?;
 			Ok(ImportedCaseSummary {
 				case_number: Some(case_number),
 				status,
@@ -496,6 +538,7 @@ async fn import_single_xml(
 			})
 		}
 		Err(err) => {
+			let _ = import_mm.dbx().rollback_txn().await;
 			let message = err.to_string();
 			record_import_history(
 				ctx,

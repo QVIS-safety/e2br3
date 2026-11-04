@@ -132,11 +132,14 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
-	let dg_row = |source_product_presave_id: Uuid, medicinal_product: &str| {
+	let dg_row = |source_product_presave_id: Uuid,
+	              source_product_id: &str,
+	              medicinal_product: &str| {
 		json!({
 			"authorities": ["ich"],
 			"rows": { "drug": {
 				"sourceProductPresaveId": source_product_presave_id,
+				"sourceProductId": source_product_id,
 				"sequenceNumber": 1,
 				"drugCharacterization": "1",
 				"medicinalProduct": medicinal_product
@@ -148,7 +151,11 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 		"POST",
 		&editor_cookie,
 		format!("/api/cases/{assigned_case}/editor/pages/DG/rows"),
-		Some(dg_row(assigned_product, "Assigned Drug")),
+		Some(dg_row(
+			assigned_product,
+			&assigned_product_key,
+			"Assigned Drug",
+		)),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
@@ -167,13 +174,46 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 		json!(assigned_product),
 		"{saved:?}"
 	);
+	assert_eq!(
+		saved["data"]["drug"]["sourceProductId"], assigned_product_key,
+		"{saved:?}"
+	);
+
+	let changed_product_key = format!("CHANGED-{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		&app,
+		"PATCH",
+		&admin_cookie,
+		format!("/api/presaves/products/{assigned_product}"),
+		Some(json!({ "data": { "productId": changed_product_key } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let (status, saved_after_source_update) = request_json(
+		&app,
+		"GET",
+		&editor_cookie,
+		format!("/api/cases/{assigned_case}/editor/pages/DG/rows/{row_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{saved_after_source_update:?}");
+	assert_eq!(
+		saved_after_source_update["data"]["drug"]["sourceProductId"],
+		assigned_product_key,
+		"{saved_after_source_update:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
 		"POST",
 		&editor_cookie,
 		format!("/api/cases/{unassigned_case}/editor/pages/DG/rows"),
-		Some(dg_row(unassigned_product, "Unassigned Drug")),
+		Some(dg_row(
+			unassigned_product,
+			&unassigned_product_key,
+			"Unassigned Drug",
+		)),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
@@ -183,7 +223,11 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 		"POST",
 		&editor_cookie,
 		format!("/api/cases/{initially_unscoped_case}/editor/pages/DG/rows"),
-		Some(dg_row(unassigned_product, "Unassigned Drug")),
+		Some(dg_row(
+			unassigned_product,
+			&unassigned_product_key,
+			"Unassigned Drug",
+		)),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");

@@ -8,10 +8,109 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::Ctx;
+use lib_core::model::admin_settings::AdminSettingsBmc;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
+
+#[tokio::test]
+async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let mut settings = AdminSettingsBmc::get(&ctx, &mm, "system")
+		.await?
+		.ok_or("missing test organization settings")?;
+	settings
+		.as_object_mut()
+		.ok_or("settings must be an object")?
+		.extend([
+			("meddra_language".to_string(), Value::Null),
+			("meddra_version".to_string(), Value::Null),
+			("workflow_enabled".to_string(), Value::Null),
+			("workflow".to_string(), json!("invalid unrelated workflow")),
+			(
+				"case_number_padding".to_string(),
+				json!("invalid unrelated padding"),
+			),
+			("future_admin_field".to_string(), json!({ "nested": true })),
+		]);
+	AdminSettingsBmc::upsert(&ctx, &mm, "system", &settings, Some(seed.admin.id))
+		.await?;
+
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+	let (status, value) =
+		request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+			.await?;
+
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["notation"], settings["notation"]);
+	assert_eq!(value["timezone"], settings["timezone"]);
+	assert_eq!(value["notices"], json!([]));
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_runtime_settings_reject_invalid_required_runtime_fields() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let original = AdminSettingsBmc::get(&ctx, &mm, "system")
+		.await?
+		.ok_or("missing test organization settings")?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	for field in ["notation", "timezone"] {
+		let mut invalid = original.clone();
+		invalid[field] = Value::Null;
+		AdminSettingsBmc::upsert(&ctx, &mm, "system", &invalid, Some(seed.admin.id))
+			.await?;
+		let (status, value) =
+			request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+				.await?;
+		assert_eq!(
+			status,
+			StatusCode::SERVICE_UNAVAILABLE,
+			"{field}: {value:?}"
+		);
+		assert_eq!(value["error"]["message"], "CONFIGURATION_ERROR");
+	}
+	for (idle, warning) in [(4, 1), (10, 10)] {
+		let mut invalid = original.clone();
+		invalid["idle_session_minutes"] = json!(idle);
+		invalid["session_warning_minutes"] = json!(warning);
+		AdminSettingsBmc::upsert(&ctx, &mm, "system", &invalid, Some(seed.admin.id))
+			.await?;
+		let (status, value) =
+			request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
+				.await?;
+		assert_eq!(
+			status,
+			StatusCode::SERVICE_UNAVAILABLE,
+			"idle={idle}, warning={warning}: {value:?}"
+		);
+		assert_eq!(value["error"]["message"], "CONFIGURATION_ERROR");
+	}
+	Ok(())
+}
 
 #[tokio::test]
 async fn test_meddra_settings_reject_unavailable_release_without_changing_saved_settings(

@@ -84,35 +84,40 @@ pub struct RuntimeSettings {
 
 impl RuntimeSettings {
 	pub(crate) fn from_value(value: Option<&Value>) -> Result<Self> {
-		let value = value.ok_or_else(|| Error::BadRequest {
+		let value = value.ok_or_else(|| Error::Configuration {
+			key: "admin_settings",
 			message: "admin settings record is missing".to_string(),
 		})?;
-		let required_string = |key: &str| -> Result<String> {
+		let required_string = |key: &'static str| -> Result<String> {
 			let value = value
 				.get(key)
 				.and_then(Value::as_str)
 				.map(str::trim)
 				.filter(|value| !value.is_empty())
-				.ok_or_else(|| Error::BadRequest {
+				.ok_or_else(|| Error::Configuration {
+					key,
 					message: format!("admin settings field '{key}' is required"),
 				})?;
 			Ok(value.to_string())
 		};
-		let required_bool = |key: &str| -> Result<bool> {
+		let required_bool = |key: &'static str| -> Result<bool> {
 			value.get(key).and_then(Value::as_bool).ok_or_else(|| {
-				Error::BadRequest {
+				Error::Configuration {
+					key,
 					message: format!("admin settings field '{key}' must be boolean"),
 				}
 			})
 		};
 		let timezone = required_string("timezone")?;
 		let timezone =
-			validate_timezone(&timezone).ok_or_else(|| Error::BadRequest {
+			validate_timezone(&timezone).ok_or_else(|| Error::Configuration {
+				key: "timezone",
 				message: "stored timezone must be a valid IANA timezone".to_string(),
 			})?;
 		let orientation = required_string("orientation")?;
 		if !matches!(orientation.as_str(), "Portrait" | "Landscape") {
-			return Err(Error::BadRequest {
+			return Err(Error::Configuration {
+				key: "orientation",
 				message: "stored orientation must be Portrait or Landscape"
 					.to_string(),
 			});
@@ -120,14 +125,16 @@ impl RuntimeSettings {
 		let import_dates = value
 			.get("import_date_update")
 			.and_then(Value::as_object)
-			.ok_or_else(|| Error::BadRequest {
+			.ok_or_else(|| Error::Configuration {
+				key: "import_date_update",
 				message: "import_date_update is required".to_string(),
 			})?;
-		let import_bool = |key: &str| -> Result<bool> {
+		let import_bool = |key: &'static str| -> Result<bool> {
 			import_dates
 				.get(key)
 				.and_then(Value::as_bool)
-				.ok_or_else(|| Error::BadRequest {
+				.ok_or_else(|| Error::Configuration {
+					key: "import_date_update",
 					message: format!("import_date_update.{key} must be boolean"),
 				})
 		};
@@ -143,7 +150,8 @@ impl RuntimeSettings {
 			import_dates.update_most_recent_info_date,
 			import_dates.update_report_first_received_date,
 		) {
-			return Err(Error::BadRequest {
+			return Err(Error::Configuration {
+				key: "import_date_update",
 				message:
 					"import_date_update must be one of the four supported states"
 						.to_string(),
@@ -151,7 +159,12 @@ impl RuntimeSettings {
 		}
 		Ok(Self {
 			timezone,
-			appendices: parse_appendices(value.get("appendices"))?,
+			appendices: parse_appendices(value.get("appendices")).map_err(
+				|error| Error::Configuration {
+					key: "appendices",
+					message: error.to_string(),
+				},
+			)?,
 			notation: required_bool("notation")?,
 			import_dates,
 			apply_sender_info_to_imported_cases: required_bool(
@@ -160,7 +173,11 @@ impl RuntimeSettings {
 			orientation,
 			data_ordering: normalize_data_ordering(
 				value.get("data_ordering").and_then(Value::as_str),
-			)?,
+			)
+			.map_err(|error| Error::Configuration {
+				key: "data_ordering",
+				message: error.to_string(),
+			})?,
 		})
 	}
 

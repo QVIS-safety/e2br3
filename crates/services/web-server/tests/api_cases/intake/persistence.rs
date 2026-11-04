@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_ich_export_without_required_narrative_still_downloads() -> Result<()> {
+async fn test_ich_export_without_required_narrative_is_rejected() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -24,8 +24,13 @@ async fn test_ich_export_without_required_narrative_still_downloads() -> Result<
 		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
-	assert!(String::from_utf8(body)?.contains("<MCCI_IN200100UV01"));
+	assert_eq!(
+		status,
+		StatusCode::BAD_REQUEST,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	assert!(String::from_utf8(body)?.contains("Correct the highlighted case fields"));
 
 	Ok(())
 }

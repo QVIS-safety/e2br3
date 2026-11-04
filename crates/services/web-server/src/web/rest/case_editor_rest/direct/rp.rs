@@ -60,6 +60,7 @@ const RP_PRIMARY_SOURCE_PATCH_FIELDS: &[(&str, &[&str])] = &[
 struct CaseEditorRpPrimarySourceDto {
 	id: Uuid,
 	sequence_number: i32,
+	source_reporter_presave_id: Option<Uuid>,
 	reporter_title: Option<String>,
 	reporter_title_null_flavor: Option<String>,
 	reporter_given_name: Option<String>,
@@ -114,6 +115,7 @@ impl From<PrimarySource> for CaseEditorRpPrimarySourceDto {
 		Self {
 			id: source.id,
 			sequence_number: source.sequence_number,
+			source_reporter_presave_id: source.source_reporter_presave_id,
 			reporter_title: source.reporter_title,
 			reporter_title_null_flavor: source.reporter_title_null_flavor,
 			reporter_given_name: source.reporter_given_name,

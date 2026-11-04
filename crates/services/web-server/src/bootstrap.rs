@@ -23,6 +23,34 @@ const DEMO_CRO_ADMIN_EMAIL: &str = "demo.cro.admin@example.com";
 const DEMO_CRO_ADMIN_USERNAME: &str = "demo_cro_admin";
 const DEMO_COMPANY_ADMIN_EMAIL: &str = "demo.company.admin@example.com";
 const DEMO_COMPANY_ADMIN_USERNAME: &str = "demo_company_admin";
+
+pub fn admin_bootstrap_enabled(
+	value: std::result::Result<String, std::env::VarError>,
+) -> Result<bool> {
+	let value = value.map_err(|err| {
+		crate::Error::Config(format!("SERVICE_BOOTSTRAP_ENABLED is required: {err}"))
+	})?;
+	value.parse::<bool>().map_err(|_| {
+		crate::Error::Config(
+			"SERVICE_BOOTSTRAP_ENABLED must be true or false".to_string(),
+		)
+	})
+}
+
+#[test]
+fn admin_bootstrap_requires_an_explicit_boolean() {
+	assert!(matches!(
+		admin_bootstrap_enabled(Ok("false".into())),
+		Ok(false)
+	));
+	assert!(matches!(
+		admin_bootstrap_enabled(Ok("true".into())),
+		Ok(true)
+	));
+	assert!(admin_bootstrap_enabled(Err(std::env::VarError::NotPresent)).is_err());
+	assert!(admin_bootstrap_enabled(Ok("yes".into())).is_err());
+}
+
 pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	let root_ctx = Ctx::root_ctx();
 	migrate_legacy_demo_user(mm).await?;

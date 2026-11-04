@@ -6,7 +6,7 @@ pub mod rest_params;
 pub mod rest_result;
 mod utils;
 
-pub use self::error::{ConstraintViolation, Error, Result};
+pub use self::error::{ConstraintViolation, Error, Result, XmlClientClassification};
 pub use authorization::{
 	denied as authorization_denied, notice_read_allowed,
 	rls_ctx_for_authorized_mutation, rls_ctx_for_authorized_read,
@@ -30,6 +30,7 @@ pub use authorization::{
 };
 pub use rest_params::*;
 pub use rest_result::*;
+pub use xml::Error as XmlError;
 
 use lib_core::model::store::set_full_context_dbx;
 
@@ -381,29 +382,37 @@ pub async fn load_workflow_runtime_settings(
 	let value = AdminSettingsBmc::get(ctx, mm, "system")
 		.await
 		.map_err(Error::Model)?;
-	let value = value.ok_or_else(|| Error::BadRequest {
+	let value = value.ok_or_else(|| Error::Configuration {
+		key: "admin_settings",
 		message: "admin settings record is missing".to_string(),
 	})?;
 	let parsed =
 		serde_json::from_value::<WorkflowSettingsDoc>(value).map_err(|err| {
-			Error::BadRequest {
+			Error::Configuration {
+				key: "workflow",
 				message: format!("stored workflow settings are invalid: {err}"),
 			}
 		})?;
-	let enabled = parsed.workflow_enabled.ok_or_else(|| Error::BadRequest {
-		message: "workflow_enabled is required".to_string(),
-	})?;
+	let enabled = parsed
+		.workflow_enabled
+		.ok_or_else(|| Error::Configuration {
+			key: "workflow_enabled",
+			message: "workflow_enabled is required".to_string(),
+		})?;
 	let statuses = parsed
 		.workflow
-		.ok_or_else(|| Error::BadRequest {
+		.ok_or_else(|| Error::Configuration {
+			key: "workflow",
 			message: "workflow configuration is required".to_string(),
 		})?
 		.statuses
-		.ok_or_else(|| Error::BadRequest {
+		.ok_or_else(|| Error::Configuration {
+			key: "workflow.statuses",
 			message: "workflow statuses are required".to_string(),
 		})?;
 	if statuses.is_empty() {
-		return Err(Error::BadRequest {
+		return Err(Error::Configuration {
+			key: "workflow.statuses",
 			message: "workflow must define at least one status".to_string(),
 		});
 	}
@@ -412,22 +421,26 @@ pub async fn load_workflow_runtime_settings(
 		.map(|status| {
 			let name = status.name.trim().to_string();
 			if name.is_empty() {
-				return Err(Error::BadRequest {
+				return Err(Error::Configuration {
+					key: "workflow.status.name",
 					message: "workflow status name is required".to_string(),
 				});
 			}
-			let due_days = status.due_days.ok_or_else(|| Error::BadRequest {
+			let due_days = status.due_days.ok_or_else(|| Error::Configuration {
+				key: "workflow.status.due_days",
 				message: format!("workflow status '{name}' due_days is required"),
 			})?;
 			if due_days < 0 {
-				return Err(Error::BadRequest {
+				return Err(Error::Configuration {
+					key: "workflow.status.due_days",
 					message: format!(
 						"workflow status '{name}' due_days must be zero or greater"
 					),
 				});
 			}
 			let allowed_roles =
-				status.allowed_roles.ok_or_else(|| Error::BadRequest {
+				status.allowed_roles.ok_or_else(|| Error::Configuration {
+					key: "workflow.status.allowed_roles",
 					message: format!(
 						"workflow status '{name}' allowed_roles is required"
 					),
@@ -437,7 +450,8 @@ pub async fn load_workflow_runtime_settings(
 				.map(|role| canonical_role(role.trim()))
 				.collect::<Vec<_>>();
 			if allowed_roles.iter().any(String::is_empty) {
-				return Err(Error::BadRequest {
+				return Err(Error::Configuration {
+					key: "workflow.status.allowed_roles",
 					message: format!(
 						"workflow status '{name}' contains an empty role"
 					),

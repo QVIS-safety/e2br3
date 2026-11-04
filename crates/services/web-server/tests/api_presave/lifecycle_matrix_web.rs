@@ -47,6 +47,26 @@ async fn audit_count(
 	Ok(count)
 }
 
+async fn create_audit_count(
+	mm: &ModelManager,
+	organization_id: Uuid,
+	table_name: &str,
+) -> Result<i64> {
+	let mut tx = mm.dbx().db().begin().await?;
+	sqlx::query("SET ROLE e2br3_auditor_role")
+		.execute(&mut *tx)
+		.await?;
+	let count = sqlx::query_scalar::<_, i64>(
+		"SELECT count(*) FROM audit_logs WHERE organization_id = $1 AND table_name = $2 AND action = 'CREATE'",
+	)
+	.bind(organization_id)
+	.bind(table_name)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.rollback().await?;
+	Ok(count)
+}
+
 fn list_row<'a>(value: &'a Value, id: Uuid) -> Result<&'a Value> {
 	value["data"]
 		.as_array()
@@ -142,6 +162,239 @@ async fn parent_repeat_delete_emits_one_business_update_audit() -> Result<()> {
 		assert_eq!(update_audit_count(&mm, table_name, id).await?, before + 1);
 		let deleted = get_json_ok(&app, &cookie, uri).await?;
 		assert_eq!(deleted.pointer(deleted_pointer), Some(&json!(true)));
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn archived_parents_reject_patch_without_audit_and_allow_explicit_restore(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
+	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
+	let product_id = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let reporter_id = create_named_reporter_presave_via_api(
+		&app,
+		&cookie,
+		format!("Archived Patch Reporter {}", Uuid::new_v4()),
+		"Archived Patch Reporter Org",
+	)
+	.await?;
+	let study_product = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let study_id = create_study_presave_for_product_via_api(
+		&app,
+		&cookie,
+		study_product,
+		"fda",
+	)
+	.await?;
+	let narrative = post_json_created(
+		&app,
+		&cookie,
+		"/api/presaves/narratives".to_string(),
+		json!({"data":{"rows":{"narrative":{
+			"caseNarrative": format!("Archived patch narrative {}", Uuid::new_v4())
+		}}}}),
+	)
+	.await?;
+	let narrative_id = data_rows_id(&narrative, "narrative")?;
+
+	for (table, id, uri, patch, restore, row_pointer, field) in [
+		(
+			"sender_presaves",
+			sender_id,
+			format!("/api/presaves/senders/{sender_id}"),
+			json!({"data":{"city":"Must not persist"}}),
+			json!({"data":{"deleted":false}}),
+			"/data",
+			"city",
+		),
+		(
+			"receiver_presaves",
+			receiver_id,
+			format!("/api/presaves/receivers/{receiver_id}"),
+			json!({"data":{"description":"Must not persist"}}),
+			json!({"data":{"deleted":false}}),
+			"/data",
+			"description",
+		),
+		(
+			"product_presaves",
+			product_id,
+			format!("/api/presaves/products/{product_id}"),
+			json!({"data":{"medicinalProduct":"Must not persist"}}),
+			json!({"data":{"deleted":false}}),
+			"/data",
+			"medicinalProduct",
+		),
+		(
+			"reporter_presaves",
+			reporter_id,
+			format!("/api/presaves/reporters/{reporter_id}"),
+			json!({"data":{"rows":{"reporter":{"reporterGivenName":"Must not persist"}}}}),
+			json!({"data":{"rows":{"reporter":{"deleted":false}}}}),
+			"/data/rows/reporter",
+			"reporterGivenName",
+		),
+		(
+			"study_presaves",
+			study_id,
+			format!("/api/presaves/studies/{study_id}"),
+			json!({"data":{"studyName":"Must not persist"}}),
+			json!({"data":{"deleted":false}}),
+			"/data",
+			"studyName",
+		),
+		(
+			"narrative_presaves",
+			narrative_id,
+			format!("/api/presaves/narratives/{narrative_id}"),
+			json!({"data":{"rows":{"narrative":{"caseNarrative":"Must not persist"}}}}),
+			json!({"data":{"rows":{"narrative":{"deleted":false}}}}),
+			"/data/rows/narrative",
+			"caseNarrative",
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &cookie, Method::DELETE, uri.clone(), None).await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+		let audit_before = update_audit_count(&mm, table, id).await?;
+		let before = get_json_ok(&app, &cookie, uri.clone()).await?;
+		let before_field = before
+			.pointer(row_pointer)
+			.and_then(|row| row.get(field))
+			.cloned();
+
+		let body = expect_json_status(
+			&app,
+			&cookie,
+			Method::PATCH,
+			uri.clone(),
+			Some(patch),
+			StatusCode::CONFLICT,
+		)
+		.await?;
+		assert!(body.to_string().contains("must be restored"), "{body:?}");
+		assert_eq!(update_audit_count(&mm, table, id).await?, audit_before);
+		let unchanged = get_json_ok(&app, &cookie, uri.clone()).await?;
+		assert_eq!(
+			unchanged
+				.pointer(row_pointer)
+				.and_then(|row| row.get(field)),
+			before_field.as_ref()
+		);
+
+		let (status, restored) =
+			request_json(&app, &cookie, Method::PATCH, uri, Some(restore)).await?;
+		assert_eq!(status, StatusCode::OK, "{restored:?}");
+		assert_eq!(
+			restored
+				.pointer(row_pointer)
+				.and_then(|row| row.get("deleted")),
+			Some(&json!(false))
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn archived_parents_reject_direct_child_create_without_state_or_audit(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
+	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
+	let product_id = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let study_product = create_product_presave_via_api(&app, &cookie, "fda").await?;
+	let study_id = create_study_presave_for_product_via_api(
+		&app,
+		&cookie,
+		study_product,
+		"fda",
+	)
+	.await?;
+
+	let cases = [
+		(
+			format!("/api/presaves/senders/{sender_id}"),
+			format!("/api/presaves/senders/{sender_id}/gateways"),
+			format!("/api/presaves/senders/{sender_id}/details"),
+			"gateways",
+			"sender_presave_gateways",
+			json!({"data":{"sequence_number":1,"gateway_authority":"fda","sender_identifier":"ARCHIVED"}}),
+		),
+		(
+			format!("/api/presaves/receivers/{receiver_id}"),
+			format!("/api/presaves/receivers/{receiver_id}/consignees"),
+			format!("/api/presaves/receivers/{receiver_id}/details"),
+			"consignees",
+			"receiver_presave_consignees",
+			json!({"data":{"sequence_number":1,"name":"Archived consignee"}}),
+		),
+		(
+			format!("/api/presaves/products/{product_id}"),
+			format!("/api/presaves/products/{product_id}/active-substances"),
+			format!("/api/presaves/products/{product_id}/details"),
+			"activeSubstances",
+			"product_presave_active_substances",
+			json!({"data":{"sequence_number":1,"substance_name":"Archived substance"}}),
+		),
+		(
+			format!("/api/presaves/studies/{study_id}"),
+			format!("/api/presaves/studies/{study_id}/registration-numbers"),
+			format!("/api/presaves/studies/{study_id}/details"),
+			"registrationNumbers",
+			"study_presave_registration_numbers",
+			json!({"data":{"sequence_number":1,"registration_number":"ARCHIVED-REG","country_code":"US"}}),
+		),
+	];
+
+	for (parent_uri, child_uri, details_uri, row_key, table, payload) in cases {
+		let (status, value) =
+			request_json(&app, &cookie, Method::DELETE, parent_uri, None).await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+		let before = get_json_ok(&app, &cookie, details_uri.clone()).await?;
+		let row_count = before["data"]["rows"][row_key]
+			.as_array()
+			.ok_or("missing child rows")?
+			.len();
+		let audit_before = create_audit_count(&mm, seed.org_id, table).await?;
+
+		let body = expect_json_status(
+			&app,
+			&cookie,
+			Method::POST,
+			child_uri,
+			Some(payload),
+			StatusCode::CONFLICT,
+		)
+		.await?;
+		assert!(
+			body.to_string().contains("cannot accept new child"),
+			"{body:?}"
+		);
+		let after = get_json_ok(&app, &cookie, details_uri).await?;
+		assert_eq!(
+			after["data"]["rows"][row_key].as_array().map(Vec::len),
+			Some(row_count)
+		);
+		assert_eq!(
+			create_audit_count(&mm, seed.org_id, table).await?,
+			audit_before
+		);
 	}
 
 	Ok(())

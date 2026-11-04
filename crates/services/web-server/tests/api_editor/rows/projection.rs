@@ -273,13 +273,14 @@ pub(crate) async fn batched_rows_match_detail_and_require_auth(
 		&app, &cookie, &case_id, page_id,
 	)
 	.await?;
-	let (status, _) = get_json(
+	let (status, body) = get_json(
 		&app,
 		"",
 		&format!("/api/cases/{case_id}/editor/pages/{page_id}?include_rows=true"),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN);
+	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body}");
+	assert_eq!(body["error"]["message"], "NO_AUTH", "{body}");
 	let row_id = crate::case_editor_contract_web::support::repeatable_row_id(
 		page_id, &app, &cookie, &case_id,
 	)

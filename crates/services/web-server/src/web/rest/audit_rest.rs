@@ -1017,12 +1017,16 @@ fn audit_field_label(
 		"source_sender_presave_id" => {
 			Some("Record metadata: Source Sender Presave ID")
 		}
+		"source_receiver_presave_id" => {
+			Some("Record metadata: Source Receiver Presave ID")
+		}
 		"source_reporter_presave_id" => {
 			Some("Record metadata: Source Reporter Presave ID")
 		}
 		"source_product_presave_id" => {
 			Some("Record metadata: Source Product Presave ID")
 		}
+		"source_product_id" => Some("Record metadata: Source Product ID"),
 		"source_study_presave_id" => {
 			Some("Record metadata: Source Study Presave ID")
 		}

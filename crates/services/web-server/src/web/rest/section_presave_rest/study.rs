@@ -74,6 +74,30 @@ impl StudyReporterForRestCreate {
 	}
 }
 
+fn reject_deleted_child_create(deleted: Option<bool>, entity: &str) -> Result<()> {
+	if deleted == Some(true) {
+		return Err(Error::BadRequest {
+			message: format!("new study {entity} cannot be deleted"),
+		});
+	}
+	Ok(())
+}
+
+fn validate_registration_create(
+	data: &StudyRegistrationNumberForRestCreate,
+) -> Result<()> {
+	reject_deleted_child_create(data.deleted, "registration number")?;
+	super::input_contract::registration_create(data)
+}
+
+fn validate_product_create(data: &StudyProductForRestCreate) -> Result<()> {
+	reject_deleted_child_create(data.deleted, "product")
+}
+
+fn validate_reporter_create(data: &StudyReporterForRestCreate) -> Result<()> {
+	reject_deleted_child_create(data.deleted, "reporter")
+}
+
 pub async fn create_study_presave(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -258,7 +282,7 @@ pub async fn update_study_presave(
 	Json(params): Json<ParamsForUpdate<StudyPresaveForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<StudyPresave>>)> {
 	let ctx = ctx_w.0;
-	with_authorized_presave_update(
+	with_authorized_presave_atomic_update(
 		&ctx,
 		&snapshot,
 		&mm,
@@ -1097,7 +1121,7 @@ generate_presave_child_rest_fns! {
 	ParentKind: Study,
 	EntityName: "study_presave_registration_numbers",
 	DeleteMode: soft,
-	ValidateCreate: super::input_contract::registration_create,
+	ValidateCreate: validate_registration_create,
 	ValidateUpdate: super::input_contract::registration_update
 }
 
@@ -1115,7 +1139,7 @@ generate_presave_child_rest_fns! {
 	ParentKind: Study,
 	EntityName: "study_presave_products",
 	DeleteMode: soft,
-	ValidateCreate: super::shared::no_input_contract,
+	ValidateCreate: validate_product_create,
 	ValidateUpdate: super::shared::no_input_contract
 }
 
@@ -1133,6 +1157,6 @@ generate_presave_child_rest_fns! {
 	ParentKind: Study,
 	EntityName: "study_presave_reporters",
 	DeleteMode: soft,
-	ValidateCreate: super::shared::no_input_contract,
+	ValidateCreate: validate_reporter_create,
 	ValidateUpdate: super::shared::no_input_contract
 }

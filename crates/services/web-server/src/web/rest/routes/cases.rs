@@ -61,7 +61,8 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LR/rows",
-			axum::routing::post(case_editor_rest::create_editor_lr_page_row),
+			axum::routing::post(case_editor_rest::create_editor_lr_page_row)
+				.patch(case_editor_rest::patch_editor_lr_page_rows),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LR/rows/{row_id}",
@@ -90,7 +91,8 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DH/rows",
-			axum::routing::post(case_editor_rest::create_editor_dh_page_row),
+			axum::routing::post(case_editor_rest::create_editor_dh_page_row)
+				.patch(case_editor_rest::patch_editor_dh_page_rows),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DH/rows/{row_id}",
@@ -104,7 +106,8 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/AE/rows",
-			axum::routing::post(case_editor_rest::create_editor_ae_page_row),
+			axum::routing::post(case_editor_rest::create_editor_ae_page_row)
+				.patch(case_editor_rest::patch_editor_ae_page_rows),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/AE/rows/{row_id}",
@@ -122,7 +125,8 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LB/rows",
-			axum::routing::post(case_editor_rest::create_editor_lb_page_row),
+			axum::routing::post(case_editor_rest::create_editor_lb_page_row)
+				.patch(case_editor_rest::patch_editor_lb_page_rows),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LB/rows/{row_id}",
@@ -140,7 +144,8 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DG/rows",
-			axum::routing::post(case_editor_rest::create_editor_dg_page_row),
+			axum::routing::post(case_editor_rest::create_editor_dg_page_row)
+				.patch(case_editor_rest::patch_editor_dg_page_rows),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DG/rows/{row_id}",

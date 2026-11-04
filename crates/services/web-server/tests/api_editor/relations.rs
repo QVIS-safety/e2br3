@@ -95,7 +95,7 @@ pub(super) async fn assert_row_lifecycle_replay(
 		("PATCH", restore_request.clone(), StatusCode::OK, false),
 		("DELETE", Value::Null, StatusCode::NO_CONTENT, true),
 		("DELETE", Value::Null, repeat_delete_status, true),
-		("PATCH", ordinary_request, StatusCode::OK, true),
+		("PATCH", ordinary_request, StatusCode::CONFLICT, true),
 	];
 	if has_post_restore {
 		calls.push(("POST", Value::Null, StatusCode::OK, false));

@@ -222,3 +222,65 @@ async fn direct_study_child_posts_persist_parented_rows_and_reject_unauthorized_
 	);
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn direct_study_soft_child_posts_reject_deleted_rows_without_audit(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let cookie = cookie_header(
+		&generate_web_token(&seed.admin.email, seed.admin.token_salt)?.to_string(),
+	);
+	let app = web_server::app(mm.clone());
+	let product_id = create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
+	let study_id =
+		create_study_presave_for_product_via_api(&app, &cookie, product_id, "fda")
+			.await?;
+	let reporter_id = create_named_reporter_presave_via_api(
+		&app,
+		&cookie,
+		format!("Deleted child reporter {}", Uuid::new_v4()),
+		"Deleted child reporter org",
+	)
+	.await?;
+	let rows_before =
+		study_child_counts(&mm, seed.org_id, seed.admin.id, study_id).await?;
+	let audits_before = study_child_create_audit_count(&mm, seed.org_id).await?;
+
+	for (path, payload) in [
+		(
+			"products",
+			json!({"data":{"sequence_number":1,"product_presave_id":product_id,"product_name":"Deleted child","deleted":true}}),
+		),
+		(
+			"registration-numbers",
+			json!({"data":{"sequence_number":1,"registration_number":"DELETED-REG","country_code":"US","deleted":true}}),
+		),
+		(
+			"reporters",
+			json!({"data":{"sequence_number":1,"reporter_presave_id":reporter_id,"reporter_organization":"Deleted child reporter org","deleted":true}}),
+		),
+	] {
+		let body = expect_json_status(
+			&app,
+			&cookie,
+			Method::POST,
+			format!("/api/presaves/studies/{study_id}/{path}"),
+			Some(payload),
+			StatusCode::BAD_REQUEST,
+		)
+		.await?;
+		assert!(body.to_string().contains("cannot be deleted"), "{body:?}");
+	}
+
+	assert_eq!(
+		study_child_counts(&mm, seed.org_id, seed.admin.id, study_id).await?,
+		rows_before
+	);
+	assert_eq!(
+		study_child_create_audit_count(&mm, seed.org_id).await?,
+		audits_before
+	);
+	Ok(())
+}

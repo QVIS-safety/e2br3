@@ -140,7 +140,7 @@ pub async fn update_sender_presave(
 	Json(params): Json<ParamsForUpdate<SenderPresaveForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SenderPresave>>)> {
 	let ctx = ctx_w.0;
-	with_authorized_presave_update(
+	with_authorized_presave_atomic_update(
 		&ctx,
 		&snapshot,
 		&mm,

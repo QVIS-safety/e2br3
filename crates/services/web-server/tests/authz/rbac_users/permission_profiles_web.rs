@@ -12,6 +12,8 @@ use lib_core::ctx::{
 };
 use serde_json::json;
 use serial_test::serial;
+use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -346,5 +348,199 @@ async fn test_permission_profiles_reject_twenty_first_custom_role_per_org(
 		"limit error should mention the maximum role count: {json:?}"
 	);
 
+	Ok(())
+}
+
+async fn assert_profile_write_locks_revision_before_audit(
+	app: axum::Router,
+	control_pool: &sqlx::PgPool,
+	organization_id: Uuid,
+	request: Request<Body>,
+	operation: &str,
+) -> Result<axum::response::Response> {
+	let mut controller = control_pool.begin().await?;
+	let (controller_pid,): (i32,) = sqlx::query_as("SELECT pg_backend_pid()")
+		.fetch_one(&mut *controller)
+		.await?;
+	sqlx::query("SELECT revision FROM organization_policy_state WHERE organization_id = $1 FOR UPDATE")
+		.bind(organization_id)
+		.execute(&mut *controller)
+		.await?;
+	let mut write = tokio::spawn(async move { app.oneshot(request).await });
+
+	let blocked = tokio::time::timeout(Duration::from_secs(5), async {
+		loop {
+			let (blocked,): (bool,) = sqlx::query_as(
+				"SELECT EXISTS (
+					SELECT 1 FROM pg_stat_activity
+					WHERE $1 = ANY(pg_blocking_pids(pid))
+				)",
+			)
+			.bind(controller_pid)
+			.fetch_one(control_pool)
+			.await?;
+			if blocked {
+				return Ok::<(), sqlx::Error>(());
+			}
+			tokio::task::yield_now().await;
+		}
+	})
+	.await;
+	match blocked {
+		Ok(Ok(())) => {}
+		Ok(Err(error)) => {
+			controller.rollback().await?;
+			write.abort();
+			let _ = write.await;
+			return Err(error.into());
+		}
+		Err(_) => {
+			controller.rollback().await?;
+			write.abort();
+			let _ = write.await;
+			return Err(format!(
+				"permission profile {operation} did not wait on revision lock"
+			)
+			.into());
+		}
+	}
+
+	let (audit_lock_available,): (bool,) = sqlx::query_as(
+		"SELECT pg_try_advisory_xact_lock(
+			hashtextextended('e2br3.audit_logs.hash_chain', 0)
+		)",
+	)
+	.fetch_one(&mut *controller)
+	.await?;
+	controller.commit().await?;
+
+	let response = match tokio::time::timeout(Duration::from_secs(5), &mut write)
+		.await
+	{
+		Ok(result) => result??,
+		Err(_) => {
+			write.abort();
+			let _ = write.await;
+			return Err(
+				format!("permission profile {operation} did not complete").into()
+			);
+		}
+	};
+	assert!(
+		audit_lock_available,
+		"permission profile {operation} acquired the audit lock before the revision lock"
+	);
+	Ok(response)
+}
+
+#[serial]
+#[tokio::test]
+async fn test_permission_profile_writes_lock_revision_before_audit_chain(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+	let database_url = std::env::var("SERVICE_DB_URL")?;
+	let control_pool = PgPoolOptions::new()
+		.max_connections(2)
+		.connect(&database_url)
+		.await?;
+	let role_name = format!("Lock Order Role {}", Uuid::new_v4());
+	let create_body = json!({
+		"data": {
+			"name": role_name,
+			"privileges": []
+		}
+	});
+	let create_request = Request::builder()
+		.method("POST")
+		.uri("/api/admin/permission-profiles")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_response = assert_profile_write_locks_revision_before_audit(
+		app.clone(),
+		&control_pool,
+		seed.org_id,
+		create_request,
+		"create",
+	)
+	.await?;
+	assert_eq!(create_response.status(), StatusCode::CREATED);
+	let create_body = to_bytes(create_response.into_body(), usize::MAX).await?;
+	let created: serde_json::Value = serde_json::from_slice(&create_body)?;
+	let profile_id = created["id"]
+		.as_str()
+		.ok_or("created permission profile response is missing id")?;
+
+	let update_body = json!({
+		"data": {
+			"name": format!("{role_name} Updated"),
+			"privileges": []
+		}
+	});
+	let update_request = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/admin/permission-profiles/{profile_id}"))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(update_body.to_string()))?;
+	let update_response = assert_profile_write_locks_revision_before_audit(
+		app,
+		&control_pool,
+		seed.org_id,
+		update_request,
+		"update",
+	)
+	.await?;
+	assert_eq!(update_response.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_permission_profile_revision_lock_rejects_mismatched_request_context(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let database_url = std::env::var("SERVICE_DB_URL")?;
+	let control_pool = PgPoolOptions::new()
+		.max_connections(1)
+		.connect(&database_url)
+		.await?;
+	let mut transaction = control_pool.begin().await?;
+	sqlx::query(
+		"SELECT set_config('app.current_user_id', $1, true),
+		        set_config('app.current_organization_id', $2, true)",
+	)
+	.bind(seed.admin.id.to_string())
+	.bind(seed.org_id.to_string())
+	.execute(&mut *transaction)
+	.await?;
+
+	let mismatched_organization_id = Uuid::new_v4();
+	let error = match sqlx::query_scalar::<_, i64>(
+		"SELECT authz_lock_organization_policy_revision($1)",
+	)
+	.bind(mismatched_organization_id)
+	.fetch_one(&mut *transaction)
+	.await
+	{
+		Ok(_) => {
+			transaction.rollback().await?;
+			return Err(
+				"mismatched organization revision lock unexpectedly succeeded"
+					.into(),
+			);
+		}
+		Err(error) => error,
+	};
+	let is_context_rejection = error
+		.as_database_error()
+		.and_then(|database_error| database_error.code())
+		.is_some_and(|code| code == "42501");
+	transaction.rollback().await?;
+	assert!(is_context_rejection, "unexpected database error: {error}");
 	Ok(())
 }

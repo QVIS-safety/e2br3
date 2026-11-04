@@ -161,6 +161,24 @@ macro_rules! repeatable_page_row_create_handler {
 }
 
 macro_rules! repeatable_page_row_patch_handler {
+	(@guard [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {};
+	(@guard [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {
+		let current = $bmc::get($ctx, $mm, $row_id).await?;
+		if current.deleted && $row.get("deleted").and_then(serde_json::Value::as_bool) != Some(false) {
+			return Err(lib_core::model::Error::Conflict {
+				message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
+			}.into());
+		}
+	};
+	(@guard_in_case [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {};
+	(@guard_in_case [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $case_id:ident, $row_id:ident) => {
+		let current = $bmc::get_in_case_with_deleted($ctx, $mm, $case_id, $row_id, true).await?;
+		if current.deleted && $row.get("deleted").and_then(serde_json::Value::as_bool) != Some(false) {
+			return Err(lib_core::model::Error::Conflict {
+				message: "This row was deleted. Restore it explicitly before saving changes.".to_string(),
+			}.into());
+		}
+	};
 	(@restore [], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {};
 	(@restore [true], $row:ident, $bmc:ident, $ctx:ident, $mm:ident, $row_id:ident) => {
 		if $row.get("deleted").and_then(serde_json::Value::as_bool) == Some(false) {
@@ -181,6 +199,7 @@ macro_rules! repeatable_page_row_patch_handler {
 	};
 	(
 		$fn_name:ident,
+		apply: $apply_fn:ident,
 		section: $section:expr,
 		row_key: $row_key:expr,
 		bmc: $bmc:ident,
@@ -191,6 +210,31 @@ macro_rules! repeatable_page_row_patch_handler {
 		$(restore_on_false: $restore_on_false:tt,)?
 		build_response: $build_response:ident $(,)?
 	) => {
+		pub(crate) async fn $apply_fn(
+			ctx: &lib_core::ctx::Ctx,
+			mm: &lib_core::model::ModelManager,
+			case_id: uuid::Uuid,
+			row_id: uuid::Uuid,
+			request: &$crate::web::rest::case_editor_dto::CaseEditorPagePatchRequest,
+		) -> lib_rest_core::Result<Option<String>> {
+			let requested_authorities =
+				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
+			$verify_fn(ctx, mm, case_id, row_id).await?;
+			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
+			let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
+			let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
+			let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
+			repeatable_page_row_patch_handler!(
+				@guard [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+			);
+			lib_core::model::update_uuid_patch::<$bmc, $model>(ctx, mm, row_id, update, &clear_fields).await?;
+			repeatable_page_row_patch_handler!(
+				@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+			);
+			Ok(requested_authorities)
+		}
+
 		pub async fn $fn_name(
 			axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>,
 			ctx_w: lib_web::middleware::mw_auth::CtxW,
@@ -206,25 +250,7 @@ macro_rules! repeatable_page_row_patch_handler {
 				case_id,
 				format!("editor/{}/{}/{}", $section, $row_key, row_id),
 				move |ctx, mm| Box::pin(async move {
-					let requested_authorities =
-						$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
-					$verify_fn(ctx, mm, case_id, row_id).await?;
-					let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-					$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
-					let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
-					let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
-					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
-					lib_core::model::update_uuid_patch::<$bmc, $model>(
-						ctx,
-						mm,
-						row_id,
-						update,
-						&clear_fields,
-					)
-					.await?;
-					repeatable_page_row_patch_handler!(
-						@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
-					);
+					let requested_authorities = $apply_fn(ctx, mm, case_id, row_id, &request).await?;
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(
 						ctx, mm, case_id, requested_authorities.clone(),
 					)
@@ -240,6 +266,7 @@ macro_rules! repeatable_page_row_patch_handler {
 	};
 	(
 		$fn_name:ident,
+		apply: $apply_fn:ident,
 		section: $section:expr,
 		row_key: $row_key:expr,
 		bmc: $bmc:ident,
@@ -250,6 +277,37 @@ macro_rules! repeatable_page_row_patch_handler {
 		$(restore_in_case_on_false: $restore_in_case_on_false:tt,)?
 		build_response: $build_response:ident $(,)?
 	) => {
+		pub(crate) async fn $apply_fn(
+			ctx: &lib_core::ctx::Ctx,
+			mm: &lib_core::model::ModelManager,
+			case_id: uuid::Uuid,
+			row_id: uuid::Uuid,
+			request: &$crate::web::rest::case_editor_dto::CaseEditorPagePatchRequest,
+		) -> lib_rest_core::Result<Option<String>> {
+			let requested_authorities =
+				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
+			$verify_fn(ctx, mm, case_id, row_id).await?;
+			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
+			let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
+			let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
+			let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
+			repeatable_page_row_patch_handler!(
+				@guard [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+			);
+			repeatable_page_row_patch_handler!(
+				@guard_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
+			);
+			$bmc::update_patch(ctx, mm, row_id, update, &clear_fields).await?;
+			repeatable_page_row_patch_handler!(
+				@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
+			);
+			repeatable_page_row_patch_handler!(
+				@restore_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
+			);
+			Ok(requested_authorities)
+		}
+
 		pub async fn $fn_name(
 			axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>,
 			ctx_w: lib_web::middleware::mw_auth::CtxW,
@@ -265,22 +323,7 @@ macro_rules! repeatable_page_row_patch_handler {
 				case_id,
 				format!("editor/{}/{}/{}", $section, $row_key, row_id),
 				move |ctx, mm| Box::pin(async move {
-					let requested_authorities =
-						$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
-					$verify_fn(ctx, mm, case_id, row_id).await?;
-					let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-					$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
-					let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
-					let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
-					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
-					$bmc::update_patch(ctx, mm, row_id, update, &clear_fields)
-					.await?;
-					repeatable_page_row_patch_handler!(
-						@restore [$($restore_on_false)?], row, $bmc, ctx, mm, row_id
-					);
-					repeatable_page_row_patch_handler!(
-						@restore_in_case [$($restore_in_case_on_false)?], row, $bmc, ctx, mm, case_id, row_id
-					);
+					let requested_authorities = $apply_fn(ctx, mm, case_id, row_id, &request).await?;
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(
 						ctx, mm, case_id, requested_authorities.clone(),
 					)
@@ -346,9 +389,21 @@ macro_rules! repeatable_page_row_patch_handler {
 macro_rules! repeatable_page_row_delete_handler {
 	(
 		$fn_name:ident,
+		apply: $apply_fn:ident,
 		bmc: $bmc:ident,
 		verify: $verify_fn:ident $(,)?
 	) => {
+		pub(crate) async fn $apply_fn(
+			ctx: &lib_core::ctx::Ctx,
+			mm: &lib_core::model::ModelManager,
+			case_id: uuid::Uuid,
+			row_id: uuid::Uuid,
+		) -> lib_rest_core::Result<()> {
+			$verify_fn(ctx, mm, case_id, row_id).await?;
+			$bmc::delete(ctx, mm, row_id).await?;
+			Ok(())
+		}
+
 		pub async fn $fn_name(
 			axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>,
 			ctx_w: lib_web::middleware::mw_auth::CtxW,
@@ -363,8 +418,7 @@ macro_rules! repeatable_page_row_delete_handler {
 				case_id,
 				format!("editor/{}/{}", stringify!($fn_name), row_id),
 				move |ctx, mm| Box::pin(async move {
-					$verify_fn(ctx, mm, case_id, row_id).await?;
-					$bmc::delete(ctx, mm, row_id).await?;
+					$apply_fn(ctx, mm, case_id, row_id).await?;
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(ctx, mm, case_id, None).await?;
 					Ok(axum::http::StatusCode::NO_CONTENT)
 				}),
@@ -447,10 +501,22 @@ macro_rules! repeatable_list_handler {
 macro_rules! repeatable_page_row_delete_restore_handlers {
 	(
 		delete: $delete_fn:ident,
+		apply_delete: $apply_delete_fn:ident,
 		restore: $restore_fn:ident,
 		bmc: $bmc:ident,
 		build_response: $build_response:ident $(,)?
 	) => {
+		pub(crate) async fn $apply_delete_fn(
+			ctx: &lib_core::ctx::Ctx,
+			mm: &lib_core::model::ModelManager,
+			case_id: uuid::Uuid,
+			row_id: uuid::Uuid,
+		) -> lib_rest_core::Result<()> {
+			$bmc::get_in_case(ctx, mm, case_id, row_id).await?;
+			$bmc::delete(ctx, mm, row_id).await?;
+			Ok(())
+		}
+
 		pub async fn $delete_fn(
 			axum::extract::State(mm): axum::extract::State<lib_core::model::ModelManager>,
 			ctx_w: lib_web::middleware::mw_auth::CtxW,
@@ -465,8 +531,7 @@ macro_rules! repeatable_page_row_delete_restore_handlers {
 				case_id,
 				format!("editor/{}/{}", stringify!($delete_fn), row_id),
 				move |ctx, mm| Box::pin(async move {
-					$bmc::get_in_case(ctx, mm, case_id, row_id).await?;
-					$bmc::delete(ctx, mm, row_id).await?;
+					$apply_delete_fn(ctx, mm, case_id, row_id).await?;
 					$crate::web::rest::case_editor_rest::common::mark_editor_validation_summary_stale(ctx, mm, case_id, None).await?;
 					Ok(axum::http::StatusCode::NO_CONTENT)
 				}),

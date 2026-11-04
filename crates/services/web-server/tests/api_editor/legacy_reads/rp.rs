@@ -1,5 +1,5 @@
 use crate::case_editor_contract_web::support::{
-	create_case_for_editor, get_json, patch_json,
+	create_case_for_editor, get_json, patch_json, post_json,
 };
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
@@ -14,10 +14,25 @@ async fn test_rp_legacy_read_projects_persisted_rows() -> Result<()> {
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
+	let (status, reporter) = post_json(
+		&app,
+		&cookie,
+		"/api/presaves/reporters",
+		json!({"data":{"rows":{"reporter":{
+			"reporterGivenName":"Presave reporter",
+			"organization":format!("Reporter source {}", uuid::Uuid::new_v4()),
+			"qualification":"1"
+		}}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{reporter}");
+	let reporter_presave_id = reporter["data"]["rows"]["reporter"]["id"]
+		.as_str()
+		.ok_or("missing reporter presave id")?;
 	let case_id =
 		create_case_for_editor(&app, &cookie, "LEGACY-RP-READ", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/RP");
-	let (status,saved)=patch_json(&app,&cookie,&uri,json!({"authorities":["ich"],"rows":{"primarySources":[{"sequenceNumber":1,"reporterGivenName":"Legacy reporter"}]}})).await?;
+	let (status,saved)=patch_json(&app,&cookie,&uri,json!({"authorities":["ich"],"rows":{"primarySources":[{"sequenceNumber":1,"sourceReporterPresaveId":reporter_presave_id,"reporterGivenName":"Legacy reporter"}]}})).await?;
 	assert_eq!(status, StatusCode::OK, "{saved}");
 	let row_id = saved["rows"]["primarySources"][0]["id"].clone();
 	let (status, body) =
@@ -28,6 +43,10 @@ async fn test_rp_legacy_read_projects_persisted_rows() -> Result<()> {
 	assert_eq!(
 		body["data"]["primarySources"][0]["reporterGivenName"],
 		"Legacy reporter"
+	);
+	assert_eq!(
+		body["data"]["primarySources"][0]["sourceReporterPresaveId"],
+		reporter_presave_id
 	);
 	assert!(body["data"]["primarySources"][0].get("deleted").is_none());
 	Ok(())

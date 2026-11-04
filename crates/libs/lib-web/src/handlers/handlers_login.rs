@@ -139,9 +139,11 @@ pub async fn api_refresh_handler(
 	let expires_at = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
 
 	// Create the success body with expiration info
+	let expires_at =
+		expires_at.format(&time::format_description::well_known::Rfc3339)?;
 	let body = Json(json!({
 		"data": {
-			"expiresAt": expires_at.format(&time::format_description::well_known::Rfc3339).unwrap_or_default()
+			"expiresAt": expires_at
 		}
 	}));
 

@@ -85,9 +85,13 @@ pub async fn mw_ctx_resolver(
 		req.extensions_mut().insert(snapshot);
 	}
 
-	if ctx_ext_result.is_err()
-		&& !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie))
-	{
+	if matches!(
+		ctx_ext_result,
+		Err(CtxExtError::TokenWrongFormat
+			| CtxExtError::TokenExpiryWrongFormat
+			| CtxExtError::UserNotFound
+			| CtxExtError::FailValidate)
+	) {
 		cookies.remove(Cookie::from(AUTH_TOKEN))
 	}
 

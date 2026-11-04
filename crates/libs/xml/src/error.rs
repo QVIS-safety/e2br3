@@ -25,6 +25,9 @@ pub enum Error {
 	InvalidImportRequest {
 		message: String,
 	},
+	MissingExportField {
+		field: &'static str,
+	},
 	#[from]
 	Io(#[serde_as(as = "DisplayFromStr")] std::io::Error),
 	#[from]

@@ -1253,6 +1253,23 @@ impl UserBmc {
 				  SELECT 1 FROM organizations o
 				  WHERE o.id = users.organization_id AND o.active = true
 			  )
+			  AND EXISTS (
+				  SELECT 1 FROM user_organization_memberships membership
+				  WHERE membership.user_id = users.id
+				    AND membership.organization_id = users.organization_id
+				    AND membership.active = true
+			  )
+			  AND EXISTS (
+				  SELECT 1
+				  FROM user_role_assignments assignment
+				  JOIN authorization_roles role
+				    ON role.id = assignment.role_id
+				   AND role.active = true
+				   AND role.deleted_at IS NULL
+				  WHERE assignment.user_id = users.id
+				    AND assignment.organization_id = users.organization_id
+				    AND assignment.active = true
+			  )
 			  AND (access_start_at IS NULL OR access_start_at <= now())
 			  AND (access_end_at IS NULL OR access_end_at >= now())
 			LIMIT 2

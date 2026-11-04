@@ -41,14 +41,14 @@ pub struct CaseEditorShellSafetyReportDto {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorShellMessageHeaderDto {
-	pub message_receiver_identifier: String,
+	pub message_receiver_identifier: Option<String>,
 }
 
 impl CaseEditorShellDto {
 	pub fn from_case_read_result(
 		value: CaseReadResult,
 		safety_report_id: String,
-		message_receiver_identifier: String,
+		message_receiver_identifier: Option<String>,
 	) -> serde_json::Result<Self> {
 		let review_receivers = value
 			.case
@@ -255,6 +255,54 @@ pub struct CaseEditorPagePatchRequest {
 	pub authorities: Option<Vec<String>>,
 	#[serde(default)]
 	pub rows: BTreeMap<String, Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CaseEditorPageRowBatchRequest {
+	pub authorities: Option<Vec<String>>,
+	pub operations: Vec<CaseEditorPageRowBatchOperation>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(
+	tag = "operation",
+	rename_all = "camelCase",
+	rename_all_fields = "camelCase",
+	deny_unknown_fields
+)]
+pub enum CaseEditorPageRowBatchOperation {
+	Create {
+		client_row_index: usize,
+		#[serde(default)]
+		rows: BTreeMap<String, Value>,
+	},
+	Update {
+		row_id: Uuid,
+		client_row_index: usize,
+		#[serde(default)]
+		rows: BTreeMap<String, Value>,
+	},
+	Delete {
+		row_id: Uuid,
+		client_row_index: usize,
+	},
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPageRowBatchResponse {
+	pub case_id: Uuid,
+	pub page_id: &'static str,
+	pub results: Vec<CaseEditorPageRowBatchResult>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPageRowBatchResult {
+	pub operation: &'static str,
+	pub client_row_index: usize,
+	pub row_id: Uuid,
 }
 
 #[derive(Debug, Deserialize)]
