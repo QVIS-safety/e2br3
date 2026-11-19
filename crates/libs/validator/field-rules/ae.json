@@ -10,43 +10,50 @@
     {
       "fieldPath": "reactions[].criteriaCongenitalAnomaly",
       "ruleCodes": [
+        "ICH.E.i.3.2e.ALLOWED.VALUE",
         "ICH.E.i.3.2e.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].criteriaDeath",
       "ruleCodes": [
+        "ICH.E.i.3.2a.ALLOWED.VALUE",
         "ICH.E.i.3.2a.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].criteriaDisabling",
       "ruleCodes": [
+        "ICH.E.i.3.2d.ALLOWED.VALUE",
         "ICH.E.i.3.2d.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].criteriaHospitalization",
       "ruleCodes": [
+        "ICH.E.i.3.2c.ALLOWED.VALUE",
         "ICH.E.i.3.2c.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].criteriaLifeThreatening",
       "ruleCodes": [
+        "ICH.E.i.3.2b.ALLOWED.VALUE",
         "ICH.E.i.3.2b.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].criteriaOtherMedicallyImportant",
       "ruleCodes": [
+        "ICH.E.i.3.2f.ALLOWED.VALUE",
         "ICH.E.i.3.2f.REQUIRED"
       ]
     },
     {
       "fieldPath": "reactions[].durationUnit",
       "ruleCodes": [
-        "ICH.E.i.6b.REQUIRED"
+        "ICH.E.i.6b.REQUIRED",
+        "ICH.E.i.6b.VOCABULARY"
       ]
     },
     {
@@ -112,6 +119,7 @@
     {
       "fieldPath": "reactions[].requiredIntervention",
       "ruleCodes": [
+        "FDA.E.i.3.2h.ALLOWED.VALUE",
         "FDA.E.i.3.2h.REQUIRED"
       ]
     },

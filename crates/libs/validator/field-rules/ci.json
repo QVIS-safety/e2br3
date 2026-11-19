@@ -118,6 +118,7 @@
     {
       "fieldPath": "safetyReportIdentification.otherCaseIdentifiersExist",
       "ruleCodes": [
+        "ICH.C.1.9.1.ALLOWED.VALUE",
         "ICH.C.1.9.1.REQUIRED"
       ]
     },

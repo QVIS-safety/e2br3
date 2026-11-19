@@ -170,8 +170,14 @@ fn validate_controlled_artifact_contract(
 	Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+	tokio::runtime::Builder::new_multi_thread()
+		.enable_all()
+		.build()?
+		.block_on(run())
+}
+
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
 	let cli = Cli::parse();
 	let mm = ModelManager::new().await?;
 
@@ -797,17 +803,23 @@ async fn upsert_mfds_product_rows(
 ) -> Result<(), Box<dyn std::error::Error>> {
 	const BATCH: usize = 1000;
 	for chunk in rows.chunks(BATCH) {
+		let values = chunk
+			.iter()
+			.map(|row| {
+				Ok((
+					row,
+					parse_basic_date(row.permit_date.as_deref())?,
+					parse_basic_date(row.cancel_date.as_deref())?,
+				))
+			})
+			.collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
 		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
 			"INSERT INTO mfds_products
 			 (item_seq, product_name_kr, product_name_en, manufacturer_name_kr,
 			  manufacturer_name_en, permit_date, cancellation_date,
 			  cancellation_status, version, active) ",
 		);
-		qb.push_values(chunk, |mut b, row| {
-			let permit_date = parse_basic_date(row.permit_date.as_deref())
-				.expect("MFDS permit date was validated");
-			let cancellation_date = parse_basic_date(row.cancel_date.as_deref())
-				.expect("MFDS cancellation date was validated");
+		qb.push_values(values, |mut b, (row, permit_date, cancellation_date)| {
 			b.push_bind(&row.item_seq)
 				.push_bind(&row.product_name_kr)
 				.push_bind(&row.product_name_en)
@@ -850,6 +862,14 @@ async fn upsert_mfds_product_substance_rows(
 			  total_amount_sequence, version, active) ",
 		);
 		qb.push_values(chunk, |mut b, row| {
+			let material_sequence = match row.material_sequence.as_deref() {
+				Some(value) => value,
+				None => "",
+			};
+			let total_amount_sequence = match row.total_amount_sequence.as_deref() {
+				Some(value) => value,
+				None => "",
+			};
 			b.push_bind(&row.item_seq)
 				.push_bind(&row.substance_code)
 				.push_bind(&row.substance_name_kr)
@@ -857,8 +877,8 @@ async fn upsert_mfds_product_substance_rows(
 				.push_bind(&row.quantity)
 				.push_bind(&row.unit)
 				.push_bind(&row.component_content)
-				.push_bind(row.material_sequence.as_deref().unwrap_or(""))
-				.push_bind(row.total_amount_sequence.as_deref().unwrap_or(""))
+				.push_bind(material_sequence)
+				.push_bind(total_amount_sequence)
 				.push_bind(version)
 				.push_bind(false);
 		});
@@ -933,11 +953,19 @@ fn parse_mfds_products(
 		{
 			return Err("MFDS substance code and name must be non-empty".into());
 		}
+		let material_sequence = match row.material_sequence.as_deref() {
+			Some(value) => value,
+			None => "",
+		};
+		let total_amount_sequence = match row.total_amount_sequence.as_deref() {
+			Some(value) => value,
+			None => "",
+		};
 		if !seen_substances.insert((
 			row.item_seq.trim(),
 			row.substance_code.trim(),
-			row.material_sequence.as_deref().unwrap_or(""),
-			row.total_amount_sequence.as_deref().unwrap_or(""),
+			material_sequence,
+			total_amount_sequence,
 		)) {
 			return Err(format!(
 				"duplicate MFDS substance {}/{}",
@@ -1034,10 +1062,10 @@ fn parse_whodrug(
 				continue;
 			}
 			let path = entry.path();
-			let name = path
-				.file_name()
-				.map(|n| n.to_string_lossy().to_ascii_lowercase())
-				.unwrap_or_default();
+			let Some(file_name) = path.file_name() else {
+				continue;
+			};
+			let name = file_name.to_string_lossy().to_ascii_lowercase();
 			if is_delimited_name(&name) {
 				candidates.push(path.to_path_buf());
 			}
@@ -1102,8 +1130,14 @@ fn parse_whodrug_delimited(
 	let mut seen = HashSet::new();
 	for rec in rdr.records() {
 		let rec = rec?;
-		let code = rec.get(code_idx).unwrap_or("").trim();
-		let drug_name = rec.get(name_idx).unwrap_or("").trim();
+		let code = rec
+			.get(code_idx)
+			.ok_or("WHODrug row is missing code column")?
+			.trim();
+		let drug_name = rec
+			.get(name_idx)
+			.ok_or("WHODrug row is missing product name column")?
+			.trim();
 		if code.is_empty() || drug_name.is_empty() {
 			continue;
 		}
@@ -1177,7 +1211,10 @@ fn read_named_file(
 			if !file.is_file() {
 				continue;
 			}
-			let name = file.name().rsplit('/').next().unwrap_or("");
+			let name = match file.name().rsplit('/').next() {
+				Some(name) => name,
+				None => return Err("zip entry is missing a file name".into()),
+			};
 			if name.eq_ignore_ascii_case(&target_name) {
 				let mut bytes = Vec::new();
 				file.read_to_end(&mut bytes)?;

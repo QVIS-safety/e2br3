@@ -7,7 +7,7 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 
@@ -81,7 +81,7 @@ async fn test_case_from_intake_allows_duplicate_override() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({
@@ -120,7 +120,7 @@ async fn test_case_intake_duplicate_check_requires_all_active_fields_to_match(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
@@ -169,7 +169,7 @@ async fn test_case_intake_duplicate_check_warns_for_missing_active_fields(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let check_body = json!({
@@ -198,7 +198,7 @@ async fn test_case_intake_duplicate_check_rejects_missing_product_and_basis_fiel
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let check_body = json!({
@@ -248,7 +248,7 @@ async fn test_case_intake_duplicate_check_accepts_null_flavor_codes_as_optional(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let check_body = json!({
@@ -281,7 +281,7 @@ async fn test_case_intake_duplicate_check_requires_active_fields_by_report_type(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let spontaneous_id = format!("INTAKE-{}", Uuid::new_v4());
 	let spontaneous_missing_patient = json!({
@@ -352,7 +352,7 @@ async fn test_case_intake_duplicate_check_requires_all_active_fields() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({

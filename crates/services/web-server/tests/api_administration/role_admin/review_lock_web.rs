@@ -109,7 +109,7 @@ async fn test_review_lock_flags_are_normalized_to_case_menu_only() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let profile_id = create_empty_custom_role(
 		&app,
@@ -191,7 +191,7 @@ async fn test_reserved_email_subscription_rows_are_not_persisted_or_granted(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let profile_id = create_empty_custom_role(
 		&app,
@@ -231,7 +231,7 @@ async fn test_case_review_and_lock_profile_permissions_are_distinct() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let profile_id = create_empty_custom_role(
 		&app,
@@ -299,7 +299,7 @@ async fn test_reviewed_and_locked_status_transitions_require_dedicated_privilege
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	// Editor: case read+edit, no review/lock.
 	let editor_profile = create_empty_custom_role(

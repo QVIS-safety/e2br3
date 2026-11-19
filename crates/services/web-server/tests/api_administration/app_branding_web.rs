@@ -31,7 +31,7 @@ async fn test_app_branding_uses_default_name_without_e2br3() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = get_json(&app, &cookie, "/api/app/branding").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
@@ -54,7 +54,7 @@ async fn test_app_branding_uses_configured_name() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = get_json(&app, &cookie, "/api/app/branding").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");

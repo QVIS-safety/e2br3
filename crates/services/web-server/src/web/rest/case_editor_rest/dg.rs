@@ -1,11 +1,11 @@
 use super::common::{
 	bool_field, child_row_has_content, ci_date, editor_page_row_response,
 	explicit_null_model_fields, i32_field, insert_alias, json,
-	mark_editor_validation_summary_stale, next_child_sequence, parse_row_model,
-	query_authorities_csv, repeatable_page_projection_response,
-	repeatable_rows_with_details, required_row_object, row_model_value,
-	string_field, uuid_eq, validate_request_projection_context,
-	validate_row_payload, CaseEditorDgListRowDto, CaseEditorPagePatchRequest,
+	mark_editor_validation_summary_stale, parse_row_model, query_authorities_csv,
+	repeatable_page_projection_response, repeatable_rows_with_details,
+	required_row_object, row_model_value, string_field, uuid_eq,
+	validate_request_projection_context, validate_row_payload,
+	CaseEditorDgListRowDto, CaseEditorPagePatchRequest,
 	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse,
 	CaseEditorRowDetailResponse, CtxW, DosageInformationBmc,
 	DosageInformationFilter, DrugActiveSubstanceBmc, DrugActiveSubstanceFilter,
@@ -275,17 +275,11 @@ async fn persist_active_substances(
 					("drug_id", json!(drug_id)),
 					(
 						"sequence_number",
-						json!(i32_field(row, &["sequenceNumber"]).unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"drug_active_substances",
-								"drug_id",
-								drug_id,
-								true,
-							)
-							.await?,
-						)),
+						json!(i32_field(row, &["sequenceNumber"])?.ok_or_else(
+							|| Error::BadRequest {
+								message: "sequenceNumber is required".into()
+							}
+						)?),
 					),
 				],
 			);
@@ -389,18 +383,8 @@ macro_rules! persist_drug_children {
 								json!(i32_field(
 									row,
 									&["sequenceNumber"]
-								)
-								.unwrap_or(
-									next_child_sequence(
-										ctx,
-										mm,
-										$table,
-										"drug_id",
-										drug_id,
-										true,
-									)
-									.await?,
-								)),
+								)?
+								.ok_or_else(|| Error::BadRequest { message: "sequenceNumber is required".into() })?),
 							),
 						],
 					);
@@ -458,7 +442,7 @@ async fn persist_drug_reaction_assessments(
 			),
 		})?;
 		let delete_assessment =
-			bool_field(row, &["_deleteAssessment"]).unwrap_or(false);
+			bool_field(row, &["_deleteAssessment"]) == Some(true);
 		let deleted = bool_field(row, &["deleted"]);
 		let relatedness_id = string_field(row, &["id"])
 			.map(|value| {
@@ -663,17 +647,11 @@ async fn persist_drug_reaction_assessments(
 					("drug_reaction_assessment_id", json!(assessment_id)),
 					(
 						"sequence_number",
-						json!(i32_field(row, &["sequenceNumber"]).unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"relatedness_assessments",
-								"drug_reaction_assessment_id",
-								assessment_id,
-								true,
-							)
-							.await?,
-						)),
+						json!(i32_field(row, &["sequenceNumber"])?.ok_or_else(
+							|| Error::BadRequest {
+								message: "sequenceNumber is required".into()
+							}
+						)?),
 					),
 				],
 			);
@@ -746,7 +724,7 @@ pub async fn get_editor_dg_page_projection(
 					ctx,
 					mm,
 					case_id,
-					query.include_deleted.unwrap_or(false),
+					query.include_deleted == Some(true),
 				)
 				.await?;
 				let authorities = query_authorities_csv(&query)?;
@@ -952,7 +930,11 @@ async fn load_editor_dg_row_detail(
 	}
 	let mut fda_devices_with_codes = Vec::with_capacity(fda_devices.len());
 	for device in fda_devices {
-		let codes = codes_by_device.remove(&device.id).unwrap_or_default();
+		let codes = codes_by_device
+			.remove(&device.id)
+			.into_iter()
+			.flatten()
+			.collect::<Vec<_>>();
 		let mut value = json!(device);
 		if let Value::Object(ref mut map) = value {
 			for (element, key) in [
@@ -1008,7 +990,9 @@ async fn load_editor_dg_row_detail(
 	for assessment in assessments {
 		let relatedness = relatedness_by_assessment
 			.remove(&assessment.id)
-			.unwrap_or_default();
+			.into_iter()
+			.flatten()
+			.collect::<Vec<_>>();
 		let base = json!({
 			"drugReactionAssessmentId": assessment.id,
 			"reactionId": assessment.reaction_id,
@@ -1070,7 +1054,10 @@ async fn load_editor_dg_row_detail(
 	let mut drug = json!(drug);
 	if let Value::Object(ref mut map) = drug {
 		let source_product_id =
-			map.remove("source_product_id").unwrap_or(Value::Null);
+			map.remove("source_product_id")
+				.ok_or_else(|| Error::BadRequest {
+					message: "serialized drug source_product_id is missing".into(),
+				})?;
 		map.insert("sourceProductId".to_string(), source_product_id);
 		insert_alias(map, "drugAuthorizationCountry", &["manufacturer_country"]);
 		map.insert("activeSubstances".to_string(), json!(active_substances));
@@ -1163,7 +1150,11 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 			("case_id", json!(case_id)),
 			(
 				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber"]).unwrap_or(1)),
+				json!(i32_field(row, &["sequenceNumber"])?.ok_or_else(|| {
+					Error::BadRequest {
+						message: "sequenceNumber is required".into(),
+					}
+				})?),
 			),
 			(
 				"drug_characterization",
@@ -1171,7 +1162,9 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 					row,
 					&["drugCharacterization", "drugRole", "drug_characterization",],
 				)
-				.unwrap_or_default()),
+				.ok_or_else(|| Error::BadRequest {
+					message: "drug characterization is required".into()
+				})?),
 			),
 		],
 	);

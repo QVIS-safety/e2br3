@@ -26,7 +26,7 @@ async fn test_role_admin_api_rejects_migration_only_menu_aliases() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -59,7 +59,7 @@ async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -110,7 +110,7 @@ async fn test_role_admin_api_rejects_rename_to_duplicate_role_name_in_same_org(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let mut second_profile_id = None;
 
 	for name in ["Original Role", "Other Role"] {
@@ -164,7 +164,7 @@ async fn test_role_admin_api_rejects_overlong_name_and_description() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let overlong_name = "R".repeat(129);
 	let overlong_description = "D".repeat(513);
 
@@ -218,7 +218,7 @@ async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,

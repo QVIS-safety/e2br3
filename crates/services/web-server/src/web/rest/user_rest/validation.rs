@@ -47,41 +47,36 @@ pub(super) fn normalize_optional_username_input(
 
 pub(super) fn parse_scope_input(
 	value: Option<ScopeListInput>,
-) -> Option<Vec<String>> {
-	match value {
-		None => None,
-		Some(ScopeListInput::List(values)) => Some(values),
-		Some(ScopeListInput::Encoded(raw)) => {
-			serde_json::from_str::<Vec<String>>(&raw).ok().or_else(|| {
-				Some(
-					raw.split(',')
-						.map(|value| value.trim().to_string())
-						.filter(|value| !value.is_empty())
-						.collect::<Vec<_>>(),
-				)
-			})
-		}
-	}
+) -> Result<Option<Vec<String>>> {
+	value
+		.map(|value| match value {
+			ScopeListInput::List(values) => Ok(values),
+			ScopeListInput::Encoded(raw) => {
+				serde_json::from_str::<Vec<String>>(&raw).map_err(|error| {
+					Error::BadRequest {
+						message: format!(
+							"scope must be a JSON string array: {error}"
+						),
+					}
+				})
+			}
+		})
+		.transpose()
 }
 
 pub(super) fn serialize_scope_input(
 	value: Option<ScopeListInput>,
-) -> Option<String> {
-	parse_scope_input(value).map(|values| {
-		let values = values
-			.into_iter()
-			.map(|value| value.trim().to_string())
-			.filter(|value| !value.is_empty())
-			.collect::<Vec<_>>();
-		serde_json::json!(values).to_string()
-	})
+) -> Result<Option<String>> {
+	parse_scope_input(value)?
+		.map(|values| serde_json::to_string(&values).map_err(Error::from))
+		.transpose()
 }
 
 pub(super) fn validate_uuid_scope(
 	field: &str,
 	input: &Option<ScopeListInput>,
 ) -> Result<()> {
-	for value in parse_scope_input(input.clone()).unwrap_or_default() {
+	for value in parse_scope_input(input.clone())?.into_iter().flatten() {
 		Uuid::parse_str(value.trim()).map_err(|_| Error::BadRequest {
 			message: format!("{field} accepts UUID values only"),
 		})?;
@@ -158,15 +153,12 @@ pub(super) async fn validate_scope_hierarchy(
 pub(super) fn scope_values_for_update(
 	value: Option<&ScopeListInput>,
 	current: Option<&str>,
-) -> Vec<String> {
-	value
-		.and_then(|value| parse_scope_input(Some(value.clone())))
-		.or_else(|| {
-			parse_scope_input(
-				current.map(|value| ScopeListInput::Encoded(value.to_string())),
-			)
-		})
-		.unwrap_or_default()
+) -> Result<Vec<String>> {
+	let input = match value {
+		Some(value) => Some(value.clone()),
+		None => current.map(|value| ScopeListInput::Encoded(value.to_string())),
+	};
+	Ok(parse_scope_input(input)?.into_iter().flatten().collect())
 }
 
 pub(super) fn validate_optional_uuid_identifier(
@@ -182,20 +174,13 @@ pub(super) fn validate_optional_uuid_identifier(
 	Ok(())
 }
 
-pub(super) fn role_display_name(role: &str) -> String {
-	let canonical = canonical_role(role);
-	built_in_role_metadata(&canonical)
-		.map(|metadata| metadata.display_name.to_string())
-		.unwrap_or_else(|| canonical.replace('_', " "))
-}
-
 pub(super) fn role_metadata(
 	role: &str,
 	custom_name: Option<&str>,
-) -> UserRoleMetadata {
+) -> Result<UserRoleMetadata> {
 	let canonical_role_id = canonical_role(role);
 	let built_in = built_in_role_metadata(&canonical_role_id);
-	UserRoleMetadata {
+	Ok(UserRoleMetadata {
 		display_name: built_in
 			.map(|metadata| metadata.display_name.to_string())
 			.or_else(|| {
@@ -204,13 +189,15 @@ pub(super) fn role_metadata(
 					.filter(|name| !name.is_empty())
 					.map(str::to_string)
 			})
-			.unwrap_or_else(|| role_display_name(&canonical_role_id)),
+			.ok_or_else(|| Error::BadRequest {
+				message: format!("role name is missing: {canonical_role_id}"),
+			})?,
 		canonical_role_id: canonical_role_id.clone(),
 		is_builtin: built_in.is_some(),
 		is_editable: built_in.is_none(),
 		is_sponsor_admin: built_in.is_some_and(|metadata| metadata.sponsor_admin),
 		is_operational: built_in.is_none_or(|metadata| metadata.operational),
-	}
+	})
 }
 
 pub(super) fn normalize_user_role(role: Option<String>) -> Option<String> {
@@ -364,10 +351,9 @@ pub(super) fn initial_password(pwd_clear: Option<String>) -> Result<String> {
 	let password = pwd_clear
 		.map(|value| value.trim().to_string())
 		.filter(|value| !value.is_empty())
-		.unwrap_or_else(|| "welcome".to_string());
-	if password == "welcome" {
-		return Ok(password);
-	}
+		.ok_or_else(|| Error::BadRequest {
+			message: "initial password is required".into(),
+		})?;
 	validate_new_password(&password)?;
 	Ok(password)
 }
@@ -437,13 +423,14 @@ pub(super) fn user_is_effectively_active(user: &User) -> bool {
 pub(super) fn has_sender_scope_assignment(
 	active_sender_identifier: &Option<String>,
 	access_sender_ids: &Option<ScopeListInput>,
-) -> bool {
-	active_sender_identifier
+) -> Result<bool> {
+	let scopes = parse_scope_input(access_sender_ids.clone())?;
+	Ok(active_sender_identifier
 		.as_deref()
 		.is_some_and(|value| !value.trim().is_empty())
-		|| parse_scope_input(access_sender_ids.clone()).is_some_and(|values| {
+		|| scopes.is_some_and(|values| {
 			values.iter().any(|value| !value.trim().is_empty())
-		})
+		}))
 }
 
 pub(super) fn sender_scope_assignment_forbidden() -> Error {
@@ -481,11 +468,13 @@ mod uuid_scope_tests {
 		assert!(!has_sender_scope_assignment(
 			&None,
 			&Some(ScopeListInput::List(Vec::new())),
-		));
+		)
+		.expect("valid scope"));
 		assert!(!has_sender_scope_assignment(
 			&Some("  ".to_string()),
-			&Some(ScopeListInput::Encoded(String::new())),
-		));
+			&Some(ScopeListInput::Encoded("[]".to_string())),
+		)
+		.expect("valid scope"));
 	}
 
 	#[test]
@@ -493,26 +482,35 @@ mod uuid_scope_tests {
 		assert!(has_sender_scope_assignment(
 			&Some(Uuid::new_v4().to_string()),
 			&None,
-		));
+		)
+		.expect("valid scope"));
 		assert!(has_sender_scope_assignment(
 			&None,
 			&Some(ScopeListInput::List(vec![Uuid::new_v4().to_string()])),
-		));
+		)
+		.expect("valid scope"));
 	}
 
 	#[test]
 	fn empty_scope_serializes_as_explicit_clear() {
 		assert_eq!(
-			serialize_scope_input(Some(ScopeListInput::List(Vec::new()))),
+			serialize_scope_input(Some(ScopeListInput::List(Vec::new()))).unwrap(),
 			Some("[]".to_string())
 		);
-		assert_eq!(serialize_scope_input(None), None);
+		assert_eq!(serialize_scope_input(None).unwrap(), None);
 	}
 
 	#[test]
-	fn initial_password_defaults_to_welcome_or_meets_the_shared_policy() {
-		assert_eq!(initial_password(None).unwrap(), "welcome");
-		assert_eq!(initial_password(Some("  ".to_string())).unwrap(), "welcome");
+	fn malformed_scope_does_not_become_csv_or_existing_scope() {
+		let invalid = ScopeListInput::Encoded("not-json,still-not-json".into());
+		assert!(parse_scope_input(Some(invalid.clone())).is_err());
+		assert!(scope_values_for_update(Some(&invalid), Some("[]")).is_err());
+		assert!(scope_values_for_update(None, Some("broken")).is_err());
+	}
+	#[test]
+	fn initial_password_is_required_and_meets_the_shared_policy() {
+		assert!(initial_password(None).is_err());
+		assert!(initial_password(Some("  ".to_string())).is_err());
 		assert!(initial_password(Some("too-short".to_string())).is_err());
 		assert_eq!(
 			initial_password(Some("long-enough-password".to_string())).unwrap(),

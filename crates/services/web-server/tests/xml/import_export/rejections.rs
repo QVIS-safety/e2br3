@@ -8,7 +8,7 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let (status, bytes) = request_json(&app, &cookie, "POST", "/api/cases".into(), Some(serde_json::json!({"data": {
         "safetyReportIdentification": {"safetyReportId": format!("N-EXPORT-{}", Uuid::new_v4())}, "status":"draft"
     }}))).await?;
@@ -169,7 +169,7 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	// Missing required export data must fail and leave a downloadable error history.
 	let create_body = serde_json::json!({

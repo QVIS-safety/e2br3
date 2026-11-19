@@ -8,7 +8,7 @@ async fn test_reporter_validation_switches_from_collection_to_existing_fields(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let validation_uri = format!("/api/cases/{case_id}/validation?authority=ich");
 	let (status, report) =
@@ -64,7 +64,7 @@ async fn test_study_sequence_gaps_keep_validation_bound_to_editor_rows() -> Resu
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/SI");
 	let (status, body) = editor_patch_json(
@@ -123,7 +123,7 @@ async fn test_validation_defaults_to_ich_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
@@ -142,7 +142,7 @@ async fn test_validation_supports_mfds_authority() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	create_safety_report(&app, &cookie, case_id).await?;
@@ -168,7 +168,7 @@ async fn test_validation_rejects_conflicting_authority_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) = get_validation(
@@ -193,7 +193,7 @@ async fn test_validation_rejects_unknown_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) = get_validation(
@@ -219,7 +219,7 @@ async fn test_validator_endpoint_requires_token() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
@@ -237,7 +237,7 @@ async fn test_validator_endpoint_rejects_invalid_cases() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
@@ -259,7 +259,7 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
@@ -345,7 +345,7 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) = update_admin_settings(

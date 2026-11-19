@@ -48,7 +48,7 @@ async fn test_runtime_settings_ignore_unrelated_invalid_admin_fields() -> Result
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let (status, value) =
 		request_json(&app, "GET", &viewer_cookie, "/api/settings/runtime", None)
 			.await?;
@@ -76,7 +76,7 @@ async fn test_runtime_settings_reject_invalid_required_runtime_fields() -> Resul
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	for field in ["notation", "timezone"] {
 		let mut invalid = original.clone();
@@ -145,7 +145,7 @@ async fn test_meddra_settings_reject_unavailable_release_without_changing_saved_
 		.await?;
 	}
 	dbx.commit_txn().await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	for (index, release_status) in statuses.iter().enumerate() {
 		let (status, value) = request_json(&app, "PUT", &cookie, "/api/admin/settings",
 			Some(json!({"data": {"meddra_language": "English", "meddra_version": format!("{version_prefix}{index}")}})),
@@ -205,7 +205,7 @@ async fn test_idle_session_settings_are_org_scoped_and_validated() -> Result<()>
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let other_viewer_cookie = cookie_header(&other_viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -301,7 +301,7 @@ async fn test_admin_settings_round_trips_alignment_fields() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = request_json(
 		&app,

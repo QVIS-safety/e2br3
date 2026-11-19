@@ -7,7 +7,7 @@ async fn test_viewer_can_read_terminology_but_cannot_import() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -58,7 +58,7 @@ async fn test_operational_user_can_list_and_search_active_meddra() -> Result<()>
 	let seed = seed_org_with_all_roles(&mm).await?;
 
 	let token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/terminology/releases?dictionary=meddra")
@@ -93,7 +93,7 @@ async fn test_viewer_cannot_approve_activate_or_rollback_release() -> Result<()>
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for uri in [
 		"/api/terminology/releases/whodrug/2025.09/approve?language=en",

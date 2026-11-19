@@ -12,7 +12,7 @@ async fn test_reporter_presave_round_trips_mfds_qualification_detail() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -146,7 +146,7 @@ async fn test_reporter_presave_accepts_mfds_qualification_detail_input() -> Resu
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,

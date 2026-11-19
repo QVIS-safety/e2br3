@@ -159,7 +159,9 @@ fn read_f_r_2_1(xpath: &mut Context, node: &Node) -> Result<String> {
 		None,
 		input_contracts::generated::f::f_r_2_1,
 	)?;
-	Ok(value.unwrap_or_default())
+	value.ok_or_else(|| Error::InvalidImportRequest {
+		message: "testName is required".to_string(),
+	})
 }
 
 /// e2b:F.r.2.2a

@@ -13,7 +13,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -284,7 +284,7 @@ async fn presave_optional_text_blank_null_and_omitted_contract() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let created = post_json_created(
 		&app,
@@ -502,7 +502,7 @@ async fn presave_parent_delete_is_repeatable_and_patch_restores_the_same_row(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let product_sender_id =

@@ -57,7 +57,7 @@ fn request_matches<'a>(
 		};
 		let segment = segments[0];
 		let repeated = segment.ends_with("[]");
-		let key = segment.strip_suffix("[]").unwrap_or(segment);
+		let key = segment.trim_end_matches("[]");
 		let Some(value) = object.get(key) else {
 			return;
 		};
@@ -122,11 +122,16 @@ fn concrete_frontend_path(template: &str, request_indexes: &[usize]) -> String {
 	let mut index = indexes.into_iter();
 	template
 		.split('.')
-		.map(|part| {
-			part.strip_suffix("[]")
-				.map(|part| format!("{part}.{}", index.next().unwrap_or(0)))
-				.unwrap_or_else(|| part.to_string())
-		})
+		.map(
+			|part| match (part.strip_suffix("[]"), index.as_slice().first()) {
+				(Some(part), Some(position)) => {
+					let path = format!("{part}.{position}");
+					index.next();
+					path
+				}
+				_ => part.to_string(),
+			},
+		)
 		.collect::<Vec<_>>()
 		.join(".")
 }
@@ -142,7 +147,7 @@ fn violation(rule_code: &str, path: &str, message: &str) -> Error {
 fn normalized_direct_object(
 	source: &Map<String, Value>,
 	aliases: &[(&str, &[&str])],
-) -> Map<String, Value> {
+) -> Result<Map<String, Value>> {
 	fn source_value<'a>(
 		source: &'a Map<String, Value>,
 		path: &str,
@@ -156,20 +161,27 @@ fn normalized_direct_object(
 		Some(value)
 	}
 
-	fn insert_path(target: &mut Map<String, Value>, path: &str, value: Value) {
+	fn insert_path(
+		target: &mut Map<String, Value>,
+		path: &str,
+		value: Value,
+	) -> Result<()> {
 		let mut current = target;
 		let mut segments = path.split('.').peekable();
 		while let Some(segment) = segments.next() {
 			if segments.peek().is_none() {
 				current.insert(segment.to_string(), value);
-				return;
+				return Ok(());
 			}
 			current = current
 				.entry(segment.to_string())
 				.or_insert_with(|| Value::Object(Map::new()))
 				.as_object_mut()
-				.expect("direct normalization path must remain an object");
+				.ok_or_else(|| Error::BadRequest {
+					message: format!("conflicting object path: {path}"),
+				})?;
 		}
+		Ok(())
 	}
 
 	let mut normalized = Map::new();
@@ -177,10 +189,10 @@ fn normalized_direct_object(
 		if let Some(value) =
 			candidates.iter().find_map(|key| source_value(source, key))
 		{
-			insert_path(&mut normalized, target, value.clone());
+			insert_path(&mut normalized, target, value.clone())?;
 		}
 	}
-	normalized
+	Ok(normalized)
 }
 
 pub(super) fn validate_direct_rows(
@@ -331,7 +343,10 @@ pub(super) fn validate_direct_rows(
 					],
 				)
 					})
-					.unwrap_or_default();
+					.transpose()?
+					.into_iter()
+					.flatten()
+					.collect::<Map<String, Value>>();
 			for (owner, aliases) in [
 				(
 					"documentsHeldBySender",
@@ -378,8 +393,9 @@ pub(super) fn validate_direct_rows(
 					if bool_field(row, &["deleted", "_delete"]) == Some(true) {
 						continue;
 					}
-					normalized_items
-						.push(Value::Object(normalized_direct_object(row, aliases)));
+					normalized_items.push(Value::Object(normalized_direct_object(
+						row, aliases,
+					)?));
 				}
 				normalized.insert(owner.to_string(), Value::Array(normalized_items));
 			}
@@ -516,7 +532,7 @@ pub(super) fn validate_direct_rows(
 							],
 						),
 					],
-				);
+				)?;
 				validate_row_payload_with_indexes(
 					section,
 					section,
@@ -573,7 +589,10 @@ pub(super) fn validate_direct_rows(
 						],
 					)
 				})
-				.unwrap_or_default();
+				.transpose()?
+				.into_iter()
+				.flatten()
+				.collect::<Map<String, Value>>();
 
 			if let Some(study) = study {
 				if let Some(value) = study
@@ -604,7 +623,7 @@ pub(super) fn validate_direct_rows(
 										],
 									),
 								],
-							),
+							)?,
 						));
 					}
 					normalized.insert(
@@ -648,7 +667,7 @@ pub(super) fn validate_direct_rows(
 								],
 							),
 						],
-					)));
+					)?));
 				}
 				normalized.insert(
 					"studyRegistrationNumbers".to_string(),
@@ -790,7 +809,7 @@ pub(super) fn validate_direct_rows(
 									&["concomitantTherapies", "concomitant_therapy"],
 								),
 							],
-						);
+						)?;
 						if let Some(Value::String(value)) =
 							normalized.get("raceCodes").cloned()
 						{
@@ -799,9 +818,12 @@ pub(super) fn validate_direct_rows(
 								Value::Array(vec![Value::String(value)]),
 							);
 						}
-						normalized
+						Ok::<_, Error>(normalized)
 					})
-					.unwrap_or_default();
+					.transpose()?
+					.into_iter()
+					.flatten()
+					.collect::<Map<String, Value>>();
 			if let Some(value) = rows.get("patientIdentifiers") {
 				let identifiers =
 					value.as_array().ok_or_else(|| Error::BadRequest {
@@ -903,7 +925,7 @@ pub(super) fn validate_direct_rows(
 									&["familyHistory", "family_history"],
 								),
 							],
-						),
+						)?,
 					));
 				}
 				normalized.insert(
@@ -938,7 +960,10 @@ pub(super) fn validate_direct_rows(
 						],
 					)
 				})
-				.unwrap_or_default();
+				.transpose()?
+				.into_iter()
+				.flatten()
+				.collect::<Map<String, Value>>();
 			for (row_key, target) in [
 				("reportedCauses", "reportedCausesOfDeath"),
 				("autopsyCauses", "autopsyCausesOfDeath"),
@@ -966,7 +991,7 @@ pub(super) fn validate_direct_rows(
 									("meddraCode", &["meddraCode", "meddra_code"]),
 									("causeText", &["causeText", "comments"]),
 								],
-							),
+							)?,
 						));
 					}
 					patient_death
@@ -1056,7 +1081,10 @@ pub(super) fn validate_direct_rows(
 							],
 						)
 					})
-					.unwrap_or_default();
+					.transpose()?
+					.into_iter()
+					.flatten()
+					.collect::<Map<String, Value>>();
 			if let Some(value) = rows.get("parentMedicalHistory") {
 				let Some(history_rows) = value.as_array() else {
 					return Err(Error::BadRequest {
@@ -1103,7 +1131,7 @@ pub(super) fn validate_direct_rows(
 								),
 								("comments", &["comments"]),
 							],
-						),
+						)?,
 					));
 				}
 				parent_information.insert(
@@ -1180,7 +1208,7 @@ pub(super) fn validate_direct_rows(
 								&["reactionMeddraCode", "reaction_meddra_code"],
 							),
 						],
-					)));
+					)?));
 				}
 				parent_information.insert(
 					"pastDrugHistory".to_string(),
@@ -1214,7 +1242,10 @@ pub(super) fn validate_direct_rows(
 						],
 					)
 				})
-				.unwrap_or_default();
+				.transpose()?
+				.into_iter()
+				.flatten()
+				.collect::<Map<String, Value>>();
 
 			let sender_diagnoses = rows
 				.get("senderDiagnoses")
@@ -1245,7 +1276,7 @@ pub(super) fn validate_direct_rows(
 								&["diagnosisMeddraCode", "diagnosis_meddra_code"],
 							),
 						],
-					)));
+					)?));
 				}
 				normalized.insert(
 					"senderDiagnoses".to_string(),
@@ -1270,7 +1301,7 @@ pub(super) fn validate_direct_rows(
 							("summaryText", &["summaryText", "summary_text"]),
 							("languageCode", &["languageCode", "language_code"]),
 						],
-					)));
+					)?));
 				}
 				normalized.insert(
 					"caseSummaryInformation".to_string(),
@@ -1374,9 +1405,10 @@ where
 	for indexes in matched_indexes {
 		let mut concrete_indexes = outer_indexes.to_vec();
 		concrete_indexes.extend_from_slice(&indexes);
-		let value = value_at_request_path(row, request_path, &indexes)
-			.map(|value| input_value(value, value_type))
-			.unwrap_or(InputValue::Missing);
+		let value = match value_at_request_path(row, request_path, &indexes) {
+			Some(value) => input_value(value, value_type),
+			None => InputValue::Missing,
+		};
 		if matches!(value, InputValue::InvalidType) {
 			let expected = match value_type {
 				InputType::String => "string",
@@ -1394,20 +1426,28 @@ where
 				value_at_request_path(row, request_path, &indexes)
 					.map(|value| (value, frontend_path, code))
 			});
-		let null_flavor_value = companion
-			.as_ref()
-			.and_then(|(value, _, _)| {
-				(!value.is_null()).then(|| {
-					value.as_str().unwrap_or("__invalid_null_flavor_type__")
-				})
-			})
-			.map(str::trim)
-			.filter(|value| !value.is_empty());
+		let null_flavor_value = match companion.as_ref() {
+			Some((value, path, _)) if !value.is_null() => Some(
+				value
+					.as_str()
+					.ok_or_else(|| {
+						violation("INPUT.TYPE", path, "NullFlavor must be a string")
+					})?
+					.trim(),
+			)
+			.filter(|value| !value.is_empty()),
+			_ => None,
+		};
 		if !matches!(value, InputValue::Missing | InputValue::Null)
 			&& null_flavor_value.is_some()
 		{
-			let (_, null_flavor_path, code) =
-				companion.expect("companion is present");
+			let (_, null_flavor_path, code) = companion.ok_or_else(|| {
+				violation(
+					"INPUT.TYPE",
+					frontend_path,
+					"missing NullFlavor companion",
+				)
+			})?;
 			let path = concrete_frontend_path(null_flavor_path, &concrete_indexes);
 			return Err(violation(
 				code,

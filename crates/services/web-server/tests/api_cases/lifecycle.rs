@@ -7,7 +7,7 @@ async fn test_update_case_rejects_invalid_status() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
@@ -24,7 +24,7 @@ async fn test_create_case_rejects_every_protected_lifecycle_status() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for protected_status in [
 		"reviewed",
@@ -68,7 +68,7 @@ async fn test_case_status_transition_prevents_regression_after_submitted(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
@@ -89,7 +89,7 @@ async fn test_case_save_does_not_auto_transition_status_when_updating_fields(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let req = Request::builder()
@@ -128,7 +128,7 @@ async fn test_review_toggle_allows_validated_to_draft_transition() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	force_validated_case_fixture(&mm, seed.admin.id, seed.org_id, case_id).await?;

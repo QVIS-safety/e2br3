@@ -16,7 +16,7 @@ async fn test_audit_list_requires_permission() -> Result<()> {
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -90,7 +90,10 @@ async fn test_audit_integrity_reports_first_broken_row_and_reason() -> Result<()
 		))
 		.header("cookie", cookie_header(&admin_token.to_string()))
 		.body(Body::empty())?;
-	let response = web_server::app(mm).oneshot(request).await;
+	let response = web_server::app(mm)
+		.expect("web server configuration")
+		.oneshot(request)
+		.await;
 
 	sqlx::query(
 		"ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_reject_update_delete",
@@ -131,7 +134,7 @@ async fn test_audit_integrity_reports_healthy_chain_and_requires_permission(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let request = Request::builder()
 		.method("GET")

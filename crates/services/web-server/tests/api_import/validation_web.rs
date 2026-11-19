@@ -33,7 +33,7 @@ async fn xml_validation_reports_valid_malformed_and_xsd_invalid_without_writes(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let before = persisted_counts(&mm, seed.org_id, seed.admin.id).await?;
 
 	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))

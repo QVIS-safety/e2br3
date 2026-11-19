@@ -23,7 +23,6 @@ pub use self::error::{Error, Result};
 pub use scheme::SchemeStatus;
 
 use crate::pwd::scheme::{get_scheme, Scheme, DEFAULT_SCHEME};
-use lazy_regex::regex_captures;
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -111,15 +110,23 @@ impl FromStr for PwdParts {
 	type Err = Error;
 
 	fn from_str(pwd_with_scheme: &str) -> Result<Self> {
-		regex_captures!(
-			r#"^#(\w+)#(.*)"#, // a literal regex
-			pwd_with_scheme
-		)
-		.map(|(_, scheme, hashed)| Self {
-			scheme_name: scheme.to_string(),
+		let value = pwd_with_scheme
+			.strip_prefix('#')
+			.ok_or(Error::PwdWithSchemeFailedParse)?;
+		let (scheme_name, hashed) = value
+			.split_once('#')
+			.ok_or(Error::PwdWithSchemeFailedParse)?;
+		if scheme_name.is_empty()
+			|| !scheme_name
+				.chars()
+				.all(|character| character.is_alphanumeric() || character == '_')
+		{
+			return Err(Error::PwdWithSchemeFailedParse);
+		}
+		Ok(Self {
+			scheme_name: scheme_name.to_string(),
 			hashed: hashed.to_string(),
 		})
-		.ok_or(Error::PwdWithSchemeFailedParse)
 	}
 }
 

@@ -21,7 +21,7 @@ async fn test_import_settings_update_enabled_c1_dates() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let product_presave_id =
 		create_test_import_product(&mm, seed.org_id, seed.admin.id)
 			.await?
@@ -119,7 +119,7 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,
@@ -277,7 +277,7 @@ async fn test_import_settings_apply_product_linked_sender_by_imported_product_id
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,

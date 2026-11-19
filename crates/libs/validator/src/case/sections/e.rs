@@ -221,7 +221,10 @@ fn e_i_3_2_marker(
 		path,
 		SECTION,
 		ALLOWED_VALUE_MESSAGE,
-		value == Some(false) && !has_text(null_flavor),
+		!matches!(
+			(value, null_flavor.map(str::trim)),
+			(None | Some(true), None | Some("")) | (None, Some("NI"))
+		),
 	);
 }
 
@@ -390,11 +393,6 @@ fn e_i_6b(idx: usize, reaction: &Reaction, issues: &mut Vec<ValidationIssue>) {
 		reaction.duration_value.is_some()
 			&& !has_text(reaction.duration_unit.as_deref()),
 	);
-	reject_when(issues, "ICH.E.i.6b.ALLOWED.VALUE", &path, SECTION,
-		"Reaction duration unit must be a supported time unit (800–805 or 10.a, a, mo, wk, d, h).",
-		reaction.duration_unit.as_deref().is_some_and(|unit| !matches!(unit, "800" | "801" | "802" | "803" | "804" | "805" | "10.a" | "a" | "mo" | "wk" | "d" | "h")),
-	);
-
 	max_length(
 		issues,
 		"ICH.E.i.6b.LENGTH.MAX",
@@ -552,6 +550,7 @@ fn e_i_9(
 }
 
 /// FDA.E.i.3.2h.REQUIRED
+/// FDA.E.i.3.2h.ALLOWED.VALUE
 fn fda_e_i_3_2h(
 	idx: usize,
 	reaction: &Reaction,
@@ -572,6 +571,17 @@ fn fda_e_i_3_2h(
 		}
 		return;
 	}
+	reject_when(
+		issues,
+		"FDA.E.i.3.2h.ALLOWED.VALUE",
+		&format!("reactions.{idx}.requiredIntervention"),
+		SECTION,
+		"FDA postmarket required intervention must be true or nullFlavor NI.",
+		!matches!(
+			(reaction.required_intervention, null_flavor.map(str::trim)),
+			(None | Some(true), None | Some("")) | (None, Some("NI"))
+		),
+	);
 	reject_when(
 		issues,
 		"FDA.E.i.3.2h.REQUIRED",
@@ -635,6 +645,21 @@ pub(crate) fn collect_ich_issues(
 		e_i_4_5(idx, reaction, issues);
 		e_i_6a(idx, reaction, issues);
 		e_i_6b(idx, reaction, issues);
+		let duration_unit = reaction.duration_unit.as_deref().map(|unit| {
+			match lib_core::model::reaction::reaction_duration_unit_to_ucum(unit) {
+				Some(ucum) => ucum,
+				None => unit,
+			}
+		});
+		super::helpers::check_ich_unit(
+			issues,
+			&validation_ctx.vocabulary,
+			crate::VocabularyScope::Time,
+			"ICH.E.i.6b.VOCABULARY",
+			&format!("reactions.{idx}.durationUnit"),
+			SECTION,
+			duration_unit,
+		);
 		e_i_7(idx, Some(reaction), issues);
 		e_i_8(idx, reaction, reported_by_hcp, issues);
 		e_i_9(idx, reaction, validation_ctx, issues);

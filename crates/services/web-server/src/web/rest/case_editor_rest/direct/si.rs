@@ -1,14 +1,14 @@
 use super::super::common::{
 	as_object, bool_field, direct_section_response, explicit_null_model_fields,
-	i32_field, json, next_child_sequence, optional_row_object,
-	reject_unknown_row_keys, string_field, uuid_eq, uuid_field, BTreeMap,
-	CaseEditorDirectSectionResponse, CtxW, Error, Json, ListOptions, ModelManager,
-	Path, Result, State, StudyFdaCrossReportedIndBmc,
-	StudyFdaCrossReportedIndFilter, StudyFdaCrossReportedIndForCreate,
-	StudyFdaCrossReportedIndForUpdate, StudyInformationBmc, StudyInformationFilter,
-	StudyInformationForCreate, StudyInformationForUpdate,
-	StudyRegistrationNumberBmc, StudyRegistrationNumberFilter,
-	StudyRegistrationNumberForCreate, StudyRegistrationNumberForUpdate, Uuid, Value,
+	i32_field, json, optional_row_object, reject_unknown_row_keys, string_field,
+	uuid_eq, uuid_field, BTreeMap, CaseEditorDirectSectionResponse, CtxW, Error,
+	Json, ListOptions, ModelManager, Path, Result, State,
+	StudyFdaCrossReportedIndBmc, StudyFdaCrossReportedIndFilter,
+	StudyFdaCrossReportedIndForCreate, StudyFdaCrossReportedIndForUpdate,
+	StudyInformationBmc, StudyInformationFilter, StudyInformationForCreate,
+	StudyInformationForUpdate, StudyRegistrationNumberBmc,
+	StudyRegistrationNumberFilter, StudyRegistrationNumberForCreate,
+	StudyRegistrationNumberForUpdate, Uuid, Value,
 };
 use super::super::handler_macros::direct_page_projection_handler;
 
@@ -203,7 +203,7 @@ pub(super) async fn apply_si_page_rows_patch(
 					registration,
 					&["countryCodeNullFlavor"],
 				),
-				sequence_number: i32_field(registration, &["sequenceNumber"]),
+				sequence_number: i32_field(registration, &["sequenceNumber"])?,
 			};
 			if let Some(id) = id {
 				let existing = StudyRegistrationNumberBmc::get(ctx, mm, id).await?;
@@ -242,17 +242,11 @@ pub(super) async fn apply_si_page_rows_patch(
 							.registration_number_null_flavor,
 						country_code: update.country_code,
 						country_code_null_flavor: update.country_code_null_flavor,
-						sequence_number: update.sequence_number.unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"study_registration_numbers",
-								"study_information_id",
-								study_id,
-								true,
-							)
-							.await?,
-						),
+						sequence_number: update.sequence_number.ok_or_else(
+							|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							},
+						)?,
 					},
 				)
 				.await?;
@@ -299,7 +293,7 @@ pub(super) async fn apply_si_page_rows_patch(
 						number,
 						&["indNumberNullFlavor"],
 					),
-					sequence_number: i32_field(number, &["sequenceNumber"]),
+					sequence_number: i32_field(number, &["sequenceNumber"])?,
 				};
 				if let Some(id) = id {
 					let existing =
@@ -331,17 +325,11 @@ pub(super) async fn apply_si_page_rows_patch(
 							study_information_id: study_id,
 							ind_number: update.ind_number,
 							ind_number_null_flavor: update.ind_number_null_flavor,
-							sequence_number: update.sequence_number.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"study_fda_cross_reported_inds",
-									"study_information_id",
-									study_id,
-									true,
-								)
-								.await?,
-							),
+							sequence_number: update.sequence_number.ok_or_else(
+								|| Error::BadRequest {
+									message: "sequenceNumber is required".into(),
+								},
+							)?,
 						},
 					)
 					.await?;
@@ -396,17 +384,21 @@ pub(super) async fn load_editor_si_data(
 		} else {
 			(Vec::new(), Vec::new())
 		};
-	let study_information = study_information.map(|study| {
-		let mut value = json!(study);
-		value
-			.as_object_mut()
-			.expect("serialized study information is an object")
-			.insert(
-				"fdaCrossReportedIndNumbers".to_string(),
-				json!(fda_cross_reported_ind_numbers),
-			);
-		value
-	});
+	let study_information = study_information
+		.map(|study| {
+			let mut value = json!(study);
+			value
+				.as_object_mut()
+				.ok_or_else(|| Error::BadRequest {
+					message: "serialized study information is an object".into(),
+				})?
+				.insert(
+					"fdaCrossReportedIndNumbers".to_string(),
+					json!(fda_cross_reported_ind_numbers),
+				);
+			Ok::<_, Error>(value)
+		})
+		.transpose()?;
 
 	Ok(json!({
 		"studyInformation": study_information,

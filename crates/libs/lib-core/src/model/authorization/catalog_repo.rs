@@ -30,11 +30,14 @@ impl AuthorizationCatalogRepository {
 		}
 
 		for grant in registry.grants() {
+			let pdf_order = i16::try_from(grant.pdf_order).map_err(|error| {
+				AuthorizationMigrationError::Registry(error.to_string())
+			})?;
 			sqlx::query(
 				"INSERT INTO authorization_grant_catalog (grant_id, pdf_order, pdf_menu, pdf_type, pdf_privilege, availability) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (grant_id) DO UPDATE SET pdf_order = EXCLUDED.pdf_order, pdf_menu = EXCLUDED.pdf_menu, pdf_type = EXCLUDED.pdf_type, pdf_privilege = EXCLUDED.pdf_privilege, availability = EXCLUDED.availability",
 			)
 			.bind(grant.id.as_str())
-			.bind(i16::try_from(grant.pdf_order).expect("validated PDF order fits i16"))
+			.bind(pdf_order)
 			.bind(&grant.pdf_menu)
 			.bind(&grant.pdf_type)
 			.bind(&grant.pdf_privilege)
@@ -69,8 +72,10 @@ impl AuthorizationCatalogRepository {
 			}
 		}
 
+		let schema_version = i32::try_from(AUTHORIZATION_CONTRACT_SCHEMA_VERSION)
+			.map_err(|error| AuthorizationMigrationError::Registry(error.to_string()))?;
 		sqlx::query("INSERT INTO authorization_catalog_state (singleton, schema_version, catalog_hash, reconciled_at) VALUES (true, $1, $2, now()) ON CONFLICT (singleton) DO UPDATE SET schema_version = EXCLUDED.schema_version, catalog_hash = EXCLUDED.catalog_hash, reconciled_at = now()")
-			.bind(i32::try_from(AUTHORIZATION_CONTRACT_SCHEMA_VERSION).expect("authorization contract schema version fits i32"))
+			.bind(schema_version)
 			.bind(&contract.catalog_hash)
 			.execute(&mut **transaction)
 			.await?;

@@ -379,9 +379,10 @@ fn write_e_i_7(value: Option<&str>) -> String {
 		"5" => Some("fatal"),
 		_ => None,
 	};
-	let display_name = display_name
-		.map(|name| format!(" displayName=\"{}\"", xml_escape(name)))
-		.unwrap_or_default();
+	let display_name = match display_name {
+		Some(name) => format!(" displayName=\"{}\"", xml_escape(name)),
+		None => String::new(),
+	};
 	format!(
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"27\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.11\"{display_name}/></observation></outboundRelationship2>",
 		xml_escape(code)
@@ -672,7 +673,20 @@ mod meddra_requirement_tests {
 
 	#[test]
 	fn exports_location_before_xsd_outbound_relationships() {
-		let reaction = reaction();
+		let mut reaction = reaction();
+		// NI must be explicit; the exporter must not turn a saved false into NI.
+		reaction.criteria_death = None;
+		reaction.criteria_death_null_flavor = Some("NI".into());
+		reaction.criteria_life_threatening = None;
+		reaction.criteria_life_threatening_null_flavor = Some("NI".into());
+		reaction.criteria_hospitalization = None;
+		reaction.criteria_hospitalization_null_flavor = Some("NI".into());
+		reaction.criteria_disabling = None;
+		reaction.criteria_disabling_null_flavor = Some("NI".into());
+		reaction.criteria_congenital_anomaly = None;
+		reaction.criteria_congenital_anomaly_null_flavor = Some("NI".into());
+		reaction.criteria_other_medically_important = None;
+		reaction.criteria_other_medically_important_null_flavor = Some("NI".into());
 		let xml = export_e_reactions_xml(std::slice::from_ref(&reaction))
 			.expect("reaction XML");
 		let value = xml.find("</originalText></value>").expect("reaction value");

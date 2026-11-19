@@ -6,9 +6,26 @@
   "collections": [],
   "relations": [],
   "auditChecks": [],
+  "dictionaryExclusions": [{"code": "N.1.1", "source": "dictionary/ich-e2br3.json", "reason": "No editable input exists. registry/sections/n-message-header.json records frontend_missing; transport-envelope handling must be resolved separately, not counted as an Editor test."}],
   "fields": [
     {
       "code": "N.1.2",
+      "dictionaryInputs": [
+        {
+          "code": "N.1.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_1_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.1.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.batchNumber",
       "projectionPath": "messageHeader.batch_number",
@@ -26,6 +43,22 @@
     },
     {
       "code": "N.1.3",
+      "dictionaryInputs": [
+        {
+          "code": "N.1.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_1_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.1.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.batchSenderIdentifier",
       "projectionPath": "messageHeader.batch_sender_identifier",
@@ -43,6 +76,22 @@
     },
     {
       "code": "N.1.4",
+      "dictionaryInputs": [
+        {
+          "code": "N.1.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_1_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.1.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.batchReceiverIdentifier",
       "projectionPath": "messageHeader.batch_receiver_identifier",
@@ -60,6 +109,22 @@
     },
     {
       "code": "N.2.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "N.2.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_2_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.2.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.messageNumber",
       "projectionPath": "messageHeader.message_number",
@@ -77,6 +142,22 @@
     },
     {
       "code": "N.2.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "N.2.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_2_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.2.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.messageSenderIdentifier",
       "projectionPath": "messageHeader.message_sender_identifier",
@@ -94,6 +175,22 @@
     },
     {
       "code": "N.2.r.3",
+      "dictionaryInputs": [
+        {
+          "code": "N.2.r.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_2_r_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.2.r.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.messageReceiverIdentifier",
       "projectionPath": "messageHeader.message_receiver_identifier",
@@ -111,6 +208,22 @@
     },
     {
       "code": "N.2.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "N.2.r.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_2_r_4",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.2.r.4.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.messageDate",
       "projectionPath": "messageHeader.message_date",
@@ -128,6 +241,22 @@
     },
     {
       "code": "N.1.5",
+      "dictionaryInputs": [
+        {
+          "code": "N.1.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "n::n_1_5",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.N.1.5.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "messageHeader.batchTransmissionDate",
       "projectionPath": "messageHeader.batch_transmission_date",

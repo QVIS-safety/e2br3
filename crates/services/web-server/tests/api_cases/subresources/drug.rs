@@ -8,7 +8,7 @@ async fn fda_device_replace_rolls_back_on_constraint_violation() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
 	let uri = format!("/api/cases/{case_id}/drugs/{drug_id}/devices/replace");
@@ -60,7 +60,7 @@ async fn fda_device_replace_normalizes_blank_null_flavors() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
 	let uri = format!("/api/cases/{case_id}/drugs/{drug_id}/devices/replace");
@@ -161,7 +161,7 @@ async fn dg_kr_substance_fields_create_read_and_update_independently() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
@@ -241,7 +241,7 @@ async fn dg_kr_product_fields_create_read_and_update_independently() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let create_payload = json!({
@@ -321,7 +321,7 @@ async fn test_drug_active_substance_soft_delete_restore() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
@@ -400,7 +400,7 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
@@ -556,7 +556,7 @@ async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("KR-DVC-{suffix}");
@@ -667,7 +667,7 @@ async fn test_relatedness_assessment_endpoints_ok() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;

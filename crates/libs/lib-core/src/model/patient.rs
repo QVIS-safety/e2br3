@@ -1169,10 +1169,10 @@ impl PatientIdentifierBmc {
 		filters: Option<Vec<PatientIdentifierFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PatientIdentifier>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(PatientIdentifierFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![PatientIdentifierFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1283,10 +1283,10 @@ impl MedicalHistoryEpisodeBmc {
 		filters: Option<Vec<MedicalHistoryEpisodeFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<MedicalHistoryEpisode>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(MedicalHistoryEpisodeFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![MedicalHistoryEpisodeFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1339,10 +1339,10 @@ impl PastDrugHistoryBmc {
 		filters: Option<Vec<PastDrugHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PastDrugHistory>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(PastDrugHistoryFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![PastDrugHistoryFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1590,10 +1590,10 @@ impl ReportedCauseOfDeathBmc {
 		filters: Option<Vec<ReportedCauseOfDeathFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ReportedCauseOfDeath>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(ReportedCauseOfDeathFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![ReportedCauseOfDeathFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1646,10 +1646,10 @@ impl AutopsyCauseOfDeathBmc {
 		filters: Option<Vec<AutopsyCauseOfDeathFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<AutopsyCauseOfDeath>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(AutopsyCauseOfDeathFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![AutopsyCauseOfDeathFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1702,10 +1702,10 @@ impl ParentInformationBmc {
 		filters: Option<Vec<ParentInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentInformation>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(ParentInformationFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![ParentInformationFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

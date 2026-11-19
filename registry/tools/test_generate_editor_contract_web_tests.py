@@ -1,13 +1,69 @@
 import tempfile
+import json
+import shutil
 import unittest
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import generate_editor_contract_web_tests as generator
+import editor_dictionary
 
 
 class EditorContractWebTestGeneratorTests(unittest.TestCase):
+    def test_dictionary_constraints_generate_executable_tests(self):
+        root = generator.REPO_ROOT / "registry"
+        checks = editor_dictionary.check(root)
+        self.assertEqual(381, len(checks))
+        generated = editor_dictionary.render_tests(root)
+        self.assertEqual(len(checks), generated.count("dictionary_test!("))
+        self.assertIn('"DM", "D.3", "D.3", "max_length", input_contracts::generated::d::d_3', generated)
+        self.assertIn('"DM", "D.1", "FDA.D.1", "null_flavors", input_contracts::generated::d::fda_d_1', generated)
+        self.assertEqual(generated, (generator.REPO_ROOT / "crates/libs/input-contracts/tests/editor_dictionary/generated.rs").read_text())
+
+    def test_dictionary_gate_rejects_missing_stale_and_unexecutable_bindings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "registry"
+            for directory in ("dictionary", "editor-contracts"):
+                shutil.copytree(generator.REPO_ROOT / "registry" / directory, root / directory)
+            catalog = root.parent / "crates/libs/validator/rules.json"
+            catalog.parent.mkdir(parents=True)
+            shutil.copyfile(generator.REPO_ROOT / "crates/libs/validator/rules.json", catalog)
+            path = root / "editor-contracts/dm.json"
+            original = path.read_text()
+            mutations = {
+                "missing.*dictionary inputs": lambda b: b.clear(),
+                "property coverage": lambda b: b[0]["checks"].pop("max_length"),
+                "stale dictionary value": lambda b: b[0]["checks"]["max_length"].update(dictionaryValue="7"),
+                "stale dictionary guidance": lambda b: b[0].update(guidance="unsupported guidance"),
+                "wrong input function": lambda b: b[0].update(function="d::d_4"),
+                "positive and negative": lambda b: b[0]["checks"]["max_length"].update(invalid=[]),
+                "length boundary": lambda b: b[0]["checks"]["max_length"]["valid"].pop(),
+                "unknown validator rules": lambda b: b[0]["checks"]["max_length"].update(owner="validator", reason="test", ruleCodes=["NONEXISTENT"]),
+                "unresolved requirement": lambda b: b[0]["checks"]["max_length"].update(owner="unresolved", reason=""),
+            }
+            for error, mutate in mutations.items():
+                with self.subTest(error=error):
+                    document = json.loads(original)
+                    field = next(f for f in document["fields"] if f["code"] == "D.3")
+                    mutate(field["dictionaryInputs"])
+                    path.write_text(json.dumps(document))
+                    with self.assertRaisesRegex(ValueError, error):
+                        editor_dictionary.check(root)
+            path.write_text(original)
+            dictionary_path = root / "dictionary/ich-e2br3.json"
+            dictionary = json.loads(dictionary_path.read_text())
+            dictionary["entries"].append({"code": "D.NEW", "kind": "element"})
+            dictionary_path.write_text(json.dumps(dictionary))
+            with self.assertRaisesRegex(ValueError, "lack editor disposition"):
+                editor_dictionary.check(root)
+
+    def test_dictionary_length_uses_r3_and_rejects_unknown_formats(self):
+        self.assertEqual(6, editor_dictionary.length_limit("6"))
+        self.assertEqual(10, editor_dictionary.length_limit("4* E2B(R2)\n10* E2B(R3)"))
+        with self.assertRaisesRegex(ValueError, "unsupported dictionary length"):
+            editor_dictionary.length_limit("unknown")
+
     def test_generates_one_named_macro_per_active_registry_field(self):
         repo = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as tmp:

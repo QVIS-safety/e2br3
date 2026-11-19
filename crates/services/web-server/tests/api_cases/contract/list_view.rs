@@ -15,7 +15,7 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-LIST-{suffix}");
@@ -272,7 +272,7 @@ async fn test_case_list_view_handles_case_without_safety_report_row() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = Uuid::new_v4();
 
 	let mut tx = mm.dbx().db().begin().await?;
@@ -318,7 +318,7 @@ async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	for index in 1..=2 {

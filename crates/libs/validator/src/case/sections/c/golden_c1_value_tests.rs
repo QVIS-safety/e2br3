@@ -1232,7 +1232,7 @@ fn allowed_value_rules_cover_c_sender_source_and_study_codes() {
 #[test]
 fn true_marker_allows_dictionary_null_flavor() {
 	let mut report = base_report();
-	report.other_case_identifiers_exist = Some(false);
+	report.other_case_identifiers_exist = None;
 	report.other_case_identifiers_exist_null_flavor = Some("NI".to_string());
 	let ctx = ctx_with(report);
 

@@ -407,7 +407,8 @@
       "allowed_value_constraint": {
         "kind": "boolean",
         "enforcement": "representation_enforced"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. true/false normally; NI only for retransmission of an R2 case whose equivalent element was absent. Requires verified import provenance, not a scalar nullable boolean. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "C.1.8.1",
@@ -428,8 +429,9 @@
       "allowed_value_constraint": {
         "kind": "format",
         "enforcement": "case_validate",
-        "format_name": "ich_identifier"
-      }
+        "format_name": "worldwide_case_id"
+      },
+      "notes": "Reviewed 2026-11-19. Original sender creates the country-company-report identifier, equal to C.1.1. Recipients preserve the received identifier unchanged; do not reject it using current country lists or a blanket format regex. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "C.1.8.2",
@@ -476,7 +478,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "C.1.9.1.r",
@@ -1701,10 +1704,18 @@
       "fda_error_id": "R0030",
       "condition_text": "Optional, but required if D.2.2a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary",
-        "enforcement": "case_validate",
-        "vocabulary_scope": "time"
-      }
+        "kind": "code_set",
+        "values": [
+          "a",
+          "mo",
+          "wk",
+          "d",
+          "h",
+          "10.a"
+        ],
+        "enforcement": "case_validate"
+      },
+      "notes": "Reviewed 2026-11-19. Age units are exactly a, mo, wk, d, h, 10.a. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "D.2.2.1a",
@@ -1751,10 +1762,16 @@
       "fda_error_id": "R0032",
       "condition_text": "Optional, but required if D.2.2.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary",
-        "enforcement": "case_validate",
-        "vocabulary_scope": "gestation"
-      }
+        "kind": "code_set",
+        "values": [
+          "mo",
+          "wk",
+          "d",
+          "{trimester}"
+        ],
+        "enforcement": "case_validate"
+      },
+      "notes": "Reviewed 2026-11-19. Gestation units are mo, wk, d, {trimester}; use the lowercase code from CL26 v2.2. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "D.2.3",
@@ -2173,7 +2190,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "mpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "D.8.r.3a",
@@ -2214,7 +2232,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "phpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "D.8.r.4",
@@ -2696,10 +2715,14 @@
       "fda_error_id": "R0050",
       "condition_text": "Optional, but required if D.10.2.2a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary",
-        "enforcement": "case_validate",
-        "vocabulary_scope": "time"
-      }
+        "kind": "code_set",
+        "values": [
+          "a",
+          "10.a"
+        ],
+        "enforcement": "case_validate"
+      },
+      "notes": "Reviewed 2026-11-19. Parent age units are exactly a and 10.a, not the whole time vocabulary. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "D.10.3",
@@ -3046,7 +3069,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "mpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "D.10.8.r.3a",
@@ -3087,7 +3111,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "phpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "D.10.8.r.4",
@@ -3409,7 +3434,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2b",
@@ -3431,7 +3457,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2c",
@@ -3453,7 +3480,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2d",
@@ -3475,7 +3503,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2e",
@@ -3497,7 +3526,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2f",
@@ -3519,7 +3549,8 @@
       "allowed_value_constraint": {
         "kind": "true_marker",
         "enforcement": "case_validate"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.4",
@@ -3618,7 +3649,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "time"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.7",
@@ -4069,7 +4101,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "mpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.2.1.2a",
@@ -4110,7 +4143,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "phpid"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.2.2",
@@ -4198,7 +4232,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "identifier_profile": "substance_id"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Substance ID follows the recipient's system and version; FDA uses SRS UNII. Length/control-character checks do not prove membership. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.2.3.r.3a",
@@ -4405,7 +4440,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "dose"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Use the dose-unit subset of ICH CL25 v2.3, including {DF}; do not accept every strength unit or every syntactically valid UCUM expression. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.4.r.2",
@@ -4546,7 +4582,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "time"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.4.r.7",
@@ -4625,10 +4662,11 @@
       "hl7_component": "codeSystemVersion=Character String (ST)",
       "vocabulary": "EDQM",
       "allowed_value_constraint": {
-        "kind": "vocabulary",
+        "kind": "format",
         "enforcement": "case_validate",
-        "vocabulary_scope": "dose_form"
-      }
+        "format_name": "terminology_version"
+      },
+      "notes": "Reviewed 2026-11-19. This is the terminology VERSION, not a dose-form TermID. Validate it against the selected terminology system/release, not the list of dose-form codes. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.4.r.9.2b",
@@ -4651,7 +4689,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "dose_form"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.4.r.10.1",
@@ -4718,7 +4757,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "route"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.4.r.11.1",
@@ -4786,7 +4826,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "route"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     },
     {
       "code": "G.k.5a",
@@ -4836,7 +4877,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "dose"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Use the dose-unit subset of ICH CL25 v2.3, including {DF}; do not accept every strength unit or every syntactically valid UCUM expression. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.6a",
@@ -4883,10 +4925,16 @@
       "fda_error_id": "R0082",
       "condition_text": "Optional, but required if G.k.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary",
-        "enforcement": "case_validate",
-        "vocabulary_scope": "gestation"
-      }
+        "kind": "code_set",
+        "values": [
+          "mo",
+          "wk",
+          "d",
+          "{trimester}"
+        ],
+        "enforcement": "case_validate"
+      },
+      "notes": "Reviewed 2026-11-19. Gestation units are mo, wk, d, {trimester}; use the lowercase code from CL26 v2.2. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.7.r",
@@ -5134,7 +5182,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "time"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.9.i.3.2a",
@@ -5183,7 +5232,8 @@
         "kind": "vocabulary",
         "enforcement": "case_validate",
         "vocabulary_scope": "time"
-      }
+      },
+      "notes": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "G.k.9.i.4",

@@ -11,10 +11,8 @@ pub fn b64u_decode(b64u: &str) -> Result<Vec<u8>> {
 }
 
 pub fn b64u_decode_to_string(b64u: &str) -> Result<String> {
-	b64u_decode(b64u)
-		.ok()
-		.and_then(|r| String::from_utf8(r).ok())
-		.ok_or(Error::FailToB64uDecode)
+	let decoded = b64u_decode(b64u)?;
+	String::from_utf8(decoded).map_err(|_| Error::FailToB64uDecode)
 }
 
 // region:    --- Error

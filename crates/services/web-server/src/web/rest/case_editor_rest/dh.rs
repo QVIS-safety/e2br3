@@ -258,9 +258,10 @@ async fn editor_dh_create_extras(
 		("patient_id", json!(patient_id)),
 		(
 			"sequence_number",
-			json!(
-				i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)
-			),
+			json!(i32_field(row, &["sequenceNumber", "sequence_number"])?
+				.ok_or_else(|| lib_rest_core::Error::BadRequest {
+					message: "sequenceNumber is required".into()
+				})?),
 		),
 	])
 }

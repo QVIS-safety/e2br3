@@ -1,0 +1,8 @@
+disallowed-methods = [
+  { path = "std::option::Option::unwrap_or", reason = "reject missing production input with ok_or(...)?" },
+  { path = "std::option::Option::unwrap_or_else", reason = "reject missing production input with ok_or_else(...)?" },
+  { path = "std::option::Option::unwrap_or_default", reason = "reject missing production input explicitly" },
+  { path = "std::result::Result::unwrap_or", reason = "propagate production errors with ?" },
+  { path = "std::result::Result::unwrap_or_else", reason = "propagate production errors with ?" },
+  { path = "std::result::Result::unwrap_or_default", reason = "propagate production errors with ?" },
+]

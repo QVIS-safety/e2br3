@@ -210,7 +210,7 @@ async fn presave_read_only_and_cross_org_roles_cannot_mutate_any_resource(
 	.await?;
 	let manager_token = generate_web_token(&manager.email, manager.token_salt)?;
 	let manager_cookie = cookie_header(&manager_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let fixture = create_fixture(&app, &owner_cookie).await?;
 
 	let read_uris = [

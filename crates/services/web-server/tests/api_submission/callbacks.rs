@@ -11,7 +11,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
@@ -114,7 +114,7 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("POST")
@@ -249,7 +249,7 @@ async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "mfds").await?;
@@ -333,7 +333,7 @@ async fn test_internal_ack_callback_duplicate_payload_is_idempotent() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
@@ -409,7 +409,7 @@ async fn test_internal_ack_callback_rejects_malformed_payload() -> Result<()> {
 	clear_esg_env();
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	let mm = init_test_mm().await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("POST")

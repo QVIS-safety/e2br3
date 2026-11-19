@@ -1,4 +1,4 @@
-use crate::XmlValidationError;
+use crate::{Error, Result, XmlValidationError};
 use lib_core::regulatory::{
 	RegulatoryAuthority, FDA_BATCH_RECEIVER_POSTMARKET,
 	FDA_BATCH_RECEIVER_PREMARKET, FDA_MSG_RECEIVER_CBER_IND, FDA_MSG_RECEIVER_CDER,
@@ -11,16 +11,17 @@ pub(in crate::validation::export_rules) fn run(
 	xpath: &mut Context,
 	authority: RegulatoryAuthority,
 	errors: &mut Vec<XmlValidationError>,
-) {
-	common(xpath, errors);
+) -> Result<()> {
+	common(xpath, errors)?;
 	match authority {
-		RegulatoryAuthority::Fda => fda(xpath, errors),
-		RegulatoryAuthority::Mfds => mfds(xpath, errors),
+		RegulatoryAuthority::Fda => fda(xpath, errors)?,
+		RegulatoryAuthority::Mfds => mfds(xpath, errors)?,
 		RegulatoryAuthority::Ich => {}
 	}
+	Ok(())
 }
 
-fn common(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
+fn common(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) -> Result<()> {
 	for (code, expression, message) in [
 		(
 			"ICH.N.1.2.REQUIRED",
@@ -63,11 +64,15 @@ fn common(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
 			"N.2.r.4 must be identical to C.1.2.",
 		),
 	] {
-		super::super::reject(xpath, errors, code, expression, message);
+		super::super::reject(xpath, errors, code, expression, message)?;
 	}
 	let future_batch_date = xpath
 		.findvalues("/hl7:MCCI_IN200100UV01/hl7:creationTime/@value", None)
-		.expect("static message-header XPath must compile")
+		.map_err(|_| Error::InvalidXml {
+			message: "Failed to evaluate batch creation time XPath".to_string(),
+			line: None,
+			column: None,
+		})?
 		.into_iter()
 		.filter_map(|value| lib_core::serde::flex_date::e2b_datetime_date(&value))
 		.any(|date| date > time::OffsetDateTime::now_utc().date());
@@ -77,25 +82,26 @@ fn common(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
 		"ICH.N.1.5.FUTURE_DATE.FORBIDDEN",
 		"[N.1.5] Date of batch transmission must not be later than today.",
 	);
+	Ok(())
 }
 
-fn fda(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
+fn fda(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) -> Result<()> {
 	let batch = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	let message = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	let batch_sender = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:sender/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	let message_sender = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	let premarket = matches!(
 		message.as_deref(),
 		Some(
@@ -170,17 +176,18 @@ fn fda(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
 		"FDA.R0100",
 		"FDA N.2.r.2 must match N.1.3.",
 	);
+	Ok(())
 }
 
-fn mfds(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
+fn mfds(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) -> Result<()> {
 	let batch = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	let message = value(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
-	);
+	)?;
 	push_if(
 		errors,
 		batch
@@ -203,15 +210,20 @@ fn mfds(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) {
 		"MFDS.N.ROUTE.PAIR",
 		"MFDS N.1.4 and N.2.r.3 must use the same receiver identifier.",
 	);
+	Ok(())
 }
 
-fn value(xpath: &mut Context, expression: &str) -> Option<String> {
-	xpath
+fn value(xpath: &mut Context, expression: &str) -> Result<Option<String>> {
+	Ok(xpath
 		.findvalues(expression, None)
-		.expect("static message-header XPath must compile")
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {expression}"),
+			line: None,
+			column: None,
+		})?
 		.into_iter()
 		.map(|value| value.trim().to_string())
-		.find(|value| !value.is_empty())
+		.find(|value| !value.is_empty()))
 }
 
 fn push_if(

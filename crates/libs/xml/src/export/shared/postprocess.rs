@@ -549,11 +549,7 @@ fn apply_section_d(
 	if let Some(v) = patient.concomitant_therapy {
 		ensure_patient_history_organizer(xpath, doc, parser)?;
 		let therapy_xpath = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='11']]/hl7:value";
-		if xpath
-			.findnodes(therapy_xpath, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		if !xpath_has_nodes(xpath, therapy_xpath)? {
 			append_fragment_child(
 				doc,
 				parser,
@@ -633,11 +629,7 @@ fn apply_section_d(
 		}
 		if let Some(v) = parent.sex.as_deref() {
 			let gender_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:associatedPerson/hl7:administrativeGenderCode";
-			if xpath
-				.findnodes(gender_xpath, None)
-				.map(|nodes| nodes.is_empty())
-				.unwrap_or(true)
-			{
+			if !xpath_has_nodes(xpath, gender_xpath)? {
 				append_fragment_child(
 					doc,
 					parser,
@@ -650,11 +642,7 @@ fn apply_section_d(
 			remove_attr_first(xpath, gender_xpath, "nullFlavor");
 		} else if let Some(null_flavor) = parent.sex_null_flavor.as_deref() {
 			let gender_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:associatedPerson/hl7:administrativeGenderCode";
-			if xpath
-				.findnodes(gender_xpath, None)
-				.map(|nodes| nodes.is_empty())
-				.unwrap_or(true)
-			{
+			if !xpath_has_nodes(xpath, gender_xpath)? {
 				append_fragment_child(
 					doc,
 					parser,
@@ -693,11 +681,7 @@ fn apply_section_d(
 		}
 		if let Some(v) = parent.weight_kg.as_ref() {
 			let weight_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:observation[hl7:code[@code='7']]/hl7:value";
-			if xpath
-				.findnodes(weight_xpath, None)
-				.map(|nodes| nodes.is_empty())
-				.unwrap_or(true)
-			{
+			if !xpath_has_nodes(xpath, weight_xpath)? {
 				append_fragment_child(
 					doc,
 					parser,
@@ -711,11 +695,7 @@ fn apply_section_d(
 		}
 		if let Some(v) = parent.height_cm.as_ref() {
 			let height_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:observation[hl7:code[@code='17']]/hl7:value";
-			if xpath
-				.findnodes(height_xpath, None)
-				.map(|nodes| nodes.is_empty())
-				.unwrap_or(true)
-			{
+			if !xpath_has_nodes(xpath, height_xpath)? {
 				append_fragment_child(
 					doc,
 					parser,
@@ -729,11 +709,7 @@ fn apply_section_d(
 		}
 		if parent.parent_age.is_some() || parent.parent_age_unit.is_some() {
 			let age_value_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:observation[hl7:code[@code='3']]/hl7:value";
-			if xpath
-				.findnodes(age_value_xpath, None)
-				.map(|nodes| nodes.is_empty())
-				.unwrap_or(true)
-			{
+			if !xpath_has_nodes(xpath, age_value_xpath)? {
 				append_fragment_child(
 					doc,
 					parser,
@@ -1048,7 +1024,10 @@ fn write_d_10_7_1_r_3(value: &ParentMedicalHistory) -> String {
 	if let Some(null_flavor) = value.continuing_null_flavor.as_deref() {
 		return format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></inboundRelationship>", xml_escape(null_flavor));
 	}
-	value.continuing.map(|v| format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>", if v { "true" } else { "false" })).unwrap_or_default()
+	match value.continuing {
+		Some(value) => format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>", if value { "true" } else { "false" }),
+		None => String::new(),
+	}
 }
 
 /// e2b:D.10.7.1.r.4
@@ -1060,7 +1039,10 @@ fn write_d_10_7_1_r_4(
 
 /// e2b:D.10.7.1.r.5
 fn write_d_10_7_1_r_5(value: &ParentMedicalHistory) -> String {
-	value.comments.as_deref().map(|v| format!("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\">{}</value></observation></outboundRelationship2>", xml_escape(v))).unwrap_or_default()
+	match value.comments.as_deref() {
+		Some(value) => format!("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\">{}</value></observation></outboundRelationship2>", xml_escape(value)),
+		None => String::new(),
+	}
 }
 
 fn apply_d_10_8_parent_past_drugs(
@@ -1197,7 +1179,7 @@ fn write_d_10_8_r_parent_past_drug(
 	};
 
 	let mut identifiers = String::new();
-	if write_d_10_8_r_2b(drug).is_some() || write_d_10_8_r_2a(drug).is_some() {
+	if let Some(id) = write_d_10_8_r_2b(drug) {
 		let mut code_attrs = String::from(
 			"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
 		);
@@ -1209,10 +1191,10 @@ fn write_d_10_8_r_parent_past_drug(
 		}
 		identifiers.push_str(&format!(
 			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-			xml_escape(write_d_10_8_r_2b(drug).unwrap_or(""))
+			xml_escape(id)
 		));
 	}
-	if write_d_10_8_r_3b(drug).is_some() || write_d_10_8_r_3a(drug).is_some() {
+	if let Some(id) = write_d_10_8_r_3b(drug) {
 		let mut code_attrs = String::from(
 			"code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
 		);
@@ -1224,7 +1206,7 @@ fn write_d_10_8_r_parent_past_drug(
 		}
 		identifiers.push_str(&format!(
 			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-			xml_escape(write_d_10_8_r_3b(drug).unwrap_or(""))
+			xml_escape(id)
 		));
 	}
 
@@ -1300,7 +1282,10 @@ fn write_d_7_1_r_3(value: &MedicalHistoryEpisode) -> String {
 	if let Some(null_flavor) = value.continuing_null_flavor.as_deref() {
 		return format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></inboundRelationship>", xml_escape(null_flavor));
 	}
-	value.continuing.map(|v| format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>", if v { "true" } else { "false" })).unwrap_or_default()
+	match value.continuing {
+		Some(value) => format!("<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>", if value { "true" } else { "false" }),
+		None => String::new(),
+	}
 }
 
 /// e2b:D.7.1.r.4
@@ -1313,12 +1298,18 @@ fn write_d_7_1_r_4(value: &MedicalHistoryEpisode) -> (Option<&str>, Option<&str>
 
 /// e2b:D.7.1.r.5
 fn write_d_7_1_r_5(value: &MedicalHistoryEpisode) -> String {
-	value.comments.as_deref().map(|v| format!("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\">{}</value></observation></outboundRelationship2>", xml_escape(v))).unwrap_or_default()
+	match value.comments.as_deref() {
+		Some(value) => format!("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\">{}</value></observation></outboundRelationship2>", xml_escape(value)),
+		None => String::new(),
+	}
 }
 
 /// e2b:D.7.1.r.6
 fn write_d_7_1_r_6(value: &MedicalHistoryEpisode) -> String {
-	value.family_history.map(|v| format!("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"38\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></outboundRelationship2>", if v { "true" } else { "false" })).unwrap_or_default()
+	match value.family_history {
+		Some(value) => format!("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"38\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></outboundRelationship2>", if value { "true" } else { "false" }),
+		None => String::new(),
+	}
 }
 
 fn apply_d_7_medical_history(
@@ -1403,10 +1394,10 @@ fn write_d_8_r_2b(value: &PastDrugHistory) -> Option<&str> {
 }
 
 fn write_d_8_fda_mpid_code_system(value: &PastDrugHistory) -> &str {
-	value
-		.mpid_source_code_system
-		.as_deref()
-		.unwrap_or(FDA_MPID_CODE_SYSTEM)
+	match value.mpid_source_code_system.as_deref() {
+		Some(code_system) => code_system,
+		None => FDA_MPID_CODE_SYSTEM,
+	}
 }
 
 fn write_d_8_fda_mpid_code_system_version(value: &PastDrugHistory) -> Option<&str> {
@@ -1529,8 +1520,11 @@ fn apply_d_8_past_drugs(
 				String::new()
 			};
 		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
-			&& (write_d_8_r_2b(&drug).is_some() || write_d_8_r_2a(&drug).is_some())
+			&& write_d_8_r_2b(&drug).is_some()
 		{
+			let Some(id) = write_d_8_r_2b(&drug) else {
+				continue;
+			};
 			let mut code_attrs = String::from(
 				"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
 			);
@@ -1542,10 +1536,10 @@ fn apply_d_8_past_drugs(
 			}
 			identifiers.push_str(&format!(
 				"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-				xml_escape(write_d_8_r_2b(&drug).unwrap_or(""))
+				xml_escape(id)
 			));
 		}
-		if write_d_8_r_3b(&drug).is_some() || write_d_8_r_3a(&drug).is_some() {
+		if let Some(id) = write_d_8_r_3b(&drug) {
 			let mut code_attrs = String::from(
 				"code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
 			);
@@ -1557,7 +1551,7 @@ fn apply_d_8_past_drugs(
 			}
 			identifiers.push_str(&format!(
 				"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-				xml_escape(write_d_8_r_3b(&drug).unwrap_or(""))
+				xml_escape(id)
 			));
 		}
 
@@ -1698,11 +1692,7 @@ fn apply_d_9_1_date_of_death_null_flavor(
 		return Ok(());
 	}
 	if let Some(null_flavor) = death.date_of_death_null_flavor.as_deref() {
-		if xpath
-			.findnodes(deceased_time, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+			if !xpath_has_nodes(xpath, deceased_time)? {
 			append_fragment_child(
 				doc,
 				parser,

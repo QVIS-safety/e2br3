@@ -20,11 +20,11 @@ pub struct Dbx {
 }
 
 impl Dbx {
-	pub fn new(db_pool: Db) -> Result<Self> {
-		Ok(Dbx {
+	pub fn new(db_pool: Db) -> Self {
+		Dbx {
 			db_pool,
 			txn_state: Arc::new(Mutex::new(TxnState::Idle)),
-		})
+		}
 	}
 }
 

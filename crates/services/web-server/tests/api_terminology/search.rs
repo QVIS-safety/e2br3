@@ -7,7 +7,7 @@ async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for uri in [
 		"/api/terminology/meddra?q=test&limit=5",
@@ -44,7 +44,7 @@ async fn test_mfds_product_substances_returns_active_explicit_link() -> Result<(
 	seed_active_terminology_rows(&mm).await?;
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/terminology/mfds-products/9000000001/substances")
@@ -66,7 +66,7 @@ async fn test_sponsor_admin_receives_active_sender_type_code_list() -> Result<()
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -98,7 +98,7 @@ async fn test_sponsor_admin_searches_only_active_mfds_products_by_code_or_name(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for (query, expected_count) in [
 		("9000000001", 1),
@@ -132,7 +132,7 @@ async fn test_sponsor_admin_can_search_active_meddra_and_whodrug_terms() -> Resu
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -188,7 +188,7 @@ async fn terminology_reference_searches_enforce_boundaries_filter_and_order(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = get_terminology(
 		&app,

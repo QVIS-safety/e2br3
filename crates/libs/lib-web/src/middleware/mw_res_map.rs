@@ -178,14 +178,23 @@ fn map_rest_error_to_client(
 			ClientError::SERVICE_ERROR,
 			None,
 		),
-		lib_rest_core::Error::ConstraintViolation(detail) => (
-			StatusCode::UNPROCESSABLE_ENTITY,
-			ClientError::CONSTRAINT_VIOLATION,
-			Some(
-				to_value(detail)
-					.expect("constraint violation detail must serialize"),
-			),
-		),
+		lib_rest_core::Error::ConstraintViolation(detail) => {
+			match to_value(detail) {
+				Ok(value) => (
+					StatusCode::UNPROCESSABLE_ENTITY,
+					ClientError::CONSTRAINT_VIOLATION,
+					Some(value),
+				),
+				Err(error) => {
+					tracing::error!(%error, "failed to serialize constraint violation");
+					(
+						StatusCode::INTERNAL_SERVER_ERROR,
+						ClientError::SERVICE_ERROR,
+						None,
+					)
+				}
+			}
+		}
 		lib_rest_core::Error::Xml(_) => match error.xml_client_classification() {
 			Some(lib_rest_core::XmlClientClassification::InvalidInput(message)) => (
 				StatusCode::BAD_REQUEST,
@@ -220,7 +229,10 @@ pub async fn mw_response_map(
 	policy_version: Option<Extension<RbacPolicyVersion>>,
 	res: Response,
 ) -> Response {
-	let ctx = ctx.map(|ctx| ctx.0).ok();
+	let ctx = match ctx {
+		Ok(ctx) => Some(ctx.0),
+		Err(_) => None,
+	};
 
 	debug!("{:<12} - mw_response_map", "RES_MAPPER");
 	let uuid = req_stamp.uuid;
@@ -262,7 +274,13 @@ pub async fn mw_response_map(
 		client_status_error
 			.as_ref()
 			.map(|(status_code, client_error)| {
-				let client_error = to_value(client_error).ok();
+				let client_error = match to_value(client_error) {
+					Ok(value) => Some(value),
+					Err(error) => {
+						tracing::error!(%error, "failed to serialize client error");
+						None
+					}
+				};
 				let message = client_error.as_ref().and_then(|v| v.get("message"));
 				let mut detail = debug_detail
 					.clone()
@@ -273,10 +291,13 @@ pub async fn mw_response_map(
 				if message.and_then(|value| value.as_str())
 					== Some("PERMISSION_DENIED")
 				{
-					let mut permission_detail = detail
+					let mut permission_detail = match detail
 						.take()
 						.and_then(|value| value.as_object().cloned())
-						.unwrap_or_default();
+					{
+						Some(detail) => detail,
+						None => serde_json::Map::new(),
+					};
 					if let Some(version) = policy_version_value {
 						permission_detail
 							.insert("policyVersion".to_string(), json!(version));
@@ -301,10 +322,10 @@ pub async fn mw_response_map(
 			});
 
 	// -- Build and log the server log line.
-	let response_status = client_status_error
-		.as_ref()
-		.map(|(status, _)| *status)
-		.unwrap_or_else(|| res.status());
+	let response_status = match client_status_error.as_ref() {
+		Some((status, _)) => *status,
+		None => res.status(),
+	};
 	let client_error = client_status_error.unzip().1;
 
 	if let Err(err) = log_request(
@@ -324,7 +345,10 @@ pub async fn mw_response_map(
 
 	debug!("\n");
 
-	let mut response = error_response.unwrap_or(res);
+	let mut response = match error_response {
+		Some(response) => response,
+		None => res,
+	};
 	if let Ok(value) = HeaderValue::from_str(&uuid.to_string()) {
 		response.headers_mut().insert("x-request-id", value);
 	}

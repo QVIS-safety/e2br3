@@ -12,7 +12,7 @@ async fn test_admin_can_update_user() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"active": false
@@ -36,7 +36,7 @@ async fn test_admin_user_update_rejects_blank_name_and_clears_start_date(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let blank_name = Request::builder()
 		.method("PUT")
@@ -90,7 +90,7 @@ async fn test_update_user_rejects_overlong_username_and_email() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for (payload, expected_detail) in [
 		(

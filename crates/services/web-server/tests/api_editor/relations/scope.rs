@@ -64,7 +64,7 @@ pub(crate) async fn isolates_study_children_and_rejects_foreign_ids(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let first_case =
 		create_case_for_editor(&app, &cookie, "SI-ISOLATION-FIRST", &["fda"])
 			.await?;
@@ -273,7 +273,7 @@ pub(crate) async fn rejects_foreign_reporter_rows_without_mutation(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let target_case =
 		create_case_for_editor(&app, &cookie, "RP-SCOPE-TARGET", &["ich"]).await?;
 	let foreign_case =
@@ -368,7 +368,7 @@ pub(crate) async fn rejects_foreign_patient_rows_without_mutation(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let target_case =
 		create_case_for_editor(&app, &cookie, "DM-SCOPE-TARGET", &["ich"]).await?;
 	let foreign_case =
@@ -671,7 +671,7 @@ pub(crate) async fn rejects_foreign_sender_without_mutation(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let target_case =
 		create_case_for_editor(&app, &cookie, "SD-SCOPE-TARGET", &["ich"]).await?;
 	let foreign_case =
@@ -744,7 +744,7 @@ pub(crate) async fn rejects_mixed_foreign_narrative_children_atomically(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let target_case =
 		create_case_for_editor(&app, &cookie, "NR-MIXED-TARGET", &["ich"]).await?;
 	let foreign_case =
@@ -829,7 +829,7 @@ pub(crate) async fn rejects_mixed_foreign_drug_children_atomically(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let target_case =
 		create_case_for_editor(&app, &cookie, "DG-MIXED-TARGET", &["ich"]).await?;
 	let foreign_case =

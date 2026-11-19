@@ -9,7 +9,7 @@ async fn test_audit_trail_case_crud() -> Result<()> {
 	let admin_id = seed.admin.id;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_body = json!({
 		"data": {
 			"safetyReportIdentification": {
@@ -97,7 +97,7 @@ async fn long_hangul_narrative_update_preserves_jsonb_and_audit_contracts(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let old_narrative = "가".repeat(100_000);
 	let new_narrative = "나".repeat(100_000);
 

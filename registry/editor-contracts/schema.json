@@ -6,6 +6,19 @@
   "properties": {
     "pageId": { "type": "string" },
     "registryFile": { "type": "string" },
+    "dictionaryExclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "source", "reason"],
+        "properties": {
+          "code": { "const": "N.1.1" },
+          "source": { "const": "dictionary/ich-e2br3.json" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "fieldChecks": {
       "type": "array",
       "items": {
@@ -80,6 +93,10 @@
         "additionalProperties": false,
         "properties": {
           "code": { "type": "string" },
+          "dictionaryInputs": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/dictionaryInput" }
+          },
           "authority": { "enum": ["ICH", "FDA", "MFDS"] },
           "frontendPath": { "type": "string" },
           "payloadPath": { "type": "string", "minLength": 1 },
@@ -301,6 +318,64 @@
     }
   ],
   "$defs": {
+    "dictionaryInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "source", "checks"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "pattern": "^dictionary/.+\\.json$" },
+        "function": { "type": "string", "pattern": "^[a-z]::[a-z0-9_]+$" },
+        "guidance": { "type": "string", "minLength": 1 },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_length": { "$ref": "#/$defs/dictionaryCheck" },
+            "allowed_value_constraint": { "$ref": "#/$defs/dictionaryCheck" },
+            "null_flavors": { "$ref": "#/$defs/dictionaryCheck" }
+          }
+        }
+      }
+    },
+    "dictionaryCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dictionaryValue", "owner"],
+      "properties": {
+        "dictionaryValue": {},
+        "owner": { "enum": ["input-contracts", "validator", "unresolved"] },
+        "ruleCode": { "type": "string", "minLength": 1 },
+        "ruleCodes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "reason": { "type": "string", "minLength": 1 },
+        "valid": { "$ref": "#/$defs/dictionaryBoundaries" },
+        "invalid": { "$ref": "#/$defs/dictionaryBoundaries" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "owner": { "const": "input-contracts" } } },
+          "then": { "required": ["ruleCode", "valid", "invalid"] },
+          "else": { "required": ["reason"] }
+        },
+        {
+          "if": { "properties": { "owner": { "const": "validator" } } },
+          "then": { "required": ["ruleCodes"] }
+        }
+      ]
+    },
+    "dictionaryBoundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "nullFlavor"],
+        "properties": {
+          "value": {},
+          "nullFlavor": { "type": ["string", "null"] }
+        }
+      }
+    },
     "clearOutcome": {
       "oneOf": [
         {

@@ -118,7 +118,10 @@ pub fn validate_e2b_xml(
 	xml: &[u8],
 	config: Option<XmlValidatorConfig>,
 ) -> Result<XmlValidationReport> {
-	let config = config.unwrap_or_default();
+	let config = match config {
+		Some(config) => config,
+		None => XmlValidatorConfig::default(),
+	};
 	let mut report = validate_e2b_xml_structure(xml, &config)?;
 	if report.errors.is_empty() {
 		if let Some(authority) = config.authority {
@@ -162,7 +165,10 @@ pub fn validate_e2b_xml_for_import(
 	xml: &[u8],
 	config: Option<XmlValidatorConfig>,
 ) -> Result<XmlValidationReport> {
-	let config = config.unwrap_or_default();
+	let config = match config {
+		Some(config) => config,
+		None => XmlValidatorConfig::default(),
+	};
 	let mut report = validate_e2b_xml_structure(xml, &config)?;
 	if has_mfds_causality_extension(xml) {
 		// This recognized MFDS extension is valid inbound data, not an error.
@@ -193,7 +199,10 @@ pub fn validate_e2b_xml_basic(
 	xml: &[u8],
 	config: Option<XmlValidatorConfig>,
 ) -> Result<XmlValidationReport> {
-	let config = config.unwrap_or_default();
+	let config = match config {
+		Some(config) => config,
+		None => XmlValidatorConfig::default(),
+	};
 	if xml.len() > config.max_bytes {
 		return Ok(XmlValidationReport {
 			ok: false,
@@ -320,10 +329,10 @@ pub fn validate_e2b_xml_xsd(
 		|errors| Error::InvalidXml {
 			message: format!(
 				"XSD parse error: {}",
-				errors
-					.first()
-					.and_then(|err| err.message.as_deref())
-					.unwrap_or("unknown")
+					match errors.first().and_then(|err| err.message.as_deref()) {
+						Some(message) => message,
+						None => "unknown",
+					}
 			),
 			line: None,
 			column: None,
@@ -335,9 +344,10 @@ pub fn validate_e2b_xml_xsd(
 		Err(errors) => Ok(errors
 			.into_iter()
 			.map(|err| XmlValidationError {
-				message: err
-					.message
-					.unwrap_or_else(|| "XSD validation error".to_string()),
+					message: match err.message {
+						Some(message) => message,
+						None => "XSD validation error".to_string(),
+					},
 				code: None,
 				section: None,
 				field_path: None,

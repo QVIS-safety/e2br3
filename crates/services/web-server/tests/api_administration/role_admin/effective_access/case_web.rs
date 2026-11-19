@@ -8,7 +8,7 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -129,7 +129,7 @@ async fn test_home_workflow_read_grants_scoped_case_queue_access() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let none_id = create_empty_custom_role_with_generated_id(
 		&app,

@@ -6,13 +6,12 @@ use argon2::{
 	Algorithm, Argon2, Params, PasswordHash, PasswordHasher as _,
 	PasswordVerifier as _, Version,
 };
-use std::sync::OnceLock;
 
 pub struct Scheme02;
 
 impl Scheme for Scheme02 {
 	fn hash(&self, to_hash: &crate::pwd::ContentToHash) -> Result<String> {
-		let argon2 = get_argon2();
+		let argon2 = get_argon2()?;
 
 		let salt_b64 = SaltString::encode_b64(to_hash.salt.as_bytes())
 			.map_err(|_| Error::Salt)?;
@@ -30,7 +29,7 @@ impl Scheme for Scheme02 {
 		to_hash: &crate::pwd::ContentToHash,
 		pwd_ref: &str,
 	) -> Result<()> {
-		let argon2 = get_argon2();
+		let argon2 = get_argon2()?;
 
 		let parsed_hash_ref = PasswordHash::new(pwd_ref).map_err(|_| Error::Hash)?;
 
@@ -40,19 +39,15 @@ impl Scheme for Scheme02 {
 	}
 }
 
-fn get_argon2() -> &'static Argon2<'static> {
-	static INSTANCE: OnceLock<Argon2<'static>> = OnceLock::new();
-
-	INSTANCE.get_or_init(|| {
-		let key = &auth_config().PWD_KEY;
-		Argon2::new_with_secret(
-			key,
-			Algorithm::Argon2id, // Same as Argon2::default()
-			Version::V0x13,      // Same as Argon2::default()
-			Params::default(),
-		)
-		.unwrap() // TODO - needs to fail early
-	})
+fn get_argon2() -> Result<Argon2<'static>> {
+	let key = &auth_config().map_err(|_| Error::Key)?.PWD_KEY;
+	Argon2::new_with_secret(
+		key,
+		Algorithm::Argon2id, // Same as Argon2::default()
+		Version::V0x13,      // Same as Argon2::default()
+		Params::default(),
+	)
+	.map_err(|_| Error::Key)
 }
 
 // region:    --- Tests

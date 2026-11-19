@@ -51,7 +51,7 @@ async fn normalized_assignment_builds_one_versioned_platform_snapshot() -> Resul
 	assert_eq!(isolation.principal_id(), USER_ID);
 	assert_eq!(isolation.organization_id(), ORGANIZATION_ID);
 	assert!(isolation.requests_platform_bypass());
-	let dbx = Dbx::new(database.pool().clone())?;
+	let dbx = Dbx::new(database.pool().clone());
 	dbx.begin_txn().await?;
 	let ctx = Ctx::from_authorization_snapshot(&snapshot)?;
 	set_full_context_from_ctx_dbx(&dbx, &ctx).await?;

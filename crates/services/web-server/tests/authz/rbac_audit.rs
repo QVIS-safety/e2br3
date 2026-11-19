@@ -19,7 +19,7 @@ async fn test_custom_manager_without_admin_read_cannot_list_audit_logs() -> Resu
 {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -40,7 +40,7 @@ async fn test_admin_can_see_user_create_in_audit_logs() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let email = format!("audit-created-user-{suffix}@example.com");
 	let role_req = Request::builder()
@@ -120,7 +120,7 @@ async fn test_admin_can_see_role_create_update_delete_in_audit_logs() -> Result<
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 
 	let create_req = Request::builder()
@@ -225,7 +225,7 @@ async fn test_admin_audit_log_list_is_limited_to_own_org() -> Result<()> {
 		Some("adminpwd"),
 	)
 	.await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let admin_token = generate_web_token(&admin.email, admin.token_salt)?;
 	let req = Request::builder()
@@ -271,7 +271,7 @@ async fn test_system_admin_audit_log_list_can_cross_orgs() -> Result<()> {
 		Some("systempwd"),
 	)
 	.await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let req = Request::builder()
@@ -301,7 +301,7 @@ async fn test_system_admin_audit_log_list_can_cross_orgs() -> Result<()> {
 async fn test_user_and_viewer_cannot_list_audit_logs() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let user_token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
 	let viewer_token =
@@ -330,7 +330,7 @@ async fn test_custom_manager_without_admin_read_cannot_list_audit_logs_by_record
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -362,7 +362,7 @@ async fn test_system_admin_can_list_audit_logs_by_record() -> Result<()> {
 	)
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -384,7 +384,7 @@ async fn test_case_audit_trail_paginates_projected_rows() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_two_orgs_manager_cases(&mm).await?;
 	let token = generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let get_page = |offset| {
 		Request::builder()
@@ -448,7 +448,7 @@ async fn test_cross_org_case_audit_requires_case_scope_but_collection_keeps_desc
 		Some("systempwd"),
 	)
 	.await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let system_admin_token =
 		generate_web_token(&system_admin.email, system_admin.token_salt)?;
@@ -523,7 +523,7 @@ async fn test_system_admin_can_read_hard_deleted_case_audit_by_record() -> Resul
 	dbx.commit_txn().await?;
 
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri(format!(
@@ -555,7 +555,7 @@ async fn test_system_admin_can_read_hard_deleted_case_audit_by_record() -> Resul
 async fn test_user_and_viewer_cannot_list_audit_logs_by_record() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let user_token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
 	let viewer_token =
@@ -587,7 +587,7 @@ async fn test_admin_can_filter_user_audit_logs_by_field() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let email_update = Request::builder()
 		.method("PUT")

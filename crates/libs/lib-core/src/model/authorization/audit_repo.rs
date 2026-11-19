@@ -157,6 +157,7 @@ fn decision_fields(decision: AuditDecision) -> (&'static str, Option<&'static st
 fn denial_reason(reason: DenialReason) -> &'static str {
 	match reason {
 		DenialReason::UnknownAction => "unknown_action",
+		DenialReason::InvalidPolicyRegistry => "invalid_policy_registry",
 		DenialReason::WrongDecisionStage => "wrong_decision_stage",
 		DenialReason::WrongOperationClass => "wrong_operation_class",
 		DenialReason::MissingGrant => "missing_grant",

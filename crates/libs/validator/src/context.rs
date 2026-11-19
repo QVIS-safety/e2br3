@@ -66,18 +66,21 @@ struct EmbeddedVocabularyEntry {
 
 type SnapshotCodes = HashMap<(String, VocabularyScope), HashSet<String>>;
 
-fn embedded_snapshot_codes() -> Arc<SnapshotCodes> {
-	static CODES: OnceLock<Arc<SnapshotCodes>> = OnceLock::new();
+fn embedded_snapshot_codes() -> Result<Arc<SnapshotCodes>> {
+	static CODES: OnceLock<core::result::Result<Arc<SnapshotCodes>, String>> =
+		OnceLock::new();
 	CODES
 		.get_or_init(|| {
-			let snapshots = [include_str!(
-				"../../../../registry/vocabularies/iso639-2.json"
-			)];
+			let snapshots = [
+				include_str!("../../../../registry/vocabularies/iso639-2.json"),
+				include_str!("../../../../registry/vocabularies/ich-dose.json"),
+				include_str!("../../../../registry/vocabularies/ich-time.json"),
+			];
 			let mut codes = SnapshotCodes::new();
 			for source in snapshots {
 				let snapshot: EmbeddedVocabularySnapshot =
 					serde_json::from_str(source)
-						.expect("embedded vocabulary snapshot should parse");
+						.map_err(|error| error.to_string())?;
 				for entry in snapshot.entries {
 					for scope in entry.scopes {
 						codes
@@ -87,9 +90,13 @@ fn embedded_snapshot_codes() -> Arc<SnapshotCodes> {
 					}
 				}
 			}
-			Arc::new(codes)
+			Ok(Arc::new(codes))
 		})
-		.clone()
+		.as_ref()
+		.map(Arc::clone)
+		.map_err(|message| lib_core::model::Error::Validation {
+			message: format!("invalid embedded vocabulary snapshot: {message}"),
+		})
 }
 
 #[derive(Debug, Clone)]
@@ -102,15 +109,18 @@ pub struct VocabularyContext {
 	snapshot_codes: Arc<SnapshotCodes>,
 }
 
+#[cfg(test)]
 impl Default for VocabularyContext {
 	fn default() -> Self {
+		let snapshot_codes = embedded_snapshot_codes()
+			.expect("embedded test vocabulary snapshot should parse");
 		Self {
 			meddra_available: false,
 			meddra_versions: HashSet::new(),
 			meddra_terms: HashSet::new(),
 			whodrug_products: HashSet::new(),
 			whodrug_cas_numbers: HashSet::new(),
-			snapshot_codes: embedded_snapshot_codes(),
+			snapshot_codes,
 		}
 	}
 }
@@ -317,7 +327,14 @@ pub async fn load_base_validation_context(
 	let patient_identifiers = list_patient_identifiers(mm, patient.as_ref()).await?;
 
 	let mut validation_ctx = ValidationContext {
-		vocabulary: VocabularyContext::default(),
+		vocabulary: VocabularyContext {
+			meddra_available: false,
+			meddra_versions: HashSet::new(),
+			meddra_terms: HashSet::new(),
+			whodrug_products: HashSet::new(),
+			whodrug_cas_numbers: HashSet::new(),
+			snapshot_codes: embedded_snapshot_codes()?,
+		},
 		case,
 		safety_report,
 		message_header,
@@ -399,7 +416,7 @@ async fn load_vocabulary_context(
 	)?;
 	let meddra_available = !versions.is_empty();
 	let meddra_versions = versions.into_iter().collect::<HashSet<_>>();
-	let mut snapshot_codes = embedded_snapshot_codes();
+	let mut snapshot_codes = embedded_snapshot_codes()?;
 	Arc::make_mut(&mut snapshot_codes)
 		.entry(("ISO3166".to_string(), VocabularyScope::All))
 		.or_default()
@@ -419,10 +436,11 @@ async fn load_vocabulary_context(
 	let requested_scoped_codes = case_scoped_terminology_codes(validation_ctx);
 	for (scope, codes) in requested_scoped_codes {
 		let (dictionary, vocabulary) = match scope {
-			VocabularyScope::Time
-			| VocabularyScope::Gestation
-			| VocabularyScope::Dose
-			| VocabularyScope::Frequency => ("ich_constrained_ucum", "ICH-UCUM"),
+			// CL25/26 are pinned official sources, never widened by a generic UCUM import.
+			VocabularyScope::Time | VocabularyScope::Dose => continue,
+			VocabularyScope::Gestation | VocabularyScope::Frequency => {
+				("ich_constrained_ucum", "ICH-UCUM")
+			}
 			VocabularyScope::DoseForm | VocabularyScope::Route => ("edqm", "EDQM"),
 			VocabularyScope::All | VocabularyScope::ItemSeq => continue,
 		};

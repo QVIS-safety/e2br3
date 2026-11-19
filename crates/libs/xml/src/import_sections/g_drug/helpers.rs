@@ -68,8 +68,10 @@ fn build_xpath(xml: &[u8]) -> Result<(libxml::tree::Document, Context)> {
 }
 
 fn normalize_characteristic_code(value: Option<&str>) -> String {
-	value
-		.unwrap_or("")
+	match value {
+		Some(value) => value,
+		None => "",
+	}
 		.trim()
 		.to_ascii_uppercase()
 		.replace(['.', '_', '-'], "")
@@ -85,10 +87,10 @@ pub(crate) fn import_fda_specialized_product_category(
 	for characteristic in characteristics {
 		let normalized =
 			normalize_characteristic_code(characteristic.code.as_deref());
-		let display = characteristic
-			.code_display_name
-			.as_deref()
-			.unwrap_or("")
+		let display = match characteristic.code_display_name.as_deref() {
+			Some(display) => display,
+			None => "",
+		}
 			.trim()
 			.to_ascii_lowercase();
 		let code_value = characteristic
@@ -304,15 +306,21 @@ pub(crate) fn parse_drug_observations(
 			let (
 				administration_start_interval_value,
 				administration_start_interval_unit,
-			) = reaction_xml_id
+			) = match reaction_xml_id
 				.as_ref()
 				.and_then(|id| administration_start_map.get(id).cloned())
-				.unwrap_or((None, None));
+			{
+				Some(interval) => interval,
+				None => (None, None),
+			};
 			let (last_dose_interval_value, last_dose_interval_unit) =
-				reaction_xml_id
+				match reaction_xml_id
 					.as_ref()
 					.and_then(|id| last_dose_map.get(id).cloned())
-					.unwrap_or((None, None));
+				{
+					Some(interval) => interval,
+					None => (None, None),
+				};
 			let rechallenge_action = read_g_k_9_i_4(&mut xpath, &obs);
 			observations.push(DrugObservationImport {
 				drug_xml_id: drug_xml_id.clone(),

@@ -14,7 +14,7 @@ pub(crate) async fn child_creation_and_update_preserve_parent_identity(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let contract = crate::case_editor_contract_web::support::behavior_contract(
 		page_id,
 		"relations",
@@ -102,7 +102,7 @@ pub(crate) async fn past_drug_creation_reuses_patient_parent(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "DH-FIRST", &["ich"]).await?;
 	let dh_uri = format!("/api/cases/{case_id}/editor/pages/DH/rows");
@@ -149,7 +149,7 @@ pub(crate) async fn partial_narrative_and_children_keep_parent(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	for rows in [
 		json!({"narrative": {"senderComments": "Persist this comment"}}),
 		json!({"caseSummaryInformation": [{"languageCode": "en", "summaryText": "Persist summary"}]}),
@@ -211,7 +211,7 @@ pub(crate) async fn registration_creates_study_with_empty_name(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "DRAFT-SI", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/SI");

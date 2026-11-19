@@ -80,3 +80,31 @@ main EC2에 SSM 권한이 없으면 OIDC가 정상이어도 CD의 `aws ssm send-
 6. 운영 CD에서 `RESET_DB=1`을 제거한다.
 7. dev/main용 SSM target과 RDS/S3 환경 변수를 분리한다.
 8. 사용자 첨부파일은 현재 RDS base64 저장 구조이므로, S3까지 사용하려면 파일 메타데이터는 RDS에 저장하고 실제 파일은 S3에 저장하도록 백엔드 API와 스키마를 별도로 변경한다.
+
+
+## Strict production lint 전환 시 필요한 설정
+
+운영 Rust 대상은 CI에서 `unwrap`, `expect`, `panic!`, `todo!`,
+`unimplemented!`, `unwrap_or*`를 deny(빌드 오류)한다. 테스트의 assertion은 별도 검사한다.
+이 검사는 알려진 구문을 차단하며, 모든 형태의 의미적 fallback을 증명하지는 않는다.
+
+기존 값에 의존하지 말고 실제 배포 설정을 명시해야 한다.
+
+- 공통: `SERVICE_DB_MAX_CONNECTIONS`(양수), `SERVICE_BIND_ADDR`,
+  `SERVICE_WEB_FOLDER`, `E2BR3_ENV`, `E2BR3_COOKIE_SECURE`(HTTPS 운영은 true),
+  `E2BR3_PUBLIC_ORIGIN`(정확한 브라우저 origin), `E2BR3_APP_NAME`, `E2BR3_APP_SHORT_NAME`.
+- AS2 사용 시: `AS2_SUBMITTER_URL`, `AS2_SUBMITTER_TOKEN`,
+  `AS2_ACK_CALLBACK_URL`, `AS2_CALLBACK_TOKEN`, `AS2_SUBMITTER_TIMEOUT_SECS`(양수).
+- ESG 사용 시: `FDA_ESG_ENABLED`, `FDA_ESG_BASE_URL`,
+  `FDA_ESG_SUBMIT_PATH`, `FDA_ESG_TIMEOUT_SECS`(양수) 및 실제 서비스 인증 설정.
+- 기능 flag도 `FDA_ESG_ENABLED`, `E2BR3_STRICT_SUBMISSION_CONFIG`,
+  `SUBMISSION_RECONCILE_ENABLED`를 true/false로 명시한다.
+- reconcile 활성화 시: `SUBMISSION_RECONCILE_INTERVAL_SECS`,
+  `SUBMISSION_RECONCILE_LIMIT`(둘 다 양수), `SUBMISSION_RECONCILE_TOKEN`.
+
+API 호출부도 명시적 값을 보내야 한다. 사용자 생성은 초기 비밀번호와 scope 배열,
+권한 생성은 name/active/privileges, 신규 editor row는 sequenceNumber,
+validation은 authority, reconcile은 limit이 필요하다.
+권한 scope의 문자열 표현은 JSON 배열만 허용하며 CSV 재해석을 하지 않는다.
+누락된 입력·잘못된 저장 데이터·지원하지 않는 PDF 글자는 성공값으로 대체하지 않는다.
+이 변경만으로 실제 운영 배포 또는 전송 검증을 완료한 것은 아니다.

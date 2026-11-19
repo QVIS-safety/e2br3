@@ -7,7 +7,7 @@ async fn test_ich_export_without_required_narrative_is_rejected() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let safety_report_id = format!("INTAKE-NO-NARRATIVE-{}", Uuid::new_v4());
 	let intake_body = json!({
 		"data": intake_data(&safety_report_id, 121, "1", json!({ "authority": "ich" }))
@@ -43,7 +43,7 @@ async fn test_case_from_intake_creates_batch_number_for_export() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let safety_report_id = format!("INTAKE-BATCH-{}", Uuid::new_v4());
 	let intake_body = json!({
 		"data": intake_data(&safety_report_id, 124, "1", json!({
@@ -121,7 +121,7 @@ async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({

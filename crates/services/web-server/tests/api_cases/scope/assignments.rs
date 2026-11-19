@@ -7,7 +7,7 @@ async fn test_user_scope_assignment_rejects_cross_sender_product() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Scope Sender A", "SCOPE-A")
 			.await?;
@@ -62,7 +62,7 @@ async fn test_user_scope_empty_array_clears_existing_assignment() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave(&app, &admin_cookie, "Clear Sender", "CLEAR").await?;
 
@@ -105,7 +105,7 @@ async fn test_case_get_does_not_treat_e2b_blinded_field_as_user_scope() -> Resul
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_id =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-BLIND")
 			.await?;
@@ -171,7 +171,7 @@ async fn test_company_sponsor_admin_can_assign_sender_scope() -> Result<()> {
 	let company_token =
 		generate_web_token(&company_admin.email, company_admin.token_salt)?;
 	let company_cookie = cookie_header(&company_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id = create_sender_presave(
 		&app,
 		&company_cookie,

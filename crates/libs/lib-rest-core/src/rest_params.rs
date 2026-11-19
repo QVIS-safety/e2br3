@@ -90,19 +90,23 @@ where
 		for (key, value) in pairs {
 			if key == "filters" {
 				// Supports `filters={...}` or `filters=[...]` payloads.
-				let parsed: JsonValue =
-					serde_json::from_str(&value).unwrap_or(JsonValue::String(value));
+				let parsed: JsonValue = serde_json::from_str(&value)
+					.map_err(|err| format!("failed to parse filters JSON: {err}"))?;
 				filters_root = Some(parsed);
 				continue;
 			}
 
 			if key == "list_options.limit" || key == "list_options[limit]" {
-				list_options.limit = value.parse::<i64>().ok();
+				list_options.limit = Some(value.parse::<i64>().map_err(|err| {
+					format!("invalid list_options.limit: {err}")
+				})?);
 				has_list_options = true;
 				continue;
 			}
 			if key == "list_options.offset" || key == "list_options[offset]" {
-				list_options.offset = value.parse::<i64>().ok();
+				list_options.offset = Some(value.parse::<i64>().map_err(|err| {
+					format!("invalid list_options.offset: {err}")
+				})?);
 				has_list_options = true;
 				continue;
 			}
@@ -127,7 +131,7 @@ where
 				filters_value,
 				&tokens[1..],
 				parse_scalar_json(&value),
-			);
+			)?;
 		}
 
 		let filters = match filters_root {
@@ -197,10 +201,14 @@ fn parse_scalar_json(value: &str) -> JsonValue {
 	JsonValue::String(value.to_string())
 }
 
-fn insert_nested_json(target: &mut JsonValue, path: &[String], value: JsonValue) {
+fn insert_nested_json(
+	target: &mut JsonValue,
+	path: &[String],
+	value: JsonValue,
+) -> Result<(), String> {
 	if path.is_empty() {
 		*target = value;
-		return;
+		return Ok(());
 	}
 
 	let head = &path[0];
@@ -208,24 +216,23 @@ fn insert_nested_json(target: &mut JsonValue, path: &[String], value: JsonValue)
 		if !target.is_array() {
 			*target = JsonValue::Array(Vec::new());
 		}
-		let arr = target
-			.as_array_mut()
-			.expect("target should be array after normalization");
+		let JsonValue::Array(arr) = target else {
+			return Err("failed to construct array filter".to_string());
+		};
 		while arr.len() <= index {
 			arr.push(JsonValue::Null);
 		}
-		insert_nested_json(&mut arr[index], &path[1..], value);
-		return;
+		return insert_nested_json(&mut arr[index], &path[1..], value);
 	}
 
 	if !target.is_object() {
 		*target = JsonValue::Object(JsonMap::new());
 	}
-	let obj = target
-		.as_object_mut()
-		.expect("target should be object after normalization");
+	let JsonValue::Object(obj) = target else {
+		return Err("failed to construct object filter".to_string());
+	};
 	let entry = obj.entry(head.clone()).or_insert(JsonValue::Null);
-	insert_nested_json(entry, &path[1..], value);
+	insert_nested_json(entry, &path[1..], value)
 }
 
 pub type UuidPath = Path<Uuid>;

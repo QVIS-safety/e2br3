@@ -516,11 +516,11 @@ fn read_e_i_6b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	let Some(unit) = unit else {
 		return Ok(None);
 	};
-	Ok(Some(
-		crate::mapping::fda::e_reaction::reaction_duration_unit_from_ucum(&unit)
-			.unwrap_or(&unit)
-			.to_string(),
-	))
+	let unit = match crate::mapping::fda::e_reaction::reaction_duration_unit_from_ucum(&unit) {
+		Some(mapped) => mapped,
+		None => &unit,
+	};
+	Ok(Some(unit.to_string()))
 }
 
 /// e2b:E.i.7

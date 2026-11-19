@@ -43,7 +43,7 @@ async fn test_viewer_cannot_create_case() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"safetyReportIdentification": {
@@ -71,7 +71,7 @@ async fn test_viewer_can_list_cases() -> Result<()> {
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	create_case(&cookie_header(&admin_token.to_string()), &app, seed.org_id).await?;
 

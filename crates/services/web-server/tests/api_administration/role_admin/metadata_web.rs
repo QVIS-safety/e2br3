@@ -26,7 +26,7 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,
@@ -86,7 +86,7 @@ async fn test_user_api_role_metadata_uses_authoritative_assignment() -> Result<(
 		)
 		.await?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let (status, value) = request_json(
 		&app,
 		"GET",
@@ -112,7 +112,7 @@ async fn test_current_user_profile_exposes_custom_role_name() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let role_name = "UIV Case Operator";
 	let role_id = create_empty_custom_role(&app, &admin_cookie, role_name).await?;
 	let (_, custom_cookie) = custom_role_user(&mm, seed.org_id, &role_id).await?;
@@ -142,7 +142,7 @@ async fn test_restoring_twenty_first_active_custom_role_returns_conflict(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for index in 0..20 {
 		let (status, value) = request_json(
@@ -200,7 +200,7 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, value) = request_json(
 		&app,

@@ -45,6 +45,43 @@
   "fields": [
     {
       "code": "D.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        },
+        {
+          "code": "FDA.D.1",
+          "source": "dictionary/fda-regional.json",
+          "function": "d::fda_d_1",
+          "checks": {
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK", "NA"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}, {"value": null, "nullFlavor": "NA"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientInitials",
       "projectionPath": "patientInformation.patient_initials",
@@ -69,6 +106,29 @@
     },
     {
       "code": "D.2.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_1",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.1.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientBirthDate",
       "projectionPath": "patientInformation.birth_date",
@@ -93,6 +153,29 @@
     },
     {
       "code": "D.2.2a",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "5",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientAge.value",
       "projectionPath": "patientInformation.age_at_time_of_onset",
@@ -118,6 +201,41 @@
     },
     {
       "code": "D.2.2b",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "a",
+                  "mo",
+                  "wk",
+                  "d",
+                  "h",
+                  "10.a"
+                ],
+                "enforcement": "case_validate"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2b.ALLOWED.VALUE",
+              "valid": [{"value": "a", "nullFlavor": null}, {"value": "mo", "nullFlavor": null}, {"value": "wk", "nullFlavor": null}, {"value": "d", "nullFlavor": null}, {"value": "h", "nullFlavor": null}, {"value": "10.a", "nullFlavor": null}],
+              "invalid": [{"value": "min", "nullFlavor": null}, {"value": "mg", "nullFlavor": null}, {"value": "10a", "nullFlavor": null}, {"value": "year", "nullFlavor": null}]
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Age units are exactly a, mo, wk, d, h, 10.a. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientAge.unit",
       "projectionPath": "patientInformation.age_unit",
@@ -170,6 +288,29 @@
     },
     {
       "code": "D.2.2.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.2.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_2_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2.1a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.gestationPeriod.value",
       "projectionPath": "patientInformation.gestation_period",
@@ -195,6 +336,39 @@
     },
     {
       "code": "D.2.2.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.2.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_2_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "mo",
+                  "wk",
+                  "d",
+                  "{trimester}"
+                ],
+                "enforcement": "case_validate"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.2.1b.ALLOWED.VALUE",
+              "valid": [{"value": "mo", "nullFlavor": null}, {"value": "wk", "nullFlavor": null}, {"value": "d", "nullFlavor": null}, {"value": "{trimester}", "nullFlavor": null}],
+              "invalid": [{"value": "a", "nullFlavor": null}, {"value": "h", "nullFlavor": null}, {"value": "{Trimester}", "nullFlavor": null}, {"value": "trimester", "nullFlavor": null}, {"value": "mg", "nullFlavor": null}]
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Gestation units are mo, wk, d, {trimester}; use the lowercase code from CL26 v2.2. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.gestationPeriod.unit",
       "projectionPath": "patientInformation.gestation_period_unit",
@@ -239,6 +413,29 @@
     },
     {
       "code": "D.2.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.2.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_2_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["0", "1", "2", "3", "4", "5", "6"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.2.3.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientAgeGroup",
       "projectionPath": "patientInformation.age_group",
@@ -262,6 +459,29 @@
     },
     {
       "code": "D.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "6",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.3.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientWeight.value",
       "projectionPath": "patientInformation.weight_kg",
@@ -287,6 +507,29 @@
     },
     {
       "code": "D.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.4.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientHeight.value",
       "projectionPath": "patientInformation.height_cm",
@@ -312,6 +555,36 @@
     },
     {
       "code": "D.5",
+      "dictionaryInputs": [
+        {
+          "code": "D.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.5.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.5.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientSex",
       "projectionPath": "patientInformation.sex",
@@ -336,6 +609,29 @@
     },
     {
       "code": "D.6",
+      "dictionaryInputs": [
+        {
+          "code": "D.6",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_6",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.6.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.6.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.lastMenstrualPeriodDate",
       "projectionPath": "patientInformation.last_menstrual_period_date",
@@ -360,6 +656,29 @@
     },
     {
       "code": "D.7.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 10001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10001}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryText",
       "projectionPath": "patientInformation.medical_history_text",
@@ -384,6 +703,21 @@
     },
     {
       "code": "D.7.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_3",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "true_marker", "enforcement": "case_validate"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.D.7.3.ALLOWED.VALUE"],
+              "reason": "True-only semantics are checked by the Case business validator; draft storage uses a boolean representation."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.concomitantTherapies",
       "projectionPath": "patientInformation.concomitant_therapy",
@@ -408,6 +742,28 @@
     },
     {
       "code": "D.7.1.r.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.D.7.1.r.1a.ALLOWED.VALUE"],
+              "reason": "MedDRA version validity is owned by the Case validator; input contracts preserve draft version text and enforce its length."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].meddraVersion",
       "projectionPath": "medicalHistoryEpisodes[].meddra_version",
@@ -431,6 +787,29 @@
     },
     {
       "code": "D.7.1.r.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.1b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].meddraCode",
       "projectionPath": "medicalHistoryEpisodes[].meddra_code",
@@ -454,6 +833,29 @@
     },
     {
       "code": "D.7.1.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_2",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.2.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].startDate",
       "projectionPath": "medicalHistoryEpisodes[].start_date",
@@ -478,6 +880,29 @@
     },
     {
       "code": "D.7.1.r.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_3",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "boolean", "enforcement": "representation_enforced"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.3.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": false, "nullFlavor": null}],
+              "invalid": [{"value": "true", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": 1, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].continuing",
       "projectionPath": "medicalHistoryEpisodes[].continuing",
@@ -503,6 +928,29 @@
     },
     {
       "code": "D.7.1.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_4",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.4.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].endDate",
       "projectionPath": "medicalHistoryEpisodes[].end_date",
@@ -527,6 +975,22 @@
     },
     {
       "code": "D.7.1.r.5",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.7.1.r.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].comments",
       "projectionPath": "medicalHistoryEpisodes[].comments",
@@ -550,6 +1014,21 @@
     },
     {
       "code": "D.7.1.r.6",
+      "dictionaryInputs": [
+        {
+          "code": "D.7.1.r.6",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_7_1_r_6",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "true_marker", "enforcement": "case_validate"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.D.7.1.r.6.ALLOWED.VALUE"],
+              "reason": "True-only semantics are checked by the Case business validator; draft storage uses a boolean representation."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.medicalHistoryEpisodes[].familyHistory",
       "projectionPath": "medicalHistoryEpisodes[].family_history",
@@ -574,6 +1053,29 @@
     },
     {
       "code": "D.9.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_1",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.1.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.dateOfDeath",
       "projectionPath": "deathInfo.date_of_death",
@@ -598,6 +1100,29 @@
     },
     {
       "code": "D.9.2.r.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.2.r.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_2_r_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.2.r.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.2.r.1a.ALLOWED.VALUE",
+              "valid": [{"value": "1.0", "nullFlavor": null}, {"value": "27.1", "nullFlavor": null}],
+              "invalid": [{"value": "1", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": "x.y", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].meddraVersion",
       "projectionPath": "reportedCauses[].meddra_version",
@@ -621,6 +1146,29 @@
     },
     {
       "code": "D.9.2.r.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.2.r.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_2_r_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.2.r.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.2.r.1b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].meddraCode",
       "projectionPath": "reportedCauses[].meddra_code",
@@ -644,6 +1192,22 @@
     },
     {
       "code": "D.9.2.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.2.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_2_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.2.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.reportedCausesOfDeath[].causeText",
       "projectionPath": "reportedCauses[].comments",
@@ -667,6 +1231,29 @@
     },
     {
       "code": "D.9.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_3",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "boolean", "enforcement": "representation_enforced"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.3.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": false, "nullFlavor": null}],
+              "invalid": [{"value": "true", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": 1, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.autopsyPerformed",
       "projectionPath": "deathInfo.autopsy_performed",
@@ -692,6 +1279,29 @@
     },
     {
       "code": "D.9.4.r.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.4.r.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_4_r_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.4.r.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.4.r.1a.ALLOWED.VALUE",
+              "valid": [{"value": "1.0", "nullFlavor": null}, {"value": "27.1", "nullFlavor": null}],
+              "invalid": [{"value": "1", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": "x.y", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].meddraVersion",
       "projectionPath": "autopsyCauses[].meddra_version",
@@ -715,6 +1325,29 @@
     },
     {
       "code": "D.9.4.r.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.4.r.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_4_r_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.4.r.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.4.r.1b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].meddraCode",
       "projectionPath": "autopsyCauses[].meddra_code",
@@ -738,6 +1371,22 @@
     },
     {
       "code": "D.9.4.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.9.4.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_9_4_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.9.4.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.patientDeath.autopsyCausesOfDeath[].causeText",
       "projectionPath": "autopsyCauses[].comments",
@@ -762,6 +1411,29 @@
     },
     {
       "code": "D.10.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentIdentification",
       "projectionPath": "parentInfo.parent_identification",
@@ -786,6 +1458,29 @@
     },
     {
       "code": "D.10.2.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.2.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_2_1",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.2.1.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.2.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentBirthDate",
       "projectionPath": "parentInfo.parent_birth_date",
@@ -810,6 +1505,29 @@
     },
     {
       "code": "D.10.2.2a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.2.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_2_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.2.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.2.2a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentAge.value",
       "projectionPath": "parentInfo.parent_age",
@@ -835,6 +1553,36 @@
     },
     {
       "code": "D.10.2.2b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.2.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_2_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.2.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "a",
+                  "10.a"
+                ],
+                "enforcement": "case_validate"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.D.10.2.2b.ALLOWED.VALUE"],
+              "reason": "Existing parent-age business rule enforces exactly a and 10.a."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Parent age units are exactly a and 10.a, not the whole time vocabulary. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentAge.unit",
       "projectionPath": "parentInfo.parent_age_unit",
@@ -871,6 +1619,29 @@
     },
     {
       "code": "D.10.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_3",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.3.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentLastMenstrualPeriodDate",
       "projectionPath": "parentInfo.last_menstrual_period_date",
@@ -895,6 +1666,29 @@
     },
     {
       "code": "D.10.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "6",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.4.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentWeight.value",
       "projectionPath": "parentInfo.weight_kg",
@@ -920,6 +1714,29 @@
     },
     {
       "code": "D.10.5",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.5.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentHeight.value",
       "projectionPath": "parentInfo.height_cm",
@@ -945,6 +1762,36 @@
     },
     {
       "code": "D.10.6",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.6",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_6",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.6.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.6.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.6.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.parentSex",
       "projectionPath": "parentInfo.sex",
@@ -969,6 +1816,22 @@
     },
     {
       "code": "D.10.7.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 10001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryText",
       "projectionPath": "parentInfo.medical_history_text",
@@ -992,6 +1855,28 @@
     },
     {
       "code": "D.10.7.1.r.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.D.10.7.1.r.1a.ALLOWED.VALUE"],
+              "reason": "MedDRA version validity is owned by the Case validator; input contracts preserve draft version text and enforce its length."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].meddraVersion",
       "projectionPath": "parentMedicalHistory[].meddra_version",
@@ -1015,6 +1900,29 @@
     },
     {
       "code": "D.10.7.1.r.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.1b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].meddraCode",
       "projectionPath": "parentMedicalHistory[].meddra_code",
@@ -1038,6 +1946,29 @@
     },
     {
       "code": "D.10.7.1.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_2",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.2.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].startDate",
       "projectionPath": "parentMedicalHistory[].start_date",
@@ -1062,6 +1993,29 @@
     },
     {
       "code": "D.10.7.1.r.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_3",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "boolean", "enforcement": "representation_enforced"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.3.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": false, "nullFlavor": null}],
+              "invalid": [{"value": "true", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": 1, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].continuing",
       "projectionPath": "parentMedicalHistory[].continuing",
@@ -1087,6 +2041,29 @@
     },
     {
       "code": "D.10.7.1.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_4",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.4.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].endDate",
       "projectionPath": "parentMedicalHistory[].end_date",
@@ -1111,6 +2088,22 @@
     },
     {
       "code": "D.10.7.1.r.5",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.7.1.r.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_7_1_r_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.7.1.r.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.medicalHistoryEpisodes[].comments",
       "projectionPath": "parentMedicalHistory[].comments",
@@ -1134,6 +2127,22 @@
     },
     {
       "code": "D.10.8.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].drugName",
       "projectionPath": "parentPastDrugs[].drug_name",
@@ -1157,6 +2166,22 @@
     },
     {
       "code": "D.10.8.r.1.KR.1a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.1.KR.1a",
+          "source": "dictionary/mfds-regional.json",
+          "function": "d::mfds_d_10_8_r_1_kr_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.D.10.8.r.1.KR.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
       "projectionPath": "parentPastDrugs[].mfds_medicinal_product_version",
@@ -1180,6 +2205,22 @@
     },
     {
       "code": "D.10.8.r.1.KR.1b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.1.KR.1b",
+          "source": "dictionary/mfds-regional.json",
+          "function": "d::mfds_d_10_8_r_1_kr_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.D.10.8.r.1.KR.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mfdsMedicinalProductId",
       "projectionPath": "parentPastDrugs[].mfds_medicinal_product_id",
@@ -1203,6 +2244,22 @@
     },
     {
       "code": "D.10.8.r.2a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mpidVersion",
       "projectionPath": "parentPastDrugs[].mpid_version",
@@ -1226,6 +2283,32 @@
     },
     {
       "code": "D.10.8.r.2b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 1001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1001}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "identifier_profile": "mpid"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific identifier system/version validation is not implemented for this field; length and control-character checks are not membership checks."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].mpid",
       "projectionPath": "parentPastDrugs[].mpid",
@@ -1249,6 +2332,22 @@
     },
     {
       "code": "D.10.8.r.3a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.3a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_3a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.3a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].phpidVersion",
       "projectionPath": "parentPastDrugs[].phpid_version",
@@ -1272,6 +2371,32 @@
     },
     {
       "code": "D.10.8.r.3b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.3b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_3b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.3b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "identifier_profile": "phpid"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific identifier system/version validation is not implemented for this field; length and control-character checks are not membership checks."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].phpid",
       "projectionPath": "parentPastDrugs[].phpid",
@@ -1295,6 +2420,29 @@
     },
     {
       "code": "D.10.8.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_4",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.4.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].startDate",
       "projectionPath": "parentPastDrugs[].start_date",
@@ -1319,6 +2467,29 @@
     },
     {
       "code": "D.10.8.r.5",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_5",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.5.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.5.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].endDate",
       "projectionPath": "parentPastDrugs[].end_date",
@@ -1343,6 +2514,29 @@
     },
     {
       "code": "D.10.8.r.6a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.6a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_6a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.6a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.6a.ALLOWED.VALUE",
+              "valid": [{"value": "1.0", "nullFlavor": null}, {"value": "27.1", "nullFlavor": null}],
+              "invalid": [{"value": "1", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": "x.y", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].indicationMeddraVersion",
       "projectionPath": "parentPastDrugs[].indication_meddra_version",
@@ -1366,6 +2560,29 @@
     },
     {
       "code": "D.10.8.r.6b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.6b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_6b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.6b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.6b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].indicationMeddraCode",
       "projectionPath": "parentPastDrugs[].indication_meddra_code",
@@ -1389,6 +2606,29 @@
     },
     {
       "code": "D.10.8.r.7a",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.7a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_7a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.7a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.7a.ALLOWED.VALUE",
+              "valid": [{"value": "1.0", "nullFlavor": null}, {"value": "27.1", "nullFlavor": null}],
+              "invalid": [{"value": "1", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": "x.y", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].reactionMeddraVersion",
       "projectionPath": "parentPastDrugs[].reaction_meddra_version",
@@ -1412,6 +2652,29 @@
     },
     {
       "code": "D.10.8.r.7b",
+      "dictionaryInputs": [
+        {
+          "code": "D.10.8.r.7b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_10_8_r_7b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.7b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.10.8.r.7b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.parentInformation.pastDrugHistory[].reactionMeddraCode",
       "projectionPath": "parentPastDrugs[].reaction_meddra_code",
@@ -1435,6 +2698,36 @@
     },
     {
       "code": "FDA.D.11.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.D.11.r.1",
+          "source": "dictionary/fda-regional.json",
+          "function": "d::fda_d_11_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.11.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["C16352", "C41259", "C41260", "C41219", "C41261"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.11.r.1.ALLOWED.VALUE",
+              "valid": [{"value": "C16352", "nullFlavor": null}, {"value": "C41259", "nullFlavor": null}, {"value": "C41260", "nullFlavor": null}, {"value": "C41219", "nullFlavor": null}, {"value": "C41261", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "UNK", "NA", "OTH"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.11.r.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "NA"}, {"value": null, "nullFlavor": "OTH"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "patientInformation.raceCodes[]",
       "projectionPath": "patientInformation.race_codes",
@@ -1459,6 +2752,29 @@
     },
     {
       "code": "FDA.D.12",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.D.12",
+          "source": "dictionary/fda-regional.json",
+          "function": "d::fda_d_12",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.12.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NI", "MSK", "UNK", "NA"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.D.12.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NI"}, {"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "NA"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "patientInformation.ethnicityCode",
       "projectionPath": "patientInformation.ethnicity_code",
@@ -1496,6 +2812,29 @@
     },
     {
       "code": "D.1.1.1",
+      "dictionaryInputs": [
+        {
+          "code": "D.1.1.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_1_1_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.gpMedicalRecordNumber",
       "projectionPath": "patientIdentifiers[].identifier_value",
@@ -1554,6 +2893,29 @@
     },
     {
       "code": "D.1.1.2",
+      "dictionaryInputs": [
+        {
+          "code": "D.1.1.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_1_1_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.specialistRecordNumber",
       "projectionPath": "patientIdentifiers[].identifier_value",
@@ -1612,6 +2974,29 @@
     },
     {
       "code": "D.1.1.3",
+      "dictionaryInputs": [
+        {
+          "code": "D.1.1.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_1_1_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.hospitalRecordNumber",
       "projectionPath": "patientIdentifiers[].identifier_value",
@@ -1670,6 +3055,29 @@
     },
     {
       "code": "D.1.1.4",
+      "dictionaryInputs": [
+        {
+          "code": "D.1.1.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "d::d_1_1_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["MSK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.D.1.1.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "patientInformation.investigationNumber",
       "projectionPath": "patientIdentifiers[].identifier_value",

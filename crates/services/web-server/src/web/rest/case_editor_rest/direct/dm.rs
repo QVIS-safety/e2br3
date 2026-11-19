@@ -1,7 +1,7 @@
 use super::super::common::{
 	as_object, bool_field, ci_date, direct_section_response,
-	explicit_null_model_fields, i32_field, json, next_child_sequence,
-	optional_row_object, reject_unknown_row_keys, string_field, uuid_eq, uuid_field,
+	explicit_null_model_fields, i32_field, json, optional_row_object,
+	reject_unknown_row_keys, string_field, uuid_eq, uuid_field,
 	AutopsyCauseOfDeathBmc, AutopsyCauseOfDeathFilter, AutopsyCauseOfDeathForCreate,
 	AutopsyCauseOfDeathForUpdate, BTreeMap, CaseEditorDirectSectionResponse, CtxW,
 	Error, Json, ListOptions, Map, MedicalHistoryEpisodeBmc,
@@ -303,9 +303,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 		let value = value_at_path(row, paths)?;
 		if let Some(value) = value.as_str() {
 			return Some(
-				(!value.trim().is_empty())
-					.then(|| vec![value.to_string()])
-					.unwrap_or_default(),
+				std::iter::once(value)
+					.filter(|value| !value.trim().is_empty())
+					.map(str::to_string)
+					.collect(),
 			);
 		}
 		value.as_array().map(|values| {
@@ -451,7 +452,11 @@ pub(super) async fn apply_dm_page_rows_patch(
 						height_cm: update.height_cm.flatten(),
 						sex: update.sex,
 						sex_null_flavor: update.sex_null_flavor,
-						race_codes: update.race_codes.unwrap_or_default(),
+						race_codes: update
+							.race_codes
+							.into_iter()
+							.flatten()
+							.collect(),
 						race_code_null_flavor: update.race_code_null_flavor,
 						ethnicity_code: update.ethnicity_code,
 						ethnicity_code_null_flavor: update
@@ -552,18 +557,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 					mm,
 					MedicalHistoryEpisodeForCreate {
 						patient_id,
-						sequence_number: i32_field(episode, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"medical_history_episodes",
-									"patient_id",
-									patient_id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(episode, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						meddra_code,
 						start_date_null_flavor,
 						continuing_null_flavor,
@@ -661,18 +658,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 					mm,
 					PatientIdentifierForCreate {
 						patient_id,
-						sequence_number: i32_field(identifier, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"patient_identifiers",
-									"patient_id",
-									patient_id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(identifier, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						identifier_type_code,
 						identifier_value: update.identifier_value,
 						identifier_value_null_flavor: update
@@ -776,50 +765,50 @@ pub(super) async fn apply_dm_page_rows_patch(
 			),
 		});
 	}
-	let death_info_id = death_info_id.unwrap_or(Uuid::nil());
-
-	if let Some(value) = rows.get("reportedCauses") {
-		let Some(causes) = value.as_array() else {
-			return Err(Error::BadRequest {
-				message: format!("{page_id}.reportedCauses must be an array"),
-			});
-		};
-		for value in causes {
-			let cause = as_object(page_id, "reportedCauses", value)?;
-			let id = uuid_field(cause, &["id"])?;
-			let current = if let Some(id) = id {
-				let current = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if current.death_info_id != death_info_id {
-					return Err(lib_core::model::Error::EntityUuidNotFound {
-						entity: "reported_causes_of_death",
-						id,
+	if let Some(death_info_id) = death_info_id {
+		if let Some(value) = rows.get("reportedCauses") {
+			let Some(causes) = value.as_array() else {
+				return Err(Error::BadRequest {
+					message: format!("{page_id}.reportedCauses must be an array"),
+				});
+			};
+			for value in causes {
+				let cause = as_object(page_id, "reportedCauses", value)?;
+				let id = uuid_field(cause, &["id"])?;
+				let current = if let Some(id) = id {
+					let current = ReportedCauseOfDeathBmc::get(ctx, mm, id).await?;
+					if current.death_info_id != death_info_id {
+						return Err(lib_core::model::Error::EntityUuidNotFound {
+							entity: "reported_causes_of_death",
+							id,
+						}
+						.into());
 					}
-					.into());
+					Some(current)
+				} else {
+					None
+				};
+				if bool_field(cause, &["deleted"]) == Some(true) {
+					if let Some(current) = current {
+						ReportedCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
+					}
+					continue;
 				}
-				Some(current)
-			} else {
-				None
-			};
-			if bool_field(cause, &["deleted"]) == Some(true) {
+				let update = ReportedCauseOfDeathForUpdate {
+					meddra_version: string_field(cause, &["meddraVersion"]),
+					meddra_code: string_field(cause, &["meddraCode"]),
+					comments: string_field(cause, &["causeText"]),
+				};
 				if let Some(current) = current {
-					ReportedCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
-				}
-				continue;
-			}
-			let update = ReportedCauseOfDeathForUpdate {
-				meddra_version: string_field(cause, &["meddraVersion"]),
-				meddra_code: string_field(cause, &["meddraCode"]),
-				comments: string_field(cause, &["causeText"]),
-			};
-			if let Some(current) = current {
-				let id = current.id;
-				if bool_field(cause, &["deleted"]) == Some(false) && current.deleted
-				{
-					ReportedCauseOfDeathBmc::restore(ctx, mm, id).await?;
-				}
-				let clear_fields =
-					explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
-				lib_core::model::update_uuid_patch::<ReportedCauseOfDeathBmc, _>(
+					let id = current.id;
+					if bool_field(cause, &["deleted"]) == Some(false)
+						&& current.deleted
+					{
+						ReportedCauseOfDeathBmc::restore(ctx, mm, id).await?;
+					}
+					let clear_fields =
+						explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
+					lib_core::model::update_uuid_patch::<ReportedCauseOfDeathBmc, _>(
 					ctx,
 					mm,
 					id,
@@ -827,111 +816,96 @@ pub(super) async fn apply_dm_page_rows_patch(
 					&clear_fields,
 				)
 				.await?;
-			} else {
-				ReportedCauseOfDeathBmc::create(
-					ctx,
-					mm,
-					ReportedCauseOfDeathForCreate {
-						death_info_id,
-						sequence_number: i32_field(cause, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"reported_causes_of_death",
-									"death_info_id",
-									death_info_id,
-									true,
-								)
-								.await?,
-							),
-						meddra_version: update.meddra_version,
-						meddra_code: update.meddra_code,
-						comments: update.comments,
-					},
-				)
-				.await?;
+				} else {
+					ReportedCauseOfDeathBmc::create(
+						ctx,
+						mm,
+						ReportedCauseOfDeathForCreate {
+							death_info_id,
+							sequence_number: i32_field(cause, &["sequenceNumber"])?
+								.ok_or_else(|| Error::BadRequest {
+									message: "sequenceNumber is required".into(),
+								})?,
+							meddra_version: update.meddra_version,
+							meddra_code: update.meddra_code,
+							comments: update.comments,
+						},
+					)
+					.await?;
+				}
 			}
 		}
-	}
 
-	if let Some(value) = rows.get("autopsyCauses") {
-		let Some(causes) = value.as_array() else {
-			return Err(Error::BadRequest {
-				message: format!("{page_id}.autopsyCauses must be an array"),
-			});
-		};
-		for value in causes {
-			let cause = as_object(page_id, "autopsyCauses", value)?;
-			let id = uuid_field(cause, &["id"])?;
-			let current = if let Some(id) = id {
-				let current = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
-				if current.death_info_id != death_info_id {
-					return Err(lib_core::model::Error::EntityUuidNotFound {
-						entity: "autopsy_causes_of_death",
-						id,
+		if let Some(value) = rows.get("autopsyCauses") {
+			let Some(causes) = value.as_array() else {
+				return Err(Error::BadRequest {
+					message: format!("{page_id}.autopsyCauses must be an array"),
+				});
+			};
+			for value in causes {
+				let cause = as_object(page_id, "autopsyCauses", value)?;
+				let id = uuid_field(cause, &["id"])?;
+				let current = if let Some(id) = id {
+					let current = AutopsyCauseOfDeathBmc::get(ctx, mm, id).await?;
+					if current.death_info_id != death_info_id {
+						return Err(lib_core::model::Error::EntityUuidNotFound {
+							entity: "autopsy_causes_of_death",
+							id,
+						}
+						.into());
 					}
-					.into());
+					Some(current)
+				} else {
+					None
+				};
+				if bool_field(cause, &["deleted"]) == Some(true) {
+					if let Some(current) = current {
+						AutopsyCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
+					}
+					continue;
 				}
-				Some(current)
-			} else {
-				None
-			};
-			if bool_field(cause, &["deleted"]) == Some(true) {
+				let update = AutopsyCauseOfDeathForUpdate {
+					meddra_version: string_field(cause, &["meddraVersion"]),
+					meddra_code: string_field(cause, &["meddraCode"]),
+					comments: string_field(cause, &["causeText"]),
+				};
 				if let Some(current) = current {
-					AutopsyCauseOfDeathBmc::delete(ctx, mm, current.id).await?;
+					let id = current.id;
+					if bool_field(cause, &["deleted"]) == Some(false)
+						&& current.deleted
+					{
+						AutopsyCauseOfDeathBmc::restore(ctx, mm, id).await?;
+					}
+					let clear_fields =
+						explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
+					lib_core::model::update_uuid_patch::<AutopsyCauseOfDeathBmc, _>(
+						ctx,
+						mm,
+						id,
+						update,
+						&clear_fields,
+					)
+					.await?;
+				} else {
+					AutopsyCauseOfDeathBmc::create(
+						ctx,
+						mm,
+						AutopsyCauseOfDeathForCreate {
+							death_info_id,
+							sequence_number: i32_field(cause, &["sequenceNumber"])?
+								.ok_or_else(|| Error::BadRequest {
+									message: "sequenceNumber is required".into(),
+								})?,
+							meddra_version: update.meddra_version,
+							meddra_code: update.meddra_code,
+							comments: update.comments,
+						},
+					)
+					.await?;
 				}
-				continue;
-			}
-			let update = AutopsyCauseOfDeathForUpdate {
-				meddra_version: string_field(cause, &["meddraVersion"]),
-				meddra_code: string_field(cause, &["meddraCode"]),
-				comments: string_field(cause, &["causeText"]),
-			};
-			if let Some(current) = current {
-				let id = current.id;
-				if bool_field(cause, &["deleted"]) == Some(false) && current.deleted
-				{
-					AutopsyCauseOfDeathBmc::restore(ctx, mm, id).await?;
-				}
-				let clear_fields =
-					explicit_null_model_fields(cause, DM_CAUSE_PATCH_FIELDS);
-				lib_core::model::update_uuid_patch::<AutopsyCauseOfDeathBmc, _>(
-					ctx,
-					mm,
-					id,
-					update,
-					&clear_fields,
-				)
-				.await?;
-			} else {
-				AutopsyCauseOfDeathBmc::create(
-					ctx,
-					mm,
-					AutopsyCauseOfDeathForCreate {
-						death_info_id,
-						sequence_number: i32_field(cause, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"autopsy_causes_of_death",
-									"death_info_id",
-									death_info_id,
-									true,
-								)
-								.await?,
-							),
-						meddra_version: update.meddra_version,
-						meddra_code: update.meddra_code,
-						comments: update.comments,
-					},
-				)
-				.await?;
 			}
 		}
 	}
-
 	let empty_parent = Map::new();
 	let has_parent_children = rows.contains_key("parentMedicalHistory")
 		|| rows.contains_key("parentPastDrugs");
@@ -1159,18 +1133,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 					mm,
 					ParentMedicalHistoryForCreate {
 						parent_id,
-						sequence_number: i32_field(history, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"parent_medical_history",
-									"parent_id",
-									parent_id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(history, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						meddra_code,
 						start_date_null_flavor,
 						continuing_null_flavor,
@@ -1311,18 +1277,10 @@ pub(super) async fn apply_dm_page_rows_patch(
 					mm,
 					ParentPastDrugHistoryForCreate {
 						parent_id,
-						sequence_number: i32_field(drug, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"parent_past_drug_history",
-									"parent_id",
-									parent_id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(drug, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						drug_name: update.drug_name,
 						mpid: update.mpid,
 						mpid_version: update.mpid_version,
@@ -1479,7 +1437,9 @@ pub(super) async fn load_editor_dm_data(
 	for parent in &parent_information_rows {
 		let medical_history = medical_history_by_parent
 			.remove(&parent.id)
-			.unwrap_or_default();
+			.into_iter()
+			.flatten()
+			.collect::<Vec<_>>();
 		let medical_history = medical_history
 			.into_iter()
 			.map(|history| {
@@ -1497,8 +1457,11 @@ pub(super) async fn load_editor_dm_data(
 				value
 			})
 			.collect::<Vec<_>>();
-		let past_drug_history =
-			past_drugs_by_parent.remove(&parent.id).unwrap_or_default();
+		let past_drug_history = past_drugs_by_parent
+			.remove(&parent.id)
+			.into_iter()
+			.flatten()
+			.collect::<Vec<_>>();
 		let past_drug_history = past_drug_history
 			.into_iter()
 			.map(|drug| {
@@ -1599,12 +1562,14 @@ pub(super) async fn load_editor_dm_data(
 		reported_causes.extend(
 			reported_causes_by_death
 				.remove(&death_info.id)
-				.unwrap_or_default(),
+				.into_iter()
+				.flatten(),
 		);
 		autopsy_causes.extend(
 			autopsy_causes_by_death
 				.remove(&death_info.id)
-				.unwrap_or_default(),
+				.into_iter()
+				.flatten(),
 		);
 	}
 	let death_info = death_information.into_iter().next().map(|death_info| {

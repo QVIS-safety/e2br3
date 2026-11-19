@@ -161,7 +161,7 @@ async fn update_case_rejects_review_receiver_without_receiver_name() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,
@@ -269,7 +269,7 @@ async fn editor_shell_reads_saved_review_receivers_as_an_array() -> Result<()> {
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-SHELL").await?;
 	let receivers = json!({
 		"reviewReceivers": [{
@@ -542,7 +542,7 @@ async fn review_receiver_json_can_be_cleared_back_to_sql_null() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-CLEAR").await?;
 
 	let (status, body) = put_json(
@@ -597,7 +597,7 @@ async fn explicit_review_receiver_date_does_not_require_a_presave_in_mixed_rows(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id =
 		create_re_validation_case(&app, &cookie, "SR-RE-EXPLICIT-DATE").await?;
 
@@ -663,7 +663,7 @@ async fn update_case_rejects_malformed_review_receiver_json() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-BAD-JSON").await?;
 	let ctx = Ctx::new(
 		seed.admin.id,
@@ -723,7 +723,7 @@ async fn update_case_rejects_review_receiver_name_over_128_chars() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-LONG").await?;
 
 	let (status, body) = put_json(
@@ -763,7 +763,7 @@ async fn update_case_rejects_invalid_review_receiver_dates() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let report_due_case_id =
 		create_re_validation_case(&app, &cookie, "SR-RE-BAD-DUE-DATE").await?;
 	let reported_case_id =
@@ -838,7 +838,7 @@ async fn update_case_drops_blank_review_receiver_rows() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_re_validation_case(&app, &cookie, "SR-RE-BLANK").await?;
 
 	let (status, body) = put_json(
@@ -883,7 +883,7 @@ async fn update_case_review_receiver_defaults_report_due_date_from_c1_5(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,
@@ -964,7 +964,7 @@ async fn update_case_review_receiver_defaults_report_due_from_receiver_timeline(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let receiver_name = format!("RE Timeline Receiver {}", Uuid::new_v4());
 
 	let (status, receiver_body) = post_json(

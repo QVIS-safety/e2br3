@@ -16,12 +16,22 @@ use tracing_subscriber::EnvFilter;
 
 // endregion: --- Modules
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
+	tokio::runtime::Builder::new_multi_thread()
+		.enable_all()
+		.build()
+		.map_err(|error| {
+			Error::Config(format!("failed to create Tokio runtime: {error}"))
+		})?
+		.block_on(run())
+}
+
+async fn run() -> Result<()> {
 	tracing_subscriber::fmt()
 		.with_target(false)
 		.with_env_filter(EnvFilter::from_default_env())
 		.init();
+	lib_auth::init().map_err(|error| Error::Config(error.to_string()))?;
 
 	// Database migrations run explicitly before the application starts.
 	_dev_utils::init_dev()
@@ -46,21 +56,25 @@ async fn main() -> Result<()> {
 		bootstrap::bootstrap_admin_user(&mm).await?;
 	}
 	start_user_expiry_worker(mm.clone());
-	start_reconcile_worker(mm.clone());
+	start_reconcile_worker(mm.clone())?;
 
 	// -- Define Routes
-	let routes_all = web_server::app(mm.clone());
+	let routes_all = web_server::app(mm.clone())
+		.map_err(|error| Error::Config(error.to_string()))?;
 
 	// region:    --- Start Server
-	// Note: For this block, ok to unwrap.
-	// Use 0.0.0.0 in Docker, 127.0.0.1 for local dev
 	let bind_addr = std::env::var("SERVICE_BIND_ADDR")
-		.unwrap_or_else(|_| "127.0.0.1:8080".to_string());
-	let listener = TcpListener::bind(&bind_addr).await.unwrap();
-	info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
+		.map_err(|_| Error::Config("SERVICE_BIND_ADDR is required".to_string()))?;
+	let listener = TcpListener::bind(&bind_addr).await.map_err(|error| {
+		Error::Config(format!("failed to bind {bind_addr}: {error}"))
+	})?;
+	let local_addr = listener.local_addr().map_err(|error| {
+		Error::Config(format!("failed to read listener address: {error}"))
+	})?;
+	info!("{:<12} - {:?}\n", "LISTENING", local_addr);
 	axum::serve(listener, routes_all.into_make_service())
 		.await
-		.unwrap();
+		.map_err(|error| Error::Config(format!("web server failed: {error}")))?;
 	// endregion: --- Start Server
 
 	Ok(())
@@ -82,21 +96,40 @@ fn start_user_expiry_worker(mm: ModelManager) {
 	});
 }
 
-fn start_reconcile_worker(mm: ModelManager) {
-	let enabled = env_truthy("SUBMISSION_RECONCILE_ENABLED");
+fn start_reconcile_worker(mm: ModelManager) -> Result<()> {
+	let enabled = env_truthy("SUBMISSION_RECONCILE_ENABLED")?;
 	if !enabled {
-		return;
+		return Ok(());
 	}
 	let interval_secs = std::env::var("SUBMISSION_RECONCILE_INTERVAL_SECS")
-		.ok()
-		.and_then(|v| v.trim().parse::<u64>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(60);
+		.map_err(|_| {
+			Error::Config(
+				"SUBMISSION_RECONCILE_INTERVAL_SECS is required when reconciliation is enabled"
+					.to_string(),
+			)
+		})?
+		.parse::<u64>()
+		.map_err(|error| {
+			Error::Config(format!(
+				"invalid SUBMISSION_RECONCILE_INTERVAL_SECS: {error}"
+			))
+		})?;
 	let limit = std::env::var("SUBMISSION_RECONCILE_LIMIT")
-		.ok()
-		.and_then(|v| v.trim().parse::<i64>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(25);
+		.map_err(|_| {
+			Error::Config(
+				"SUBMISSION_RECONCILE_LIMIT is required when reconciliation is enabled"
+					.to_string(),
+			)
+		})?
+		.parse::<i64>()
+		.map_err(|error| {
+			Error::Config(format!("invalid SUBMISSION_RECONCILE_LIMIT: {error}"))
+		})?;
+	if interval_secs == 0 || limit <= 0 {
+		return Err(Error::Config(
+			"submission reconcile interval and limit must be positive".to_string(),
+		));
+	}
 
 	tokio::spawn(async move {
 		let mut ticker = interval(Duration::from_secs(interval_secs));
@@ -118,11 +151,16 @@ fn start_reconcile_worker(mm: ModelManager) {
 			}
 		}
 	});
+	Ok(())
 }
 
-fn env_truthy(name: &str) -> bool {
-	matches!(
-		std::env::var(name),
-		Ok(v) if matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
-	)
+fn env_truthy(name: &str) -> Result<bool> {
+	match std::env::var(name) {
+		Ok(value) => match value.trim().to_ascii_lowercase().as_str() {
+			"1" | "true" | "yes" | "on" => Ok(true),
+			"0" | "false" | "no" | "off" => Ok(false),
+			_ => Err(Error::Config(format!("{name} must be a boolean value"))),
+		},
+		Err(error) => Err(Error::Config(format!("failed to read {name}: {error}"))),
+	}
 }

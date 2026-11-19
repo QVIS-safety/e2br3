@@ -353,13 +353,15 @@ pub(super) async fn list_latest_ack_summaries(
 pub(super) fn format_latest_ack_result(
 	ack: &LatestSubmissionAckRow,
 ) -> Option<String> {
-	let code = ack
-		.ack_code
-		.as_deref()
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.map(str::to_string)
-		.unwrap_or_else(|| format!("ACK{}", ack.ack_level));
+	let code = format!(
+		"ACK{}{}",
+		ack.ack_level,
+		ack.ack_code
+			.as_deref()
+			.into_iter()
+			.map(|code| format!(" ({code})"))
+			.collect::<String>()
+	);
 	let message = ack
 		.ack_message
 		.as_deref()

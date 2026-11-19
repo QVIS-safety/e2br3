@@ -17,7 +17,7 @@ async fn test_admin_create_user_allows_plain_user_role() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {
@@ -49,7 +49,7 @@ async fn test_sponsor_admin_create_user_rejects_sponsor_admin_role() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {
@@ -90,7 +90,7 @@ async fn test_system_admin_create_user_rejects_second_sponsor_admin_for_org(
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {
@@ -127,7 +127,7 @@ async fn test_admin_create_user_rejects_role_when_org_has_no_permission_profile(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {

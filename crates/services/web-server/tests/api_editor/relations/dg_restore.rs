@@ -21,7 +21,7 @@ pub(crate) async fn deleted_drug_can_be_read_and_restored_with_children_and_guar
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &admin_cookie, "EDITOR-DG-RESTORE", &["ich"])
 			.await?;

@@ -1,5 +1,35 @@
 use super::*;
 
+#[test]
+fn rule_ich_c_1_9_1_allowed_value() {
+	let run = |report| {
+		let mut issues = run_ich(&fixture::ctx_with(report));
+		super::super::super::retain_case_business_rules(&mut issues);
+		issues
+	};
+	let mut bad = fixture::base_report();
+	bad.other_case_identifiers_exist = Some(false);
+	bad.other_case_identifiers_exist_null_flavor = None;
+	for (value, flavor) in [(Some(true), None), (None, Some("NI"))] {
+		let mut good = bad.clone();
+		good.other_case_identifiers_exist = value;
+		good.other_case_identifiers_exist_null_flavor = flavor.map(str::to_string);
+		assert_edge(
+			"ICH.C.1.9.1.ALLOWED.VALUE",
+			"safetyReportIdentification.otherCaseIdentifiersExist",
+			run(bad.clone()),
+			run(good),
+		);
+	}
+	for (value, flavor) in [(Some(false), "NI"), (Some(true), "NI"), (None, "UNK")] {
+		bad.other_case_identifiers_exist = value;
+		bad.other_case_identifiers_exist_null_flavor = Some(flavor.into());
+		assert!(run(bad.clone())
+			.iter()
+			.any(|issue| issue.code == "ICH.C.1.9.1.ALLOWED.VALUE"));
+	}
+}
+
 fn run_ich(ctx: &ValidationContext) -> Vec<ValidationIssue> {
 	let mut issues = Vec::new();
 	collect_ich_issues(ctx, &mut issues);

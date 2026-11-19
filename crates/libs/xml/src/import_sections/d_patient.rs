@@ -414,6 +414,33 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn patient_units_use_the_field_specific_input_contracts() -> Result<()> {
+		for (code, units) in [
+			("3", vec!["a", "mo", "wk", "d", "h", "10.a"]),
+			("16", vec!["mo", "wk", "d", "{trimester}"]),
+		] {
+			for unit in units.into_iter().chain(["mg", "{Trimester}"]) {
+				let xml = format!(
+					r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><observation><code code="{code}" codeSystem="2.16.840.1.113883.3.989.2.1.1.19"/><value value="1" unit="{unit}"/></observation></subjectOf2></primaryRole></MCCI_IN200100UV01>"#
+				);
+				let result = parse_d_patient(xml.as_bytes());
+				if matches!(unit, "mg" | "{Trimester}") {
+					assert!(result.is_err(), "{code}/{unit}");
+				} else {
+					let patient = result?.expect("patient");
+					let actual = if code == "3" {
+						patient.age_unit
+					} else {
+						patient.gestation_period_unit
+					};
+					assert_eq!(actual.as_deref(), Some(unit));
+				}
+			}
+		}
+		Ok(())
+	}
+
+	#[test]
 	fn patient_fields_do_not_read_parent_values_or_null_flavors() {
 		for nf in [false, true] {
 			let history = if nf {

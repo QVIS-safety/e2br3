@@ -45,7 +45,7 @@ async fn one_account_lists_and_switches_membership_organizations() -> Result<()>
 	insert_user_organization_membership(&mm, seed.user1.id, seed.org2_id).await?;
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, profile) =
 		request_json(&app, "GET", &cookie, "/api/users/me/profile", None).await?;
@@ -100,7 +100,7 @@ async fn account_cannot_switch_without_membership() -> Result<()> {
 	let seed = seed_two_orgs_users_cases(&mm).await?;
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, rejected) = request_json(
 		&app,

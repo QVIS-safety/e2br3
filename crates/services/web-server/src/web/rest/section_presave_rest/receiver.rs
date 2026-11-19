@@ -463,22 +463,12 @@ async fn load_receiver_presave_details(
 			receiver,
 			consignees: consignees
 				.into_iter()
-				.map(|row| {
-					canonicalize_child(
-						serde_json::to_value(row)
-							.expect("serializable receiver consignee"),
-					)
-				})
-				.collect(),
+				.map(|row| serde_json::to_value(row).map(canonicalize_child))
+				.collect::<serde_json::Result<Vec<_>>>()?,
 			routes: routes
 				.into_iter()
-				.map(|row| {
-					canonicalize_child(
-						serde_json::to_value(row)
-							.expect("serializable receiver route"),
-					)
-				})
-				.collect(),
+				.map(|row| serde_json::to_value(row).map(canonicalize_child))
+				.collect::<serde_json::Result<Vec<_>>>()?,
 		},
 	})
 }

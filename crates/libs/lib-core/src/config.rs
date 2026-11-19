@@ -1,14 +1,13 @@
 use lib_utils::envs::get_env;
 use std::sync::OnceLock;
 
-pub fn core_config() -> &'static CoreConfig {
-	static INSTANCE: OnceLock<CoreConfig> = OnceLock::new();
+pub fn core_config() -> lib_utils::envs::Result<&'static CoreConfig> {
+	static INSTANCE: OnceLock<lib_utils::envs::Result<CoreConfig>> = OnceLock::new();
 
-	INSTANCE.get_or_init(|| {
-		CoreConfig::load_from_env().unwrap_or_else(|ex| {
-			panic!("FATAL - WHILE LOADING CONF - Cause: {ex:?}")
-		})
-	})
+	INSTANCE
+		.get_or_init(CoreConfig::load_from_env)
+		.as_ref()
+		.map_err(Clone::clone)
 }
 
 #[allow(non_snake_case)]

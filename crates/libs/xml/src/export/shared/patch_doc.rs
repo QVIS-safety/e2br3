@@ -34,7 +34,10 @@ fn normalize_export_values(xpath: &mut Context) -> crate::Result<()> {
 		};
 		if let Ok(nodes) = xpath.findnodes(spec.xpath, None) {
 			for mut node in nodes {
-				let value = node.get_attribute(spec.attribute).unwrap_or_default();
+				let value = match node.get_attribute(spec.attribute) {
+					Some(value) => value,
+					None => String::new(),
+				};
 				let valid = matches_normalization_kind(value.trim(), spec.kind);
 				if !valid {
 					let _ = node.set_attribute("nullFlavor", "NI");
@@ -191,7 +194,10 @@ fn prune_placeholder_nodes(xpath: &mut Context) {
 					if !required_intervention_rule_applies(&node) {
 						continue;
 					}
-					let val = node.get_attribute("value").unwrap_or_default();
+					let val = match node.get_attribute("value") {
+						Some(value) => value,
+						None => String::new(),
+					};
 					let trimmed = val.trim();
 					if !trimmed.is_empty() && !looks_placeholder(trimmed) {
 						let _ = node.remove_attribute("nullFlavor");
@@ -334,8 +340,7 @@ fn required_intervention_rule_applies(value_node: &Node) -> bool {
 
 	let other_medically_important = reaction_observation
 		.as_ref()
-		.map(reaction_has_other_medically_important_true)
-		.unwrap_or(false);
+		.is_some_and(reaction_has_other_medically_important_true);
 
 	other_medically_important
 }
@@ -355,14 +360,12 @@ fn reaction_has_other_medically_important_true(reaction_obs: &Node) -> bool {
 				if child.get_name() != "value" {
 					continue;
 				}
-				let explicit_true = child
-					.get_attribute("value")
-					.map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-					.unwrap_or(false);
-				let coded_true = child
-					.get_attribute("code")
-					.map(|v| v == "true" || v == "1")
-					.unwrap_or(false);
+					let explicit_true = child
+						.get_attribute("value")
+						.is_some_and(|v| v.eq_ignore_ascii_case("true") || v == "1");
+					let coded_true = child
+						.get_attribute("code")
+						.is_some_and(|v| v == "true" || v == "1");
 				if explicit_true || coded_true {
 					return true;
 				}

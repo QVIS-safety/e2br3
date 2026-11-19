@@ -40,7 +40,7 @@ async fn test_user_reads_are_scoped_to_current_org_for_system_and_sponsor_admins
 		generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let sponsor_token =
 		generate_web_token(&sponsor_admin.email, sponsor_admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let org1_user_id = seed.user1.id.to_string();
 	let org2_user_id = seed.user2.id.to_string();
 	let org2_email_query = format!(

@@ -202,13 +202,17 @@ impl PresaveLifecycleService {
 		let bound_sql = format!(
 			"SELECT value FROM ({sql}) AS dependency(value), (SELECT $2::uuid, $3::text, $4::text) AS bindings"
 		);
+		let bound_name = match name {
+			Some(name) => name,
+			None => "",
+		};
 		let (used,): (bool,) = dbx
 			.fetch_one(
 				sqlx::query_as(&bound_sql)
 					.bind(id)
 					.bind(ctx.organization_id())
 					.bind(id.to_string())
-					.bind(name.unwrap_or("")),
+					.bind(bound_name),
 			)
 			.await?;
 		Ok(used)

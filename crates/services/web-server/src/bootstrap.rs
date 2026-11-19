@@ -1,7 +1,6 @@
 use crate::Result;
 use lib_core::ctx::{
 	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
-	SYSTEM_ORG_ID,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::user::{UserBmc, UserForCreate, UserForUpdate};
@@ -16,9 +15,8 @@ const INITIAL_ADMIN_EMAIL: &str = "hdh4063@gmail.com";
 const INITIAL_ADMIN_USERNAME: &str = "hdh4063";
 const INITIAL_PASSWORD: &str = "welcome";
 const LEGACY_DEMO_EMAIL: &str = "demo.user@example.com";
-const DEMO_CRO_ORG_ID: &str = "00000000-0000-0000-0000-000000000001";
+#[cfg(test)]
 const DEMO_COMPANY_ORG_ID: &str = "00000000-0000-0000-0000-000000000002";
-const DEMO_CRO_SENDER_ID: &str = "00000000-0000-0000-0000-000000000003";
 const DEMO_CRO_ADMIN_EMAIL: &str = "demo.cro.admin@example.com";
 const DEMO_CRO_ADMIN_USERNAME: &str = "demo_cro_admin";
 const DEMO_COMPANY_ADMIN_EMAIL: &str = "demo.company.admin@example.com";
@@ -54,17 +52,9 @@ fn admin_bootstrap_requires_an_explicit_boolean() {
 pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	let root_ctx = Ctx::root_ctx();
 	migrate_legacy_demo_user(mm).await?;
-	sync_org(
-		mm,
-		Uuid::parse_str(SYSTEM_ORG_ID).expect("invalid system org id"),
-		"System",
-		"Internal",
-		"system@e2br3.local",
-	)
-	.await?;
-	let cro_org_id = Uuid::parse_str(DEMO_CRO_ORG_ID).expect("invalid CRO org id");
-	let company_org_id =
-		Uuid::parse_str(DEMO_COMPANY_ORG_ID).expect("invalid company org id");
+	sync_org(mm, Uuid::nil(), "System", "Internal", "system@e2br3.local").await?;
+	let cro_org_id = Uuid::from_u128(1);
+	let company_org_id = Uuid::from_u128(2);
 
 	sync_org(
 		mm,
@@ -82,16 +72,11 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 		"demo-company@example.com",
 	)
 	.await?;
-	sync_sender_presave(
-		mm,
-		cro_org_id,
-		Uuid::parse_str(DEMO_CRO_SENDER_ID).expect("invalid CRO sender id"),
-	)
-	.await?;
+	sync_sender_presave(mm, cro_org_id, Uuid::from_u128(3)).await?;
 	sync_user(
 		&root_ctx,
 		mm,
-		Uuid::parse_str(SYSTEM_ORG_ID).expect("invalid system org id"),
+		Uuid::nil(),
 		INITIAL_ADMIN_EMAIL,
 		INITIAL_ADMIN_USERNAME,
 		ROLE_SYSTEM_ADMIN,
@@ -575,15 +560,15 @@ mod tests {
 			.fetch_optional(sqlx::query_as::<_, (Uuid, Uuid, String)>(
 				"SELECT id, organization_id, organization_name FROM sender_presaves WHERE id = $1",
 			)
-			.bind(Uuid::parse_str(DEMO_CRO_SENDER_ID).expect("invalid CRO sender id")))
+			.bind(Uuid::from_u128(3)))
 			.await
 			.expect("query bootstrapped sender");
 		mm.dbx().commit_txn().await.expect("commit sender query");
 		assert_eq!(
 			sender,
 			Some((
-				Uuid::parse_str(DEMO_CRO_SENDER_ID).expect("invalid CRO sender id"),
-				Uuid::parse_str(DEMO_CRO_ORG_ID).expect("invalid CRO org id"),
+				Uuid::from_u128(3),
+				Uuid::from_u128(1),
 				"Demo Sender Organization".to_string(),
 			))
 		);
@@ -609,8 +594,8 @@ mod tests {
 				ORDER BY organization_id
 				"#,
 				)
-				.bind(Uuid::parse_str(SYSTEM_ORG_ID).expect("invalid system org id"))
-				.bind(Uuid::parse_str(DEMO_CRO_ORG_ID).expect("invalid CRO org id"))
+				.bind(Uuid::nil())
+				.bind(Uuid::from_u128(1))
 				.bind(
 					Uuid::parse_str(DEMO_COMPANY_ORG_ID)
 						.expect("invalid company org id"),

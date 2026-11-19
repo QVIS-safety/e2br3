@@ -11,7 +11,7 @@ async fn test_routing_profile_sender_options_include_info_sender_masters(
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let sender_id = create_sender_presave(
 		&app,
@@ -81,7 +81,7 @@ async fn test_unset_sender_scope_lists_all_sender_presaves() -> Result<()> {
 	let viewer_token = generate_web_token(&info_user.email, info_user.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let sender_id = create_sender_presave(
 		&app,
@@ -131,7 +131,7 @@ async fn test_sender_uuid_scope_lists_matching_sender_presave() -> Result<()> {
 	let viewer_token = generate_web_token(&info_user.email, info_user.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let allowed_id = create_sender_presave(
 		&app,
@@ -186,7 +186,7 @@ async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-ROUTE-A")
 			.await?;

@@ -1,12 +1,10 @@
 use serde_json::{Map, Value};
 
-pub(super) fn camelize_rows<T: serde::Serialize>(rows: Vec<T>) -> Vec<Value> {
+pub(super) fn camelize_rows<T: serde::Serialize>(
+	rows: Vec<T>,
+) -> serde_json::Result<Vec<Value>> {
 	rows.into_iter()
-		.map(|row| {
-			camelize_value(
-				serde_json::to_value(row).expect("serializable presave row"),
-			)
-		})
+		.map(|row| serde_json::to_value(row).map(camelize_value))
 		.collect()
 }
 

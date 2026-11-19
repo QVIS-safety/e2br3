@@ -4,6 +4,29 @@
   "fields": [
     {
       "code": "G.k.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugCharacterization",
       "projectionPath": "drug.drug_characterization",
@@ -48,6 +71,22 @@
     },
     {
       "code": "G.k.2.2",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].medicinalProduct",
       "projectionPath": "drug.medicinal_product",
@@ -93,6 +132,29 @@
     },
     {
       "code": "G.k.8",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.8",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_8",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.8.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "0", "9"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.8.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "0", "nullFlavor": null}, {"value": "9", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugActionTaken",
       "projectionPath": "drug.action_taken",
@@ -116,6 +178,22 @@
     },
     {
       "code": "G.k.2.1.KR.1a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.KR.1a",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_2_1_kr_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.2.1.KR.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].mfdsMpidVersion",
       "projectionPath": "drug.mfds_mpid_version",
@@ -139,6 +217,22 @@
     },
     {
       "code": "G.k.2.1.KR.1b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.KR.1b",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_2_1_kr_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.2.1.KR.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].mfdsMpid",
       "projectionPath": "drug.mfds_mpid",
@@ -189,6 +283,22 @@
     },
     {
       "code": "G.k.2.1.1a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_1_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.1.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].mpidVersion",
       "projectionPath": "drug.mpid_version",
@@ -212,6 +322,32 @@
     },
     {
       "code": "G.k.2.1.1b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_1_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.1.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 1001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1001}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "identifier_profile": "mpid"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific identifier system/version validation is not implemented for this field; length and control-character checks are not membership checks."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].mpid",
       "projectionPath": "drug.mpid",
@@ -235,6 +371,22 @@
     },
     {
       "code": "G.k.2.1.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_1_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.1.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].phpidVersion",
       "projectionPath": "drug.phpid_version",
@@ -258,6 +410,32 @@
     },
     {
       "code": "G.k.2.1.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.1.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_1_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.1.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "identifier_profile": "phpid"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific identifier system/version validation is not implemented for this field; length and control-character checks are not membership checks."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].phpid",
       "projectionPath": "drug.phpid",
@@ -281,6 +459,28 @@
     },
     {
       "code": "G.k.2.4",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.2.4.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].obtainDrugCountry",
       "projectionPath": "drug.obtain_drug_country",
@@ -312,6 +512,21 @@
     },
     {
       "code": "G.k.2.5",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_5",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "true_marker", "enforcement": "case_validate"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.2.5.ALLOWED.VALUE"],
+              "reason": "True-only semantics are checked by the Case business validator; draft storage uses a boolean representation."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].investigationalProductBlinded",
       "projectionPath": "drug.investigational_product_blinded",
@@ -336,6 +551,22 @@
     },
     {
       "code": "G.k.3.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.3.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_3_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "35",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.3.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 35}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 35}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 36}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 36}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugAuthorizationNumber",
       "projectionPath": "drug.drug_authorization_number",
@@ -359,6 +590,28 @@
     },
     {
       "code": "G.k.3.2",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.3.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_3_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.3.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.3.2.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugAuthorizationCountry",
       "projectionPath": "drug.manufacturer_country",
@@ -390,6 +643,22 @@
     },
     {
       "code": "G.k.3.3",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.3.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_3_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.3.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugAuthorizationHolder",
       "projectionPath": "drug.manufacturer_name",
@@ -413,6 +682,29 @@
     },
     {
       "code": "G.k.5a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.5a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_5a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.5a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.5a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].cumulativeDoseValue",
       "projectionPath": "drug.cumulative_dose_first_reaction_value",
@@ -438,6 +730,33 @@
     },
     {
       "code": "G.k.5b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.5b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_5b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.5b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "dose"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.5b.VOCABULARY"],
+              "reason": "Submission checks the pinned official ICH CL25 dose / CL26 duration subset."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Use the dose-unit subset of ICH CL25 v2.3, including {DF}; do not accept every strength unit or every syntactically valid UCUM expression. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].cumulativeDoseUnit",
       "projectionPath": "drug.cumulative_dose_first_reaction_unit",
@@ -469,6 +788,29 @@
     },
     {
       "code": "G.k.6a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.6a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_6a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.6a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.6a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].gestationPeriodExposureValue",
       "projectionPath": "drug.gestation_period_exposure_value",
@@ -494,6 +836,39 @@
     },
     {
       "code": "G.k.6b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.6b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_6b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.6b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "mo",
+                  "wk",
+                  "d",
+                  "{trimester}"
+                ],
+                "enforcement": "case_validate"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.6b.ALLOWED.VALUE",
+              "valid": [{"value": "mo", "nullFlavor": null}, {"value": "wk", "nullFlavor": null}, {"value": "d", "nullFlavor": null}, {"value": "{trimester}", "nullFlavor": null}],
+              "invalid": [{"value": "a", "nullFlavor": null}, {"value": "h", "nullFlavor": null}, {"value": "{Trimester}", "nullFlavor": null}, {"value": "trimester", "nullFlavor": null}, {"value": "mg", "nullFlavor": null}]
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Gestation units are mo, wk, d, {trimester}; use the lowercase code from CL26 v2.2. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].gestationPeriodExposureUnit",
       "projectionPath": "drug.gestation_period_exposure_unit",
@@ -525,6 +900,22 @@
     },
     {
       "code": "G.k.11",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.11",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_11",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.11.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugAdditionalInformation",
       "projectionPath": "drug.drug_additional_information",
@@ -548,6 +939,36 @@
     },
     {
       "code": "FDA.G.k.10a",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.10a",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_10a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.10a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "5"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.10a.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NA"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.10a.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NA"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaAdditionalInfoCoded",
       "projectionPath": "drug.fda_additional_info_coded",
@@ -597,6 +1018,22 @@
     },
     {
       "code": "FDA.G.k.10.1",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.10.1",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_10_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.10.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaSpecializedProductCategory",
       "projectionPath": "drug.fda_specialized_product_category",
@@ -661,6 +1098,29 @@
     },
     {
       "code": "FDA.G.k.1.a",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.1.a",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_1_a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.1.a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.1.a.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaOtherCharacterization",
       "projectionPath": "drug.fda_other_characterization",
@@ -684,6 +1144,22 @@
     },
     {
       "code": "G.k.2.3.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_3_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].activeSubstances[].substanceName",
       "projectionPath": "drug.activeSubstances[].substance_name",
@@ -707,6 +1183,22 @@
     },
     {
       "code": "G.k.2.3.r.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_3_r_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].activeSubstances[].substanceTermIdVersion",
       "projectionPath": "drug.activeSubstances[].substance_termid_version",
@@ -730,6 +1222,32 @@
     },
     {
       "code": "G.k.2.3.r.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_3_r_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "identifier_profile": "substance_id"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific identifier system/version validation is not implemented for this field; length and control-character checks are not membership checks."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Substance ID follows the recipient's system and version; FDA uses SRS UNII. Length/control-character checks do not prove membership. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].activeSubstances[].substanceTermId",
       "projectionPath": "drug.activeSubstances[].substance_termid",
@@ -753,6 +1271,22 @@
     },
     {
       "code": "G.k.2.3.r.1.KR.1a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.1.KR.1a",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_2_3_r_1_kr_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "20",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.2.3.r.1.KR.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].activeSubstances[].mfdsVersion",
       "projectionPath": "drug.activeSubstances[].mfds_version",
@@ -776,6 +1310,22 @@
     },
     {
       "code": "G.k.2.3.r.1.KR.1b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.1.KR.1b",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_2_3_r_1_kr_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.2.3.r.1.KR.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].activeSubstances[].mfdsId",
       "projectionPath": "drug.activeSubstances[].mfds_id",
@@ -833,6 +1383,29 @@
     },
     {
       "code": "G.k.2.3.r.3a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.3a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_3_r_3a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.3a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.3a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].activeSubstances[].substanceStrengthValue",
       "projectionPath": "drug.activeSubstances[].strength_value",
@@ -858,6 +1431,28 @@
     },
     {
       "code": "G.k.2.3.r.3b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.2.3.r.3b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_2_3_r_3b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.2.3.r.3b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.2.3.r.3b.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].activeSubstances[].substanceStrengthUnit",
       "projectionPath": "drug.activeSubstances[].strength_unit",
@@ -890,6 +1485,29 @@
     },
     {
       "code": "G.k.4.r.1a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.1a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].doseValue",
       "projectionPath": "drug.dosageInformation[].dose_value",
@@ -915,6 +1533,33 @@
     },
     {
       "code": "G.k.4.r.1b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "dose"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.4.r.1b.VOCABULARY"],
+              "reason": "Submission checks the pinned official ICH CL25 dose / CL26 duration subset."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Use the dose-unit subset of ICH CL25 v2.3, including {DF}; do not accept every strength unit or every syntactically valid UCUM expression. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].doseUnit",
       "projectionPath": "drug.dosageInformation[].dose_unit",
@@ -967,6 +1612,29 @@
     },
     {
       "code": "G.k.4.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.2.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].numberOfUnits",
       "projectionPath": "drug.dosageInformation[].number_of_units",
@@ -992,6 +1660,28 @@
     },
     {
       "code": "G.k.4.r.3",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "frequency"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.4.r.3.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].frequencyUnit",
       "projectionPath": "drug.dosageInformation[].frequency_unit",
@@ -1056,6 +1746,22 @@
     },
     {
       "code": "G.k.4.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_4",
+          "checks": {
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].firstAdministrationDate",
       "projectionPath": "drug.dosageInformation[].first_administration_date",
@@ -1080,6 +1786,22 @@
     },
     {
       "code": "G.k.4.r.5",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_5",
+          "checks": {
+            "null_flavors": {
+              "dictionaryValue": ["MSK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.5.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].lastAdministrationDate",
       "projectionPath": "drug.dosageInformation[].last_administration_date",
@@ -1104,6 +1826,29 @@
     },
     {
       "code": "G.k.4.r.6a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.6a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_6a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "5",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.6a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.6a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].durationValue",
       "projectionPath": "drug.dosageInformation[].duration_value",
@@ -1129,6 +1874,33 @@
     },
     {
       "code": "G.k.4.r.6b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.6b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_6b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.6b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "time"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.4.r.6b.VOCABULARY"],
+              "reason": "Submission checks the pinned official ICH CL25 dose / CL26 duration subset."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].durationUnit",
       "projectionPath": "drug.dosageInformation[].duration_unit",
@@ -1209,6 +1981,22 @@
     },
     {
       "code": "G.k.4.r.7",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.7",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_7",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "35",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.7.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 35}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 35}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 36}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 36}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].batchNumber",
       "projectionPath": "drug.dosageInformation[].batch_lot_number",
@@ -1232,6 +2020,22 @@
     },
     {
       "code": "G.k.4.r.8",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.8",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_8",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.8.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].dosageText",
       "projectionPath": "drug.dosageInformation[].dosage_text",
@@ -1255,6 +2059,29 @@
     },
     {
       "code": "G.k.4.r.9.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.9.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_9_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.9.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.9.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].doseForm",
       "projectionPath": "drug.dosageInformation[].dose_form",
@@ -1279,6 +2106,32 @@
     },
     {
       "code": "G.k.4.r.9.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.9.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_9_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.9.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "format",
+                "enforcement": "case_validate",
+                "format_name": "terminology_version"
+              },
+              "owner": "unresolved",
+              "reason": "Terminology-version validation needs the selected system and a loaded release; the current input function only checks length."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. This is the terminology VERSION, not a dose-form TermID. Validate it against the selected terminology system/release, not the list of dose-form codes. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].doseFormTermIdVersion",
       "projectionPath": "drug.dosageInformation[].dose_form_termid_version",
@@ -1302,6 +2155,32 @@
     },
     {
       "code": "G.k.4.r.9.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.9.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_9_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.9.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "dose_form"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific EDQM/SPL system, version and code validation is not connected to this field. The required terminology release must be available before claiming coverage."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].doseFormTermId",
       "projectionPath": "drug.dosageInformation[].dose_form_termid",
@@ -1325,6 +2204,29 @@
     },
     {
       "code": "G.k.4.r.10.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.10.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_10_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.10.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.10.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].routeOfAdministration",
       "projectionPath": "drug.dosageInformation[].route_of_administration",
@@ -1364,6 +2266,22 @@
     },
     {
       "code": "G.k.4.r.10.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.10.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_10_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4* E2B(R2)\n10* E2B(R3)",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.10.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].routeTermIdVersion",
       "projectionPath": "drug.dosageInformation[].route_termid_version",
@@ -1387,6 +2305,32 @@
     },
     {
       "code": "G.k.4.r.10.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.10.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_10_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3* E2B(R2)\n100* E2B(R3)",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.10.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "route"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific EDQM/SPL system, version and code validation is not connected to this field. The required terminology release must be available before claiming coverage."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].routeTermId",
       "projectionPath": "drug.dosageInformation[].route_termid",
@@ -1410,6 +2354,29 @@
     },
     {
       "code": "G.k.4.r.11.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.11.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_11_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.11.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.11.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].parentRouteOfAdministration",
       "projectionPath": "drug.dosageInformation[].parent_route",
@@ -1434,6 +2401,22 @@
     },
     {
       "code": "G.k.4.r.11.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.11.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_11_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4* E2B(R2)\n10* E2B(R3)",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.11.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].parentRouteTermIdVersion",
       "projectionPath": "drug.dosageInformation[].parent_route_termid_version",
@@ -1457,6 +2440,32 @@
     },
     {
       "code": "G.k.4.r.11.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.4.r.11.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_4_r_11_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "3* E2B(R2)\n100* E2B(R3)",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.4.r.11.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "route"
+              },
+              "owner": "unresolved",
+              "reason": "Recipient-specific EDQM/SPL system, version and code validation is not connected to this field. The required terminology release must be available before claiming coverage."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348; FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].dosageInformation[].parentRouteTermId",
       "projectionPath": "drug.dosageInformation[].parent_route_termid",
@@ -1480,6 +2489,29 @@
     },
     {
       "code": "G.k.7.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.7.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_7_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "250",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.7.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 250}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 249}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 250}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 251}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 251}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["UNK", "ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.7.r.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].indications[].indicationText",
       "projectionPath": "drug.indications[].indication_text",
@@ -1504,6 +2536,28 @@
     },
     {
       "code": "G.k.7.r.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.7.r.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_7_r_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "4",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.7.r.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "dotted_version"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.7.r.2a.ALLOWED.VALUE"],
+              "reason": "MedDRA version validity is owned by the Case validator; input contracts preserve draft version text and enforce its length."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].indications[].indicationMeddraVersion",
       "projectionPath": "drug.indications[].indication_meddra_version",
@@ -1536,6 +2590,29 @@
     },
     {
       "code": "G.k.7.r.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.7.r.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_7_r_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "8",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.7.r.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "case_validate", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.7.r.2b.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].indications[].indicationMeddraCode",
       "projectionPath": "drug.indications[].indication_meddra_code",
@@ -1576,6 +2653,29 @@
     },
     {
       "code": "G.k.9.i.3.1a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.3.1a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_3_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "5",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.1a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].administrationStartIntervalValue",
       "projectionPath": "drug.drugReactionAssessments[].administrationStartIntervalValue",
@@ -1601,6 +2701,33 @@
     },
     {
       "code": "G.k.9.i.3.1b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.3.1b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_3_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "time"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.9.i.3.1b.VOCABULARY"],
+              "reason": "Submission checks the pinned official ICH CL25 dose / CL26 duration subset."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].administrationStartIntervalUnit",
       "projectionPath": "drug.drugReactionAssessments[].administrationStartIntervalUnit",
@@ -1624,6 +2751,29 @@
     },
     {
       "code": "G.k.9.i.3.2a",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.3.2a",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_3_2a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "5",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.2a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 5}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 4}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 5}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "numeric", "enforcement": "representation_enforced", "numeric_shape": "decimal"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.2a.ALLOWED.VALUE",
+              "valid": [{"value": "0", "nullFlavor": null}, {"value": "-1.5", "nullFlavor": null}, {"value": ".5", "nullFlavor": null}, {"value": 1.5, "nullFlavor": null}],
+              "invalid": [{"value": "12mg", "nullFlavor": null}, {"value": "1.2.3", "nullFlavor": null}, {"value": true, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].lastDoseIntervalValue",
       "projectionPath": "drug.drugReactionAssessments[].lastDoseIntervalValue",
@@ -1649,6 +2799,33 @@
     },
     {
       "code": "G.k.9.i.3.2b",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.3.2b",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_3_2b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.3.2b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "time"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.G.k.9.i.3.2b.VOCABULARY"],
+              "reason": "Submission checks the pinned official ICH CL25 dose / CL26 duration subset."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].lastDoseIntervalUnit",
       "projectionPath": "drug.drugReactionAssessments[].lastDoseIntervalUnit",
@@ -1672,6 +2849,29 @@
     },
     {
       "code": "G.k.9.i.4",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.4.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].recurrenceAction",
       "projectionPath": "drug.drugReactionAssessments[].recurrenceAction",
@@ -1696,6 +2896,22 @@
     },
     {
       "code": "G.k.9.i.2.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_2_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.2.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].sourceOfAssessment",
       "projectionPath": "drug.drugReactionAssessments[].sourceOfAssessment",
@@ -1719,6 +2935,22 @@
     },
     {
       "code": "G.k.9.i.2.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_2_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.2.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].methodOfAssessment",
       "projectionPath": "drug.drugReactionAssessments[].methodOfAssessment",
@@ -1742,6 +2974,22 @@
     },
     {
       "code": "G.k.9.i.2.r.3",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_9_i_2_r_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.9.i.2.r.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessment",
       "projectionPath": "drug.drugReactionAssessments[].resultOfAssessment",
@@ -1765,6 +3013,29 @@
     },
     {
       "code": "G.k.9.i.2.r.3.KR.2",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.3.KR.2",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_9_i_2_r_3_kr_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.2.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr2",
       "projectionPath": "drug.drugReactionAssessments[].resultOfAssessmentKr2",
@@ -1825,6 +3096,14 @@
     },
     {
       "code": "FDA.G.k.12.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.1",
+          "source": "dictionary/fda-regional.json",
+          "checks": {
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].malfunction",
       "projectionPath": "drug.fdaDevices[].malfunction",
@@ -1847,6 +3126,29 @@
     },
     {
       "code": "FDA.G.k.12.r.10",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.10",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_10",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.10.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.10.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].operatorOfDevice",
       "projectionPath": "drug.fdaDevices[].operator_of_device",
@@ -1870,6 +3172,22 @@
     },
     {
       "code": "FDA.G.k.12.r.11.r",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.11.r",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_11_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.11.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].remedialActions[].valueCode",
       "projectionPath": "drug.fdaDevices[].remedialActions[].value_code",
@@ -1936,6 +3254,29 @@
     },
     {
       "code": "FDA.G.k.12.r.2.r",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.2.r",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_2_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.2.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.2.r.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].followUpTypes[].valueCode",
       "projectionPath": "drug.fdaDevices[].followUpTypes[].value_code",
@@ -1981,6 +3322,22 @@
     },
     {
       "code": "FDA.G.k.12.r.3.r",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.3.r",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_3_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "7",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.3.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 7}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 6}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 7}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 8}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 8}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].deviceProblemCodes[].valueCode",
       "projectionPath": "drug.fdaDevices[].deviceProblemCodes[].value_code",
@@ -2005,6 +3362,29 @@
     },
     {
       "code": "FDA.G.k.12.r.4",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.4",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "80",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 79}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 80}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 79}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 80}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 81}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 81}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NI"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.4.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NI"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].deviceBrandName",
       "projectionPath": "drug.fdaDevices[].device_brand_name",
@@ -2053,6 +3433,29 @@
     },
     {
       "code": "FDA.G.k.12.r.5",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.5",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "80",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 79}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 80}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 79}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 80}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 81}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 81}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NI"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.5.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NI"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].commonDeviceName",
       "projectionPath": "drug.fdaDevices[].common_device_name",
@@ -2101,6 +3504,22 @@
     },
     {
       "code": "FDA.G.k.12.r.6",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.6",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_6",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.6.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].deviceProductCode",
       "projectionPath": "drug.fdaDevices[].device_product_code",
@@ -2124,6 +3543,22 @@
     },
     {
       "code": "FDA.G.k.12.r.7.1a",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.7.1a",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_7_1a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.7.1a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].manufacturerName",
       "projectionPath": "drug.fdaDevices[].manufacturer_name",
@@ -2147,6 +3582,22 @@
     },
     {
       "code": "FDA.G.k.12.r.7.1b",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.7.1b",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_7_1b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.7.1b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].manufacturerAddress",
       "projectionPath": "drug.fdaDevices[].manufacturer_address",
@@ -2170,6 +3621,22 @@
     },
     {
       "code": "FDA.G.k.12.r.7.1c",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.7.1c",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_7_1c",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "35",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.7.1c.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 35}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 35}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 36}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 36}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].manufacturerCity",
       "projectionPath": "drug.fdaDevices[].manufacturer_city",
@@ -2193,6 +3660,22 @@
     },
     {
       "code": "FDA.G.k.12.r.7.1d",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.7.1d",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_7_1d",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "40",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.7.1d.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 40}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 40}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 41}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 41}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].manufacturerState",
       "projectionPath": "drug.fdaDevices[].manufacturer_state",
@@ -2216,6 +3699,33 @@
     },
     {
       "code": "FDA.G.k.12.r.7.1e",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.7.1e",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_7_1e",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.7.1e.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "all"
+              },
+              "owner": "validator",
+              "ruleCodes": ["FDA.G.k.12.r.7.1e.VOCABULARY"],
+              "reason": "Submission checks active ISO 3166 alpha-2 country membership plus EU; missing country dataset is an explicit error."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Device manufacturer country: ISO 3166-1 alpha-2 plus the explicit EU exception. Two-character length alone is insufficient. Source: FDA Business Rules (2024-04): https://www.fda.gov/media/175373/download?attachment="
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].manufacturerCountry",
       "projectionPath": "drug.fdaDevices[].manufacturer_country",
@@ -2247,6 +3757,29 @@
     },
     {
       "code": "FDA.G.k.12.r.8",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.8",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_8",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.8.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.8.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].deviceUsage",
       "projectionPath": "drug.fdaDevices[].device_usage",
@@ -2270,6 +3803,22 @@
     },
     {
       "code": "FDA.G.k.12.r.9",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.G.k.12.r.9",
+          "source": "dictionary/fda-regional.json",
+          "function": "g::fda_g_k_12_r_9",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.G.k.12.r.9.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "drugs[].fdaDevices[].deviceLotNumber",
       "projectionPath": "drug.fdaDevices[].device_lot_number",
@@ -2293,6 +3842,29 @@
     },
     {
       "code": "G.k.10.r",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.10.r",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "g::g_k_10_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.10.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.G.k.10.r.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}, {"value": "7", "nullFlavor": null}, {"value": "8", "nullFlavor": null}, {"value": "9", "nullFlavor": null}, {"value": "10", "nullFlavor": null}, {"value": "11", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugAdditionalInformationCodes",
       "projectionPath": "drug.drug_additional_info_codes_json",
@@ -2465,6 +4037,14 @@
     },
     {
       "code": "G.k.9.i.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.1",
+          "source": "dictionary/ich-e2br3.json",
+          "checks": {
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "drugs[].drugReactionAssessments[].reactionId",
       "projectionPath": "drug.drugReactionAssessments[].reactionId",
@@ -2494,6 +4074,29 @@
     },
     {
       "code": "G.k.9.i.2.r.2.KR.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.2.KR.1",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_9_i_2_r_2_kr_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.2.KR.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.2.KR.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].drugReactionAssessments[].methodOfAssessmentKr1",
       "projectionPath": "drug.drugReactionAssessments[].methodOfAssessmentKr1",
@@ -2530,6 +4133,36 @@
     },
     {
       "code": "G.k.9.i.2.r.3.KR.1",
+      "dictionaryInputs": [
+        {
+          "code": "G.k.9.i.2.r.3.KR.1",
+          "source": "dictionary/mfds-regional.json",
+          "function": "g::mfds_g_k_9_i_2_r_3_kr_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "5", "6"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NA"],
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.G.k.9.i.2.r.3.KR.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NA"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "drugs[].drugReactionAssessments[].resultOfAssessmentKr1",
       "projectionPath": "drug.drugReactionAssessments[].resultOfAssessmentKr1",

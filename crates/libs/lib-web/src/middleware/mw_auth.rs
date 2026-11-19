@@ -56,10 +56,10 @@ pub async fn mw_ctx_resolver(
 		.and_then(trim_non_empty);
 
 	let resolved = ctx_resolve(mm.clone(), &cookies).await;
-	let snapshot = resolved
-		.as_ref()
-		.ok()
-		.map(|resolved| resolved.snapshot.clone());
+	let snapshot = match resolved.as_ref() {
+		Ok(resolved) => Some(resolved.snapshot.clone()),
+		Err(_) => None,
+	};
 	let ctx_ext_result = match resolved {
 		Ok(ResolvedRequest {
 			ctx,
@@ -126,7 +126,10 @@ fn decode_audit_reason_header(value: &str) -> Option<String> {
 			index += 1;
 		}
 	}
-	String::from_utf8(decoded).ok()
+	match String::from_utf8(decoded) {
+		Ok(value) => Some(value),
+		Err(_) => None,
+	}
 }
 
 fn hex_value(value: u8) -> Option<u8> {
@@ -159,24 +162,20 @@ async fn ctx_resolve(
 
 	// New tokens bind the selected organization to the signed identity. Keep
 	// accepting legacy email-only tokens while deployments rotate sessions.
-	let user: UserForAuth = if let Some((email, organization_id)) = token
-		.ident
-		.rsplit_once('|')
-		.and_then(|(email, organization)| {
-			uuid::Uuid::parse_str(organization)
-				.ok()
-				.map(|organization_id| (email, organization_id))
-		}) {
-		UserBmc::auth_by_email_and_organization(&mm, email, organization_id)
-			.await
-			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
-			.ok_or(CtxExtError::UserNotFound)?
-	} else {
-		UserBmc::auth_by_email(&mm, &token.ident)
-			.await
-			.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
-			.ok_or(CtxExtError::UserNotFound)?
-	};
+	let user: UserForAuth =
+		if let Some((email, organization)) = token.ident.rsplit_once('|') {
+			let organization_id = uuid::Uuid::parse_str(organization)
+				.map_err(|_| CtxExtError::TokenWrongFormat)?;
+			UserBmc::auth_by_email_and_organization(&mm, email, organization_id)
+				.await
+				.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
+				.ok_or(CtxExtError::UserNotFound)?
+		} else {
+			UserBmc::auth_by_email(&mm, &token.ident)
+				.await
+				.map_err(|ex| CtxExtError::ModelAccessError(ex.to_string()))?
+				.ok_or(CtxExtError::UserNotFound)?
+		};
 	// -- Validate Token
 	validate_web_token(&token, user.token_salt)
 		.map_err(|_| CtxExtError::FailValidate)?;
@@ -184,7 +183,9 @@ async fn ctx_resolve(
 		.map_err(|_| CtxExtError::TokenExpiryWrongFormat)?;
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		mm.dbx().db(),
-		policy_registry(),
+		policy_registry().map_err(|error| {
+			CtxExtError::AuthorizationSnapshotLoad(error.to_string())
+		})?,
 		user.id,
 		user.organization_id,
 		time::OffsetDateTime::now_utc(),
@@ -242,6 +243,7 @@ pub enum CtxExtError {
 	ModelAccessError(String),
 	FailValidate,
 	CannotSetTokenCookie,
+	Configuration(String),
 	AuthorizationSnapshotLoad(String),
 	PasswordChangeRequired,
 

@@ -22,24 +22,29 @@ pub fn set_token_cookie(
 	cookie.set_http_only(true);
 	cookie.set_path("/");
 	cookie.set_same_site(SameSite::Lax);
-	cookie.set_secure(secure_auth_cookie());
+	cookie.set_secure(secure_auth_cookie()?);
 
 	cookies.add(cookie);
 
 	Ok(())
 }
 
-fn secure_auth_cookie() -> bool {
-	let environment = std::env::var("E2BR3_ENV")
-		.or_else(|_| std::env::var("SERVICE_ENV"))
-		.unwrap_or_default();
-	matches!(
-		environment.trim().to_ascii_lowercase().as_str(),
-		"prod" | "production"
-	) || matches!(
-		std::env::var("E2BR3_COOKIE_SECURE"),
-		Ok(value) if matches!(value.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
-	)
+fn secure_auth_cookie() -> Result<bool> {
+	let config_error = |message| {
+		Error::CtxExt(crate::middleware::mw_auth::CtxExtError::Configuration(
+			message,
+		))
+	};
+	let value = std::env::var("E2BR3_COOKIE_SECURE").map_err(|error| {
+		config_error(format!("E2BR3_COOKIE_SECURE is required: {error}"))
+	})?;
+	match value.trim().to_ascii_lowercase().as_str() {
+		"1" | "true" | "yes" | "on" => Ok(true),
+		"0" | "false" | "no" | "off" => Ok(false),
+		_ => Err(config_error(
+			"E2BR3_COOKIE_SECURE must be a boolean value".into(),
+		)),
+	}
 }
 
 pub fn remove_token_cookie(cookies: &Cookies) -> Result<()> {

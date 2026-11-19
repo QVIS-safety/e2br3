@@ -24,7 +24,7 @@ async fn test_auth_login_refresh_logoff() -> Result<()> {
 	let admin_email = seed.admin.email.clone();
 	let admin_salt = seed.admin.token_salt;
 
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let login_body = json!({ "email": admin_email, "pwd": "adminpwd" });
 	let req = Request::builder()
 		.method("POST")
@@ -102,7 +102,7 @@ async fn test_auth_login_refresh_logoff() -> Result<()> {
 async fn test_auth_login_wrong_password() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let login_body = json!({ "email": seed.admin.email, "pwd": "wrongpwd" });
 	let req = Request::builder()
@@ -127,7 +127,7 @@ async fn test_auth_login_wrong_password() -> Result<()> {
 async fn test_auth_login_unknown_email() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let login_body = json!({ "email": "missing@example.com", "pwd": "anypwd" });
 	let req = Request::builder()
@@ -153,7 +153,7 @@ async fn test_auth_login_user_with_nil_org_fails() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let email = format!("nil-org-login-{suffix}@example.com");
 	let admin_cookie = cookie_header(&admin_token.to_string());
@@ -231,7 +231,7 @@ async fn test_auth_login_created_user_email_case_insensitive() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let mixed_case_email = format!("CaseMix-{suffix}@Example.COM");
 	let login_email = mixed_case_email.to_lowercase();
@@ -280,7 +280,7 @@ async fn test_auth_login_created_user_uses_requested_initial_password() -> Resul
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let email = format!("initial-password-{suffix}@example.com");
 	let password = "InitialPwd123!-long";
@@ -327,7 +327,7 @@ async fn test_auth_login_upgrades_legacy_hash_for_non_admin_user() -> Result<()>
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let email = format!("legacy-user-{suffix}@example.com");
 	let password = "hello legacy world";
@@ -401,7 +401,7 @@ async fn test_auth_login_upgrades_legacy_hash_for_non_admin_user() -> Result<()>
 async fn test_middleware_requires_auth() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/users")
@@ -426,7 +426,7 @@ async fn test_refresh_rejects_bad_token() -> Result<()> {
 	token.pop();
 	token.push('x');
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("POST")
 		.uri("/auth/v1/refresh")
@@ -446,7 +446,7 @@ async fn test_refresh_rejects_bad_token() -> Result<()> {
 async fn test_refresh_missing_token() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let _seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("POST")

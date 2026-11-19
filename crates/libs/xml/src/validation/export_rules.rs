@@ -15,8 +15,8 @@ pub fn validate_export_rules(
 ) -> Result<Vec<XmlValidationError>> {
 	let (_document, mut xpath) = export_xpath(xml)?;
 	let mut errors = Vec::new();
-	ich::run(&mut xpath, authority, &mut errors);
-	authority::run(&mut xpath, authority, &mut errors);
+	ich::run(&mut xpath, authority, &mut errors)?;
+	authority::run(&mut xpath, authority, &mut errors)?;
 	Ok(errors)
 }
 
@@ -27,7 +27,7 @@ pub fn validate_export_message_header(
 ) -> Result<Vec<XmlValidationError>> {
 	let (_document, mut xpath) = export_xpath(xml)?;
 	let mut errors = Vec::new();
-	ich::n::run(&mut xpath, authority, &mut errors);
+	ich::n::run(&mut xpath, authority, &mut errors)?;
 	Ok(errors)
 }
 
@@ -87,8 +87,8 @@ fn reject(
 	code: &str,
 	expression: &str,
 	message: &str,
-) {
-	if matches(xpath, expression) {
+) -> Result<()> {
+	if matches(xpath, expression)? {
 		errors.push(XmlValidationError {
 			message: message.to_string(),
 			code: Some(code.to_string()),
@@ -98,14 +98,19 @@ fn reject(
 			column: None,
 		});
 	}
+	Ok(())
 }
 
-fn matches(xpath: &mut Context, expression: &str) -> bool {
-	!xpath
+fn matches(xpath: &mut Context, expression: &str) -> Result<bool> {
+	Ok(!xpath
 		.evaluate(expression)
-		.expect("static XML-integrity XPath must compile")
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {expression}"),
+			line: None,
+			column: None,
+		})?
 		.get_nodes_as_vec()
-		.is_empty()
+		.is_empty())
 }
 
 #[cfg(test)]

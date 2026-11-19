@@ -111,9 +111,9 @@ async fn import_c_1_safety_report(
 	apply_c_safety_report_import_settings(
 		&mut report,
 		settings,
-		settings
-			.import_date
-			.unwrap_or_else(|| time::OffsetDateTime::now_utc().date()),
+		settings.import_date.ok_or_else(|| Error::InvalidImportRequest {
+			message: "import date is required".to_string(),
+		})?,
 	)?;
 
 	let receiver_organization = header.and_then(|h| h.message_receiver.clone());

@@ -4,6 +4,29 @@
   "fields": [
     {
       "code": "C.5.1.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.1.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_5_1_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.1.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.1.r.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "studyInformation.studyRegistrationNumbers[].registrationNumber",
       "projectionPath": "studyRegistrationNumbers[].registration_number",
@@ -38,6 +61,35 @@
     },
     {
       "code": "C.5.1.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.1.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_5_1_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.1.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.C.5.1.r.2.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            },
+            "null_flavors": {
+              "dictionaryValue": ["ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.1.r.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "studyInformation.studyRegistrationNumbers[].countryCode",
       "projectionPath": "studyRegistrationNumbers[].country_code",
@@ -80,6 +132,29 @@
     },
     {
       "code": "C.5.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_5_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.2.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "studyInformation.studyName",
       "projectionPath": "studyInformation.study_name",
@@ -104,6 +179,29 @@
     },
     {
       "code": "C.5.3",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_5_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.3.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "studyInformation.sponsorStudyNumber",
       "projectionPath": "studyInformation.sponsor_study_number",
@@ -128,6 +226,41 @@
     },
     {
       "code": "C.5.4",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_5_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6"
+                ],
+                "enforcement": "case_validate"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.5.4.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          },
+          "guidance": "ICH E2D(R1) alignment (16 December 2025), section 3: https://www.fda.gov/media/195119/download?attachment=. FDA AEMS accepts codes 4-6; MFDS regional receiver rules retain codes 1-3."
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "studyInformation.studyTypeReaction",
       "projectionPath": "studyInformation.study_type_reaction",
@@ -151,6 +284,22 @@
     },
     {
       "code": "C.5.4.KR.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.5.4.KR.1",
+          "source": "dictionary/mfds-regional.json",
+          "function": "c::mfds_c_5_4_kr_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.C.5.4.KR.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "studyInformation.studyTypeReactionKr1",
       "projectionPath": "studyInformation.study_type_reaction_kr1",
@@ -174,6 +323,22 @@
     },
     {
       "code": "FDA.C.5.5a",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.C.5.5a",
+          "source": "dictionary/fda-regional.json",
+          "function": "c::fda_c_5_5a",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.5.5a.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "studyInformation.fdaIndNumberOccurred",
       "projectionPath": "studyInformation.fda_ind_number_occurred",
@@ -197,6 +362,22 @@
     },
     {
       "code": "FDA.C.5.5b",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.C.5.5b",
+          "source": "dictionary/fda-regional.json",
+          "function": "c::fda_c_5_5b",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.5.5b.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "studyInformation.fdaPreAndaNumberOccurred",
       "projectionPath": "studyInformation.fda_pre_anda_number_occurred",
@@ -220,6 +401,29 @@
     },
     {
       "code": "FDA.C.5.6.r",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.C.5.6.r",
+          "source": "dictionary/fda-regional.json",
+          "function": "c::fda_c_5_6_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "10",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.5.6.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 10}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 9}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 10}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 11}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 11}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NA"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.5.6.r.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NA"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "studyInformation.fdaCrossReportedIndNumbers[].indNumber",
       "projectionPath": "studyInformation.fdaCrossReportedIndNumbers[].ind_number",

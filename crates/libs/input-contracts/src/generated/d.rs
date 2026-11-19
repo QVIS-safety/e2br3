@@ -616,6 +616,7 @@ pub fn d_2_2_1a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 }
 
 /// ICH.D.2.2.1b.LENGTH.MAX
+/// ICH.D.2.2.1b.ALLOWED.VALUE
 pub fn d_2_2_1b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
 	crate::helpers::max_length(
@@ -623,6 +624,12 @@ pub fn d_2_2_1b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		"ICH.D.2.2.1b.LENGTH.MAX",
 		input.value,
 		50,
+	);
+	crate::helpers::allowed_values(
+		&mut issues,
+		"ICH.D.2.2.1b.ALLOWED.VALUE",
+		input.value,
+		&["mo", "wk", "d", "{trimester}"],
 	);
 	issues
 }
@@ -642,6 +649,7 @@ pub fn d_2_2a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 }
 
 /// ICH.D.2.2b.LENGTH.MAX
+/// ICH.D.2.2b.ALLOWED.VALUE
 pub fn d_2_2b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
 	crate::helpers::max_length(
@@ -649,6 +657,12 @@ pub fn d_2_2b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		"ICH.D.2.2b.LENGTH.MAX",
 		input.value,
 		50,
+	);
+	crate::helpers::allowed_values(
+		&mut issues,
+		"ICH.D.2.2b.ALLOWED.VALUE",
+		input.value,
+		&["a", "mo", "wk", "d", "h", "10.a"],
 	);
 	issues
 }

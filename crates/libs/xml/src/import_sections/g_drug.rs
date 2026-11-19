@@ -450,8 +450,11 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 }
 
 fn read_xml_id(xpath: &mut Context, node: &Node, index: usize) -> Result<String> {
-	Ok(first_attr(xpath, node, GDrugPaths::XML_ID_ROOT)
-		.unwrap_or_else(|| format!("import-drug-{index}")))
+	first_attr(xpath, node, GDrugPaths::XML_ID_ROOT).ok_or_else(|| {
+		Error::InvalidImportRequest {
+			message: format!("drug {index} is missing XML ID"),
+		}
+	})
 }
 
 /// e2b:G.k.1
@@ -484,8 +487,10 @@ fn read_drug_roles(xpath: &mut Context) -> Result<HashMap<String, String>> {
 		else {
 			continue;
 		};
-		let value =
-			first_attr(xpath, &node, GDrugPaths::DRUG_ROLE_CODE).unwrap_or_default();
+		let value = first_attr(xpath, &node, GDrugPaths::DRUG_ROLE_CODE)
+			.ok_or_else(|| Error::InvalidImportRequest {
+				message: "drug role code is required".to_string(),
+			})?;
 		import_constraint::string(
 			"drugCharacterization",
 			Some(&value),
@@ -542,8 +547,10 @@ fn read_fda_other_characterizations(
 
 /// e2b:G.k.2.2
 fn read_g_k_2_2(xpath: &mut Context, node: &Node, _index: usize) -> Result<String> {
-	let value =
-		first_text(xpath, node, GDrugPaths::PRODUCT_NAME_1).unwrap_or_default();
+	let value = first_text(xpath, node, GDrugPaths::PRODUCT_NAME_1)
+		.ok_or_else(|| Error::InvalidImportRequest {
+			message: "medicinal product name is required".to_string(),
+		})?;
 	import_constraint::string(
 		"medicinalProduct",
 		Some(&value),

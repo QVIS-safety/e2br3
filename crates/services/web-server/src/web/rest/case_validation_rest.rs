@@ -30,7 +30,14 @@ pub struct ValidationAuthoritiesQuery {
 impl ValidationAuthoritiesQuery {
 	pub fn resolve(&self) -> Result<Vec<RegulatoryAuthority>> {
 		let mut authorities = Vec::new();
-		for value in self.authorities.as_deref().unwrap_or("ich").split(',') {
+		for value in self
+			.authorities
+			.as_deref()
+			.ok_or_else(|| Error::BadRequest {
+				message: "authorities is required".into(),
+			})?
+			.split(',')
+		{
 			let authority = super::case_rest::parse_authority_or_bad_request(value)?;
 			if !authorities.contains(&authority) {
 				authorities.push(authority);
@@ -78,7 +85,9 @@ pub(crate) async fn resolve_authority(
 		.iter()
 		.copied()
 		.find(|configured| *configured == authority)
-		.unwrap_or(settings.appendices[0]))
+		.ok_or_else(|| Error::BadRequest {
+			message: "requested authority is not configured".into(),
+		})?)
 }
 
 pub async fn refresh_case_validation_cache(

@@ -7,7 +7,7 @@ async fn test_admin_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let profile_id = create_empty_custom_role(
 		&app,
 		&admin_cookie,
@@ -73,7 +73,7 @@ async fn test_admin_matrix_privileges_grant_user_operations_but_not_role_identit
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let profile_id = format!("qa_users_roles_matrix_{}", Uuid::new_v4().simple());
 
 	let profile_id =
@@ -291,7 +291,7 @@ async fn test_pdf_admin_read_and_edit_grant_registered_admin_actions() -> Result
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let profile_id = format!("qa_settings_admin_{}", Uuid::new_v4().simple());
 
 	let profile_id =
@@ -522,7 +522,7 @@ async fn test_admin_read_grants_effective_audit_log_access() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let none_id = create_empty_custom_role_with_generated_id(
 		&app,

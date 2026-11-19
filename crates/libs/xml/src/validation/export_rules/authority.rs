@@ -1,4 +1,4 @@
-use crate::XmlValidationError;
+use crate::{Result, XmlValidationError};
 use lib_core::regulatory::RegulatoryAuthority;
 use libxml::xpath::Context;
 
@@ -6,15 +6,16 @@ pub(super) fn run(
 	xpath: &mut Context,
 	authority: RegulatoryAuthority,
 	errors: &mut Vec<XmlValidationError>,
-) {
+) -> Result<()> {
 	match authority {
-		RegulatoryAuthority::Fda => reject(xpath, errors, MFDS, "FDA", "MFDS"),
-		RegulatoryAuthority::Mfds => reject(xpath, errors, FDA, "MFDS", "FDA"),
+		RegulatoryAuthority::Fda => reject(xpath, errors, MFDS, "FDA", "MFDS")?,
+		RegulatoryAuthority::Mfds => reject(xpath, errors, FDA, "MFDS", "FDA")?,
 		RegulatoryAuthority::Ich => {
-			reject(xpath, errors, MFDS, "ICH", "MFDS");
-			reject(xpath, errors, FDA, "ICH", "FDA");
+			reject(xpath, errors, MFDS, "ICH", "MFDS")?;
+			reject(xpath, errors, FDA, "ICH", "FDA")?;
 		}
 	}
+	Ok(())
 }
 
 const MFDS: &str = "//*[@codeSystem and starts-with(@codeSystem, '2.16.840.1.113883.3.989.5.1.10.')] | //*[@root and starts-with(@root, '2.16.840.1.113883.3.989.5.1.10.')]";
@@ -26,8 +27,8 @@ fn reject(
 	expression: &str,
 	authority: &str,
 	regional_authority: &str,
-) {
-	if super::matches(xpath, expression) {
+) -> Result<()> {
+	if super::matches(xpath, expression)? {
 		errors.push(XmlValidationError {
 			message: format!(
 				"XML for {authority} contains {regional_authority} regional fields."
@@ -39,4 +40,5 @@ fn reject(
 			column: None,
 		});
 	}
+	Ok(())
 }

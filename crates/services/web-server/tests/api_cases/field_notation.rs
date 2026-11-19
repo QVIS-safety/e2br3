@@ -140,7 +140,7 @@ async fn field_notation_scalar_lifecycle_preserves_id_and_audits_changes(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let endpoint = format!("/api/cases/{case_id}/field-notation");
 	let query = format!("{endpoint}?e2bCode=C.1.1");
@@ -283,7 +283,7 @@ async fn field_notation_keeps_scalar_and_actual_record_subjects_isolated(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug_record(&app, &cookie, case_id).await?;
 	let endpoint = format!("/api/cases/{case_id}/field-notation");
@@ -347,7 +347,7 @@ async fn field_notation_accepts_nested_soft_deleted_rows_and_rejects_unknown_ids
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug_record(&app, &cookie, case_id).await?;
 	let dosage_id = create_dosage_record(&app, &cookie, case_id, drug_id).await?;
@@ -438,7 +438,7 @@ async fn field_notation_rejects_cross_case_and_cross_organization_record_ids(
 		generate_web_token(&other.admin.email, other.admin.token_salt)?;
 	let owner_cookie = cookie_header(&owner_token.to_string());
 	let other_cookie = cookie_header(&other_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let owner_case = create_case(&app, &owner_cookie, owner.org_id).await?;
 	let same_org_case = create_case(&app, &owner_cookie, owner.org_id).await?;
 	let other_org_case = create_case(&app, &other_cookie, other.org_id).await?;
@@ -546,7 +546,7 @@ async fn viewer_cannot_change_field_notation_or_its_audit_history() -> Result<()
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
 	let endpoint = format!("/api/cases/{case_id}/field-notation");
 	let query = format!("{endpoint}?e2bCode=D.1");

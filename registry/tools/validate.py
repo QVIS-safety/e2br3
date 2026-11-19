@@ -65,7 +65,7 @@ ALLOWED_VALUE_CONSTRAINT_FIELDS = {
     "enforcement",
 }
 NUMERIC_SHAPES = {"decimal", "integer", "dotted_version"}
-FORMAT_NAMES = {"e2b_datetime", "base64", "ich_identifier"}
+FORMAT_NAMES = {"e2b_datetime", "base64", "ich_identifier", "worldwide_case_id", "terminology_version"}
 VOCABULARY_SCOPES = {
     "all",
     "time",

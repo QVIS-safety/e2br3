@@ -22,7 +22,10 @@ pub fn parse_e2b_xml(xml: &[u8]) -> Result<ParsedE2b> {
 }
 
 fn extract_root_element_name(xml: &[u8]) -> Option<String> {
-	let xml_str = std::str::from_utf8(xml).ok()?;
+	let xml_str = match std::str::from_utf8(xml) {
+		Ok(xml) => xml,
+		Err(_) => return None,
+	};
 	let mut rest = xml_str;
 	loop {
 		let start = rest.find('<')?;
@@ -31,9 +34,10 @@ fn extract_root_element_name(xml: &[u8]) -> Option<String> {
 			rest = rest.get(rest.find('>')? + 1..)?;
 			continue;
 		}
-		let end = rest
-			.find(|c: char| c.is_whitespace() || c == '>' || c == '/')
-			.unwrap_or(rest.len());
+		let end = match rest.find(|c: char| c.is_whitespace() || c == '>' || c == '/') {
+			Some(end) => end,
+			None => rest.len(),
+		};
 		let name = rest[..end].trim();
 		return (!name.is_empty()).then(|| name.to_string());
 	}

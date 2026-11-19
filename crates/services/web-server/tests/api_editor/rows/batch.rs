@@ -14,7 +14,7 @@ async fn repeatable_row_batch_rolls_back_data_and_audit_on_validation_failure(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let ctx = lib_core::ctx::Ctx::new(
 		seed.admin.id,
 		seed.org_id,
@@ -78,7 +78,7 @@ async fn repeatable_row_batch_rejects_the_whole_batch_for_permission_and_lifecyc
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let ctx = lib_core::ctx::Ctx::new(
 		seed.admin.id,
 		seed.org_id,
@@ -156,7 +156,7 @@ async fn repeatable_row_batch_commits_all_operations_together() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "AE-BATCH-OK", &["ich"]).await?;
 	let row_id = create_reaction_contract_fixture(&app, &cookie, &case_id).await?;

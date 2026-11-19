@@ -473,13 +473,13 @@ fn timeline_day_count(
 }
 
 fn reaction_is_serious(reaction: &Reaction) -> bool {
-	reaction.serious.unwrap_or(false)
-		|| reaction.criteria_death.unwrap_or(false)
-		|| reaction.criteria_life_threatening.unwrap_or(false)
-		|| reaction.criteria_hospitalization.unwrap_or(false)
-		|| reaction.criteria_disabling.unwrap_or(false)
-		|| reaction.criteria_congenital_anomaly.unwrap_or(false)
-		|| reaction.criteria_other_medically_important.unwrap_or(false)
+	(reaction.serious == Some(true))
+		|| (reaction.criteria_death == Some(true))
+		|| (reaction.criteria_life_threatening == Some(true))
+		|| (reaction.criteria_hospitalization == Some(true))
+		|| (reaction.criteria_disabling == Some(true))
+		|| (reaction.criteria_congenital_anomaly == Some(true))
+		|| (reaction.criteria_other_medically_important == Some(true))
 }
 
 fn is_blank_review_receiver_row(object: &Map<String, Value>) -> bool {
@@ -592,11 +592,22 @@ fn parse_review_receiver_date(value: &str) -> Option<time::Date> {
 	if bytes.get(4) != Some(&b'-') || bytes.get(7) != Some(&b'-') {
 		return None;
 	}
-	let year = value.get(0..4)?.parse::<i32>().ok()?;
-	let month = value.get(5..7)?.parse::<u8>().ok()?;
-	let day = value.get(8..10)?.parse::<u8>().ok()?;
-	time::Date::from_calendar_date(year, time::Month::try_from(month).ok()?, day)
-		.ok()
+	let Ok(year) = value.get(0..4)?.parse::<i32>() else {
+		return None;
+	};
+	let Ok(month) = value.get(5..7)?.parse::<u8>() else {
+		return None;
+	};
+	let Ok(day) = value.get(8..10)?.parse::<u8>() else {
+		return None;
+	};
+	let Ok(month) = time::Month::try_from(month) else {
+		return None;
+	};
+	match time::Date::from_calendar_date(year, month, day) {
+		Ok(date) => Some(date),
+		Err(_) => None,
+	}
 }
 
 fn format_date(date: time::Date) -> String {
@@ -715,7 +726,7 @@ fn optional_text_changed(next: &Option<String>, current: Option<&str>) -> bool {
 	let Some(next) = next.as_deref() else {
 		return false;
 	};
-	next.trim() != current.unwrap_or_default().trim()
+	current.map(str::trim) != Some(next.trim())
 }
 
 fn case_identity_or_scope_update_requires_reason(
@@ -941,18 +952,14 @@ pub async fn case_to_read_result(
 	let actionability = workflow_actionability_for_case(ctx, mm, &case).await?;
 	let write_block_reason =
 		case_write_block_reason_for_case(ctx, mm, &case).await?;
-	Ok(build_case_read_result(
-		case,
-		actionability,
-		write_block_reason,
-	))
+	build_case_read_result(case, actionability, write_block_reason)
 }
 
 fn case_to_read_result_with_workflow(
 	ctx: &Ctx,
 	case: Case,
 	workflow: &WorkflowRuntimeSettings,
-) -> CaseReadResult {
+) -> Result<CaseReadResult> {
 	let (actionability, write_block_reason) =
 		case_read_decisions_with_workflow(ctx, &case, workflow);
 	build_case_read_result(case, actionability, write_block_reason)
@@ -962,18 +969,18 @@ fn build_case_read_result(
 	case: Case,
 	actionability: WorkflowActionability,
 	write_block_reason: Option<WorkflowBlockReason>,
-) -> CaseReadResult {
-	CaseReadResult {
+) -> Result<CaseReadResult> {
+	Ok(CaseReadResult {
 		qc_state: qc_state_for_case_status(
 			&case.status,
 			case.status_before_lock.as_deref(),
-		),
+		)?,
 		is_locked: case.status.eq_ignore_ascii_case("locked"),
 		case: case.into(),
 		can_act_on_workflow: actionability.can_act_on_workflow,
 		workflow_block_reason: actionability.workflow_block_reason,
 		case_write_block_reason: write_block_reason.map(|reason| reason.code),
-	}
+	})
 }
 
 fn case_scope_ids(
@@ -1321,7 +1328,7 @@ pub async fn list_cases(
 					.map(|entity| {
 						case_to_read_result_with_workflow(ctx, entity, &workflow)
 					})
-					.collect();
+					.collect::<Result<Vec<_>>>()?;
 				Ok((axum::http::StatusCode::OK, Json(DataRestResult { data })))
 			})
 		},
@@ -1408,10 +1415,10 @@ async fn list_case_view_rows_authorized(
 	)
 	.await?;
 	for item in &mut items {
-		item.warn = cached_totals
-			.get(&item.case_id)
-			.map(|count| count.to_string())
-			.unwrap_or_else(|| "Not checked".to_string());
+		item.warn = match cached_totals.get(&item.case_id) {
+			Some(count) => count.to_string(),
+			None => "Not checked".to_string(),
+		};
 	}
 
 	Ok((
@@ -1501,15 +1508,13 @@ async fn update_case_authorized(
 		}
 	}
 
-	let requires_compliance = requested_status
-		.as_deref()
-		.map(|next_status| {
+	let requires_compliance =
+		requested_status.as_deref().is_some_and(|next_status| {
 			let prev = current.status.trim().to_ascii_lowercase();
 			let next = next_status.trim().to_ascii_lowercase();
 			prev != next
 				&& matches!(next.as_str(), "submitted" | "nullified" | "deleted")
-		})
-		.unwrap_or(false);
+		});
 	let requires_reason_for_identity_or_scope =
 		case_identity_or_scope_update_requires_reason(&current, &data)
 			|| (clear_fields.contains(&"dg_prd_key")
@@ -1651,7 +1656,11 @@ pub async fn delete_case(
 				let PublicCaseDeleteRequest {
 					reason_for_change,
 					e_signature,
-				} = payload.map(|Json(params)| params).unwrap_or_default();
+				} = payload.map(|Json(params)| params).ok_or_else(|| {
+					Error::BadRequest {
+						message: "delete request body is required".into(),
+					}
+				})?;
 				let current = CaseBmc::get(ctx, mm, id).await?;
 				if !is_allowed_case_status_transition(&current.status, "deleted") {
 					return Err(Error::BadRequest {
@@ -1779,8 +1788,9 @@ pub async fn mark_case_validated_by_validator(
 	}
 	let provided_token = headers
 		.get("x-validator-token")
-		.and_then(|value| value.to_str().ok())
-		.ok_or(Error::Authentication)?;
+		.ok_or(Error::Authentication)?
+		.to_str()
+		.map_err(|_| Error::Authentication)?;
 	if provided_token != required_token {
 		return Err(Error::Authentication);
 	}

@@ -81,7 +81,7 @@ pub(super) async fn setup_imported_case_from(
 	)?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let xml_path = examples_dir.join(fixture_name);
 	let fixture_xml = std::fs::read_to_string(&xml_path)?;

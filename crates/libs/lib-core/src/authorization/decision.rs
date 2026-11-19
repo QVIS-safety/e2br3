@@ -3,6 +3,7 @@ use super::ActionId;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DenialReason {
 	UnknownAction,
+	InvalidPolicyRegistry,
 	WrongDecisionStage,
 	WrongOperationClass,
 	MissingGrant,

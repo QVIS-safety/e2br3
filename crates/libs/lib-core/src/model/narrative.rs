@@ -422,7 +422,10 @@ impl SenderDiagnosisBmc {
 		filters: Option<Vec<SenderDiagnosisFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<SenderDiagnosis>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -483,7 +486,10 @@ impl CaseSummaryInformationBmc {
 		filters: Option<Vec<CaseSummaryInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<CaseSummaryInformation>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

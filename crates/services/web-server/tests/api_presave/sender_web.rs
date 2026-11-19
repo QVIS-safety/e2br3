@@ -13,7 +13,7 @@ async fn sender_details_accept_canonical_camel_case_rows() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 
 	let saved = put_json_ok(
@@ -72,7 +72,7 @@ async fn sender_list_includes_responsible_person_rows() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let created = post_json_created(
 		&app,
@@ -119,7 +119,7 @@ async fn test_sender_presave_parent_does_not_store_person_or_department_fields(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let parent_without_given_name = json!({
 		"data": { "rows": {
@@ -199,7 +199,7 @@ async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let organization_name = format!("Duplicate Sender Org {}", Uuid::new_v4());
 
 	let sender_id = create_sender_presave_with_type_via_api(
@@ -270,7 +270,7 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
@@ -329,7 +329,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 
@@ -458,7 +458,7 @@ async fn test_sender_presave_details_rolls_back_parent_on_child_constraint_failu
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 
@@ -511,7 +511,7 @@ async fn test_sender_presave_direct_child_delete_soft_deletes_details_rows(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 	let gateway_id =
@@ -674,7 +674,7 @@ async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 	let gateway_delete_id =
@@ -838,7 +838,7 @@ async fn test_sender_presave_details_rejects_invalid_child_operations() -> Resul
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_a = create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 	let sender_b = create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
 	let gateway_b =

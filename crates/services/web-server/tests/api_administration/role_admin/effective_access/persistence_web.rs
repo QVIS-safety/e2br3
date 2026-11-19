@@ -7,7 +7,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let (profile_status, profile_before) = request_json(
 		&app,
 		"GET",

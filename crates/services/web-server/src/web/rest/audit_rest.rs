@@ -1088,7 +1088,7 @@ fn audit_snapshot_text<'a>(log: &'a AuditLog, field: &str) -> Option<&'a str> {
 	audit_snapshot(log)?.get(field)?.as_str()
 }
 
-fn audit_parent_record_id(log: &AuditLog) -> Option<Uuid> {
+fn audit_parent_record_id(log: &AuditLog) -> Result<Option<Uuid>> {
 	[
 		"drug_reaction_assessment_id",
 		"device_id",
@@ -1101,7 +1101,14 @@ fn audit_parent_record_id(log: &AuditLog) -> Option<Uuid> {
 		"case_id",
 	]
 	.into_iter()
-	.find_map(|field| audit_snapshot_text(log, field)?.parse().ok())
+	.find_map(|field| audit_snapshot_text(log, field))
+	.map(|value| {
+		value.parse().map_err(|error| Error::Internal {
+			operation: "parse audit parent UUID",
+			source: Box::new(error),
+		})
+	})
+	.transpose()
 }
 
 fn audit_record_snapshot_at<'logs>(
@@ -1118,7 +1125,7 @@ fn audit_record_snapshot_at<'logs>(
 fn audit_row_numbers(
 	log: &AuditLog,
 	logs_by_record: &std::collections::HashMap<Uuid, Vec<&AuditLog>>,
-) -> [String; 3] {
+) -> Result<[String; 3]> {
 	let mut numbers = Vec::new();
 	let mut visited = std::collections::HashSet::new();
 	let mut current = Some(log);
@@ -1134,7 +1141,13 @@ fn audit_row_numbers(
 		}
 		if snapshot_log.table_name == "drug_reaction_assessments" {
 			let reaction_snapshot = audit_snapshot_text(snapshot_log, "reaction_id")
-				.and_then(|reaction_id| reaction_id.parse().ok())
+				.map(|reaction_id| {
+					reaction_id.parse().map_err(|error| Error::Internal {
+						operation: "parse audit reaction UUID",
+						source: Box::new(error),
+					})
+				})
+				.transpose()?
 				.and_then(|reaction_id| {
 					audit_record_snapshot_at(logs_by_record, reaction_id, log.id)
 				});
@@ -1146,7 +1159,7 @@ fn audit_row_numbers(
 				numbers.push(sequence.to_string());
 			}
 		}
-		current = audit_parent_record_id(snapshot_log).and_then(|parent_id| {
+		current = audit_parent_record_id(snapshot_log)?.and_then(|parent_id| {
 			audit_record_snapshot_at(logs_by_record, parent_id, log.id)
 		});
 	}
@@ -1155,20 +1168,20 @@ fn audit_row_numbers(
 	for (target, value) in rows.iter_mut().zip(numbers.into_iter().take(3)) {
 		*target = value;
 	}
-	rows
+	Ok(rows)
 }
 
 fn changed_field_entries(log: &AuditLog) -> Vec<(String, JsonValue)> {
 	log.changed_fields
 		.as_ref()
 		.and_then(JsonValue::as_object)
-		.map(|object| {
+		.into_iter()
+		.flat_map(|object| {
 			object
 				.iter()
 				.map(|(key, value)| (key.clone(), value.clone()))
-				.collect()
 		})
-		.unwrap_or_default()
+		.collect()
 }
 
 fn json_display_value(value: &JsonValue) -> String {
@@ -1182,8 +1195,9 @@ fn json_display_value(value: &JsonValue) -> String {
 fn audit_display_value(action: &str, diff: &JsonValue) -> String {
 	let preferred = if action == "DELETE" { "old" } else { "new" };
 	diff.get(preferred)
+		.into_iter()
 		.map(json_display_value)
-		.unwrap_or_default()
+		.collect()
 }
 
 fn audit_notation_value(action: &str, field: &str, diff: &JsonValue) -> String {
@@ -1202,14 +1216,8 @@ fn audit_null_flavor_value(action: &str, field: &str, diff: &JsonValue) -> Strin
 	}
 }
 
-fn audit_reason_value(action: &str, reason: Option<String>) -> String {
-	reason.unwrap_or_else(|| {
-		if action == "CREATE" {
-			"Initial Data".to_string()
-		} else {
-			String::new()
-		}
-	})
+fn audit_reason_value(_action: &str, reason: Option<String>) -> String {
+	reason.into_iter().collect()
 }
 
 /// GET /api/audit-logs
@@ -1336,7 +1344,7 @@ pub async fn list_case_audit_trail(
 			let mut rows = Vec::new();
 			for log in &logs {
 				let [row_no1, row_no2, row_no3] =
-					audit_row_numbers(log, &logs_by_record);
+					audit_row_numbers(log, &logs_by_record)?;
 				for (field, diff) in changed_field_entries(log) {
 					let (page, item) = audit_field_label(&log.table_name, &field)?;
 					rows.push(CaseAuditTrailRow {
@@ -1729,8 +1737,8 @@ mod tests {
 	}
 
 	#[test]
-	fn audit_reason_defaults_create_to_initial_data() {
-		assert_eq!(audit_reason_value("CREATE", None), "Initial Data");
+	fn audit_reason_does_not_invent_initial_data() {
+		assert_eq!(audit_reason_value("CREATE", None), "");
 		assert_eq!(
 			audit_reason_value("CREATE", Some("Imported row".to_string())),
 			"Imported row"
@@ -1846,13 +1854,22 @@ mod tests {
 			snapshots.sort_unstable_by_key(|log| log.id);
 		}
 
-		assert_eq!(audit_row_numbers(&logs[1], &logs_by_record), ["1", "2", ""]);
-		assert_eq!(audit_row_numbers(&logs[3], &logs_by_record), ["5", "2", ""]);
 		assert_eq!(
-			audit_row_numbers(&logs[5], &logs_by_record),
+			audit_row_numbers(&logs[1], &logs_by_record).expect("valid audit UUIDs"),
+			["1", "2", ""]
+		);
+		assert_eq!(
+			audit_row_numbers(&logs[3], &logs_by_record).expect("valid audit UUIDs"),
+			["5", "2", ""]
+		);
+		assert_eq!(
+			audit_row_numbers(&logs[5], &logs_by_record).expect("valid audit UUIDs"),
 			["5", "3", "4"]
 		);
-		assert_eq!(audit_row_numbers(&logs[7], &logs_by_record), ["9", "8", ""]);
+		assert_eq!(
+			audit_row_numbers(&logs[7], &logs_by_record).expect("valid audit UUIDs"),
+			["9", "8", ""]
+		);
 	}
 
 	#[test]
@@ -1961,14 +1978,20 @@ mod tests {
 			snapshots.sort_unstable_by_key(|log| log.id);
 		}
 
-		assert_eq!(audit_row_numbers(&logs[2], &logs_by_record), ["1", "2", ""]);
 		assert_eq!(
-			audit_row_numbers(&logs[3], &logs_by_record),
+			audit_row_numbers(&logs[2], &logs_by_record).expect("valid audit UUIDs"),
+			["1", "2", ""]
+		);
+		assert_eq!(
+			audit_row_numbers(&logs[3], &logs_by_record).expect("valid audit UUIDs"),
 			["1", "2", "3"]
 		);
-		assert_eq!(audit_row_numbers(&logs[5], &logs_by_record), ["1", "4", ""]);
 		assert_eq!(
-			audit_row_numbers(&logs[6], &logs_by_record),
+			audit_row_numbers(&logs[5], &logs_by_record).expect("valid audit UUIDs"),
+			["1", "4", ""]
+		);
+		assert_eq!(
+			audit_row_numbers(&logs[6], &logs_by_record).expect("valid audit UUIDs"),
 			["1", "4", "3"]
 		);
 	}

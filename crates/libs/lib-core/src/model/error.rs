@@ -74,12 +74,13 @@ impl Error {
 		}) {
 			// "23505" => postgresql "unique violation"
 			Some((Some(Cow::Borrowed("23505")), Some(table), Some(constraint))) => {
-				resolver
-					.and_then(|fun| fun(table, constraint))
-					.unwrap_or_else(|| Error::UniqueViolation {
+				match resolver.and_then(|fun| fun(table, constraint)) {
+					Some(error) => error,
+					None => Error::UniqueViolation {
 						table: table.to_string(),
 						constraint: constraint.to_string(),
-					})
+					},
+				}
 			}
 			_ => self,
 		}

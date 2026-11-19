@@ -20,7 +20,7 @@ pub(crate) async fn deleted_test_result_can_be_read_and_restored_with_case_and_a
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &admin_cookie, "EDITOR-LB-RESTORE", &["ich"])
 			.await?;

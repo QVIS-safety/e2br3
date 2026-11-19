@@ -102,34 +102,46 @@ pub(super) struct EsgAckResponse {
 	pub(super) message: Option<String>,
 }
 
-pub(super) fn env_truthy(name: &str) -> bool {
-	matches!(
-		std::env::var(name),
-		Ok(v) if matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
-	)
-}
-
-pub(super) fn is_esg_enabled() -> bool {
-	env_truthy("FDA_ESG_ENABLED")
-}
-
-pub(super) fn as2_submitter_url() -> Option<String> {
-	std::env::var("AS2_SUBMITTER_URL").ok().and_then(|v| {
-		let trimmed = v.trim();
-		if trimmed.is_empty() {
-			None
-		} else {
-			Some(trimmed.to_string())
+pub(super) fn is_esg_enabled() -> Result<bool> {
+	crate::config::env_truthy("FDA_ESG_ENABLED").map_err(|message| {
+		Error::Configuration {
+			key: "FDA_ESG_ENABLED",
+			message,
 		}
 	})
 }
 
-pub(super) fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
-	std::env::var(name)
-		.ok()
-		.and_then(|v| v.trim().parse::<u64>().ok())
-		.filter(|v| *v > 0)
-		.unwrap_or(default_secs)
+pub(super) fn as2_submitter_url() -> Result<Option<String>> {
+	match std::env::var("AS2_SUBMITTER_URL") {
+		Ok(value) if !value.trim().is_empty() => Ok(Some(value.trim().to_string())),
+		Err(std::env::VarError::NotPresent) => Ok(None),
+		_ => Err(Error::Configuration {
+			key: "AS2_SUBMITTER_URL",
+			message: "AS2_SUBMITTER_URL must be nonempty UTF-8".into(),
+		}),
+	}
+}
+
+pub(super) fn parse_timeout_secs(name: &'static str) -> Result<u64> {
+	let value = std::env::var(name).map_err(|error| Error::Configuration {
+		key: name,
+		message: error.to_string(),
+	})?;
+	let seconds =
+		value
+			.trim()
+			.parse::<u64>()
+			.map_err(|error| Error::Configuration {
+				key: name,
+				message: error.to_string(),
+			})?;
+	if seconds == 0 {
+		return Err(Error::Configuration {
+			key: name,
+			message: "timeout must be positive".into(),
+		});
+	}
+	Ok(seconds)
 }
 
 pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {
@@ -156,5 +168,24 @@ pub(super) fn status_from_db(status: &str) -> Result<SubmissionStatus> {
 		other => Err(Error::BadRequest {
 			message: format!("unknown submission status: {other}"),
 		}),
+	}
+}
+
+#[cfg(test)]
+mod strict_config_tests {
+	use super::*;
+
+	#[test]
+	fn timeout_requires_an_explicit_positive_integer() {
+		const KEY: &str = "E2BR3_TEST_STRICT_TIMEOUT";
+		std::env::remove_var(KEY);
+		assert!(parse_timeout_secs(KEY).is_err());
+		for value in ["", "broken", "0", "-1"] {
+			std::env::set_var(KEY, value);
+			assert!(parse_timeout_secs(KEY).is_err(), "{value}");
+		}
+		std::env::set_var(KEY, "17");
+		assert_eq!(parse_timeout_secs(KEY).unwrap(), 17);
+		std::env::remove_var(KEY);
 	}
 }

@@ -34,10 +34,14 @@ const CASE_NUMBER_FORMAT_FIELDS: &[&str] = &[
 
 fn notice_update_allowed(
 	snapshot: &lib_core::authorization::RequestAuthorizationSnapshot,
-) -> bool {
-	eligible_action_ids(snapshot)
+) -> Result<bool> {
+	Ok(eligible_action_ids(snapshot)
+		.map_err(|error| Error::Internal {
+			operation: "resolve eligible authorization actions",
+			source: Box::new(error),
+		})?
 		.iter()
-		.any(|action| action.as_str() == "notice.update")
+		.any(|action| action.as_str() == "notice.update"))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -326,7 +330,13 @@ fn normalize_notices(
 	let mut normalized = Vec::new();
 	for (index, notice) in notices.into_iter().enumerate() {
 		let title = notice.title.trim().to_string();
-		let body = notice.body.unwrap_or_default().trim().to_string();
+		let body = notice
+			.body
+			.ok_or_else(|| Error::BadRequest {
+				message: "notice body is required".into(),
+			})?
+			.trim()
+			.to_string();
 		if title.is_empty() && body.is_empty() {
 			continue;
 		}
@@ -531,9 +541,7 @@ async fn payload_to_value(
 			message: "stored timezone is required".to_string(),
 		})?;
 	let existing_timezone = runtime_settings::validate_timezone(existing_timezone)
-		.ok_or_else(|| Error::BadRequest {
-		message: "stored timezone must be a valid IANA timezone".to_string(),
-	})?;
+		.map_err(|message| Error::BadRequest { message })?;
 	object.insert("timezone".to_string(), json!(existing_timezone));
 	let existing_data_ordering = runtime_settings::normalize_data_ordering(
 		object.get("data_ordering").and_then(Value::as_str),
@@ -541,12 +549,8 @@ async fn payload_to_value(
 	object.insert("data_ordering".to_string(), json!(existing_data_ordering));
 
 	if let Some(timezone) = payload.timezone.as_deref() {
-		let timezone =
-			runtime_settings::validate_timezone(timezone).ok_or_else(|| {
-				Error::BadRequest {
-					message: "timezone must be a valid IANA timezone".to_string(),
-				}
-			})?;
+		let timezone = runtime_settings::validate_timezone(timezone)
+			.map_err(|message| Error::BadRequest { message })?;
 		object.insert("timezone".to_string(), json!(timezone));
 	}
 
@@ -641,20 +645,33 @@ async fn payload_to_value(
 	let existing_idle = object
 		.get("idle_session_minutes")
 		.and_then(Value::as_i64)
-		.and_then(|value| i32::try_from(value).ok())
+		.map(i32::try_from)
+		.transpose()
+		.map_err(|error| Error::BadRequest {
+			message: format!("invalid stored settings integer: {error}"),
+		})?
 		.ok_or_else(|| Error::BadRequest {
 			message: "stored idle_session_minutes is required".to_string(),
 		})?;
 	let existing_warning = object
 		.get("session_warning_minutes")
 		.and_then(Value::as_i64)
-		.and_then(|value| i32::try_from(value).ok())
+		.map(i32::try_from)
+		.transpose()
+		.map_err(|error| Error::BadRequest {
+			message: format!("invalid stored settings integer: {error}"),
+		})?
 		.ok_or_else(|| Error::BadRequest {
 			message: "stored session_warning_minutes is required".to_string(),
 		})?;
-	let idle_session_minutes = payload.idle_session_minutes.unwrap_or(existing_idle);
-	let session_warning_minutes =
-		payload.session_warning_minutes.unwrap_or(existing_warning);
+	let idle_session_minutes = match payload.idle_session_minutes {
+		Some(value) => value,
+		None => existing_idle,
+	};
+	let session_warning_minutes = match payload.session_warning_minutes {
+		Some(value) => value,
+		None => existing_warning,
+	};
 	if idle_session_minutes < 5 {
 		return Err(Error::BadRequest {
 			message: "idle_session_minutes must be at least 5".to_string(),
@@ -675,13 +692,18 @@ async fn payload_to_value(
 	let existing_case_number_padding = object
 		.get("case_number_padding")
 		.and_then(Value::as_i64)
-		.and_then(|value| i32::try_from(value).ok())
+		.map(i32::try_from)
+		.transpose()
+		.map_err(|error| Error::BadRequest {
+			message: format!("invalid stored settings integer: {error}"),
+		})?
 		.ok_or_else(|| Error::BadRequest {
 			message: "stored case_number_padding is required".to_string(),
 		})?;
-	let case_number_padding = payload
-		.case_number_padding
-		.unwrap_or(existing_case_number_padding);
+	let case_number_padding = match payload.case_number_padding {
+		Some(value) => value,
+		None => existing_case_number_padding,
+	};
 	if case_number_padding < 1 {
 		return Err(Error::BadRequest {
 			message: "case_number_padding must be a positive integer".to_string(),
@@ -990,12 +1012,8 @@ fn runtime_settings_payload(
 	let timezone = payload.timezone.ok_or_else(|| Error::BadRequest {
 		message: "timezone is required".to_string(),
 	})?;
-	let timezone =
-		runtime_settings::validate_timezone(&timezone).ok_or_else(|| {
-			Error::BadRequest {
-				message: "stored timezone must be a valid IANA timezone".to_string(),
-			}
-		})?;
+	let timezone = runtime_settings::validate_timezone(&timezone)
+		.map_err(|message| Error::BadRequest { message })?;
 	let orientation = payload.orientation.ok_or_else(|| Error::BadRequest {
 		message: "orientation is required".to_string(),
 	})?;
@@ -1081,9 +1099,9 @@ pub async fn get_runtime_settings(
 ) -> Result<(StatusCode, Json<RuntimeSettingsPayload>)> {
 	let ctx = ctx_w.0;
 	let payload = load_runtime_admin_settings_payload(&ctx, &mm).await?;
-	let notices = if notice_update_allowed(&snapshot) {
+	let notices = if notice_update_allowed(&snapshot)? {
 		load_notices(&ctx, &mm).await?
-	} else if notice_read_allowed(&snapshot) {
+	} else if notice_read_allowed(&snapshot)? {
 		active_notices(
 			load_notices(&ctx, &mm).await?,
 			payload
@@ -1116,7 +1134,7 @@ pub async fn get_admin_settings(
 	snapshot: AuthorizationSnapshotW,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	let can_read_notices = notice_read_allowed(&snapshot);
+	let can_read_notices = notice_read_allowed(&snapshot)?;
 	with_authorized_settings_read(&ctx, &snapshot, &mm, move |ctx, mm| {
 		Box::pin(async move {
 			let mut payload = load_admin_settings_payload(ctx, mm).await?;

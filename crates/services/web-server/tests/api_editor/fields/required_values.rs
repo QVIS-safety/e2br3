@@ -14,7 +14,7 @@ pub(crate) async fn report_year_rejects_non_numeric_input(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let id =
 		create_case_for_editor(&app, &cookie, "EDITOR-CONTRACT", &["ich"]).await?;
@@ -40,7 +40,7 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	for (section, owner, field, column, initial, row, rule_code, path) in [
 		(
 			"DG",
@@ -119,7 +119,7 @@ pub(crate) async fn narrative_blank_rejection_preserves_saved_comments(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let id = create_case_for_editor(&app, &cookie, "CLEAR-NR", &["ich"]).await?;
 	let uri = format!("/api/cases/{id}/editor/pages/NR");
 	for (value, expected) in [
@@ -179,7 +179,7 @@ pub(crate) async fn blank_safety_report_id_is_rejected(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "BLANK-SAFETY-REPORT-ID", &["ich"])
 			.await?;

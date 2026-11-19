@@ -173,14 +173,22 @@ fn length_issues_for(reaction: Reaction) -> Vec<(String, String)> {
 fn duration_unit_validation_matches_export_units() {
 	for unit in [
 		"800", "801", "802", "803", "804", "805", "10.a", "a", "mo", "wk", "d", "h",
-		"bogus",
+		"s", "min", "bogus",
 	] {
 		let mut r = reaction();
 		r.duration_value = Some("1".into());
 		r.duration_unit = Some(unit.into());
 		let mut issues = Vec::new();
-		e_i_6b(0, &r, &mut issues);
-		assert_eq!(issues.is_empty(), unit != "bogus", "{unit}");
+		let mut ctx = empty_ctx();
+		ctx.reactions.push(r);
+		collect_ich_issues(&ctx, &mut issues);
+		assert_eq!(
+			issues
+				.iter()
+				.any(|issue| issue.code == "ICH.E.i.6b.VOCABULARY"),
+			unit == "bogus",
+			"{unit}"
+		);
 	}
 }
 

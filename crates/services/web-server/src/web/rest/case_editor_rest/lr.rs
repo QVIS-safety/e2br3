@@ -164,7 +164,7 @@ repeatable_page_row_create_handler!(
 		("case_id", json!(case_id)),
 		(
 			"sequence_number",
-			json!(i32_field(row, &["sequenceNumber"]).unwrap_or(1)),
+			json!(i32_field(row, &["sequenceNumber"])?.ok_or_else(|| lib_rest_core::Error::BadRequest { message: "sequenceNumber is required".into() })?),
 		),
 	],
 	build_response: build_editor_lr_page_row_response,

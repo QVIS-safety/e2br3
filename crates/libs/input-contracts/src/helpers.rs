@@ -166,7 +166,10 @@ pub(crate) fn min_e2b_datetime(
 	minimum_digits: usize,
 ) {
 	if let InputValue::String(value) = normalized(value) {
-		let end = value.find(['+', '-', '.']).unwrap_or(value.len());
+		let end = match value.find(['+', '-', '.']) {
+			Some(end) => end,
+			None => value.len(),
+		};
 		if end < minimum_digits {
 			push(
 				issues,
@@ -203,9 +206,10 @@ fn present(value: Option<&str>) -> Option<&str> {
 fn normalized(value: InputValue<'_>) -> InputValue<'_> {
 	match value {
 		InputValue::Null => InputValue::Missing,
-		InputValue::String(value) => present(Some(value))
-			.map(InputValue::String)
-			.unwrap_or(InputValue::Missing),
+		InputValue::String(value) => match present(Some(value)) {
+			Some(value) => InputValue::String(value),
+			None => InputValue::Missing,
+		},
 		value => value,
 	}
 }
@@ -215,9 +219,14 @@ fn valid_decimal(value: &str) -> bool {
 	if value.is_empty() {
 		return false;
 	}
-	let value = value.strip_prefix(['+', '-']).unwrap_or(value);
+	let value = match value.strip_prefix(['+', '-']) {
+		Some(unsigned) => unsigned,
+		None => value,
+	};
 	let mut parts = value.split('.');
-	let whole = parts.next().unwrap_or_default();
+	let Some(whole) = parts.next() else {
+		return false;
+	};
 	let fraction = parts.next();
 	parts.next().is_none()
 		&& whole.bytes().all(|byte| byte.is_ascii_digit())
@@ -305,9 +314,10 @@ fn valid_e2b_datetime(value: &str) -> bool {
 		}
 	}
 
-	let (digits, fraction) = local
-		.split_once('.')
-		.map_or((local, None), |(digits, fraction)| (digits, Some(fraction)));
+	let (digits, fraction) = match local.split_once('.') {
+		Some((digits, fraction)) => (digits, Some(fraction)),
+		None => (local, None),
+	};
 	if !matches!(digits.len(), 4 | 6 | 8 | 10 | 12 | 14)
 		|| !digits.bytes().all(|byte| byte.is_ascii_digit())
 		|| fraction.is_some_and(|fraction| {
@@ -319,16 +329,21 @@ fn valid_e2b_datetime(value: &str) -> bool {
 		return false;
 	}
 
-	let number = |range: std::ops::Range<usize>| {
-		digits.get(range).and_then(|value| value.parse::<u8>().ok())
+	let number = |range: std::ops::Range<usize>| -> Result<u8, ()> {
+		let value = digits.get(range).ok_or(())?;
+		value.parse::<u8>().map_err(|_| ())
 	};
-	if digits.len() >= 6 && !matches!(number(4..6), Some(1..=12)) {
+	if digits.len() >= 6 && !matches!(number(4..6), Ok(1..=12)) {
 		return false;
 	}
 	if digits.len() >= 8 {
-		let year = digits[0..4].parse::<u16>().unwrap_or_default();
-		let month = digits[4..6].parse::<u8>().unwrap_or_default();
-		let day = digits[6..8].parse::<u8>().unwrap_or_default();
+		let (Ok(year), Ok(month), Ok(day)) = (
+			digits[0..4].parse::<u16>(),
+			digits[4..6].parse::<u8>(),
+			digits[6..8].parse::<u8>(),
+		) else {
+			return false;
+		};
 		let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 		let days = match month {
 			2 if leap => 29,
@@ -341,9 +356,9 @@ fn valid_e2b_datetime(value: &str) -> bool {
 			return false;
 		}
 	}
-	(digits.len() < 10 || matches!(number(8..10), Some(0..=23)))
-		&& (digits.len() < 12 || matches!(number(10..12), Some(0..=59)))
-		&& (digits.len() < 14 || matches!(number(12..14), Some(0..=59)))
+	(digits.len() < 10 || matches!(number(8..10), Ok(0..=23)))
+		&& (digits.len() < 12 || matches!(number(10..12), Ok(0..=59)))
+		&& (digits.len() < 14 || matches!(number(12..14), Ok(0..=59)))
 }
 
 #[cfg(test)]

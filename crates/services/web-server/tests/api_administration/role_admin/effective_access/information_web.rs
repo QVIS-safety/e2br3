@@ -8,7 +8,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let profile_id = format!("qa_info_matrix_{}", Uuid::new_v4().simple());
 
 	let profile_id =

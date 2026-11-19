@@ -1,0 +1,23 @@
+# Input standards and the checks that protect them. Test source is not frozen.
+# This file must be merged into each protected base branch before review routing applies.
+/.github/ @donihyun
+Cargo.toml @donihyun
+.cargo/ @donihyun
+clippy.toml @donihyun
+.clippy.toml @donihyun
+rust-toolchain* @donihyun
+/scripts/ci_test_plan.py @donihyun
+/scripts/ci_test_scope.py @donihyun
+/registry/dictionary/ @donihyun
+/registry/dictionary.schema.json @donihyun
+/registry/editor-contracts/ @donihyun
+/registry/vocabularies/ @donihyun
+/registry/tools/check_input_contract_lock.py @donihyun
+/registry/tools/editor_dictionary.py @donihyun
+/registry/tools/editor_contract.py @donihyun
+/registry/tools/generate_editor_contract_web_tests.py @donihyun
+/registry/tools/validate.py @donihyun
+/crates/libs/validator/tools/check_rule_tests.py @donihyun
+/crates/libs/validator/tools/rule_inventory.py @donihyun
+/crates/services/web-server/tests/api_specs/api-contract-manifest.json @donihyun
+/crates/services/web-server/tests/api_specs/check_api_contract_manifest.py @donihyun

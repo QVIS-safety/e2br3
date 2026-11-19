@@ -224,7 +224,9 @@ fn read_h_1(xpath: &mut Context) -> Result<String> {
 		None,
 		input_contracts::generated::h::h_1,
 	)?;
-	Ok(value.unwrap_or_default())
+	value.ok_or_else(|| Error::InvalidImportRequest {
+		message: "case narrative is required".to_string(),
+	})
 }
 
 /// e2b:H.2

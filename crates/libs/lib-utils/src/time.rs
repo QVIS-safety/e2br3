@@ -6,8 +6,10 @@ pub fn now_utc() -> OffsetDateTime {
 	OffsetDateTime::now_utc()
 }
 
-pub fn format_time(time: OffsetDateTime) -> String {
-	time.format(&Rfc3339).unwrap() // TODO: need to check if safe.
+pub fn format_time(
+	time: OffsetDateTime,
+) -> core::result::Result<String, time::error::Format> {
+	time.format(&Rfc3339)
 }
 
 /// Formats the supplied date/time components as an E2B timestamp, without an offset.
@@ -23,7 +25,9 @@ pub fn format_e2b_timestamp(value: OffsetDateTime) -> String {
 	)
 }
 
-pub fn now_utc_plus_sec_str(sec: f64) -> String {
+pub fn now_utc_plus_sec_str(
+	sec: f64,
+) -> core::result::Result<String, time::error::Format> {
 	let new_time = now_utc() + Duration::seconds_f64(sec);
 	format_time(new_time)
 }

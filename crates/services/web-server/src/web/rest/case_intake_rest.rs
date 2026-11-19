@@ -514,7 +514,12 @@ async fn create_case_from_intake_in_txn(
 )> {
 	use sqlx::types::time::OffsetDateTime;
 
-	let mut safety_report_id = data.safety_report_id.clone().unwrap_or_default();
+	let mut safety_report_id =
+		data.safety_report_id
+			.clone()
+			.ok_or_else(|| Error::BadRequest {
+				message: "safety_report_id is required".into(),
+			})?;
 	validate_intake_value(
 		data.date_first_received_from_source.as_deref(),
 		"safetyReportIdentification.dateFirstReceivedFromSource",
@@ -534,25 +539,19 @@ async fn create_case_from_intake_in_txn(
 	let duplicate_key = intake_to_duplicate_key(&data);
 	let (duplicate_basis, duplicate_matches) =
 		assess_intake_duplicates(ctx, mm, &duplicate_key).await?;
-	if !duplicate_matches.is_empty()
-		&& !data.allow_duplicate_override.unwrap_or(false)
-	{
+	if !duplicate_matches.is_empty() && data.allow_duplicate_override != Some(true) {
 		return Err(Error::BadRequest {
 			message:
 				"duplicate case detected; create is blocked when intake check finds duplicates"
 					.to_string(),
 		});
 	}
-	if !duplicate_basis.basis_complete
-		&& !data.allow_duplicate_override.unwrap_or(false)
+	if !duplicate_basis.basis_complete && data.allow_duplicate_override != Some(true)
 	{
-		let message = duplicate_basis
-			.warnings
-			.first()
-			.cloned()
-			.unwrap_or_else(|| {
-				"Some fields needed for the duplicate check are missing. Review the form before creating this case.".to_string()
-			});
+		let message = format!(
+			"Duplicate check basis is incomplete: {}",
+			duplicate_basis.warnings.join("; ")
+		);
 		return Err(Error::BadRequest { message });
 	}
 
@@ -574,7 +573,9 @@ async fn create_case_from_intake_in_txn(
 	let case_create = InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
 		dg_prd_key: Some(dg_prd_key),
-		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
+		status: Some(data.status.ok_or_else(|| Error::BadRequest {
+			message: "status is required".into(),
+		})?),
 		review_receivers_json: None,
 		workflow_routes_json: None,
 		mfds_report_type: data.mfds_report_type.clone(),
@@ -589,17 +590,17 @@ async fn create_case_from_intake_in_txn(
 				message: "date_of_most_recent_information is required".to_string(),
 			}
 		})?;
-	let transmission_date = data.transmission_date.unwrap_or_else(|| {
-		lib_core::serde::flex_date::e2b_datetime_date(
-			&date_of_most_recent_information,
-		)
-		.unwrap_or_else(|| OffsetDateTime::now_utc().date())
-	});
+	let transmission_date =
+		data.transmission_date.ok_or_else(|| Error::BadRequest {
+			message: "transmission_date is required".into(),
+		})?;
 	let date_first_received_from_source = data
 		.date_first_received_from_source
 		.as_deref()
 		.and_then(|value| non_empty(Some(value)))
-		.unwrap_or_else(|| date_of_most_recent_information.clone());
+		.ok_or_else(|| Error::BadRequest {
+			message: "date_first_received_from_source is required".into(),
+		})?;
 
 	let now = OffsetDateTime::now_utc();
 	MessageHeaderBmc::create(

@@ -131,34 +131,6 @@ pub(super) fn without_empty_row_lists(
 		.collect()
 }
 
-pub(super) async fn next_child_sequence(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	table: &'static str,
-	parent_column: &'static str,
-	parent_id: Uuid,
-	active_only: bool,
-) -> Result<i32> {
-	let deleted_filter = if active_only {
-		" AND deleted = false"
-	} else {
-		""
-	};
-	let sql = format!(
-		"SELECT COALESCE(MAX(sequence_number), 0) + 1 FROM {table} WHERE {parent_column} = $1{deleted_filter}"
-	);
-	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
-		Box::pin(async move {
-			dbx.fetch_one(sqlx::query_as::<_, (i32,)>(&sql).bind(parent_id))
-				.await
-				.map_err(lib_core::model::Error::from)
-				.map_err(Error::from)
-				.map(|(sequence,)| sequence)
-		})
-	})
-	.await
-}
-
 pub(super) fn child_row_has_content(row: &Map<String, Value>) -> bool {
 	row.iter().any(|(key, value)| {
 		if matches!(
@@ -346,15 +318,23 @@ pub(super) fn string_field(
 pub(super) fn i32_field(
 	map: &serde_json::Map<String, Value>,
 	aliases: &[&str],
-) -> Option<i32> {
+) -> Result<Option<i32>> {
 	for alias in aliases {
 		if let Some(value) = map.get(*alias) {
-			if let Some(value) = value.as_i64() {
-				return i32::try_from(value).ok();
+			if value.is_null() {
+				return Ok(None);
 			}
+			let number = value.as_i64().ok_or_else(|| Error::BadRequest {
+				message: format!("{alias} must be an integer"),
+			})?;
+			return i32::try_from(number).map(Some).map_err(|error| {
+				Error::BadRequest {
+					message: format!("invalid {alias}: {error}"),
+				}
+			});
 		}
 	}
-	None
+	Ok(None)
 }
 
 pub(super) fn bool_field(
@@ -550,28 +530,20 @@ pub(super) fn direct_page_saved(page_id: &str, data: &Value) -> bool {
 		"RP" => map
 			.get("primarySources")
 			.and_then(Value::as_array)
-			.map(|rows| !rows.is_empty())
-			.unwrap_or(false),
+			.is_some_and(|rows| !rows.is_empty()),
 		"CI" => map
 			.get("safetyReportIdentification")
-			.map(|value| !value.is_null())
-			.unwrap_or(false),
+			.is_some_and(|value| !value.is_null()),
 		"SD" => map
 			.get("senderInformation")
-			.map(|value| !value.is_null())
-			.unwrap_or(false),
+			.is_some_and(|value| !value.is_null()),
 		"SI" => map
 			.get("studyInformation")
-			.map(|value| !value.is_null())
-			.unwrap_or(false),
+			.is_some_and(|value| !value.is_null()),
 		"DM" => map
 			.get("patientInformation")
-			.map(|value| !value.is_null())
-			.unwrap_or(false),
-		"NR" => map
-			.get("narrative")
-			.map(|value| !value.is_null())
-			.unwrap_or(false),
+			.is_some_and(|value| !value.is_null()),
+		"NR" => map.get("narrative").is_some_and(|value| !value.is_null()),
 		_ => false,
 	}
 }
@@ -637,8 +609,7 @@ pub(super) fn repeatable_page_projection_response(
 		saved: rows
 			.get("rows")
 			.and_then(Value::as_array)
-			.map(|items| !items.is_empty())
-			.unwrap_or(false),
+			.is_some_and(|items| !items.is_empty()),
 		required_count: 0,
 		fields: BTreeMap::new(),
 		rows: rows_from_direct_section(rows),
@@ -664,6 +635,17 @@ pub(super) fn editor_page_row_response(
 #[cfg(test)]
 mod canonical_row_persistence_tests {
 	use super::*;
+
+	#[test]
+	fn integer_fields_reject_malformed_or_out_of_range_values() {
+		for value in [json!("bad"), json!(1.5), json!(2147483648_i64)] {
+			let row = Map::from_iter([("sequenceNumber".into(), value)]);
+			assert!(i32_field(&row, &["sequenceNumber"]).is_err());
+		}
+		assert_eq!(i32_field(&Map::new(), &["sequenceNumber"]).unwrap(), None);
+		let row = Map::from_iter([("sequenceNumber".into(), json!(2))]);
+		assert_eq!(i32_field(&row, &["sequenceNumber"]).unwrap(), Some(2));
+	}
 
 	#[test]
 	fn malformed_row_identity_is_rejected_instead_of_becoming_a_create() {

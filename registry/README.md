@@ -46,6 +46,126 @@ Do not use combined values such as `ICH+FDA`. If a field is FDA-specific, set
 
 ## Dictionary
 
+### Editor input coverage
+
+`editor-contracts/*.json` binds dictionary elements through each field's
+`dictionaryInputs`. The existing `constraint` remains the HTTP/UI smoke test;
+`dictionaryInputs.checks` records **all structured** `max_length`,
+`allowed_value_constraint` (except descriptive prose), and `null_flavors`
+requirements, including the exact dictionary value so source drift fails CI.
+`dictionaryInputs.guidance` mirrors dictionary `notes`, including reviewed
+official versions, URLs and field-specific conditions; stale guidance also fails.
+Requiredness, cross-field rules, and descriptive prose are not scalar input
+requirements; their existing business-rule mappings remain in validator.
+
+Each requirement explicitly names its owner:
+
+- `input-contracts`: production Rust function, issue code, positive and negative
+  cases. Length checks include ASCII and Unicode at N−1, N and N+1; code sets
+  and nullFlavor checks include every allowed dictionary value.
+- `validator`: existing catalog rule codes and the reason for business ownership.
+  This reference is not a claim that its business tests ran in the input suite.
+- `unresolved`: a documented coverage/ownership gap, **not** a passing test.
+
+There are 264 dictionary bindings for 263 editor codes: FDA.D.1 is a regional
+nullFlavor overlay on D.1. N.1.1 is the one explicit `dictionaryExclusions`
+entry: the registry records no editable input. Together these account for all
+265 dictionary elements; accounting for an element does not mean all its
+requirements are enforced. After the 2026-11-19 official-source review there are
+381 executable scalar checks, 38 validator-owned requirements and 13 unresolved
+requirements. The original 32 gaps all have source-backed guidance: three gained
+scalar checks, eight gained submission-marker bindings/tests, and parent age
+now correctly binds its existing `a` / `10.a` business rule.
+
+Age/gestation units are field-specific code sets, not arbitrary UCUM expressions.
+G.k.4.r.9.2a is a terminology version, not a dose-form code. C.1.8.1 distinguishes
+original creation from preservation on retransmission; it must not acquire a
+blanket format regex. True-marker rules run at case validation, not draft save;
+only true without a nullFlavor or NI without a boolean is submission-valid.
+The 13 open requirements cover identity/provenance (2), regional identifiers (7),
+and terminology version/codes (4). These are implementation gaps,
+not unknown official requirements or passing checks.
+
+Boundary values are isolated test fixtures, not production Case data. A
+`{"repeat":"X","count":100}` value expands to a boundary string in the test
+runner. Each test asserts only its named issue code; a length-boundary string
+may independently violate a code-set rule. Existing HTTP save/roundtrip tests
+remain separate; these scalar tests do not prove endpoint wiring or persistence.
+
+After updating the dictionary or these bindings, run:
+
+```sh
+python3 registry/tools/generate_editor_contract_web_tests.py --write
+python3 -m unittest registry/tools/test_generate_editor_contract_web_tests.py
+python3 registry/tools/generate_editor_contract_web_tests.py --check
+cargo test -p input-contracts --locked
+```
+
+The existing registry CI runs the generator check; registry changes already
+select the input-contracts crate tests. Missing elements, properties, source
+changes, missing boundaries and stale generated tests fail these gates.
+Backend-only dictionary fixtures and guidance are stripped by the frontend
+snapshot sync. The three fixed-unit input checks are also implemented in the
+frontend; the patient trimester option and XML output use canonical `{trimester}`.
+No existing case data is rewritten. Invalid legacy units or false submission
+markers can now require correction before a save/submission respectively.
+
+Duration and dose submission checks use `vocabularies/ich-time.json` (CL26 v2.2)
+and `vocabularies/ich-dose.json` (CL25 v2.3), extracted from the official ICH
+package linked in each snapshot. These are authoritative pinned lists, not a
+fallback for a missing database. CL25 selects current `dosef=y` entries, including
+the 2025 additions; duration excludes frequency annotations and gestation-only
+units. Generic UCUM imports cannot widen these lists. Regenerate with
+`import_vocabularies.py --ich-dose-source <CL25.xml> --ich-interval-source <CL26.xml>`.
+Reaction duration's internal 800–805 codes retain the existing XML mapping.
+FDA device manufacturer countries are checked against the active ISO country
+dataset plus EU; a missing dataset is an explicit validation error.
+
+Thirteen reviewed requirements remain unresolved: eleven regional identifier /
+versioned terminology requirements need authoritative NDC, PhPID, UNII and
+EDQM/FDA SPL sources and system/version mappings; C.1.7 needs verified R2 import
+provenance, and C.1.8.1 needs original-sender / retransmission lifecycle enforcement.
+These are not covered by the seven new unit/country rules, and remain visibly
+unresolved in editor-contracts rather than being counted as validated.
+
+### Reviewed input baseline
+
+`python3 registry/tools/check_input_contract_lock.py` checks the reviewed semantic
+fingerprint in `.github/input-contract.sha256`. The Clippy runner calls it before
+Cargo; CI also runs it in the unconditional Test Scope job. This is a contract
+check alongside Clippy, not a Rust Clippy lint.
+
+It pins dictionary input requirements, editor ownership (including unresolved
+identities), error/constraint status, null/blank/omission behavior, and committed
+vocabularies. Changing both dictionary and editor contract cannot silently weaken
+the baseline. Test names, counts, boundary fixtures and Rust function names are
+not fingerprinted; the existing consistency checks still apply to them.
+
+An intentional standards correction requires official evidence, a reviewed
+semantic diff, and owner approval before updating the fingerprint. There is no
+automatic rebaseline command. Production Clippy prohibitions use `-F` so an
+inline `#[allow(...)]` cannot disable them; test targets remain separately linted.
+
+The fingerprint is not tamper-proof on its own. Repository-side required checks
+and required code-owner approval must protect `.github/`, `clippy.toml`,
+`Cargo.toml`, `scripts/ci_test_plan.py`, `scripts/ci_test_scope.py`, `registry/tools/`,
+`registry/dictionary/`, `registry/editor-contracts/`, and `registry/vocabularies/`.
+Protect Cargo configuration/toolchain files too, since they control lint execution.
+Do not claim this protection is active until those settings and CODEOWNERS are
+deployed. The agent's credentials must not be able to approve changes or bypass
+or edit those settings; sharing a repository-admin credential with the reviewer
+cannot enforce that separation.
+
+Current owner: `@donihyun` in `.github/CODEOWNERS`. GitHub `main` and `dev`
+require the GitHub Actions `Test Scope` and `Clippy` checks and code-owner
+reviews, with stale approvals dismissed. Unowned files have no additional
+approval-count requirement. CODEOWNERS review routing only takes effect after
+this file is merged into each base branch. By explicit owner choice, admin
+bypass remains enabled for the shared `donihyun` account: this is a review
+guardrail, not a security boundary against the agent using that account.
+
+### Source dictionaries
+
 The dictionaries are the standards layer: the authoritative list of E2BR3 data
 elements per authority, with conformance, data types, allowed values,
 nullFlavors, and OIDs. Registry rows are mapping decisions *about* dictionary

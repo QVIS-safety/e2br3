@@ -156,17 +156,17 @@ async fn require_current_workflow_step_owner(
 fn normalize_override_reason(
 	value: Option<&str>,
 	used_admin_override: bool,
-) -> Option<String> {
+) -> Result<Option<String>> {
 	let provided = value
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.map(|value| value.to_string());
 	if used_admin_override {
-		return Some(provided.unwrap_or_else(|| {
-			"workflow ownership override by audited admin policy".to_string()
-		}));
+		return provided.map(Some).ok_or_else(|| Error::BadRequest {
+			message: "override_reason is required for an admin override".into(),
+		});
 	}
-	provided
+	Ok(provided)
 }
 
 fn workflow_delay(
@@ -359,7 +359,7 @@ async fn transition_case_workflow_authorized(
 	let override_reason = normalize_override_reason(
 		input.override_reason.as_deref(),
 		used_admin_override,
-	);
+	)?;
 
 	CaseWorkflowEventBmc::record_transition(
 		ctx,
@@ -492,7 +492,7 @@ async fn assign_case_workflow_authorized(
 	let override_reason = normalize_override_reason(
 		input.override_reason.as_deref(),
 		used_admin_override,
-	);
+	)?;
 
 	CaseWorkflowEventBmc::record_assignment(
 		ctx,

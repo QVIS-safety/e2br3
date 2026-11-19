@@ -22,26 +22,28 @@ fn create_payload_to_update(
 		safety_report_id: data.safety_report_id,
 		version: data.version,
 		transmission_date: data.transmission_date,
-		report_type: data
-			.report_type
-			.map(PatchValue::Value)
-			.unwrap_or(PatchValue::Missing),
+		report_type: match data.report_type {
+			Some(value) => PatchValue::Value(value),
+			None => PatchValue::Missing,
+		},
 		date_first_received_from_source: data.date_first_received_from_source,
 		date_of_most_recent_information: data.date_of_most_recent_information,
-		fulfil_expedited_criteria: data
-			.fulfil_expedited_criteria
-			.map(PatchValue::Value)
-			.unwrap_or(PatchValue::Missing),
+		fulfil_expedited_criteria: match data.fulfil_expedited_criteria {
+			Some(value) => PatchValue::Value(value),
+			None => PatchValue::Missing,
+		},
 		fulfil_expedited_criteria_null_flavor: data
 			.fulfil_expedited_criteria_null_flavor,
-		local_criteria_report_type: data
-			.local_criteria_report_type
-			.map(PatchValue::Value)
-			.unwrap_or(PatchValue::Missing),
-		combination_product_report_indicator: data
+		local_criteria_report_type: match data.local_criteria_report_type {
+			Some(value) => PatchValue::Value(value),
+			None => PatchValue::Missing,
+		},
+		combination_product_report_indicator: match data
 			.combination_product_report_indicator
-			.map(PatchValue::Value)
-			.unwrap_or(PatchValue::Missing),
+		{
+			Some(value) => PatchValue::Value(value),
+			None => PatchValue::Missing,
+		},
 		worldwide_unique_id: data.worldwide_unique_id,
 		first_sender_type: data.first_sender_type,
 		additional_documents_available: data.additional_documents_available,
@@ -290,6 +292,5 @@ async fn requires_nullification_compliance(
 		.nullification_code
 		.as_deref()
 		.map(str::trim)
-		.map(|value| value == "1")
-		.unwrap_or(false))
+		.is_some_and(|value| value == "1"))
 }

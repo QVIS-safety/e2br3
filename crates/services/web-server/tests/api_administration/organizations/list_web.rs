@@ -27,7 +27,7 @@ async fn system_admin_lists_filtered_sorted_organizations_across_tenants(
 	let cookie = cookie_header(
 		&generate_web_token(&admin.email, admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let marker = Uuid::new_v4();
 	let mut created_ids = Vec::new();
 

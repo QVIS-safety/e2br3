@@ -13,7 +13,8 @@ INPUT_ONLY_SUFFIXES = (".LENGTH.MAX", ".ALLOWED.VALUE", ".NULLFLAVOR.ALLOWED")
 GENERATED_BUSINESS_RULE_CODES = {
     *(f"FDA.{field}.{kind}" for field in ("C.1.6.1.r.2", "C.4.r.2")
       for kind in ("FILE_NAME.REQUIRED", "MEDIA_TYPE.MATCH")),
-    *(f"ICH.E.i.3.2{suffix}.REQUIRED" for suffix in "abcdef"),
+    *(f"ICH.E.i.3.2{suffix}.{kind}" for suffix in "abcdef"
+      for kind in ("REQUIRED", "ALLOWED.VALUE")),
     *(
         f"ICH.{section}.r.{suffix}{part}.{kind}"
         for section in ("D.8", "D.10.8")

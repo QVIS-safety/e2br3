@@ -167,7 +167,7 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 	mm.dbx().commit_txn().await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,

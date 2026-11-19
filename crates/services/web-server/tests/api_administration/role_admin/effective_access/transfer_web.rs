@@ -8,7 +8,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let no_export_profile_name =
 		format!("qa_export_none_{}", Uuid::new_v4().simple());
 	let read_profile_name = format!("qa_export_read_{}", Uuid::new_v4().simple());
@@ -222,7 +222,7 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let read_profile_name = format!("qa_import_read_{}", Uuid::new_v4().simple());
 	let edit_profile_name = format!("qa_import_edit_{}", Uuid::new_v4().simple());
 

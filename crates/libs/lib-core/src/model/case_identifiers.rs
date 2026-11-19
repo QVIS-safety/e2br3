@@ -131,7 +131,10 @@ impl OtherCaseIdentifierBmc {
 		filters: Option<Vec<OtherCaseIdentifierFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<OtherCaseIdentifier>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -184,7 +187,10 @@ impl LinkedReportNumberBmc {
 		filters: Option<Vec<LinkedReportNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LinkedReportNumber>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

@@ -10,7 +10,7 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-A").await?;
 	let sender_b =
@@ -137,7 +137,7 @@ async fn test_sender_scope_follows_product_relationship() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_id = create_sender_presave(
 		&app,
 		&admin_cookie,
@@ -202,7 +202,7 @@ async fn test_case_get_does_not_match_sender_scope_by_message_header_only(
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let scoped_sender =
 		create_sender_presave(&app, &admin_cookie, "Scoped Sender", "SCOPED")
 			.await?;
@@ -259,7 +259,7 @@ async fn test_case_get_allows_case_without_source_when_user_has_sender_scope(
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let scoped_sender = create_sender_presave(
 		&app,
 		&admin_cookie,
@@ -310,7 +310,7 @@ async fn test_case_get_allows_unset_scope_even_when_case_has_values() -> Result<
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	// Case carries sender org, product brand, and study number.
 	let case_id = create_case(
@@ -351,7 +351,7 @@ async fn test_case_update_requires_matching_sender_scope() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-UPD-A")
 			.await?;
@@ -478,7 +478,7 @@ async fn test_case_get_requires_matching_product_and_study_scope() -> Result<()>
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_id =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-SCOPE")
 			.await?;
@@ -546,7 +546,7 @@ async fn test_case_get_allows_empty_product_or_study_scope_but_blocks_mismatch(
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_id = create_sender_presave(
 		&app,
 		&admin_cookie,
@@ -665,7 +665,7 @@ async fn test_active_sender_selection_does_not_filter_case_list() -> Result<()> 
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-ACTIVE-A")
 			.await?;

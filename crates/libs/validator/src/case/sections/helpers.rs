@@ -85,27 +85,50 @@ pub(crate) fn e2b_datetime_date(value: Option<&str>) -> Option<Date> {
 
 pub(crate) fn e2b_ts_date(value: Option<&str>) -> Option<Date> {
 	let value = value?.trim();
-	let local = value
+	let local = match value
 		.char_indices()
 		.skip(4)
 		.find(|(_, char)| matches!(char, '+' | '-'))
-		.map(|(index, _)| &value[..index])
-		.unwrap_or(value);
+	{
+		Some((index, _)) => &value[..index],
+		None => value,
+	};
 	let local = local.split('.').next()?;
 	let digits: String = local.chars().filter(|c| c.is_ascii_digit()).collect();
-	let year = digits.get(0..4)?.parse().ok()?;
+	let Ok(year) = digits.get(0..4)?.parse() else {
+		return None;
+	};
 	match digits.len() {
-		4 => Date::from_calendar_date(year, time::Month::January, 1).ok(),
+		4 => match Date::from_calendar_date(year, time::Month::January, 1) {
+			Ok(date) => Some(date),
+			Err(_) => None,
+		},
 		6 => {
-			let month: u8 = digits.get(4..6)?.parse().ok()?;
-			Date::from_calendar_date(year, time::Month::try_from(month).ok()?, 1)
-				.ok()
+			let Ok(month) = digits.get(4..6)?.parse::<u8>() else {
+				return None;
+			};
+			let Ok(month) = time::Month::try_from(month) else {
+				return None;
+			};
+			match Date::from_calendar_date(year, month, 1) {
+				Ok(date) => Some(date),
+				Err(_) => None,
+			}
 		}
 		_ if digits.len() >= 8 => {
-			let month: u8 = digits.get(4..6)?.parse().ok()?;
-			let day: u8 = digits.get(6..8)?.parse().ok()?;
-			Date::from_calendar_date(year, time::Month::try_from(month).ok()?, day)
-				.ok()
+			let Ok(month) = digits.get(4..6)?.parse::<u8>() else {
+				return None;
+			};
+			let Ok(day) = digits.get(6..8)?.parse::<u8>() else {
+				return None;
+			};
+			let Ok(month) = time::Month::try_from(month) else {
+				return None;
+			};
+			match Date::from_calendar_date(year, month, day) {
+				Ok(date) => Some(date),
+				Err(_) => None,
+			}
 		}
 		_ => None,
 	}
@@ -158,9 +181,12 @@ pub(crate) fn valid_e2b_datetime(value: &str) -> bool {
 		{
 			return false;
 		}
-		let hour = offset[1..3].parse::<u8>().ok();
-		let minute = offset[3..5].parse::<u8>().ok();
-		if !matches!((hour, minute), (Some(0..=14), Some(0..=59))) {
+		let (Ok(hour), Ok(minute)) =
+			(offset[1..3].parse::<u8>(), offset[3..5].parse::<u8>())
+		else {
+			return false;
+		};
+		if hour > 14 || minute > 59 {
 			return false;
 		}
 	}
@@ -184,10 +210,10 @@ pub(crate) fn valid_e2b_datetime(value: &str) -> bool {
 		}
 	}
 
-	let number = |range: std::ops::Range<usize>| {
-		digits.get(range).and_then(|value| value.parse::<u8>().ok())
+	let number = |range: std::ops::Range<usize>| -> Result<u8, ()> {
+		digits.get(range).ok_or(())?.parse::<u8>().map_err(|_| ())
 	};
-	if digits.len() >= 6 && !matches!(number(4..6), Some(1..=12)) {
+	if digits.len() >= 6 && !matches!(number(4..6), Ok(1..=12)) {
 		return false;
 	}
 	if digits.len() >= 8
@@ -195,13 +221,13 @@ pub(crate) fn valid_e2b_datetime(value: &str) -> bool {
 	{
 		return false;
 	}
-	if digits.len() >= 10 && !matches!(number(8..10), Some(0..=23)) {
+	if digits.len() >= 10 && !matches!(number(8..10), Ok(0..=23)) {
 		return false;
 	}
-	if digits.len() >= 12 && !matches!(number(10..12), Some(0..=59)) {
+	if digits.len() >= 12 && !matches!(number(10..12), Ok(0..=59)) {
 		return false;
 	}
-	if digits.len() >= 14 && !matches!(number(12..14), Some(0..=59)) {
+	if digits.len() >= 14 && !matches!(number(12..14), Ok(0..=59)) {
 		return false;
 	}
 	true
@@ -212,6 +238,24 @@ pub(crate) fn valid_ucum(value: Option<&str>) -> bool {
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.is_none_or(|value| octofhir_ucum::validate(value).is_ok())
+}
+
+pub(crate) fn check_ich_unit(
+	issues: &mut Vec<ValidationIssue>,
+	vocabulary: &VocabularyContext,
+	scope: crate::VocabularyScope,
+	code: &str,
+	path: &str,
+	section: &str,
+	value: Option<&str>,
+) {
+	if let Some(value) = value.filter(|value| !value.trim().is_empty()) {
+		reject_when(
+			issues, code, path, section,
+			"Unit is not in the field-specific ICH CL25 (dose) / CL26 (duration) code list.",
+			!vocabulary.contains_snapshot_code("ICH-UCUM", scope, value),
+		);
+	}
 }
 
 pub(crate) fn valid_dotted_version(value: Option<&str>) -> bool {

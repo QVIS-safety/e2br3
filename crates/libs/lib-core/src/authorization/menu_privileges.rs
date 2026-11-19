@@ -1,5 +1,6 @@
 use super::{
 	policy_registry, Availability, BuiltInIdentityKind, GrantId, GrantUiField,
+	RegistryError,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -16,6 +17,21 @@ pub struct AdminMenuPrivilege {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PrivilegeAdapterError {
 	UnknownMenu { menu_key: String },
+	InvalidPolicyRegistry(RegistryError),
+}
+
+impl std::fmt::Display for PrivilegeAdapterError {
+	fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(formatter, "{self:?}")
+	}
+}
+
+impl std::error::Error for PrivilegeAdapterError {}
+
+impl From<RegistryError> for PrivilegeAdapterError {
+	fn from(error: RegistryError) -> Self {
+		Self::InvalidPolicyRegistry(error)
+	}
 }
 
 fn empty_privilege(menu_key: String) -> AdminMenuPrivilege {
@@ -39,19 +55,23 @@ fn set_enabled(privilege: &mut AdminMenuPrivilege, field: GrantUiField) {
 
 pub fn built_in_menu_privileges(
 	kind: BuiltInIdentityKind,
-) -> Vec<AdminMenuPrivilege> {
-	let registry = policy_registry();
+) -> Result<Vec<AdminMenuPrivilege>, PrivilegeAdapterError> {
+	let registry = policy_registry()?;
 	let Some(identity) = registry.built_in_identity(kind) else {
-		return Vec::new();
+		return Ok(Vec::new());
 	};
 	let effective_grants = registry
-		.effective_grants(identity.grants.iter().map(|grant| grant.as_str()))
-		.expect("canonical built-in identity grants must be valid");
+		.effective_grants(identity.grants.iter().map(|grant| grant.as_str()))?;
 	let mut privileges = BTreeMap::new();
 	for grant_id in effective_grants {
-		let grant = registry
-			.grant(grant_id.as_str())
-			.expect("effective grant must exist in the policy registry");
+		let Some(grant) = registry.grant(grant_id.as_str()) else {
+			return Err(PrivilegeAdapterError::InvalidPolicyRegistry(
+				RegistryError::UnknownGrant {
+					owner: "effective grants".to_string(),
+					grant: grant_id.to_string(),
+				},
+			));
+		};
 		if grant.availability != Availability::Implemented {
 			continue;
 		}
@@ -60,7 +80,7 @@ pub fn built_in_menu_privileges(
 			.or_insert_with(|| empty_privilege(grant.ui_binding.menu_key.clone()));
 		set_enabled(privilege, grant.ui_binding.field);
 	}
-	privileges.into_values().collect()
+	Ok(privileges.into_values().collect())
 }
 
 pub fn normalize_menu_privileges(
@@ -81,7 +101,7 @@ pub fn grant_ids_for_menu_privileges(
 ) -> Result<BTreeSet<GrantId>, PrivilegeAdapterError> {
 	let normalized =
 		normalize_menu_privileges_with_aliases(privileges, allow_legacy_aliases)?;
-	let registry = policy_registry();
+	let registry = policy_registry()?;
 	Ok(registry
 		.grants()
 		.filter(|grant| {
@@ -99,7 +119,7 @@ fn normalize_menu_privileges_with_aliases(
 	privileges: &[AdminMenuPrivilege],
 	allow_legacy_aliases: bool,
 ) -> Result<Vec<AdminMenuPrivilege>, PrivilegeAdapterError> {
-	let registry = policy_registry();
+	let registry = policy_registry()?;
 	let mut normalized = BTreeMap::new();
 	for privilege in privileges {
 		let menu_key = privilege.menu_key.trim().to_ascii_lowercase();

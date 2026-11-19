@@ -2,26 +2,9 @@
 
 pub struct EReactionPaths;
 
-const REACTION_DURATION_UNITS: &[(&str, &str)] = &[
-	("800", "10.a"),
-	("801", "a"),
-	("802", "mo"),
-	("803", "wk"),
-	("804", "d"),
-	("805", "h"),
-];
-
-pub(crate) fn reaction_duration_unit_to_ucum(code: &str) -> Option<&'static str> {
-	REACTION_DURATION_UNITS.iter().find_map(|(stored, ucum)| {
-		(*stored == code || *ucum == code).then_some(*ucum)
-	})
-}
-
-pub(crate) fn reaction_duration_unit_from_ucum(unit: &str) -> Option<&'static str> {
-	REACTION_DURATION_UNITS
-		.iter()
-		.find_map(|(stored, ucum)| (*ucum == unit).then_some(*stored))
-}
+pub(crate) use lib_core::model::reaction::{
+	reaction_duration_unit_from_ucum, reaction_duration_unit_to_ucum,
+};
 
 impl EReactionPaths {
 	// Base reaction observation node

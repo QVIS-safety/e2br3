@@ -12,7 +12,7 @@ async fn receiver_details_accept_canonical_camel_case_rows() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
 
 	let saved = put_json_ok(
@@ -66,7 +66,7 @@ async fn receiver_details_distinguish_null_day_counts_from_omission() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
 	let path = format!("/api/presaves/receivers/{receiver_id}/details");
 
@@ -177,7 +177,7 @@ async fn receiver_presave_rejects_required_duplicate_and_timeline_gaps() -> Resu
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let receiver_name = format!("Receiver Validation {}", uuid::Uuid::new_v4());
 
 	for (label, body, expected_detail) in [
@@ -281,7 +281,7 @@ async fn section_presave_receiver_details_contract_includes_routes() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let receiver_id =
 		create_receiver_presave_via_api(&app, &admin_cookie, "fda").await?;
 
@@ -396,7 +396,7 @@ async fn test_receiver_presave_details_graph_load_save_noop_delete_and_invalid(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let receiver_a =
 		create_receiver_presave_via_api(&app, &admin_cookie, "ich").await?;
 	let receiver_b =

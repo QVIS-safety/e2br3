@@ -8,7 +8,7 @@ async fn test_case_editor_can_create_assigned_dg_but_denies_unassigned_product(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let profile_id = create_empty_custom_role(
 		&app,

@@ -725,10 +725,10 @@ async fn load_study_presave_details(
 	Ok(StudyPresaveDetails {
 		rows: StudyPresaveRows {
 			study,
-			products: camelize_rows(products),
-			registration_numbers: camelize_rows(study_registration_numbers),
-			fda_cross_reported_inds: camelize_rows(fda_cross_reported_ind_numbers),
-			reporters: camelize_rows(reporters),
+			products: camelize_rows(products)?,
+			registration_numbers: camelize_rows(study_registration_numbers)?,
+			fda_cross_reported_inds: camelize_rows(fda_cross_reported_ind_numbers)?,
+			reporters: camelize_rows(reporters)?,
 		},
 	})
 }

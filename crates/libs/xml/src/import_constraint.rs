@@ -15,7 +15,10 @@ where
 	reject_input_issues(
 		field,
 		_check_field(FieldInput::new(
-			value.map(InputValue::String).unwrap_or(InputValue::Missing),
+				match value {
+					Some(value) => InputValue::String(value),
+					None => InputValue::Missing,
+				},
 			null_flavor,
 		)),
 	)
@@ -45,9 +48,10 @@ where
 	reject_input_issues(
 		field,
 		_check_field(FieldInput::new(
-			value
-				.map(InputValue::Boolean)
-				.unwrap_or(InputValue::Missing),
+				match value {
+					Some(value) => InputValue::Boolean(value),
+					None => InputValue::Missing,
+				},
 			null_flavor,
 		)),
 	)
@@ -99,10 +103,10 @@ where
 	reject_input_issues(
 		field,
 		check_field(FieldInput::new(
-			number
-				.as_ref()
-				.map(InputValue::Number)
-				.unwrap_or(InputValue::Missing),
+				match number.as_ref() {
+					Some(number) => InputValue::Number(number),
+					None => InputValue::Missing,
+				},
 			None,
 		)),
 	)

@@ -215,7 +215,9 @@ pub async fn prepare_outbound_message_header(
 		.sender_identifier
 		.as_deref()
 		.map(str::trim)
-		.unwrap_or_default()
+		.ok_or_else(|| Error::BadRequest {
+			message: "gateway sender identifier is missing".into(),
+		})?
 		.to_string();
 
 	let (batch_receiver_identifier, message_receiver_identifier) = match authority {

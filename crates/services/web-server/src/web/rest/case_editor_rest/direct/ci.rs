@@ -1,7 +1,7 @@
 use super::super::common::{
 	bool_field, direct_page_projection_response, direct_section_response,
 	explicit_null_model_fields, i32_field, json,
-	mark_editor_validation_summary_stale, next_child_sequence, optional_row_object,
+	mark_editor_validation_summary_stale, optional_row_object,
 	query_authorities_csv, reject_unknown_row_keys, string_field, uuid_eq, BTreeMap,
 	CaseBmc, CaseEditorCiCaseDto, CaseEditorCiDocumentDto,
 	CaseEditorCiLinkedReportDto, CaseEditorCiOtherIdentifierDto,
@@ -455,7 +455,9 @@ pub(super) async fn apply_ci_rows_patch(
 			}
 		}
 		fn date_text(row: &Map<String, Value>, key: &str) -> Result<Option<String>> {
-			let value = row.get(key).cloned().unwrap_or(Value::Null);
+			let Some(value) = row.get(key).cloned() else {
+				return Ok(None);
+			};
 			if value.as_str().is_some_and(|value| value.trim().is_empty()) {
 				return Ok(None);
 			}
@@ -488,7 +490,7 @@ pub(super) async fn apply_ci_rows_patch(
 			case_id,
 			SafetyReportIdentificationForUpdate {
 				safety_report_id: string_field(row, &["safetyReportId"]),
-				version: i32_field(row, &["version"]),
+				version: i32_field(row, &["version"])?,
 				transmission_date: string_field(row, &["transmissionDate"]),
 				report_type: patch_string(row, "reportType")?,
 				date_first_received_from_source: date_text(
@@ -562,7 +564,9 @@ pub(super) async fn apply_ci_rows_patch(
 		let patch = serde_json::from_value::<CiCaseRowPatch>(value.clone())
 			.map_err(|err| ci_row_error("case", err))?;
 		let clear_fields = explicit_null_model_fields(
-			value.as_object().expect("validated CI case row"),
+			value.as_object().ok_or_else(|| Error::BadRequest {
+				message: "validated CI case row".into(),
+			})?,
 			CI_CASE_PATCH_FIELDS,
 		);
 		lib_core::model::update_uuid_patch::<CaseBmc, _>(
@@ -585,7 +589,9 @@ pub(super) async fn apply_ci_rows_patch(
 		let patches =
 			serde_json::from_value::<Vec<CiDocumentRowPatch>>(value.clone())
 				.map_err(|err| ci_row_error("documentsHeldBySender", err))?;
-		let raw_patches = value.as_array().expect("validated CI document array");
+		let raw_patches = value.as_array().ok_or_else(|| Error::BadRequest {
+			message: "validated CI document array".into(),
+		})?;
 		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
 			if patch.id.is_none() && patch.deleted == Some(true) {
 				continue;
@@ -605,7 +611,9 @@ pub(super) async fn apply_ci_rows_patch(
 					DocumentsHeldBySenderBmc::restore(ctx, mm, id).await?;
 				}
 				let clear_fields = explicit_null_model_fields(
-					raw_patch.as_object().expect("validated CI document row"),
+					raw_patch.as_object().ok_or_else(|| Error::BadRequest {
+						message: "validated CI document row".into(),
+					})?,
 					CI_DOCUMENT_PATCH_FIELDS,
 				);
 				lib_core::model::update_uuid_patch::<DocumentsHeldBySenderBmc, _>(
@@ -643,17 +651,11 @@ pub(super) async fn apply_ci_rows_patch(
 						media_type: patch.media_type,
 						representation: patch.representation,
 						compression: patch.compression,
-						sequence_number: patch.sequence_number.unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"documents_held_by_sender",
-								"case_id",
-								case_id,
-								true,
-							)
-							.await?,
-						),
+						sequence_number: patch.sequence_number.ok_or_else(|| {
+							Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							}
+						})?,
 					},
 				)
 				.await?;
@@ -711,24 +713,23 @@ pub(super) async fn apply_ci_rows_patch(
 				if patch.deleted == Some(true) {
 					continue;
 				}
-				let source = patch.source.unwrap_or_default();
-				let case_identifier = patch.case_identifier.unwrap_or_default();
+				let source = patch.source.ok_or_else(|| Error::BadRequest {
+					message: "case identifier source is required".into(),
+				})?;
+				let case_identifier =
+					patch.case_identifier.ok_or_else(|| Error::BadRequest {
+						message: "case identifier is required".into(),
+					})?;
 				OtherCaseIdentifierBmc::create(
 					ctx,
 					mm,
 					OtherCaseIdentifierForCreate {
 						case_id,
-						sequence_number: patch.sequence_number.unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"other_case_identifiers",
-								"case_id",
-								case_id,
-								true,
-							)
-							.await?,
-						),
+						sequence_number: patch.sequence_number.ok_or_else(|| {
+							Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							}
+						})?,
 						source_of_identifier: source,
 						case_identifier,
 					},
@@ -794,17 +795,11 @@ pub(super) async fn apply_ci_rows_patch(
 					mm,
 					LinkedReportNumberForCreate {
 						case_id,
-						sequence_number: patch.sequence_number.unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"linked_report_numbers",
-								"case_id",
-								case_id,
-								true,
-							)
-							.await?,
-						),
+						sequence_number: patch.sequence_number.ok_or_else(|| {
+							Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							}
+						})?,
 						linked_report_number,
 					},
 				)
@@ -817,9 +812,9 @@ pub(super) async fn apply_ci_rows_patch(
 		let patches =
 			serde_json::from_value::<Vec<CiSourceDocumentRowPatch>>(value.clone())
 				.map_err(|err| ci_row_error("sourceDocuments", err))?;
-		let raw_patches = value
-			.as_array()
-			.expect("validated CI source document array");
+		let raw_patches = value.as_array().ok_or_else(|| Error::BadRequest {
+			message: "validated CI source document array".into(),
+		})?;
 		for (patch, raw_patch) in patches.into_iter().zip(raw_patches) {
 			if patch.id.is_none() && patch.deleted == Some(true) {
 				continue;
@@ -834,9 +829,9 @@ pub(super) async fn apply_ci_rows_patch(
 					.into());
 				}
 				let clear_fields = explicit_null_model_fields(
-					raw_patch
-						.as_object()
-						.expect("validated CI source document row"),
+					raw_patch.as_object().ok_or_else(|| Error::BadRequest {
+						message: "validated CI source document row".into(),
+					})?,
 					CI_SOURCE_DOCUMENT_PATCH_FIELDS,
 				);
 				if patch.deleted == Some(true) {
@@ -865,17 +860,11 @@ pub(super) async fn apply_ci_rows_patch(
 						source_document_name: patch.source_document_name,
 						source_document_base64: patch.source_document_base64,
 						source_document_media_type: patch.source_document_media_type,
-						sequence_number: patch.sequence_number.unwrap_or(
-							next_child_sequence(
-								ctx,
-								mm,
-								"source_documents",
-								"case_id",
-								case_id,
-								false,
-							)
-							.await?,
-						),
+						sequence_number: patch.sequence_number.ok_or_else(|| {
+							Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							}
+						})?,
 					},
 				)
 				.await?;

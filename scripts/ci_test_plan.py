@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "registry/tools"))
 from generate_editor_contract_web_tests import ACTIVE_PAGES, LEGACY_READ_PAGES, load_contract, normalize_editor_filters, expected_editor_execution_tests
 
 from ci_test_scope import changed_paths, event_revisions
+from check_input_contract_lock import check as check_input_contract_lock
 
 # Nested modules whose directory name differs from their Cargo integration target.
 FAMILIES = {
@@ -261,8 +262,19 @@ def commands_for(selections: dict, workspace: dict, kind: str = 'tests', editor_
         return [['cargo', 'fmt', *package_args, '--check']]
     if kind == 'clippy':
         args = ['cargo', 'clippy', '--locked', '--all-features']
+        # Dependency derive macros set allow groups; deny still rejects violations in our source.
+        policy_lints = [
+            '-D', 'clippy::unwrap_used',
+            '-D', 'clippy::expect_used',
+            '-D', 'clippy::panic',
+            '-D', 'clippy::todo',
+            '-D', 'clippy::unimplemented',
+            '-D', 'clippy::disallowed_methods',
+        ]
         whole_crates = [arg for package, targets in sorted(selections.items()) if not targets for arg in ('-p', package)]
-        commands = [args + ['--all-targets', *whole_crates]] if whole_crates else []
+        commands = [args + package_args + ['--', *policy_lints]]
+        if whole_crates:
+            commands.append(args + ['--all-targets', *whole_crates])
         for package, targets in sorted(selections.items()):
             if targets:
                 commands.append(args + ['-p', package] + [arg for target in targets for arg in ('--test', target)])
@@ -365,6 +377,8 @@ def main():
         print(json.dumps(terminology_snapshot_for_cargo_args(args.cargo_args)))
         return
     root = Path.cwd()
+    if args.command == 'run' and args.kind == 'clippy':
+        check_input_contract_lock(root)
     workspace = load_workspace(root)
     if args.command == 'run':
         raise SystemExit(run_commands(commands_for(json.loads(args.selections), workspace, args.kind, json.loads(args.editor_filters))))

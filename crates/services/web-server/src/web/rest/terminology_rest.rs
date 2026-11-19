@@ -456,7 +456,9 @@ async fn import_meddra_authorized(
 	params: TerminologyImportParams,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
-	let language = params.language.unwrap_or_else(|| "en".to_string());
+	let language = params.language.ok_or_else(|| Error::BadRequest {
+		message: "terminology language is required".into(),
+	})?;
 
 	let bytes = read_upload_bytes(multipart).await?;
 	let rows =
@@ -524,7 +526,9 @@ async fn import_whodrug_authorized(
 	params: TerminologyImportParams,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
-	let language = params.language.unwrap_or_else(|| "en".to_string());
+	let language = params.language.ok_or_else(|| Error::BadRequest {
+		message: "terminology language is required".into(),
+	})?;
 
 	let mut upload = spool_whodrug_upload(multipart).await?;
 	let is_c3 = terminology_import::whodrug_zip_is_official_c3(&upload.path)
@@ -635,7 +639,9 @@ pub async fn approve_release(
 		fingerprint,
 		move |ctx, mm| {
 			Box::pin(async move {
-				let language = params.language.unwrap_or_else(|| "en".to_string());
+				let language = params.language.ok_or_else(|| Error::BadRequest {
+					message: "terminology language is required".into(),
+				})?;
 				terminology_import::validate_dictionary(&path.dictionary)
 					.map_err(map_import_err)?;
 				let data = terminology_import::approve_release(
@@ -678,7 +684,9 @@ pub async fn activate_release(
 		fingerprint,
 		move |ctx, mm| {
 			Box::pin(async move {
-				let language = params.language.unwrap_or_else(|| "en".to_string());
+				let language = params.language.ok_or_else(|| Error::BadRequest {
+					message: "terminology language is required".into(),
+				})?;
 				let data = terminology_import::activate_release_tx(
 					mm,
 					ctx.user_id(),
@@ -713,7 +721,9 @@ pub async fn rollback_release(
 		fingerprint,
 		move |ctx, mm| {
 			Box::pin(async move {
-				let language = params.language.unwrap_or_else(|| "en".to_string());
+				let language = params.language.ok_or_else(|| Error::BadRequest {
+					message: "terminology language is required".into(),
+				})?;
 				let data = terminology_import::activate_release_tx(
 					mm,
 					ctx.user_id(),

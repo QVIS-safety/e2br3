@@ -220,10 +220,14 @@ impl UserBmc {
 		})
 	}
 
-	fn normalize_role(role: Option<String>) -> String {
-		role.map(|role| canonical_role(&role))
-			.filter(|role| !role.is_empty())
-			.unwrap_or_else(|| ROLE_USER.to_string())
+	fn normalize_role(role: Option<String>) -> Result<String> {
+		let role = role
+			.ok_or_else(|| Error::Store("role is required".to_string()))?;
+		let role = canonical_role(&role);
+		if role.is_empty() {
+			return Err(Error::Store("role is required".to_string()));
+		}
+		Ok(role)
 	}
 
 	fn is_retryable_write_error(err: &Error) -> bool {
@@ -287,7 +291,7 @@ impl UserBmc {
 			let access_study_ids = Self::serialize_id_scope(access_study_ids);
 			let active_sender_identifier =
 				Self::normalize_optional_text(active_sender_identifier);
-			let role = Self::normalize_role(role);
+			let role = Self::normalize_role(role)?;
 			let assignment_role = role.clone();
 
 			let user_fi = UserForInsert {

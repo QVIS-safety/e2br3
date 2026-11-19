@@ -236,10 +236,10 @@ impl ParentMedicalHistoryBmc {
 		filters: Option<Vec<ParentMedicalHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentMedicalHistory>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(ParentMedicalHistoryFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![ParentMedicalHistoryFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -292,10 +292,10 @@ impl ParentPastDrugHistoryBmc {
 		filters: Option<Vec<ParentPastDrugHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentPastDrugHistory>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(ParentPastDrugHistoryFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![ParentPastDrugHistoryFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

@@ -363,16 +363,18 @@ pub async fn workflow_ownership_for_case(
 pub fn qc_state_for_case_status(
 	status: &str,
 	status_before_lock: Option<&str>,
-) -> &'static str {
+) -> Result<&'static str> {
 	let status = if status.trim().eq_ignore_ascii_case("locked") {
-		status_before_lock.unwrap_or(status)
+		status_before_lock.ok_or_else(|| Error::BadRequest {
+			message: "locked case is missing status_before_lock".to_string(),
+		})?
 	} else {
 		status
 	};
-	match status.trim().to_ascii_lowercase().as_str() {
+	Ok(match status.trim().to_ascii_lowercase().as_str() {
 		"reviewed" | "validated" => "QCed",
 		_ => "Pending",
-	}
+	})
 }
 
 pub async fn load_workflow_runtime_settings(
@@ -779,11 +781,10 @@ pub async fn validate_active_sender_selection(
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.map(|value| value.to_string());
-	if next.is_none() {
+	let Some(requested) = next else {
 		return Ok(None);
-	}
+	};
 	let profile = routing_profile_for_user(ctx, mm).await?;
-	let requested = next.clone().expect("checked is_some");
 	let requested = Uuid::parse_str(&requested)
 		.map_err(|_| Error::BadRequest {
 			message: "active_sender_identifier accepts a UUID value only"

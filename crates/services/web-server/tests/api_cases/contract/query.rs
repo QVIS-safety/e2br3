@@ -13,7 +13,7 @@ async fn test_case_query_catalog_describes_queryable_fields() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = get_json(&app, &cookie, "/api/case-query/catalog").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
@@ -49,7 +49,7 @@ async fn test_case_query_search_alias_returns_same_projection_as_cases_query(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-QUERY-ALIAS-{suffix}");
 	let product_id = format!("QUERY-ALIAS-PROD-{suffix}");
@@ -96,7 +96,7 @@ async fn test_case_query_returns_lightweight_list_view_items() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-QUERY-LIST-{suffix}");
 	let product_id = format!("QUERY-PROD-{suffix}");

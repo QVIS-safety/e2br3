@@ -14,6 +14,17 @@ fn uuid_eq(id: sqlx::types::Uuid) -> OpValsValue {
 	OpValValue::Eq(json!(id)).into()
 }
 
+fn xpath_is_empty(xpath: &mut Context, path: &str) -> Result<bool> {
+	xpath
+		.findnodes(path, None)
+		.map(|nodes| nodes.is_empty())
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {path}"),
+			line: None,
+			column: None,
+		})
+}
+
 pub(crate) async fn export_patch(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -162,14 +173,10 @@ fn apply_c_2_primary_source_values(
 			.as_deref()
 			.is_some_and(|v| !v.trim().is_empty())
 	{
-		if xpath
-			.findnodes(
-				&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
-				None,
-			)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		if xpath_is_empty(
+			xpath,
+			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
+		)? {
 			append_fragment_child(
 				doc,
 				parser,
@@ -190,10 +197,7 @@ fn apply_c_2_primary_source_values(
 			.as_deref()
 			.is_some_and(|v| !v.trim().is_empty());
 	if (has_organization || has_department)
-		&& xpath
-			.findnodes(&format!("{base}/hl7:representedOrganization"), None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
+		&& xpath_is_empty(xpath, &format!("{base}/hl7:representedOrganization"))?
 	{
 		append_fragment_child(
 			doc,
@@ -205,11 +209,7 @@ fn apply_c_2_primary_source_values(
 	}
 	let organization_path = if has_department {
 		let nested = format!("{base}/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name");
-		if xpath
-			.findnodes(&nested, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		if xpath_is_empty(xpath, &nested)? {
 			append_fragment_child(
 				doc,
 				parser,
@@ -243,11 +243,7 @@ fn apply_c_2_primary_source_values(
 	if primary.qualification.is_some() || primary.qualification_null_flavor.is_some()
 	{
 		let path = format!("{base}/hl7:assignedPerson/hl7:asQualifiedEntity");
-		if xpath
-			.findnodes(&path, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		if xpath_is_empty(xpath, &path)? {
 			append_fragment_child(
 				doc,
 				parser,
@@ -463,11 +459,7 @@ fn ensure_primary_source_author_nodes(
 	relationship: &str,
 	base: &str,
 ) -> Result<()> {
-	if xpath
-		.findnodes(base, None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false)
-	{
+	if !xpath_is_empty(xpath, base)? {
 		return Ok(());
 	}
 	let present = |value: Option<&str>, null_flavor: Option<&str>| {
@@ -476,12 +468,14 @@ fn ensure_primary_source_author_nodes(
 			.flatten()
 			.any(|value| !value.trim().is_empty())
 	};
-	let title = present(
+	let title = if present(
 		primary.reporter_title.as_deref(),
 		primary.reporter_title_null_flavor.as_deref(),
-	)
-	.then_some("<prefix/>")
-	.unwrap_or_default();
+	) {
+		"<prefix/>"
+	} else {
+		""
+	};
 	let given_name = present(
 		primary.reporter_given_name.as_deref(),
 		primary.reporter_given_name_null_flavor.as_deref(),
@@ -490,80 +484,82 @@ fn ensure_primary_source_author_nodes(
 		primary.reporter_middle_name.as_deref(),
 		primary.reporter_middle_name_null_flavor.as_deref(),
 	);
-	let given = given_name.then_some("<given/>").unwrap_or_default();
-	let middle = (middle_name && given_name)
-		.then_some("<given/>")
-		.unwrap_or_default();
-	let family = present(
+	let given = if given_name { "<given/>" } else { "" };
+	let middle = if middle_name && given_name { "<given/>" } else { "" };
+	let family = if present(
 		primary.reporter_family_name.as_deref(),
 		primary.reporter_family_name_null_flavor.as_deref(),
-	)
-	.then_some("<family/>")
-	.unwrap_or_default();
-	let name = (!title.is_empty()
+	) {
+		"<family/>"
+	} else {
+		""
+	};
+	let name = if !title.is_empty()
 		|| !given.is_empty()
 		|| !middle.is_empty()
-		|| !family.is_empty())
-	.then(|| format!("<name>{title}{given}{middle}{family}</name>"))
-	.unwrap_or_default();
-	let qualification = present(
+		|| !family.is_empty()
+	{
+		format!("<name>{title}{given}{middle}{family}</name>")
+	} else {
+		String::new()
+	};
+	let qualification = if present(
 		primary.qualification.as_deref(),
 		primary.qualification_null_flavor.as_deref(),
-	)
-	.then_some("<asQualifiedEntity classCode=\"QUAL\"><code codeSystem=\"2.16.840.1.113883.3.989.2.1.1.6\"/></asQualifiedEntity>")
-	.unwrap_or_default();
-	let location = primary
+	) {
+		"<asQualifiedEntity classCode=\"QUAL\"><code codeSystem=\"2.16.840.1.113883.3.989.2.1.1.6\"/></asQualifiedEntity>"
+	} else {
+		""
+	};
+	let location = if primary
 		.country_code
 		.as_deref()
 		.filter(|value| !value.trim().is_empty())
-		.map(|_| "<asLocatedEntity classCode=\"LOCE\"><location classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code codeSystem=\"1.0.3166.1.2.2\"/></location></asLocatedEntity>")
-		.unwrap_or_default();
-	let assigned_person = (!name.is_empty()
+		.is_some()
+	{
+		"<asLocatedEntity classCode=\"LOCE\"><location classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code codeSystem=\"1.0.3166.1.2.2\"/></location></asLocatedEntity>"
+	} else {
+		""
+	};
+	let assigned_person = if !name.is_empty()
 		|| !qualification.is_empty()
-		|| !location.is_empty())
-		.then(|| format!("<assignedPerson classCode=\"PSN\" determinerCode=\"INSTANCE\">{name}{qualification}{location}</assignedPerson>"))
-		.unwrap_or_default();
-	let street = present(
+		|| !location.is_empty()
+	{
+		format!("<assignedPerson classCode=\"PSN\" determinerCode=\"INSTANCE\">{name}{qualification}{location}</assignedPerson>")
+	} else {
+		String::new()
+	};
+	let street = if present(
 		primary.street.as_deref(),
 		primary.street_null_flavor.as_deref(),
-	)
-	.then_some("<streetAddressLine/>")
-	.unwrap_or_default();
-	let city = present(primary.city.as_deref(), primary.city_null_flavor.as_deref())
-		.then_some("<city/>")
-		.unwrap_or_default();
-	let state = present(
+	) { "<streetAddressLine/>" } else { "" };
+	let city = if present(primary.city.as_deref(), primary.city_null_flavor.as_deref()) {
+		"<city/>"
+	} else { "" };
+	let state = if present(
 		primary.state.as_deref(),
 		primary.state_null_flavor.as_deref(),
-	)
-	.then_some("<state/>")
-	.unwrap_or_default();
-	let postcode = present(
+	) { "<state/>" } else { "" };
+	let postcode = if present(
 		primary.postcode.as_deref(),
 		primary.postcode_null_flavor.as_deref(),
-	)
-	.then_some("<postalCode/>")
-	.unwrap_or_default();
-	let address = (!street.is_empty()
+	) { "<postalCode/>" } else { "" };
+	let address = if !street.is_empty()
 		|| !city.is_empty()
 		|| !state.is_empty()
-		|| !postcode.is_empty())
-	.then(|| format!("<addr>{street}{city}{state}{postcode}</addr>"))
-	.unwrap_or_default();
-	let telephone = present(
+		|| !postcode.is_empty()
+	{
+		format!("<addr>{street}{city}{state}{postcode}</addr>")
+	} else { String::new() };
+	let telephone = if present(
 		primary.telephone.as_deref(),
 		primary.telephone_null_flavor.as_deref(),
-	)
-	.then_some("<telecom value=\"tel:\"/>")
-	.unwrap_or_default();
-	let email =
-		(matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
+	) { "<telecom value=\"tel:\"/>" } else { "" };
+	let email = if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
 			&& present(
 				primary.email.as_deref(),
 				primary.email_null_flavor.as_deref(),
-			))
-		.then_some("<telecom value=\"mailto:\"/>")
-		.unwrap_or_default();
+			) { "<telecom value=\"mailto:\"/>" } else { "" };
 	let has_organization = present(
 		primary.organization.as_deref(),
 		primary.organization_null_flavor.as_deref(),
@@ -573,9 +569,9 @@ fn ensure_primary_source_author_nodes(
 		primary.department_null_flavor.as_deref(),
 	);
 	let organization = if has_department {
-		let nested = has_organization
-			.then_some("<assignedEntity classCode=\"ASSIGNED\"><representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization></assignedEntity>")
-			.unwrap_or_default();
+		let nested = if has_organization {
+			"<assignedEntity classCode=\"ASSIGNED\"><representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization></assignedEntity>"
+		} else { "" };
 		format!("<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/>{nested}</representedOrganization>")
 	} else if has_organization {
 		"<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization>".to_string()
@@ -586,17 +582,13 @@ fn ensure_primary_source_author_nodes(
 		"<subjectOf2 typeCode=\"SUBJ\"><controlActEvent classCode=\"CACT\" moodCode=\"EVN\"><author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\">{address}{telephone}{email}{assigned_person}{organization}</assignedEntity></author></controlActEvent></subjectOf2>"
 	);
 
-	if xpath
-		.findnodes(relationship, None)
-		.map(|nodes| nodes.is_empty())
-		.unwrap_or(true)
-	{
-		let priority = primary
+	if xpath_is_empty(xpath, relationship)? {
+		let priority = if primary
 			.primary_source_regulatory
 			.as_deref()
 			.filter(|value| !value.trim().is_empty())
-			.map(|_| "<priorityNumber/>")
-			.unwrap_or_default();
+			.is_some()
+		{ "<priorityNumber/>" } else { "" };
 		append_fragment_child(
 			doc,
 			parser,
@@ -670,12 +662,14 @@ pub(crate) fn apply_c_1_report_relationships(
 
 /// e2b:C.1.6.1.r.1
 fn write_c_1_6_1_r_1(value: &DocumentsHeldBySender) -> String {
-	value
+	match value
 		.title
 		.as_deref()
 		.filter(|v| !v.trim().is_empty())
-		.map(|v| format!("<title>{}</title>", xml_escape(v)))
-		.unwrap_or_default()
+	{
+		Some(value) => format!("<title>{}</title>", xml_escape(value)),
+		None => String::new(),
+	}
 }
 
 /// e2b:C.1.6.1.r.2
@@ -707,27 +701,29 @@ fn write_attachment_text(
 		return Ok(String::new());
 	};
 	let file_name = file_name.map(str::trim).filter(|value| !value.is_empty());
-	let mut media_type = media_type
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.unwrap_or("application/octet-stream");
+	let mut media_type = match media_type.map(str::trim).filter(|value| !value.is_empty()) {
+		Some(media_type) => media_type,
+		None => "application/octet-stream",
+	};
 	if authority == lib_core::regulatory::RegulatoryAuthority::Fda {
-		media_type = file_name
-			.and_then(lib_core::regulatory::fda_attachment_media_type)
-			.unwrap_or(media_type);
+		if let Some(fda_media_type) =
+			file_name.and_then(lib_core::regulatory::fda_attachment_media_type)
+		{
+			media_type = fda_media_type;
+		}
 	}
-	let reference = file_name
-		.map(|value| format!("<reference value=\"{}\"/>", xml_escape(value)))
-		.unwrap_or_default();
-	let representation = representation
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.unwrap_or("B64");
-	let compression = compression
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.map(|value| format!(" compression=\"{}\"", xml_escape(value)))
-		.unwrap_or_default();
+	let reference = match file_name {
+		Some(value) => format!("<reference value=\"{}\"/>", xml_escape(value)),
+		None => String::new(),
+	};
+	let representation = match representation.map(str::trim).filter(|value| !value.is_empty()) {
+		Some(representation) => representation,
+		None => "B64",
+	};
+	let compression = match compression.map(str::trim).filter(|value| !value.is_empty()) {
+		Some(value) => format!(" compression=\"{}\"", xml_escape(value)),
+		None => String::new(),
+	};
 	Ok(format!(
 		"<text mediaType=\"{}\" representation=\"{}\"{}>{}{}</text>",
 		xml_escape(media_type),
@@ -764,10 +760,20 @@ pub fn export_c_safety_report_patch(
 	sender: Option<&SenderInformation>,
 	authority: lib_core::regulatory::RegulatoryAuthority,
 ) -> Result<String> {
+	let report_unique_id = report
+		.safety_report_id
+		.as_deref()
+		.filter(|value| !value.trim().is_empty())
+		.ok_or(Error::MissingExportField { field: "C.1.1" })?;
+	let report_type = report
+		.report_type
+		.as_deref()
+		.filter(|value| !value.trim().is_empty())
+		.ok_or(Error::MissingExportField { field: "C.1.3" })?;
 	let patch = CSafetyReportPatch {
-		report_unique_id: report.safety_report_id.as_deref().unwrap_or(""),
+		report_unique_id,
 		transmission_date: report.transmission_date.as_deref(),
-		report_type: report.report_type.as_deref().unwrap_or(""),
+		report_type,
 		date_first_received: report.date_first_received_from_source.as_deref(),
 		date_most_recent: report.date_of_most_recent_information.as_deref(),
 		fulfil_expedited: report.fulfil_expedited_criteria,
@@ -1382,22 +1388,25 @@ pub(crate) fn apply_c_4_literature(
 
 /// e2b:C.4.r.1
 fn write_c_4_r_1(item: &LiteratureReference) -> String {
-	let text = item.reference_text.as_deref().unwrap_or("").trim();
+	let text = match item.reference_text.as_deref() {
+		Some(text) => text.trim(),
+		None => "",
+	};
 	if !text.is_empty() {
 		return format!(
 			"<bibliographicDesignationText>{}</bibliographicDesignationText>",
 			xml_escape(text)
 		);
 	}
-	item.reference_text_null_flavor
-		.as_deref()
-		.map(|value| {
+	match item.reference_text_null_flavor.as_deref() {
+		Some(value) => {
 			format!(
 				"<bibliographicDesignationText nullFlavor=\"{}\"/>",
 				xml_escape(value)
 			)
-		})
-		.unwrap_or_else(|| "<bibliographicDesignationText/>".to_string())
+		}
+		None => "<bibliographicDesignationText/>".to_string(),
+	}
 }
 
 /// e2b:C.4.r.2
@@ -1513,16 +1522,15 @@ fn write_c_5_1_r_1(value: &StudyRegistrationNumber) -> String {
 		.as_deref()
 		.filter(|value| !value.trim().is_empty())
 	else {
-		return value
-			.registration_number_null_flavor
-			.as_deref()
-			.map(|null_flavor| {
+		return match value.registration_number_null_flavor.as_deref() {
+			Some(null_flavor) => {
 				format!(
 					"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
 					xml_escape(null_flavor)
 				)
-			})
-			.unwrap_or_default();
+			}
+			None => String::new(),
+		};
 	};
 	format!(
 		"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
@@ -1541,57 +1549,66 @@ fn write_c_5_1_r_2(value: &StudyRegistrationNumber) -> String {
 
 /// e2b:C.5.2
 fn write_c_5_2(value: &StudyInformation) -> String {
-	let name = value.study_name.as_deref().unwrap_or("").trim();
+	let name = match value.study_name.as_deref() {
+		Some(name) => name.trim(),
+		None => "",
+	};
 	if !name.is_empty() {
 		return format!("<title>{}</title>", xml_escape(name));
 	}
-	value
-		.study_name_null_flavor
-		.as_deref()
-		.map(|v| format!("<title nullFlavor=\"{}\"/>", xml_escape(v)))
-		.unwrap_or_else(|| "<title/>".to_string())
+	match value.study_name_null_flavor.as_deref() {
+		Some(value) => format!("<title nullFlavor=\"{}\"/>", xml_escape(value)),
+		None => "<title/>".to_string(),
+	}
 }
 
 /// e2b:C.5.3
 fn write_c_5_3(value: &StudyInformation) -> String {
-	let number = value.sponsor_study_number.as_deref().unwrap_or("").trim();
+	let number = match value.sponsor_study_number.as_deref() {
+		Some(number) => number.trim(),
+		None => "",
+	};
 	if !number.is_empty() {
 		return format!(
 			"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
 			xml_escape(number)
 		);
 	}
-	value
-		.sponsor_study_number_null_flavor
-		.as_deref()
-		.map(|null_flavor| {
+	match value.sponsor_study_number_null_flavor.as_deref() {
+		Some(null_flavor) => {
 			format!(
 				"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
 				xml_escape(null_flavor)
 			)
-		})
-		.unwrap_or_default()
+		}
+		None => String::new(),
+	}
 }
 
 /// e2b:C.5.4
 fn write_c_5_4(value: &StudyInformation) -> String {
-	value
+	match value
 		.study_type_reaction
 		.as_deref()
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
-		.map(|value| {
+	{
+		Some(value) => {
 			format!(
 				"<code code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>",
 				xml_escape(value)
 			)
-		})
-		.unwrap_or_default()
+		}
+		None => String::new(),
+	}
 }
 
 /// e2b:C.5.4.KR.1
 fn write_c_5_4_kr_1(value: &StudyInformation) -> String {
-	value.study_type_reaction_kr1.as_deref().filter(|v| !v.trim().is_empty()).map(|v| format!("<subjectOf2 typeCode=\"SUBJ\"><investigationCharacteristic classCode=\"OBS\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.7\" codeSystemVersion=\"1.0\" displayName=\"otherStudiesType\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.3\" codeSystemVersion=\"1.0\"/></investigationCharacteristic></subjectOf2>", xml_escape(v))).unwrap_or_default()
+	match value.study_type_reaction_kr1.as_deref().filter(|v| !v.trim().is_empty()) {
+		Some(value) => format!("<subjectOf2 typeCode=\"SUBJ\"><investigationCharacteristic classCode=\"OBS\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.7\" codeSystemVersion=\"1.0\" displayName=\"otherStudiesType\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.3\" codeSystemVersion=\"1.0\"/></investigationCharacteristic></subjectOf2>", xml_escape(value)),
+		None => String::new(),
+	}
 }
 
 /// e2b:FDA.C.5.5a
@@ -1630,10 +1647,10 @@ fn write_fda_c_5_6_r(value: &StudyFdaCrossReportedInd) -> String {
 }
 
 fn write_fda_study_id(value: Option<&str>, root: &str) -> String {
-	value
-		.filter(|v| !v.trim().is_empty())
-		.map(|v| format!("<id extension=\"{}\" root=\"{root}\"/>", xml_escape(v)))
-		.unwrap_or_default()
+	match value.filter(|v| !v.trim().is_empty()) {
+		Some(value) => format!("<id extension=\"{}\" root=\"{root}\"/>", xml_escape(value)),
+		None => String::new(),
+	}
 }
 
 pub(crate) async fn fetch_study_information(
@@ -1784,10 +1801,10 @@ fn insert_c_5_study(xml: &str, fragment: &str) -> Option<String> {
 	let primary_end = xml[primary_start..].find("</primaryRole>")? + primary_start;
 	let body_start = xml[primary_start..].find('>')? + primary_start + 1;
 	let body = &xml[body_start..primary_end];
-	let insert_at = body
-		.find("<subjectOf2")
-		.map(|idx| body_start + idx)
-		.unwrap_or(primary_end);
+	let insert_at = match body.find("<subjectOf2") {
+		Some(index) => body_start + index,
+		None => primary_end,
+	};
 	let mut out = String::with_capacity(xml.len() + fragment.len() + 8);
 	out.push_str(&xml[..insert_at]);
 	out.push_str(fragment);
@@ -1800,10 +1817,10 @@ fn insert_c_1_or_c_4(xml: &str, fragment: &str) -> Option<String> {
 	let end = xml[start..].find("</investigationEvent>")? + start;
 	let body_start = xml[start..].find('>')? + start + 1;
 	let body = &xml[body_start..end];
-	let insert_at = body
-		.find("<component")
-		.map(|idx| body_start + idx)
-		.unwrap_or(end);
+	let insert_at = match body.find("<component") {
+		Some(index) => body_start + index,
+		None => end,
+	};
 	let mut out = String::with_capacity(xml.len() + fragment.len() + 8);
 	out.push_str(&xml[..insert_at]);
 	out.push_str(fragment);

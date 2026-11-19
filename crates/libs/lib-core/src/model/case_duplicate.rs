@@ -165,8 +165,7 @@ pub fn matches_optional_text(expected: Option<&str>, actual: Option<&str>) -> bo
 	};
 	actual
 		.map(str::trim)
-		.map(|v| v.eq_ignore_ascii_case(expected))
-		.unwrap_or(false)
+		.is_some_and(|value| value.eq_ignore_ascii_case(expected))
 }
 
 /// Returns true when `expected` is absent/nil, or when it numerically equals `actual`.
@@ -238,11 +237,10 @@ pub fn matches_patient_signature(
 /// The duplicate scan is only meaningful when every active intake field is
 /// supplied, either as a value or a NullFlavor.
 pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessment {
-	let report_type = key
-		.report_type
-		.as_deref()
-		.map(str::trim)
-		.unwrap_or_default();
+	let report_type = match key.report_type.as_deref() {
+		Some(report_type) => report_type.trim(),
+		None => "",
+	};
 	let reporter_present = field_present(
 		key.reporter_organization.as_deref(),
 		key.reporter_organization_null_flavor.as_deref(),

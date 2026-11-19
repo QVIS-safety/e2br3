@@ -11,7 +11,7 @@ async fn fixture() -> Result<(axum::Router, String, String, String)> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "LEGACY-LB-READ", &["ich"]).await?;
 	let(status,body)=post_json(&app,&cookie,&format!("/api/cases/{case_id}/test-results"),json!({"data":{"case_id":case_id,"sequence_number":1,"test_name":"Legacy test","test_result_value":"42","test_result_unit":"mg"}})).await?;

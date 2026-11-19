@@ -28,119 +28,135 @@ pub(super) fn encode_pdf_unicode_text(value: &str) -> String {
 }
 
 pub(super) fn date_text(value: Option<Date>) -> String {
-	value.map(|value| value.to_string()).unwrap_or_default()
+	value.into_iter().map(|value| value.to_string()).collect()
 }
 
 pub(super) fn ts_text(value: Option<&str>) -> String {
-	value.unwrap_or_default().to_string()
+	value.into_iter().collect()
 }
 
-pub(super) fn e2b_datetime_date_text(value: Option<&str>) -> String {
+pub(super) fn e2b_datetime_date_text(value: Option<&str>) -> Result<String> {
 	value
-		.and_then(lib_core::serde::flex_date::e2b_datetime_date)
-		.map(|value| value.to_string())
-		.unwrap_or_default()
+		.map(|value| {
+			lib_core::serde::flex_date::e2b_datetime_date(value)
+				.map(|date| date.to_string())
+				.ok_or_else(|| Error::BadRequest {
+					message: format!("invalid CIOMS report date: {value}"),
+				})
+		})
+		.transpose()
+		.map(|value| value.into_iter().collect())
 }
 
 pub(super) fn decimal_text(value: Option<Decimal>) -> String {
 	value
 		.map(|value| value.normalize().to_string())
-		.unwrap_or_default()
+		.into_iter()
+		.collect()
 }
 
-pub(super) fn age_unit_text(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"a" => "years",
-		"mo" => "months",
-		"wk" => "weeks",
-		"d" => "days",
-		"h" => "hours",
-		_ => "",
+pub(super) fn age_unit_text(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("a") => "years",
+		Some("mo") => "months",
+		Some("wk") => "weeks",
+		Some("d") => "days",
+		Some("h") => "hours",
+		Some(value) => value,
 	}
 }
 
-pub(super) fn duration_unit_text(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"a" => "years",
-		"mo" => "months",
-		"wk" => "weeks",
-		"d" => "days",
-		"h" => "hours",
-		"min" => "minutes",
-		_ => "",
+pub(super) fn duration_unit_text(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("a") => "years",
+		Some("mo") => "months",
+		Some("wk") => "weeks",
+		Some("d") => "days",
+		Some("h") => "hours",
+		Some("min") => "minutes",
+		Some(value) => value,
 	}
 }
 
-pub(super) fn sex_text(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"1" => "Male",
-		"2" => "Female",
-		"0" => "Unknown",
-		_ => "",
+pub(super) fn sex_text(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("1") => "Male",
+		Some("2") => "Female",
+		Some("0") => "Unknown",
+		Some(value) => value,
 	}
 }
 
-pub(super) fn yes_no_na(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"1" => "Yes",
-		"2" => "No",
-		"3" => "NA",
-		_ => "",
+pub(super) fn yes_no_na(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("1") => "Yes",
+		Some("2") => "No",
+		Some("3") => "NA",
+		Some(value) => value,
 	}
 }
 
-pub(super) fn yes_no_unknown(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"1" => "Yes",
-		"2" => "No",
-		"3" => "Unknown",
-		_ => "",
+pub(super) fn yes_no_unknown(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("1") => "Yes",
+		Some("2") => "No",
+		Some("3") => "Unknown",
+		Some(value) => value,
 	}
 }
 
-pub(super) fn report_type_text(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"1" => "Spontaneous report",
-		"2" => "Report from study",
-		"3" => "Other",
-		"4" => "Not available",
-		_ => "",
+pub(super) fn report_type_text(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("1") => "Spontaneous report",
+		Some("2") => "Report from study",
+		Some("3") => "Other",
+		Some("4") => "Not available",
+		Some(value) => value,
 	}
 }
 
 pub(super) fn reaction_outcome_text(value: Option<&str>) -> String {
-	match value.unwrap_or_default() {
-		"1" => "Recovered/resolved",
-		"2" => "Recovering/resolving",
-		"3" => "Not recovered/not resolved",
-		"4" => "Recovered/resolved with sequelae",
-		"5" => "Fatal",
-		"6" => "Unknown",
-		value => value,
+	match value {
+		None => "",
+		Some("1") => "Recovered/resolved",
+		Some("2") => "Recovering/resolving",
+		Some("3") => "Not recovered/not resolved",
+		Some("4") => "Recovered/resolved with sequelae",
+		Some("5") => "Fatal",
+		Some("6") => "Unknown",
+		Some(value) => value,
 	}
 	.to_string()
 }
 
 pub(super) fn drug_action_text(value: Option<&str>) -> String {
-	match value.unwrap_or_default() {
-		"1" => "Drug withdrawn",
-		"2" => "Dose reduced",
-		"3" => "Dose increased",
-		"4" => "Dose not changed",
-		"5" => "Unknown",
-		"6" => "Not applicable",
-		value => value,
+	match value {
+		None => "",
+		Some("1") => "Drug withdrawn",
+		Some("2") => "Dose reduced",
+		Some("3") => "Dose increased",
+		Some("4") => "Dose not changed",
+		Some("5") => "Unknown",
+		Some("6") => "Not applicable",
+		Some(value) => value,
 	}
 	.to_string()
 }
 
-pub(super) fn rechallenge_action_text(value: Option<&str>) -> &'static str {
-	match value.unwrap_or_default() {
-		"1" => "Drug readministered",
-		"2" => "Drug not readministered",
-		"3" => "Unknown",
-		"4" => "Not applicable",
-		_ => "",
+pub(super) fn rechallenge_action_text(value: Option<&str>) -> &str {
+	match value {
+		None => "",
+		Some("1") => "Drug readministered",
+		Some("2") => "Drug not readministered",
+		Some("3") => "Unknown",
+		Some("4") => "Not applicable",
+		Some(value) => value,
 	}
 }
 

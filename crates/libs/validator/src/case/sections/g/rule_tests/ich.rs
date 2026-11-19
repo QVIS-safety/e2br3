@@ -1,5 +1,103 @@
 use super::*;
 
+fn check_unit_rule(
+	code: &str,
+	path: &str,
+	dose: bool,
+	set: fn(&mut ValidationContext, Option<String>),
+) {
+	let run = |value: Option<&str>| {
+		let mut ctx = fixture::empty_ctx();
+		ctx.drugs.push(fixture::drug());
+		ctx.dosages.push(fixture::dosage());
+		ctx.drug_reaction_assessments.push(fixture::assessment());
+		set(&mut ctx, value.map(str::to_string));
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		super::super::super::retain_case_business_rules(&mut issues);
+		issues
+	};
+	let (bad, good): (&[&str], &[&str]) = if dose {
+		(
+			&["kg.m/s2", "mg/mL", "MG", " mg ", "invented"],
+			&["mg", "{DF}", "{cells}", "g/kg/min", "u[iU]"],
+		)
+	} else {
+		(
+			&[
+				"mg",
+				"800",
+				"{total}",
+				"{asnecessary}",
+				"{cyclical}",
+				"{trimester}",
+				" min ",
+			],
+			&["s", "min", "h", "d", "wk", "mo", "a", "10.a"],
+		)
+	};
+	for bad in bad {
+		for good in good.iter().copied().map(Some).chain([None]) {
+			edge(code, path, run(Some(bad)), run(good));
+		}
+	}
+}
+
+#[test]
+fn rule_ich_g_k_4_r_1b_vocabulary() {
+	check_unit_rule(
+		"ICH.G.k.4.r.1b.VOCABULARY",
+		"drugs.0.dosageInformation.0.doseUnit",
+		true,
+		|ctx, value| ctx.dosages[0].dose_unit = value,
+	);
+}
+
+#[test]
+fn rule_ich_g_k_5b_vocabulary() {
+	check_unit_rule(
+		"ICH.G.k.5b.VOCABULARY",
+		"drugs.0.cumulativeDoseFirstReactionUnit",
+		true,
+		|ctx, value| ctx.drugs[0].cumulative_dose_first_reaction_unit = value,
+	);
+}
+
+#[test]
+fn rule_ich_g_k_4_r_6b_vocabulary() {
+	check_unit_rule(
+		"ICH.G.k.4.r.6b.VOCABULARY",
+		"drugs.0.dosageInformation.0.durationUnit",
+		false,
+		|ctx, value| ctx.dosages[0].duration_unit = value,
+	);
+}
+
+#[test]
+fn rule_ich_g_k_9_i_3_1b_vocabulary() {
+	check_unit_rule(
+		"ICH.G.k.9.i.3.1b.VOCABULARY",
+		"drugs.0.drugReactionAssessments.0.administrationStartIntervalUnit",
+		false,
+		|ctx, value| {
+			ctx.drug_reaction_assessments[0].administration_start_interval_unit =
+				value
+		},
+	);
+}
+
+#[test]
+fn rule_ich_g_k_9_i_3_2b_vocabulary() {
+	check_unit_rule(
+		"ICH.G.k.9.i.3.2b.VOCABULARY",
+		"drugs.0.drugReactionAssessments.0.lastDoseIntervalUnit",
+		false,
+		|ctx, value| {
+			ctx.drug_reaction_assessments[0].last_dose_interval_unit = value
+		},
+	);
+}
+
 fn verify_ich(code: &str) {
 	let (path, bad, good) = match code {
 		"ICH.G.k.REQUIRED" => {

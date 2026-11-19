@@ -22,7 +22,7 @@ async fn verify_dm_parent_transition(field: DmParentField) -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -156,7 +156,7 @@ pub(crate) async fn dosage_value_null_flavor_pairs_reject_simultaneous_values(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -281,7 +281,7 @@ pub(crate) async fn split_null_flavor_http_contract(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -382,7 +382,7 @@ pub(crate) async fn patient_identity_can_be_cleared_and_set_to_null_flavor(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-DM-CLEAR", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/DM");
@@ -454,7 +454,7 @@ pub(crate) async fn registration_blank_values_can_be_replaced_by_null_flavors(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-SI-NULL-FLAVOR", &["ich"])
 			.await?;

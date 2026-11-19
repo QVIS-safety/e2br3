@@ -63,7 +63,7 @@ pub(crate) fn apply_section_n(
 			"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent",
 			receiver,
 			report.receiver_organization.as_deref(),
-		);
+		)?;
 		apply_n_receiver_organization(
 			doc,
 			parser,
@@ -71,7 +71,7 @@ pub(crate) fn apply_section_n(
 			"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:asAgent",
 			receiver,
 			report.receiver_organization.as_deref(),
-		);
+		)?;
 	}
 	Ok(())
 }
@@ -289,11 +289,7 @@ pub(crate) fn ensure_receiver_agent_nodes(
 	receiver_id: &str,
 ) -> Result<()> {
 	let base = "/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization";
-	if xpath
-		.findnodes(base, None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, base)? {
 		return Ok(());
 	}
 	let escaped = xml_escape(receiver_id);
@@ -321,11 +317,7 @@ fn ensure_top_level_receiver_agent_nodes(
 	receiver_id: &str,
 ) -> Result<()> {
 	let base = "/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization";
-	if xpath
-		.findnodes(base, None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, base)? {
 		return Ok(());
 	}
 	let escaped = xml_escape(receiver_id);
@@ -353,7 +345,7 @@ fn apply_n_receiver_organization(
 	agent_base: &str,
 	receiver: &ReceiverInformation,
 	report_receiver_organization: Option<&str>,
-) {
+	) -> Result<()> {
 	let org_base = format!("{agent_base}/hl7:representedOrganization");
 	remove_nodes(xpath, &format!("{org_base}/hl7:code"));
 	remove_nodes(xpath, &format!("{org_base}/hl7:desc"));
@@ -372,7 +364,7 @@ fn apply_n_receiver_organization(
 			xpath,
 			&org_base,
 			&format!("tel:{value}"),
-		);
+		)?;
 	}
 	if let Some(value) = receiver.fax.as_deref() {
 		append_n_receiver_telecom(
@@ -381,7 +373,7 @@ fn apply_n_receiver_organization(
 			xpath,
 			&org_base,
 			&format!("fax:{value}"),
-		);
+		)?;
 	}
 	if let Some(value) = receiver.email.as_deref() {
 		append_n_receiver_telecom(
@@ -390,8 +382,9 @@ fn apply_n_receiver_organization(
 			xpath,
 			&org_base,
 			&format!("mailto:{value}"),
-		);
+		)?;
 	}
+	Ok(())
 }
 
 fn append_n_receiver_telecom(
@@ -400,22 +393,18 @@ fn append_n_receiver_telecom(
 	xpath: &mut Context,
 	org_base: &str,
 	value: &str,
-) {
+) -> Result<()> {
 	let telecom_xpath = format!("{org_base}/hl7:telecom[@value='{value}']");
-	if xpath
-		.findnodes(&telecom_xpath, None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false)
-	{
-		return;
+	if xpath_has_nodes(xpath, &telecom_xpath)? {
+		return Ok(());
 	}
-	let _ = append_fragment_child(
+	append_fragment_child(
 		doc,
 		parser,
 		xpath,
 		org_base,
 		&format!("<telecom value=\"{}\"/>", xml_escape(value)),
-	);
+	)
 }
 
 fn ensure_batch_receiver_nodes(
@@ -424,11 +413,7 @@ fn ensure_batch_receiver_nodes(
 	xpath: &mut Context,
 	receiver_id: &str,
 ) -> Result<()> {
-	if xpath
-		.findnodes("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device", None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, "/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device")? {
 		return Ok(());
 	}
 

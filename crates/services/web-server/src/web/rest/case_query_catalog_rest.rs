@@ -121,9 +121,7 @@ fn element_value_expression(item: &CatalogItem) -> String {
 			} else {
 				""
 			};
-			let order = join_sequence_column(table)
-				.map(|column| format!(" ORDER BY t.{column}"))
-				.unwrap_or_default();
+			let order = join_sequence_column(table).into_iter().map(|column| format!(" ORDER BY t.{column}")).collect::<String>();
 			format!(
 				"COALESCE((SELECT jsonb_agg(t.{column}::text{order}) FROM {table} t WHERE t.case_id = c.id{active} AND t.{column} IS NOT NULL), '[]'::jsonb)",
 				column = item.source.column,
@@ -203,7 +201,7 @@ pub async fn search_cases(
 		move |ctx, mm, scope| {
 			Box::pin(async move {
 				let explicit_page = request.limit.is_some() || request.offset.is_some();
-				let limit = request.limit.unwrap_or(MAX_CASE_QUERY_ROWS as u32);
+				let limit = request.limit.ok_or_else(|| Error::BadRequest { message: "query limit is required".into() })?;
 				if limit == 0 || limit as usize > MAX_CASE_QUERY_ROWS {
 					return Err(Error::BadRequest {
 						message: format!(
@@ -211,7 +209,7 @@ pub async fn search_cases(
 						),
 					});
 				}
-				let offset = request.offset.unwrap_or(0);
+				let offset = request.offset.ok_or_else(|| Error::BadRequest { message: "query offset is required".into() })?;
 				let pages = resolve_result_pages(&request.result_pages)?;
 				let elements = result_elements(&pages);
 				let conditions =
@@ -304,10 +302,7 @@ pub async fn search_cases(
 				)
 				.await?;
 				for item in &mut items {
-					item.warn = cached_totals
-						.get(&item.case_id)
-						.map(|count| count.to_string())
-						.unwrap_or_else(|| "Not checked".to_string());
+					item.warn = match cached_totals.get(&item.case_id) { Some(count) => count.to_string(), None => "Not checked".to_string() };
 				}
 				let element_values = if case_ids.is_empty() {
 					Vec::new()

@@ -17,7 +17,7 @@ async fn test_sponsor_admin_can_hide_and_restore_blind_user() -> Result<()> {
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let role_id = create_empty_permission_profile(
 		&app,
@@ -135,7 +135,7 @@ async fn test_admin_update_user_allows_plain_user_role() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"role": ROLE_USER
@@ -164,7 +164,7 @@ async fn test_user_role_update_changes_the_normalized_assignment_atomically(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let role_id = create_empty_permission_profile(
 		&app,
 		&admin_cookie,
@@ -201,7 +201,7 @@ async fn test_sponsor_admin_cannot_assign_sponsor_admin_role() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"role": ROLE_SPONSOR_ADMIN_CRO
@@ -226,7 +226,7 @@ async fn test_sponsor_admin_cannot_update_existing_sponsor_admin_user() -> Resul
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"comments": "attempted sponsor admin edit"
@@ -256,7 +256,7 @@ async fn test_update_user_rejects_sponsor_admin_role_for_wrong_org_type(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"role": ROLE_SPONSOR_ADMIN_COMPANY

@@ -466,7 +466,10 @@ impl RelatednessAssessmentBmc {
 		filters: Option<Vec<RelatednessAssessmentFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<RelatednessAssessment>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

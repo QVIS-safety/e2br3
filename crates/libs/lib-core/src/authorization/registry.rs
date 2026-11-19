@@ -498,14 +498,14 @@ fn validate_no_grant_cycles(
 	Ok(())
 }
 
-static POLICY_REGISTRY: OnceLock<PolicyRegistry> = OnceLock::new();
+static POLICY_REGISTRY: OnceLock<Result<PolicyRegistry, RegistryError>> =
+	OnceLock::new();
 
-pub fn policy_registry() -> &'static PolicyRegistry {
-	POLICY_REGISTRY.get_or_init(|| {
-		canonical_registry_builder()
-			.build()
-			.expect("valid policy registry")
-	})
+pub fn policy_registry() -> Result<&'static PolicyRegistry, RegistryError> {
+	POLICY_REGISTRY
+		.get_or_init(|| canonical_registry_builder().build())
+		.as_ref()
+		.map_err(Clone::clone)
 }
 
 fn canonical_registry_builder() -> PolicyRegistryBuilder {

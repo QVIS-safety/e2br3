@@ -12,6 +12,34 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 class VocabularyImporterTests(unittest.TestCase):
+    def test_ich_dose_uses_current_dose_flag_not_strength_or_ucum_syntax(self):
+        raw = b'''<CodeList><Identification><ShortName>ich-dose-strength-unit</ShortName><Version>test</Version></Identification><SimpleCodeList>
+        <Row><Value ColumnRef="code"><SimpleValue>{DF}</SimpleValue></Value><Value ColumnRef="cf"><SimpleValue>y</SimpleValue></Value><Value ColumnRef="dosef"><SimpleValue>y</SimpleValue></Value><Value ColumnRef="strgth"><SimpleValue>n</SimpleValue></Value></Row>
+        <Row><Value ColumnRef="code"><SimpleValue>mg/mL</SimpleValue></Value><Value ColumnRef="cf"><SimpleValue>y</SimpleValue></Value><Value ColumnRef="dosef"><SimpleValue>n</SimpleValue></Value><Value ColumnRef="strgth"><SimpleValue>y</SimpleValue></Value></Row>
+        <Row><Value ColumnRef="code"><SimpleValue>obsolete</SimpleValue></Value><Value ColumnRef="cf"><SimpleValue>n</SimpleValue></Value><Value ColumnRef="dosef"><SimpleValue>y</SimpleValue></Value></Row>
+        </SimpleCodeList></CodeList>'''
+        result = import_vocabularies.normalize_ich_units(raw)
+        self.assertEqual(result["entries"], [{"code": "{DF}", "scopes": ["dose"]}])
+        self.assertEqual(result["source_sha256"], hashlib.sha256(raw).hexdigest())
+        with self.assertRaisesRegex(ValueError, "dose applicability"):
+            import_vocabularies.normalize_ich_units(raw.replace(b'ColumnRef="dosef"', b'ColumnRef="other"'))
+        with self.assertRaisesRegex(ValueError, "CL25 or CL26"):
+            import_vocabularies.normalize_ich_units((FIXTURES / "ucum-essence-minimal.xml").read_bytes())
+
+    def test_official_ich_snapshots_pin_source_and_field_subsets(self):
+        dose = json.loads((import_vocabularies.VOCABULARY_DIR / "ich-dose.json").read_text())
+        duration = json.loads((import_vocabularies.VOCABULARY_DIR / "ich-time.json").read_text())
+        for snapshot in (dose, duration):
+            import_vocabularies.validate_snapshot(snapshot)
+        self.assertEqual(dose["version"], "2.3")
+        self.assertEqual(len(dose["entries"]), 107)
+        self.assertEqual(dose["source_sha256"], "f7d9d579fdc774dfa23d67b295e662818a7343212a6b64479d5d302eb96cbcd8")
+        self.assertEqual(duration["version"], "2.2")
+        self.assertEqual(duration["source_sha256"], "d831184fedf12e5ca194e079413a7ba697d705b70adfa563903404830bbd08bf")
+        self.assertEqual({row["code"] for row in duration["entries"]}, {"s", "min", "h", "d", "wk", "mo", "a", "10.a"})
+        self.assertTrue(all(row["scopes"] == ["time"] for row in duration["entries"]))
+        self.assertTrue(all(row["scopes"] == ["dose"] for row in dose["entries"]))
+
     def test_snapshot_validation_rejects_duplicate_codes(self):
         snapshot = import_vocabularies.normalize_iso639(
             (FIXTURES / "iso-639-2-minimal.txt").read_bytes()

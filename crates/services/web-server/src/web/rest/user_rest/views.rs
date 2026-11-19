@@ -6,7 +6,10 @@ pub(super) async fn user_view(
 	user: User,
 ) -> Result<UserView> {
 	let mut views = user_views(ctx, mm, vec![user]).await?;
-	Ok(views.pop().expect("single user view"))
+	views.pop().ok_or_else(|| Error::Internal {
+		operation: "build user view",
+		source: std::io::Error::other("single user view was not produced").into(),
+	})
 }
 
 pub(super) async fn user_views(
@@ -28,17 +31,18 @@ pub(super) async fn user_views(
 			if user.id == ctx.user_id() {
 				user.organization_id = ctx.organization_id();
 			}
-			let role = role_assignments
+			let role_id = role_assignments
 				.get(&(user.id, user.organization_id))
 				.copied()
-				.map(role_for_assignment)
-				// Inactive legacy users have no effective authorization assignment;
-				// this role is display-only and never feeds authorization.
-				.or_else(|| (!user.active).then(|| canonical_role(&user.role)))
-				// A role can be deactivated while an existing assignment remains. Do
-				// not turn that stale display record into a 500; authorization still
-				// fails closed because inactive roles are excluded from snapshots.
-				.unwrap_or_else(|| canonical_role(&user.role));
+				.ok_or_else(|| Error::Internal {
+					operation: "load user role assignment",
+					source: std::io::Error::other(format!(
+						"user {} has no role assignment for organization {}",
+						user.id, user.organization_id
+					))
+					.into(),
+				})?;
+			let role = role_for_assignment(role_id)?;
 			let role_name = role_names.get(&role).map(String::as_str);
 			user_view_with_role(user, role, role_name)
 		})
@@ -62,7 +66,7 @@ fn user_view_with_role(
 		email: user.email,
 		username: user.username,
 		role: role.clone(),
-		role_meta: role_metadata(&role, role_name),
+		role_meta: role_metadata(&role, role_name)?,
 		comments: user.comments,
 		other_information: user.other_information,
 		scope: UserScopeView {
@@ -93,27 +97,29 @@ fn user_view_with_role(
 	})
 }
 
-fn role_for_assignment(role_id: Uuid) -> String {
-	match policy_registry()
-		.built_in_identities()
-		.iter()
-		.find(|identity| identity.id == role_id)
-		.map(|identity| identity.kind)
-	{
-		Some(BuiltInIdentityKind::PlatformAdministrator) => {
-			ROLE_SYSTEM_ADMIN.to_string()
-		}
-		Some(BuiltInIdentityKind::SponsorCroAdministrator) => {
-			ROLE_SPONSOR_ADMIN_CRO.to_string()
-		}
-		Some(BuiltInIdentityKind::SponsorCompanyAdministrator) => {
-			ROLE_SPONSOR_ADMIN_COMPANY.to_string()
-		}
-		Some(BuiltInIdentityKind::OperationalUser) => ROLE_USER.to_string(),
-		Some(BuiltInIdentityKind::InternalServicePrincipal) | None => {
-			role_id.to_string()
-		}
-	}
+fn role_for_assignment(role_id: Uuid) -> Result<String> {
+	Ok(
+		match super::super::authorization_registry()?
+			.built_in_identities()
+			.iter()
+			.find(|identity| identity.id == role_id)
+			.map(|identity| identity.kind)
+		{
+			Some(BuiltInIdentityKind::PlatformAdministrator) => {
+				ROLE_SYSTEM_ADMIN.to_string()
+			}
+			Some(BuiltInIdentityKind::SponsorCroAdministrator) => {
+				ROLE_SPONSOR_ADMIN_CRO.to_string()
+			}
+			Some(BuiltInIdentityKind::SponsorCompanyAdministrator) => {
+				ROLE_SPONSOR_ADMIN_COMPANY.to_string()
+			}
+			Some(BuiltInIdentityKind::OperationalUser) => ROLE_USER.to_string(),
+			Some(BuiltInIdentityKind::InternalServicePrincipal) | None => {
+				role_id.to_string()
+			}
+		},
+	)
 }
 
 pub(super) fn workflow_user_option_view(
@@ -146,10 +152,16 @@ pub(super) async fn current_user_organization_selection_view(
 ) -> Result<CurrentUserOrganizationSelectionView> {
 	let active: Organization =
 		OrganizationBmc::get(ctx, mm, ctx.organization_id()).await?;
-	let mut available =
+	let available =
 		UserBmc::list_member_organizations(ctx, mm, ctx.user_id()).await?;
 	if available.is_empty() {
-		available.push(active.clone());
+		return Err(Error::Internal {
+			operation: "load user organizations",
+			source: std::io::Error::other(
+				"active user has no organization memberships",
+			)
+			.into(),
+		});
 	}
 	Ok(CurrentUserOrganizationSelectionView {
 		active_organization: organization_option_view(active),

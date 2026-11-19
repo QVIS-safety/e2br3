@@ -4,6 +4,29 @@
   "fields": [
     {
       "code": "C.4.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.4.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_4_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "500",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.4.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 499}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 500}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 499}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 500}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 501}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 501}, "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["ASKU", "NASK"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.4.r.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "literatureReferences[].referenceText",
       "projectionPath": "literatureReference.reference_text",
@@ -52,6 +75,22 @@
     },
     {
       "code": "C.4.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.4.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_4_r_2",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "base64"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.4.r.2.ALLOWED.VALUE",
+              "valid": [{"value": "TQ==", "nullFlavor": null}, {"value": "TWE=", "nullFlavor": null}, {"value": "TWFu", "nullFlavor": null}],
+              "invalid": [{"value": "not-base64", "nullFlavor": null}, {"value": "T===", "nullFlavor": null}, {"value": "TR==", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "literatureReferences[].documentBase64",
       "projectionPath": "literatureReference.document_base64",

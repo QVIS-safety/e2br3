@@ -4,6 +4,22 @@
   "fields": [
     {
       "code": "C.1.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.safetyReportId",
       "projectionPath": "safetyReportIdentification.safetyReportId",
@@ -27,6 +43,22 @@
     },
     {
       "code": "C.1.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_2",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.2.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.transmissionDate",
       "projectionPath": "safetyReportIdentification.transmissionDate",
@@ -50,6 +82,29 @@
     },
     {
       "code": "C.1.3",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.3.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.reportType",
       "projectionPath": "safetyReportIdentification.reportType",
@@ -73,6 +128,22 @@
     },
     {
       "code": "C.1.4",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_4",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.4.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}, {"value": "202402", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.dateFirstReceivedFromSource",
       "projectionPath": "safetyReportIdentification.dateFirstReceivedFromSource",
@@ -96,6 +167,22 @@
     },
     {
       "code": "C.1.5",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_5",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "representation_enforced", "format_name": "e2b_datetime"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.5.ALLOWED.VALUE",
+              "valid": [{"value": "20240229", "nullFlavor": null}, {"value": "20240229123059+0900", "nullFlavor": null}],
+              "invalid": [{"value": "20230229", "nullFlavor": null}, {"value": "20241301", "nullFlavor": null}, {"value": "20240101246000", "nullFlavor": null}, {"value": "not-a-date", "nullFlavor": null}, {"value": "2024", "nullFlavor": null}, {"value": "202402", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.dateOfMostRecentInformation",
       "projectionPath": "safetyReportIdentification.dateOfMostRecentInformation",
@@ -119,6 +206,25 @@
     },
     {
       "code": "C.1.6.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.6.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_6_1",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "boolean",
+                "enforcement": "representation_enforced"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.6.1.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": false, "nullFlavor": null}],
+              "invalid": [{"value": "true", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": 1, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.additionalDocumentsAvailable",
       "projectionPath": "safetyReportIdentification.additionalDocumentsAvailable",
@@ -143,6 +249,22 @@
     },
     {
       "code": "C.1.6.1.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.6.1.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_6_1_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.6.1.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "documentsHeldBySender[].documentDescription",
       "projectionPath": "documentsHeldBySender[].documentDescription",
@@ -166,6 +288,21 @@
     },
     {
       "code": "C.1.6.1.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.6.1.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_6_1_r_2",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "base64"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.C.1.6.1.r.2.ALLOWED.VALUE"],
+              "reason": "Attachment encoding validation is delegated to the Case validator; draft document input is not rejected by the scalar input contract."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "documentsHeldBySender[].includedDocument",
       "projectionPath": "documentsHeldBySender[].includedDocument",
@@ -188,6 +325,31 @@
     },
     {
       "code": "C.1.7",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.7",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_7",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "boolean",
+                "enforcement": "representation_enforced"
+              },
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.7.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": false, "nullFlavor": null}],
+              "invalid": [{"value": "true", "nullFlavor": null}, {"value": "1", "nullFlavor": null}, {"value": 1, "nullFlavor": null}, {"value": [], "nullFlavor": null}]
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NI"],
+              "owner": "unresolved",
+              "reason": "The NI exception needs verified R2 import provenance; the manual R3 API rejects it. Import/provenance validation is not covered by a scalar check."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. true/false normally; NI only for retransmission of an R2 case whose equivalent element was absent. Requires verified import provenance, not a scalar nullable boolean. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.fulfilExpeditedCriteria",
       "projectionPath": "safetyReportIdentification.fulfilExpeditedCriteria",
@@ -213,6 +375,29 @@
     },
     {
       "code": "FDA.C.1.7.1",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.C.1.7.1",
+          "source": "dictionary/fda-regional.json",
+          "function": "c::fda_c_1_7_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.1.7.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "4", "5", "6"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.1.7.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "safetyReportIdentification.localCriteriaReportType",
       "projectionPath": "safetyReportIdentification.localCriteriaReportType",
@@ -236,6 +421,22 @@
     },
     {
       "code": "FDA.C.1.12",
+      "dictionaryInputs": [
+        {
+          "code": "FDA.C.1.12",
+          "source": "dictionary/fda-regional.json",
+          "function": "c::fda_c_1_12",
+          "checks": {
+            "null_flavors": {
+              "dictionaryValue": ["NI"],
+              "owner": "input-contracts",
+              "ruleCode": "FDA.C.1.12.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NI"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          }
+        }
+      ],
       "authority": "FDA",
       "frontendPath": "safetyReportIdentification.combinationProductReportIndicator",
       "projectionPath": "safetyReportIdentification.combinationProductReportIndicator",
@@ -259,6 +460,32 @@
     },
     {
       "code": "C.1.8.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.8.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_8_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.8.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "format",
+                "enforcement": "case_validate",
+                "format_name": "worldwide_case_id"
+              },
+              "owner": "unresolved",
+              "reason": "Creation and immutable retransmission identity need lifecycle tests. A universal format regex is explicitly inappropriate; existing length/required checks do not prove preservation."
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Original sender creates the country-company-report identifier, equal to C.1.1. Recipients preserve the received identifier unchanged; do not reject it using current country lists or a blanket format regex. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.worldwideUniqueId",
       "projectionPath": "safetyReportIdentification.worldwideUniqueId",
@@ -282,6 +509,29 @@
     },
     {
       "code": "C.1.8.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.8.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_8_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.8.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.8.2.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.firstSenderType",
       "projectionPath": "safetyReportIdentification.firstSenderType",
@@ -305,6 +555,32 @@
     },
     {
       "code": "C.1.9.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.9.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_9_1",
+          "checks": {
+            "allowed_value_constraint": {
+              "dictionaryValue": {
+                "kind": "true_marker",
+                "enforcement": "case_validate"
+              },
+              "owner": "validator",
+              "ruleCodes": ["ICH.C.1.9.1.ALLOWED.VALUE"],
+              "reason": "Submission-only marker validation; draft booleans remain editable."
+            },
+            "null_flavors": {
+              "dictionaryValue": ["NI"],
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.9.1.NULLFLAVOR.ALLOWED",
+              "valid": [{"value": null, "nullFlavor": "NI"}],
+              "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
+            }
+          },
+          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.otherCaseIdentifiersExist",
       "projectionPath": "safetyReportIdentification.otherCaseIdentifiersExist",
@@ -330,6 +606,22 @@
     },
     {
       "code": "C.1.9.1.r.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.9.1.r.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_9_1_r_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.9.1.r.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "otherCaseIdentifiers[].source",
       "projectionPath": "otherCaseIdentifiers[].source",
@@ -358,6 +650,28 @@
     },
     {
       "code": "C.1.9.1.r.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.9.1.r.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_9_1_r_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.9.1.r.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "ich_identifier"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.C.1.9.1.r.2.FORMAT"],
+              "reason": "Identifier structure is a business rule, separate from the input length limit."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "otherCaseIdentifiers[].caseIdentifier",
       "projectionPath": "otherCaseIdentifiers[].caseIdentifier",
@@ -386,6 +700,22 @@
     },
     {
       "code": "C.1.10.r",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.10.r",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_10_r",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.10.r.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "linkedReports[].linkedReportNumber",
       "projectionPath": "linkedReports[].linkedReportNumber",
@@ -409,6 +739,29 @@
     },
     {
       "code": "C.1.11.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.11.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_11_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.11.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.11.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.nullificationAmendmentCode",
       "projectionPath": "safetyReportIdentification.nullificationAmendmentCode",
@@ -432,6 +785,22 @@
     },
     {
       "code": "C.1.11.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.1.11.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_1_11_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2000",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.11.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2000}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1999}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2000}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2001}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2001}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "safetyReportIdentification.nullificationReason",
       "projectionPath": "safetyReportIdentification.nullificationReason",

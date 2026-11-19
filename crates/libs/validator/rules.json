@@ -191,6 +191,15 @@
       "testModule": "case::sections::d::rule_tests::fda"
     },
     {
+      "ruleCode": "FDA.E.i.3.2h.ALLOWED.VALUE",
+      "testName": "rule_fda_e_i_3_2h_allowed_value",
+      "expectedIssueCode": "FDA.E.i.3.2h.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].requiredIntervention"
+      ],
+      "testModule": "case::sections::e::rule_tests::fda"
+    },
+    {
       "ruleCode": "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED",
       "testName": "rule_fda_e_i_3_2h_premarket_ni_required",
       "expectedIssueCode": "FDA.E.i.3.2h.PREMARKET.NI.REQUIRED",
@@ -259,6 +268,15 @@
       "expectedIssueCode": "FDA.G.k.12.r.4-6.AT_LEAST_ONE",
       "expectedIssuePaths": [
         "drugs[].fdaDevices[].deviceBrandName"
+      ],
+      "testModule": "case::sections::g::rule_tests::fda"
+    },
+    {
+      "ruleCode": "FDA.G.k.12.r.7.1e.VOCABULARY",
+      "testName": "rule_fda_g_k_12_r_7_1e_vocabulary",
+      "expectedIssueCode": "FDA.G.k.12.r.7.1e.VOCABULARY",
+      "expectedIssuePaths": [
+        "drugs[].fdaDevices[].manufacturerCountry"
       ],
       "testModule": "case::sections::g::rule_tests::fda"
     },
@@ -755,6 +773,15 @@
       "expectedIssueCode": "ICH.C.1.8.2.REQUIRED",
       "expectedIssuePaths": [
         "safetyReportIdentification.firstSenderType"
+      ],
+      "testModule": "case::sections::c::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.C.1.9.1.ALLOWED.VALUE",
+      "testName": "rule_ich_c_1_9_1_allowed_value",
+      "expectedIssueCode": "ICH.C.1.9.1.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "safetyReportIdentification.otherCaseIdentifiersExist"
       ],
       "testModule": "case::sections::c::rule_tests::ich"
     },
@@ -1679,11 +1706,29 @@
       "testModule": "case::sections::e::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.E.i.3.2a.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2a_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2a.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaDeath"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.E.i.3.2a.REQUIRED",
       "testName": "rule_ich_e_i_3_2a_required",
       "expectedIssueCode": "ICH.E.i.3.2a.REQUIRED",
       "expectedIssuePaths": [
         "reactions[].criteriaDeath"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.E.i.3.2b.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2b_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2b.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaLifeThreatening"
       ],
       "testModule": "case::sections::e::rule_tests::ich"
     },
@@ -1697,11 +1742,29 @@
       "testModule": "case::sections::e::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.E.i.3.2c.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2c_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2c.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaHospitalization"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.E.i.3.2c.REQUIRED",
       "testName": "rule_ich_e_i_3_2c_required",
       "expectedIssueCode": "ICH.E.i.3.2c.REQUIRED",
       "expectedIssuePaths": [
         "reactions[].criteriaHospitalization"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.E.i.3.2d.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2d_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2d.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaDisabling"
       ],
       "testModule": "case::sections::e::rule_tests::ich"
     },
@@ -1715,11 +1778,29 @@
       "testModule": "case::sections::e::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.E.i.3.2e.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2e_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2e.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaCongenitalAnomaly"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.E.i.3.2e.REQUIRED",
       "testName": "rule_ich_e_i_3_2e_required",
       "expectedIssueCode": "ICH.E.i.3.2e.REQUIRED",
       "expectedIssuePaths": [
         "reactions[].criteriaCongenitalAnomaly"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.E.i.3.2f.ALLOWED.VALUE",
+      "testName": "rule_ich_e_i_3_2f_allowed_value",
+      "expectedIssueCode": "ICH.E.i.3.2f.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "reactions[].criteriaOtherMedicallyImportant"
       ],
       "testModule": "case::sections::e::rule_tests::ich"
     },
@@ -1754,6 +1835,15 @@
       "ruleCode": "ICH.E.i.6b.REQUIRED",
       "testName": "rule_ich_e_i_6b_required",
       "expectedIssueCode": "ICH.E.i.6b.REQUIRED",
+      "expectedIssuePaths": [
+        "reactions[].durationUnit"
+      ],
+      "testModule": "case::sections::e::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.E.i.6b.VOCABULARY",
+      "testName": "rule_ich_e_i_6b_vocabulary",
+      "expectedIssueCode": "ICH.E.i.6b.VOCABULARY",
       "expectedIssuePaths": [
         "reactions[].durationUnit"
       ],
@@ -2058,6 +2148,15 @@
       "testModule": "case::sections::g::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.G.k.4.r.1b.VOCABULARY",
+      "testName": "rule_ich_g_k_4_r_1b_vocabulary",
+      "expectedIssueCode": "ICH.G.k.4.r.1b.VOCABULARY",
+      "expectedIssuePaths": [
+        "drugs[].dosageInformation[].doseUnit"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.G.k.4.r.3.REQUIRED",
       "testName": "rule_ich_g_k_4_r_3_required",
       "expectedIssueCode": "ICH.G.k.4.r.3.REQUIRED",
@@ -2103,6 +2202,15 @@
       "testModule": "case::sections::g::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.G.k.4.r.6b.VOCABULARY",
+      "testName": "rule_ich_g_k_4_r_6b_vocabulary",
+      "expectedIssueCode": "ICH.G.k.4.r.6b.VOCABULARY",
+      "expectedIssuePaths": [
+        "drugs[].dosageInformation[].durationUnit"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.G.k.5a.REQUIRED",
       "testName": "rule_ich_g_k_5a_required",
       "expectedIssueCode": "ICH.G.k.5a.REQUIRED",
@@ -2115,6 +2223,15 @@
       "ruleCode": "ICH.G.k.5b.REQUIRED",
       "testName": "rule_ich_g_k_5b_required",
       "expectedIssueCode": "ICH.G.k.5b.REQUIRED",
+      "expectedIssuePaths": [
+        "drugs[].cumulativeDoseFirstReactionUnit"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.G.k.5b.VOCABULARY",
+      "testName": "rule_ich_g_k_5b_vocabulary",
+      "expectedIssueCode": "ICH.G.k.5b.VOCABULARY",
       "expectedIssuePaths": [
         "drugs[].cumulativeDoseFirstReactionUnit"
       ],
@@ -2212,6 +2329,15 @@
       "testModule": "case::sections::g::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.G.k.9.i.3.1b.VOCABULARY",
+      "testName": "rule_ich_g_k_9_i_3_1b_vocabulary",
+      "expectedIssueCode": "ICH.G.k.9.i.3.1b.VOCABULARY",
+      "expectedIssuePaths": [
+        "drugs[].drugReactionAssessments[].administrationStartIntervalUnit"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.G.k.9.i.3.2a.REQUIRED",
       "testName": "rule_ich_g_k_9_i_3_2a_required",
       "expectedIssueCode": "ICH.G.k.9.i.3.2a.REQUIRED",
@@ -2224,6 +2350,15 @@
       "ruleCode": "ICH.G.k.9.i.3.2b.REQUIRED",
       "testName": "rule_ich_g_k_9_i_3_2b_required",
       "expectedIssueCode": "ICH.G.k.9.i.3.2b.REQUIRED",
+      "expectedIssuePaths": [
+        "drugs[].drugReactionAssessments[].lastDoseIntervalUnit"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
+      "ruleCode": "ICH.G.k.9.i.3.2b.VOCABULARY",
+      "testName": "rule_ich_g_k_9_i_3_2b_vocabulary",
+      "expectedIssueCode": "ICH.G.k.9.i.3.2b.VOCABULARY",
       "expectedIssuePaths": [
         "drugs[].drugReactionAssessments[].lastDoseIntervalUnit"
       ],

@@ -856,6 +856,7 @@ pub fn g_k_6a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 }
 
 /// ICH.G.k.6b.LENGTH.MAX
+/// ICH.G.k.6b.ALLOWED.VALUE
 pub fn g_k_6b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
 	crate::helpers::max_length(
@@ -863,6 +864,12 @@ pub fn g_k_6b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		"ICH.G.k.6b.LENGTH.MAX",
 		input.value,
 		50,
+	);
+	crate::helpers::allowed_values(
+		&mut issues,
+		"ICH.G.k.6b.ALLOWED.VALUE",
+		input.value,
+		&["mo", "wk", "d", "{trimester}"],
 	);
 	issues
 }

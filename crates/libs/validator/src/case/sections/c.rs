@@ -380,8 +380,16 @@ fn c_1_9_1(report: &SafetyReportIdentification, issues: &mut Vec<ValidationIssue
 		issues,
 		"ICH.C.1.9.1.ALLOWED.VALUE",
 		PATH,
-		has_text(report.other_case_identifiers_exist_null_flavor.as_deref())
-			|| report.other_case_identifiers_exist != Some(false),
+		matches!(
+			(
+				report.other_case_identifiers_exist,
+				report
+					.other_case_identifiers_exist_null_flavor
+					.as_deref()
+					.map(str::trim)
+			),
+			(None | Some(true), None | Some("")) | (None, Some("NI"))
+		),
 	);
 }
 
@@ -2003,7 +2011,7 @@ pub(crate) async fn collect_fda_issues(
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		fda_c_1_7_1(
 			report.local_criteria_report_type.as_deref(),
-			report.fulfil_expedited_criteria.unwrap_or(false),
+			matches!(report.fulfil_expedited_criteria, Some(true)),
 			issues,
 		);
 		fda_c_1_12(

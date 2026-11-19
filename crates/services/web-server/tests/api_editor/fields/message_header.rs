@@ -20,7 +20,7 @@ async fn test_editor_shell_allows_missing_message_header_and_preserves_receiver(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "SHELL-MESSAGE-HEADER", &["ich"])
 			.await?;
@@ -100,7 +100,7 @@ pub(super) async fn verify_field(field: &Value) -> Result<()> {
 	)?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "N-CONTRACT", &["ich"]).await?;
 	let case_uuid = Uuid::parse_str(&case_id)?;

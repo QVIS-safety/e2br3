@@ -19,7 +19,7 @@ pub(crate) async fn page_projection_orders_past_drugs_by_sequence_then_id(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-DH-ORDER", &["ich"]).await?;
 	let rows_uri = format!("/api/cases/{case_id}/editor/pages/DH/rows");
@@ -73,7 +73,7 @@ pub(crate) async fn list_projection_includes_displayed_result_columns(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-LB-LIST", &["ich"]).await?;
 	let (status, body) = post_json(
@@ -124,7 +124,7 @@ pub(crate) async fn page_projection_orders_references_by_sequence_then_id(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-LR-ORDER", &["ich"]).await?;
 	let rows_uri = format!("/api/cases/{case_id}/editor/pages/LR/rows");
@@ -177,7 +177,7 @@ pub(crate) async fn reporters_remain_ordered_by_sequence_and_id_after_update(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-RP-ORDER", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/RP");
@@ -266,7 +266,7 @@ pub(crate) async fn batched_rows_match_detail_and_require_auth(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "BATCHED-ROWS", &["ich"]).await?;
 	crate::case_editor_contract_web::support::assert_batched_rows(

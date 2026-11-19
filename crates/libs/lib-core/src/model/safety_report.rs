@@ -1,6 +1,6 @@
 // Section C - Safety Report Identification
 
-use crate::ctx::{Ctx, SYSTEM_USER_ID};
+use crate::ctx::Ctx;
 use crate::e2b::null_flavor::NullFlavor;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
@@ -680,7 +680,10 @@ impl SafetyReportIdentificationBmc {
 		match row {
 			Ok((value,)) => {
 				mm.dbx().commit_txn().await?;
-				Ok(value.unwrap_or(0))
+				Ok(match value {
+					Some(version) => version,
+					None => 0,
+				})
 			}
 			Err(err) => {
 				let _ = mm.dbx().rollback_txn().await;
@@ -806,12 +809,10 @@ impl SafetyReportIdentificationBmc {
 		let clear_combination_product_report_indicator =
 			clear_combination_product_report_indicator
 				|| clear_fields.contains(&"combination_product_report_indicator");
-		let should_mark_nullified = data
-			.nullification_code
-			.as_deref()
-			.map(str::trim)
-			.map(|v| v == "1")
-			.unwrap_or(false);
+		let should_mark_nullified = matches!(
+			data.nullification_code.as_deref().map(str::trim),
+			Some("1")
+		);
 
 		if should_mark_nullified {
 			mm.dbx().begin_txn().await?;
@@ -840,8 +841,7 @@ impl SafetyReportIdentificationBmc {
 				current_status.trim().eq_ignore_ascii_case("nullified");
 			let has_reason = ctx
 				.change_reason()
-				.map(|v| !v.trim().is_empty())
-				.unwrap_or(false);
+				.is_some_and(|value| !value.trim().is_empty());
 			let has_signature = ctx.e_signature_id().is_some();
 			if !(currently_nullified
 				|| is_system_context(ctx)
@@ -965,8 +965,7 @@ impl SafetyReportIdentificationBmc {
 }
 
 fn is_system_context(ctx: &Ctx) -> bool {
-	ctx.user_id()
-		== Uuid::parse_str(SYSTEM_USER_ID).expect("Invalid system user UUID")
+	ctx.user_id() == Uuid::from_u128(1)
 }
 
 pub struct SenderInformationBmc;
@@ -1057,10 +1056,10 @@ impl PrimarySourceBmc {
 		filters: Option<Vec<PrimarySourceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PrimarySource>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(PrimarySourceFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![PrimarySourceFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1222,10 +1221,10 @@ impl LiteratureReferenceBmc {
 		filters: Option<Vec<LiteratureReferenceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LiteratureReference>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(LiteratureReferenceFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![LiteratureReferenceFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1278,7 +1277,10 @@ impl DocumentsHeldBySenderBmc {
 		filters: Option<Vec<DocumentsHeldBySenderFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DocumentsHeldBySender>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1376,10 +1378,10 @@ impl StudyRegistrationNumberBmc {
 		filters: Option<Vec<StudyRegistrationNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyRegistrationNumber>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(StudyRegistrationNumberFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![StudyRegistrationNumberFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1432,10 +1434,10 @@ impl StudyFdaCrossReportedIndBmc {
 		filters: Option<Vec<StudyFdaCrossReportedIndFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyFdaCrossReportedInd>> {
-		let mut filters = filters.unwrap_or_default();
-		if filters.is_empty() {
-			filters.push(StudyFdaCrossReportedIndFilter::default());
-		}
+		let mut filters = match filters {
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![StudyFdaCrossReportedIndFilter::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

@@ -298,7 +298,10 @@ pub fn parse_whodrug_sun(bytes: &[u8]) -> Result<Vec<String>> {
 				rec.len()
 			)));
 		}
-		let cas = rec.get(1).unwrap_or("").trim();
+		let cas = rec
+			.get(1)
+			.ok_or_else(|| bad_input("WHODrug C3 SUN.csv row is missing CAS number"))?
+			.trim();
 		if cas.len() != 10 || !cas.bytes().all(|value| value.is_ascii_digit()) {
 			return Err(bad_input(format!(
 				"WHODrug C3 SUN.csv row {} has invalid 10-digit CAS number",
@@ -347,11 +350,13 @@ fn parse_whodrug_b3_zip_entries(
 ) -> Result<Vec<WhodrugRow>> {
 	let dd = official_zip_entry_by_basename(entries, WHODRUG_B3_DD.basename)
 		.ok_or_else(|| bad_input("Missing official WHODrug B3 DD.csv"))?;
-	let atc_by_code =
-		official_zip_entry_by_basename(entries, WHODRUG_B3_DDA.basename)
-			.map(|bytes| parse_whodrug_positional_atc(bytes, WHODRUG_B3_DDA))
-			.transpose()?
-			.unwrap_or_default();
+	let atc_by_code = match official_zip_entry_by_basename(
+		entries,
+		WHODRUG_B3_DDA.basename,
+	) {
+		Some(bytes) => parse_whodrug_positional_atc(bytes, WHODRUG_B3_DDA)?,
+		None => BTreeMap::new(),
+	};
 
 	parse_whodrug_positional_products(dd, WHODRUG_B3_DD, &atc_by_code)
 }
@@ -418,7 +423,14 @@ fn parse_whodrug_positional_products(
 		let drug_name = if let Some((_, drug_name)) = c3_identity {
 			drug_name
 		} else {
-			rec.get(name_idx).unwrap_or("").trim()
+			rec.get(name_idx)
+				.ok_or_else(|| {
+					bad_input(format!(
+						"{} row {row_number} is missing drug name column",
+						format.source_name
+					))
+				})?
+				.trim()
 		};
 		if drug_name.is_empty() {
 			return Err(bad_input(format!(
@@ -489,7 +501,15 @@ fn parse_whodrug_positional_atc(
 				format.source_name
 			))
 		})?;
-		let atc = rec.get(atc_idx).unwrap_or("").trim();
+		let atc = rec
+			.get(atc_idx)
+			.ok_or_else(|| {
+				bad_input(format!(
+					"{} row {row_number} is missing ATC column",
+					format.source_name
+				))
+			})?
+			.trim();
 		if !atc.is_empty() {
 			by_code.entry(code).or_insert_with(|| atc.to_string());
 		}
@@ -538,8 +558,14 @@ fn parse_whodrug_delimited(bytes: &[u8]) -> Result<Vec<WhodrugRow>> {
 	for rec in rdr.records() {
 		let rec =
 			rec.map_err(|e| bad_input(format!("whodrug row parse error: {e}")))?;
-		let code = rec.get(code_idx).unwrap_or("").trim();
-		let drug_name = rec.get(name_idx).unwrap_or("").trim();
+		let code = rec
+			.get(code_idx)
+			.ok_or_else(|| bad_input("WHODrug row is missing code column"))?
+			.trim();
+		let drug_name = rec
+			.get(name_idx)
+			.ok_or_else(|| bad_input("WHODrug row is missing product name column"))?
+			.trim();
 		if code.is_empty() || drug_name.is_empty() {
 			continue;
 		}
@@ -1476,7 +1502,10 @@ fn read_zip_file_case_insensitive(
 		if !file.is_file() {
 			continue;
 		}
-		let name = file.name().rsplit('/').next().unwrap_or("");
+		let name = match file.name().rsplit('/').next() {
+			Some(name) => name,
+			None => return Err(bad_input("terminology zip entry has no file name")),
+		};
 		if name.eq_ignore_ascii_case(&target_name) {
 			let bytes = read_limited_zip_entry(
 				file,
@@ -1618,7 +1647,10 @@ fn official_zip_entry_by_basename<'a>(
 }
 
 fn zip_basename(name: &str) -> &str {
-	name.rsplit('/').next().unwrap_or(name)
+	match name.rsplit('/').next() {
+		Some(basename) => basename,
+		None => name,
+	}
 }
 
 fn is_whodrug_zip_metadata_or_doc(name: &str) -> bool {
@@ -1671,9 +1703,18 @@ fn looks_like_positional_whodrug_row(
 	format: WhodrugPositionalFormat,
 	row_number: usize,
 ) -> Result<()> {
-	let code_1 = rec.get(format.code_1_idx).unwrap_or("").trim();
-	let code_2 = rec.get(format.code_2_idx).unwrap_or("").trim();
-	let code_3 = rec.get(format.code_3_idx).unwrap_or("").trim();
+	let code_1 = rec
+		.get(format.code_1_idx)
+		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 1", format.source_name)))?
+		.trim();
+	let code_2 = rec
+		.get(format.code_2_idx)
+		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 2", format.source_name)))?
+		.trim();
+	let code_3 = rec
+		.get(format.code_3_idx)
+		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 3", format.source_name)))?
+		.trim();
 	if !is_digits(code_1) || !is_code_segment(code_2) || !is_code_segment(code_3) {
 		return Err(bad_input(format!(
 			"{} row {row_number} does not look like a positional WHODrug row",

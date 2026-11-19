@@ -1,5 +1,93 @@
 use super::*;
 
+#[test]
+fn rule_ich_e_i_6b_vocabulary() {
+	let run = |unit: Option<&str>| {
+		let mut ctx = empty_ctx();
+		let mut row = reaction();
+		row.duration_unit = unit.map(str::to_string);
+		ctx.reactions.push(row);
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		super::super::super::retain_case_business_rules(&mut issues);
+		issues
+	};
+	for bad in [
+		"mg",
+		"806",
+		"{cyclical}",
+		"{asnecessary}",
+		"{total}",
+		"{trimester}",
+		"MIN",
+		" min ",
+	] {
+		for good in [
+			Some("s"),
+			Some("min"),
+			Some("h"),
+			Some("d"),
+			Some("wk"),
+			Some("mo"),
+			Some("a"),
+			Some("10.a"),
+			Some("800"),
+			Some("801"),
+			Some("802"),
+			Some("803"),
+			Some("804"),
+			Some("805"),
+			None,
+		] {
+			assert_edge(
+				"ICH.E.i.6b.VOCABULARY",
+				"reactions.0.durationUnit",
+				run(Some(bad)),
+				run(good),
+			);
+		}
+	}
+}
+
+macro_rules! marker_rules {
+	($($name:ident, $code:literal, $path:literal, $value:ident, $flavor:ident;)+) => {$(
+		#[test]
+		fn $name() {
+			let run = |row: Reaction| {
+				let mut ctx = empty_ctx();
+				ctx.reactions.push(row);
+				let mut issues = Vec::new();
+				collect_ich_issues(&ctx, &mut issues);
+				super::super::super::retain_case_business_rules(&mut issues);
+				issues
+			};
+			let mut bad = reaction();
+			bad.$value = Some(false);
+			bad.$flavor = None;
+			for (value, flavor) in [(Some(true), None), (None, Some("NI"))] {
+				let mut good = bad.clone();
+				good.$value = value;
+				good.$flavor = flavor.map(str::to_string);
+				assert_edge($code, $path, run(bad.clone()), run(good));
+			}
+			for (value, flavor) in [(Some(false), "NI"), (Some(true), "NI"), (None, "UNK")] {
+				bad.$value = value;
+				bad.$flavor = Some(flavor.into());
+				assert!(run(bad.clone()).iter().any(|issue| issue.code == $code));
+			}
+		}
+	)+};
+}
+
+marker_rules! {
+	rule_ich_e_i_3_2a_allowed_value, "ICH.E.i.3.2a.ALLOWED.VALUE", "reactions.0.criteriaDeath", criteria_death, criteria_death_null_flavor;
+	rule_ich_e_i_3_2b_allowed_value, "ICH.E.i.3.2b.ALLOWED.VALUE", "reactions.0.criteriaLifeThreatening", criteria_life_threatening, criteria_life_threatening_null_flavor;
+	rule_ich_e_i_3_2c_allowed_value, "ICH.E.i.3.2c.ALLOWED.VALUE", "reactions.0.criteriaHospitalization", criteria_hospitalization, criteria_hospitalization_null_flavor;
+	rule_ich_e_i_3_2d_allowed_value, "ICH.E.i.3.2d.ALLOWED.VALUE", "reactions.0.criteriaDisabling", criteria_disabling, criteria_disabling_null_flavor;
+	rule_ich_e_i_3_2e_allowed_value, "ICH.E.i.3.2e.ALLOWED.VALUE", "reactions.0.criteriaCongenitalAnomaly", criteria_congenital_anomaly, criteria_congenital_anomaly_null_flavor;
+	rule_ich_e_i_3_2f_allowed_value, "ICH.E.i.3.2f.ALLOWED.VALUE", "reactions.0.criteriaOtherMedicallyImportant", criteria_other_medically_important, criteria_other_medically_important_null_flavor;
+}
+
 fn verify(code: &str) {
 	let (path, invalid, repaired) = match code {
 		"ICH.E.i.REQUIRED" => {

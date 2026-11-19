@@ -8,7 +8,7 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let runtime = assert_get_status(
 		&app,
 		&admin_cookie,
@@ -105,7 +105,7 @@ async fn test_report_due_mail_rows_persist_but_grant_nothing_while_reserved(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let profile_id = create_empty_custom_role_with_generated_id(
 		&app,

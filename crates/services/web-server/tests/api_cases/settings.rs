@@ -8,7 +8,7 @@ async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = get_workflow_config(&app, &cookie).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
@@ -31,7 +31,7 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let identifier = format!("SAFETY{}", Uuid::new_v4().simple());
 	let first_case_number = format!("{identifier}001");
 	let second_case_number = format!("{identifier}002");

@@ -55,11 +55,11 @@ impl CaseEditorShellDto {
 			.review_receivers_json
 			.as_deref()
 			.map(serde_json::from_str)
-			.transpose()?
-			.unwrap_or_else(|| Value::Array(Vec::new()));
+			.transpose()?;
 		let review_receivers = match review_receivers {
-			Value::Array(rows) => Value::Array(rows),
-			Value::Object(mut object) => object
+			None => Value::Array(Vec::new()), // No receivers have been assigned.
+			Some(Value::Array(rows)) => Value::Array(rows),
+			Some(Value::Object(mut object)) => object
 				.remove("reviewReceivers")
 				.filter(Value::is_array)
 				.ok_or_else(|| {

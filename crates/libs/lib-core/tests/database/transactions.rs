@@ -18,7 +18,7 @@ async fn test_dbx() -> Dbx {
 		.await
 		.expect("read current test database");
 	assert_eq!(actual_database, expected_database);
-	Dbx::new(pool).expect("test Dbx")
+	Dbx::new(pool)
 }
 
 async fn reset_test_rows(dbx: &Dbx) {

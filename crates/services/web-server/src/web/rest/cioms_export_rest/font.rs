@@ -1,7 +1,6 @@
 use flate2::{write::ZlibEncoder, Compression};
 use skrifa::prelude::{LocationRef, Size};
 use skrifa::{FontRef, GlyphId, MetadataProvider};
-use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::sync::OnceLock;
@@ -12,88 +11,86 @@ const FONT_BYTES: &[u8] = include_bytes!(concat!(
 ));
 
 const FONT_NAME: &str = "NotoSansCJKkr-Regular";
-const REPLACEMENT_CODEPOINT: u32 = 0xFFFD;
+use lib_rest_core::{Error, Result};
+
+fn font_error(message: impl ToString) -> Error {
+	Error::Internal {
+		operation: "render CIOMS font",
+		source: std::io::Error::other(message.to_string()).into(),
+	}
+}
 
 pub(super) fn font_name() -> &'static str {
 	FONT_NAME
 }
 
-pub(super) fn compressed_font() -> &'static [u8] {
-	static FONT: OnceLock<Vec<u8>> = OnceLock::new();
-	FONT.get_or_init(|| {
+pub(super) fn compressed_font() -> Result<&'static [u8]> {
+	static FONT: OnceLock<std::result::Result<Vec<u8>, String>> = OnceLock::new();
+	match FONT.get_or_init(|| {
 		let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
 		encoder
-			.write_all(cff_table())
-			.expect("embedded CIOMS font must be compressible");
-		encoder
-			.finish()
-			.expect("embedded CIOMS font compression must finish")
-	})
-	.as_slice()
+			.write_all(cff_table().map_err(|e| e.to_string())?)
+			.map_err(|e| e.to_string())?;
+		encoder.finish().map_err(|e| e.to_string())
+	}) {
+		Ok(bytes) => Ok(bytes),
+		Err(error) => Err(font_error(error)),
+	}
 }
 
-pub(super) fn font_widths() -> &'static str {
-	static WIDTHS: OnceLock<String> = OnceLock::new();
-	WIDTHS.get_or_init(|| {
-		let font = FontRef::new(FONT_BYTES)
-			.expect("embedded CIOMS font must be valid OpenType");
+pub(super) fn font_widths() -> Result<&'static str> {
+	static WIDTHS: OnceLock<std::result::Result<String, String>> = OnceLock::new();
+	match WIDTHS.get_or_init(|| {
+		let font = FontRef::new(FONT_BYTES).map_err(|e| e.to_string())?;
 		let metrics = font.glyph_metrics(Size::unscaled(), LocationRef::default());
-		let glyph_count = font
+		let count = font
 			.metrics(Size::unscaled(), LocationRef::default())
-			.glyph_count as u32;
-		let widths = (0..glyph_count)
-			.map(|glyph| {
-				metrics
-					.advance_width(GlyphId::new(glyph))
-					.unwrap_or(1000.0)
-					.round() as u16
-			})
-			.collect::<Vec<_>>();
-		let mut result = String::from("[");
-		let mut start = 0;
-		while start < widths.len() {
-			let end = (start + 1..widths.len())
-				.find(|&index| widths[index] != widths[start])
-				.unwrap_or(widths.len());
-			let _ = write!(result, " {start} {} {}", end - 1, widths[start]);
-			start = end;
+			.glyph_count;
+		let mut result = String::from("[0 [");
+		for glyph in 0..u32::from(count) {
+			let width = metrics
+				.advance_width(GlyphId::new(glyph))
+				.ok_or_else(|| format!("missing width for glyph {glyph}"))?;
+			write!(result, " {} ", width.round() as u16)
+				.map_err(|e| e.to_string())?;
 		}
-		result.push_str(" ]");
-		result
-	})
+		result.push_str("]]");
+		Ok(result)
+	}) {
+		Ok(widths) => Ok(widths),
+		Err(error) => Err(font_error(error)),
+	}
 }
 
-pub(super) fn glyph_id(codepoint: u32) -> u16 {
-	static GLYPHS: OnceLock<BTreeMap<u32, u16>> = OnceLock::new();
-	let glyphs = GLYPHS.get_or_init(|| {
-		let font = FontRef::new(FONT_BYTES)
-			.expect("embedded CIOMS font must be valid OpenType");
-		font.charmap()
-			.mappings()
-			.filter_map(|(codepoint, glyph)| {
-				let glyph = glyph.to_u32();
-				(codepoint <= 0x10FFFF && glyph <= u16::MAX as u32)
-					.then_some((codepoint, glyph as u16))
-			})
-			.collect()
-	});
-	// Keep unsupported scalars visible in the PDF instead of silently emitting
-	// the font's .notdef CID. ToUnicode still preserves the original scalar.
-	*glyphs
-		.get(&codepoint)
-		.or_else(|| glyphs.get(&REPLACEMENT_CODEPOINT))
-		.unwrap_or(&0)
+pub(super) fn glyph_id(codepoint: u32) -> Result<u16> {
+	let font = FontRef::new(FONT_BYTES).map_err(font_error)?;
+	let glyph = font.charmap().map(codepoint).ok_or_else(|| {
+		font_error(format!("unsupported character U+{codepoint:04X}"))
+	})?;
+	u16::try_from(glyph.to_u32()).map_err(font_error)
 }
 
-pub(super) fn encoding_cmap(mapping: &[(u16, u32)]) -> String {
+pub(super) fn glyph_width(character: char) -> Result<usize> {
+	let font = FontRef::new(FONT_BYTES).map_err(font_error)?;
+	let glyph = glyph_id(character as u32)?;
+	let width = font
+		.glyph_metrics(Size::unscaled(), LocationRef::default())
+		.advance_width(GlyphId::new(u32::from(glyph)))
+		.ok_or_else(|| {
+			font_error(format!("missing width for U+{:04X}", character as u32))
+		})?;
+	Ok(width.round() as usize)
+}
+
+pub(super) fn encoding_cmap(mapping: &[(u16, u32)]) -> Result<String> {
 	build_cmap(false, mapping)
 }
 
-pub(super) fn to_unicode_cmap(mapping: &[(u16, u32)]) -> String {
+pub(super) fn to_unicode_cmap(mapping: &[(u16, u32)]) -> Result<String> {
 	build_cmap(true, mapping)
 }
 
-fn build_cmap(to_unicode: bool, mapping: &[(u16, u32)]) -> String {
+fn build_cmap(to_unicode: bool, mapping: &[(u16, u32)]) -> Result<String> {
 	let name = if to_unicode {
 		"NotoSansCJKkr-ToUnicode"
 	} else {
@@ -125,7 +122,7 @@ fn build_cmap(to_unicode: bool, mapping: &[(u16, u32)]) -> String {
 		} else {
 			let _ = writeln!(cmap, "{} begincidchar", chunk.len());
 			for &(code, codepoint) in chunk {
-				let _ = writeln!(cmap, "<{code:04X}> {}", glyph_id(codepoint));
+				let _ = writeln!(cmap, "<{code:04X}> {}", glyph_id(codepoint)?);
 			}
 			cmap.push_str("endcidchar\n");
 		}
@@ -137,7 +134,7 @@ fn build_cmap(to_unicode: bool, mapping: &[(u16, u32)]) -> String {
 		"end\n",
 		"end\n",
 	));
-	cmap
+	Ok(cmap)
 }
 
 fn unicode_hex(codepoint: u32) -> String {
@@ -150,7 +147,7 @@ fn unicode_hex(codepoint: u32) -> String {
 	format!("{high:04X}{low:04X}")
 }
 
-fn cff_table() -> &'static [u8] {
+fn cff_table() -> Result<&'static [u8]> {
 	let table_count = u16::from_be_bytes([FONT_BYTES[4], FONT_BYTES[5]]) as usize;
 	for index in 0..table_count {
 		let record = 12 + (index * 16);
@@ -167,8 +164,25 @@ fn cff_table() -> &'static [u8] {
 				FONT_BYTES[record + 14],
 				FONT_BYTES[record + 15],
 			]) as usize;
-			return &FONT_BYTES[offset..offset + length];
+			return FONT_BYTES
+				.get(offset..offset + length)
+				.ok_or_else(|| font_error("invalid CFF table bounds"));
 		}
 	}
-	panic!("embedded CIOMS font has no CFF table")
+	Err(font_error("embedded CIOMS font has no CFF table"))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn real_embedded_font_supports_korean_and_rejects_missing_glyphs() {
+		assert!(glyph_id('한' as u32).is_ok());
+		assert!(glyph_width('한').unwrap() > 0);
+		assert!(glyph_id(0x10ffff).is_err());
+		assert!(encoding_cmap(&[(1, 0x10ffff)]).is_err());
+		assert!(cff_table().unwrap().len() > 4);
+		assert!(font_widths().unwrap().starts_with("[0 ["));
+	}
 }

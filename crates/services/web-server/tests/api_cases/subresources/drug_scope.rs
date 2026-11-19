@@ -34,7 +34,7 @@ async fn generated_drug_child_routes_bind_drug_to_case_for_every_resource(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let foreign_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let owning_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, owning_case_id).await?;
@@ -180,7 +180,7 @@ async fn deleted_drug_hides_children_and_restore_preserves_child_identity(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
 	let collection =
@@ -264,7 +264,7 @@ async fn fda_device_code_routes_reject_a_matching_drug_from_a_different_case(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let first_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let second_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let _first_drug_id = create_drug(&app, &cookie, first_case_id).await?;
@@ -452,7 +452,7 @@ async fn drug_child_id_is_hidden_under_a_different_drug() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let first_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let second_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let first_drug_id = create_drug(&app, &cookie, first_case_id).await?;

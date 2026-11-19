@@ -16,7 +16,7 @@ async fn protected_snapshot_extractor_reads_the_attached_snapshot() -> Result<()
 	let organization_id = uuid::Uuid::parse_str(SYSTEM_ORG_ID)?;
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		mm.dbx().db(),
-		policy_registry(),
+		policy_registry().expect("valid policy registry"),
 		principal_id,
 		organization_id,
 		OffsetDateTime::now_utc(),

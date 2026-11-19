@@ -6,6 +6,7 @@ use crate::authorization::RequestAuthorizationSnapshot;
 use crate::core_config;
 use crate::ctx::{canonical_role, Ctx};
 use crate::model::Error;
+use lib_utils::envs::get_env_parse;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres, Transaction};
 use uuid::Uuid;
@@ -50,12 +51,10 @@ impl DatabaseIsolationContext {
 	}
 }
 
-pub async fn new_db_pool() -> sqlx::Result<Db> {
-	// * See NOTE 1) below
-	let max_connections = std::env::var("SERVICE_DB_MAX_CONNECTIONS")
-		.ok()
-		.and_then(|value| value.parse::<u32>().ok())
-		.unwrap_or_else(|| if cfg!(test) { 1 } else { 5 });
+pub async fn new_db_pool() -> Result<Db, Error> {
+	let max_connections = get_env_parse("SERVICE_DB_MAX_CONNECTIONS")
+		.map_err(|error| Error::Store(error.to_string()))?;
+	let config = core_config().map_err(|error| Error::Store(error.to_string()))?;
 
 	PgPoolOptions::new()
 		.max_connections(max_connections)
@@ -67,8 +66,9 @@ pub async fn new_db_pool() -> sqlx::Result<Db> {
 				Ok(())
 			})
 		})
-		.connect(&core_config().DB_URL)
+		.connect(&config.DB_URL)
 		.await
+		.map_err(|error| Error::Store(error.to_string()))
 }
 
 // region:    --- User Context Helpers
@@ -199,9 +199,9 @@ pub async fn set_compliance_context_dbx(
 	change_category: Option<&str>,
 	e_signature_id: Option<Uuid>,
 ) -> Result<(), Error> {
-	let reason = change_reason.unwrap_or("");
-	let category = change_category.unwrap_or("");
-	let sig = e_signature_id.map(|id| id.to_string()).unwrap_or_default();
+	let reason = change_reason.map_or("", |value| value);
+	let category = change_category.map_or("", |value| value);
+	let sig = e_signature_id.map_or_else(String::new, |id| id.to_string());
 
 	let query = sqlx::query(
 		"SELECT set_config('app.change_reason', $1, true),

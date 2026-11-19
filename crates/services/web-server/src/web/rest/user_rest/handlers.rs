@@ -38,9 +38,9 @@ pub async fn create_user(
 	} else {
 		"user.create"
 	};
-	let create_action = policy_registry()
-		.context_action::<Proposed<UserCreateProposal>>(action_id)
-		.expect("registered user create policy");
+	let create_action = super::super::registered_context_action::<
+		Proposed<UserCreateProposal>,
+	>(action_id)?;
 	let permit = authorize_contextual_mutation(
 		create_action,
 		&snapshot,
@@ -52,11 +52,21 @@ pub async fn create_user(
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
 	let sender_ids =
-		parse_scope_input(data.access_sender_ids.clone()).unwrap_or_default();
-	let product_ids =
-		parse_scope_input(data.access_product_ids.clone()).unwrap_or_default();
+		parse_scope_input(data.access_sender_ids.clone())?.ok_or_else(|| {
+			Error::BadRequest {
+				message: "explicit access scope is required".into(),
+			}
+		})?;
+	let product_ids = parse_scope_input(data.access_product_ids.clone())?
+		.ok_or_else(|| Error::BadRequest {
+			message: "explicit access scope is required".into(),
+		})?;
 	let study_ids =
-		parse_scope_input(data.access_study_ids.clone()).unwrap_or_default();
+		parse_scope_input(data.access_study_ids.clone())?.ok_or_else(|| {
+			Error::BadRequest {
+				message: "explicit access scope is required".into(),
+			}
+		})?;
 	validate_scope_hierarchy(
 		&db_ctx,
 		&mm,
@@ -79,7 +89,7 @@ pub async fn create_user(
 	) && has_sender_scope_assignment(
 		&data.active_sender_identifier,
 		&data.access_sender_ids,
-	) {
+	)? {
 		return Err(sender_scope_assignment_forbidden());
 	}
 	if organization_id.is_nil() {
@@ -92,7 +102,9 @@ pub async fn create_user(
 	let email = normalize_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?
 		.filter(|value| !value.is_empty())
-		.unwrap_or_else(|| email.split('@').next().unwrap_or("user").to_string());
+		.ok_or_else(|| Error::BadRequest {
+			message: "username is required".into(),
+		})?;
 	validate_username(&username)?;
 	validate_permission_profile_role_for_org(&db_ctx, &mm, role.as_deref()).await?;
 	validate_sponsor_admin_role_for_org(
@@ -121,9 +133,9 @@ pub async fn create_user(
 		access_start_at: data.access_start_at,
 		access_end_at: data.access_end_at,
 		active_sender_identifier: data.active_sender_identifier,
-		access_sender_ids: parse_scope_input(data.access_sender_ids),
-		access_product_ids: parse_scope_input(data.access_product_ids),
-		access_study_ids: parse_scope_input(data.access_study_ids),
+		access_sender_ids: parse_scope_input(data.access_sender_ids)?,
+		access_product_ids: parse_scope_input(data.access_product_ids)?,
+		access_study_ids: parse_scope_input(data.access_study_ids)?,
 		access_blind_allowed: data.access_blind_allowed,
 	};
 	let id = UserBmc::create(&db_ctx, &mm, create).await?;
@@ -148,9 +160,9 @@ pub async fn get_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let target_organization_id = user_target_organization(&ctx);
-	let action = policy_registry()
-		.context_action::<Existing<UserResource>>("user.read")
-		.expect("user.read policy");
+	let action = super::super::registered_context_action::<Existing<UserResource>>(
+		"user.read",
+	)?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -254,9 +266,9 @@ pub async fn list_users(
 				.push(OpValBool::Eq(false));
 		}
 	}
-	let action = policy_registry()
-		.context_action("user.list")
-		.expect("user.list policy");
+	let action = super::super::registered_context_action::<
+		lib_core::authorization::Collection<UserResource>,
+	>("user.list")?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -298,7 +310,9 @@ pub async fn list_workflow_user_options(
 				let users = UserBmc::list_workflow_options(
 					ctx,
 					mm,
-					query.limit.unwrap_or(200),
+					query.limit.ok_or_else(|| Error::BadRequest {
+						message: "limit is required".into(),
+					})?,
 				)
 				.await?;
 				let users = users
@@ -366,22 +380,22 @@ pub async fn update_user(
 					&& has_sender_scope_assignment(
 						&data.active_sender_identifier,
 						&data.access_sender_ids,
-					) {
+					)? {
 					return Err(sender_scope_assignment_forbidden());
 				}
 				let existing: User = UserBmc::get(db_ctx, mm, id).await?;
 				let sender_ids = scope_values_for_update(
 					data.access_sender_ids.as_ref(),
 					existing.access_sender_ids.as_deref(),
-				);
+				)?;
 				let product_ids = scope_values_for_update(
 					data.access_product_ids.as_ref(),
 					existing.access_product_ids.as_deref(),
-				);
+				)?;
 				let study_ids = scope_values_for_update(
 					data.access_study_ids.as_ref(),
 					existing.access_study_ids.as_deref(),
-				);
+				)?;
 				validate_scope_hierarchy(
 					db_ctx,
 					mm,
@@ -432,11 +446,13 @@ pub async fn update_user(
 					other_information: data.other_information,
 					access_start_at: data.access_start_at.flatten(),
 					access_end_at: data.access_end_at.flatten(),
-					access_sender_ids: serialize_scope_input(data.access_sender_ids),
+					access_sender_ids: serialize_scope_input(
+						data.access_sender_ids,
+					)?,
 					access_product_ids: serialize_scope_input(
 						data.access_product_ids,
-					),
-					access_study_ids: serialize_scope_input(data.access_study_ids),
+					)?,
+					access_study_ids: serialize_scope_input(data.access_study_ids)?,
 					access_blind_allowed: data.access_blind_allowed,
 					active_sender_identifier: data.active_sender_identifier,
 					last_login_at: data.last_login_at,
@@ -493,7 +509,11 @@ pub async fn get_current_user_profile(
 	let privileges =
 		current_user_menu_privileges(&ctx, snapshot.identity().built_in_kind(), &mm)
 			.await?;
-	let eligible_actions = lib_core::authorization::eligible_action_ids(&snapshot);
+	let eligible_actions = lib_core::authorization::eligible_action_ids(&snapshot)
+		.map_err(|error| Error::Internal {
+		operation: "resolve eligible authorization actions",
+		source: Box::new(error),
+	})?;
 	let policy_version = snapshot.version().organization_revision();
 	Ok((
 		StatusCode::OK,
@@ -518,7 +538,10 @@ async fn current_user_menu_privileges(
 	mm: &ModelManager,
 ) -> Result<Vec<AdminMenuPrivilege>> {
 	if let Some(kind) = built_in_kind {
-		return Ok(built_in_menu_privileges(kind));
+		return built_in_menu_privileges(kind).map_err(|error| Error::Internal {
+			operation: "resolve built-in menu privileges",
+			source: Box::new(error),
+		});
 	}
 	let Ok(profile_id) = Uuid::parse_str(ctx.role()) else {
 		return Ok(Vec::new());
@@ -538,7 +561,12 @@ async fn current_user_menu_privileges(
 	if !row.active || row.organization_id != ctx.organization_id() {
 		return Ok(Vec::new());
 	}
-	Ok(normalize_menu_privileges(&row.privileges_json.0).unwrap_or_default())
+	normalize_menu_privileges(&row.privileges_json.0).map_err(|error| {
+		Error::Internal {
+			operation: "load user menu privileges",
+			source: Box::new(error),
+		}
+	})
 }
 
 pub async fn update_current_user_organization(
@@ -602,9 +630,10 @@ pub async fn get_current_user_routing(
 	Json<DataRestResult<lib_rest_core::RoutingProfile>>,
 )> {
 	let ctx = ctx_w.0;
-	let organization_id = query
-		.organization_id
-		.unwrap_or_else(|| ctx.organization_id());
+	let organization_id = match query.organization_id {
+		Some(id) => id,
+		None => ctx.organization_id(),
+	};
 	let routing_ctx = if organization_id == ctx.organization_id() {
 		ctx
 	} else {

@@ -108,6 +108,41 @@ def normalize_iso639(raw: bytes) -> dict[str, Any]:
     }
 
 
+def normalize_ich_units(raw: bytes) -> dict[str, Any]:
+    root = ElementTree.fromstring(raw)
+    name = root.findtext("Identification/ShortName")
+    version = root.findtext("Identification/Version")
+    if name not in {"ich-dose-strength-unit", "ich-interval-unit"} or not version:
+        raise ValueError("expected versioned ICH CL25 or CL26 genericode source")
+    rows = []
+    seen = set()
+    for row in root.findall("SimpleCodeList/Row"):
+        values = {v.attrib["ColumnRef"]: v.findtext("SimpleValue") for v in row.findall("Value")}
+        code = values.get("code")
+        if not code or code in seen or values.get("cf") not in {"y", "n"}:
+            raise ValueError("ICH unit requires unique code and current flag")
+        seen.add(code)
+        if name == "ich-dose-strength-unit":
+            if values.get("dosef") not in {"y", "n"}:
+                raise ValueError("ICH CL25 requires dose applicability flag")
+            scopes = ["dose"] if values["dosef"] == "y" else []
+        else:
+            # Duration fields require elapsed time, not dosing-frequency annotations.
+            scopes = ["time"] if code in {"s", "min", "h", "d", "wk", "mo", "a", "10.a"} else []
+        if values["cf"] == "y" and scopes:
+            rows.append((code, scopes))
+    result = {
+        "name": "ICH-UCUM",
+        "version": version,
+        "source": "https://admin.ich.org/sites/default/files/inline-files/IG_Complete_Package_v1_11_1.zip",
+        "source_sha256": source_sha256(raw),
+        "license": "ICH E2B(R3) code lists; https://www.ich.org/page/terms-conditions",
+        "entries": normalized_entries(rows),
+    }
+    validate_snapshot(result)
+    return result
+
+
 def normalize_edqm(raw: bytes) -> dict[str, Any]:
     payload = json.loads(raw)
     release = payload.get("release")
@@ -179,14 +214,18 @@ def main() -> int:
     parser.add_argument("--ucum-source", type=Path)
     parser.add_argument("--iso639-source", type=Path)
     parser.add_argument("--edqm-source", type=Path)
+    parser.add_argument("--ich-dose-source", type=Path)
+    parser.add_argument("--ich-interval-source", type=Path)
     args = parser.parse_args()
-    if not any((args.ucum_source, args.iso639_source, args.edqm_source)):
+    if not any((args.ucum_source, args.iso639_source, args.edqm_source, args.ich_dose_source, args.ich_interval_source)):
         parser.error("at least one source argument is required")
 
     jobs = (
         (args.ucum_source, "ucum.json", normalize_ucum),
         (args.iso639_source, "iso639-2.json", normalize_iso639),
         (args.edqm_source, "edqm.json", normalize_edqm),
+        (args.ich_dose_source, "ich-dose.json", normalize_ich_units),
+        (args.ich_interval_source, "ich-time.json", normalize_ich_units),
     )
     for source, output_name, normalize in jobs:
         if source is not None:

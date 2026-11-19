@@ -12,7 +12,7 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
@@ -107,7 +107,7 @@ async fn test_canonical_product_parent_soft_delete_allows_editor_with_unset_scop
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (editor_id, editor_cookie) =
 		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
 	let (status, value) = request_json(

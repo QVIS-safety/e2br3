@@ -44,7 +44,7 @@ async fn test_mfds_product_activation_and_rollback_change_visible_search_release
 	.await?;
 	tx.commit().await?;
 
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let revision_v1 = CaseValidationSummaryBmc::validation_revision(
 		&mm,
 		validator::VALIDATOR_REVISION,
@@ -128,7 +128,7 @@ async fn test_admin_can_list_terminology_releases() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("GET")
@@ -151,7 +151,7 @@ async fn test_admin_release_actions_validate_dictionary_and_target() -> Result<(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("POST")
@@ -179,7 +179,7 @@ async fn test_admin_can_meddra_approve_activate_and_rollback_release() -> Result
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let tag = short_tag();
 	let version_v1 = format!("M{}1", tag);
 	let version_v2 = format!("M{}2", tag);
@@ -355,7 +355,7 @@ async fn test_reimport_same_version_is_idempotent_for_meddra_and_whodrug(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let tag = short_tag();
 	let meddra_version = format!("MI{tag}");
 	let whodrug_version = format!("WI{tag}");
@@ -473,7 +473,7 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let tag = short_tag();
 	let stem = format!("LangSwitch{tag}");
 	let en_v1 = format!("E1{tag}");
@@ -662,7 +662,7 @@ async fn test_admin_can_approve_activate_and_rollback_release() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let csv_v1 = "code,drug_name,atc_code\nW001,Example Drug v1,A01AA01\n";
 	let csv_v2 = "code,drug_name,atc_code\nW001,Example Drug v2,A01AA01\n";

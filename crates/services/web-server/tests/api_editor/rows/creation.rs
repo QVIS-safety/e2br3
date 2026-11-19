@@ -14,7 +14,7 @@ pub(crate) async fn empty_collections_do_not_create_parents(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let contract = crate::case_editor_contract_web::support::behavior_contract(
 		page_id,
 		"collections",
@@ -60,7 +60,7 @@ pub(crate) async fn empty_parent_child_objects_create_draft_rows(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	for owner in ["parentMedicalHistory", "parentPastDrugs"] {
 		let id =
 			create_case_for_editor(&app, &cookie, "EMPTY-ROW", &["ich"]).await?;
@@ -91,7 +91,7 @@ pub(crate) async fn incomplete_test_result_creates_empty_name(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	for (section, owner, payload, column) in [(
 		"LB",
 		"testResult",
@@ -127,7 +127,7 @@ pub(crate) async fn blank_product_rejects_creation_without_a_row(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "DRAFT-SAVE", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/DG");

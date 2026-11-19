@@ -7,7 +7,7 @@ async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -125,7 +125,7 @@ async fn test_workflow_assignment_updates_owner_without_changing_status(
 	let seed = seed_org_with_all_roles(&mm).await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -221,7 +221,7 @@ async fn test_workflow_transition_rejects_user_outside_current_step_role(
 	let user_token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let user_cookie = cookie_header(&user_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -287,7 +287,7 @@ async fn test_workflow_transition_rejects_user_outside_current_assignee(
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let other_user_cookie = cookie_header(&other_user_token.to_string());
 	let user_cookie = cookie_header(&user_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -384,7 +384,7 @@ async fn test_workflow_admin_override_is_allowed_and_audited() -> Result<()> {
 	let seed = seed_org_with_all_roles(&mm).await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -462,7 +462,7 @@ async fn test_locked_case_blocks_workflow_transition_even_for_admin_override(
 	let seed = seed_org_with_all_roles(&mm).await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = update_admin_settings(
 		&app,

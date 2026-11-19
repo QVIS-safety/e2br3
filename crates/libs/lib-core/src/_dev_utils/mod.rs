@@ -1,8 +1,5 @@
 // region:    --- Modules
 
-use crate::model::ModelManager;
-use tokio::sync::OnceCell;
-
 // endregion: --- Modules
 
 /// Database setup is explicit: use the shared migration runner before startup.
@@ -14,23 +11,6 @@ pub async fn init_dev() -> std::io::Result<()> {
 			"Automatic database initialization is disabled. Run deploy/ec2/migrate-rds.sh for an existing database, or --initialize for an empty database, then set SKIP_DEV_INIT=1.",
 		)),
 	}
-}
-
-/// Initialize test environment.
-pub async fn init_test() -> ModelManager {
-	static INIT: OnceCell<ModelManager> = OnceCell::const_new();
-
-	let mm = INIT
-		.get_or_init(|| async {
-			init_dev()
-				.await
-				.expect("database initialization must be explicit");
-			// NOTE: Rare occasion where unwrap is kind of ok.
-			ModelManager::new().await.unwrap()
-		})
-		.await;
-
-	mm.clone()
 }
 
 // NOTE: Test seed/clean helpers for user/agent/conv have been removed

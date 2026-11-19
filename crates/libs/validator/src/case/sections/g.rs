@@ -1,8 +1,8 @@
 use super::helpers::{
-	max_length, reject_future_date, reject_when, require, valid_code, valid_decimal,
-	valid_dotted_version, valid_identifier, valid_iso3166, valid_meddra_term,
-	valid_meddra_version, valid_mfds_product, valid_mfds_substance, valid_ucum,
-	DateValues,
+	check_ich_unit, max_length, reject_future_date, reject_when, require,
+	valid_code, valid_decimal, valid_dotted_version, valid_identifier,
+	valid_iso3166, valid_meddra_term, valid_meddra_version, valid_mfds_product,
+	valid_mfds_substance, valid_ucum, DateValues,
 };
 use crate::{
 	has_text, is_fda_postmarket_batch_receiver, is_fda_premarket_message_receiver,
@@ -76,13 +76,13 @@ fn decimal_text(value: Option<Decimal>) -> Option<String> {
 	value.map(|value| value.normalize().to_string())
 }
 
-fn additional_info_codes(drug: &DrugInformation) -> Vec<String> {
-	parse_drug_additional_info_codes_json(
+fn additional_info_codes(drug: &DrugInformation) -> serde_json::Result<Vec<String>> {
+	Ok(parse_drug_additional_info_codes_json(
 		drug.drug_additional_info_codes_json.as_ref(),
-	)
+	)?
 	.into_iter()
 	.filter_map(|entry| entry.value_code)
-	.collect()
+	.collect())
 }
 
 /// ICH.G.k.1.REQUIRED
@@ -476,7 +476,13 @@ fn g_k_8(idx: usize, drug: &DrugInformation, issues: &mut Vec<ValidationIssue>) 
 /// ICH.G.k.10.r.LENGTH.MAX
 fn g_k_10_r(idx: usize, drug: &DrugInformation, issues: &mut Vec<ValidationIssue>) {
 	let path = format!("drugs.{idx}.drugAdditionalInformationCodes");
-	let values = additional_info_codes(drug);
+	let values = match additional_info_codes(drug) {
+		Ok(values) => values,
+		Err(_) => {
+			allowed(issues, "ICH.G.k.10.r.ALLOWED.VALUE", &path, false);
+			return;
+		}
+	};
 	allowed(
 		issues,
 		"ICH.G.k.10.r.ALLOWED.VALUE",
@@ -1207,7 +1213,11 @@ fn assessment_row_offsets(ctx: &ValidationContext) -> HashMap<Uuid, usize> {
 		.map(|assessment| {
 			let next = next_by_drug.entry(assessment.drug_id).or_insert(0);
 			let offset = *next;
-			*next += counts.get(&assessment.id).copied().unwrap_or(0).max(1);
+			let count = match counts.get(&assessment.id) {
+				Some(count) => *count,
+				None => 0,
+			};
+			*next += count.max(1);
 			(assessment.id, offset)
 		})
 		.collect()
@@ -1506,6 +1516,15 @@ pub(crate) fn collect_ich_issues(
 		g_k_3_3(idx, drug, issues);
 		g_k_5a(idx, drug, issues);
 		g_k_5b(idx, drug, issues);
+		check_ich_unit(
+			issues,
+			&validation_ctx.vocabulary,
+			crate::VocabularyScope::Dose,
+			"ICH.G.k.5b.VOCABULARY",
+			&format!("drugs.{idx}.cumulativeDoseFirstReactionUnit"),
+			SECTION,
+			drug.cumulative_dose_first_reaction_unit.as_deref(),
+		);
 		g_k_6a(idx, drug, issues);
 		g_k_6b(idx, drug, issues);
 		g_k_8(idx, drug, issues);
@@ -1547,11 +1566,29 @@ pub(crate) fn collect_ich_issues(
 		let nested = Some((drug_idx, idx));
 		g_k_4_r_1a(nested, dosage, issues);
 		g_k_4_r_1b(flat_idx, nested, dosage, issues);
+		check_ich_unit(
+			issues,
+			&validation_ctx.vocabulary,
+			crate::VocabularyScope::Dose,
+			"ICH.G.k.4.r.1b.VOCABULARY",
+			&format!("drugs.{drug_idx}.dosageInformation.{idx}.doseUnit"),
+			SECTION,
+			dosage.dose_unit.as_deref(),
+		);
 		g_k_4_r_2(nested, dosage, issues);
 		g_k_4_r_3(flat_idx, nested, dosage, &validation_ctx.vocabulary, issues);
 		g_k_4_r_4_5(nested, dosage, issues);
 		g_k_4_r_6a(flat_idx, nested, dosage, issues);
 		g_k_4_r_6b(flat_idx, nested, dosage, issues);
+		check_ich_unit(
+			issues,
+			&validation_ctx.vocabulary,
+			crate::VocabularyScope::Time,
+			"ICH.G.k.4.r.6b.VOCABULARY",
+			&format!("drugs.{drug_idx}.dosageInformation.{idx}.durationUnit"),
+			SECTION,
+			dosage.duration_unit.as_deref(),
+		);
 		g_k_4_r_7(nested, dosage, issues);
 		g_k_4_r_8(nested, dosage, issues);
 		g_k_4_r_9_1(nested, dosage, issues);
@@ -1593,8 +1630,18 @@ pub(crate) fn collect_ich_issues(
 		let nested = Some((drug_idx, idx));
 		g_k_9_i_3_1a(flat_idx, nested, assessment, issues);
 		g_k_9_i_3_1b(flat_idx, nested, assessment, issues);
+		check_ich_unit(
+			issues, &validation_ctx.vocabulary, crate::VocabularyScope::Time,
+			"ICH.G.k.9.i.3.1b.VOCABULARY", &format!("drugs.{drug_idx}.drugReactionAssessments.{idx}.administrationStartIntervalUnit"),
+			SECTION, assessment.administration_start_interval_unit.as_deref(),
+		);
 		g_k_9_i_3_2a(flat_idx, nested, assessment, issues);
 		g_k_9_i_3_2b(flat_idx, nested, assessment, issues);
+		check_ich_unit(
+			issues, &validation_ctx.vocabulary, crate::VocabularyScope::Time,
+			"ICH.G.k.9.i.3.2b.VOCABULARY", &format!("drugs.{drug_idx}.drugReactionAssessments.{idx}.lastDoseIntervalUnit"),
+			SECTION, assessment.last_dose_interval_unit.as_deref(),
+		);
 		g_k_9_i_4(nested, assessment, issues);
 		cioms_item_20(nested, assessment, issues);
 	}
@@ -2025,9 +2072,10 @@ fn fda_g_k_9(
 		crate::push_business_issue(
 			issues,
 			"FDA.G.k.9.i.2.r.3.REQUIRED",
-			first_suspect_result_path
-				.or(first_suspect_assessment_path)
-				.unwrap_or_else(|| "drugs".to_string()),
+			match first_suspect_result_path.or(first_suspect_assessment_path) {
+				Some(path) => path,
+				None => "drugs".to_string(),
+			},
 			"At least one suspect product must have a relatedness result for an IND safety report.",
 		);
 	}
@@ -2049,7 +2097,56 @@ pub(crate) async fn collect_fda_issues(
 		device_codes.append(&mut drug_device_codes);
 	}
 	collect_fda_rules(validation_ctx, fda_ctx, &devices, &device_codes, issues);
+	if devices
+		.iter()
+		.any(|device| has_text(device.manufacturer_country.as_deref()))
+	{
+		let countries =
+			lib_core::model::terminology::IsoCountryBmc::list_all(ctx, mm).await?;
+		if countries.is_empty() {
+			return Err(lib_core::model::Error::Validation {
+				message: "FDA device manufacturer country validation requires an active ISO 3166 country dataset in iso_countries.".into(),
+			});
+		}
+		let country_codes =
+			countries.into_iter().map(|country| country.code).collect();
+		collect_fda_device_country_issues(
+			validation_ctx,
+			&devices,
+			&country_codes,
+			issues,
+		);
+	}
 	Ok(())
+}
+
+fn collect_fda_device_country_issues(
+	validation_ctx: &ValidationContext,
+	devices: &[FdaDeviceInformation],
+	country_codes: &HashSet<String>,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
+		for (device_idx, device) in devices
+			.iter()
+			.filter(|device| device.drug_id == drug.id)
+			.enumerate()
+		{
+			let Some(country) = device
+				.manufacturer_country
+				.as_deref()
+				.filter(|value| !value.trim().is_empty())
+			else {
+				continue;
+			};
+			reject_when(
+				issues, "FDA.G.k.12.r.7.1e.VOCABULARY",
+				&format!("drugs.{drug_idx}.fdaDevices.{device_idx}.manufacturerCountry"), SECTION,
+				"Device manufacturer country must be an active ISO 3166 alpha-2 code or EU.",
+				country != "EU" && (country.len() != 2 || !country_codes.contains(country)),
+			);
+		}
+	}
 }
 
 fn collect_fda_rules(
@@ -2522,10 +2619,8 @@ pub(crate) fn collect_mfds_issues(
 			mfds_substance_indices.entry(substance.drug_id).or_insert(0);
 		let child_index = *substance_index;
 		*substance_index += 1;
-		let drug_has_mfds_mpid = drug_has_mfds_mpid_by_id
-			.get(&substance.drug_id)
-			.copied()
-			.unwrap_or(false);
+		let drug_has_mfds_mpid =
+			matches!(drug_has_mfds_mpid_by_id.get(&substance.drug_id), Some(true));
 		mfds_g_k_2_3_r_1_kr_1b(
 			drug_index,
 			child_index,

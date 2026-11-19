@@ -278,7 +278,10 @@ async fn apply_rp_source_patch(
 			PrimarySourceForCreate {
 				case_id,
 				source_reporter_presave_id: update.source_reporter_presave_id,
-				sequence_number: i32_field(source, &["sequenceNumber"]).unwrap_or(1),
+				sequence_number: i32_field(source, &["sequenceNumber"])?
+					.ok_or_else(|| Error::BadRequest {
+						message: "sequenceNumber is required".into(),
+					})?,
 				reporter_title: update.reporter_title,
 				reporter_title_null_flavor: update.reporter_title_null_flavor,
 				reporter_given_name: update.reporter_given_name,

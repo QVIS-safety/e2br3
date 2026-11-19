@@ -59,7 +59,7 @@ async fn general_case_rows_enforce_scope_permission_lock_lifecycle_and_audit(
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let wrong_case_id = create_case(&app, &cookie, seed.org_id).await?;
 
@@ -368,7 +368,7 @@ async fn field_notation_repeated_clear_and_lock_preserve_state_and_audit(
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let endpoint = format!("/api/cases/{case_id}/field-notation");
 	let query = format!("{endpoint}?e2bCode=C.1.1");

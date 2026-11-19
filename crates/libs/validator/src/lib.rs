@@ -45,7 +45,7 @@ use std::collections::BTreeMap;
 pub const VALIDATOR_REVISION: &str = env!("VALIDATOR_REVISION");
 
 pub fn has_text(value: Option<&str>) -> bool {
-	value.map(|v| !v.trim().is_empty()).unwrap_or(false)
+	value.is_some_and(|value| !value.trim().is_empty())
 }
 
 pub(crate) fn push_business_issue(

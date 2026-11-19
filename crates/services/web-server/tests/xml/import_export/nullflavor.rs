@@ -12,7 +12,7 @@ async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
 		create_test_import_product(&mm, seed.org_id, seed.admin.id).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let xml = scenario6_with_first_test_date_null_flavor()?;
 
 	let import_value = import_xml_string(
@@ -61,7 +61,7 @@ async fn test_import_e_nullflavor_then_readback_reactions() -> Result<()> {
 		create_test_import_product(&mm, seed.org_id, seed.admin.id).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let xml = scenario6_xml()?;
 
 	let import_value = import_xml_string(

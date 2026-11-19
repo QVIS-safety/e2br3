@@ -116,15 +116,15 @@ impl SnapshotRepository {
 			if built_in_kind == Some(BuiltInIdentityKind::InternalServicePrincipal) {
 				return Err(SnapshotLoadError::IncompatibleIdentity);
 			}
-			let organization_type = row.organization_type.as_deref().unwrap_or("");
+			let organization_type = row.organization_type.as_deref();
 			if matches!(
 				built_in_kind,
 				Some(BuiltInIdentityKind::SponsorCroAdministrator)
-			) && organization_type != "cro"
+			) && organization_type != Some("cro")
 				|| matches!(
 					built_in_kind,
 					Some(BuiltInIdentityKind::SponsorCompanyAdministrator)
-				) && organization_type != "pharmaceutical_company"
+				) && organization_type != Some("pharmaceutical_company")
 			{
 				return Err(SnapshotLoadError::IncompatibleIdentity);
 			}
@@ -141,7 +141,7 @@ impl SnapshotRepository {
 				parse_scope(row.access_sender_ids.as_deref())?,
 				parse_scope(row.access_product_ids.as_deref())?,
 				parse_scope(row.access_study_ids.as_deref())?,
-				row.access_blind_allowed.unwrap_or(false),
+				matches!(row.access_blind_allowed, Some(true)),
 				trimmed(row.active_sender_identifier),
 			);
 			let valid_until = [row.access_end_at, authentication_expires_at]

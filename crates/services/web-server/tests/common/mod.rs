@@ -103,6 +103,7 @@ pub async fn init_test_env() -> Result<()> {
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
 	std::env::set_var("SERVICE_DB_MAX_CONNECTIONS", "5");
 	std::env::set_var("E2BR3_DEBUG_ERRORS", "1");
+	std::env::set_var("E2BR3_COOKIE_SECURE", "false");
 	if std::env::var("E2BR3_DEFAULT_MESSAGE_SENDER").is_err() {
 		std::env::set_var("E2BR3_DEFAULT_MESSAGE_SENDER", "TEST-SENDER");
 	}
@@ -172,7 +173,7 @@ async fn reconcile_test_authorization_storage() -> Result<()> {
 			}
 			AuthorizationMigrationService::reconcile_registry_storage(
 				&pool,
-				policy_registry(),
+				policy_registry().expect("valid policy registry"),
 			)
 			.await
 			.map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
@@ -583,7 +584,7 @@ async fn seed_normalized_role_assignment(
 	organization_id: Uuid,
 	legacy_role: &str,
 ) -> Result<()> {
-	let registry = policy_registry();
+	let registry = policy_registry().expect("valid policy registry");
 	let built_in_kind = match legacy_role {
 		ROLE_SYSTEM_ADMIN => Some(BuiltInIdentityKind::PlatformAdministrator),
 		ROLE_SPONSOR_ADMIN_CRO => Some(BuiltInIdentityKind::SponsorCroAdministrator),

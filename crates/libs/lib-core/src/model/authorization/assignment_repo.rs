@@ -90,6 +90,7 @@ fn normalized_role_id(legacy_role: &str) -> Result<Uuid> {
 	};
 	if let Some(kind) = kind {
 		return policy_registry()
+			.map_err(|error| Error::Store(error.to_string()))?
 			.built_in_identities()
 			.iter()
 			.find(|identity| identity.kind == kind)

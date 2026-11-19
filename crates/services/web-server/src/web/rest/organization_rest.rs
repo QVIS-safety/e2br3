@@ -4,9 +4,8 @@ use axum::Json;
 use lib_core::authorization::{
 	authorize_contextual_mutation, authorize_contextual_read,
 	existing_organization_mutation_context, existing_organization_read_context,
-	organization_collection_context, policy_registry, proposed_organization_context,
-	Collection, Existing, OrganizationCreateProposal, OrganizationResource,
-	Proposed,
+	organization_collection_context, proposed_organization_context, Collection,
+	Existing, OrganizationCreateProposal, OrganizationResource, Proposed,
 };
 use lib_core::model::organization::{
 	Organization, OrganizationBmc, OrganizationFilter, OrganizationForCreate,
@@ -55,11 +54,9 @@ pub async fn create_organization(
 	Json(params): Json<ParamsForCreate<OrganizationForCreate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	let action = policy_registry()
-		.context_action::<Proposed<OrganizationCreateProposal>>(
-			"organization.create",
-		)
-		.expect("organization.create policy");
+	let action = super::registered_context_action::<
+		Proposed<OrganizationCreateProposal>,
+	>("organization.create")?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
@@ -81,9 +78,9 @@ pub async fn get_organization(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	let action = policy_registry()
-		.context_action::<Existing<OrganizationResource>>("organization.read")
-		.expect("organization.read policy");
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.read",
+	)?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -102,9 +99,9 @@ pub async fn list_organizations(
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<Organization>>>)> {
 	let ctx = ctx_w.0;
-	let action = policy_registry()
-		.context_action::<Collection<OrganizationResource>>("organization.list")
-		.expect("organization.list policy");
+	let action = super::registered_context_action::<Collection<OrganizationResource>>(
+		"organization.list",
+	)?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -129,9 +126,9 @@ pub async fn update_organization(
 	Json(params): Json<ParamsForUpdate<OrganizationForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	let action = policy_registry()
-		.context_action::<Existing<OrganizationResource>>("organization.update")
-		.expect("organization.update policy");
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.update",
+	)?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
@@ -153,9 +150,9 @@ pub async fn delete_organization(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	let action = policy_registry()
-		.context_action::<Existing<OrganizationResource>>("organization.delete")
-		.expect("organization.delete policy");
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.delete",
+	)?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,

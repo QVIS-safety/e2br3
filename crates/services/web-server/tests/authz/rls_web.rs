@@ -20,7 +20,7 @@ async fn test_users_endpoints_require_admin_guard() -> Result<()> {
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/users")
@@ -48,7 +48,7 @@ async fn test_rls_list_cases_filters_org() -> Result<()> {
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/cases")
@@ -120,7 +120,7 @@ async fn test_rls_case_versions_filters_org() -> Result<()> {
 	let token = generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri(format!("/api/cases/{}/versions", seed.case_org1))

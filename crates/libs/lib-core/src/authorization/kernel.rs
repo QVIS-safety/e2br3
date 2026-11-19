@@ -9,7 +9,16 @@ pub fn check_eligibility(
 	action_id: &ActionId,
 	snapshot: &RequestAuthorizationSnapshot,
 ) -> EligibilityDecision {
-	let Some(policy) = policy_registry().action(action_id.as_str()) else {
+	let registry = match policy_registry() {
+		Ok(registry) => registry,
+		Err(_) => {
+			return EligibilityDecision::Denied(AuthorizationDenial::new(
+				action_id.clone(),
+				DenialReason::InvalidPolicyRegistry,
+			))
+		}
+	};
+	let Some(policy) = registry.action(action_id.as_str()) else {
 		return EligibilityDecision::Denied(AuthorizationDenial::new(
 			action_id.clone(),
 			DenialReason::UnknownAction,
@@ -41,12 +50,12 @@ pub fn check_eligibility(
 
 pub fn eligible_action_ids(
 	snapshot: &RequestAuthorizationSnapshot,
-) -> Vec<ActionId> {
-	policy_registry()
+) -> Result<Vec<ActionId>, super::RegistryError> {
+	Ok(policy_registry()?
 		.actions()
 		.filter(|policy| check_eligibility(&policy.id, snapshot).is_eligible())
 		.map(|policy| policy.id.clone())
-		.collect()
+		.collect())
 }
 
 pub fn authorize_subject(
@@ -127,7 +136,13 @@ pub fn authorize_contextual_mutation<'tx, C: AuthorizationContext>(
 fn contextual_policy<C: AuthorizationContext>(
 	action_id: &ActionId,
 ) -> Result<&'static super::ActionPolicy, AuthorizationDenial> {
-	let policy = policy_registry()
+	let registry = policy_registry().map_err(|_| {
+		AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::InvalidPolicyRegistry,
+		)
+	})?;
+	let policy = registry
 		.action(action_id.as_str())
 		.ok_or_else(|| {
 			AuthorizationDenial::new(action_id.clone(), DenialReason::UnknownAction)
@@ -151,9 +166,15 @@ fn check_context(
 	{
 		return Err(denial);
 	}
-	let policy = policy_registry()
-		.action(action_id.as_str())
-		.expect("context action was resolved before evaluation");
+	let registry = policy_registry().map_err(|_| {
+		AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::InvalidPolicyRegistry,
+		)
+	})?;
+	let policy = registry.action(action_id.as_str()).ok_or_else(|| {
+		AuthorizationDenial::new(action_id.clone(), DenialReason::UnknownAction)
+	})?;
 	for condition in &policy.context_conditions {
 		let denied = match condition {
 			ContextCondition::SameOrganization

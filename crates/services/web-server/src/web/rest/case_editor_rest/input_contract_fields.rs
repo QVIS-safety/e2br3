@@ -949,7 +949,10 @@ fn dg(
 		None
 	};
 	validate_field(
-		normalized_codes_row.as_ref().unwrap_or(row),
+		match normalized_codes_row.as_ref() {
+			Some(normalized) => normalized,
+			None => row,
+		},
 		"drugAdditionalInformationCodes[].valueCode",
 		"drugs[].drugAdditionalInformationCodes[].valueCode",
 		InputType::String,

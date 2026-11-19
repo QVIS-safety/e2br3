@@ -7,7 +7,7 @@ async fn patient_physical_fields_preserve_values_and_ucum_units() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 
 	let body = json!({
@@ -49,7 +49,7 @@ async fn parent_information_preserves_dob_null_flavor_and_decade_unit() -> Resul
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let patient_id = create_patient(&app, &cookie, case_id).await?;
 
@@ -88,7 +88,7 @@ async fn test_audit_reason_header_records_normal_patient_update_reason() -> Resu
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let patient_id = create_patient(&app, &cookie, case_id).await?;
 
@@ -151,7 +151,7 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let patient_id = create_patient(&app, &cookie, case_id).await?;
@@ -326,7 +326,7 @@ async fn nested_patient_children_preserve_crud_scope_and_restore_contracts(
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let other_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let patients = [
@@ -533,7 +533,7 @@ async fn patient_identifier_preserves_scope_and_delete_response() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let first_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let second_case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let first_patient_id = create_patient(&app, &cookie, first_case_id).await?;
@@ -579,7 +579,7 @@ async fn test_past_drugs_support_mfds_product_fields_and_200_char_ids() -> Resul
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let patient_id = create_patient(&app, &cookie, case_id).await?;

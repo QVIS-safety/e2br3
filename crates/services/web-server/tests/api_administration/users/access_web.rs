@@ -17,7 +17,7 @@ async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let email = format!("first-login-{suffix}@example.com");
@@ -169,7 +169,7 @@ async fn test_user_after_access_end_is_inactive_and_cannot_login() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let email = format!("expired-user-{suffix}@example.com");
@@ -234,7 +234,7 @@ async fn test_create_user_persists_access_start_and_end_dates() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let email = format!("access-window-{suffix}@example.com");

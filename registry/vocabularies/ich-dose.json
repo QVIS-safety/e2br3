@@ -1,0 +1,651 @@
+{
+  "entries": [
+    {
+      "code": "%",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "10*6.[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "10*6/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "10.a",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "Bq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "Ci",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "GBq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "L",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "L/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "MBq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "M[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[arb'U]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[drp]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[hp_C]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[hp_M]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[hp_Q]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[hp_X]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[iU]/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[iU]/g{Hb}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[iU]/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[kp_C]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[kp_M]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[kp_Q]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "[kp_X]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "cL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "cg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "dL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "dg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "eq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "fg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "fm",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "fmol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "fmol/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "fmol/mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/(100.g)",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/h/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/kg/(8.h)",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/kg/min",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "g/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "kBq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "k[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "kg/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "kg/m3",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mCi",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mL/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mL/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "m[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "meq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mg/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mg/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mg/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mg/m3",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mmol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mmol/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mmol/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mmol/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mol/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mol/m3",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mosm",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mosm/L",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "mosm/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "nCi",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "nL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ng",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ng/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ng/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ng/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ng/mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "nmol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "nmol/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "pL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "pg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "pg/mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "pmol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "pmol/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "uCi",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "uL",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "u[iU]",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ueq",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/(100.g)",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/m2",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/m3",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "ug/mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "umol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "umol/g",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "umol/kg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "umol/mg",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "umol{BCE}/mol",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{AHF'U}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{DF}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{asnecessary}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{cells}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{copies}/ug",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{cyclical}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{total}",
+      "scopes": [
+        "dose"
+      ]
+    },
+    {
+      "code": "{trimester}",
+      "scopes": [
+        "dose"
+      ]
+    }
+  ],
+  "license": "ICH E2B(R3) code lists; https://www.ich.org/page/terms-conditions",
+  "name": "ICH-UCUM",
+  "source": "https://admin.ich.org/sites/default/files/inline-files/IG_Complete_Package_v1_11_1.zip",
+  "source_sha256": "f7d9d579fdc774dfa23d67b295e662818a7343212a6b64479d5d302eb96cbcd8",
+  "version": "2.3"
+}

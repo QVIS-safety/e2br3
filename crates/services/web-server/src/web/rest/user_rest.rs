@@ -6,9 +6,8 @@ use axum::Json;
 use lib_core::authorization::{
 	authorize_contextual_mutation, authorize_contextual_read,
 	built_in_menu_privileges, existing_user_read_context, normalize_menu_privileges,
-	policy_registry, proposed_user_context, user_collection_context,
-	AdminMenuPrivilege, BuiltInIdentityKind, Existing, Proposed, UserCreateProposal,
-	UserResource,
+	proposed_user_context, user_collection_context, AdminMenuPrivilege,
+	BuiltInIdentityKind, Existing, Proposed, UserCreateProposal, UserResource,
 };
 use lib_core::ctx::{
 	built_in_role_metadata, canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY,

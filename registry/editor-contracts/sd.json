@@ -4,6 +4,29 @@
   "fields": [
     {
       "code": "C.3.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "5", "6", "7"], "enforcement": "case_validate"},
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.1.ALLOWED.VALUE",
+              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}, {"value": "7", "nullFlavor": null}],
+              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.senderType",
       "projectionPath": "senderInformation.senderType",
@@ -27,6 +50,22 @@
     },
     {
       "code": "C.3.1.KR.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.1.KR.1",
+          "source": "dictionary/mfds-regional.json",
+          "function": "c::mfds_c_3_1_kr_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "1",
+              "owner": "input-contracts",
+              "ruleCode": "MFDS.C.3.1.KR.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "MFDS",
       "frontendPath": "senderInformation.healthProfessionalTypeKr1",
       "projectionPath": "senderInformation.healthProfessionalTypeKr1",
@@ -50,6 +89,22 @@
     },
     {
       "code": "C.3.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.organizationName",
       "projectionPath": "senderInformation.organizationName",
@@ -73,6 +128,22 @@
     },
     {
       "code": "C.3.3.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.3.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_3_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.3.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.department",
       "projectionPath": "senderInformation.department",
@@ -96,6 +167,22 @@
     },
     {
       "code": "C.3.3.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.3.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_3_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "50",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.3.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.personTitle",
       "projectionPath": "senderInformation.personTitle",
@@ -119,6 +206,22 @@
     },
     {
       "code": "C.3.3.3",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.3.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_3_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.3.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.personGivenName",
       "projectionPath": "senderInformation.personGivenName",
@@ -142,6 +245,22 @@
     },
     {
       "code": "C.3.3.4",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.3.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_3_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.3.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.personMiddleName",
       "projectionPath": "senderInformation.personMiddleName",
@@ -165,6 +284,22 @@
     },
     {
       "code": "C.3.3.5",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.3.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_3_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "60",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.3.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.personFamilyName",
       "projectionPath": "senderInformation.personFamilyName",
@@ -188,6 +323,22 @@
     },
     {
       "code": "C.3.4.1",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.1",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_1",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.1.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.streetAddress",
       "projectionPath": "senderInformation.streetAddress",
@@ -211,6 +362,22 @@
     },
     {
       "code": "C.3.4.2",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.2",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_2",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "35",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.2.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 35}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 35}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 36}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 36}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.city",
       "projectionPath": "senderInformation.city",
@@ -234,6 +401,22 @@
     },
     {
       "code": "C.3.4.3",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.3",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_3",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "40",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.3.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 40}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 40}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 41}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 41}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.state",
       "projectionPath": "senderInformation.state",
@@ -257,6 +440,22 @@
     },
     {
       "code": "C.3.4.4",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.4",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_4",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "15",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.4.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 14}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 15}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 14}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 15}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 16}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 16}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.postcode",
       "projectionPath": "senderInformation.postcode",
@@ -280,6 +479,28 @@
     },
     {
       "code": "C.3.4.5",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.5",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_5",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "2",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.5.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+            },
+            "allowed_value_constraint": {
+              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "owner": "validator",
+              "ruleCodes": ["ICH.C.3.4.5.VOCABULARY"],
+              "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.countryCode",
       "projectionPath": "senderInformation.countryCode",
@@ -311,6 +532,22 @@
     },
     {
       "code": "C.3.4.6",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.6",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_6",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "33",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.6.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 33}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 33}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.telephone",
       "projectionPath": "senderInformation.telephone",
@@ -334,6 +571,22 @@
     },
     {
       "code": "C.3.4.7",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.7",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_7",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "33",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.7.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 33}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 33}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.fax",
       "projectionPath": "senderInformation.fax",
@@ -357,6 +610,22 @@
     },
     {
       "code": "C.3.4.8",
+      "dictionaryInputs": [
+        {
+          "code": "C.3.4.8",
+          "source": "dictionary/ich-e2br3.json",
+          "function": "c::c_3_4_8",
+          "checks": {
+            "max_length": {
+              "dictionaryValue": "100",
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.3.4.8.LENGTH.MAX",
+              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
+              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+            }
+          }
+        }
+      ],
       "authority": "ICH",
       "frontendPath": "senderInformation.email",
       "projectionPath": "senderInformation.email",

@@ -1,5 +1,35 @@
 use super::*;
 
+#[test]
+fn rule_fda_g_k_12_r_7_1e_vocabulary() {
+	let run = |country: Option<&str>| {
+		let mut ctx = fixture::empty_ctx();
+		ctx.drugs.push(fixture::drug());
+		let mut row = device();
+		row.drug_id = ctx.drugs[0].id;
+		row.manufacturer_country = country.map(str::to_string);
+		let mut issues = Vec::new();
+		collect_fda_device_country_issues(
+			&ctx,
+			&[row],
+			&HashSet::from(["US".into(), "KR".into()]),
+			&mut issues,
+		);
+		super::super::super::retain_case_business_rules(&mut issues);
+		issues
+	};
+	for bad in ["ZZ", "USA", "us", " US "] {
+		for good in [Some("US"), Some("KR"), Some("EU"), None] {
+			edge(
+				"FDA.G.k.12.r.7.1e.VOCABULARY",
+				"drugs.0.fdaDevices.0.manufacturerCountry",
+				run(Some(bad)),
+				run(good),
+			);
+		}
+	}
+}
+
 fn verify_fda(code: &str) {
 	let (path, b, g) = match code {
 		"FDA.G.K.12.REQUIRED" => {

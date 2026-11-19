@@ -6,6 +6,8 @@ import json
 import re
 from pathlib import Path
 
+import editor_dictionary
+
 
 ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH", "N")
 LEGACY_READ_PAGES = ("CI", "RP", "SD", "SI", "DM", "NR", "AE", "LB", "DG", "DH")
@@ -206,6 +208,13 @@ def main() -> int:
             path.write_text(rendered, encoding="utf-8")
         elif not path.exists() or path.read_text(encoding="utf-8") != rendered:
             stale.append(str(path.relative_to(REPO_ROOT)))
+    path = REPO_ROOT / "crates/libs/input-contracts/tests/editor_dictionary/generated.rs"
+    rendered = editor_dictionary.render_tests(REPO_ROOT / "registry")
+    if args.write:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(rendered, encoding="utf-8")
+    elif not path.exists() or path.read_text(encoding="utf-8") != rendered:
+        stale.append(str(path.relative_to(REPO_ROOT)))
     if stale:
         print("generated editor contract tests are stale; run with --write")
         for path in stale:

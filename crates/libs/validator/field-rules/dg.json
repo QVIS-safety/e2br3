@@ -61,7 +61,8 @@
     {
       "fieldPath": "drugs[].cumulativeDoseFirstReactionUnit",
       "ruleCodes": [
-        "ICH.G.k.5b.REQUIRED"
+        "ICH.G.k.5b.REQUIRED",
+        "ICH.G.k.5b.VOCABULARY"
       ]
     },
     {
@@ -79,13 +80,15 @@
     {
       "fieldPath": "drugs[].dosageInformation[].doseUnit",
       "ruleCodes": [
-        "ICH.G.k.4.r.1b.REQUIRED"
+        "ICH.G.k.4.r.1b.REQUIRED",
+        "ICH.G.k.4.r.1b.VOCABULARY"
       ]
     },
     {
       "fieldPath": "drugs[].dosageInformation[].durationUnit",
       "ruleCodes": [
-        "ICH.G.k.4.r.6b.REQUIRED"
+        "ICH.G.k.4.r.6b.REQUIRED",
+        "ICH.G.k.4.r.6b.VOCABULARY"
       ]
     },
     {
@@ -140,7 +143,8 @@
     {
       "fieldPath": "drugs[].drugReactionAssessments[].administrationStartIntervalUnit",
       "ruleCodes": [
-        "ICH.G.k.9.i.3.1b.REQUIRED"
+        "ICH.G.k.9.i.3.1b.REQUIRED",
+        "ICH.G.k.9.i.3.1b.VOCABULARY"
       ]
     },
     {
@@ -152,7 +156,8 @@
     {
       "fieldPath": "drugs[].drugReactionAssessments[].lastDoseIntervalUnit",
       "ruleCodes": [
-        "ICH.G.k.9.i.3.2b.REQUIRED"
+        "ICH.G.k.9.i.3.2b.REQUIRED",
+        "ICH.G.k.9.i.3.2b.VOCABULARY"
       ]
     },
     {
@@ -219,6 +224,12 @@
       "fieldPath": "drugs[].fdaDevices[].malfunction",
       "ruleCodes": [
         "FDA.G.K.12.REQUIRED"
+      ]
+    },
+    {
+      "fieldPath": "drugs[].fdaDevices[].manufacturerCountry",
+      "ruleCodes": [
+        "FDA.G.k.12.r.7.1e.VOCABULARY"
       ]
     },
     {

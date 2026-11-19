@@ -98,16 +98,22 @@ pub fn export_g_drugs_xml(
 	let mut items_xml = String::new();
 	let mut causality_xml = String::new();
 	for drug in ordered_drugs {
-		let subs = subs_by_drug.get(&drug.id).cloned().unwrap_or_default();
-		let doses = dosages_by_drug.get(&drug.id).cloned().unwrap_or_default();
-		let inds = indications_by_drug
-			.get(&drug.id)
-			.cloned()
-			.unwrap_or_default();
-		let chars = characteristics_by_drug
-			.get(&drug.id)
-			.cloned()
-			.unwrap_or_default();
+		let subs = match subs_by_drug.get(&drug.id) {
+			Some(rows) => rows.clone(),
+			None => Vec::new(),
+		};
+		let doses = match dosages_by_drug.get(&drug.id) {
+			Some(rows) => rows.clone(),
+			None => Vec::new(),
+		};
+		let inds = match indications_by_drug.get(&drug.id) {
+			Some(rows) => rows.clone(),
+			None => Vec::new(),
+		};
+		let chars = match characteristics_by_drug.get(&drug.id) {
+			Some(rows) => rows.clone(),
+			None => Vec::new(),
+		};
 		let mut drug_assessments: Vec<&DrugReactionAssessment> = assessments
 			.iter()
 			.filter(|assessment| assessment.drug_id == drug.id)
@@ -725,11 +731,10 @@ pub(crate) fn write_g_k_drug(
 		&& (write_g_k_2_1_1b(drug).is_some() || write_g_k_2_1_1a(drug).is_some())
 	{
 		out.push_str("<code codeSystem=\"");
-		out.push_str(
-			drug.mpid_source_code_system
-				.as_deref()
-				.unwrap_or(FDA_MPID_CODE_SYSTEM),
-		);
+			out.push_str(match drug.mpid_source_code_system.as_deref() {
+				Some(code_system) => code_system,
+				None => FDA_MPID_CODE_SYSTEM,
+			});
 		out.push('"');
 		if let Some(code) = write_g_k_2_1_1b(drug) {
 			out.push_str(" code=\"");
@@ -1625,9 +1630,10 @@ pub(crate) fn write_g_k_1_causality(drug: &DrugInformation) -> String {
 	if code.is_empty() {
 		return String::new();
 	}
-	let display_name = write_g_k_1(drug)
-		.map(|(_, name)| format!(" displayName=\"{}\"", xml_escape(name)))
-		.unwrap_or_default();
+	let display_name = match write_g_k_1(drug) {
+		Some((_, name)) => format!(" displayName=\"{}\"", xml_escape(name)),
+		None => String::new(),
+	};
 	format!(
 		"<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\"><code code=\"20\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"interventionCharacterization\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.13\"{display_name}/><subject2 typeCode=\"SUBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"{drug_id}\"/></productUseReference></subject2></causalityAssessment></component>",
 		xml_escape(code),

@@ -249,7 +249,9 @@ fn write_d_9_3(
 		Some(false) => out.push_str(" value=\"false\""),
 		None if autopsy_performed_null_flavor.is_some() => {
 			out.push_str(" nullFlavor=\"");
-			out.push_str(&xml_escape(autopsy_performed_null_flavor.unwrap()));
+			if let Some(null_flavor) = autopsy_performed_null_flavor {
+				out.push_str(&xml_escape(null_flavor));
+			}
 			out.push('"');
 		}
 		None => {}

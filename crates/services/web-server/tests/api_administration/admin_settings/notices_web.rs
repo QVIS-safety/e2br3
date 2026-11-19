@@ -30,7 +30,7 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let other_viewer_cookie = cookie_header(&other_viewer_token.to_string());
 	let other_admin_cookie = cookie_header(&other_admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (_, runtime) = request_json(
 		&app,
 		"GET",
@@ -186,7 +186,7 @@ async fn test_dashboard_notices_hidden_without_notice_read() -> Result<()> {
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (_, runtime) =
 		request_json(&app, "GET", &admin_cookie, "/api/settings/runtime", None)
 			.await?;

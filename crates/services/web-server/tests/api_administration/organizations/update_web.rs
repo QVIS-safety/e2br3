@@ -27,7 +27,7 @@ async fn update_normalizes_type_persists_and_audits_while_invalid_input_is_uncha
 	let cookie = cookie_header(
 		&generate_web_token(&admin.email, admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let marker = Uuid::new_v4();
 	let (status, created) = request_json(
 		&app,

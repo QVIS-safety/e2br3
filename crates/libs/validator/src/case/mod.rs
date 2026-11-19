@@ -17,10 +17,11 @@ pub async fn validate_case_for_authority(
 ) -> Result<CaseValidationReport> {
 	let reports =
 		validate_case_for_authorities(ctx, mm, case_id, &[authority]).await?;
-	Ok(reports
-		.into_iter()
-		.next()
-		.expect("single authority returns one report"))
+	reports.into_iter().next().ok_or_else(|| {
+		lib_core::model::Error::Validation {
+			message: "validator did not return the requested authority report".to_string(),
+		}
+	})
 }
 
 /// Validate a case against multiple authorities simultaneously, sharing the

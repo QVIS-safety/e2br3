@@ -459,22 +459,12 @@ async fn load_sender_presave_details(
 			sender,
 			gateways: gateways
 				.into_iter()
-				.map(|row| {
-					camelize_value(
-						serde_json::to_value(row)
-							.expect("serializable sender gateway"),
-					)
-				})
-				.collect(),
+				.map(|row| serde_json::to_value(row).map(camelize_value))
+				.collect::<serde_json::Result<Vec<_>>>()?,
 			responsible_persons: responsible_persons
 				.into_iter()
-				.map(|row| {
-					camelize_value(
-						serde_json::to_value(row)
-							.expect("serializable sender responsible person"),
-					)
-				})
-				.collect(),
+				.map(|row| serde_json::to_value(row).map(camelize_value))
+				.collect::<serde_json::Result<Vec<_>>>()?,
 		},
 	})
 }

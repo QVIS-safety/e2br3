@@ -57,6 +57,14 @@ fn retain_case_business_rules(issues: &mut Vec<ValidationIssue>) {
 		matches!(
 			issue.code.as_str(),
 			"ICH.C.1.6.1.r.2.ALLOWED.VALUE"
+				| "ICH.C.1.9.1.ALLOWED.VALUE"
+				| "ICH.E.i.3.2a.ALLOWED.VALUE"
+				| "ICH.E.i.3.2b.ALLOWED.VALUE"
+				| "ICH.E.i.3.2c.ALLOWED.VALUE"
+				| "ICH.E.i.3.2d.ALLOWED.VALUE"
+				| "ICH.E.i.3.2e.ALLOWED.VALUE"
+				| "ICH.E.i.3.2f.ALLOWED.VALUE"
+				| "FDA.E.i.3.2h.ALLOWED.VALUE"
 				| "MFDS.D.2.3.ALLOWED.VALUE"
 				| "ICH.C.4.r.2.ALLOWED.VALUE"
 				| "ICH.D.7.1.r.6.ALLOWED.VALUE"
@@ -298,7 +306,8 @@ fn section_and_subsection_from_path(path: &str) -> (&'static str, &'static str) 
 }
 
 pub(crate) fn resolve_validation_section(code: &str, path: Option<&str>) -> String {
-	code.split('.')
+	match code
+		.split('.')
 		.nth(1)
 		.filter(|section| {
 			matches!(*section, "C" | "D" | "E" | "F" | "G" | "H" | "N")
@@ -306,9 +315,10 @@ pub(crate) fn resolve_validation_section(code: &str, path: Option<&str>) -> Stri
 		.or_else(|| {
 			path.map(section_and_subsection_from_path)
 				.map(|value| value.0)
-		})
-		.unwrap_or("unknown")
-		.to_string()
+		}) {
+		Some(section) => section.to_string(),
+		None => "unknown".to_string(),
+	}
 }
 
 pub(crate) fn resolve_validation_subsection(
@@ -381,10 +391,10 @@ pub(crate) fn resolve_validation_subsection(
 		return "N".to_string();
 	}
 
-	path.map(section_and_subsection_from_path)
-		.map(|value| value.1)
-		.unwrap_or("unknown")
-		.to_string()
+	match path.map(section_and_subsection_from_path) {
+		Some(value) => value.1.to_string(),
+		None => "unknown".to_string(),
+	}
 }
 
 #[cfg(test)]

@@ -100,7 +100,7 @@ async fn test_cioms_export_returns_generated_pdf_attachment() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	// Keep the identifier on one line in either CIOMS orientation.
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_number = format!("CIOMS-{}", &suffix[..12]);
@@ -160,7 +160,7 @@ async fn test_cioms_export_enforces_permission_scope_and_case_existence(
 	let owner_admin_cookie = cookie_header(&owner_admin_token.to_string());
 	let owner_viewer_cookie = cookie_header(&owner_viewer_token.to_string());
 	let other_admin_cookie = cookie_header(&other_admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let owner_case =
 		create_case(&app, &owner_admin_cookie, owner_org.org_id).await?;
 	let other_case =

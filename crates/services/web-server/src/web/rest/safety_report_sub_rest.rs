@@ -161,20 +161,32 @@ async fn normalize_primary_source_flags(
 	}
 	entities.sort_by_key(|entity| entity.sequence_number);
 
-	let chosen_primary_id = preferred_primary_id
-		.filter(|preferred| entities.iter().any(|entity| entity.id == *preferred))
-		.or_else(|| {
-			entities.iter().find_map(|entity| {
-				(normalize_primary_source_regulatory_value(
-					entity.primary_source_regulatory.clone(),
-				)
-				.ok()
-				.flatten()
-				.as_deref() == Some("1"))
-				.then_some(entity.id)
+	let mut primary_ids = Vec::new();
+	for entity in &entities {
+		if normalize_primary_source_regulatory_value(
+			entity.primary_source_regulatory.clone(),
+		)?
+		.as_deref()
+			== Some("1")
+		{
+			primary_ids.push(entity.id);
+		}
+	}
+	let chosen_primary_id = match preferred_primary_id {
+		Some(id) if entities.iter().any(|entity| entity.id == id) => id,
+		Some(_) => {
+			return Err(Error::BadRequest {
+				message: "preferred primary source does not belong to the case"
+					.into(),
 			})
-		})
-		.unwrap_or(entities[0].id);
+		}
+		None if primary_ids.len() == 1 => primary_ids[0],
+		None => {
+			return Err(Error::BadRequest {
+				message: "exactly one primary source must be selected".into(),
+			})
+		}
+	};
 
 	for entity in entities {
 		let desired = if entity.id == chosen_primary_id {
@@ -184,9 +196,8 @@ async fn normalize_primary_source_flags(
 		};
 		let current = normalize_primary_source_regulatory_value(
 			entity.primary_source_regulatory.clone(),
-		)?
-		.unwrap_or_else(|| "2".to_string());
-		if current != desired {
+		)?;
+		if current.as_deref() != Some(desired) {
 			PrimarySourceBmc::update(
 				ctx,
 				mm,

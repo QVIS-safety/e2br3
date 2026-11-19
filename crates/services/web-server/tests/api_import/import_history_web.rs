@@ -22,7 +22,7 @@ async fn test_import_history_uploaded_at_is_rfc3339() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("POST")
 		.uri("/api/presaves/senders")
@@ -93,7 +93,7 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, seed.admin.id).await?;

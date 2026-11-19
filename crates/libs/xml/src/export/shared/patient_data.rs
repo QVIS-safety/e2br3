@@ -191,11 +191,7 @@ pub(crate) fn ensure_patient_observation(
 	let path = format!(
 		"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='{code}']]"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, &path)? {
 		return Ok(());
 	}
 	let fragment = format!(
@@ -210,11 +206,7 @@ pub(crate) fn ensure_patient_history_organizer(
 	parser: &Parser,
 ) -> Result<()> {
 	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]";
-	if xpath
-		.findnodes(path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, path)? {
 		return Ok(());
 	}
 	append_fragment_child(
@@ -233,11 +225,7 @@ pub(crate) fn ensure_patient_history_text(
 ) -> Result<()> {
 	ensure_patient_history_organizer(xpath, doc, parser)?;
 	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]";
-	if xpath
-		.findnodes(path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, path)? {
 		return Ok(());
 	}
 	append_fragment_child(
@@ -258,11 +246,7 @@ pub(crate) fn ensure_patient_identifier(
 	let path = format!(
 		"//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity[hl7:code[@code='{id_type_code}']]"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, &path)? {
 		return Ok(());
 	}
 	let root = match id_type_code {
@@ -290,11 +274,7 @@ pub(crate) fn ensure_parent_role(
 	parser: &Parser,
 ) -> Result<()> {
 	let path = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]";
-	if xpath
-		.findnodes(path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if xpath_has_nodes(xpath, path)? {
 		return Ok(());
 	}
 	append_fragment_child(

@@ -50,11 +50,11 @@ pub(super) async fn submit_to_gateway(
 	authority: SubmissionAuthority,
 ) -> Result<GatewaySubmissionOutcome> {
 	let now = OffsetDateTime::now_utc();
-	if as2_submitter_url().is_some() {
+	if as2_submitter_url()?.is_some() {
 		return Err(Error::BadRequest { message: "AS2 requires durable reservation; automatic gateway resend is disabled".into() });
 	}
 
-	if !is_esg_enabled() {
+	if !is_esg_enabled()? {
 		return Err(Error::Configuration {
 			key: "submission_transport",
 			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
@@ -73,14 +73,18 @@ pub(super) async fn submit_to_gateway(
 			key: "FDA_ESG_BASE_URL",
 			message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
 		})?;
-	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH")
-		.unwrap_or_else(|_| "/submissions".to_string());
+	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH").map_err(|error| {
+		Error::Configuration {
+			key: "FDA_ESG_SUBMIT_PATH",
+			message: error.to_string(),
+		}
+	})?;
 	let submit_url = format!(
 		"{}/{}",
 		base_url.trim_end_matches('/'),
 		submit_path.trim_start_matches('/')
 	);
-	let timeout_secs = parse_timeout_secs("FDA_ESG_TIMEOUT_SECS", 30);
+	let timeout_secs = parse_timeout_secs("FDA_ESG_TIMEOUT_SECS")?;
 	let client = reqwest::Client::builder()
 		.timeout(Duration::from_secs(timeout_secs))
 		.build()
@@ -147,10 +151,10 @@ pub(super) async fn submit_to_gateway(
 }
 
 pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<String> {
-	if as2_submitter_url().is_some() {
+	if as2_submitter_url()?.is_some() {
 		return Ok(format!("as2-submitter-http-{}", authority.as_str()));
 	}
-	if !is_esg_enabled() {
+	if !is_esg_enabled()? {
 		return Err(Error::Configuration {
 			key: "submission_transport",
 			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
@@ -236,9 +240,20 @@ mod tests {
 		std::env::remove_var("FDA_ESG_BASE_URL");
 		let result = select_gateway_name(SubmissionAuthority::Fda);
 		let error = result.expect_err("unconfigured transport must fail");
+		assert!(matches!(
+			error,
+			Error::Configuration {
+				key: "FDA_ESG_ENABLED",
+				..
+			}
+		));
+		std::env::set_var("FDA_ESG_ENABLED", "false");
+		let error = select_gateway_name(SubmissionAuthority::Fda)
+			.expect_err("disabled transports must fail");
 		assert!(error
 			.to_string()
 			.contains("no submission transport configured"));
+		std::env::remove_var("FDA_ESG_ENABLED");
 	}
 }
 
@@ -248,7 +263,7 @@ pub(super) async fn request_as2_state(
 	authority: SubmissionAuthority,
 	xml: Option<&str>,
 ) -> Result<As2GatewaySubmitResponse> {
-	let base = as2_submitter_url().ok_or(Error::BadRequest {
+	let base = as2_submitter_url()?.ok_or(Error::BadRequest {
 		message: "AS2_SUBMITTER_URL is required".into(),
 	})?;
 	let token = as2_submitter_token()?;
@@ -260,8 +275,7 @@ pub(super) async fn request_as2_state(
 	let client = reqwest::Client::builder()
 		.timeout(Duration::from_secs(parse_timeout_secs(
 			"AS2_SUBMITTER_TIMEOUT_SECS",
-			30,
-		)))
+		)?))
 		.build()
 		.map_err(|e| Error::BadRequest {
 			message: e.to_string(),
@@ -272,7 +286,7 @@ pub(super) async fn request_as2_state(
 		.json(
 			&json!({"caseId": case_id.to_string(), "authority": authority.as_str(),
             "idempotencyKey": case_id.to_string(), "xmlPayload": xml,
-            "callbackUrl": std::env::var("AS2_ACK_CALLBACK_URL").ok()}),
+            "callbackUrl": std::env::var("AS2_ACK_CALLBACK_URL").map_err(|error| Error::Configuration { key: "AS2_ACK_CALLBACK_URL", message: error.to_string() })?}),
 		)
 		.send()
 		.await

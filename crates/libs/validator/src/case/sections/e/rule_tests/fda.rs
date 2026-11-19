@@ -1,5 +1,36 @@
 use super::*;
 
+#[test]
+fn rule_fda_e_i_3_2h_allowed_value() {
+	let run = |row: &Reaction| {
+		let mut issues = Vec::new();
+		fda_e_i_3_2h(0, row, false, &mut issues);
+		super::super::super::retain_case_business_rules(&mut issues);
+		issues
+	};
+	let mut bad = reaction();
+	bad.required_intervention = Some(false);
+	bad.required_intervention_null_flavor = None;
+	for (value, flavor) in [(Some(true), None), (None, Some("NI"))] {
+		let mut good = bad.clone();
+		good.required_intervention = value;
+		good.required_intervention_null_flavor = flavor.map(str::to_string);
+		assert_edge(
+			"FDA.E.i.3.2h.ALLOWED.VALUE",
+			"reactions.0.requiredIntervention",
+			run(&bad),
+			run(&good),
+		);
+	}
+	for (value, flavor) in [(Some(false), "NI"), (Some(true), "NI"), (None, "UNK")] {
+		bad.required_intervention = value;
+		bad.required_intervention_null_flavor = Some(flavor.into());
+		assert!(run(&bad)
+			.iter()
+			.any(|issue| issue.code == "FDA.E.i.3.2h.ALLOWED.VALUE"));
+	}
+}
+
 fn verify(code: &str) {
 	let (path, invalid, repaired) = match code {
 		"FDA.E.i.3.2h.PREMARKET.NI.REQUIRED" | "FDA.E.i.3.2h.REQUIRED" => {

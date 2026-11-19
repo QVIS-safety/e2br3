@@ -18,7 +18,7 @@ async fn test_import_export_submission_histories_follow_scope() -> Result<()> {
 		generate_web_token(&scoped_manager.email, scoped_manager.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let manager_cookie = cookie_header(&manager_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let sender_id =
 		create_sender_presave(&app, &admin_cookie, "Sender Hist Org", "SEND-HIST")
 			.await?;

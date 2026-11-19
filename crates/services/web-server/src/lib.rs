@@ -4,7 +4,7 @@ pub mod submission;
 pub mod web;
 
 use axum::body::Body;
-use axum::http::{header, Method, Request, StatusCode, Uri};
+use axum::http::{header, Method, Request, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{middleware, routing::get, Json, Router};
 use lib_core::model::authorization::{
@@ -43,7 +43,8 @@ pub async fn reconcile_authorization_storage(
 		})
 		.connect(&database_url)
 		.await?;
-	let registry = lib_core::authorization::policy_registry();
+	let registry = lib_core::authorization::policy_registry()
+		.map_err(|error| AuthorizationMigrationError::Registry(error.to_string()))?;
 	let result = async {
 		RevisionRepository::verify_fact_triggers(&pool, registry).await?;
 		let report =
@@ -72,7 +73,7 @@ fn classify_authorization_startup(
 	result.map(AuthorizationStartupStatus::Reconciled)
 }
 
-pub fn app(mm: ModelManager) -> Router {
+pub fn app(mm: ModelManager) -> Result<Router, lib_utils::envs::Error> {
 	let routes_rest = web::routes_rest::routes(mm.clone())
 		.fallback(route_not_found)
 		.route_layer(middleware::from_fn_with_state(
@@ -85,7 +86,7 @@ pub fn app(mm: ModelManager) -> Router {
 	let routes_login =
 		web::routes_login::routes(mm.clone()).fallback(route_not_found);
 
-	Router::new()
+	Ok(Router::new()
 		.route("/health", get(health))
 		.nest("/auth/v1", routes_login)
 		.nest("/api", routes_rest)
@@ -94,7 +95,9 @@ pub fn app(mm: ModelManager) -> Router {
 		.layer(middleware::from_fn_with_state(mm, mw_ctx_resolver))
 		.layer(CookieManagerLayer::new())
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
-		.fallback_service(routes_static::serve_dir(&config::web_config().WEB_FOLDER))
+		.fallback_service(routes_static::serve_dir(
+			&config::web_config()?.WEB_FOLDER,
+		)))
 }
 
 async fn mw_csrf_origin(req: Request<Body>, next: middleware::Next) -> Response {
@@ -102,15 +105,23 @@ async fn mw_csrf_origin(req: Request<Body>, next: middleware::Next) -> Response 
 		req.method(),
 		&Method::GET | &Method::HEAD | &Method::OPTIONS | &Method::TRACE
 	);
-	let has_auth_cookie = req
+	let cookie = match req
 		.headers()
 		.get(header::COOKIE)
-		.and_then(|value| value.to_str().ok())
-		.is_some_and(|value| {
-			value
-				.split(';')
-				.any(|part| part.trim_start().starts_with("auth-token="))
-		});
+		.map(|value| value.to_str())
+		.transpose()
+	{
+		Ok(cookie) => cookie,
+		Err(_) => {
+			return (StatusCode::BAD_REQUEST, "invalid cookie header")
+				.into_response()
+		}
+	};
+	let has_auth_cookie = cookie.is_some_and(|value| {
+		value
+			.split(';')
+			.any(|part| part.trim_start().starts_with("auth-token="))
+	});
 	if state_changing && has_auth_cookie && !csrf_origin_allowed(&req) {
 		return (
 			StatusCode::FORBIDDEN,
@@ -131,28 +142,12 @@ fn csrf_origin_allowed(req: &Request<Body>) -> bool {
 	if origin.eq_ignore_ascii_case("null") {
 		return false;
 	}
-	if let Ok(expected) = std::env::var("E2BR3_PUBLIC_ORIGIN") {
-		let expected = expected.trim().trim_end_matches('/');
-		if !expected.is_empty() {
-			return origin.trim_end_matches('/').eq_ignore_ascii_case(expected);
-		}
-	}
-	let origin_authority = origin.parse::<Uri>().ok().and_then(|uri| {
-		uri.authority()
-			.map(|authority| authority.as_str().to_owned())
-	});
-	let Some(origin_authority) = origin_authority else {
+	let Ok(expected) = std::env::var("E2BR3_PUBLIC_ORIGIN") else {
 		return false;
 	};
-	[header::HOST.as_str(), "x-forwarded-host"]
-		.into_iter()
-		.filter_map(|name| {
-			req.headers()
-				.get(name)
-				.and_then(|value| value.to_str().ok())
-		})
-		.flat_map(|value| value.split(',').map(str::trim))
-		.any(|host| origin_authority.eq_ignore_ascii_case(host))
+	let expected = expected.trim().trim_end_matches('/');
+	!expected.is_empty()
+		&& origin.trim_end_matches('/').eq_ignore_ascii_case(expected)
 }
 
 async fn health() -> StatusCode {
@@ -215,14 +210,14 @@ mod tests {
 	}
 
 	#[test]
-	fn csrf_accepts_the_origin_forwarded_by_the_frontend_proxy() {
+	fn csrf_does_not_trust_forwarded_host_as_an_origin_allowlist() {
 		let request = Request::builder()
 			.header(header::HOST, "127.0.0.1:8216")
 			.header("x-forwarded-host", "localhost:4033")
 			.header(header::ORIGIN, "http://localhost:4033")
 			.body(Body::empty())
 			.expect("request");
-		assert!(csrf_origin_allowed(&request));
+		assert!(!csrf_origin_allowed(&request));
 	}
 
 	#[tokio::test]

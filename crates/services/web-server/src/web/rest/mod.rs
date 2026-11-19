@@ -45,6 +45,31 @@ pub use routes::*;
 
 use axum::routing::get;
 use axum::Router;
+use lib_core::authorization::{
+	AuthorizationContext, ContextActionId, PolicyRegistry,
+};
+use lib_rest_core::{Error, Result};
+
+pub(crate) fn authorization_registry() -> Result<&'static PolicyRegistry> {
+	lib_core::authorization::policy_registry().map_err(|error| Error::Internal {
+		operation: "load authorization policy registry",
+		source: Box::new(error),
+	})
+}
+
+pub(crate) fn registered_context_action<C: AuthorizationContext>(
+	id: &str,
+) -> Result<ContextActionId<C>> {
+	authorization_registry()?
+		.context_action::<C>(id)
+		.ok_or_else(|| Error::Internal {
+			operation: "load registered authorization action",
+			source: std::io::Error::other(format!(
+				"missing contextual action: {id}"
+			))
+			.into(),
+		})
+}
 
 /// Routes for /api/app
 pub fn routes_app() -> Router {

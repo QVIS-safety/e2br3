@@ -31,7 +31,7 @@ async fn create_case_defaults_c1_2_to_backend_creation_timestamp() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let lower_bound = format_e2b_creation_timestamp(
 		OffsetDateTime::now_utc() - Duration::seconds(2),
 	);
@@ -94,7 +94,7 @@ async fn test_public_case_create_uses_nested_safety_report_identification(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,
@@ -129,7 +129,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,
@@ -182,7 +182,7 @@ async fn test_case_save_updates_fda_report_type_public_field() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,
@@ -274,7 +274,7 @@ async fn update_case_optional_metadata_clears_blanks_and_null_but_preserves_omit
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (status, body) = post_json(
 		&app,
@@ -394,7 +394,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = Uuid::new_v4();
 
 	let mut tx = mm.dbx().db().begin().await?;
@@ -469,7 +469,7 @@ async fn test_public_case_update_rejects_legacy_safety_report_id() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,
@@ -522,7 +522,7 @@ async fn test_public_case_update_rejects_legacy_safety_report_id_with_reason(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,

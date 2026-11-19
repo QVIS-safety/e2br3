@@ -23,7 +23,7 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let listener = TcpListener::bind("127.0.0.1:0").await?;
 	let callback_addr = listener.local_addr()?;
 	std::env::set_var(

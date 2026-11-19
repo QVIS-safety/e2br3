@@ -95,6 +95,26 @@ fn case_output_keeps_migrated_business_rules() {
 }
 
 #[test]
+fn case_output_keeps_submission_marker_rules() {
+	let codes = [
+		"ICH.C.1.9.1.ALLOWED.VALUE",
+		"ICH.E.i.3.2a.ALLOWED.VALUE",
+		"ICH.E.i.3.2b.ALLOWED.VALUE",
+		"ICH.E.i.3.2c.ALLOWED.VALUE",
+		"ICH.E.i.3.2d.ALLOWED.VALUE",
+		"ICH.E.i.3.2e.ALLOWED.VALUE",
+		"ICH.E.i.3.2f.ALLOWED.VALUE",
+		"FDA.E.i.3.2h.ALLOWED.VALUE",
+	];
+	let mut issues = Vec::new();
+	for code in codes {
+		crate::push_field_issue(&mut issues, code, "field", "section", code);
+	}
+	retain_case_business_rules(&mut issues);
+	assert_eq!(issues.len(), codes.len());
+}
+
+#[test]
 fn resolves_field_path_from_the_issue_path_only() {
 	assert_eq!(resolve_validation_field_path(None), None);
 	assert_eq!(

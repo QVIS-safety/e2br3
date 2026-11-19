@@ -10,7 +10,7 @@ async fn fixture() -> Result<(axum::Router, String, String, String)> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "LEGACY-AE-READ", &["ich"]).await?;
 	let row_id = create_reaction_contract_fixture(&app, &cookie, &case_id).await?;

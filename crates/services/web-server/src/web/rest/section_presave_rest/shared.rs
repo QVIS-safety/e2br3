@@ -700,29 +700,27 @@ pub(super) fn filter_study_presaves_for_scope(
 		.into_iter()
 		.filter(|entity| {
 			identifier_allowed(scope.study_ids(), entity.id)
-				&& entity
-					.product_presave_id
-					.map(|product_id| {
-						products
-							.iter()
-							.find(|product| product.id == product_id)
-							.is_some_and(|product| {
-								identifier_allowed(scope.product_ids(), product.id)
-									&& (scope.sender_ids().is_empty()
-										|| product.sender_presave_id.is_some_and(
-											|sender_id| {
-												identifier_allowed(
-													scope.sender_ids(),
-													sender_id,
-												)
-											},
-										))
-							})
-					})
-					.unwrap_or_else(|| {
+				&& match entity.product_presave_id {
+					Some(product_id) => products
+						.iter()
+						.find(|product| product.id == product_id)
+						.is_some_and(|product| {
+							identifier_allowed(scope.product_ids(), product.id)
+								&& (scope.sender_ids().is_empty()
+									|| product.sender_presave_id.is_some_and(
+										|sender_id| {
+											identifier_allowed(
+												scope.sender_ids(),
+												sender_id,
+											)
+										},
+									))
+						}),
+					None => {
 						scope.product_ids().is_empty()
 							&& scope.sender_ids().is_empty()
-					})
+					}
+				}
 		})
 		.collect()
 }

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Utc};
+use chrono::{Datelike, Utc};
 use chrono_tz::Tz;
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
@@ -109,11 +109,12 @@ impl RuntimeSettings {
 			})
 		};
 		let timezone = required_string("timezone")?;
-		let timezone =
-			validate_timezone(&timezone).ok_or_else(|| Error::Configuration {
+		let timezone = validate_timezone(&timezone).map_err(|message| {
+			Error::Configuration {
 				key: "timezone",
-				message: "stored timezone must be a valid IANA timezone".to_string(),
-			})?;
+				message,
+			}
+		})?;
 		let orientation = required_string("orientation")?;
 		if !matches!(orientation.as_str(), "Portrait" | "Landscape") {
 			return Err(Error::Configuration {
@@ -182,40 +183,45 @@ impl RuntimeSettings {
 	}
 
 	pub fn resolve_notation(&self, requested: Option<bool>) -> bool {
-		requested.unwrap_or(self.notation)
+		match requested {
+			Some(requested) => requested,
+			None => self.notation,
+		}
 	}
 
-	pub fn import_date(&self) -> Date {
-		let timezone = self
-			.timezone
-			.parse::<Tz>()
-			.expect("runtime settings timezone is validated when loaded");
-		let now = Utc::now();
-		let local = DateTime::<Utc>::from_timestamp(
-			now.timestamp(),
-			now.timestamp_subsec_nanos(),
+	pub fn import_date(&self) -> Result<Date> {
+		let timezone =
+			self.timezone
+				.parse::<Tz>()
+				.map_err(|error| Error::Configuration {
+					key: "timezone",
+					message: error.to_string(),
+				})?;
+		let local = Utc::now().with_timezone(&timezone).date_naive();
+		let month = Month::try_from(local.month() as u8).map_err(|error| {
+			Error::Configuration {
+				key: "import_date",
+				message: error.to_string(),
+			}
+		})?;
+		Date::from_calendar_date(local.year(), month, local.day() as u8).map_err(
+			|error| Error::Configuration {
+				key: "import_date",
+				message: error.to_string(),
+			},
 		)
-		.expect("current UTC timestamp is valid")
-		.with_timezone(&timezone)
-		.date_naive();
-		Date::from_calendar_date(
-			local.year(),
-			Month::try_from(local.month() as u8).expect("chrono month is valid"),
-			local.day() as u8,
-		)
-		.expect("current local date is valid")
 	}
 }
 
-pub fn validate_timezone(value: &str) -> Option<String> {
+pub fn validate_timezone(value: &str) -> core::result::Result<String, String> {
 	let value = value.trim();
 	if value.is_empty() {
-		return None;
+		return Err("timezone must not be empty".to_string());
 	}
 	value
 		.parse::<Tz>()
-		.ok()
 		.map(|timezone| timezone.to_string())
+		.map_err(|error| format!("timezone must be a valid IANA timezone: {error}"))
 }
 
 pub async fn load(
@@ -293,9 +299,9 @@ mod tests {
 	fn validates_only_real_iana_timezones() {
 		assert_eq!(
 			validate_timezone(" Asia/Seoul "),
-			Some("Asia/Seoul".to_string())
+			Ok("Asia/Seoul".to_string())
 		);
-		assert_eq!(validate_timezone("not-a-timezone"), None);
+		assert!(validate_timezone("not-a-timezone").is_err());
 	}
 
 	#[test]

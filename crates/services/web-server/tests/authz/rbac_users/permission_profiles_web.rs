@@ -37,7 +37,10 @@ async fn test_system_admin_profile_menu_privileges_match_eligible_actions(
 		.uri("/api/users/me/profile")
 		.header("cookie", cookie_header(&token.to_string()))
 		.body(Body::empty())?;
-	let response = web_server::app(mm).oneshot(request).await?;
+	let response = web_server::app(mm)
+		.expect("web server configuration")
+		.oneshot(request)
+		.await?;
 	assert_eq!(response.status(), StatusCode::OK);
 	let body = to_bytes(response.into_body(), usize::MAX).await?;
 	let profile: serde_json::Value = serde_json::from_slice(&body)?;
@@ -79,7 +82,7 @@ async fn test_system_admin_permission_profiles_require_target_organization(
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let source_role_name = format!("Source Role {}", Uuid::new_v4());
 	let role_name = format!("Target Role {}", Uuid::new_v4());
 	let role_body = |name: &str| {
@@ -171,7 +174,7 @@ async fn test_system_admin_cross_org_profile_read_is_not_found() -> Result<()> {
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let create = Request::builder()
 		.method("POST")
 		.uri(format!(
@@ -216,7 +219,7 @@ async fn test_permission_profiles_are_scoped_by_organization_for_sponsor_admins(
 	let org2 = seed_org_with_users(&mm, "otheradminpwd", "otherviewpwd").await?;
 	let org1_token = generate_web_token(&org1.admin.email, org1.admin.token_salt)?;
 	let org2_token = generate_web_token(&org2.admin.email, org2.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let create_profile = |name: String| {
 		json!({
@@ -300,7 +303,7 @@ async fn test_permission_profiles_reject_twenty_first_custom_role_per_org(
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for index in 1..=20 {
 		let body = json!({
@@ -440,7 +443,7 @@ async fn test_permission_profile_writes_lock_revision_before_audit_chain(
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let database_url = std::env::var("SERVICE_DB_URL")?;
 	let control_pool = PgPoolOptions::new()
 		.max_connections(2)

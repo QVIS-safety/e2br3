@@ -33,3 +33,14 @@ pub(crate) use crate::export_utils::{
 	remove_nodes, set_attr_first, set_text_first, xml_escape,
 };
 pub(crate) use patient_data::*;
+
+pub(crate) fn xpath_has_nodes(xpath: &mut Context, path: &str) -> Result<bool> {
+	xpath
+		.findnodes(path, None)
+		.map(|nodes| !nodes.is_empty())
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {path}"),
+			line: None,
+			column: None,
+		})
+}

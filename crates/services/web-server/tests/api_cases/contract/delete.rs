@@ -13,7 +13,7 @@ async fn test_delete_case_requires_reason_for_change() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,
@@ -99,7 +99,7 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let report_id = format!("SR-{}", Uuid::new_v4());
 	let (create_status, create_body) = post_json(
@@ -269,7 +269,7 @@ async fn test_deleted_case_rejects_content_updates() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (create_status, create_body) = post_json(
 		&app,

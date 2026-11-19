@@ -7,7 +7,7 @@ async fn test_admin_can_dry_run_meddra_import() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let zip_bytes = make_meddra_zip_bytes()?;
 	let (content_type, body_bytes) = make_multipart_file_body(
@@ -41,7 +41,7 @@ async fn test_admin_dry_run_meddra_import_rejects_invalid_zip() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let (content_type, body_bytes) = make_multipart_file_body(
 		"----safetydb-boundary-meddra-invalid",
@@ -68,7 +68,7 @@ async fn test_admin_can_dry_run_whodrug_import() -> Result<()> {
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let csv = "code,drug_name,atc_code\nW001,Example Drug,A01AA01\n";
 	let (content_type, body_bytes) = make_multipart_file_body(
@@ -102,7 +102,7 @@ async fn test_admin_dry_run_whodrug_import_rejects_missing_columns() -> Result<(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let csv = "foo,bar\nx,y\n";
 	let (content_type, body_bytes) = make_multipart_file_body(
@@ -131,7 +131,7 @@ async fn test_whodrug_parser_accepts_zipped_delimited_and_alternate_headers(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let tag = short_tag();
 
 	let tsv = "drug_code\tmedicinal product name\tatc1\nW101\tZip TSV Drug\tA01AA01\nW102\tZip TSV Drug 2\tA01AA02\n";
@@ -188,7 +188,7 @@ async fn test_admin_c3_dry_run_streams_batches_and_rejects_late_invalid_data(
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let version = format!("C3{}", short_tag());
 
 	let valid = make_c3_zip_bytes(&version, 1001, None)?;
@@ -271,7 +271,7 @@ async fn test_admin_c3_stage_persists_thirteen_character_short_once() -> Result<
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let version = format!("C3SHORT{}", short_tag());
 	assert_eq!(version.len(), 13);
 	let zip = make_c3_zip_bytes(&version, 2, None)?;
@@ -342,7 +342,7 @@ async fn test_imported_terminology_can_be_used_in_case_generation_flow() -> Resu
 	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let tag = short_tag();
 	let stem = format!("CaseGen{tag}");
 	let meddra_version = format!("CGM{tag}");

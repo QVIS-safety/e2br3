@@ -4,8 +4,7 @@ use crate::model::base::DbBmc;
 use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::store::dbx::Dbx;
 use crate::model::store::set_full_context_dbx_or_rollback;
-use crate::model::ModelManager;
-use crate::model::Result;
+use crate::model::{Error, ModelManager, Result};
 use modql::field::Fields;
 use modql::filter::{
 	FilterNodes, ListOptions, OpValString, OpValValue, OpValsString, OpValsValue,
@@ -575,13 +574,20 @@ fn first_string_eq(values: &OpValsString) -> Option<String> {
 	})
 }
 
-fn first_uuid_eq(values: &OpValsValue) -> Option<Uuid> {
-	values.0.iter().find_map(|op| match op {
-		OpValValue::Eq(value) => {
-			value.as_str().and_then(|value| Uuid::parse_str(value).ok())
+fn first_uuid_eq(values: &OpValsValue) -> Result<Option<Uuid>> {
+	for op in &values.0 {
+		if let OpValValue::Eq(value) = op {
+			let Some(value) = value.as_str() else {
+				return Err(Error::Validation {
+					message: "organization ID filter must be a string".to_string(),
+				});
+			};
+			return Uuid::parse_str(value).map(Some).map_err(|_| Error::Validation {
+				message: "organization ID filter must be a UUID".to_string(),
+			});
 		}
-		_ => None,
-	})
+	}
+	Ok(None)
 }
 
 impl CaseBmc {
@@ -677,8 +683,9 @@ impl CaseBmc {
 		if let Some(filters) = filters {
 			for filter in filters {
 				if organization_id.is_none() {
-					organization_id =
-						filter.organization_id.as_ref().and_then(first_uuid_eq);
+					if let Some(values) = filter.organization_id.as_ref() {
+						organization_id = first_uuid_eq(values)?;
+					}
 				}
 				if safety_report_id.is_none() {
 					safety_report_id =
@@ -704,16 +711,14 @@ impl CaseBmc {
 		conditions.push(case_scope_where(scope_bind));
 		let limit_bind = scope_bind + 3;
 		let offset_bind = limit_bind + 1;
-		let limit = list_options
-			.as_ref()
-			.and_then(|options| options.limit)
-			.unwrap_or(1000)
-			.clamp(0, 5000);
-		let offset = list_options
-			.as_ref()
-			.and_then(|options| options.offset)
-			.unwrap_or(0)
-			.max(0);
+		let limit = match list_options.as_ref().and_then(|options| options.limit) {
+			Some(limit) => limit.clamp(0, 5000),
+			None => 1000,
+		};
+		let offset = match list_options.as_ref().and_then(|options| options.offset) {
+			Some(offset) => offset.max(0),
+			None => 0,
+		};
 		let mut sql = case_select(false);
 		sql.push_str(" WHERE ");
 		sql.push_str(&conditions.join(" AND "));
@@ -1046,14 +1051,14 @@ impl CaseBmc {
 		let order_clause = list_view_order_clause(
 			list_options.and_then(|options| options.order_bys.as_ref()),
 		);
-		let limit = list_options
-			.and_then(|options| options.limit)
-			.unwrap_or(500)
-			.clamp(0, 500);
-		let offset = list_options
-			.and_then(|options| options.offset)
-			.unwrap_or(0)
-			.max(0);
+		let limit = match list_options.and_then(|options| options.limit) {
+			Some(limit) => limit.clamp(0, 500),
+			None => 500,
+		};
+		let offset = match list_options.and_then(|options| options.offset) {
+			Some(offset) => offset.max(0),
+			None => 0,
+		};
 		let sql = format!(
 			"{} LIMIT $4 OFFSET $5",
 			list_view_rows_sql(

@@ -28,7 +28,7 @@ async fn delete_deactivates_and_preserves_tenant_data_with_single_update_audit(
 	let cookie = cookie_header(
 		&generate_web_token(&admin.email, admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let (status, created) = request_json(
 		&app,

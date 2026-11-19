@@ -169,23 +169,20 @@ pub struct DrugAdditionalInfoCodeEntry {
 
 pub fn parse_drug_additional_info_codes_json(
 	value: Option<&JsonValue>,
-) -> Vec<DrugAdditionalInfoCodeEntry> {
-	value
-		.cloned()
-		.and_then(|raw| {
-			serde_json::from_value::<Vec<DrugAdditionalInfoCodeEntry>>(raw).ok()
-		})
-		.unwrap_or_default()
+) -> serde_json::Result<Vec<DrugAdditionalInfoCodeEntry>> {
+	let entries: Vec<DrugAdditionalInfoCodeEntry> = match value {
+		Some(raw) => serde_json::from_value(raw.clone())?,
+		None => Vec::new(),
+	};
+	Ok(entries
 		.into_iter()
 		.filter(|entry| {
-			!entry
+			entry
 				.value_code
 				.as_deref()
-				.map(str::trim)
-				.unwrap_or("")
-				.is_empty()
+				.is_some_and(|value| !value.trim().is_empty())
 		})
-		.collect()
+		.collect())
 }
 
 fn characteristic_code_entry(
@@ -216,7 +213,7 @@ fn characteristic_code_entry(
 
 pub fn derive_drug_characteristics(
 	drug: &DrugInformation,
-) -> Vec<DrugDeviceCharacteristic> {
+) -> serde_json::Result<Vec<DrugDeviceCharacteristic>> {
 	fn push_code_row(
 		rows: &mut Vec<DrugDeviceCharacteristic>,
 		sequence_number: &mut i32,
@@ -245,7 +242,7 @@ pub fn derive_drug_characteristics(
 	);
 	for entry in parse_drug_additional_info_codes_json(
 		drug.drug_additional_info_codes_json.as_ref(),
-	) {
+	)? {
 		push_code_row(
 			&mut rows,
 			&mut sequence_number,
@@ -255,7 +252,7 @@ pub fn derive_drug_characteristics(
 		);
 	}
 
-	rows
+	Ok(rows)
 }
 
 pub fn structured_drug_additional_info_codes_to_json(
@@ -264,12 +261,10 @@ pub fn structured_drug_additional_info_codes_to_json(
 	let filtered: Vec<_> = codes
 		.into_iter()
 		.filter(|entry| {
-			!entry
+			entry
 				.value_code
 				.as_deref()
-				.map(str::trim)
-				.unwrap_or("")
-				.is_empty()
+				.is_some_and(|value| !value.trim().is_empty())
 		})
 		.collect();
 	if filtered.is_empty() {
@@ -1378,7 +1373,10 @@ impl DrugActiveSubstanceBmc {
 		filters: Option<Vec<DrugActiveSubstanceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugActiveSubstance>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1431,7 +1429,10 @@ impl DosageInformationBmc {
 		filters: Option<Vec<DosageInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DosageInformation>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1484,7 +1485,10 @@ impl DrugIndicationBmc {
 		filters: Option<Vec<DrugIndicationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugIndication>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1539,7 +1543,10 @@ impl FdaDeviceInformationBmc {
 		filters: Option<Vec<FdaDeviceInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<FdaDeviceInformation>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1592,7 +1599,10 @@ impl FdaDeviceCodeBmc {
 		filters: Option<Vec<FdaDeviceCodeFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<FdaDeviceCode>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}
@@ -1645,7 +1655,10 @@ impl DrugDeviceCharacteristicBmc {
 		filters: Option<Vec<DrugDeviceCharacteristicFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugDeviceCharacteristic>> {
-		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		let mut filters = match filters {
+			Some(filters) => filters,
+			None => vec![Default::default()],
+		};
 		for filter in &mut filters {
 			filter.deleted = Some(OpValBool::Eq(false).into());
 		}

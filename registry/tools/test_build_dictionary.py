@@ -78,6 +78,31 @@ class ParseIchCsvTests(unittest.TestCase):
 
 
 class AllowedValueConstraintTests(unittest.TestCase):
+    def test_reviewed_input_profiles_and_sources_are_committed(self):
+        notes = build_dictionary.reviewed_input_notes()
+        self.assertEqual(32, len(notes))
+        entries = {
+            entry["code"]: entry
+            for name in ("ich-e2br3.json", "fda-regional.json")
+            for entry in json.loads((build_dictionary.DICTIONARY_DIR / name).read_text())["entries"]
+        }
+        for code, note in notes.items():
+            with self.subTest(code=code):
+                self.assertEqual(note, entries[code]["notes"])
+                self.assertIn("https://", note)
+                self.assertIn("2026-11-19", note)
+        expected_units = {
+            "D.2.2b": ["a", "mo", "wk", "d", "h", "10.a"],
+            "D.10.2.2b": ["a", "10.a"],
+            "D.2.2.1b": ["mo", "wk", "d", "{trimester}"],
+            "G.k.6b": ["mo", "wk", "d", "{trimester}"],
+        }
+        for code, values in expected_units.items():
+            self.assertEqual({"kind": "code_set", "values": values, "enforcement": "case_validate"},
+                             entries[code]["allowed_value_constraint"])
+        self.assertEqual("terminology_version", entries["G.k.4.r.9.2a"]["allowed_value_constraint"]["format_name"])
+        self.assertEqual("worldwide_case_id", entries["C.1.8.1"]["allowed_value_constraint"]["format_name"])
+
     def test_typed_numeric_and_datetime_constraints_are_representation_enforced(self):
         self.assertEqual(
             "representation_enforced",
@@ -253,12 +278,12 @@ class AllowedValueConstraintTests(unittest.TestCase):
         self.assertEqual(
             {
                 "boolean": 7,
-                "code_set": 18,
+                "code_set": 22,
                 "descriptive": 90,
-                "format": 25,
+                "format": 26,
                 "numeric": 41,
                 "true_marker": 10,
-                "vocabulary": 32,
+                "vocabulary": 27,
             },
             dict(sorted(Counter(rule["kind"] for rule in classified).items())),
         )

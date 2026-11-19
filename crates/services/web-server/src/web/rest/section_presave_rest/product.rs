@@ -80,7 +80,7 @@ pub async fn list_product_presaves(
 	let ctx = ctx_w.0;
 	let sender_ids = parse_scope_filter(query.sender_ids.as_deref(), "senderIds")?;
 	let show_all = can_manage_all_presaves(&snapshot);
-	let action_id = if lib_core::authorization::policy_registry()
+	let action_id = if super::super::authorization_registry()?
 		.action("info.list")
 		.is_some_and(|action| {
 			lib_core::authorization::check_eligibility(&action.id, &snapshot)
@@ -402,10 +402,7 @@ async fn load_product_presave_details(
 	let canonical_active_substances = active_substances
 		.into_iter()
 		.map(|substance| {
-			let mut value = camelize_value(
-				serde_json::to_value(substance)
-					.expect("serializable product substance"),
-			);
+			let mut value = camelize_value(serde_json::to_value(substance)?);
 			if let Some(row) = value.as_object_mut() {
 				if let Some(term_id_version) = row.remove("substanceTermidVersion") {
 					row.insert("substanceTermIdVersion".into(), term_id_version);
@@ -421,9 +418,9 @@ async fn load_product_presave_details(
 				}
 				row.insert("deleted".into(), json!(false));
 			}
-			value
+			Ok(value)
 		})
-		.collect();
+		.collect::<serde_json::Result<Vec<_>>>()?;
 	Ok(ProductPresaveDetails {
 		rows: ProductPresaveRows {
 			product,

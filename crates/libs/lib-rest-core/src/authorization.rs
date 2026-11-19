@@ -6,7 +6,8 @@ use lib_core::authorization::{
 	AuthorizedSubject, CaseAuditTrailResource, CaseChildResource,
 	CaseCreateProposal, CaseResource, Collection, EnforcedScopeFilter, Existing,
 	ImportHistoryResource, NoticeResource, Parent, PolicySnapshotVersion,
-	PresaveCreateProposal, PresaveResource, Proposed, RequestAuthorizationSnapshot,
+	PolicyRegistry, PresaveCreateProposal, PresaveResource, Proposed,
+	RequestAuthorizationSnapshot,
 	ResourceSet, SettingsResource, SubmissionResource, TerminologyImportProposal,
 	TerminologyResource, UserResource, XmlImportBatchProposal,
 };
@@ -33,18 +34,25 @@ pub fn denied(denial: AuthorizationDenial) -> Error {
 	}
 }
 
-pub fn notice_read_allowed(snapshot: &RequestAuthorizationSnapshot) -> bool {
+fn registry() -> Result<&'static PolicyRegistry> {
+	policy_registry().map_err(|source| Error::Internal {
+		operation: "load authorization policy registry",
+		source: Box::new(source),
+	})
+}
+
+pub fn notice_read_allowed(snapshot: &RequestAuthorizationSnapshot) -> Result<bool> {
 	let Some(action) =
-		policy_registry().context_action::<Existing<NoticeResource>>("notice.read")
+		registry()?.context_action::<Existing<NoticeResource>>("notice.read")
 	else {
-		return false;
+		return Ok(false);
 	};
-	authorize_contextual_read(
+	Ok(authorize_contextual_read(
 		action,
 		snapshot,
 		existing_notice_context(snapshot.organization_id()),
 	)
-	.is_ok()
+	.is_ok())
 }
 
 trait RequestBoundPermit {
@@ -145,7 +153,7 @@ where
 	let dbx = begin_fact_transaction(request_ctx, mm).await?;
 	let result = async {
 		let action =
-			policy_registry().subject_action(action_id).ok_or_else(|| {
+			registry()?.subject_action(action_id).ok_or_else(|| {
 				Error::AccessDenied {
 					required_role: format!("registered {action_id} action"),
 				}
@@ -186,7 +194,7 @@ where
 		} else {
 			ordinary_action_id
 		};
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<UserResource>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -217,7 +225,7 @@ where
 	let dbx = begin_fact_transaction(request_ctx, mm).await?;
 	let result = async {
 		let context = AuthorizationFactLoader::new(dbx, snapshot).case_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<CaseResource>>("case.list")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered case.list action".to_string(),
@@ -254,7 +262,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).settings_existing();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<SettingsResource>>("settings.read")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered settings.read action".to_string(),
@@ -287,7 +295,7 @@ where
 			.settings_for_mutation()
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<SettingsResource>>("settings.update")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered settings.update action".to_string(),
@@ -320,7 +328,7 @@ where
 			.notice_for_mutation()
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<NoticeResource>>("notice.update")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered notice.update action".to_string(),
@@ -351,7 +359,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).audit_log_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<AuditLogResource>>("audit_log.list")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered audit_log.list action".to_string(),
@@ -382,7 +390,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).terminology_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<TerminologyResource>>("terminology.list")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered terminology.list action".to_string(),
@@ -416,7 +424,7 @@ where
 			.terminology_import_for_mutation(fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Proposed<TerminologyImportProposal>>(
 				"terminology.import",
 			)
@@ -473,7 +481,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).presave_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<PresaveResource>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -514,7 +522,7 @@ where
 			.presave_existing(kind, id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<PresaveResource>>("info.read")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered info.read action".to_string(),
@@ -548,7 +556,7 @@ where
 			.presave_create_for_mutation(fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Proposed<PresaveCreateProposal>>("info.create")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered info.create action".to_string(),
@@ -581,7 +589,7 @@ where
 			.presave_create_for_mutation(fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Proposed<PresaveCreateProposal>>("info.create")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered info.create action".to_string(),
@@ -616,7 +624,7 @@ where
 			.presave_for_mutation(kind, id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<PresaveResource>>("info.update")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered info.update action".to_string(),
@@ -650,7 +658,7 @@ where
 			.presave_for_mutation(kind, id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<PresaveResource>>("info.update")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered info.update action".to_string(),
@@ -684,7 +692,7 @@ where
 			.case_audit_trail(case_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Parent<CaseResource, CaseAuditTrailResource>>(
 				"case.audit.list",
 			)
@@ -717,7 +725,7 @@ where
 	let dbx = begin_fact_transaction(request_ctx, mm).await?;
 	let result = async {
 		let context = AuthorizationFactLoader::new(dbx, snapshot).case_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<CaseResource>>("case.export.history.list")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered case.export.history.list action"
@@ -758,7 +766,7 @@ where
 			.case_resource_set(case_ids)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<ResourceSet<CaseResource>>("case.export.xml_set")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered case.export.xml_set action".to_string(),
@@ -797,7 +805,7 @@ where
 			.case_existing(case_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<CaseResource>>("case.export.history.read")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered case.export.history.read action"
@@ -852,7 +860,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).submission_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<SubmissionResource>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -884,7 +892,7 @@ where
 	let result = async {
 		let context =
 			AuthorizationFactLoader::new(dbx, snapshot).import_history_collection();
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Collection<ImportHistoryResource>>(
 				"import.history.list",
 			)
@@ -926,7 +934,7 @@ where
 			.import_history_existing(history_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<ImportHistoryResource>>("import.history.read")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered import.history.read action".to_string(),
@@ -962,7 +970,7 @@ where
 			.xml_import_batch_for_mutation(fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Proposed<XmlImportBatchProposal>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -1002,7 +1010,7 @@ where
 			.submission_existing(submission_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<SubmissionResource>>("submission.read")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered submission.read action".to_string(),
@@ -1036,7 +1044,7 @@ where
 			.submission_parent_case_for_mutation(submission_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<CaseResource>>("submission.execute")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered submission.execute action".to_string(),
@@ -1071,7 +1079,7 @@ where
 			.case_existing(case_id)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<CaseResource>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -1113,7 +1121,7 @@ where
 			)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Proposed<CaseCreateProposal>>("case.create")
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: "registered case.create action".to_string(),
@@ -1154,7 +1162,7 @@ where
 			.case_existing_for_verified_mutation(case_id, mutation_kind)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Existing<CaseResource>>(action_id)
 			.ok_or_else(|| Error::AccessDenied {
 				required_role: format!("registered {action_id} action"),
@@ -1196,7 +1204,7 @@ where
 			.case_child(case_id, child_fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Parent<CaseResource, CaseChildResource>>(
 				"case.child.read",
 			)
@@ -1239,7 +1247,7 @@ where
 			.case_child_for_verified_mutation(case_id, &child_fingerprint)
 			.await
 			.map_err(map_fact_load_error)?;
-		let action = policy_registry()
+		let action = registry()?
 			.context_action::<Parent<CaseResource, CaseChildResource>>(
 				"case.child.update",
 			)

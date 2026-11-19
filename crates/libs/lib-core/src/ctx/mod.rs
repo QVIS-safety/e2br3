@@ -87,10 +87,8 @@ impl Ctx {
 	/// Used for migrations, background jobs, and system operations.
 	pub fn root_ctx() -> Self {
 		Ctx {
-			user_id: uuid::Uuid::parse_str(SYSTEM_USER_ID)
-				.expect("Invalid system UUID"),
-			organization_id: uuid::Uuid::parse_str(SYSTEM_ORG_ID)
-				.expect("Invalid system org UUID"),
+			user_id: uuid::Uuid::from_u128(1),
+			organization_id: uuid::Uuid::nil(),
 			role: ROLE_SYSTEM_ADMIN.to_string(),
 			change_reason: None,
 			change_category: None,

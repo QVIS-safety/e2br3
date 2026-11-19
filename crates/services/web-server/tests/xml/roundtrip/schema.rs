@@ -13,7 +13,7 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 	)?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (status, body) = request_json(
 		&app,
 		&cookie,

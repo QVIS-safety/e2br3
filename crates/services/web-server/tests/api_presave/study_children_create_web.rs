@@ -93,7 +93,7 @@ async fn direct_study_child_posts_persist_parented_rows_and_reject_unauthorized_
 	let other_cookie = cookie_header(
 		&generate_web_token(&other.admin.email, other.admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let product_id = create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
 	let study_id = create_study_presave_for_product_via_api(
 		&app,
@@ -232,7 +232,7 @@ async fn direct_study_soft_child_posts_reject_deleted_rows_without_audit(
 	let cookie = cookie_header(
 		&generate_web_token(&seed.admin.email, seed.admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let product_id = create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
 	let study_id =
 		create_study_presave_for_product_via_api(&app, &cookie, product_id, "fda")

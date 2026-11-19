@@ -10,7 +10,7 @@ pub struct Scheme01;
 
 impl Scheme for Scheme01 {
 	fn hash(&self, to_hash: &ContentToHash) -> Result<String> {
-		let key = &auth_config().PWD_KEY;
+		let key = &auth_config().map_err(|_| Error::Key)?.PWD_KEY;
 		hash(key, to_hash)
 	}
 
@@ -58,7 +58,7 @@ mod tests {
 	fn test_scheme_01_hash_into_b64u_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
-		let fx_key = &auth_config().PWD_KEY; // 512 bits = 64 bytes
+		let fx_key = &auth_config()?.PWD_KEY; // 512 bits = 64 bytes
 		let fx_to_hash = ContentToHash {
 			content: "hello world".to_string(),
 			salt: fx_salt,

@@ -18,7 +18,7 @@ async fn test_admin_can_create_user() -> Result<()> {
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let role_id = create_empty_permission_profile(
 		&app,
@@ -63,7 +63,7 @@ async fn test_admin_create_user_defaults_missing_role_to_plain_user() -> Result<
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {
@@ -97,7 +97,7 @@ async fn test_create_user_missing_optional_fields_uses_backend_defaults(
 	let admin_cookie = cookie_header(&token.to_string());
 	let suffix = Uuid::new_v4();
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let role_id = create_empty_permission_profile(
 		&app,
 		&admin_cookie,
@@ -149,7 +149,7 @@ async fn test_create_user_duplicate_email_returns_conflict_with_detail() -> Resu
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&token.to_string());
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let email = format!("rbac-dup-email-{suffix}@example.com");
 	let role_id = create_empty_permission_profile(
@@ -219,7 +219,7 @@ async fn test_create_user_rejects_overlong_username_and_email() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 
 	for (email, username, expected_detail) in [

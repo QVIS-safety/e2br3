@@ -18,11 +18,26 @@ fn parse_yyyymmdd_digits(digits: &str) -> Option<Date> {
 	if digits.len() < 8 {
 		return None;
 	}
-	let y: i32 = digits.get(0..4)?.parse().ok()?;
-	let m: u8 = digits.get(4..6)?.parse().ok()?;
-	let d: u8 = digits.get(6..8)?.parse().ok()?;
-	let month = Month::try_from(m).ok()?;
-	Date::from_calendar_date(y, month, d).ok()
+	let y: i32 = match digits.get(0..4)?.parse() {
+		Ok(value) => value,
+		Err(_) => return None,
+	};
+	let m: u8 = match digits.get(4..6)?.parse() {
+		Ok(value) => value,
+		Err(_) => return None,
+	};
+	let d: u8 = match digits.get(6..8)?.parse() {
+		Ok(value) => value,
+		Err(_) => return None,
+	};
+	let month = match Month::try_from(m) {
+		Ok(value) => value,
+		Err(_) => return None,
+	};
+	match Date::from_calendar_date(y, month, d) {
+		Ok(value) => Some(value),
+		Err(_) => None,
+	}
 }
 
 fn parse_flexible_date_str(s: &str) -> Option<Date> {
@@ -95,9 +110,10 @@ fn normalize_e2b_datetime_str(s: &str) -> Option<String> {
 				&& (bytes[0] == b'+' || bytes[0] == b'-')
 				&& bytes[1..].iter().all(u8::is_ascii_digit)
 		});
-	let without_offset = offset
-		.map(|_| &trimmed[..trimmed.len().saturating_sub(5)])
-		.unwrap_or(trimmed);
+	let without_offset = match offset {
+		Some(_) => &trimmed[..trimmed.len().saturating_sub(5)],
+		None => trimmed,
+	};
 	let digits: String = without_offset
 		.chars()
 		.filter(|c| c.is_ascii_digit())
@@ -225,16 +241,21 @@ where
 	let Some(v) = opt else { return Ok(None) };
 	Ok(match v {
 		FlexDateInput::Str(s) => normalize_e2b_datetime_str(&s),
-		FlexDateInput::YearOrdinal(year, ordinal) => {
-			Date::from_ordinal_date(year, u16::max(1, ordinal))
-				.ok()
-				.map(format_e2b_datetime)
-		}
+		FlexDateInput::YearOrdinal(year, ordinal) => match Date::from_ordinal_date(
+			year,
+			u16::max(1, ordinal),
+		) {
+			Ok(date) => Some(format_e2b_datetime(date)),
+			Err(_) => None,
+		},
 		FlexDateInput::YearMonthDay(year, month, day) => {
-			let month = Month::try_from(month).ok();
-			month
-				.and_then(|m| Date::from_calendar_date(year, m, day).ok())
-				.map(format_e2b_datetime)
+			let Ok(month) = Month::try_from(month) else {
+				return Ok(None);
+			};
+			match Date::from_calendar_date(year, month, day) {
+				Ok(date) => Some(format_e2b_datetime(date)),
+				Err(_) => None,
+			}
 		}
 	})
 }
@@ -270,17 +291,32 @@ where
 			if issues.is_empty() {
 				return Ok(Some(value.to_string()));
 			}
-			let date = (value.len() == 10
+			let date = if value.len() == 10
 				&& value.as_bytes().get(4) == Some(&b'-')
-				&& value.as_bytes().get(7) == Some(&b'-'))
-			.then(|| {
-				let year = value.get(0..4)?.parse().ok()?;
-				let month = value.get(5..7)?.parse::<u8>().ok()?;
-				let day = value.get(8..10)?.parse().ok()?;
-				Date::from_calendar_date(year, Month::try_from(month).ok()?, day)
-					.ok()
-			})
-			.flatten();
+				&& value.as_bytes().get(7) == Some(&b'-')
+			{
+				let parsed = (|| -> Result<Date, ()> {
+					let year = value.get(0..4).ok_or(())?.parse().map_err(|_| ())?;
+					let month = value
+						.get(5..7)
+						.ok_or(())?
+						.parse::<u8>()
+						.map_err(|_| ())?;
+					let day = value.get(8..10).ok_or(())?.parse().map_err(|_| ())?;
+					Date::from_calendar_date(
+						year,
+						Month::try_from(month).map_err(|_| ())?,
+						day,
+					)
+					.map_err(|_| ())
+				})();
+				match parsed {
+					Ok(date) => Some(date),
+					Err(()) => None,
+				}
+			} else {
+				None
+			};
 			date.map(format_date)
 				.map(Some)
 				.ok_or_else(|| de::Error::custom("invalid F.r.1 test date"))
@@ -304,14 +340,17 @@ where
 
 pub fn e2b_datetime_date(value: &str) -> Option<Date> {
 	let value = value.trim();
-	let local = value
+	let local_with_fraction = match value
 		.char_indices()
 		.find(|(index, char)| *index >= 8 && matches!(char, '+' | '-'))
-		.map(|(index, _)| &value[..index])
-		.unwrap_or(value)
-		.split('.')
-		.next()
-		.unwrap_or(value);
+	{
+		Some((index, _)) => &value[..index],
+		None => value,
+	};
+	let local = match local_with_fraction.split('.').next() {
+		Some(local) => local,
+		None => value,
+	};
 	let digits: String = local.chars().filter(|c| c.is_ascii_digit()).collect();
 	parse_yyyymmdd_digits(&digits)
 }

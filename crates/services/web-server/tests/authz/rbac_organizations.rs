@@ -16,7 +16,7 @@ use uuid::Uuid;
 async fn test_non_admin_cannot_list_organizations() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -52,7 +52,7 @@ async fn test_sponsor_admin_cannot_access_organization_admin_endpoints() -> Resu
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let create_body = json!({
 		"data": {
@@ -119,7 +119,7 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 	)
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let create_body = json!({
@@ -174,7 +174,7 @@ async fn test_system_admin_cannot_create_organization_with_unknown_type(
 	)
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let create_body = json!({
@@ -201,7 +201,7 @@ async fn test_system_admin_cannot_create_organization_with_unknown_type(
 async fn test_non_admin_cannot_get_organization() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -235,7 +235,7 @@ async fn test_non_admin_cannot_get_organization() -> Result<()> {
 async fn test_non_admin_cannot_create_organization() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -278,7 +278,7 @@ async fn test_non_admin_cannot_create_organization() -> Result<()> {
 async fn test_non_admin_cannot_update_organization() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -318,7 +318,7 @@ async fn test_non_admin_cannot_update_organization() -> Result<()> {
 async fn test_non_admin_cannot_delete_organization() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;

@@ -15,7 +15,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		create_test_import_product(&mm, seed.org_id, seed.admin.id).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let xml_path = examples_dir.join("FAERS2022Scenario2.xml");
 	let original_xml = std::fs::read_to_string(&xml_path)?;

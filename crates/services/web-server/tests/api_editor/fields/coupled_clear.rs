@@ -23,7 +23,7 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -214,7 +214,7 @@ pub(crate) async fn clearing_phpid_survives_dg_row_reload(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -270,7 +270,7 @@ pub(crate) async fn blank_optional_text_clears_without_changing_omitted_sibling(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
@@ -332,7 +332,7 @@ pub(crate) async fn clearing_numeric_result_clears_qualifier_and_keeps_free_text
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-LB-NUMERIC-CLEAR", &["ich"])
 			.await?;
@@ -495,7 +495,7 @@ pub(crate) async fn reporter_title_can_be_cleared_without_changing_siblings(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-RP-CLEAR", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/RP");
@@ -543,7 +543,7 @@ pub(crate) async fn summary_language_and_text_clear_together(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let id =
 		create_case_for_editor(&app, &cookie, "EDITOR-CONTRACT", &["ich"]).await?;
@@ -572,7 +572,7 @@ pub(crate) async fn blank_test_name_keeps_meddra_selection(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let id = create_case_for_editor(&app, &cookie, "CLEAR-LB-TEST-NAME", &["ich"])
 		.await?;
 	let uri = format!("/api/cases/{id}/editor/pages/LB/rows");

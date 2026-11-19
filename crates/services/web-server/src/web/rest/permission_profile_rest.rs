@@ -4,7 +4,7 @@ use axum::Json;
 use lib_core::authorization::{
 	authorize_contextual_mutation, authorize_contextual_read,
 	built_in_menu_privileges, existing_role_mutation_context,
-	existing_role_read_context, normalize_current_menu_privileges, policy_registry,
+	existing_role_read_context, normalize_current_menu_privileges,
 	proposed_role_context, role_collection_context, AdminMenuPrivilege,
 	BuiltInIdentityKind, Existing, PrivilegeAdapterError, Proposed,
 	RoleCreateProposal, RoleResource,
@@ -167,7 +167,10 @@ fn normalize_admin_privileges(
 	privileges: Option<Vec<AdminMenuPrivilege>>,
 ) -> Result<Vec<AdminMenuPrivilege>> {
 	let raw = privileges
-		.unwrap_or_default()
+		.ok_or_else(|| Error::BadRequest {
+			message: "privileges must be supplied explicitly (use [] for no access)"
+				.into(),
+		})?
 		.into_iter()
 		.filter(|privilege| !privilege.menu_key.trim().is_empty())
 		.collect::<Vec<_>>();
@@ -175,24 +178,37 @@ fn normalize_admin_privileges(
 		PrivilegeAdapterError::UnknownMenu { menu_key } => Error::BadRequest {
 			message: format!("unknown role privilege menu '{menu_key}'"),
 		},
+		PrivilegeAdapterError::InvalidPolicyRegistry(error) => Error::Internal {
+			operation: "normalize role privileges",
+			source: Box::new(error),
+		},
 	})
 }
 
 fn built_in_role_row(
 	role_id: &str,
 	kind: BuiltInIdentityKind,
-) -> PermissionProfileRow {
-	let metadata = built_in_role_metadata(role_id)
-		.expect("built-in role row requires canonical metadata");
-	build_role_row(
+) -> Result<PermissionProfileRow> {
+	let metadata =
+		built_in_role_metadata(role_id).ok_or_else(|| Error::Internal {
+			operation: "load built-in role metadata",
+			source: std::io::Error::other(format!(
+				"missing built-in role metadata: {role_id}"
+			))
+			.into(),
+		})?;
+	Ok(build_role_row(
 		metadata.role_id.to_string(),
 		metadata.display_name.to_string(),
 		Some(metadata.description.to_string()),
-		built_in_menu_privileges(kind),
+		built_in_menu_privileges(kind).map_err(|error| Error::Internal {
+			operation: "resolve built-in menu privileges",
+			source: Box::new(error),
+		})?,
 		true,
 		true,
 		false,
-	)
+	))
 }
 
 async fn visible_built_in_roles(
@@ -204,27 +220,27 @@ async fn visible_built_in_roles(
 			built_in_role_row(
 				ROLE_SYSTEM_ADMIN,
 				BuiltInIdentityKind::PlatformAdministrator,
-			),
+			)?,
 			built_in_role_row(
 				ROLE_SPONSOR_ADMIN_CRO,
 				BuiltInIdentityKind::SponsorCroAdministrator,
-			),
+			)?,
 			built_in_role_row(
 				ROLE_SPONSOR_ADMIN_COMPANY,
 				BuiltInIdentityKind::SponsorCompanyAdministrator,
-			),
+			)?,
 		],
 		Some(BuiltInIdentityKind::SponsorCroAdministrator) => {
 			vec![built_in_role_row(
 				ROLE_SPONSOR_ADMIN_CRO,
 				BuiltInIdentityKind::SponsorCroAdministrator,
-			)]
+			)?]
 		}
 		Some(BuiltInIdentityKind::SponsorCompanyAdministrator) => {
 			vec![built_in_role_row(
 				ROLE_SPONSOR_ADMIN_COMPANY,
 				BuiltInIdentityKind::SponsorCompanyAdministrator,
-			)]
+			)?]
 		}
 		_ => Vec::new(),
 	};
@@ -264,9 +280,9 @@ pub async fn list_permission_profiles(
 	let organization_id =
 		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
 			.await?;
-	let action = policy_registry()
-		.context_action("role.list")
-		.expect("role.list policy");
+	let action = super::registered_context_action::<
+		lib_core::authorization::Collection<RoleResource>,
+	>("role.list")?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -295,9 +311,8 @@ pub async fn get_permission_profile(
 	let organization_id =
 		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
 			.await?;
-	let action = policy_registry()
-		.context_action::<Existing<RoleResource>>("role.read")
-		.expect("role.read policy");
+	let action =
+		super::registered_context_action::<Existing<RoleResource>>("role.read")?;
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
@@ -334,9 +349,9 @@ pub async fn create_permission_profile(
 	let organization_id =
 		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
 			.await?;
-	let action = policy_registry()
-		.context_action::<Proposed<RoleCreateProposal>>("role.create")
-		.expect("role.create policy");
+	let action = super::registered_context_action::<Proposed<RoleCreateProposal>>(
+		"role.create",
+	)?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
@@ -350,7 +365,9 @@ pub async fn create_permission_profile(
 		.as_deref()
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
-		.unwrap_or("Custom Role")
+		.ok_or_else(|| Error::BadRequest {
+			message: "role name is required".into(),
+		})?
 		.to_string();
 	validate_role_name(&name)?;
 	if PermissionProfileBmc::name_exists_in_org(&ctx, &mm, &name, None)
@@ -362,7 +379,9 @@ pub async fn create_permission_profile(
 		});
 	}
 	let description = normalize_role_description(data.description)?;
-	let active = data.active.unwrap_or(true);
+	let active = data.active.ok_or_else(|| Error::BadRequest {
+		message: "active is required".into(),
+	})?;
 	let privileges = normalize_admin_privileges(data.privileges)?;
 
 	let id = PermissionProfileBmc::create(
@@ -405,9 +424,8 @@ pub async fn update_permission_profile(
 	} else {
 		"role.update"
 	};
-	let action = policy_registry()
-		.context_action::<Existing<RoleResource>>(action_id)
-		.expect("registered role mutation policy");
+	let action =
+		super::registered_context_action::<Existing<RoleResource>>(action_id)?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
@@ -426,11 +444,12 @@ pub async fn update_permission_profile(
 		.map_err(Error::Model)?;
 
 	let data = params.data;
-	let next_name = data
-		.name
-		.unwrap_or_else(|| current.name.clone())
-		.trim()
-		.to_string();
+	let next_name = match data.name {
+		Some(name) => name,
+		None => current.name.clone(),
+	}
+	.trim()
+	.to_string();
 	validate_role_name(&next_name)?;
 	if PermissionProfileBmc::name_exists_in_org(&ctx, &mm, &next_name, Some(id))
 		.await
@@ -449,7 +468,10 @@ pub async fn update_permission_profile(
 	} else {
 		row_to_api(current.clone()).privileges
 	};
-	let next_active = data.active.unwrap_or(current.active);
+	let next_active = match data.active {
+		Some(active) => active,
+		None => current.active,
+	};
 
 	PermissionProfileBmc::update(
 		&ctx,
@@ -484,9 +506,8 @@ pub async fn delete_permission_profile(
 	let organization_id =
 		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
 			.await?;
-	let action = policy_registry()
-		.context_action::<Existing<RoleResource>>("role.delete")
-		.expect("role.delete policy");
+	let action =
+		super::registered_context_action::<Existing<RoleResource>>("role.delete")?;
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,

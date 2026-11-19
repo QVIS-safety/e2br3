@@ -135,7 +135,7 @@ const REACTION_ROW_ALIASES: &[(&str, &[&str])] = &[
 ];
 
 fn reaction_sequence_number(row: &serde_json::Map<String, Value>) -> Result<i32> {
-	i32_field(row, &["sequenceNumber", "sequence_number"])
+	i32_field(row, &["sequenceNumber", "sequence_number"])?
 		.filter(|sequence_number| *sequence_number > 0)
 		.ok_or_else(|| Error::BadRequest {
 			message: "AE.reaction.sequenceNumber must be a positive integer"
@@ -198,7 +198,7 @@ pub async fn get_editor_ae_page_projection(
 					ctx,
 					mm,
 					case_id,
-					query.include_deleted.unwrap_or(false),
+					query.include_deleted == Some(true),
 				)
 				.await?;
 				let authorities = query_authorities_csv(&query)?;

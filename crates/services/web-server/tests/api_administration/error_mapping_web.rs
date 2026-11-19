@@ -13,7 +13,7 @@ async fn test_bad_uuid_returns_400() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/users/not-a-uuid")
@@ -32,7 +32,7 @@ async fn test_not_found_returns_404() -> Result<()> {
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let missing_id = Uuid::new_v4();
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("GET")
 		.uri(format!("/api/users/{missing_id}"))
@@ -48,6 +48,7 @@ async fn test_not_found_returns_404() -> Result<()> {
 async fn test_missing_session_returns_401_with_request_reference() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let response = web_server::app(mm)
+		.expect("web server configuration")
 		.oneshot(
 			Request::builder()
 				.uri("/api/users/me")
@@ -78,6 +79,7 @@ async fn test_auth_database_failure_preserves_session_cookie() -> Result<()> {
 	let unavailable = lib_core::model::ModelManager::new().await?;
 	unavailable.dbx().db().close().await;
 	let response = web_server::app(unavailable)
+		.expect("web server configuration")
 		.oneshot(
 			Request::builder()
 				.uri("/api/users/me")

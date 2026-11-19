@@ -1,14 +1,13 @@
 use super::super::common::{
 	as_object, bool_field, direct_section_response, explicit_null_model_fields,
-	i32_field, json, next_child_sequence, optional_row_object,
-	reject_unknown_row_keys, string_field, uuid_eq, uuid_field, BTreeMap,
-	CaseEditorDirectSectionResponse, CaseSummaryInformationBmc,
-	CaseSummaryInformationFilter, CaseSummaryInformationForCreate,
-	CaseSummaryInformationForUpdate, CtxW, Error, Json, ListOptions, ModelManager,
-	NarrativeInformationBmc, NarrativeInformationForCreate,
-	NarrativeInformationForUpdate, Path, Result, SenderDiagnosisBmc,
-	SenderDiagnosisFilter, SenderDiagnosisForCreate, SenderDiagnosisForUpdate,
-	State, Uuid, Value,
+	i32_field, json, optional_row_object, reject_unknown_row_keys, string_field,
+	uuid_eq, uuid_field, BTreeMap, CaseEditorDirectSectionResponse,
+	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
+	CaseSummaryInformationForCreate, CaseSummaryInformationForUpdate, CtxW, Error,
+	Json, ListOptions, ModelManager, NarrativeInformationBmc,
+	NarrativeInformationForCreate, NarrativeInformationForUpdate, Path, Result,
+	SenderDiagnosisBmc, SenderDiagnosisFilter, SenderDiagnosisForCreate,
+	SenderDiagnosisForUpdate, State, Uuid, Value,
 };
 use super::super::handler_macros::direct_page_projection_handler;
 
@@ -86,7 +85,11 @@ pub(super) async fn apply_nr_page_rows_patch(
 						case_id,
 						source_narrative_presave_id: update
 							.source_narrative_presave_id,
-						case_narrative: case_narrative.unwrap_or_default(),
+						case_narrative: case_narrative.ok_or_else(|| {
+							Error::BadRequest {
+								message: "case narrative is required".into(),
+							}
+						})?,
 						reporter_comments: update.reporter_comments,
 						sender_comments: update.sender_comments,
 						additional_information: update.additional_information,
@@ -154,18 +157,10 @@ pub(super) async fn apply_nr_page_rows_patch(
 					mm,
 					SenderDiagnosisForCreate {
 						narrative_id: narrative.id,
-						sequence_number: i32_field(diagnosis, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"sender_diagnoses",
-									"narrative_id",
-									narrative.id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(diagnosis, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						diagnosis_meddra_version: string_field(
 							diagnosis,
 							&["diagnosisMeddraVersion"],
@@ -226,18 +221,10 @@ pub(super) async fn apply_nr_page_rows_patch(
 					mm,
 					CaseSummaryInformationForCreate {
 						narrative_id: narrative.id,
-						sequence_number: i32_field(summary, &["sequenceNumber"])
-							.unwrap_or(
-								next_child_sequence(
-									ctx,
-									mm,
-									"case_summary_information",
-									"narrative_id",
-									narrative.id,
-									true,
-								)
-								.await?,
-							),
+						sequence_number: i32_field(summary, &["sequenceNumber"])?
+							.ok_or_else(|| Error::BadRequest {
+								message: "sequenceNumber is required".into(),
+							})?,
 						language_code: string_field(summary, &["languageCode"]),
 						summary_text: string_field(summary, &["summaryText"]),
 					},

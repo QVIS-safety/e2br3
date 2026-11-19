@@ -34,14 +34,14 @@ fn changed_settings_fields(
 
 	let mut changed = Map::new();
 	for key in keys {
-		let old_field = old_object
-			.and_then(|object| object.get(&key))
-			.cloned()
-			.unwrap_or(Value::Null);
-		let new_field = new_object
-			.and_then(|object| object.get(&key))
-			.cloned()
-			.unwrap_or(Value::Null);
+		let old_field = match old_object.and_then(|object| object.get(&key)) {
+			Some(value) => value.clone(),
+			None => Value::Null,
+		};
+		let new_field = match new_object.and_then(|object| object.get(&key)) {
+			Some(value) => value.clone(),
+			None => Value::Null,
+		};
 		if old_field != new_field {
 			changed.insert(
 				key,

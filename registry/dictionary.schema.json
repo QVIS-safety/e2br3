@@ -50,7 +50,7 @@
         },
         "format_name": {
           "type": "string",
-          "enum": ["e2b_datetime", "base64", "ich_identifier"]
+          "enum": ["e2b_datetime", "base64", "ich_identifier", "worldwide_case_id", "terminology_version"]
         },
         "vocabulary_scope": {
           "type": "string",

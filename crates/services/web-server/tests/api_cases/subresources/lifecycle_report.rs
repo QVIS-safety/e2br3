@@ -89,7 +89,7 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let wrong_case_id = create_case(&app, &cookie, seed.org_id).await?;
 

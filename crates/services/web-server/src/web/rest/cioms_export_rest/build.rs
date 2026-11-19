@@ -37,7 +37,7 @@ pub(super) fn build_cioms_pdf_with_options(
 		)
 	};
 	let ordered = ordered_cioms_case_data(data, settings);
-	let mut canvas = PdfCanvas::with_font_mapping(&[]);
+	let mut canvas = PdfCanvas::with_font_mapping(&[])?;
 	canvas.stream.push_str("0.8 w\n");
 	render_cioms_first_page(
 		&mut canvas,
@@ -49,7 +49,7 @@ pub(super) fn build_cioms_pdf_with_options(
 	)?;
 	let mut font_mapping = canvas.font_mapping();
 	let first_stream = canvas.stream;
-	let overflow = collect_cioms_overflow(&ordered, settings, options);
+	let overflow = collect_cioms_overflow(&ordered, settings, options)?;
 	let continuation_streams =
 		if cioms_continuation_required(&ordered, settings, &overflow) {
 			let (pages, mapping) = render_cioms_continuation_pages(
@@ -60,7 +60,7 @@ pub(super) fn build_cioms_pdf_with_options(
 				width,
 				height,
 				&font_mapping,
-			);
+			)?;
 			font_mapping = mapping;
 			pages
 		} else {
@@ -86,9 +86,9 @@ pub(super) fn build_cioms_pdf_with_options(
 	let obj6 = format!(
 		"<< /Type /Font /Subtype /CIDFontType0 /BaseFont /{} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 10 0 R /DW 1000 /W {} >>",
 		font_name(),
-		font_widths(),
+		font_widths()?,
 	);
-	let to_unicode = to_unicode_cmap(&font_mapping);
+	let to_unicode = to_unicode_cmap(&font_mapping)?;
 	let obj7 = format!(
 		"<< /Length {} >>\nstream\n{}endstream",
 		to_unicode.len(),
@@ -99,7 +99,7 @@ pub(super) fn build_cioms_pdf_with_options(
 		first_stream.len(),
 		first_stream
 	);
-	let encoding = encoding_cmap(&font_mapping);
+	let encoding = encoding_cmap(&font_mapping)?;
 	let obj9 = format!(
 		"<< /Length {} >>\nstream\n{}endstream",
 		encoding.len(),
@@ -109,7 +109,7 @@ pub(super) fn build_cioms_pdf_with_options(
 		"<< /Type /FontDescriptor /FontName /{} /Flags 32 /FontBBox [-1002 -1048 2928 1808] /ItalicAngle 0 /Ascent 1160 /Descent -288 /CapHeight 733 /StemV 80 /FontFile3 11 0 R >>",
 		font_name()
 	);
-	let compressed_font = compressed_font();
+	let compressed_font = compressed_font()?;
 	let mut obj11 = format!(
 		"<< /Length {} /Subtype /CIDFontType0C /Filter /FlateDecode >>\nstream\n",
 		compressed_font.len()
@@ -193,9 +193,10 @@ pub async fn export_case_cioms_pdf(
 					&data,
 					&settings,
 					CiomsExportOptions {
-						include_notation: query
-							.include_notation
-							.unwrap_or(settings.notation),
+						include_notation: match query.include_notation {
+							Some(value) => value,
+							None => settings.notation,
+						},
 					},
 				)?;
 				let file_name = format!("{}-cioms.pdf", data.case_number);

@@ -1,0 +1,57 @@
+{
+  "entries": [
+    {
+      "code": "10.a",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "a",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "d",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "h",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "min",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "mo",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "s",
+      "scopes": [
+        "time"
+      ]
+    },
+    {
+      "code": "wk",
+      "scopes": [
+        "time"
+      ]
+    }
+  ],
+  "license": "ICH E2B(R3) code lists; https://www.ich.org/page/terms-conditions",
+  "name": "ICH-UCUM",
+  "source": "https://admin.ich.org/sites/default/files/inline-files/IG_Complete_Package_v1_11_1.zip",
+  "source_sha256": "d831184fedf12e5ca194e079413a7ba697d705b70adfa563903404830bbd08bf",
+  "version": "2.2"
+}

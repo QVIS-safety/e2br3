@@ -233,9 +233,7 @@ fn issue_keys_for_report(
 		report
 			.issues
 			.iter()
-			.filter(|issue| {
-				section.map(|value| issue.section == value).unwrap_or(true)
-			})
+			.filter(|issue| section.is_none_or(|value| issue.section == value))
 			.map(|issue| serde_json::json!([issue.code, issue.path]))
 			.collect(),
 	)
@@ -250,9 +248,7 @@ fn required_count_for_report(
 		.iter()
 		.filter(|issue| {
 			issue.code.ends_with(".REQUIRED")
-				&& section
-					.map(|section| issue.section == section)
-					.unwrap_or(true)
+				&& section.is_none_or(|section| issue.section == section)
 		})
 		.count()
 }

@@ -18,11 +18,17 @@ pub(super) fn reconcile_runtime_store() -> &'static Mutex<ReconcileRuntimeStore>
 	STORE.get_or_init(|| Mutex::new(ReconcileRuntimeStore::default()))
 }
 
-pub(super) fn record_reconcile_result(result: &SubmissionReconcileResult) {
+pub(super) fn record_reconcile_result(
+	result: &SubmissionReconcileResult,
+) -> Result<()> {
 	let now = OffsetDateTime::now_utc();
-	let mut store = reconcile_runtime_store()
-		.lock()
-		.expect("reconcile runtime stats lock");
+	let mut store =
+		reconcile_runtime_store()
+			.lock()
+			.map_err(|error| Error::Internal {
+				operation: "lock reconcile runtime stats",
+				source: std::io::Error::other(error.to_string()).into(),
+			})?;
 	store.last_run_at = Some(now);
 	store.last_success_at = Some(now);
 	store.last_error = None;
@@ -35,24 +41,34 @@ pub(super) fn record_reconcile_result(result: &SubmissionReconcileResult) {
 		.saturating_add(result.succeeded as u64);
 	store.total_failed = store.total_failed.saturating_add(result.failed as u64);
 	store.total_skipped = store.total_skipped.saturating_add(result.skipped as u64);
+	Ok(())
 }
 
-pub(super) fn record_reconcile_error(err: &str) {
+pub(super) fn record_reconcile_error(err: &str) -> Result<()> {
 	let now = OffsetDateTime::now_utc();
-	let mut store = reconcile_runtime_store()
-		.lock()
-		.expect("reconcile runtime stats lock");
+	let mut store =
+		reconcile_runtime_store()
+			.lock()
+			.map_err(|error| Error::Internal {
+				operation: "lock reconcile runtime stats",
+				source: std::io::Error::other(error.to_string()).into(),
+			})?;
 	store.last_run_at = Some(now);
 	store.last_error = Some(err.to_string());
 	store.total_runs = store.total_runs.saturating_add(1);
 	store.total_errors = store.total_errors.saturating_add(1);
+	Ok(())
 }
 
-pub fn get_reconcile_runtime_status() -> SubmissionReconcileRuntimeStatus {
-	let store = reconcile_runtime_store()
-		.lock()
-		.expect("reconcile runtime stats lock");
-	SubmissionReconcileRuntimeStatus {
+pub fn get_reconcile_runtime_status() -> Result<SubmissionReconcileRuntimeStatus> {
+	let store =
+		reconcile_runtime_store()
+			.lock()
+			.map_err(|error| Error::Internal {
+				operation: "lock reconcile runtime stats",
+				source: std::io::Error::other(error.to_string()).into(),
+			})?;
+	Ok(SubmissionReconcileRuntimeStatus {
 		last_run_at: store.last_run_at,
 		last_success_at: store.last_success_at,
 		last_error: store.last_error.clone(),
@@ -62,5 +78,5 @@ pub fn get_reconcile_runtime_status() -> SubmissionReconcileRuntimeStatus {
 		total_succeeded: store.total_succeeded,
 		total_failed: store.total_failed,
 		total_skipped: store.total_skipped,
-	}
+	})
 }

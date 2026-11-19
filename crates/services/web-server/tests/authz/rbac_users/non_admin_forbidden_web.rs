@@ -21,7 +21,7 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let suffix = Uuid::new_v4();
 	let body = json!({
 		"data": {
@@ -56,7 +56,7 @@ async fn test_viewer_cannot_update_user() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let body = json!({
 		"data": {
 			"role": "sponsor_admin_company",
@@ -79,7 +79,7 @@ async fn test_viewer_cannot_update_user() -> Result<()> {
 async fn test_non_admin_cannot_list_users() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -114,7 +114,7 @@ async fn test_user_without_case_read_cannot_list_workflow_user_options() -> Resu
 {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
 
 	let req = Request::builder()
@@ -133,7 +133,7 @@ async fn test_case_reader_without_workflow_grant_cannot_list_workflow_user_optio
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_two_orgs_users_cases(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;
 
 	let req = Request::builder()
@@ -152,7 +152,7 @@ async fn test_case_reader_without_workflow_grant_cannot_list_workflow_user_optio
 async fn test_non_admin_cannot_get_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -186,7 +186,7 @@ async fn test_non_admin_cannot_get_user() -> Result<()> {
 async fn test_non_admin_cannot_create_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -231,7 +231,7 @@ async fn test_non_admin_cannot_create_user() -> Result<()> {
 async fn test_non_admin_cannot_update_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let manager_token =
 		generate_web_token(&seed.manager.email, seed.manager.token_salt)?;
@@ -273,7 +273,7 @@ async fn test_permission_denied_for_viewer() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let req = Request::builder()
 		.method("POST")
 		.uri("/api/users")

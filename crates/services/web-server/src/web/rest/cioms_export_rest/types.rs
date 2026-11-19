@@ -215,8 +215,7 @@ impl CiomsFormData {
 		let suspect_drug = data
 			.drugs
 			.iter()
-			.find(|drug| drug.drug_characterization == "1")
-			.or_else(|| data.drugs.first());
+			.find(|drug| drug.drug_characterization == "1");
 		let suspect_drug_id = suspect_drug.map(|drug| drug.id);
 		let suspect_dosage = suspect_drug_id.and_then(|drug_id| {
 			data.dosages.iter().find(|dosage| dosage.drug_id == drug_id)
@@ -232,7 +231,8 @@ impl CiomsFormData {
 			case_number: data.case_number.clone(),
 			patient_initials: patient
 				.and_then(|patient| patient.patient_initials.clone())
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			patient_birth_date: date_text(
 				patient.and_then(|patient| patient.birth_date),
 			),
@@ -243,25 +243,29 @@ impl CiomsFormData {
 			.to_string(),
 			reaction_country: first_reaction
 				.and_then(|reaction| reaction.country_code.clone())
-				.or_else(|| source.and_then(|source| source.country_code.clone()))
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			reaction_dates: reaction_dates(first_reaction),
 			reaction_description: cioms_reaction_description(data),
 			suspect_drug_name: drug_name(suspect_drug),
 			suspect_drug_dose: suspect_drug_id
 				.map(|drug_id| dosage_texts_for_drug(data, drug_id))
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			suspect_drug_route: suspect_dosage
 				.and_then(|dosage| dosage.route_of_administration.clone())
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			suspect_drug_indication: suspect_indication
 				.and_then(|indication| indication.indication_text.clone())
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			suspect_drug_therapy_dates: dosage_therapy_dates(suspect_dosage),
 			suspect_drug_therapy_duration: dosage_duration(suspect_dosage),
 			medical_history: patient
 				.and_then(|patient| patient.medical_history_text.clone())
-				.unwrap_or_default(),
+				.into_iter()
+				.collect(),
 			manufacturer_address: sender_address(data.senders.first()),
 			reporter_name: reporter_name(source),
 			report_type: report_type_text(

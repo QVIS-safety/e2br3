@@ -83,7 +83,7 @@ async fn parent_repeat_delete_emits_one_business_update_audit() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
@@ -175,7 +175,7 @@ async fn archived_parents_reject_patch_without_audit_and_allow_explicit_restore(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
@@ -313,7 +313,7 @@ async fn archived_parents_reject_direct_child_create_without_state_or_audit(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let receiver_id = create_receiver_presave_via_api(&app, &cookie, "fda").await?;
@@ -408,7 +408,7 @@ async fn direct_soft_children_repeat_delete_restore_same_id_and_noop_audit(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let gateway_id =
@@ -635,7 +635,7 @@ async fn parent_archive_restore_preserves_hard_soft_and_graph_only_children(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_id = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let gateway_id =
@@ -863,7 +863,7 @@ async fn direct_and_graph_children_reject_wrong_parent_without_state_change(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let sender_a = create_sender_presave_via_api(&app, &cookie, "fda").await?;
 	let sender_b = create_sender_presave_via_api(&app, &cookie, "fda").await?;

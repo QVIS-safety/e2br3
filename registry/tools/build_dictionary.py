@@ -48,13 +48,62 @@ ICH_IDENTIFIER_PROFILES = {
     "G.k.2.3.r.2b": "substance_id",
 }
 
+# ICH IG 5.03 (18 July 2025), checked against package 1.11 (January 2026).
+ICH_INPUT_CODE_SETS = {
+    "D.2.2b": ["a", "mo", "wk", "d", "h", "10.a"],
+    "D.10.2.2b": ["a", "10.a"],
+    "D.2.2.1b": ["mo", "wk", "d", "{trimester}"],
+    "G.k.6b": ["mo", "wk", "d", "{trimester}"],
+}
+
+
+def reviewed_input_notes() -> dict[str, str]:
+    """Record the 32 reviewed requirements without claiming runtime coverage."""
+    ich = "ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+    fda = "FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
+    fda_rules = "FDA Business Rules (2024-04): https://www.fda.gov/media/175373/download?attachment="
+    groups = [
+        ([*(f"E.i.3.2{part}" for part in "abcdef"), "C.1.9.1"],
+         "Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation.", ich),
+        (["FDA.E.i.3.2h"],
+         "Postmarket submission: true or nullFlavor NI. Premarket submission: NI only, with no boolean value.", fda_rules),
+        (["C.1.7"],
+         "true/false normally; NI only for retransmission of an R2 case whose equivalent element was absent. Requires verified import provenance, not a scalar nullable boolean.", ich),
+        (["C.1.8.1"],
+         "Original sender creates the country-company-report identifier, equal to C.1.1. Recipients preserve the received identifier unchanged; do not reject it using current country lists or a blanket format regex.", ich),
+        (["D.2.2b"], "Age units are exactly a, mo, wk, d, h, 10.a.", ich),
+        (["D.10.2.2b"], "Parent age units are exactly a and 10.a, not the whole time vocabulary.", ich),
+        (["D.2.2.1b", "G.k.6b"],
+         "Gestation units are mo, wk, d, {trimester}; use the lowercase code from CL26 v2.2.", ich),
+        (["E.i.6b", "G.k.4.r.6b", "G.k.9.i.3.1b", "G.k.9.i.3.2b"],
+         "Constrained UCUM time/duration units from ICH CL26 v2.2 with field-specific restrictions; general UCUM syntax alone is insufficient. Frequency annotations are not automatically duration units.", ich),
+        (["G.k.4.r.1b", "G.k.5b"],
+         "Use the dose-unit subset of ICH CL25 v2.3, including {DF}; do not accept every strength unit or every syntactically valid UCUM expression.", ich),
+        (["D.8.r.2b", "D.10.8.r.2b", "G.k.2.1.1b"],
+         "MPID follows the recipient's identifier system and version. FDA uses NDC when known; syntax/control-character checks do not prove identifier validity.", ich + "; " + fda),
+        (["D.8.r.3b", "D.10.8.r.3b", "G.k.2.1.2b"],
+         "PhPID follows the applicable identifier system, version, availability and regional guidance. Do not invent a universal regex or assume a code service is available.", ich),
+        (["G.k.2.3.r.2b"],
+         "Substance ID follows the recipient's system and version; FDA uses SRS UNII. Length/control-character checks do not prove membership.", ich + "; " + fda),
+        (["G.k.4.r.9.2a"],
+         "This is the terminology VERSION, not a dose-form TermID. Validate it against the selected terminology system/release, not the list of dose-form codes.", ich + "; " + fda),
+        (["G.k.4.r.9.2b", "G.k.4.r.10.2b", "G.k.4.r.11.2b"],
+         "ICH uses EDQM dose-form/route terms; FDA also accepts the corresponding SPL terminology. Validate system, version and code together; an EDQM-only check is not sufficient for FDA.", ich + "; " + fda),
+        (["FDA.G.k.12.r.7.1e"],
+         "Device manufacturer country: ISO 3166-1 alpha-2 plus the explicit EU exception. Two-character length alone is insufficient.", fda_rules),
+    ]
+    notes = {}
+    for codes, requirement, source in groups:
+        for code in codes:
+            if code in notes:
+                raise ValueError(f"duplicate reviewed input: {code}")
+            notes[code] = f"Reviewed 2026-11-19. {requirement} Source: {source}"
+    return notes
+
 ICH_VOCABULARY_SCOPES = {
     "C.2.r.3": "all",
     "C.3.4.5": "all",
     "C.5.1.r.2": "all",
-    "D.2.2b": "time",
-    "D.2.2.1b": "gestation",
-    "D.10.2.2b": "time",
     "E.i.1.1b": "all",
     "E.i.6b": "time",
     "E.i.9": "all",
@@ -65,12 +114,10 @@ ICH_VOCABULARY_SCOPES = {
     "G.k.4.r.1b": "dose",
     "G.k.4.r.3": "frequency",
     "G.k.4.r.6b": "time",
-    "G.k.4.r.9.2a": "dose_form",
     "G.k.4.r.9.2b": "dose_form",
     "G.k.4.r.10.2b": "route",
     "G.k.4.r.11.2b": "route",
     "G.k.5b": "dose",
-    "G.k.6b": "gestation",
     "G.k.9.i.3.1b": "time",
     "G.k.9.i.3.2b": "time",
     "H.5.r.1b": "all",
@@ -263,6 +310,12 @@ def allowed_value_constraint(
 ) -> dict[str, Any]:
     """Add executable parameters while preserving the official source prose."""
     del data_type
+    if code in ICH_INPUT_CODE_SETS:
+        return {"kind": "code_set", "values": ICH_INPUT_CODE_SETS[code],
+                "enforcement": "case_validate"}
+    if code in {"C.1.8.1", "G.k.4.r.9.2a"}:
+        return {"kind": "format", "enforcement": "case_validate",
+                "format_name": "worldwide_case_id" if code == "C.1.8.1" else "terminology_version"}
     result = classify_allowed_value_kind(value)
     kind = result["kind"]
     if kind == "descriptive":
@@ -839,6 +892,9 @@ def preserve_documented_amendments(
                     f"expected amended {dictionary_name} metadata to be absent: {code}.{field}"
                 )
             generated_by_code[code].pop(field, None)
+    for code, note in reviewed_input_notes().items():
+        if dictionary_name != "mfds-regional.json" and code in generated_by_code:
+            generated_by_code[code]["notes"] = note
 
 
 def extract_mfds_rules(sheet1_rows: list[list[Any]]) -> dict[str, str]:

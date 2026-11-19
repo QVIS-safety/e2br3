@@ -161,11 +161,12 @@ fn ensure_c_3_nodes(
 		|value: Option<&str>| value.is_some_and(|value| !value.trim().is_empty());
 	let present = |value_, null_flavor| value(value_) || value(null_flavor);
 	let mut ensure = |parent: &str, path: &str, fragment: &str| {
-		if xpath
-			.findnodes(path, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		let nodes = xpath.findnodes(path, None).map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {path}"),
+			line: None,
+			column: None,
+		})?;
+		if nodes.is_empty() {
 			append_fragment_child(doc, parser, xpath, parent, fragment)?;
 		}
 		Ok::<_, Error>(())
@@ -576,11 +577,12 @@ fn write_c_1_8_2(
 	let relationship =
 		"//hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='1']]";
 	if let Some(value) = first_sender_type {
-		if xpath
-			.findnodes(relationship, None)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
+		let nodes = xpath.findnodes(relationship, None).map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {relationship}"),
+			line: None,
+			column: None,
+		})?;
+		if nodes.is_empty() {
 			append_fragment_child(
 				doc,
 				parser,
@@ -715,11 +717,16 @@ fn write_fda_c_1_12(
 	)?;
 	let path = format!("{component}/hl7:value");
 	if let Some(value) = combination_product_indicator {
+		let value = normalize_bl_value(value).ok_or_else(|| Error::InvalidXml {
+			message: format!("Invalid boolean value: {value}"),
+			line: None,
+			column: None,
+		})?;
 		set_attr_first(
 			xpath,
 			&path,
 			"value",
-			normalize_bl_value(value).unwrap_or("false"),
+			value,
 		);
 		clear_null_flavor_if_export_policy(xpath, "FDA.C.1.12.REQUIRED", &path);
 	} else if let Some(null_flavor) = combination_product_indicator_null_flavor {
@@ -919,7 +926,10 @@ fn normalized_c_3_4_telecom(prefix: &str, value: Option<&str>) -> Option<String>
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.and_then(|value| {
-			let body = value.strip_prefix(prefix).unwrap_or(value).trim();
+			let body = match value.strip_prefix(prefix) {
+				Some(body) => body.trim(),
+				None => value.trim(),
+			};
 			(!body.is_empty()).then(|| format!("{prefix}{body}"))
 		})
 }

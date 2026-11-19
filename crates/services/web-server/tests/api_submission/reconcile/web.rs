@@ -6,7 +6,7 @@ async fn test_internal_reconcile_endpoint_auth_and_empty_result() -> Result<()> 
 	clear_esg_env();
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let req = Request::builder()
 		.method("POST")
@@ -50,7 +50,7 @@ async fn test_internal_reconcile_status_accumulates_runtime_counters() -> Result
 	clear_esg_env();
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	for _ in 0..2 {
 		let req = Request::builder()
@@ -105,7 +105,7 @@ async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
@@ -230,7 +230,7 @@ async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;

@@ -71,7 +71,7 @@ pub async fn reconcile_due_submissions(
 				}
 			}
 
-			record_reconcile_result(&result);
+			record_reconcile_result(&result)?;
 			Ok(result)
 		}
 		Err(err) => {
@@ -243,7 +243,7 @@ pub async fn reconcile_due_submissions_with_runtime_status(
 	match reconcile_due_submissions(mm, limit).await {
 		Ok(result) => Ok(result),
 		Err(err) => {
-			record_reconcile_error(&err.to_string());
+			record_reconcile_error(&err.to_string())?;
 			Err(err)
 		}
 	}

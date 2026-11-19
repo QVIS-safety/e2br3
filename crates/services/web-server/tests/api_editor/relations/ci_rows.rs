@@ -25,7 +25,7 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id =
 		create_case_for_editor(&app, &cookie, "CI-CHILD-LIFECYCLE", &["ich"])
 			.await?;
@@ -180,7 +180,7 @@ pub(crate) async fn ci_child_foreign_case_rejection_rolls_back_rows_and_audits(
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let first =
 		create_case_for_editor(&app, &cookie, "CI-SCOPE-A", &["ich"]).await?;
 	let second =

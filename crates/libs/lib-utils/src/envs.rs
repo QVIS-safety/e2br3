@@ -18,7 +18,7 @@ pub fn get_env_b64u_as_u8s(name: &'static str) -> Result<Vec<u8>> {
 // region:    --- Error
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Error {
 	MissingEnv(&'static str),
 	WrongFormat(&'static str),

@@ -483,7 +483,11 @@ async fn import_single_xml(
 					matched_case_number: result.case_number,
 					matched_case_version: result
 						.case_version
-						.and_then(|version| i32::try_from(version).ok()),
+						.map(i32::try_from)
+						.transpose()
+						.map_err(|error| Error::BadRequest {
+							message: format!("invalid case version: {error}"),
+						})?,
 				});
 			}
 			let potential_duplicate = decision.action
@@ -637,7 +641,11 @@ fn duplicate_key_from_xml(
 	Ok((
 		XmlImportIncomingKey {
 			safety_report_id,
-			transmission_date: c_report.transmission_date.unwrap_or_default(),
+			transmission_date: c_report.transmission_date.ok_or_else(|| {
+				Error::BadRequest {
+					message: "XML transmission_date is required".into(),
+				}
+			})?,
 		},
 		CaseDuplicateKey {
 			report_type: c_report.report_type,
@@ -766,7 +774,7 @@ async fn load_import_settings(
 		apply_sender_info_to_imported_cases: settings
 			.apply_sender_info_to_imported_cases,
 		selected_sender_presave_id: None,
-		import_date: Some(settings.import_date()),
+		import_date: Some(settings.import_date()?),
 	})
 }
 

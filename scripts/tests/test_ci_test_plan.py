@@ -5,9 +5,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, terminology_snapshot_for_cargo_args, xml_assets_for_cargo_args
+import ci_test_plan
 from generate_editor_contract_web_tests import expected_editor_execution_tests
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -413,14 +415,31 @@ class TestPlanTests(unittest.TestCase):
 
     def test_clippy_limits_test_only_edits_and_keeps_production_targets(self):
         selection = {'web-server': ['api_cases', 'authz'], 'lib-core': ['authorization'], 'validator': []}
+        policy_lints = [
+            '-D', 'clippy::unwrap_used', '-D', 'clippy::expect_used',
+            '-D', 'clippy::panic', '-D', 'clippy::todo',
+            '-D', 'clippy::unimplemented', '-D', 'clippy::disallowed_methods',
+        ]
         self.assertEqual(commands_for(selection, self.workspace, 'clippy'), [
+            ['cargo', 'clippy', '--locked', '--all-features', '-p', 'lib-core', '-p', 'validator', '-p', 'web-server', '--', *policy_lints],
             ['cargo', 'clippy', '--locked', '--all-features', '--all-targets', '-p', 'validator'],
             ['cargo', 'clippy', '--locked', '--all-features', '-p', 'lib-core', '--test', 'authorization'],
             ['cargo', 'clippy', '--locked', '--all-features', '-p', 'web-server', '--test', 'api_cases', '--test', 'authz'],
         ])
         self.assertEqual(commands_for({'lib-core': [], 'web-server': []}, self.workspace, 'clippy'), [
+            ['cargo', 'clippy', '--locked', '--all-features', '-p', 'lib-core', '-p', 'web-server', '--', *policy_lints],
             ['cargo', 'clippy', '--locked', '--all-features', '--all-targets', '-p', 'lib-core', '-p', 'web-server'],
         ])
+
+    def test_clippy_contract_failure_stops_before_cargo(self):
+        with patch.object(sys, 'argv', ['ci_test_plan.py', 'run', '--kind', 'clippy',
+                                     '--selections', '{"input-contracts":[]}']), \
+                patch.object(ci_test_plan, 'check_input_contract_lock', side_effect=ValueError('contract changed')) as guard, \
+                patch.object(ci_test_plan, 'load_workspace') as cargo:
+            with self.assertRaisesRegex(ValueError, 'contract changed'):
+                ci_test_plan.main()
+            guard.assert_called_once_with(Path.cwd())
+            cargo.assert_not_called()
 
     def test_push_and_pr_share_one_plan_and_discover_new_workspace_crates(self):
         with tempfile.TemporaryDirectory() as temporary:

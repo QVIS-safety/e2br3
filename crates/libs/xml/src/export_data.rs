@@ -100,17 +100,16 @@ pub(crate) async fn load_drug_export_bundle(
 			.iter()
 			.filter(|row| {
 				row.drug_id == drug.id
-					&& row
-						.code
-						.as_deref()
-						.map(|value| !value.trim().is_empty())
-						.unwrap_or(false)
+						&& row
+							.code
+							.as_deref()
+							.is_some_and(|value| !value.trim().is_empty())
 			})
 			.cloned()
 			.collect();
 		raw_rows.sort_by_key(|row| row.sequence_number);
 		if raw_rows.is_empty() {
-			characteristics.extend(derive_drug_characteristics(drug));
+			characteristics.extend(derive_drug_characteristics(drug)?);
 		} else {
 			let seen_codes: std::collections::HashSet<_> = raw_rows
 				.iter()
@@ -120,13 +119,12 @@ pub(crate) async fn load_drug_export_bundle(
 				.collect();
 			characteristics.extend(raw_rows);
 			characteristics.extend(
-				derive_drug_characteristics(drug).into_iter().filter(|row| {
+				derive_drug_characteristics(drug)?.into_iter().filter(|row| {
 					row.code
 						.as_deref()
 						.map(str::trim)
 						.filter(|value| !value.is_empty())
-						.map(|code| !seen_codes.contains(code))
-						.unwrap_or(true)
+							.is_none_or(|code| !seen_codes.contains(code))
 				}),
 			);
 		}

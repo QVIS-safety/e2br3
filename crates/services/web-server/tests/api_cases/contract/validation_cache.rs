@@ -17,7 +17,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-LIST-WARN-{suffix}");
@@ -99,7 +99,7 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-LIST-CACHED-WARN-{suffix}");
@@ -321,7 +321,7 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_no = format!("CASE-EXPLICIT-PROFILES-{}", Uuid::new_v4());
 
 	let (status, body) = post_json(
@@ -552,7 +552,7 @@ async fn test_validation_cache_waits_for_case_mutation() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (status, body) = post_json(&app, &cookie, "/api/cases", json!({"data": {
 		"safetyReportIdentification": {"safetyReportId": format!("CACHE-RACE-{}", Uuid::new_v4())},
 		"status": "draft"
@@ -611,7 +611,7 @@ async fn test_validation_cache_waits_for_case_mutation() -> Result<()> {
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let (status, report) = get_json(
-		&web_server::app(mm.clone()),
+		&web_server::app(mm.clone()).expect("web server configuration"),
 		&cookie_header(&viewer_token.to_string()),
 		&format!("/api/cases/{case_id}/validation?authority=ich"),
 	)

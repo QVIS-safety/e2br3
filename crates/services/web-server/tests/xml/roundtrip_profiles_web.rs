@@ -118,7 +118,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		create_test_import_product(&mm, seed.org_id, seed.admin.id).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let mut failures = Vec::new();
 
 	for fixture in fixtures {

@@ -186,7 +186,11 @@ pub async fn import_e2b_xml_in_txn(
 			.await
 			.map_err(model::Error::from)?;
 		dbx.commit_txn().await.map_err(model::Error::from)?;
-		(duplicate_case, max_version.0.unwrap_or(0) + 1)
+			let max_version = match max_version.0 {
+				Some(version) => version,
+				None => 0,
+			};
+			(duplicate_case, max_version + 1)
 	};
 	if let Some((case_id, case_number, case_version)) = duplicate_case {
 		return Ok(XmlImportResult {

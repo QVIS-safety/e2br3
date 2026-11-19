@@ -76,7 +76,10 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 	if let Some(val) = write_f_r_3_2(result) {
 		let unit = write_f_r_3_3(result);
 		out.push_str("<value xsi:type=\"IVL_PQ\">");
-		match result.test_result_qualifier.as_deref().unwrap_or("EQ") {
+		match match result.test_result_qualifier.as_deref() {
+			Some(qualifier) => qualifier,
+			None => "EQ",
+		} {
 			"LT" => {
 				out.push_str("<low nullFlavor=\"NINF\"/>");
 				write_f_r_3_bound(&mut out, "high", val, unit, Some(false));

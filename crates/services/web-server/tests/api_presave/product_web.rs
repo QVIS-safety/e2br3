@@ -13,7 +13,7 @@ async fn product_presave_details_accept_case_editor_rows_contract() -> Result<()
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let product_id =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
 
@@ -82,7 +82,7 @@ async fn product_substance_strength_distinguishes_omission_null_and_zero(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let product_id = create_product_presave_via_api(&app, &cookie, "fda").await?;
 	let details_path = format!("/api/presaves/products/{product_id}/details");
 
@@ -238,7 +238,7 @@ async fn product_presave_create_persists_complete_rows_atomically() -> Result<()
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 
@@ -284,7 +284,7 @@ async fn info_editor_can_create_and_list_only_products_in_scope() -> Result<()> 
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let (editor_id, editor_cookie) =
 		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
 	let sender_id =
@@ -354,7 +354,7 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 
@@ -403,7 +403,7 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "mfds").await?;
 
@@ -474,7 +474,7 @@ async fn test_product_presave_rejects_missing_sender_or_identity() -> Result<()>
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 
@@ -553,7 +553,7 @@ async fn test_product_presave_rejects_duplicate_identity_under_same_sender(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 	let other_sender_id =
@@ -630,7 +630,7 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let product_id =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
 	let substance_id = create_product_active_substance_via_api(
@@ -701,7 +701,7 @@ async fn product_presave_details_hides_old_source_fields_and_excludes_mfds_devic
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let product_id =
 		create_product_presave_via_api(&app, &admin_cookie, "mfds").await?;
 
@@ -760,7 +760,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let product_a =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
 	let product_b =

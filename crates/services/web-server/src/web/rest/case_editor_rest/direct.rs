@@ -179,16 +179,14 @@ pub(crate) async fn apply_editor_direct_page_patch(
 		validate_request_projection_context(request.authorities.as_deref())?;
 	let fda = request
 		.authorities
-		.as_deref()
-		.unwrap_or_default()
 		.iter()
+		.flatten()
 		.any(|authority| authority.eq_ignore_ascii_case("fda"));
 	if page_id == "SI"
 		&& !request
 			.authorities
-			.as_deref()
-			.unwrap_or_default()
 			.iter()
+			.flatten()
 			.any(|authority| authority.eq_ignore_ascii_case("mfds"))
 	{
 		if let Some(study) = request

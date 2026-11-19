@@ -37,7 +37,7 @@ async fn workflow_options_are_active_same_org_sorted_limited_dto_rows() -> Resul
 	let cookie = cookie_header(
 		&generate_web_token(&seed.admin.email, seed.admin.token_salt)?.to_string(),
 	);
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 	let (status, body) = request_json(
 		&app,
 		"GET",

@@ -30,7 +30,7 @@ pub struct FieldNotationResponse {
 	id: Option<Uuid>,
 	e2b_code: String,
 	record_id: Option<Uuid>,
-	notation: String,
+	notation: Option<String>,
 }
 
 fn validate_e2b_code(e2b_code: &str) -> Result<&str> {
@@ -83,7 +83,7 @@ pub async fn get_field_notation(
 						id: row.as_ref().map(|row| row.id),
 						e2b_code,
 						record_id: query.record_id,
-						notation: row.map(|row| row.notation).unwrap_or_default(),
+						notation: row.map(|row| row.notation),
 					}),
 				))
 			})
@@ -130,7 +130,7 @@ pub async fn save_field_notation(
 						id: Some(row.id),
 						e2b_code: row.e2b_code,
 						record_id: row.record_id,
-						notation: row.notation,
+						notation: Some(row.notation),
 					}),
 				))
 			})
@@ -171,7 +171,7 @@ pub async fn delete_field_notation(
 						id: None,
 						e2b_code,
 						record_id: query.record_id,
-						notation: String::new(),
+						notation: None,
 					}),
 				))
 			})

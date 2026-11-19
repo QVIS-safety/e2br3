@@ -406,8 +406,7 @@ pub async fn download_submission_ack_text(
 					text.push_str(&format!("ACK Message: {message}\n"));
 				}
 				if let Some(raw_payload) = ack.raw_payload.as_ref() {
-					let pretty = serde_json::to_string_pretty(raw_payload)
-						.unwrap_or_else(|_| raw_payload.to_string());
+					let pretty = serde_json::to_string_pretty(raw_payload)?;
 					text.push_str("\nRaw Payload:\n");
 					text.push_str(&pretty);
 					text.push('\n');
@@ -528,7 +527,8 @@ pub async fn post_gateway_ack_callback(
 	}
 	let incoming = headers
 		.get("x-callback-token")
-		.and_then(header_to_str)
+		.map(header_to_str)
+		.transpose()?
 		.ok_or(Error::Authentication)?;
 	if !tokens_equal(&expected, &incoming) {
 		return Err(Error::Authentication);
@@ -544,7 +544,12 @@ pub async fn post_reconcile_due_submissions(
 	payload: Option<Json<ReconcileRequestInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionReconcileData>>)> {
 	validate_internal_token(&headers)?;
-	let limit = payload.and_then(|p| p.0.limit).unwrap_or(25);
+	let limit =
+		payload
+			.and_then(|p| p.0.limit)
+			.ok_or_else(|| Error::BadRequest {
+				message: "reconcile limit is required".into(),
+			})?;
 	let result = reconcile_due_submissions_with_runtime_status(&mm, limit).await?;
 	Ok((
 		StatusCode::OK,
@@ -562,7 +567,7 @@ pub async fn get_reconcile_status(
 	Json<DataRestResult<SubmissionReconcileStatusData>>,
 )> {
 	validate_internal_token(&headers)?;
-	let status = get_reconcile_runtime_status();
+	let status = get_reconcile_runtime_status()?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -571,8 +576,11 @@ pub async fn get_reconcile_status(
 	))
 }
 
-fn header_to_str(value: &HeaderValue) -> Option<String> {
-	value.to_str().ok().map(|v| v.to_string())
+fn header_to_str(value: &HeaderValue) -> Result<String> {
+	value
+		.to_str()
+		.map(str::to_string)
+		.map_err(|_| Error::Authentication)
 }
 
 fn validate_internal_token(headers: &HeaderMap) -> Result<()> {
@@ -592,7 +600,8 @@ fn validate_internal_token(headers: &HeaderMap) -> Result<()> {
 	}
 	let incoming = headers
 		.get("x-reconcile-token")
-		.and_then(header_to_str)
+		.map(header_to_str)
+		.transpose()?
 		.ok_or(Error::Authentication)?;
 	if !tokens_equal(&expected, &incoming) {
 		return Err(Error::Authentication);
@@ -605,8 +614,16 @@ fn tokens_equal(expected: &str, incoming: &str) -> bool {
 	let incoming = incoming.as_bytes();
 	let mut difference = expected.len() ^ incoming.len();
 	for index in 0..expected.len().max(incoming.len()) {
-		let expected_byte = expected.get(index).copied().unwrap_or(0);
-		let incoming_byte = incoming.get(index).copied().unwrap_or(0);
+		let expected_byte = if index < expected.len() {
+			expected[index]
+		} else {
+			0
+		};
+		let incoming_byte = if index < incoming.len() {
+			incoming[index]
+		} else {
+			0
+		};
 		difference |= usize::from(expected_byte ^ incoming_byte);
 	}
 	difference == 0

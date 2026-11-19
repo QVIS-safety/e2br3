@@ -25,6 +25,8 @@ pub async fn log_request(
 	let now = now_utc();
 	let duration: Duration = now - time_in;
 	let duration_ms = (duration.as_seconds_f64() * 1_000_000.).floor() / 1_000.;
+	let timestamp = format_time(now)?;
+	let time_in = format_time(time_in)?;
 	let user_id = ctx.map(|ctx| ctx.user_id().to_string());
 	let client_error_type = client_error.map(|error| error.as_ref().to_string());
 	let http_path = sanitized_http_path(&uri);
@@ -32,8 +34,8 @@ pub async fn log_request(
 		warn!(
 			event = "http_request",
 			request_id = %uuid,
-			timestamp = %format_time(now),
-			time_in = %format_time(time_in),
+			%timestamp,
+			%time_in,
 			duration_ms,
 			http_method = %http_method,
 			http_path,
@@ -48,8 +50,8 @@ pub async fn log_request(
 		info!(
 			event = "http_request",
 			request_id = %uuid,
-			timestamp = %format_time(now),
-			time_in = %format_time(time_in),
+			%timestamp,
+			%time_in,
 			duration_ms,
 			http_method = %http_method,
 			http_path,
@@ -123,6 +125,7 @@ fn ctx_error_type(error: &crate::middleware::mw_auth::CtxExtError) -> &'static s
 		ModelAccessError(_) => "ModelAccessError",
 		FailValidate => "FailValidate",
 		CannotSetTokenCookie => "CannotSetTokenCookie",
+		Configuration(_) => "Configuration",
 		AuthorizationSnapshotLoad(_) => "AuthorizationSnapshotLoad",
 		PasswordChangeRequired => "PasswordChangeRequired",
 		CtxNotInRequestExt => "CtxNotInRequestExt",

@@ -8,7 +8,7 @@ async fn test_follow_up_creation_preserves_scope_and_allocates_versions(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let safety_report_id = format!("FOLLOW-UP-{}", Uuid::new_v4());
 	let product_id = format!("PRODUCT-{}", Uuid::new_v4());
 
@@ -185,7 +185,7 @@ async fn test_case_from_intake_requires_product_id() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm).expect("web server configuration");
 
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({
@@ -223,7 +223,7 @@ async fn test_case_from_intake_rolls_back_shell_when_patient_create_fails(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let dg_prd_key = format!("ROLLBACK-{safety_report_id}");
 

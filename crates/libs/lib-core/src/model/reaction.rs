@@ -15,6 +15,28 @@ use sqlx::FromRow;
 
 // -- Reaction
 
+// XML import and the editor store these legacy codes; validation uses their UCUM meaning.
+const REACTION_DURATION_UNITS: &[(&str, &str)] = &[
+	("800", "10.a"),
+	("801", "a"),
+	("802", "mo"),
+	("803", "wk"),
+	("804", "d"),
+	("805", "h"),
+];
+
+pub fn reaction_duration_unit_to_ucum(code: &str) -> Option<&'static str> {
+	REACTION_DURATION_UNITS.iter().find_map(|(stored, ucum)| {
+		(*stored == code || *ucum == code).then_some(*ucum)
+	})
+}
+
+pub fn reaction_duration_unit_from_ucum(unit: &str) -> Option<&'static str> {
+	REACTION_DURATION_UNITS
+		.iter()
+		.find_map(|(stored, ucum)| (*ucum == unit).then_some(*stored))
+}
+
 fn deserialize_term_highlighted<'de, D>(
 	deserializer: D,
 ) -> std::result::Result<Option<String>, D::Error>

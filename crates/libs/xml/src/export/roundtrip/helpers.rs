@@ -1,5 +1,16 @@
 use super::*;
 
+fn has_nodes(xpath: &mut Context, path: &str) -> Result<bool> {
+	xpath
+		.findnodes(path, None)
+		.map(|nodes| !nodes.is_empty())
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to evaluate XPath: {path}"),
+			line: None,
+			column: None,
+		})
+}
+
 pub(super) fn ensure_investigation_id(
 	doc: &mut Document,
 	parser: &Parser,
@@ -9,11 +20,7 @@ pub(super) fn ensure_investigation_id(
 	let path = format!(
 		"//hl7:controlActProcess/hl7:subject/hl7:investigationEvent/hl7:id[@root='{root}']"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, &path)? {
 		return Ok(());
 	}
 	append_fragment_child(
@@ -30,11 +37,7 @@ pub(super) fn ensure_primary_role(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if xpath
-		.findnodes("//hl7:primaryRole/hl7:player1", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, "//hl7:primaryRole/hl7:player1")? {
 		return Ok(());
 	}
 	let fragment = "\
@@ -67,11 +70,7 @@ pub(super) fn ensure_subject_observation(
 	let path = format!(
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='{code}' and @codeSystem='{code_system}']]"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, &path)? {
 		return Ok(());
 	}
 	let fragment = format!(
@@ -90,11 +89,7 @@ pub(super) fn ensure_control_act_effective_time(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if xpath
-		.findnodes("//hl7:controlActProcess/hl7:effectiveTime", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, "//hl7:controlActProcess/hl7:effectiveTime")? {
 		return Ok(());
 	}
 	append_fragment_child(
@@ -111,18 +106,13 @@ pub(super) fn ensure_investigation_effective_time(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if xpath
-		.findnodes("//hl7:investigationEvent/hl7:effectiveTime/hl7:low", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(
+		xpath,
+		"//hl7:investigationEvent/hl7:effectiveTime/hl7:low",
+	)? {
 		return Ok(());
 	}
-	if xpath
-		.findnodes("//hl7:investigationEvent/hl7:effectiveTime", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, "//hl7:investigationEvent/hl7:effectiveTime")? {
 		append_fragment_child(
 			doc,
 			parser,
@@ -146,11 +136,7 @@ pub(super) fn ensure_investigation_availability_time(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if xpath
-		.findnodes("//hl7:investigationEvent/hl7:availabilityTime", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, "//hl7:investigationEvent/hl7:availabilityTime")? {
 		return Ok(());
 	}
 	append_fragment_child(
@@ -167,11 +153,7 @@ pub(super) fn ensure_investigation_text(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if xpath
-		.findnodes("//hl7:investigationEvent/hl7:text", None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, "//hl7:investigationEvent/hl7:text")? {
 		return Ok(());
 	}
 	append_fragment_child(doc, parser, xpath, "//hl7:investigationEvent", "<text/>")
@@ -188,16 +170,13 @@ pub(super) fn ensure_investigation_characteristic(
 	let path = format!(
 		"//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='{code}' and @codeSystem='{code_system}']]"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, &path)? {
 		return Ok(());
 	}
-	let value_cs = value_code_system
-		.map(|cs| format!(" codeSystem=\"{cs}\""))
-		.unwrap_or_default();
+	let value_cs = match value_code_system {
+		Some(cs) => format!(" codeSystem=\"{cs}\""),
+		None => String::new(),
+	};
 	let fragment = format!(
 		"<subjectOf2 typeCode=\"SUBJ\">\
 			<investigationCharacteristic classCode=\"OBS\" moodCode=\"EVN\">\
@@ -220,11 +199,7 @@ pub(super) fn ensure_observation_event_component(
 	let path = format!(
 		"//hl7:component/hl7:observationEvent[hl7:code[@code='{code}' and @codeSystem='{code_system}']]"
 	);
-	if xpath
-		.findnodes(&path, None)
-		.map(|n| !n.is_empty())
-		.unwrap_or(false)
-	{
+	if has_nodes(xpath, &path)? {
 		return Ok(());
 	}
 	let fragment = format!(
