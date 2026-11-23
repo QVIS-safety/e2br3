@@ -3434,9 +3434,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2b",
@@ -3457,9 +3457,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2c",
@@ -3480,9 +3480,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2d",
@@ -3503,9 +3503,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2e",
@@ -3526,9 +3526,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.3.2f",
@@ -3549,9 +3549,9 @@
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
         "kind": "true_marker",
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       },
-      "notes": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+      "notes": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
     },
     {
       "code": "E.i.4",

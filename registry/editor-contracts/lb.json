@@ -586,7 +586,7 @@
         "kind": "row",
         "owner": "testResult"
       },
-      "roundTripValue": "EQ",
+      "roundTripValue": "LE",
       "constraint": {
         "status": "verified",
         "ruleCode": "LOCAL.F.r.testResultQualifier.ALLOWED.VALUE",

@@ -11,11 +11,17 @@ dictionary_test!(ae_e_i_1_1b_max_length, "AE", "E.i.1.1b", "E.i.1.1b", "max_leng
 dictionary_test!(ae_e_i_2_1a_max_length, "AE", "E.i.2.1a", "E.i.2.1a", "max_length", input_contracts::generated::e::e_i_2_1a);
 dictionary_test!(ae_e_i_3_1_max_length, "AE", "E.i.3.1", "E.i.3.1", "max_length", input_contracts::generated::e::e_i_3_1);
 dictionary_test!(ae_e_i_3_1_allowed_value_constraint, "AE", "E.i.3.1", "E.i.3.1", "allowed_value_constraint", input_contracts::generated::e::e_i_3_1);
+dictionary_test!(ae_e_i_3_2a_allowed_value_constraint, "AE", "E.i.3.2a", "E.i.3.2a", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2a);
 dictionary_test!(ae_e_i_3_2a_null_flavors, "AE", "E.i.3.2a", "E.i.3.2a", "null_flavors", input_contracts::generated::e::e_i_3_2a);
+dictionary_test!(ae_e_i_3_2b_allowed_value_constraint, "AE", "E.i.3.2b", "E.i.3.2b", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2b);
 dictionary_test!(ae_e_i_3_2b_null_flavors, "AE", "E.i.3.2b", "E.i.3.2b", "null_flavors", input_contracts::generated::e::e_i_3_2b);
+dictionary_test!(ae_e_i_3_2c_allowed_value_constraint, "AE", "E.i.3.2c", "E.i.3.2c", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2c);
 dictionary_test!(ae_e_i_3_2c_null_flavors, "AE", "E.i.3.2c", "E.i.3.2c", "null_flavors", input_contracts::generated::e::e_i_3_2c);
+dictionary_test!(ae_e_i_3_2d_allowed_value_constraint, "AE", "E.i.3.2d", "E.i.3.2d", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2d);
 dictionary_test!(ae_e_i_3_2d_null_flavors, "AE", "E.i.3.2d", "E.i.3.2d", "null_flavors", input_contracts::generated::e::e_i_3_2d);
+dictionary_test!(ae_e_i_3_2e_allowed_value_constraint, "AE", "E.i.3.2e", "E.i.3.2e", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2e);
 dictionary_test!(ae_e_i_3_2e_null_flavors, "AE", "E.i.3.2e", "E.i.3.2e", "null_flavors", input_contracts::generated::e::e_i_3_2e);
+dictionary_test!(ae_e_i_3_2f_allowed_value_constraint, "AE", "E.i.3.2f", "E.i.3.2f", "allowed_value_constraint", input_contracts::generated::e::e_i_3_2f);
 dictionary_test!(ae_e_i_3_2f_null_flavors, "AE", "E.i.3.2f", "E.i.3.2f", "null_flavors", input_contracts::generated::e::e_i_3_2f);
 dictionary_test!(ae_fda_e_i_3_2h_null_flavors, "AE", "FDA.E.i.3.2h", "FDA.E.i.3.2h", "null_flavors", input_contracts::generated::e::fda_e_i_3_2h);
 dictionary_test!(ae_e_i_5_allowed_value_constraint, "AE", "E.i.5", "E.i.5", "allowed_value_constraint", input_contracts::generated::e::e_i_5);

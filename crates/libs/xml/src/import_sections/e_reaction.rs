@@ -122,14 +122,17 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 				criteria_other_medically_important,
 				criteria_other_medically_important_null_flavor,
 			) = read_e_i_3_2f(&mut xpath, &node)?;
-			let serious = read_e_i_serious([
-				criteria_death,
-				criteria_life_threatening,
-				criteria_hospitalization,
-				criteria_disabling,
-				criteria_congenital_anomaly,
-				criteria_other_medically_important,
-			]);
+			let serious = read_e_i_serious(
+				term_highlighted.as_deref(),
+				[
+					criteria_death,
+					criteria_life_threatening,
+					criteria_hospitalization,
+					criteria_disabling,
+					criteria_congenital_anomaly,
+					criteria_other_medically_important,
+				],
+			);
 
 			let (required_intervention, required_intervention_null_flavor) =
 				read_fda_e_i_3_2h(&mut xpath, &node)?;
@@ -301,9 +304,19 @@ fn read_e_i_3_1(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 }
 
 /// e2b:E.i.serious
-fn read_e_i_serious(criteria: [Option<bool>; 6]) -> Option<bool> {
-	let values = criteria.into_iter().flatten().collect::<Vec<_>>();
-	(!values.is_empty()).then_some(values.into_iter().any(|value| value))
+fn read_e_i_serious(
+	term_highlighted: Option<&str>,
+	criteria: [Option<bool>; 6],
+) -> Option<bool> {
+	if criteria.into_iter().any(|value| value == Some(true))
+		|| matches!(term_highlighted, Some("3" | "4"))
+	{
+		Some(true)
+	} else if matches!(term_highlighted, Some("1" | "2")) {
+		Some(false)
+	} else {
+		None
+	}
 }
 
 fn read_seriousness(
@@ -863,7 +876,18 @@ fn input_string(
 
 #[cfg(test)]
 mod split_null_flavor_tests {
-	use super::parse_e_reactions;
+	use super::{parse_e_reactions, read_e_i_serious};
+
+	#[test]
+	fn derives_seriousness_from_official_term_code_and_true_criteria() {
+		assert_eq!(read_e_i_serious(Some("3"), [None; 6]), Some(true));
+		assert_eq!(read_e_i_serious(Some("2"), [None; 6]), Some(false));
+		assert_eq!(
+			read_e_i_serious(None, [None, None, Some(true), None, None, None]),
+			Some(true)
+		);
+		assert_eq!(read_e_i_serious(None, [None; 6]), None);
+	}
 
 	fn reaction_with_duration_unit(unit: &str) -> String {
 		format!(

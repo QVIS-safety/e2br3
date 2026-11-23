@@ -216,7 +216,7 @@ class AllowedValueConstraintTests(unittest.TestCase):
 
         self.assertEqual(133, len(machine))
         self.assertEqual(
-            43,
+            49,
             sum(
                 rule["enforcement"] == "representation_enforced"
                 for rule in machine

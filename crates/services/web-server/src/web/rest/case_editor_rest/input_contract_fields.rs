@@ -2397,12 +2397,10 @@ fn lb(
 			|input| match input.value {
 				input_contracts::InputValue::Missing
 				| input_contracts::InputValue::Null
-				| input_contracts::InputValue::String(
-					"EQ" | "LT" | "LE" | "GT" | "GE",
-				) => Vec::new(),
+				| input_contracts::InputValue::String("LT" | "LE" | "GT" | "GE") => Vec::new(),
 				_ => vec![InputIssue {
 					code: "LOCAL.F.r.testResultQualifier.ALLOWED.VALUE",
-					message: "must be one of: EQ, LT, LE, GT, GE".to_string(),
+					message: "must be one of: LT, LE, GT, GE".to_string(),
 				}],
 			},
 		)?;

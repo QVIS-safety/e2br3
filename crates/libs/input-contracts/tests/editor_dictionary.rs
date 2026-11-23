@@ -77,25 +77,30 @@ macro_rules! dictionary_test {
 include!("editor_dictionary/generated.rs");
 
 #[test]
-fn draft_markers_and_received_worldwide_id_are_not_submission_checks() {
+fn official_seriousness_markers_reject_false_at_input() {
 	use input_contracts::generated::{c, e};
 	for validate in [
-		c::c_1_9_1,
 		e::e_i_3_2a,
 		e::e_i_3_2b,
 		e::e_i_3_2c,
 		e::e_i_3_2d,
 		e::e_i_3_2e,
 		e::e_i_3_2f,
-		e::fda_e_i_3_2h,
 	] {
+		assert!(
+			!validate(FieldInput::new(InputValue::Boolean(false), None)).is_empty()
+		);
+	}
+	for validate in [c::c_1_9_1, e::fda_e_i_3_2h] {
 		assert!(
 			validate(FieldInput::new(InputValue::Boolean(false), None)).is_empty()
 		);
 	}
-	assert!(c::c_1_8_1(FieldInput::new(
-		InputValue::String("legacy/received-id"),
-		None
-	))
-	.is_empty());
+	assert!(
+		c::c_1_8_1(FieldInput::new(
+			InputValue::String("legacy/received-id"),
+			None
+		))
+		.is_empty()
+	);
 }

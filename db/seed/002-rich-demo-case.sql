@@ -308,16 +308,24 @@ BEGIN
     INSERT INTO reactions (
         id, case_id, sequence_number, primary_source_reaction, primary_source_reaction_translation,
         reaction_language, reaction_meddra_version, reaction_meddra_code, term_highlighted,
-        serious, criteria_death, criteria_life_threatening, criteria_hospitalization,
-        criteria_disabling, criteria_congenital_anomaly, criteria_other_medically_important,
+        serious, criteria_death, criteria_death_null_flavor,
+        criteria_life_threatening, criteria_life_threatening_null_flavor,
+        criteria_hospitalization, criteria_hospitalization_null_flavor,
+        criteria_disabling, criteria_disabling_null_flavor,
+        criteria_congenital_anomaly, criteria_congenital_anomaly_null_flavor,
+        criteria_other_medically_important, criteria_other_medically_important_null_flavor,
         required_intervention, start_date, end_date, duration_value, duration_unit, outcome,
         medical_confirmation, country_code, created_by, updated_by, created_at, updated_at
     )
     VALUES (
         v_reaction_id, v_case_id, 1, 'Severe headache', 'Severe headache', 'en',
         '27.1', '10019211', '3',
-        true, true, false, true,
-        false, false, true,
+        true, true, NULL,
+        NULL, 'NI',
+        true, NULL,
+        NULL, 'NI',
+        NULL, 'NI',
+        true, NULL,
         true, DATE '2026-04-08', DATE '2026-04-09', 2, '804', '5',
         true, 'KR', v_user_id, v_user_id, NOW(), NOW()
     )

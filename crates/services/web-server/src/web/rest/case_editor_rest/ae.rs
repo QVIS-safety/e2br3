@@ -22,7 +22,6 @@ const REACTION_ROW_ALIASES: &[(&str, &[&str])] = &[
 	("reaction_meddra_version", &["reactionMeddraVersionLLT"]),
 	("reaction_meddra_code", &["reactionMeddraCodeLLT"]),
 	("term_highlighted", &["termHighlighted"]),
-	("serious", &["seriousness.serious"]),
 	("criteria_death", &["seriousness.criteriaResultsInDeath"]),
 	(
 		"criteria_death_null_flavor",

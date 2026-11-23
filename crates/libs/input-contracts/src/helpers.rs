@@ -94,6 +94,19 @@ pub(crate) fn boolean(
 	}
 }
 
+pub(crate) fn true_marker(
+	issues: &mut Vec<InputIssue>,
+	code: &'static str,
+	value: InputValue<'_>,
+) {
+	if !matches!(
+		normalized(value),
+		InputValue::Missing | InputValue::Boolean(true)
+	) {
+		push(issues, code, "must be true when provided".to_string());
+	}
+}
+
 pub(crate) fn email(
 	issues: &mut Vec<InputIssue>,
 	code: &'static str,

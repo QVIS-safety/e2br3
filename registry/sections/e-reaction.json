@@ -215,24 +215,24 @@
     "authority": "ICH",
     "status": "complete",
     "editor_page": "AE",
-    "editor_status": "complete",
+    "editor_status": "incomplete",
     "local_only": true,
     "backend": {
       "status": "mapped",
       "model": "Reaction",
       "field": "serious",
       "file": "crates/libs/lib-core/src/model/reaction.rs",
-      "evidence": "Reaction.serious stores E.i.serious values."
+      "evidence": "Reaction.serious stores the value derived by the database from E.i.3.1 and E.i.3.2 criteria."
     },
     "frontend": {
       "status": "mapped",
       "section": "reactions",
       "field": "seriousness.serious",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
-      "evidence": "SectionE binds fieldNumber seriousness.serious to reactions[index].seriousness.serious."
+      "evidence": "SectionE displays seriousness derived from E.i.3.1 and E.i.3.2 criteria."
     },
-    "action": "",
-    "notes": ""
+    "action": "No editable contract is required for this derived read-only value.",
+    "notes": "The API ignores independent editor writes and the database derives this local value."
   },
   {
     "id": "E.i.3.2a",

@@ -401,29 +401,6 @@
       }
     },
     {
-      "code": "E.i.serious",
-      "authority": "ICH",
-      "frontendPath": "reactions[].seriousness.serious",
-      "projectionPath": "reaction.serious",
-      "patch": {
-        "kind": "row",
-        "owner": "reaction"
-      },
-      "roundTripValue": true,
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "Derived local editor flag has no Input Contract."
-      },
-      "payloadPath": "seriousness.serious",
-      "auditItem": "Serious Reaction/Event",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "not_applicable", "reason": "The declared JSON input is not a string."},
-        "omission": "preserve",
-        "audit": {"table": "reactions", "column": "serious", "record": {"source": "projection", "path": "reaction.id"}}
-      }
-    },
-    {
       "code": "E.i.3.2a",
       "dictionaryInputs": [
         {
@@ -434,11 +411,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2a.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2a.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -448,7 +426,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -461,8 +439,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2a.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaResultsInDeath"
       },
       "payloadPath": "seriousness.criteriaResultsInDeath",
@@ -485,11 +463,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2b.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2b.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -499,7 +478,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -512,8 +491,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2b.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaLifeThreatening"
       },
       "payloadPath": "seriousness.criteriaLifeThreatening",
@@ -536,11 +515,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2c.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2c.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -550,7 +530,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -563,8 +543,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2c.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaHospitalization"
       },
       "payloadPath": "seriousness.criteriaHospitalization",
@@ -587,11 +567,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2d.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2d.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -601,7 +582,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -614,8 +595,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2d.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaDisabling"
       },
       "payloadPath": "seriousness.criteriaDisabling",
@@ -638,11 +619,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2e.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2e.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -652,7 +634,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -665,8 +647,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2e.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaCongenitalAnomaly"
       },
       "payloadPath": "seriousness.criteriaCongenitalAnomaly",
@@ -689,11 +671,12 @@
             "allowed_value_constraint": {
               "dictionaryValue": {
                 "kind": "true_marker",
-                "enforcement": "case_validate"
+                "enforcement": "representation_enforced"
               },
-              "owner": "validator",
-              "ruleCodes": ["ICH.E.i.3.2f.ALLOWED.VALUE"],
-              "reason": "Submission-only marker validation; draft booleans remain editable."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.E.i.3.2f.ALLOWED.VALUE",
+              "valid": [{"value": true, "nullFlavor": null}, {"value": null, "nullFlavor": null}],
+              "invalid": [{"value": false, "nullFlavor": null}]
             },
             "null_flavors": {
               "dictionaryValue": ["NI"],
@@ -703,7 +686,7 @@
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
           },
-          "guidance": "Reviewed 2026-11-19. Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
+          "guidance": "Reviewed 2026-11-19. Input marker: true or nullFlavor NI, not false. Source: ICH IG 5.03 (2025-07-18), package 1.11 (2026-01): https://admin.ich.org/node/348"
         }
       ],
       "authority": "ICH",
@@ -716,8 +699,8 @@
       "roundTripValue": true,
       "constraint": {
         "status": "verified",
-        "ruleCode": "INPUT.TYPE",
-        "invalidValue": "not-a-boolean",
+        "ruleCode": "ICH.E.i.3.2f.ALLOWED.VALUE",
+        "invalidValue": false,
         "issuePath": "reactions[].seriousness.criteriaOtherMedicallyImportant"
       },
       "payloadPath": "seriousness.criteriaOtherMedicallyImportant",

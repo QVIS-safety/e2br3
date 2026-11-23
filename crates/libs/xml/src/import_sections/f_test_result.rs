@@ -215,7 +215,7 @@ fn read_f_r_3_2(
 	let high_null =
 		first_attr(xpath, node, FTestResultPaths::RESULT_HIGH_NULL_FLAVOR);
 	let (value, qualifier) = if let Some(value) = center {
-		(Some(value), Some("EQ".to_string()))
+		(Some(value), None)
 	} else if low_null.as_deref() == Some("NINF") && high_value.is_some() {
 		let inclusive =
 			first_attr(xpath, node, FTestResultPaths::RESULT_HIGH_INCLUSIVE)
@@ -359,6 +359,14 @@ mod tests {
 		assert_eq!(results[0].test_result_value.as_deref(), Some("10"));
 		assert_eq!(results[0].test_result_qualifier.as_deref(), Some("LT"));
 		assert_eq!(results[0].test_result_unit.as_deref(), Some("mg/dL"));
+	}
+
+	#[test]
+	fn imports_exact_result_without_a_redundant_qualifier() {
+		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><organizer><code code="3" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><observation><code><originalText>Result</originalText></code><value><center value="10" unit="mg/dL"/></value></observation></component></organizer></MCCI_IN200100UV01>"#;
+		let results = parse_f_test_results(xml).expect("parse exact result");
+		assert_eq!(results[0].test_result_value.as_deref(), Some("10"));
+		assert_eq!(results[0].test_result_qualifier, None);
 	}
 
 	#[test]

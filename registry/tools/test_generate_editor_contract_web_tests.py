@@ -15,7 +15,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
     def test_dictionary_constraints_generate_executable_tests(self):
         root = generator.REPO_ROOT / "registry"
         checks = editor_dictionary.check(root)
-        self.assertEqual(382, len(checks))
+        self.assertEqual(388, len(checks))
         generated = editor_dictionary.render_tests(root)
         self.assertEqual(len(checks), generated.count("dictionary_test!("))
         self.assertIn('"DM", "D.3", "D.3", "max_length", input_contracts::generated::d::d_3', generated)

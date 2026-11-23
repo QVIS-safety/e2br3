@@ -23,7 +23,7 @@ CREATE TABLE test_results (
 
 	-- F.r.3.2 - Test Result (value/finding)
 	test_result_value VARCHAR(20000),  -- Can be numeric or text
-	test_result_qualifier VARCHAR(2) CHECK (test_result_qualifier IN ('EQ', 'LT', 'LE', 'GT', 'GE')),
+	test_result_qualifier VARCHAR(2) CHECK (test_result_qualifier IN ('LT', 'LE', 'GT', 'GE')),
 
     -- F.r.3.3 - Test Result Unit
     test_result_unit VARCHAR(50),

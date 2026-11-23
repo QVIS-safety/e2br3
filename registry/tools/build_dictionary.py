@@ -63,7 +63,9 @@ def reviewed_input_notes() -> dict[str, str]:
     fda = "FDA regional IG 3.1 (2024-08): https://www.fda.gov/media/180748/download"
     fda_rules = "FDA Business Rules (2024-04): https://www.fda.gov/media/175373/download?attachment="
     groups = [
-        ([*(f"E.i.3.2{part}" for part in "abcdef"), "C.1.9.1"],
+        ([*(f"E.i.3.2{part}" for part in "abcdef")],
+         "Input marker: true or nullFlavor NI, not false.", ich),
+        (["C.1.9.1"],
          "Submission marker: true or nullFlavor NI, not false. Draft boolean storage is separate from the transmitted representation.", ich),
         (["FDA.E.i.3.2h"],
          "Postmarket submission: true or nullFlavor NI. Premarket submission: NI only, with no boolean value.", fda_rules),
@@ -259,6 +261,12 @@ REPRESENTATION_ENFORCED_CODES = {
     # The four E.i.3.1 source codes are the complete boolean serious/highlighted
     # cross-product stored by the API.
     "E.i.3.1",
+    "E.i.3.2a",
+    "E.i.3.2b",
+    "E.i.3.2c",
+    "E.i.3.2d",
+    "E.i.3.2e",
+    "E.i.3.2f",
     # Decimal/integer-backed DTO fields.
     "D.2.2a",
     "D.2.2.1a",

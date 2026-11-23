@@ -1694,6 +1694,7 @@ mod input_contract_save_tests {
 	fn lb_qualifier_rejects_unknown_codes_and_types_for_both_aliases() {
 		for field in ["testResultQualifier", "test_result_qualifier"] {
 			for token in [
+				json!("EQ"),
 				json!("ZZ"),
 				json!("BAD"),
 				json!("eq"),
@@ -1720,7 +1721,6 @@ mod input_contract_save_tests {
 			}
 			for token in [
 				Value::Null,
-				json!("EQ"),
 				json!("LT"),
 				json!("LE"),
 				json!("GT"),
@@ -1735,13 +1735,15 @@ mod input_contract_save_tests {
 			.expect("omission allowed");
 		let row =
 			json!({"testResultQualifier": "EQ", "test_result_qualifier": "BAD"});
-		assert!(validate_row_payload(
-			"LB",
-			"testResult",
-			row.as_object().expect("row"),
-			None
-		)
-		.is_err());
+		assert!(
+			validate_row_payload(
+				"LB",
+				"testResult",
+				row.as_object().expect("row"),
+				None
+			)
+			.is_err()
+		);
 	}
 
 	#[test]
