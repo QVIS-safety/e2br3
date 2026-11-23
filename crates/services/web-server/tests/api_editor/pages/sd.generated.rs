@@ -20,17 +20,6 @@ mod fields {
     field_contract_test!(c_3_4_6, "C.3.4.6");
     field_contract_test!(c_3_4_7, "C.3.4.7");
     field_contract_test!(c_3_4_8, "C.3.4.8");
-    field_contract_test!(local_receiver_1, "local.receiver.1");
-    field_contract_test!(local_receiver_10, "local.receiver.10");
-    field_contract_test!(local_receiver_2, "local.receiver.2");
-    field_contract_test!(local_receiver_3, "local.receiver.3");
-    field_contract_test!(local_receiver_4, "local.receiver.4");
-    field_contract_test!(local_receiver_5, "local.receiver.5");
-    field_contract_test!(local_receiver_6, "local.receiver.6");
-    field_contract_test!(local_receiver_7, "local.receiver.7");
-    field_contract_test!(local_receiver_8, "local.receiver.8");
-    field_contract_test!(local_receiver_9, "local.receiver.9");
-    field_contract_test!(local_receiver_country, "local.receiver.country");
 }
 mod rows {
 }

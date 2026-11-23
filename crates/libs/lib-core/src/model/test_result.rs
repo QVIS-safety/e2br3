@@ -24,7 +24,7 @@ pub struct TestResult {
 	pub test_date_null_flavor: Option<String>,
 
 	// F.r.2 - Test Name
-	pub test_name: String,
+	pub test_name: Option<String>,
 
 	// F.r.2.1 - Test Name (MedDRA coded)
 	pub test_meddra_version: Option<String>,
@@ -72,8 +72,7 @@ pub struct TestResultForCreate {
 	)]
 	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
-	#[serde(default)]
-	pub test_name: String,
+	pub test_name: Option<String>,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,
 	pub test_result_code: Option<String>,
@@ -216,14 +215,14 @@ impl TestResultBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET test_name = CASE WHEN 'test_name' = ANY($17) THEN '' ELSE COALESCE($2, test_name) END,
+			 SET test_name = CASE WHEN 'test_name' = ANY($17) THEN NULL ELSE COALESCE($2, test_name) END,
 				     test_date = CASE WHEN 'test_date' = ANY($17) THEN NULL ELSE CASE WHEN $3 IS NOT NULL THEN $3 ELSE CASE WHEN $4 IS NOT NULL THEN NULL ELSE test_date END END END,
 				     test_date_null_flavor = CASE WHEN 'test_date_null_flavor' = ANY($17) THEN NULL ELSE CASE WHEN $3 IS NOT NULL THEN NULL ELSE COALESCE($4, test_date_null_flavor) END END,
 				     test_meddra_version = CASE WHEN 'test_meddra_version' = ANY($17) THEN NULL ELSE COALESCE($5, test_meddra_version) END,
 			     test_meddra_code = CASE WHEN 'test_meddra_code' = ANY($17) THEN NULL ELSE COALESCE($6, test_meddra_code) END,
 			     test_result_code = CASE WHEN 'test_result_code' = ANY($17) THEN NULL ELSE COALESCE($7, test_result_code) END,
 			     test_result_value = CASE WHEN 'test_result_value' = ANY($17) THEN NULL ELSE COALESCE($8, test_result_value) END,
-			     test_result_qualifier = CASE WHEN 'test_result_qualifier' = ANY($17) OR 'test_result_value' = ANY($17) THEN NULL ELSE COALESCE($9, test_result_qualifier) END,
+			     test_result_qualifier = CASE WHEN 'test_result_qualifier' = ANY($17) THEN NULL WHEN $9 IS NOT NULL THEN $9 WHEN 'test_result_value' = ANY($17) THEN NULL ELSE test_result_qualifier END,
 			     test_result_unit = CASE WHEN 'test_result_unit' = ANY($17) THEN NULL ELSE COALESCE($10, test_result_unit) END,
 			     result_unstructured = CASE WHEN 'result_unstructured' = ANY($17) THEN NULL ELSE COALESCE($11, result_unstructured) END,
 			     normal_low_value = CASE WHEN 'normal_low_value' = ANY($17) THEN NULL ELSE COALESCE($12, normal_low_value) END,
@@ -407,14 +406,14 @@ impl TestResultBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET test_name = CASE WHEN 'test_name' = ANY($18) THEN '' ELSE COALESCE($3, test_name) END,
+			 SET test_name = CASE WHEN 'test_name' = ANY($18) THEN NULL ELSE COALESCE($3, test_name) END,
 				     test_date = CASE WHEN 'test_date' = ANY($18) THEN NULL ELSE CASE WHEN $4 IS NOT NULL THEN $4 ELSE CASE WHEN $5 IS NOT NULL THEN NULL ELSE test_date END END END,
 				     test_date_null_flavor = CASE WHEN 'test_date_null_flavor' = ANY($18) THEN NULL ELSE CASE WHEN $4 IS NOT NULL THEN NULL ELSE COALESCE($5, test_date_null_flavor) END END,
 				     test_meddra_version = CASE WHEN 'test_meddra_version' = ANY($18) THEN NULL ELSE COALESCE($6, test_meddra_version) END,
 			     test_meddra_code = CASE WHEN 'test_meddra_code' = ANY($18) THEN NULL ELSE COALESCE($7, test_meddra_code) END,
 			     test_result_code = CASE WHEN 'test_result_code' = ANY($18) THEN NULL ELSE COALESCE($8, test_result_code) END,
 			     test_result_value = CASE WHEN 'test_result_value' = ANY($18) THEN NULL ELSE COALESCE($9, test_result_value) END,
-			     test_result_qualifier = CASE WHEN 'test_result_qualifier' = ANY($18) OR 'test_result_value' = ANY($18) THEN NULL ELSE COALESCE($10, test_result_qualifier) END,
+			     test_result_qualifier = CASE WHEN 'test_result_qualifier' = ANY($18) THEN NULL WHEN $10 IS NOT NULL THEN $10 WHEN 'test_result_value' = ANY($18) THEN NULL ELSE test_result_qualifier END,
 			     test_result_unit = CASE WHEN 'test_result_unit' = ANY($18) THEN NULL ELSE COALESCE($11, test_result_unit) END,
 			     result_unstructured = CASE WHEN 'result_unstructured' = ANY($18) THEN NULL ELSE COALESCE($12, result_unstructured) END,
 			     normal_low_value = CASE WHEN 'normal_low_value' = ANY($18) THEN NULL ELSE COALESCE($13, normal_low_value) END,
@@ -586,6 +585,29 @@ mod tests {
 			"comments": null,
 			"more_info_available": null
 		})
+	}
+
+	#[test]
+	fn create_preserves_absent_null_and_explicit_test_names() {
+		let mut payload = create_payload("2024");
+		payload.as_object_mut().unwrap().remove("test_name");
+		assert_eq!(
+			serde_json::from_value::<TestResultForCreate>(payload.clone())
+				.unwrap()
+				.test_name,
+			None
+		);
+		for value in [
+			serde_json::Value::Null,
+			serde_json::json!(""),
+			serde_json::json!("  "),
+			serde_json::json!("ALT"),
+		] {
+			payload["test_name"] = value.clone();
+			let parsed: TestResultForCreate =
+				serde_json::from_value(payload.clone()).unwrap();
+			assert_eq!(serde_json::to_value(parsed.test_name).unwrap(), value);
+		}
 	}
 
 	#[test]

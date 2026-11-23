@@ -88,8 +88,8 @@ fn generate_token(
 ) -> Result<Token> {
 	// -- Compute the two first components.
 	let ident = ident.to_string();
-	let exp = now_utc_plus_sec_str(duration_sec)
-		.map_err(|_| Error::CannotFormatExp)?;
+	let exp =
+		now_utc_plus_sec_str(duration_sec).map_err(|_| Error::CannotFormatExp)?;
 
 	// -- Sign the two first components.
 	let sign_b64u = token_sign_into_b64u(&ident, &exp, salt, key)?;
@@ -205,8 +205,7 @@ mod tests {
 	fn test_token_validate_web_token_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_user = "user_one";
-		let fx_salt =
-			Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+		let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
 		let fx_duration_sec = 0.02; // 20ms
 		let token_key = &auth_config()?.TOKEN_KEY;
 		let fx_token = generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
@@ -225,8 +224,7 @@ mod tests {
 	fn test_token_validate_web_token_err_expired() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_user = "user_one";
-		let fx_salt =
-			Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+		let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
 		let fx_duration_sec = 0.01; // 10ms
 		let token_key = &auth_config()?.TOKEN_KEY;
 		let fx_token = generate_token(fx_user, fx_duration_sec, fx_salt, token_key)?;
@@ -246,8 +244,7 @@ mod tests {
 
 	#[test]
 	fn test_token_validate_web_token_rejects_tampering() -> Result<()> {
-		let fx_salt =
-			Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+		let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
 		let token_key = &auth_config()?.TOKEN_KEY;
 		let mut fx_token = generate_token("user_one", 60.0, fx_salt, token_key)?;
 		fx_token.ident.push('x');

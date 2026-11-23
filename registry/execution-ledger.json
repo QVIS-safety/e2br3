@@ -8,12 +8,12 @@
     "sourceCount": 74
   },
   "counts": {
-    "canonicalFieldCount": 360,
-    "staticBlockerCount": 89,
-    "verifiedProofCount": 360,
-    "verifiedStaticBlockerCount": 89,
+    "canonicalFieldCount": 358,
+    "staticBlockerCount": 87,
+    "verifiedProofCount": 358,
+    "verifiedStaticBlockerCount": 87,
     "evidenceAdjustedUnprovedCount": 0,
-    "connectedFieldCount": 360,
+    "connectedFieldCount": 358,
     "unprovedFieldCount": 0,
     "readyEvidenceRequiredCount": 0,
     "pendingStaticBlockerCount": 0
@@ -2076,18 +2076,6 @@
       "identity": "SD|ICH|C.3.4.8|senderInformation.email",
       "state": "VERIFIED",
       "staticBlocker": false,
-      "proofRecorded": true
-    },
-    {
-      "identity": "SD|ICH|local.receiver.1|receiverInformation.organizationName",
-      "state": "VERIFIED",
-      "staticBlocker": true,
-      "proofRecorded": true
-    },
-    {
-      "identity": "SD|ICH|local.receiver.2|receiverInformation.receiverType",
-      "state": "VERIFIED",
-      "staticBlocker": true,
       "proofRecorded": true
     },
     {
@@ -11494,66 +11482,6 @@
         "path": "jev-sd-email-20261027-main3/canonical-inventory.json",
         "sha256": "7e9556de0ca02665b1f22bbc8caf97c10d898af22839fa12576a0d661a210456",
         "sourceHashesSha256": "9a3e7e3fb4b3c75a578b45f3be641f9ca714b7e0df2c50642c90f8deb84a37f7"
-      }
-    },
-    {
-      "identity": "SD|ICH|local.receiver.1|receiverInformation.organizationName",
-      "kind": "mutation",
-      "dataClassification": "TEST_FIXTURE",
-      "outcome": "VERIFIED",
-      "recordedAt": "2026-10-27T09:40:01.690967+00:00",
-      "originalRestored": true,
-      "siblingPreservation": true,
-      "auditTrail": true,
-      "proofContractSha256": "38acfac9788b296c3aff3adb92d3a7733c5c4571242e07f4e2d9bb895eba0882",
-      "result": {
-        "path": "jev-final-sd-org-20261027-main6/result.json",
-        "sha256": "c2f117b6e804e39ecff0cbf70b7168ea17605dc9edff78fef0c994ce3b781adc"
-      },
-      "canonicalInventory": {
-        "path": "jev-final-sd-org-20261027-main6/canonical-inventory.json",
-        "sha256": "4c71de8ef4a2d66bf44970b6c7e6d2196169e277b9ab01286124e364c9c2a711",
-        "sourceHashesSha256": "176a3d28e512ee3549600e17526ea47c7414efed86ab43ac60d866c0b1d5187c"
-      },
-      "syntheticFixture": {
-        "classification": "DETERMINISTIC_SYNTHETIC_VALIDATION_FIXTURE",
-        "executionSurface": "REAL_API_UI_JEV",
-        "cleanupVerified": true,
-        "baselineRestored": true,
-        "lifecycle": {
-          "path": "easy-blockers-state-20261027-main4.json",
-          "sha256": "b53dca5bb109a012d5d4d6bf97bfbe2d18ee7c39d75e5c31f7bc9225f39f45d5"
-        }
-      }
-    },
-    {
-      "identity": "SD|ICH|local.receiver.2|receiverInformation.receiverType",
-      "kind": "mutation",
-      "dataClassification": "TEST_FIXTURE",
-      "outcome": "VERIFIED",
-      "recordedAt": "2026-10-27T09:40:12.498725+00:00",
-      "originalRestored": true,
-      "siblingPreservation": true,
-      "auditTrail": true,
-      "proofContractSha256": "abeafd5b3dc73857dc2f92d9bac7d06b7670c71d278b1f6ff7b1e8369c8db869",
-      "result": {
-        "path": "jev-final-sd-type-20261027-main1/result.json",
-        "sha256": "4cad4c243c29d432a9ec1ac2aa82a084df69f294339d75412f3bc7b81cb3794b"
-      },
-      "canonicalInventory": {
-        "path": "jev-final-sd-type-20261027-main1/canonical-inventory.json",
-        "sha256": "4c71de8ef4a2d66bf44970b6c7e6d2196169e277b9ab01286124e364c9c2a711",
-        "sourceHashesSha256": "176a3d28e512ee3549600e17526ea47c7414efed86ab43ac60d866c0b1d5187c"
-      },
-      "syntheticFixture": {
-        "classification": "DETERMINISTIC_SYNTHETIC_VALIDATION_FIXTURE",
-        "executionSurface": "REAL_API_UI_JEV",
-        "cleanupVerified": true,
-        "baselineRestored": true,
-        "lifecycle": {
-          "path": "easy-blockers-state-20261027-main4.json",
-          "sha256": "b53dca5bb109a012d5d4d6bf97bfbe2d18ee7c39d75e5c31f7bc9225f39f45d5"
-        }
       }
     },
     {

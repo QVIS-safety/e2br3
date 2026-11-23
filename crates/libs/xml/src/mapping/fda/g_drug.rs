@@ -56,9 +56,13 @@ impl GDrugPaths {
 	pub const GESTATION_EXPOSURE_UNIT: &'static str =
 		"hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value/@unit";
 	pub const FDA_ADDITIONAL_INFO: &'static str =
-		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value/@code";
+		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value[not(@codeSystem='2.16.840.1.113883.3.989.2.1.1.17')]/@code";
 	pub const FDA_ADDITIONAL_INFO_NULL_FLAVOR: &'static str =
-		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value/@nullFlavor";
+		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value[not(@codeSystem='2.16.840.1.113883.3.989.2.1.1.17')]/@nullFlavor";
+	pub const ICH_ADDITIONAL_INFO_VALUES: &'static str =
+		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value[@codeSystem='2.16.840.1.113883.3.989.2.1.1.17']";
+	pub const ICH_EMPTY_ADDITIONAL_INFO: &'static str =
+		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[not(@nullFlavor) and not(hl7:value) and hl7:code[@code='9' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]";
 	pub const FDA_SPECIALIZED_PRODUCT_CATEGORY: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic[hl7:code[@displayName='FDA Specialized Product Category']]/hl7:value/@code";
 	pub const DRUG_ADDITIONAL_INFORMATION: &'static str =

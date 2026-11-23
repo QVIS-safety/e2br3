@@ -53,7 +53,6 @@ fn create_payload_to_update(
 		combination_product_report_indicator_null_flavor: None,
 		nullification_code: data.nullification_code,
 		nullification_reason: data.nullification_reason,
-		receiver_organization: data.receiver_organization,
 	}
 }
 

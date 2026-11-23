@@ -26,7 +26,8 @@ use lib_core::model::drug::{
 	FdaDeviceCodeFilter, FdaDeviceInformationBmc, FdaDeviceInformationFilter,
 };
 use lib_core::model::drug_reaction_assessment::{
-	DrugReactionAssessmentForCreate, DrugReactionAssessmentForUpdate,
+	DrugReactionAssessment, DrugReactionAssessmentForCreate,
+	DrugReactionAssessmentForUpdate, RelatednessAssessment,
 	RelatednessAssessmentBmc, RelatednessAssessmentFilter,
 	RelatednessAssessmentForCreate, RelatednessAssessmentForUpdate,
 };
@@ -361,7 +362,7 @@ macro_rules! persist_drug_children {
 						);
 						let update =
 							parse_row_model::<$update>("DG", $key, model)?;
-						lib_core::model::update_uuid_patch::<$bmc, $update>(
+						$bmc::update_patch(
 							ctx,
 							mm,
 							id,
@@ -418,6 +419,37 @@ persist_drug_children!(
 	create: DrugIndicationForCreate,
 	update: DrugIndicationForUpdate
 );
+
+fn requested_assessment_reaction_id(
+	row: &Map<String, Value>,
+	index: usize,
+) -> Result<Option<Uuid>> {
+	let value = match (row.get("reactionId"), row.get("reaction_id")) {
+		(Some(camel), Some(snake)) if camel != snake => return Err(Error::BadRequest {
+			message: format!("conflicting DG.drug.drugReactionAssessments[{index}].reactionId aliases"),
+		}),
+		(Some(value), _) | (None, Some(value)) => value,
+		(None, None) => return Ok(None),
+	};
+	if value.is_null() || value.as_str().is_some_and(|text| text.trim().is_empty()) {
+		return Err(Error::ConstraintViolation(
+			lib_rest_core::ConstraintViolation {
+				rule_code: "INPUT.NULL.REJECTED".into(),
+				path: format!("drugs.0.drugReactionAssessments.{index}.reactionId"),
+				message: "cannot be null".into(),
+			},
+		));
+	}
+	let id = value
+		.as_str()
+		.and_then(|text| Uuid::parse_str(text).ok())
+		.ok_or_else(|| Error::BadRequest {
+			message: format!(
+				"invalid DG.drug.drugReactionAssessments[{index}].reactionId"
+			),
+		})?;
+	Ok(Some(id))
+}
 
 async fn persist_drug_reaction_assessments(
 	ctx: &lib_core::ctx::Ctx,
@@ -491,26 +523,27 @@ async fn persist_drug_reaction_assessments(
 		} else {
 			None
 		};
-		let reaction_id = string_field(row, &["reactionId"])
-			.map(|value| {
-				Uuid::parse_str(&value).map_err(|_| Error::BadRequest {
-					message: format!(
-						"invalid DG.drug.drugReactionAssessments[{index}].reactionId"
-					),
-				})
-			})
-			.transpose()?
-			.or_else(|| {
+		let reaction_id = match requested_assessment_reaction_id(row, index)? {
+			Some(id) => id,
+			None => {
 				persisted_assessment
 					.as_ref()
-					.map(|assessment| assessment.reaction_id)
-			})
-			.ok_or_else(|| Error::BadRequest {
-				message: format!(
-					"missing DG.drug.drugReactionAssessments[{index}].reactionId"
-				),
-			})?;
-		ReactionBmc::get_in_case(ctx, mm, case_id, reaction_id).await?;
+					.ok_or_else(|| {
+						Error::BadRequest {
+				message: format!("missing DG.drug.drugReactionAssessments[{index}].reactionId"),
+			}
+					})?
+					.reaction_id
+			}
+		};
+		ReactionBmc::get_in_case_with_deleted(
+			ctx,
+			mm,
+			case_id,
+			reaction_id,
+			delete_assessment || deleted == Some(true),
+		)
+		.await?;
 
 		if delete_assessment {
 			let assessment = persisted_assessment.ok_or_else(|| Error::BadRequest {
@@ -818,6 +851,85 @@ impl FromDrugIdFilter for FdaDeviceInformationFilter {
 	}
 }
 
+fn editor_assessment_rows(
+	assessments: &[DrugReactionAssessment],
+	relatedness_rows: &[RelatednessAssessment],
+) -> Vec<Value> {
+	let mut relatedness_by_assessment = BTreeMap::new();
+	for relatedness in relatedness_rows {
+		relatedness_by_assessment
+			.entry(relatedness.drug_reaction_assessment_id)
+			.or_insert_with(Vec::new)
+			.push(relatedness);
+	}
+	let mut drug_reaction_assessments = Vec::new();
+	for assessment in assessments {
+		let relatedness = relatedness_by_assessment
+			.remove(&assessment.id)
+			.into_iter()
+			.flatten()
+			.collect::<Vec<_>>();
+		let base = json!({
+			"drugReactionAssessmentId": assessment.id,
+			"reactionId": assessment.reaction_id,
+			"administrationStartIntervalValue":
+				assessment.administration_start_interval_value,
+			"administrationStartIntervalUnit":
+				assessment.administration_start_interval_unit,
+			"lastDoseIntervalValue": assessment.last_dose_interval_value,
+			"lastDoseIntervalUnit": assessment.last_dose_interval_unit,
+			"recurrenceAction": assessment.recurrence_action,
+			"reactionRecurred": assessment.reaction_recurred,
+			"dechallengeResult": assessment.dechallenge_result,
+			"expectedness": assessment.expectedness,
+		});
+		if relatedness.iter().all(|row| row.deleted) {
+			drug_reaction_assessments.push(base.clone());
+		}
+		for relatedness in relatedness {
+			let mut row = base.clone();
+			if let Value::Object(ref mut map) = row {
+				map.insert("id".to_string(), json!(relatedness.id));
+				map.insert("deleted".to_string(), json!(relatedness.deleted));
+				map.insert(
+					"sequenceNumber".to_string(),
+					json!(relatedness.sequence_number),
+				);
+				map.insert(
+					"sourceOfAssessment".to_string(),
+					json!(relatedness.source_of_assessment),
+				);
+				map.insert(
+					"methodOfAssessment".to_string(),
+					json!(relatedness.method_of_assessment),
+				);
+				map.insert(
+					"methodOfAssessmentKr1".to_string(),
+					json!(relatedness.method_of_assessment_kr1),
+				);
+				map.insert(
+					"resultOfAssessment".to_string(),
+					json!(relatedness.result_of_assessment),
+				);
+				map.insert(
+					"resultOfAssessmentKr1".to_string(),
+					json!(relatedness.result_of_assessment_kr1),
+				);
+				map.insert(
+					"resultOfAssessmentKr1NullFlavor".to_string(),
+					json!(relatedness.result_of_assessment_kr1_null_flavor),
+				);
+				map.insert(
+					"resultOfAssessmentKr2".to_string(),
+					json!(relatedness.result_of_assessment_kr2),
+				);
+			}
+			drug_reaction_assessments.push(row);
+		}
+	}
+	drug_reaction_assessments
+}
+
 async fn load_editor_dg_row_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -833,18 +945,20 @@ async fn load_editor_dg_row_detail(
 		include_deleted,
 	)
 	.await?;
-	let active_substances = DrugActiveSubstanceBmc::list(
+	let active_substances = DrugActiveSubstanceBmc::list_with_deleted(
 		ctx,
 		mm,
 		drug_id_filter::<DrugActiveSubstanceFilter>(drug_id),
 		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		include_deleted,
 	)
 	.await?;
-	let dosage_information = DosageInformationBmc::list(
+	let dosage_information = DosageInformationBmc::list_with_deleted(
 		ctx,
 		mm,
 		drug_id_filter::<DosageInformationFilter>(drug_id),
 		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		include_deleted,
 	)
 	.await?;
 	let dosage_information = dosage_information
@@ -876,11 +990,12 @@ async fn load_editor_dg_row_detail(
 			value
 		})
 		.collect::<Vec<_>>();
-	let indications = DrugIndicationBmc::list(
+	let indications = DrugIndicationBmc::list_with_deleted(
 		ctx,
 		mm,
 		drug_id_filter::<DrugIndicationFilter>(drug_id),
 		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		include_deleted,
 	)
 	.await?;
 	let device_characteristics = DrugDeviceCharacteristicBmc::list(
@@ -962,7 +1077,7 @@ async fn load_editor_dg_row_detail(
 	let relatedness_rows = if assessment_ids.is_empty() {
 		Vec::new()
 	} else {
-		RelatednessAssessmentBmc::list(
+		RelatednessAssessmentBmc::list_with_deleted(
 			ctx,
 			mm,
 			Some(
@@ -976,81 +1091,12 @@ async fn load_editor_dg_row_detail(
 					.collect(),
 			),
 			Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+			include_deleted,
 		)
 		.await?
 	};
-	let mut relatedness_by_assessment = BTreeMap::new();
-	for relatedness in relatedness_rows {
-		relatedness_by_assessment
-			.entry(relatedness.drug_reaction_assessment_id)
-			.or_insert_with(Vec::new)
-			.push(relatedness);
-	}
-	let mut drug_reaction_assessments = Vec::new();
-	for assessment in assessments {
-		let relatedness = relatedness_by_assessment
-			.remove(&assessment.id)
-			.into_iter()
-			.flatten()
-			.collect::<Vec<_>>();
-		let base = json!({
-			"drugReactionAssessmentId": assessment.id,
-			"reactionId": assessment.reaction_id,
-			"administrationStartIntervalValue":
-				assessment.administration_start_interval_value,
-			"administrationStartIntervalUnit":
-				assessment.administration_start_interval_unit,
-			"lastDoseIntervalValue": assessment.last_dose_interval_value,
-			"lastDoseIntervalUnit": assessment.last_dose_interval_unit,
-			"recurrenceAction": assessment.recurrence_action,
-			"reactionRecurred": assessment.reaction_recurred,
-			"dechallengeResult": assessment.dechallenge_result,
-			"expectedness": assessment.expectedness,
-		});
-		if relatedness.is_empty() {
-			drug_reaction_assessments.push(base);
-		} else {
-			for relatedness in relatedness {
-				let mut row = base.clone();
-				if let Value::Object(ref mut map) = row {
-					map.insert("id".to_string(), json!(relatedness.id));
-					map.insert(
-						"sequenceNumber".to_string(),
-						json!(relatedness.sequence_number),
-					);
-					map.insert(
-						"sourceOfAssessment".to_string(),
-						json!(relatedness.source_of_assessment),
-					);
-					map.insert(
-						"methodOfAssessment".to_string(),
-						json!(relatedness.method_of_assessment),
-					);
-					map.insert(
-						"methodOfAssessmentKr1".to_string(),
-						json!(relatedness.method_of_assessment_kr1),
-					);
-					map.insert(
-						"resultOfAssessment".to_string(),
-						json!(relatedness.result_of_assessment),
-					);
-					map.insert(
-						"resultOfAssessmentKr1".to_string(),
-						json!(relatedness.result_of_assessment_kr1),
-					);
-					map.insert(
-						"resultOfAssessmentKr1NullFlavor".to_string(),
-						json!(relatedness.result_of_assessment_kr1_null_flavor),
-					);
-					map.insert(
-						"resultOfAssessmentKr2".to_string(),
-						json!(relatedness.result_of_assessment_kr2),
-					);
-				}
-				drug_reaction_assessments.push(row);
-			}
-		}
-	}
+	let drug_reaction_assessments =
+		editor_assessment_rows(&assessments, &relatedness_rows);
 	let mut drug = json!(drug);
 	if let Value::Object(ref mut map) = drug {
 		let source_product_id =
@@ -1326,6 +1372,152 @@ repeatable_page_row_delete_restore_handlers!(
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn deleted_relatedness_keeps_identity_and_a_live_parent_projection() {
+		let timestamp = time::OffsetDateTime::UNIX_EPOCH;
+		let parent = DrugReactionAssessment {
+			id: Uuid::new_v4(),
+			drug_id: Uuid::new_v4(),
+			reaction_id: Uuid::new_v4(),
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: None,
+			reaction_recurred: None,
+			dechallenge_result: None,
+			expectedness: Some("1".into()),
+			created_at: timestamp,
+			updated_at: timestamp,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		};
+		let mut child = RelatednessAssessment {
+			id: Uuid::new_v4(),
+			drug_reaction_assessment_id: parent.id,
+			sequence_number: 1,
+			source_of_assessment: None,
+			method_of_assessment: None,
+			method_of_assessment_kr1: None,
+			result_of_assessment: None,
+			result_of_assessment_kr1: None,
+			result_of_assessment_kr1_null_flavor: None,
+			result_of_assessment_kr2: None,
+			deleted: true,
+			created_at: timestamp,
+			updated_at: timestamp,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		};
+		let base = editor_assessment_rows(std::slice::from_ref(&parent), &[]);
+		assert_eq!(base.len(), 1);
+		let deleted_only = editor_assessment_rows(
+			std::slice::from_ref(&parent),
+			std::slice::from_ref(&child),
+		);
+		assert_eq!(
+			deleted_only.len(),
+			2,
+			"a deleted child must not hide its live parent"
+		);
+		assert_eq!(deleted_only[0], base[0]);
+		assert_eq!(deleted_only[1]["id"], json!(child.id));
+		assert_eq!(deleted_only[1]["deleted"], true);
+		assert_eq!(deleted_only[1]["sourceOfAssessment"], Value::Null);
+		assert_eq!(
+			deleted_only[1]["drugReactionAssessmentId"],
+			json!(parent.id)
+		);
+		let mut sibling = child.clone();
+		sibling.id = Uuid::new_v4();
+		sibling.sequence_number = 2;
+		sibling.deleted = false;
+		let mixed = editor_assessment_rows(
+			std::slice::from_ref(&parent),
+			&[child.clone(), sibling.clone()],
+		);
+		assert_eq!(mixed.len(), 2);
+		assert_eq!(mixed[0], deleted_only[1]);
+		assert_eq!(mixed[1]["id"], json!(sibling.id));
+		assert_eq!(mixed[1]["deleted"], false);
+		child.deleted = false;
+		let restored = editor_assessment_rows(&[parent], &[child, sibling]);
+		assert_eq!(restored.len(), 2);
+		assert_eq!(restored[0]["id"], deleted_only[1]["id"]);
+		assert_eq!(restored[0]["deleted"], false);
+		assert_eq!(restored[1], mixed[1]);
+	}
+
+	#[test]
+	fn reaction_reference_requires_explicit_valid_and_consistent_uuid() {
+		let id = Uuid::new_v4();
+		assert_eq!(
+			requested_assessment_reaction_id(&Map::new(), 0).expect("omission"),
+			None
+		);
+		for key in ["reactionId", "reaction_id"] {
+			let valid = json!({key:id});
+			assert_eq!(
+				requested_assessment_reaction_id(valid.as_object().expect("row"), 0)
+					.expect("UUID"),
+				Some(id)
+			);
+			for value in [Value::Null, json!(""), json!(" \n")] {
+				let row = json!({key:value});
+				let Error::ConstraintViolation(issue) =
+					requested_assessment_reaction_id(
+						row.as_object().expect("row"),
+						2,
+					)
+					.expect_err("explicit clear")
+				else {
+					panic!("wrong error contract");
+				};
+				assert_eq!(issue.rule_code, "INPUT.NULL.REJECTED");
+				assert_eq!(
+					issue.path,
+					"drugs.0.drugReactionAssessments.2.reactionId"
+				);
+			}
+			for value in [json!(false), json!(1), json!("invalid"), json!([])] {
+				let row = json!({key:value});
+				assert!(matches!(
+					requested_assessment_reaction_id(
+						row.as_object().expect("row"),
+						0
+					),
+					Err(Error::BadRequest { .. })
+				));
+			}
+		}
+		let same = json!({"reactionId":id,"reaction_id":id});
+		assert_eq!(
+			requested_assessment_reaction_id(same.as_object().expect("row"), 0)
+				.expect("same aliases"),
+			Some(id)
+		);
+		let conflicting = json!({"reactionId":id,"reaction_id":Uuid::new_v4()});
+		assert!(matches!(
+			requested_assessment_reaction_id(
+				conflicting.as_object().expect("row"),
+				0
+			),
+			Err(Error::BadRequest { .. })
+		));
+	}
+
+	#[test]
+	fn selected_reaction_is_assessment_content_without_causality_values() {
+		let selected = json!({"reactionId": Uuid::new_v4()});
+		assert!(child_row_has_content(
+			selected.as_object().expect("fixture")
+		));
+		for value in [Value::Null, json!(""), json!(" ")] {
+			let empty = json!({"reactionId": value, "sequenceNumber": 1});
+			assert!(!child_row_has_content(empty.as_object().expect("fixture")));
+		}
+	}
 
 	#[test]
 	fn assessment_update_keeps_validated_reaction_id() {

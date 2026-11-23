@@ -96,3 +96,26 @@ pub(super) fn import_case_id(import_value: &Value) -> Result<&str> {
 			format!("missing data.caseId in import response: {import_value}").into()
 		})
 }
+
+pub(super) fn xpath_value(xml: &[u8], expression: &str) -> Result<String> {
+	use std::io::Write;
+	use std::process::{Command, Stdio};
+	let mut child = Command::new("xmllint")
+		.args(["--nonet", "--xpath", expression, "-"])
+		.stdin(Stdio::piped())
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()?;
+	child
+		.stdin
+		.take()
+		.ok_or("missing XML input pipe")?
+		.write_all(xml)?;
+	let output = child.wait_with_output()?;
+	if !output.status.success() {
+		return Err(String::from_utf8_lossy(&output.stderr).into_owned().into());
+	}
+	Ok(String::from_utf8(output.stdout)?
+		.trim_end_matches('\n')
+		.to_string())
+}

@@ -380,6 +380,87 @@ fn stored_dose_scale_does_not_trigger_max_length() {
 }
 
 #[test]
+fn additional_code_parser_retains_present_entries_for_validation() {
+	let raw = json!([{}, {"value_code": null}, {"value_code": ""}, {"value_code": " "}, {"value_code": "2"}]);
+	let entries =
+		parse_drug_additional_info_codes_json(Some(&raw)).expect("typed entries");
+	assert_eq!(
+		entries
+			.into_iter()
+			.map(|entry| entry.value_code)
+			.collect::<Vec<_>>(),
+		vec![
+			None,
+			None,
+			Some(String::new()),
+			Some(" ".to_string()),
+			Some("2".to_string())
+		]
+	);
+}
+
+#[test]
+fn additional_code_validation_rejects_missing_blank_and_noncanonical_entries() {
+	for raw in [
+		json!([{}]),
+		json!([{"value_code": null}]),
+		json!([{"value_code": ""}]),
+		json!([{"value_code": " "}]),
+		json!([{"value_code": "1 "}]),
+		json!([{"value_code": " 1"}]),
+		json!([{"value_code": "\t1"}]),
+		json!([{"value_code": "2"}, {}]),
+		json!([{"value_code": "2"}, {"value_code": ""}]),
+		json!([{"value_code": 2}]),
+		json!([null]),
+		json!(null),
+	] {
+		let mut drug = drug();
+		drug.drug_additional_info_codes_json = Some(raw.clone());
+		let mut issues = Vec::new();
+		g_k_10_r(2, &drug, &mut issues);
+		super::super::retain_case_business_rules(&mut issues);
+		assert!(
+			issues
+				.iter()
+				.any(|issue| issue.code == "ICH.G.k.10.r.ALLOWED.VALUE"
+					&& issue.field_path.as_deref()
+						== Some("drugs.2.drugAdditionalInformationCodes")),
+			"silently accepted {raw}"
+		);
+		assert_eq!(drug.drug_additional_info_codes_json, Some(raw));
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let report = crate::build_report(authority, drug.case_id, issues.clone());
+			assert!(!report.ok);
+			assert_eq!(report.issue_count, 1);
+			assert_eq!(report.issues[0].code, "ICH.G.k.10.r.ALLOWED.VALUE");
+		}
+	}
+}
+
+#[test]
+fn additional_code_validation_accepts_absence_empty_and_exact_dictionary_values() {
+	for raw in [
+		None,
+		Some(json!([])),
+		Some(
+			json!([{"value_code": "1"}, {"value_code": "11"}, {"value_code": "1"}]),
+		),
+	] {
+		let mut drug = drug();
+		drug.drug_additional_info_codes_json = raw.clone();
+		let mut issues = Vec::new();
+		g_k_10_r(0, &drug, &mut issues);
+		assert!(issues.is_empty(), "{raw:?}");
+		assert_eq!(drug.drug_additional_info_codes_json, raw);
+	}
+}
+
+#[test]
 fn allowed_value_rules_cover_g_drug_and_reaction_codes() {
 	let mut ctx = empty_ctx();
 	let mut drug = drug();

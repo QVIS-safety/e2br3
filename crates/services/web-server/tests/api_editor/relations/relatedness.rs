@@ -360,8 +360,40 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.iter()
 		.filter(|row| row["reactionId"] == json!(reaction_ids[0]))
 		.collect::<Vec<_>>();
-	assert_eq!(siblings_after_delete.len(), 1, "{body}");
-	assert_eq!(siblings_after_delete[0]["id"], json!(sibling_id), "{body}");
+	assert_eq!(
+		siblings_after_delete.len(),
+		2,
+		"editor must retain deleted children"
+	);
+	let (status, inclusive) =
+		get_json(&app, &cookie, &format!("{uri}?include_deleted=true")).await?;
+	assert_eq!(status, StatusCode::OK, "{inclusive}");
+	assert_eq!(
+		inclusive["data"], body["data"],
+		"row detail is always inclusive"
+	);
+	let inclusive_rows = inclusive["data"]["drug"]["drugReactionAssessments"]
+		.as_array()
+		.ok_or("missing inclusive relatedness rows")?;
+	for (id, deleted) in [(&relatedness_id, true), (&sibling_id, false)] {
+		let matches: Vec<_> = inclusive_rows
+			.iter()
+			.filter(|row| row["id"] == json!(id))
+			.collect();
+		assert_eq!(matches.len(), 1, "missing or duplicate relatedness");
+		assert_eq!(matches[0]["deleted"], deleted);
+		assert_eq!(matches[0]["drugReactionAssessmentId"], assessment_id);
+		assert_eq!(matches[0]["reactionId"], reaction_ids[0]);
+	}
+	let (status, active_only) = get_json(&app, &cookie, &format!(
+		"/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness"
+	)).await?;
+	assert_eq!(status, StatusCode::OK, "{active_only}");
+	let active_rows = active_only["data"]
+		.as_array()
+		.ok_or("missing active relatedness list")?;
+	assert_eq!(active_rows.len(), 1);
+	assert_eq!(active_rows[0]["id"], sibling_id);
 	for row in [
 		json!({"id":relatedness_id,"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0],"deleted":true}),
 		json!({"id":relatedness_id,"drugReactionAssessmentId":assessment_id,"reactionId":reaction_ids[0]}),
@@ -384,10 +416,19 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 			.collect();
 		assert_eq!(
 			siblings.len(),
-			1,
-			"ordinary resave restored a deleted relatedness"
+			2,
+			"editor must retain deleted and live relatedness"
 		);
-		assert_eq!(siblings[0]["id"], sibling_id);
+		for (id, deleted) in [(&relatedness_id, true), (&sibling_id, false)] {
+			let row = siblings
+				.iter()
+				.find(|row| row["id"] == json!(id))
+				.ok_or("missing replayed child")?;
+			assert_eq!(
+				row["deleted"], deleted,
+				"ordinary resave changed deletion state"
+			);
+		}
 	}
 	let restore_relatedness = json!({"authorities": ["ich"], "rows": {"drug": {
 		"drugReactionAssessments": [{
@@ -420,6 +461,7 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 			.filter(|row| row["reactionId"] == json!(reaction_ids[0]))
 			.collect::<Vec<_>>();
 		assert_eq!(siblings.len(), 2, "{body}");
+		assert!(siblings.iter().all(|row| row["deleted"] == false));
 		assert!(
 			siblings.iter().any(|row| {
 				row["id"] == json!(relatedness_id)
@@ -458,6 +500,39 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 		.ok_or("missing assessments after rejected deletion")?
 		.iter()
 		.all(|row| row["reactionId"] != json!(reaction_ids[2])));
+
+	let (status, deleted_reaction) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows"),
+		json!({"authorities":["ich"],"operations":[{
+			"operation":"delete","rowId":reaction_ids[1],"clientRowIndex":1
+		}]}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{deleted_reaction}");
+	let (status, before_deleted_reaction_update) =
+		get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK);
+	let blocked_audit = super::case_audit_ids(&mm, &ctx, &case_id).await?;
+	let (status, blocked_update) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[{
+			"drugReactionAssessmentId":parent_only_id,"reactionId":reaction_ids[1],"expectedness":"1"
+		}]}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND, "{blocked_update}");
+	assert_eq!(
+		get_json(&app, &cookie, &uri).await?.1,
+		before_deleted_reaction_update
+	);
+	assert_eq!(
+		super::case_audit_ids(&mm, &ctx, &case_id).await?,
+		blocked_audit
+	);
 
 	let delete_audit_before = super::case_audit_ids(&mm, &ctx, &case_id).await?;
 	let (status, body) = patch_json(
@@ -586,5 +661,30 @@ pub(crate) async fn relatedness_delete_preserves_sibling_and_parent_delete_remov
 			"repeated hard parent deletion must not add audit rows"
 		);
 	}
+	let (status, selected_only) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"drug":{"drugReactionAssessments":[{
+			"reactionId":reaction_ids[2]
+		}]}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{selected_only}");
+	let rows = selected_only["data"]["drug"]["drugReactionAssessments"]
+		.as_array()
+		.ok_or("missing selected-only assessment list")?;
+	assert_eq!(
+		rows.len(),
+		1,
+		"selected reaction must not be silently discarded"
+	);
+	assert_eq!(rows[0]["reactionId"], reaction_ids[2]);
+	assert!(rows[0]["drugReactionAssessmentId"].as_str().is_some());
+	assert_eq!(rows[0]["expectedness"], Value::Null);
+	assert_eq!(
+		get_json(&app, &cookie, &uri).await?.1["data"],
+		selected_only["data"]
+	);
 	Ok(())
 }

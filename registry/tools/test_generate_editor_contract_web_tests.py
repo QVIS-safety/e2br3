@@ -1,4 +1,5 @@
 import tempfile
+import copy
 import json
 import shutil
 import unittest
@@ -14,7 +15,7 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
     def test_dictionary_constraints_generate_executable_tests(self):
         root = generator.REPO_ROOT / "registry"
         checks = editor_dictionary.check(root)
-        self.assertEqual(381, len(checks))
+        self.assertEqual(382, len(checks))
         generated = editor_dictionary.render_tests(root)
         self.assertEqual(len(checks), generated.count("dictionary_test!("))
         self.assertIn('"DM", "D.3", "D.3", "max_length", input_contracts::generated::d::d_3', generated)
@@ -90,9 +91,10 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
                 outputs["DM"],
             )
             self.assertIn(
-                "// BLOCKED editor contract G.k.9.i.1:",
+                'field_contract_test!(g_k_9_i_1, "G.k.9.i.1");',
                 outputs["DG"],
             )
+            self.assertIn('field_contract_test!(g_k_local_sourceproductpresaveid, "G.k.local.sourceProductPresaveId");', outputs["DG"])
             self.assertIn('field_contract_test!(n_1_5, "N.1.5");', outputs["N"])
             self.assertEqual(8, outputs["N"].count("field_contract_test!("))
 
@@ -101,6 +103,22 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "blocked execution requires a reason"):
             generator.render_page("DG", fields)
+
+    def test_runtime_references_require_a_known_source_and_no_literal(self):
+        root = generator.REPO_ROOT / "registry"
+        contract = generator.load_contract(root, "DG")
+        generator.validate_behavior_bindings(contract, root)
+        for mutation in [
+            {"roundTripReference": "unknown"},
+            {"roundTripValue": "00000000-0000-0000-0000-000000000001"},
+            {"execution": {"status": "blocked", "reason": "contradictory fixture"}},
+        ]:
+            with self.subTest(mutation=mutation):
+                changed = copy.deepcopy(contract)
+                field = next(field for field in changed["fields"] if field["code"] == "G.k.9.i.1")
+                field.update(mutation)
+                with self.assertRaisesRegex(ValueError, "invalid runtime roundtrip reference"):
+                    generator.validate_behavior_bindings(changed, root)
 
     def test_rejects_duplicate_normalized_test_names(self):
         fields = [{"code": "C.1-a"}, {"code": "C.1.a"}]

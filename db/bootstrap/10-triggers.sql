@@ -55,13 +55,6 @@ FOR EACH ROW EXECUTE FUNCTION require_active_presave_reference(
     'sender_presaves', 'source_sender_presave_id', 'case'
 );
 
-DROP TRIGGER IF EXISTS guard_receiver_information_source_receiver_presave ON receiver_information;
-CREATE TRIGGER guard_receiver_information_source_receiver_presave
-BEFORE INSERT OR UPDATE OF source_receiver_presave_id ON receiver_information
-FOR EACH ROW EXECUTE FUNCTION require_active_presave_reference(
-    'receiver_presaves', 'source_receiver_presave_id', 'case'
-);
-
 DROP TRIGGER IF EXISTS guard_drug_information_source_product_presave ON drug_information;
 CREATE TRIGGER guard_drug_information_source_product_presave
 BEFORE INSERT OR UPDATE OF source_product_presave_id ON drug_information
@@ -952,10 +945,6 @@ CREATE TRIGGER audit_users AFTER INSERT OR UPDATE OR DELETE ON users
 CREATE TRIGGER audit_permission_profiles AFTER INSERT OR UPDATE OR DELETE ON permission_profiles
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
--- Phase 1-3 new tables audit triggers
-CREATE TRIGGER audit_receiver_information AFTER INSERT OR UPDATE OR DELETE ON receiver_information
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
 CREATE TRIGGER audit_other_case_identifiers AFTER INSERT OR UPDATE OR DELETE ON other_case_identifiers
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -1043,10 +1032,6 @@ CREATE TRIGGER update_sender_diagnoses_updated_at BEFORE UPDATE ON sender_diagno
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_case_summary_information_updated_at BEFORE UPDATE ON case_summary_information
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Phase 1-3 new tables updated_at triggers
-CREATE TRIGGER update_receiver_information_updated_at BEFORE UPDATE ON receiver_information
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_other_case_identifiers_updated_at BEFORE UPDATE ON other_case_identifiers
@@ -1416,26 +1401,6 @@ CREATE POLICY sender_info_via_case ON sender_information
         EXISTS (
             SELECT 1 FROM cases c
             WHERE c.id = sender_information.case_id
-            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
--- Receiver Information
-ALTER TABLE receiver_information ENABLE ROW LEVEL SECURITY;
-ALTER TABLE receiver_information FORCE ROW LEVEL SECURITY;
-CREATE POLICY receiver_info_via_message ON receiver_information
-    FOR ALL TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM cases c
-            WHERE c.id = receiver_information.case_id
-            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM cases c
-            WHERE c.id = receiver_information.case_id
             AND (c.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );
@@ -2241,9 +2206,6 @@ CREATE TRIGGER aa_dirty_c_study_fda_cross_reported_inds
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c_from_study_info();
 CREATE TRIGGER aa_dirty_c_primary_sources
   AFTER INSERT OR UPDATE OR DELETE ON primary_sources
-  FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER aa_dirty_c_receiver_information
-  AFTER INSERT OR UPDATE OR DELETE ON receiver_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
 CREATE TRIGGER aa_dirty_c_other_case_identifiers
   AFTER INSERT OR UPDATE OR DELETE ON other_case_identifiers

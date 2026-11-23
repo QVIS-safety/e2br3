@@ -2,15 +2,14 @@ use crate::error::Error;
 use crate::export::roundtrip::{patch_f_test_results, patch_h_narrative};
 use crate::export_data::load_drug_export_bundle;
 use crate::export_utils::{
-	append_fragment_child, fmt_datetime, remove_nodes, set_attr_first,
-	set_text_first, xml_escape,
+	append_fragment_child, remove_nodes, set_attr_first, set_text_first, xml_escape,
 };
 use crate::Result;
 use lib_core::ctx::Ctx;
 use lib_core::model;
 use lib_core::model::case::Case;
 use lib_core::model::narrative::NarrativeInformationBmc;
-use lib_core::model::patient::{PatientDeathInformation, PatientInformationBmc};
+use lib_core::model::patient::PatientDeathInformation;
 use lib_core::model::reaction::Reaction;
 use lib_core::model::safety_report::LiteratureReference;
 use lib_core::model::safety_report::PrimarySource;

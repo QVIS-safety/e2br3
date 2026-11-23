@@ -120,7 +120,7 @@ return {
         )
 
     def test_transfer_pattern_rejects_cross_wired_receiver_assignments(self):
-        batch_spec = extractor.TRANSFER_SPECS["receiver"][2]
+        batch_spec = extractor.TRANSFER_SPECS["receiver"][0]
         source = '''
 const batchReceiverIdentifier = route.batchReceiverIdentifier;
 const messageReceiverIdentifier = route.messageReceiverIdentifier;

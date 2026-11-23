@@ -42,7 +42,7 @@ fn verify(code: &str) {
 		}
 		"ICH.F.r.1.REQUIRED" => {
 			let mut bad = test_result();
-			bad.test_name = "ALT".into();
+			bad.test_name = Some("ALT".into());
 			let mut good = bad.clone();
 			good.test_date = Some("20200101".into());
 			(
@@ -55,7 +55,7 @@ fn verify(code: &str) {
 			let mut bad = test_result();
 			bad.test_result_code = Some("1".into());
 			let mut good = bad.clone();
-			good.test_name = "ALT".into();
+			good.test_name = Some("ALT".into());
 			(
 				"testResults.0.testName",
 				rule_issues(&bad),
@@ -66,7 +66,7 @@ fn verify(code: &str) {
 			let mut bad = test_result();
 			bad.test_date = Some("20200101".into());
 			let mut good = bad.clone();
-			good.test_name = "ALT".into();
+			good.test_name = Some("ALT".into());
 			(
 				"testResults.0.testName",
 				rule_issues(&bad),
@@ -143,7 +143,7 @@ fn verify(code: &str) {
 		}
 		"ICH.F.r.3.1.REQUIRED" | "ICH.F.r.3.2.REQUIRED" | "ICH.F.r.3.4.REQUIRED" => {
 			let mut bad = test_result();
-			bad.test_name = "ALT".into();
+			bad.test_name = Some("ALT".into());
 			let mut good = bad.clone();
 			let path = if code.contains("3.1") {
 				good.test_result_code = Some("1".into());
@@ -226,7 +226,7 @@ fn rule_ich_f_r_1_required() {
 	verify("ICH.F.r.1.REQUIRED");
 
 	let mut row = test_result();
-	row.test_name = "ALT".into();
+	row.test_name = Some("ALT".into());
 	row.test_date_null_flavor = Some("UNK".into());
 	assert!(!rule_issues(&row)
 		.iter()
@@ -251,7 +251,7 @@ fn rule_ich_f_r_2_2b_required() {
 
 	let mut row = test_result();
 	row.test_date = Some("20200101".into());
-	row.test_name = "ALT".into();
+	row.test_name = Some("ALT".into());
 	assert!(!rule_issues(&row)
 		.iter()
 		.any(|i| i.code == "ICH.F.r.2.2b.REQUIRED"));
@@ -281,7 +281,7 @@ fn rule_ich_f_r_3_1_required() {
 
 	for alternative in 0..3 {
 		let mut row = test_result();
-		row.test_name = "ALT".into();
+		row.test_name = Some("ALT".into());
 		match alternative {
 			0 => row.test_result_code = Some("1".into()),
 			1 => row.test_result_value = Some("0".into()),
@@ -308,7 +308,7 @@ fn rule_ich_f_r_3_2_required() {
 
 	for alternative in 0..3 {
 		let mut row = test_result();
-		row.test_name = "ALT".into();
+		row.test_name = Some("ALT".into());
 		match alternative {
 			0 => row.test_result_code = Some("1".into()),
 			1 => row.test_result_value = Some("0".into()),
@@ -335,7 +335,7 @@ fn rule_ich_f_r_3_4_required() {
 
 	for alternative in 0..3 {
 		let mut row = test_result();
-		row.test_name = "ALT".into();
+		row.test_name = Some("ALT".into());
 		match alternative {
 			0 => row.test_result_code = Some("1".into()),
 			1 => row.test_result_value = Some("0".into()),

@@ -27,8 +27,17 @@ pub(crate) async fn import_section_g(
 	case_id: Uuid,
 	reaction_map: &ImportIdMap,
 	product_presave_id: Uuid,
+	product_link_mappings: &[super::product_links::ProductLinkMapping],
 ) -> Result<ImportIdMap> {
-	let drug_map = import_drugs(ctx, mm, xml, case_id, product_presave_id).await?;
+	let drug_map = import_drugs(
+		ctx,
+		mm,
+		xml,
+		case_id,
+		product_presave_id,
+		product_link_mappings,
+	)
+	.await?;
 	import_drug_reaction_assessments(ctx, mm, xml, &drug_map, reaction_map).await?;
 	Ok(drug_map)
 }
@@ -39,11 +48,31 @@ async fn import_drugs(
 	xml: &[u8],
 	case_id: Uuid,
 	product_presave_id: Uuid,
+	product_link_mappings: &[super::product_links::ProductLinkMapping],
 ) -> Result<ImportIdMap> {
 	let imports = super::parse_g_drugs(xml)?;
+	let links = super::product_links::resolve_product_links(
+		&imports
+			.iter()
+			.map(|drug| drug.source_product_link)
+			.collect::<Vec<_>>(),
+		product_presave_id,
+		product_link_mappings,
+	)?;
+	for id in links
+		.iter()
+		.flatten()
+		.copied()
+		.collect::<std::collections::HashSet<_>>()
+	{
+		let product = model::presave::ProductPresaveBmc::get(ctx, mm, id).await?;
+		if product.deleted || product.organization_id != ctx.organization_id() {
+			return Err(Error::InvalidImportRequest { message: "Mapped products must be active and belong to the importing organization".to_owned() });
+		}
+	}
 	let mut map = ImportIdMap::default();
 
-	for (index, drug) in imports.into_iter().enumerate() {
+	for (drug, product_link) in imports.into_iter().zip(links) {
 		let fda_specialized_product_category =
 			g_helpers::import_fda_specialized_product_category(
 				&drug,
@@ -54,9 +83,8 @@ async fn import_drugs(
 			mm,
 			DrugInformationForCreate {
 				case_id,
-				source_product_presave_id: (index == 0)
-					.then_some(product_presave_id),
-				source_product_id: None,
+				source_product_presave_id: product_link,
+				source_product_id: drug.source_product_id.clone(),
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
@@ -70,9 +98,8 @@ async fn import_drugs(
 			mm,
 			drug_id,
 			DrugInformationForUpdate {
-				source_product_presave_id: (index == 0)
-					.then_some(product_presave_id),
-				source_product_id: None,
+				source_product_presave_id: product_link,
+				source_product_id: drug.source_product_id,
 				medicinal_product: Some(drug.medicinal_product),
 				drug_characterization: Some(drug.drug_characterization),
 				// FDA.G.k.2.2.1 intentionally unsupported until a verified
@@ -104,7 +131,8 @@ async fn import_drugs(
 				fda_additional_info_coded: drug.fda_additional_info_coded,
 				fda_additional_info_coded_null_flavor: drug
 					.fda_additional_info_coded_null_flavor,
-				drug_additional_info_codes_json: None,
+				drug_additional_info_codes_json: drug
+					.drug_additional_info_codes_json,
 				drug_additional_information: drug.drug_additional_information,
 				fda_specialized_product_category,
 				fda_other_characterization: drug.fda_other_characterization,
@@ -193,7 +221,7 @@ async fn import_drugs(
 					last_administration_date_raw: dose.end_date_raw,
 					duration_value: dose.duration_value,
 					duration_unit: dose.duration_unit,
-					continuing: None,
+					continuing: dose.continuing,
 					batch_lot_number: dose.batch_lot,
 					batch_lot_number_null_flavor: dose.batch_lot_null_flavor,
 					dosage_text: dose.dosage_text,
@@ -277,6 +305,17 @@ async fn import_drugs(
 		}
 
 		if let Some(xml_id) = drug.xml_id {
+			mm.dbx()
+				.fetch_one(
+					sqlx::query_as::<_, (Uuid,)>(
+						"UPDATE drug_information SET source_xml_id = $1 WHERE id = $2 AND case_id = $3 RETURNING id",
+					)
+					.bind(&xml_id)
+					.bind(drug_id)
+					.bind(case_id),
+				)
+				.await
+				.map_err(model::Error::from)?;
 			map.insert_xml_id(xml_id, drug_id);
 		}
 		map.push_sequence(drug_id);
@@ -416,6 +455,22 @@ async fn import_drug_reaction_assessments(
 			assessment_map.insert(key, id);
 			id
 		};
+
+		// A reference-only G.k.9.i preserves the parent link, not a fabricated assessment row.
+		if [
+			&rel.source_of_assessment,
+			&rel.method_of_assessment,
+			&rel.method_of_assessment_kr1,
+			&rel.result_of_assessment,
+			&rel.result_of_assessment_kr1,
+			&rel.result_of_assessment_kr1_null_flavor,
+			&rel.result_of_assessment_kr2,
+		]
+		.iter()
+		.all(|value| value.is_none())
+		{
+			continue;
+		}
 
 		let seq = seq_map
 			.entry((drug_id, reaction_id))

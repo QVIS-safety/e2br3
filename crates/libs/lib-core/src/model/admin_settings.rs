@@ -7,6 +7,7 @@ use crate::ctx::{
 	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
 	SYSTEM_ORG_ID,
 };
+use crate::model::organization::{ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY};
 use crate::model::store::dbx::Dbx;
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
@@ -126,7 +127,14 @@ impl AdminSettingsBmc {
 			.fetch_optional(
 				sqlx::query_as::<_, (Uuid, Value)>(
 					"INSERT INTO app_settings (organization_id, key, value, updated_by)
-					 VALUES ($1, 'system', app_settings_default_value(), $2)
+					 VALUES (
+						$1,
+						'system',
+						app_settings_default_value_for_org(
+							(SELECT org_type FROM organizations WHERE id = $1 AND active = true)
+						),
+						$2
+					 )
 					 ON CONFLICT (organization_id, key) DO NOTHING
 					 RETURNING organization_id, value",
 				)
@@ -619,9 +627,46 @@ impl AdminSettingsBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 	) -> Result<HashSet<String>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let organization_type = match dbx
+			.fetch_optional(sqlx::query_as::<_, (Option<String>,)>(
+				"SELECT lower(trim(org_type)) FROM organizations WHERE id = $1 AND active = true",
+			)
+			.bind(ctx.organization_id()))
+			.await
+		{
+			Ok(Some((Some(organization_type),))) => organization_type,
+			Ok(_) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Validation {
+					message: "active organization type is required for workflow roles"
+						.to_string(),
+				});
+			},
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			},
+		};
+		let sponsor_admin_role = match organization_type.as_str() {
+			ORG_TYPE_CRO => ROLE_SPONSOR_ADMIN_CRO,
+			ORG_TYPE_PHARMACEUTICAL_COMPANY => ROLE_SPONSOR_ADMIN_COMPANY,
+			_ => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Validation {
+					message: format!(
+						"unsupported organization type '{organization_type}' for workflow roles"
+					),
+				});
+			}
+		};
 		let mut roles = [
-			ROLE_SPONSOR_ADMIN_CRO,
-			ROLE_SPONSOR_ADMIN_COMPANY,
+			sponsor_admin_role,
 			ROLE_USER,
 			"manager",
 			"pvm",
@@ -633,13 +678,6 @@ impl AdminSettingsBmc {
 		.into_iter()
 		.map(str::to_string)
 		.collect::<HashSet<_>>();
-
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
 		let rows = match dbx
 			.fetch_all(sqlx::query_as::<_, (Uuid,)>(
 				"SELECT id FROM permission_profiles WHERE organization_id = $1 AND active = true AND built_in = false",

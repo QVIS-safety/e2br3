@@ -9,7 +9,6 @@ DECLARE
     v_case_id UUID := '22222222-2222-2222-2222-222222222222';
     v_case_version_id UUID := '22222222-2222-2222-2222-222222222223';
     v_message_header_id UUID := '33333333-3333-3333-3333-333333333333';
-    v_receiver_info_id UUID := '33333333-3333-3333-3333-333333333334';
     v_safety_ident_id UUID := '44444444-4444-4444-4444-444444444444';
     v_sender_info_id UUID := '55555555-5555-5555-5555-555555555555';
     v_study_info_id UUID := '66666666-6666-6666-6666-666666666666';
@@ -71,8 +70,8 @@ BEGIN
     -- Keep the demo tenants usable with strict runtime settings from a clean DB.
     INSERT INTO app_settings (organization_id, key, value)
     VALUES
-        (v_org_id, 'system', jsonb_set(app_settings_default_value(), '{appendices}', '["ICH", "FDA", "MFDS"]'::jsonb)),
-        (v_company_org_id, 'system', jsonb_set(app_settings_default_value(), '{appendices}', '["ICH", "FDA", "MFDS"]'::jsonb))
+        (v_org_id, 'system', jsonb_set(app_settings_default_value_for_org('cro'), '{appendices}', '["ICH", "FDA", "MFDS"]'::jsonb)),
+        (v_company_org_id, 'system', jsonb_set(app_settings_default_value_for_org('pharmaceutical_company'), '{appendices}', '["ICH", "FDA", "MFDS"]'::jsonb))
     ON CONFLICT (organization_id, key) DO NOTHING;
 
     -- Insert demo identities without password hashes.
@@ -345,30 +344,8 @@ BEGIN
     VALUES (v_message_header_id, v_case_id, 'B-001', 'SENDER-1', 'ichicsr', '2.1', '2.0', 'MSG-001', 'ORG-SENDER', 'ORG-RECEIVER', '204', '20240101120000', v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO receiver_information (
-        id,
-        case_id,
-        receiver_type,
-        organization_name,
-        country_code,
-        created_by,
-        created_at,
-        updated_at
-    )
-    VALUES (
-        v_receiver_info_id,
-        v_case_id,
-        '2',
-        'FDA',
-        'US',
-        v_user_id,
-        NOW(),
-        NOW()
-    )
-    ON CONFLICT (id) DO NOTHING;
-
-    INSERT INTO safety_report_identification (id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, receiver_organization, created_by, created_at, updated_at)
-    VALUES (v_safety_ident_id, v_case_id, 'SR-001', 1, TO_CHAR(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS'), '1', CURRENT_DATE, CURRENT_DATE, TRUE, 'Demo Receiver', v_user_id, NOW(), NOW())
+    INSERT INTO safety_report_identification (id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, created_by, created_at, updated_at)
+    VALUES (v_safety_ident_id, v_case_id, 'SR-001', 1, TO_CHAR(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS'), '1', CURRENT_DATE, CURRENT_DATE, TRUE, v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO sender_information (id, case_id, sender_type, organization_name, created_by, created_at, updated_at)

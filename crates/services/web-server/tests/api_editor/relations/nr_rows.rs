@@ -106,12 +106,28 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "delete attempt {attempt}: {body}");
-		for owner in ["senderDiagnoses", "caseSummaryInformation"] {
+		for (owner, id, column, value) in [
+			(
+				"senderDiagnoses",
+				&diagnosis_id,
+				"diagnosis_meddra_code",
+				"10019211",
+			),
+			(
+				"caseSummaryInformation",
+				&summary_id,
+				"summary_text",
+				"Summary",
+			),
+		] {
 			assert_eq!(
 				body["rows"][owner].as_array().map(Vec::len),
-				Some(0),
+				Some(1),
 				"{owner}: {body}"
 			);
+			assert_eq!(&body["rows"][owner][0]["id"], id);
+			assert_eq!(body["rows"][owner][0]["deleted"], true);
+			assert_eq!(body["rows"][owner][0][column], value);
 		}
 	}
 	for rows in [
@@ -129,12 +145,28 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
-		for owner in ["senderDiagnoses", "caseSummaryInformation"] {
+		for (owner, id, column, value) in [
+			(
+				"senderDiagnoses",
+				&diagnosis_id,
+				"diagnosis_meddra_code",
+				"10019211",
+			),
+			(
+				"caseSummaryInformation",
+				&summary_id,
+				"summary_text",
+				"Summary",
+			),
+		] {
 			assert_eq!(
 				body["rows"][owner].as_array().map(Vec::len),
-				Some(0),
+				Some(1),
 				"{owner}: {body}"
 			);
+			assert_eq!(&body["rows"][owner][0]["id"], id);
+			assert_eq!(body["rows"][owner][0]["deleted"], true);
+			assert_eq!(body["rows"][owner][0][column], value);
 		}
 	}
 	let restored = json!({
@@ -153,6 +185,7 @@ pub(crate) async fn narrative_rows_delete_restore_and_resave_are_stable(
 		.await?;
 		assert_eq!(status, StatusCode::OK, "restore attempt {attempt}: {body}");
 		for owner in ["senderDiagnoses", "caseSummaryInformation"] {
+			assert_eq!(body["rows"][owner][0]["deleted"], false);
 			assert_eq!(
 				body["rows"][owner].as_array().map(Vec::len),
 				Some(1),

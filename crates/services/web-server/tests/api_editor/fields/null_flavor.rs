@@ -446,7 +446,7 @@ pub(crate) async fn patient_identity_can_be_cleared_and_set_to_null_flavor(
 	Ok(())
 }
 
-pub(crate) async fn registration_blank_values_can_be_replaced_by_null_flavors(
+pub(crate) async fn registration_values_can_be_replaced_by_null_flavors(
 	_page_id: &str,
 	_check_id: &str,
 ) -> Result<()> {
@@ -487,7 +487,7 @@ pub(crate) async fn registration_blank_values_can_be_replaced_by_null_flavors(
 		json!({"authorities": ["ich"], "rows": {
 			"studyRegistrationNumbers": [{
 				"id": first_id,
-				"registrationNumber": "",
+				"registrationNumber": null,
 				"registrationNumberNullFlavor": "ASKU"
 			}]
 		}}),
@@ -518,7 +518,7 @@ pub(crate) async fn registration_blank_values_can_be_replaced_by_null_flavors(
 		json!({"authorities": ["ich"], "rows": {
 			"studyRegistrationNumbers": [{
 				"id": first_id,
-				"countryCode": " ",
+				"countryCode": null,
 				"countryCodeNullFlavor": "ASKU"
 			}]
 		}}),

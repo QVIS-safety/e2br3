@@ -25,7 +25,7 @@ pub(crate) async fn device_list_replacement_removes_children(
 		create_case_for_editor(&app, &cookie, "UI-REGRESSION", &["ich"]).await?;
 	let base = format!("/api/cases/{id}/editor/pages");
 	let (status, body) = post_json(&app, &cookie, &format!("{base}/DG/rows"), json!({"authorities":["ich"],"rows":{"drug":{
-		"drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
+		"sequenceNumber":1, "drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
         "mfdsDeviceInfo":{"serialNumber":"SN-1","udiManufacturingDate":"20260901","models":[{"value":"MODEL-1"}]},
         "fdaDevices":[{"deviceBrandName":"DEVICE-1","followUpTypes":[{"valueCode":"1"}],
             "remedialActions":[{"valueCode":"1"}],"deviceProblemCodes":[{"valueCode":"C133496"}]}]
@@ -52,6 +52,22 @@ pub(crate) async fn device_list_replacement_removes_children(
 	let original_device = drug["fdaDevices"][0].clone();
 	let case_uuid = uuid::Uuid::parse_str(&id)?;
 	let device_id = original_device["id"].as_str().ok_or("missing device ID")?;
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"drug":{"fdaDevices":[{
+			"id":device_id,
+			"followUpTypes":[{"id":original_device["followUpTypes"][0]["id"]}]
+		}]}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (_, after_omission) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(
+		after_omission["data"]["drug"]["fdaDevices"][0], original_device,
+		"omitted fields must preserve stored values"
+	);
 	let groups = ["followUpTypes", "remedialActions", "deviceProblemCodes"];
 	let mut guarded = vec![
 		(
@@ -86,7 +102,7 @@ pub(crate) async fn device_list_replacement_removes_children(
 		&cookie,
 		&format!("{foreign_base}/DG/rows"),
 		json!({"authorities":["ich"],"rows":{"drug":{
-			"drugCharacterization":"1","medicinalProduct":"FOREIGN DEVICE TEST",
+			"sequenceNumber":1,"drugCharacterization":"1","medicinalProduct":"FOREIGN DEVICE TEST",
 			"fdaDevices":[{"deviceBrandName":"FOREIGN DEVICE","followUpTypes":[{"valueCode":"2"}],
 				"remedialActions":[{"valueCode":"2"}],"deviceProblemCodes":[{"valueCode":"C133497"}]}]
 		}}}),

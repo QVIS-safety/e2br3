@@ -73,7 +73,9 @@ impl AuthorizationCatalogRepository {
 		}
 
 		let schema_version = i32::try_from(AUTHORIZATION_CONTRACT_SCHEMA_VERSION)
-			.map_err(|error| AuthorizationMigrationError::Registry(error.to_string()))?;
+			.map_err(|error| {
+				AuthorizationMigrationError::Registry(error.to_string())
+			})?;
 		sqlx::query("INSERT INTO authorization_catalog_state (singleton, schema_version, catalog_hash, reconciled_at) VALUES (true, $1, $2, now()) ON CONFLICT (singleton) DO UPDATE SET schema_version = EXCLUDED.schema_version, catalog_hash = EXCLUDED.catalog_hash, reconciled_at = now()")
 			.bind(schema_version)
 			.bind(&contract.catalog_hash)

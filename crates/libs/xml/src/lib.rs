@@ -12,6 +12,7 @@ pub mod mfds;
 pub mod model;
 pub mod parser;
 pub mod raw;
+mod source_documents;
 pub mod types;
 pub mod validation;
 

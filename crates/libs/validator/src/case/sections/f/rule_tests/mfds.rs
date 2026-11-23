@@ -26,7 +26,6 @@ fn report(additional_documents_available: bool) -> SafetyReportIdentification {
 		other_case_identifiers_exist_null_flavor: None,
 		nullification_code: None,
 		nullification_reason: None,
-		receiver_organization: None,
 		created_at: OffsetDateTime::UNIX_EPOCH,
 		updated_at: OffsetDateTime::UNIX_EPOCH,
 		created_by: Uuid::nil(),

@@ -9,8 +9,8 @@ use crate::web::rest::{
 	case_workflow_rest, cioms_export_rest, drug_reaction_assessment_rest, drug_rest,
 	drug_sub_rest, message_header_rest, narrative_rest, narrative_sub_rest,
 	parent_history_rest, patient_rest, patient_sub_rest, reaction_rest,
-	receiver_rest, relatedness_assessment_rest, safety_report_rest,
-	safety_report_sub_rest, submission_rest, test_result_rest,
+	relatedness_assessment_rest, safety_report_rest, safety_report_sub_rest,
+	submission_rest, test_result_rest,
 };
 
 /// Routes for /api/cases and nested subresources
@@ -39,6 +39,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		.route(
 			"/cases/{case_id}/editor/CI",
 			get(case_editor_rest::get_editor_ci),
+		)
+		.route(
+			"/cases/{case_id}/editor/pages",
+			axum::routing::patch(case_editor_rest::save_editor_pages),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/CI",
@@ -704,14 +708,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	.route(
 		"/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}/restore",
 		axum::routing::post(safety_report_sub_rest::restore_study_fda_cross_reported_ind),
-	)
-	// Receiver (singleton per case) - Section A
-	.route(
-		"/cases/{case_id}/receiver",
-		get(receiver_rest::get_receiver)
-			.post(receiver_rest::create_receiver)
-			.put(receiver_rest::update_receiver)
-			.delete(receiver_rest::delete_receiver),
 	)
 	// Other Case Identifiers (collection per case) - C.1.9.r
 	.route(

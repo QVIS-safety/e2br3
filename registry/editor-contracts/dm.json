@@ -99,7 +99,7 @@
       "nullFlavorPartnerCode": "D.1.local.patientInitialsNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "patient_initials", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -146,7 +146,7 @@
       "nullFlavorPartnerCode": "D.2.1.local.patientBirthDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "birth_date", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -281,7 +281,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "age_unit", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -406,7 +406,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "gestation_period_unit", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -452,7 +452,7 @@
       "payloadPath": "patientAgeGroup",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "age_group", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -596,13 +596,13 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.5.ALLOWED.VALUE",
-        "invalidValue": "0"
+        "invalidValue": "3"
       },
       "payloadPath": "patientSex",
       "nullFlavorPartnerCode": "D.5.local.patientSexNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "sex", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -649,7 +649,7 @@
       "nullFlavorPartnerCode": "D.6.local.lastMenstrualPeriodDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "last_menstrual_period_date", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -696,7 +696,7 @@
       "nullFlavorPartnerCode": "D.7.2.local.medicalHistoryTextNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "medical_history_text", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -780,7 +780,7 @@
       "payloadPath": "[].meddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "meddra_version", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -826,7 +826,7 @@
       "payloadPath": "[].meddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "meddra_code", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -873,7 +873,7 @@
       "nullFlavorPartnerCode": "D.7.1.r.2.local.startDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "start_date", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -968,7 +968,7 @@
       "nullFlavorPartnerCode": "D.7.1.r.4.local.endDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "end_date", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -1007,7 +1007,7 @@
       "payloadPath": "[].comments",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "comments", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -1093,7 +1093,7 @@
       "nullFlavorPartnerCode": "D.9.1.local.dateOfDeathNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_death_information", "column": "date_of_death", "record": {"source": "projection", "path": "deathInfo.id"}}
       }
@@ -1139,7 +1139,7 @@
       "payloadPath": "[].meddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reported_causes_of_death", "column": "meddra_version", "record": {"source": "projection", "path": "reportedCauses[].id"}}
       }
@@ -1185,7 +1185,7 @@
       "payloadPath": "[].meddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reported_causes_of_death", "column": "meddra_code", "record": {"source": "projection", "path": "reportedCauses[].id"}}
       }
@@ -1224,7 +1224,7 @@
       "payloadPath": "[].causeText",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reported_causes_of_death", "column": "comments", "record": {"source": "projection", "path": "reportedCauses[].id"}}
       }
@@ -1318,7 +1318,7 @@
       "payloadPath": "[].meddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "autopsy_causes_of_death", "column": "meddra_version", "record": {"source": "projection", "path": "autopsyCauses[].id"}}
       }
@@ -1364,7 +1364,7 @@
       "payloadPath": "[].meddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "autopsy_causes_of_death", "column": "meddra_code", "record": {"source": "projection", "path": "autopsyCauses[].id"}}
       }
@@ -1404,7 +1404,7 @@
       "payloadPath": "[].causeText",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "autopsy_causes_of_death", "column": "comments", "record": {"source": "projection", "path": "autopsyCauses[].id"}}
       }
@@ -1451,7 +1451,7 @@
       "nullFlavorPartnerCode": "D.10.1.local.parentIdentificationNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "parent_identification", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1498,7 +1498,7 @@
       "nullFlavorPartnerCode": "D.10.2.1.local.parentBirthDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "parent_birth_date", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1612,7 +1612,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "parent_age_unit", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1659,7 +1659,7 @@
       "nullFlavorPartnerCode": "D.10.3.local.parentLastMenstrualPeriodDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "last_menstrual_period_date", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1803,13 +1803,13 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "ICH.D.10.6.ALLOWED.VALUE",
-        "invalidValue": "0"
+        "invalidValue": "3"
       },
       "payloadPath": "parentSex",
       "nullFlavorPartnerCode": "D.10.6.local.parentSexNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "sex", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1848,7 +1848,7 @@
       "payloadPath": "medicalHistoryText",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "medical_history_text", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -1893,7 +1893,7 @@
       "payloadPath": "[].meddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "meddra_version", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -1939,7 +1939,7 @@
       "payloadPath": "[].meddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "meddra_code", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -1986,7 +1986,7 @@
       "nullFlavorPartnerCode": "D.10.7.1.r.2.local.startDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "start_date", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -2081,7 +2081,7 @@
       "nullFlavorPartnerCode": "D.10.7.1.r.4.local.endDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "end_date", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -2120,7 +2120,7 @@
       "payloadPath": "[].comments",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "comments", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -2159,7 +2159,7 @@
       "payloadPath": "[].drugName",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "drug_name", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2198,7 +2198,7 @@
       "payloadPath": "[].mfdsMedicinalProductVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "mfds_medicinal_product_version", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2237,7 +2237,7 @@
       "payloadPath": "[].mfdsMedicinalProductId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "mfds_medicinal_product_id", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2276,7 +2276,7 @@
       "payloadPath": "[].mpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "mpid_version", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2325,7 +2325,7 @@
       "payloadPath": "[].mpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "mpid", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2364,7 +2364,7 @@
       "payloadPath": "[].phpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "phpid_version", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2413,7 +2413,7 @@
       "payloadPath": "[].phpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "phpid", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2460,7 +2460,7 @@
       "nullFlavorPartnerCode": "D.10.8.r.4.local.startDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "start_date", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2507,7 +2507,7 @@
       "nullFlavorPartnerCode": "D.10.8.r.5.local.endDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "end_date", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2553,7 +2553,7 @@
       "payloadPath": "[].indicationMeddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "indication_meddra_version", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2599,7 +2599,7 @@
       "payloadPath": "[].indicationMeddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "indication_meddra_code", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2645,7 +2645,7 @@
       "payloadPath": "[].reactionMeddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "reaction_meddra_version", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2691,7 +2691,7 @@
       "payloadPath": "[].reactionMeddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "reaction_meddra_code", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -2745,7 +2745,7 @@
       "nullFlavorPartnerCode": "FDA.D.11.r.1.local.raceCodeNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": [], "value": []},
-        "blank": {"effect": "store", "input": "", "value": []},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "race_codes", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -2805,7 +2805,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "ethnicity_code", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -2857,7 +2857,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -2886,7 +2886,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value_null_flavor", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -2938,7 +2938,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -2967,7 +2967,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value_null_flavor", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -3019,7 +3019,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -3048,7 +3048,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value_null_flavor", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -3100,7 +3100,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -3129,7 +3129,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_identifiers", "column": "identifier_value_null_flavor", "record": {"source": "projection", "path": "patientIdentifiers[].id"}}
       }
@@ -3153,7 +3153,7 @@
       "nullFlavorPartnerCode": "D.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "patient_initials_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3177,7 +3177,7 @@
       "nullFlavorPartnerCode": "D.10.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "parent_identification_null_flavor", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -3201,7 +3201,7 @@
       "nullFlavorPartnerCode": "D.10.2.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "parent_birth_date_null_flavor", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -3225,7 +3225,7 @@
       "nullFlavorPartnerCode": "D.10.3",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "last_menstrual_period_date_null_flavor", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -3249,7 +3249,7 @@
       "nullFlavorPartnerCode": "D.10.6",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_information", "column": "sex_null_flavor", "record": {"source": "projection", "path": "parentInfo.id"}}
       }
@@ -3273,7 +3273,7 @@
       "nullFlavorPartnerCode": "D.10.7.1.r.2",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -3297,7 +3297,7 @@
       "nullFlavorPartnerCode": "D.10.7.1.r.3",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "continuing_null_flavor", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -3321,7 +3321,7 @@
       "nullFlavorPartnerCode": "D.10.7.1.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_medical_history", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "parentMedicalHistory[].id"}}
       }
@@ -3345,7 +3345,7 @@
       "nullFlavorPartnerCode": "D.10.8.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -3369,7 +3369,7 @@
       "nullFlavorPartnerCode": "D.10.8.r.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "parent_past_drug_history", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "parentPastDrugs[].id"}}
       }
@@ -3393,7 +3393,7 @@
       "nullFlavorPartnerCode": "D.2.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "birth_date_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3417,7 +3417,7 @@
       "nullFlavorPartnerCode": "D.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "sex_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3441,7 +3441,7 @@
       "nullFlavorPartnerCode": "D.6",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "last_menstrual_period_date_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3465,7 +3465,7 @@
       "nullFlavorPartnerCode": "D.7.1.r.2",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -3489,7 +3489,7 @@
       "nullFlavorPartnerCode": "D.7.1.r.3",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "continuing_null_flavor", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -3513,7 +3513,7 @@
       "nullFlavorPartnerCode": "D.7.1.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "medical_history_episodes", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "medicalHistoryEpisodes[].id"}}
       }
@@ -3537,7 +3537,7 @@
       "nullFlavorPartnerCode": "D.7.2",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "medical_history_text_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3561,7 +3561,7 @@
       "nullFlavorPartnerCode": "D.9.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_death_information", "column": "date_of_death_null_flavor", "record": {"source": "projection", "path": "deathInfo.id"}}
       }
@@ -3585,7 +3585,7 @@
       "nullFlavorPartnerCode": "D.9.3",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_death_information", "column": "autopsy_performed_null_flavor", "record": {"source": "projection", "path": "deathInfo.id"}}
       }
@@ -3609,7 +3609,7 @@
       "nullFlavorPartnerCode": "FDA.D.11.r.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "race_code_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3633,7 +3633,7 @@
       "nullFlavorPartnerCode": "FDA.D.12",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "patient_information", "column": "ethnicity_code_null_flavor", "record": {"source": "projection", "path": "patientInformation.id"}}
       }
@@ -3677,9 +3677,9 @@
       }
     },
     {
-      "id": "empty_parent_child_objects_create_draft_rows",
-      "verifier": "rows::creation::empty_parent_child_objects_create_draft_rows",
-      "description": "empty parent child objects create draft rows"
+      "id": "parent_child_drafts_require_sequence",
+      "verifier": "rows::creation::parent_child_drafts_require_sequence",
+      "description": "empty parent child objects are rejected without mutation; explicit sequence permits an otherwise empty draft row"
     }
   ],
   "relations": [
@@ -3698,6 +3698,7 @@
             "rows": {
               "medicalHistoryEpisodes": [
                 {
+                  "sequenceNumber": 1,
                   "comments": "History first"
                 }
               ]
@@ -3710,6 +3711,7 @@
             "rows": {
               "reportedCauses": [
                 {
+                  "sequenceNumber": 1,
                   "causeText": "Death cause first"
                 }
               ]
@@ -3722,6 +3724,7 @@
             "rows": {
               "parentMedicalHistory": [
                 {
+                  "sequenceNumber": 1,
                   "comments": "Parent history first"
                 }
               ]
@@ -3734,6 +3737,7 @@
             "rows": {
               "parentPastDrugs": [
                 {
+                  "sequenceNumber": 1,
                   "drugName": "Parent drug first"
                 }
               ]

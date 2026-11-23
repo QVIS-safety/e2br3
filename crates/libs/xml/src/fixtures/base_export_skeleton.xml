@@ -46,19 +46,17 @@
 							<author typeCode="AUT">
 								<assignedEntity classCode="ASSIGNED">
 									<code codeSystem="2.16.840.1.113883.3.989.2.1.1.7"/>
-									<addr><streetAddressLine/><city/><state/><postalCode/></addr>
+									<addr/>
 									<telecom value="tel:"/>
 									<telecom value="fax:"/>
 									<telecom value="mailto:"/>
 									<assignedPerson classCode="PSN" determinerCode="INSTANCE">
-										<name><prefix/><given/><family/></name>
 										<asLocatedEntity classCode="LOCE">
 											<location classCode="COUNTRY" determinerCode="INSTANCE"><code codeSystem="1.0.3166.1.2.2"/></location>
 										</asLocatedEntity>
 									</assignedPerson>
 									<representedOrganization classCode="ORG" determinerCode="INSTANCE">
-										<name/>
-										<assignedEntity classCode="ASSIGNED"><representedOrganization classCode="ORG" determinerCode="INSTANCE"><name/></representedOrganization></assignedEntity>
+										<assignedEntity classCode="ASSIGNED"><representedOrganization classCode="ORG" determinerCode="INSTANCE"/></assignedEntity>
 									</representedOrganization>
 								</assignedEntity>
 							</author>

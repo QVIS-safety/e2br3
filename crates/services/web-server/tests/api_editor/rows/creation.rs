@@ -52,7 +52,7 @@ pub(crate) async fn empty_collections_do_not_create_parents(
 	Ok(())
 }
 
-pub(crate) async fn empty_parent_child_objects_create_draft_rows(
+pub(crate) async fn parent_child_drafts_require_sequence(
 	_page_id: &str,
 	_check_id: &str,
 ) -> crate::common::Result<()> {
@@ -65,11 +65,26 @@ pub(crate) async fn empty_parent_child_objects_create_draft_rows(
 		let id =
 			create_case_for_editor(&app, &cookie, "EMPTY-ROW", &["ich"]).await?;
 		let uri = format!("/api/cases/{id}/editor/pages/DM");
+		let before = get_json(&app, &cookie, &uri).await?;
 		let (status, body) = patch_json(
 			&app,
 			&cookie,
 			&uri,
 			json!({"authorities":["ich"],"rows":{owner:[{}]}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+		assert_eq!(body["error"]["message"], "INVALID_REQUEST");
+		assert_eq!(
+			body["error"]["data"]["detail"],
+			"sequenceNumber is required"
+		);
+		assert_eq!(get_json(&app, &cookie, &uri).await?, before);
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{owner:[{"sequenceNumber":1}]}}),
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
@@ -78,12 +93,13 @@ pub(crate) async fn empty_parent_child_objects_create_draft_rows(
 			Some(1),
 			"{body}"
 		);
+		assert_eq!(body["rows"][owner][0]["sequence_number"], 1);
 	}
 
 	Ok(())
 }
 
-pub(crate) async fn incomplete_test_result_creates_empty_name(
+pub(crate) async fn incomplete_test_result_preserves_absent_name(
 	_page_id: &str,
 	_check_id: &str,
 ) -> crate::common::Result<()> {
@@ -95,7 +111,7 @@ pub(crate) async fn incomplete_test_result_creates_empty_name(
 	for (section, owner, payload, column) in [(
 		"LB",
 		"testResult",
-		json!({"testMeddraVersion": "28.1"}),
+		json!({"sequenceNumber": 1, "testMeddraVersion": "28.1"}),
 		"test_name",
 	)] {
 		let case_id =
@@ -113,7 +129,16 @@ pub(crate) async fn incomplete_test_result_creates_empty_name(
 		let (status, saved) =
 			get_json(&app, &cookie, &format!("{uri}/{row_id}")).await?;
 		assert_eq!(status, StatusCode::OK, "{saved}");
-		assert_eq!(saved["data"][owner][column], "", "{saved}");
+		assert_eq!(
+			saved["data"][owner][column],
+			serde_json::Value::Null,
+			"{saved}"
+		);
+		assert_eq!(
+			saved["data"][owner]["test_meddra_version"], "28.1",
+			"{saved}"
+		);
+		assert_eq!(saved["data"][owner]["sequence_number"], 1, "{saved}");
 	}
 
 	Ok(())

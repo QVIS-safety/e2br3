@@ -4,6 +4,7 @@ mod dg;
 mod dh;
 mod dm;
 mod lb;
+mod lr;
 mod nr;
 mod rp;
 mod sd;

@@ -85,11 +85,7 @@ pub(super) async fn apply_nr_page_rows_patch(
 						case_id,
 						source_narrative_presave_id: update
 							.source_narrative_presave_id,
-						case_narrative: case_narrative.ok_or_else(|| {
-							Error::BadRequest {
-								message: "case narrative is required".into(),
-							}
-						})?,
+						case_narrative,
 						reporter_comments: update.reporter_comments,
 						sender_comments: update.sender_comments,
 						additional_information: update.additional_information,
@@ -243,32 +239,35 @@ pub(super) async fn load_editor_nr_data(
 ) -> Result<Value> {
 	let narrative =
 		NarrativeInformationBmc::get_by_case_optional(ctx, mm, case_id).await?;
-	let (sender_diagnoses, case_summary_information) =
-		if let Some(ref narrative) = narrative {
-			let sender_diagnoses = SenderDiagnosisBmc::list(
-				ctx,
-				mm,
-				Some(vec![SenderDiagnosisFilter {
-					narrative_id: Some(uuid_eq(narrative.id)),
-					..Default::default()
-				}]),
-				Some(ListOptions::default()),
-			)
-			.await?;
-			let case_summary_information = CaseSummaryInformationBmc::list(
-				ctx,
-				mm,
-				Some(vec![CaseSummaryInformationFilter {
-					narrative_id: Some(uuid_eq(narrative.id)),
-					..Default::default()
-				}]),
-				Some(ListOptions::default()),
-			)
-			.await?;
-			(sender_diagnoses, case_summary_information)
-		} else {
-			(Vec::new(), Vec::new())
-		};
+	let (sender_diagnoses, case_summary_information) = if let Some(ref narrative) =
+		narrative
+	{
+		let sender_diagnoses = SenderDiagnosisBmc::list_with_deleted(
+			ctx,
+			mm,
+			Some(vec![SenderDiagnosisFilter {
+				narrative_id: Some(uuid_eq(narrative.id)),
+				..Default::default()
+			}]),
+			Some(ListOptions::default()),
+			true,
+		)
+		.await?;
+		let case_summary_information = CaseSummaryInformationBmc::list_with_deleted(
+			ctx,
+			mm,
+			Some(vec![CaseSummaryInformationFilter {
+				narrative_id: Some(uuid_eq(narrative.id)),
+				..Default::default()
+			}]),
+			Some(ListOptions::default()),
+			true,
+		)
+		.await?;
+		(sender_diagnoses, case_summary_information)
+	} else {
+		(Vec::new(), Vec::new())
+	};
 
 	Ok(json!({
 		"narrative": narrative,

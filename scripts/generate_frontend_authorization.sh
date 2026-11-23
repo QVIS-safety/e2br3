@@ -41,8 +41,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-cargo run --quiet --manifest-path "$repo_root/Cargo.toml" \
-  -p lib-core --example export_authorization_contract -- "$temporary_output"
+cargo build --quiet --manifest-path "$repo_root/Cargo.toml" \
+  -p lib-core --example export_authorization_contract
+"$repo_root/target/debug/examples/export_authorization_contract" "$temporary_output"
 chmod 0644 "$temporary_output"
 mv -f -- "$temporary_output" "$output"
 trap - EXIT

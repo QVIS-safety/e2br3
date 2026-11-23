@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		.nth(1)
 		.map(PathBuf::from)
 		.ok_or("usage: export_authorization_contract <output.ts>")?;
-	let contract = export_contract(policy_registry())?;
+	let contract = export_contract(policy_registry()?)?;
 	if let Some(parent) = output.parent() {
 		std::fs::create_dir_all(parent)?;
 	}

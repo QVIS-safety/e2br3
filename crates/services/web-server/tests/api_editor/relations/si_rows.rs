@@ -120,20 +120,7 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "delete attempt {attempt}: {body}");
-		assert_eq!(
-			body["rows"]["studyRegistrationNumbers"]
-				.as_array()
-				.map(Vec::len),
-			Some(0),
-			"{body}"
-		);
-		assert_eq!(
-			body["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"]
-				.as_array()
-				.map(Vec::len),
-			Some(0),
-			"{body}"
-		);
+		assert_deleted_rows(&body, &registration_id, &ind_id);
 	}
 	for rows in [
 		json!({}),
@@ -150,13 +137,38 @@ pub(crate) async fn study_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_deleted_rows(&body, &registration_id, &ind_id);
+	}
+	fn assert_deleted_rows(
+		body: &serde_json::Value,
+		registration_id: &serde_json::Value,
+		ind_id: &serde_json::Value,
+	) {
 		assert_eq!(
 			body["rows"]["studyRegistrationNumbers"]
 				.as_array()
 				.map(Vec::len),
-			Some(0),
+			Some(1),
 			"{body}"
 		);
+		assert_eq!(
+			body["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"]
+				.as_array()
+				.map(Vec::len),
+			Some(1),
+			"{body}"
+		);
+		let registration = &body["rows"]["studyRegistrationNumbers"][0];
+		let ind = &body["rows"]["studyInformation"]["fdaCrossReportedIndNumbers"][0];
+		assert_eq!(&registration["id"], registration_id);
+		assert_eq!(&ind["id"], ind_id);
+		for row in [registration, ind] {
+			assert_eq!(row["deleted"], true);
+			assert_eq!(row["sequence_number"], 1);
+		}
+		assert_eq!(registration["registration_number"], "REG");
+		assert_eq!(registration["country_code"], "US");
+		assert_eq!(ind["ind_number"], "IND");
 	}
 	let restored = json!({
 		"studyRegistrationNumbers":[{"id":registration_id,"deleted":false,"registrationNumber":"RESTORED","countryCode":"US"}],

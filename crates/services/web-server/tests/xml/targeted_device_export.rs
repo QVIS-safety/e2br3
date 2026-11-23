@@ -168,7 +168,7 @@ async fn targeted_device_export_ignores_same_and_cross_org_volume() -> Result<()
 		NarrativeInformationForCreate {
 			case_id: seed.case_org1,
 			source_narrative_presave_id: None,
-			case_narrative: "Device export RLS regression".to_string(),
+			case_narrative: Some("Device export RLS regression".to_string()),
 			reporter_comments: None,
 			sender_comments: None,
 			additional_information: None,
@@ -177,10 +177,12 @@ async fn targeted_device_export_ignores_same_and_cross_org_volume() -> Result<()
 	.await?;
 	let exported = tokio::task::block_in_place(|| {
 		let header = xml::OutboundMessageHeader {
-			batch_number: "TEST-BATCH".to_string(),
-			batch_sender_identifier: "TEST-SENDER".to_string(),
-			batch_receiver_identifier: "ZZFDA".to_string(),
-			batch_transmission_date: time::OffsetDateTime::now_utc(),
+			batch_number: Some("TEST-BATCH".to_string()),
+			batch_sender_identifier: Some("TEST-SENDER".to_string()),
+			batch_receiver_identifier: Some("ZZFDA".to_string()),
+			batch_transmission_date: Some("20241121010203+0000".to_string()),
+			message_number: "TEST-MESSAGE".to_string(),
+			message_date: "20241121010203+0000".to_string(),
 			message_sender_identifier: "TEST-SENDER".to_string(),
 			message_receiver_identifier: "CDER".to_string(),
 		};

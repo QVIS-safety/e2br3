@@ -19,7 +19,7 @@ function walk(directory) {
 }
 walk(detailRoot);
 
-const roots = "case|caseSummaryInformation|documentsHeldBySender|drugReactionAssessments|drugs|linkedReports|literatureReferences|messageHeader|narrative|otherCaseIdentifiers|patientInformation|primarySources|receiverInformation|reactions|reviewReceivers|safetyReportIdentification|senderInformation|sourceDocuments|studyInformation|testResults";
+const roots = "case|caseSummaryInformation|documentsHeldBySender|drugReactionAssessments|drugs|linkedReports|literatureReferences|messageHeader|narrative|otherCaseIdentifiers|patientInformation|primarySources|reactions|reviewReceivers|safetyReportIdentification|senderInformation|sourceDocuments|studyInformation|testResults";
 const rootPattern = new RegExp(`^(?:${roots})\\.`);
 const inventory = new Map();
 const containerPaths = new Set([

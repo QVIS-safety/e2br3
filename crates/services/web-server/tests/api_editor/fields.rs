@@ -3,8 +3,9 @@ pub(super) mod message_header;
 pub(super) mod null_flavor;
 pub(super) mod required_values;
 use super::support::{
-	create_case_for_editor, create_reaction_contract_fixture, get_json,
-	patch_json_with_reason, repeatable_row_id,
+	create_case_for_editor, create_product_presave_contract_fixture,
+	create_reaction_contract_fixture, get_json, patch_json_with_reason,
+	repeatable_row_id,
 };
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
@@ -136,11 +137,6 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 	let projection_path = field["projectionPath"]
 		.as_str()
 		.ok_or("missing projectionPath")?;
-	let round_trip = field["roundTripValue"].clone();
-	let projection_value = field
-		.get("projectionValue")
-		.cloned()
-		.unwrap_or_else(|| round_trip.clone());
 	let authority = field["authority"]
 		.as_str()
 		.ok_or("missing authority")?
@@ -178,14 +174,37 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 	let sentinel_status =
 		case_status(&mm, seed.admin.id, seed.org_id, &case_id).await?;
 	let row_id = repeatable_row_id(spec.page_id, &app, &cookie, &case_id).await?;
+	let round_trip = match field.get("roundTripReference") {
+		Some(Value::String(reference)) if reference == "case-reaction" => {
+			json!(create_reaction_contract_fixture(&app, &cookie, &case_id).await?)
+		}
+		Some(Value::String(reference)) if reference == "product-presave" => {
+			json!(create_product_presave_contract_fixture(&app, &cookie).await?)
+		}
+		None => field
+			.get("roundTripValue")
+			.ok_or("missing roundtrip value")?
+			.clone(),
+		Some(_) => return Err("unknown roundtrip reference".into()),
+	};
+	let projection_value = match field.get("projectionValue") {
+		Some(value) => value.clone(),
+		None => round_trip.clone(),
+	};
 	let mut row = field.get("fixture").cloned().unwrap_or_else(|| json!({}));
 	merge_json(&mut row, build_path(payload_path, round_trip.clone()));
 	if let Some(assessments) = row
 		.get_mut("drugReactionAssessments")
 		.and_then(Value::as_array_mut)
 	{
-		let reaction_id =
-			create_reaction_contract_fixture(&app, &cookie, &case_id).await?;
+		let reaction_id = if field["roundTripReference"] == "case-reaction" {
+			round_trip
+				.as_str()
+				.ok_or("missing saved reaction UUID")?
+				.to_string()
+		} else {
+			create_reaction_contract_fixture(&app, &cookie, &case_id).await?
+		};
 		for assessment in assessments {
 			assessment
 				.as_object_mut()
@@ -337,6 +356,71 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 		spec.page_id,
 		spec.code
 	);
+	if field["roundTripReference"] == "case-reaction" {
+		let foreign_case = create_case_for_editor(
+			&app,
+			&cookie,
+			"FOREIGN-REFERENCE",
+			&[&authority],
+		)
+		.await?;
+		let foreign_reaction =
+			create_reaction_contract_fixture(&app, &cookie, &foreign_case).await?;
+		let foreign_uri = format!(
+			"/api/cases/{foreign_case}/editor/pages/AE/rows/{foreign_reaction}"
+		);
+		let foreign_before = get_json(&app, &cookie, &foreign_uri).await?;
+		let audit_before = super::audit::case_audit_ids(&mm, &ctx, &case_id).await?;
+		let foreign_audit_before =
+			super::audit::case_audit_ids(&mm, &ctx, &foreign_case).await?;
+		for (camel, expected_status, expected_error) in [
+			(None, StatusCode::NOT_FOUND, "ENTITY_UUID_NOT_FOUND"),
+			(
+				Some(round_trip.clone()),
+				StatusCode::BAD_REQUEST,
+				"INVALID_REQUEST",
+			),
+		] {
+			let mut update = build_path(&request_path, json!(foreign_reaction));
+			pin_row_ids(
+				&mut update,
+				&request_path,
+				&projection,
+				projection_path,
+				&contract["rowIdentities"],
+			)?;
+			let assessment = update[owner]["drugReactionAssessments"][0]
+				.as_object_mut()
+				.ok_or("missing assessment")?;
+			let foreign = assessment
+				.remove("reactionId")
+				.ok_or("missing reference under test")?;
+			assessment.insert("reaction_id".into(), foreign);
+			if let Some(value) = camel {
+				assessment.insert("reactionId".into(), value);
+			}
+			let (status, rejection) = patch_json_with_reason(
+				&app,
+				&cookie,
+				&uri,
+				json!({"authorities":[authority],"rows":update}),
+				Some("Reference scope rejection"),
+			)
+			.await?;
+			assert_eq!(status, expected_status, "{rejection}");
+			assert_eq!(rejection["error"]["message"], expected_error);
+			assert_eq!(case.reload().await?, projection);
+			assert_eq!(get_json(&app, &cookie, &foreign_uri).await?, foreign_before);
+			assert_eq!(
+				super::audit::case_audit_ids(&mm, &ctx, &case_id).await?,
+				audit_before
+			);
+			assert_eq!(
+				super::audit::case_audit_ids(&mm, &ctx, &foreign_case).await?,
+				foreign_audit_before
+			);
+		}
+	}
 	Ok(())
 }
 
@@ -415,6 +499,9 @@ impl FieldCase<'_> {
 							let name = key["name"]
 								.as_str()
 								.ok_or("missing identity key name")?;
+							if format!("{collection}.{name}") == path {
+								continue;
+							}
 							assert_eq!(
 								current.get(name),
 								previous.get(name),
@@ -551,6 +638,10 @@ pub(super) fn pin_row_ids(
 			.ok_or("missing collection identity keys")?
 		{
 			let name = key["name"].as_str().ok_or("missing identity key name")?;
+			// Never replace the value under test with the old relation identity.
+			if format!("{request}.{name}") == payload_path {
+				continue;
+			}
 			match row.get(name) {
 				Some(id) => {
 					Uuid::parse_str(id.as_str().ok_or("child ID is not a string")?)?;
@@ -648,5 +739,22 @@ fn assessment_identity_does_not_invent_a_relatedness_id() -> Result<()> {
 	let invalid =
 		json!({"drug":{"drugReactionAssessments":[{"reactionId":reaction}]}});
 	assert!(pin_row_ids(&mut payload, path, &invalid, path, &identities).is_err());
+	let path = "drug.drugReactionAssessments[].reactionId";
+	for input in [
+		Value::Null,
+		json!(""),
+		json!("00000000-0000-0000-0000-000000000003"),
+	] {
+		let mut payload = build_path(path, input.clone());
+		pin_row_ids(&mut payload, path, &projection, path, &identities)?;
+		assert_eq!(read_path(&payload, path), Some(&input));
+		assert_eq!(
+			payload["drug"]["drugReactionAssessments"][0]
+				["drugReactionAssessmentId"],
+			parent
+		);
+		remove_leaf(&mut payload, path)?;
+		assert!(read_path(&payload, path).is_none());
+	}
 	Ok(())
 }

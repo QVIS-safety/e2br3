@@ -1,9 +1,9 @@
 use lib_core::model::test_result::TestResult;
-use xml::raw::patch::patch_f_test_results;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::Uuid;
 use time::OffsetDateTime;
+use xml::export::roundtrip::patch_f_test_results;
 
 #[test]
 fn patch_f_test_updates_raw_xml() {
@@ -20,13 +20,15 @@ fn patch_f_test_updates_raw_xml() {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
 		sequence_number: 1,
+		deleted: false,
 		test_date: None,
 		test_date_null_flavor: None,
-		test_name: "ALT".to_string(),
+		test_name: Some("ALT".to_string()),
 		test_meddra_version: None,
 		test_meddra_code: None,
 		test_result_code: None,
 		test_result_value: Some("25".to_string()),
+		test_result_qualifier: None,
 		test_result_unit: Some("U/L".to_string()),
 		result_unstructured: None,
 		normal_low_value: None,

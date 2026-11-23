@@ -153,6 +153,25 @@ class PostgresMigrations(unittest.TestCase):
         self.run_migrations(db_dir=ROOT / 'db')
         self.assertEqual(before, self.sql('SELECT filename,checksum,applied_at FROM schema_migrations ORDER BY filename'))
 
+    def test_all_model_string_constraints(self):
+        self.run_migrations('--initialize', db_dir=ROOT / 'db')
+        # Check the final schema before the probe reapplies the migration, so later columns cannot escape it.
+        self.assertEqual(self.sql("""SELECT count(*) FROM pg_attribute a
+          JOIN pg_class c ON c.oid = a.attrelid
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          JOIN pg_type t ON t.oid = a.atttypid
+          LEFT JOIN pg_type element ON element.oid = t.typelem
+          WHERE n.nspname = 'public' AND c.relkind IN ('r','p')
+            AND a.attnum > 0 AND NOT a.attisdropped
+            AND (t.typcategory = 'S' OR (t.typcategory = 'A' AND element.typcategory = 'S'))
+            AND NOT EXISTS (SELECT 1 FROM pg_constraint x WHERE x.conrelid=c.oid
+              AND x.conname='model_nonblank_' || md5(a.attname) AND x.convalidated)"""), '0')
+        result = subprocess.run(['psql', '-Xw', '-d', self.env['PGDATABASE'],
+                                 '-v', 'ON_ERROR_STOP=1', '-f',
+                                 str(ROOT / 'scripts/db/test-nonblank-model-strings.sql')],
+                                env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_runtime_reconciliation_is_atomic_and_repeatable(self):
         repair = '20261102_reconcile_runtime_schema.sql'
         shutil.rmtree(self.db_dir / 'bootstrap')

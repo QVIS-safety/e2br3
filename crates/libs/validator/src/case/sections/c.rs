@@ -1030,13 +1030,13 @@ fn c_1_9_1_r_1(
 		&path,
 		"case-identification",
 		"[C.1.9.1.r.1] Source of the case identifier is required when an other case identifier row is present.",
-		has_text(Some(identifier.source_of_identifier.as_str())),
+		has_text(identifier.source_of_identifier.as_deref()),
 	);
 	length(
 		issues,
 		"ICH.C.1.9.1.r.1.LENGTH.MAX",
 		&path,
-		Some(identifier.source_of_identifier.as_str()),
+		identifier.source_of_identifier.as_deref(),
 		100,
 	);
 }
@@ -1051,7 +1051,7 @@ fn c_1_9_1_r_2(
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let path = format!("otherCaseIdentifiers.{idx}.caseIdentifier");
-	let value = Some(identifier.case_identifier.as_str());
+	let value = identifier.case_identifier.as_deref();
 	required_field(
 		issues,
 		"ICH.C.1.9.1.r.2.REQUIRED",
@@ -1094,7 +1094,7 @@ fn c_1_10_r(
 		issues,
 		"ICH.C.1.10.r.LENGTH.MAX",
 		&path,
-		Some(report.linked_report_number.as_str()),
+		report.linked_report_number.as_deref(),
 		100,
 	);
 }

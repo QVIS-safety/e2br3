@@ -97,16 +97,18 @@ where
 			}
 
 			if key == "list_options.limit" || key == "list_options[limit]" {
-				list_options.limit = Some(value.parse::<i64>().map_err(|err| {
-					format!("invalid list_options.limit: {err}")
-				})?);
+				list_options.limit =
+					Some(value.parse::<i64>().map_err(|err| {
+						format!("invalid list_options.limit: {err}")
+					})?);
 				has_list_options = true;
 				continue;
 			}
 			if key == "list_options.offset" || key == "list_options[offset]" {
-				list_options.offset = Some(value.parse::<i64>().map_err(|err| {
-					format!("invalid list_options.offset: {err}")
-				})?);
+				list_options.offset =
+					Some(value.parse::<i64>().map_err(|err| {
+						format!("invalid list_options.offset: {err}")
+					})?);
 				has_list_options = true;
 				continue;
 			}

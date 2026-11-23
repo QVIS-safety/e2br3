@@ -345,8 +345,13 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 		)
 	})?;
 	assert!(
-		exported.contains(&format!("<creationTime value=\"{transmission_date}\"")),
-		"N.2.r.4 did not use persisted C.1.2"
+		exported
+			.contains(&format!("<creationTime value=\"{}\"", header.message_date)),
+		"N.2.r.4 did not use the supplied message date"
+	);
+	assert!(
+		exported.contains(&format!("<effectiveTime value=\"{transmission_date}\"")),
+		"C.1.2 was overwritten by the message date"
 	);
 	let deceased = exported
 		.split_once("<deceasedTime")
@@ -435,13 +440,24 @@ async fn fresh_full_build_validates_for_all_authorities() -> Result<()> {
 		xsd_path: Some(resolved_xsd_path()),
 		..Default::default()
 	};
+	let report =
+		lib_core::model::safety_report::SafetyReportIdentificationBmc::get_by_case(
+			&ctx, &mm, case_id,
+		)
+		.await?;
+	let report_id = report.safety_report_id.ok_or("fixture missing report ID")?;
+	let report_date = report
+		.transmission_date
+		.ok_or("fixture missing report date")?;
 
 	for authority in [
 		lib_core::regulatory::RegulatoryAuthority::Ich,
 		lib_core::regulatory::RegulatoryAuthority::Fda,
 		lib_core::regulatory::RegulatoryAuthority::Mfds,
 	] {
-		let header = outbound_header(authority);
+		let mut header = outbound_header(authority);
+		header.message_number = report_id.clone();
+		header.message_date = report_date.clone();
 		let exported = tokio::task::block_in_place(|| {
 			tokio::runtime::Handle::current().block_on(
 				xml::export::serialize_case_xml_for_authority(

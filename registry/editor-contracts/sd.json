@@ -14,15 +14,105 @@
               "dictionaryValue": "1",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.1.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 0
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 0
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                }
+              ]
             },
             "allowed_value_constraint": {
-              "dictionaryValue": {"kind": "code_set", "values": ["1", "2", "3", "4", "5", "6", "7"], "enforcement": "case_validate"},
+              "dictionaryValue": {
+                "kind": "code_set",
+                "values": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7"
+                ],
+                "enforcement": "case_validate"
+              },
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.1.ALLOWED.VALUE",
-              "valid": [{"value": "1", "nullFlavor": null}, {"value": "2", "nullFlavor": null}, {"value": "3", "nullFlavor": null}, {"value": "4", "nullFlavor": null}, {"value": "5", "nullFlavor": null}, {"value": "6", "nullFlavor": null}, {"value": "7", "nullFlavor": null}],
-              "invalid": [{"value": "ZZZ", "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": "1",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "2",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "3",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "4",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "5",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "6",
+                  "nullFlavor": null
+                },
+                {
+                  "value": "7",
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": "ZZZ",
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -42,10 +132,26 @@
       },
       "payloadPath": "senderType",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "sender_type", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "sender_type",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -60,8 +166,52 @@
               "dictionaryValue": "1",
               "owner": "input-contracts",
               "ruleCode": "MFDS.C.3.1.KR.1.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 0}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 0
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 0
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -81,10 +231,26 @@
       },
       "payloadPath": "healthProfessionalTypeKr1",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "health_professional_type_kr1", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "health_professional_type_kr1",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -99,8 +265,52 @@
               "dictionaryValue": "100",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.2.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -120,10 +330,26 @@
       },
       "payloadPath": "organizationName",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "organization_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "organization_name",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -138,8 +364,52 @@
               "dictionaryValue": "60",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.3.1.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -159,10 +429,26 @@
       },
       "payloadPath": "department",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "department", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "department",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -177,8 +463,52 @@
               "dictionaryValue": "50",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.3.2.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 50}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 49}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 50}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 51}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 51}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 49
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 50
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 49
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 50
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 51
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 51
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -198,10 +528,26 @@
       },
       "payloadPath": "personTitle",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "person_title", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "person_title",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -216,8 +562,52 @@
               "dictionaryValue": "60",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.3.3.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -237,10 +627,26 @@
       },
       "payloadPath": "personGivenName",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "person_given_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "person_given_name",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -255,8 +661,52 @@
               "dictionaryValue": "60",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.3.4.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -276,10 +726,26 @@
       },
       "payloadPath": "personMiddleName",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "person_middle_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "person_middle_name",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -294,8 +760,52 @@
               "dictionaryValue": "60",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.3.5.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 60}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 59}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 60}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 59
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 60
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 61
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -315,10 +825,26 @@
       },
       "payloadPath": "personFamilyName",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "person_family_name", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "person_family_name",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -333,8 +859,52 @@
               "dictionaryValue": "100",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.1.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -354,10 +924,26 @@
       },
       "payloadPath": "streetAddress",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "street_address", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "street_address",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -372,8 +958,52 @@
               "dictionaryValue": "35",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.2.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 35}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 35}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 36}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 36}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 35
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 35
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 36
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 36
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -393,10 +1023,26 @@
       },
       "payloadPath": "city",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "city", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "city",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -411,8 +1057,52 @@
               "dictionaryValue": "40",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.3.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 40}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 39}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 40}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 41}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 41}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 39
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 40
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 39
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 40
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 41
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 41
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -432,10 +1122,26 @@
       },
       "payloadPath": "state",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "state", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "state",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -450,8 +1156,52 @@
               "dictionaryValue": "15",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.4.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 14}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 15}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 14}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 15}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 16}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 16}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 14
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 15
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 14
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 15
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 16
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 16
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -471,10 +1221,26 @@
       },
       "payloadPath": "postcode",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "postcode", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "postcode",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -489,13 +1255,63 @@
               "dictionaryValue": "2",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.5.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 2}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 1}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 2}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 3}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 3}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 1
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 2
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 3
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 3
+                  },
+                  "nullFlavor": null
+                }
+              ]
             },
             "allowed_value_constraint": {
-              "dictionaryValue": {"kind": "vocabulary", "enforcement": "case_validate", "vocabulary_scope": "all"},
+              "dictionaryValue": {
+                "kind": "vocabulary",
+                "enforcement": "case_validate",
+                "vocabulary_scope": "all"
+              },
               "owner": "validator",
-              "ruleCodes": ["ICH.C.3.4.5.VOCABULARY"],
+              "ruleCodes": [
+                "ICH.C.3.4.5.VOCABULARY"
+              ],
               "reason": "Membership requires the active terminology or identifier policy; it is not a scalar input format check."
             }
           }
@@ -524,10 +1340,26 @@
         "selectedLabel": "KR"
       },
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "country_code", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "country_code",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -542,8 +1374,52 @@
               "dictionaryValue": "33",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.6.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 33}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 33}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 32
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 33
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 32
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 33
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -563,10 +1439,26 @@
       },
       "payloadPath": "telephone",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "telephone", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "telephone",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -581,8 +1473,52 @@
               "dictionaryValue": "33",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.7.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 33}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 32}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 33}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 34}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 34}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 32
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 33
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 32
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 33
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 34
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -602,10 +1538,26 @@
       },
       "payloadPath": "fax",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "fax", "record": {"source": "projection", "path": "senderInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "fax",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     },
     {
@@ -620,8 +1572,52 @@
               "dictionaryValue": "100",
               "owner": "input-contracts",
               "ruleCode": "ICH.C.3.4.8.LENGTH.MAX",
-              "valid": [{"value": {"repeat": "X", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 100}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 99}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 100}, "nullFlavor": null}],
-              "invalid": [{"value": {"repeat": "X", "count": 101}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 101}, "nullFlavor": null}]
+              "valid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 99
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 100
+                  },
+                  "nullFlavor": null
+                }
+              ],
+              "invalid": [
+                {
+                  "value": {
+                    "repeat": "X",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                },
+                {
+                  "value": {
+                    "repeat": "한",
+                    "count": 101
+                  },
+                  "nullFlavor": null
+                }
+              ]
             }
           }
         }
@@ -641,252 +1637,26 @@
       },
       "payloadPath": "email",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "clear": {
+          "effect": "store",
+          "input": null,
+          "value": null
+        },
+        "blank": {
+          "effect": "reject",
+          "input": "",
+          "status": 422,
+          "ruleCode": "INPUT.EMPTY.REJECTED"
+        },
         "omission": "preserve",
-        "audit": {"table": "sender_information", "column": "email", "record": {"source": "projection", "path": "senderInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.1",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.organizationName",
-      "projectionPath": "receiverInformation.organizationName",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "Receiver Org",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "organizationName",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "organization_name", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.2",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.receiverType",
-      "projectionPath": "receiverInformation.receiverType",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "2",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "receiverType",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "receiver_type", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.3",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.department",
-      "projectionPath": "receiverInformation.department",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "Safety",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "department",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "department", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.4",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.streetAddress",
-      "projectionPath": "receiverInformation.streetAddress",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "2 Test Road",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "streetAddress",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "street_address", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.5",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.city",
-      "projectionPath": "receiverInformation.city",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "Busan",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "city",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "city", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.6",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.stateProvince",
-      "projectionPath": "receiverInformation.stateProvince",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "Busan",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "stateProvince",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "state_province", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.7",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.postcode",
-      "projectionPath": "receiverInformation.postcode",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "48000",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "postcode",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "postcode", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.country",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.countryCode",
-      "projectionPath": "receiverInformation.countryCode",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "KR",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "countryCode",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "country_code", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.8",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.telephone",
-      "projectionPath": "receiverInformation.telephone",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "+821055555555",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "telephone",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "telephone", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.9",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.fax",
-      "projectionPath": "receiverInformation.fax",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "+82511234567",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "fax",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "fax", "record": {"source": "projection", "path": "receiverInformation.id"}}
-      }
-    },
-    {
-      "code": "local.receiver.10",
-      "authority": "ICH",
-      "frontendPath": "receiverInformation.email",
-      "projectionPath": "receiverInformation.email",
-      "patch": {
-        "kind": "row",
-        "owner": "receiverInformation"
-      },
-      "roundTripValue": "receiver@example.test",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "The local receiver master-data field has no Input Contract."
-      },
-      "payloadPath": "email",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
-        "omission": "preserve",
-        "audit": {"table": "receiver_information", "column": "email", "record": {"source": "projection", "path": "receiverInformation.id"}}
+        "audit": {
+          "table": "sender_information",
+          "column": "email",
+          "record": {
+            "source": "projection",
+            "path": "senderInformation.id"
+          }
+        }
       }
     }
   ],

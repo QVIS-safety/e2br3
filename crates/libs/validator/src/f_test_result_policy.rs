@@ -3,7 +3,7 @@ use lib_core::model::test_result::TestResult;
 // Shared Section F policy used by exporter + case validators.
 
 pub fn has_test_name(test: &TestResult) -> bool {
-	!test.test_name.trim().is_empty()
+	super::has_text(test.test_name.as_deref())
 		|| super::has_text(test.test_meddra_code.as_deref())
 }
 

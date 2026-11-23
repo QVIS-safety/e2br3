@@ -83,7 +83,7 @@ pub(super) fn narrative() -> NarrativeInformation {
 		id: Uuid::nil(),
 		case_id: Uuid::nil(),
 		source_narrative_presave_id: None,
-		case_narrative: String::new(),
+		case_narrative: None,
 		reporter_comments: None,
 		sender_comments: None,
 		additional_information: None,
@@ -162,7 +162,7 @@ fn h_1_is_required_independently_of_other_narrative_content() {
 	assert_eq!(required_count(&empty_row), 1);
 
 	let mut whitespace = narrative();
-	whitespace.case_narrative = " \t\n ".to_string();
+	whitespace.case_narrative = Some(" \t\n ".to_string());
 	let mut whitespace_ctx = empty_ctx();
 	whitespace_ctx.narrative = Some(whitespace);
 	assert_eq!(required_count(&whitespace_ctx), 1);
@@ -176,7 +176,7 @@ fn h_1_is_required_independently_of_other_narrative_content() {
 	assert_eq!(required_count(&h_5_only), 1);
 
 	let mut populated = narrative();
-	populated.case_narrative = "Required narrative".to_string();
+	populated.case_narrative = Some("Required narrative".to_string());
 	let mut populated_ctx = empty_ctx();
 	populated_ctx.narrative = Some(populated);
 	assert_eq!(required_count(&populated_ctx), 0);
@@ -202,7 +202,7 @@ fn meddra_vocabulary_rules_cover_sender_diagnosis_codes() {
 #[test]
 fn max_length_rules_cover_h_narrative_text_fields() {
 	let mut narrative = narrative();
-	narrative.case_narrative = "N".repeat(100001);
+	narrative.case_narrative = Some("N".repeat(100001));
 	narrative.reporter_comments = Some("R".repeat(20001));
 	narrative.sender_comments = Some("S".repeat(20001));
 	let mut diagnosis = sender_diagnosis();

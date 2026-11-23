@@ -34,10 +34,11 @@ fn extract_root_element_name(xml: &[u8]) -> Option<String> {
 			rest = rest.get(rest.find('>')? + 1..)?;
 			continue;
 		}
-		let end = match rest.find(|c: char| c.is_whitespace() || c == '>' || c == '/') {
-			Some(end) => end,
-			None => rest.len(),
-		};
+		let end =
+			match rest.find(|c: char| c.is_whitespace() || c == '>' || c == '/') {
+				Some(end) => end,
+				None => rest.len(),
+			};
 		let name = rest[..end].trim();
 		return (!name.is_empty()).then(|| name.to_string());
 	}

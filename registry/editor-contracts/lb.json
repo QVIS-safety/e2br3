@@ -44,7 +44,7 @@
       "nullFlavorPartnerCode": "F.r.1.local.testDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_date", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -89,8 +89,8 @@
       ],
       "payloadPath": "testName",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": ""},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_name", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -136,7 +136,7 @@
       "payloadPath": "testResultCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_result_code", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -182,7 +182,7 @@
       "payloadPath": "testResult",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_result_value", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -235,7 +235,7 @@
       "payloadPath": "testUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_result_unit", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -289,7 +289,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_meddra_version", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -352,7 +352,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_meddra_code", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -391,7 +391,7 @@
       "payloadPath": "testResultUnstructured",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "result_unstructured", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -430,7 +430,7 @@
       "payloadPath": "lowRange",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "normal_low_value", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -469,7 +469,7 @@
       "payloadPath": "highRange",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "normal_high_value", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -508,7 +508,7 @@
       "payloadPath": "comments",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "comments", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -572,7 +572,7 @@
       "nullFlavorPartnerCode": "F.r.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_date_null_flavor", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -588,14 +588,15 @@
       },
       "roundTripValue": "EQ",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "The UI select limits values to EQ/LT/LE/GT/GE, while the backend has no separate portable 422 input-contract rule for this optional serialization modifier."
+        "status": "verified",
+        "ruleCode": "LOCAL.F.r.testResultQualifier.ALLOWED.VALUE",
+        "invalidValue": "BAD"
       },
       "auditItem": "Test Result Qualifier",
       "payloadPath": "testResultQualifier",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "test_results", "column": "test_result_qualifier", "record": {"source": "projection", "path": "testResult.id"}}
       }
@@ -608,9 +609,9 @@
       "description": "clearing numeric result clears qualifier and keeps free text"
     },
     {
-      "id": "blank_test_name_keeps_meddra_selection",
-      "verifier": "fields::coupled_clear::blank_test_name_keeps_meddra_selection",
-      "description": "blank test name keeps meddra selection"
+      "id": "blank_test_name_is_rejected_and_null_preserves_meddra",
+      "verifier": "fields::coupled_clear::blank_test_name_is_rejected_and_null_preserves_meddra",
+      "description": "Blank test names are rejected; omission and explicit NULL preserve MedDRA fields"
     }
   ],
   "collections": [
@@ -620,9 +621,9 @@
       "description": "list projection includes displayed result columns"
     },
     {
-      "id": "incomplete_test_result_creates_empty_name",
-      "verifier": "rows::creation::incomplete_test_result_creates_empty_name",
-      "description": "incomplete test result creates empty name"
+      "id": "incomplete_test_result_preserves_absent_name",
+      "verifier": "rows::creation::incomplete_test_result_preserves_absent_name",
+      "description": "incomplete sequenced test result preserves an absent name as null without inventing an empty string"
     },
     {
       "id": "batched_rows_match_detail_and_require_auth",

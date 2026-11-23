@@ -7,7 +7,7 @@ use lib_auth::token::generate_web_token;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
+pub(crate) async fn ci_child_text_distinguishes_null_from_omission(
 	_page_id: &str,
 	_check_id: &str,
 ) -> crate::common::Result<()> {
@@ -38,8 +38,8 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 		&cookie,
 		&uri,
 		json!({"authorities":["ich"],"rows":{
-			"otherCaseIdentifiers":[{"source":"SOURCE-1","caseIdentifier":"US-SENDER-CASE1"}],
-			"linkedReports":[{"linkedReportNumber":"LINK-1"}]
+			"otherCaseIdentifiers":[{"sequenceNumber":1,"source":"SOURCE-1","caseIdentifier":"US-SENDER-CASE1"}],
+			"linkedReports":[{"sequenceNumber":1,"linkedReportNumber":"LINK-1"}]
 		}}),
 	)
 	.await?;
@@ -94,21 +94,33 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["rows"]["otherCaseIdentifiers"][0]["source"], "");
+	assert_eq!(
+		body["rows"]["otherCaseIdentifiers"][0]["source"],
+		Value::Null
+	);
 	assert_eq!(
 		body["rows"]["otherCaseIdentifiers"][0]["caseIdentifier"],
 		"US-SENDER-CASE2"
 	);
-	assert_eq!(body["rows"]["linkedReports"][0]["linkedReportNumber"], "");
+	assert_eq!(
+		body["rows"]["linkedReports"][0]["linkedReportNumber"],
+		Value::Null
+	);
 
 	let (status, body) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["rows"]["otherCaseIdentifiers"][0]["source"], "");
+	assert_eq!(
+		body["rows"]["otherCaseIdentifiers"][0]["source"],
+		Value::Null
+	);
 	assert_eq!(
 		body["rows"]["otherCaseIdentifiers"][0]["caseIdentifier"],
 		"US-SENDER-CASE2"
 	);
-	assert_eq!(body["rows"]["linkedReports"][0]["linkedReportNumber"], "");
+	assert_eq!(
+		body["rows"]["linkedReports"][0]["linkedReportNumber"],
+		Value::Null
+	);
 
 	let (status, body) = patch_json(
 		&app,
@@ -121,10 +133,13 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["rows"]["otherCaseIdentifiers"][0]["source"], "");
+	assert_eq!(
+		body["rows"]["otherCaseIdentifiers"][0]["source"],
+		Value::Null
+	);
 	assert_eq!(
 		body["rows"]["otherCaseIdentifiers"][0]["caseIdentifier"],
-		""
+		Value::Null
 	);
 	assert_eq!(
 		body["rows"]["linkedReports"][0]["linkedReportNumber"],
@@ -141,13 +156,25 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 		}}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["rows"]["otherCaseIdentifiers"][0]["source"], "");
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
 	assert_eq!(
-		body["rows"]["otherCaseIdentifiers"][0]["caseIdentifier"],
-		""
+		body["error"]["data"]["detail"]["ruleCode"],
+		"INPUT.EMPTY.REJECTED"
 	);
-	assert_eq!(body["rows"]["linkedReports"][0]["linkedReportNumber"], "");
+	let (status, unchanged) = get_json(&app, &cookie, &uri).await?;
+	assert_eq!(status, StatusCode::OK, "{unchanged}");
+	assert_eq!(
+		unchanged["rows"]["otherCaseIdentifiers"][0]["source"],
+		Value::Null
+	);
+	assert_eq!(
+		unchanged["rows"]["otherCaseIdentifiers"][0]["caseIdentifier"],
+		Value::Null
+	);
+	assert_eq!(
+		unchanged["rows"]["linkedReports"][0]["linkedReportNumber"],
+		"LINK-RESTORED"
+	);
 
 	let (status, body) = patch_json(
 		&app,
@@ -197,8 +224,32 @@ pub(crate) async fn non_nullable_ci_child_text_distinguishes_null_from_omission(
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
 	assert!(
-		body.to_string().contains("linkedReportNumber is required"),
+		body.to_string().contains("sequenceNumber is required"),
 		"{body}"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{
+			"otherCaseIdentifiers":[{"sequenceNumber":2,"caseIdentifier":"PARTIAL"}],
+			"linkedReports":[{"sequenceNumber":2}]
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["otherCaseIdentifiers"][1]["source"],
+		Value::Null
+	);
+	assert_eq!(
+		body["rows"]["otherCaseIdentifiers"][1]["caseIdentifier"],
+		"PARTIAL"
+	);
+	assert_eq!(
+		body["rows"]["linkedReports"][1]["linkedReportNumber"],
+		Value::Null
 	);
 
 	assert_ne!(other_id, Value::Null);
@@ -262,7 +313,7 @@ pub(crate) async fn clearing_phpid_survives_dg_row_reload(
 	Ok(())
 }
 
-pub(crate) async fn blank_optional_text_clears_without_changing_omitted_sibling(
+pub(crate) async fn blank_optional_text_is_rejected_without_changing_siblings(
 	_page_id: &str,
 	_check_id: &str,
 ) -> Result<()> {
@@ -307,11 +358,15 @@ pub(crate) async fn blank_optional_text_clears_without_changing_omitted_sibling(
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"INPUT.EMPTY.REJECTED"
+	);
 
 	let (status, body) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["data"]["drug"]["phpid"], Value::Null);
+	assert_eq!(body["data"]["drug"]["phpid"], "PHPID-OLD");
 	assert_eq!(body["data"]["drug"]["phpid_version"], json!("202608"));
 	Ok(())
 }
@@ -400,6 +455,35 @@ pub(crate) async fn clearing_numeric_result_clears_qualifier_and_keeps_free_text
 		"{body}"
 	);
 
+	for (numeric, qualifier) in [
+		("testResult", "testResultQualifier"),
+		("test_result_value", "test_result_qualifier"),
+	] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities": ["ich"], "rows": {"testResult": {
+				(numeric): null, (qualifier): "LT"
+			}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+		assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
+		assert_eq!(
+			body["error"]["data"]["detail"]["ruleCode"],
+			"LOCAL.F.r.testResultQualifier.REQUIRES.VALUE"
+		);
+		let (status, body) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_eq!(body["data"]["testResult"]["test_result_value"], "5.6");
+		assert_eq!(body["data"]["testResult"]["test_result_qualifier"], "GE");
+		assert_eq!(
+			body["data"]["testResult"]["result_unstructured"],
+			"Free result"
+		);
+	}
+
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
@@ -459,7 +543,12 @@ pub(crate) async fn clearing_numeric_result_clears_qualifier_and_keeps_free_text
 		json!({"authorities": ["ich"], "rows": {"testResult": {"testResultQualifier": "LE"}}}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"LOCAL.F.r.testResultQualifier.REQUIRES.VALUE"
+	);
 	let (status, body) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(
@@ -505,6 +594,7 @@ pub(crate) async fn reporter_title_can_be_cleared_without_changing_siblings(
 		&cookie,
 		&uri,
 		json!({"authorities": ["ich"], "rows": {"primarySources": [{
+			"sequenceNumber": 1,
 			"reporterTitle": "Dr",
 			"reporterGivenName": "Sibling"
 		}]}}),
@@ -549,7 +639,7 @@ pub(crate) async fn summary_language_and_text_clear_together(
 		create_case_for_editor(&app, &cookie, "EDITOR-CONTRACT", &["ich"]).await?;
 	let base = format!("/api/cases/{id}/editor/pages");
 	let uri = format!("{base}/NR");
-	let (status, body) = patch_json(&app, &cookie, &uri, json!({"authorities":["ich"],"rows":{"caseSummaryInformation":[{"languageCode":"eng","summaryText":"TEXT"}]}})).await?;
+	let (status, body) = patch_json(&app, &cookie, &uri, json!({"authorities":["ich"],"rows":{"caseSummaryInformation":[{"sequenceNumber":1,"languageCode":"eng","summaryText":"TEXT"}]}})).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let (_, saved) = get_json(&app, &cookie, &uri).await?;
 	let summary_id = &saved["rows"]["caseSummaryInformation"][0]["id"];
@@ -560,11 +650,19 @@ pub(crate) async fn summary_language_and_text_clear_together(
 		saved["rows"]["caseSummaryInformation"][0]["language_code"].is_null(),
 		"{saved}"
 	);
+	assert!(
+		saved["rows"]["caseSummaryInformation"][0]["summary_text"].is_null(),
+		"{saved}"
+	);
+	assert_eq!(
+		&saved["rows"]["caseSummaryInformation"][0]["id"],
+		summary_id
+	);
 
 	Ok(())
 }
 
-pub(crate) async fn blank_test_name_keeps_meddra_selection(
+pub(crate) async fn blank_test_name_is_rejected_and_null_preserves_meddra(
 	_page_id: &str,
 	_check_id: &str,
 ) -> crate::common::Result<()> {
@@ -580,7 +678,7 @@ pub(crate) async fn blank_test_name_keeps_meddra_selection(
 		&app,
 		&cookie,
 		&uri,
-		json!({"authorities":["ich"],"rows":{"testResult":{"testName":"Before"}}}),
+		json!({"authorities":["ich"],"rows":{"testResult":{"sequenceNumber":1,"testName":"Before"}}}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body}");
@@ -598,9 +696,32 @@ pub(crate) async fn blank_test_name_keeps_meddra_selection(
 		}}}),
 	)
 	.await?;
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"INPUT.EMPTY.REJECTED"
+	);
+	let (_, unchanged) = get_json(&app, &cookie, &detail).await?;
+	assert_eq!(unchanged["data"]["testResult"]["test_name"], "Before");
+	assert_eq!(
+		unchanged["data"]["testResult"]["test_meddra_code"],
+		Value::Null
+	);
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&detail,
+		json!({"authorities":["ich"],"rows":{"testResult":{
+			"testDate":"20210303", "testMeddraVersion":"28.1", "testMeddraCode":"10088978"
+		}}}),
+	)
+	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let (_, saved) = get_json(&app, &cookie, &detail).await?;
-	assert_eq!(saved["data"]["testResult"]["test_name"], "", "{saved}");
+	assert_eq!(
+		saved["data"]["testResult"]["test_name"], "Before",
+		"{saved}"
+	);
 	assert_eq!(
 		saved["data"]["testResult"]["test_meddra_version"], "28.1",
 		"{saved}"
@@ -618,11 +739,72 @@ pub(crate) async fn blank_test_name_keeps_meddra_selection(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let (_, saved) = get_json(&app, &cookie, &detail).await?;
-	assert_eq!(saved["data"]["testResult"]["test_name"], "", "{saved}");
+	assert_eq!(
+		saved["data"]["testResult"]["test_name"],
+		Value::Null,
+		"{saved}"
+	);
 	assert_eq!(
 		saved["data"]["testResult"]["test_meddra_code"], "10088978",
 		"{saved}"
 	);
 
+	Ok(())
+}
+
+pub(crate) async fn dosage_date_precision_transitions_preserve_values(
+	_page_id: &str,
+	_check_id: &str,
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm).expect("web server configuration");
+	let case_id =
+		create_case_for_editor(&app, &cookie, "DOSAGE-PRECISION", &["ich"]).await?;
+	let uri = format!("/api/cases/{case_id}/editor/pages/DG/rows");
+	let (status, created) = post_json(
+		&app,
+		&cookie,
+		&uri,
+		json!({"authorities":["ich"],"rows":{"drug":{
+			"sequenceNumber":1,"drugCharacterization":"1","medicinalProduct":"Precision test",
+			"dosageInformation":[{"sequenceNumber":1,"firstAdministrationDate":"2020"}]
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{created}");
+	let drug_id = created["rowId"].as_str().ok_or("missing drug ID")?;
+	let uri = format!("{uri}/{drug_id}");
+	let (_, initial) = get_json(&app, &cookie, &uri).await?;
+	let dosage_id = initial["data"]["drug"]["dosageInformation"][0]["id"].clone();
+	assert_eq!(
+		initial["data"]["drug"]["dosageInformation"][0]["first_administration_date"],
+		"2020"
+	);
+	for value in [
+		json!("20200102"),
+		json!("202002"),
+		json!("20200304"),
+		Value::Null,
+	] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"drug":{
+				"dosageInformation":[{"id":dosage_id,"firstAdministrationDate":value}]
+			}}}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		let (_, saved) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(
+			saved["data"]["drug"]["dosageInformation"][0]
+				["first_administration_date"],
+			value
+		);
+	}
 	Ok(())
 }

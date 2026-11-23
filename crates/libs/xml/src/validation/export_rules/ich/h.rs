@@ -1,7 +1,10 @@
 use crate::{Result, XmlValidationError};
 use libxml::xpath::Context;
 
-pub(super) fn run(xpath: &mut Context, errors: &mut Vec<XmlValidationError>) -> Result<()> {
+pub(super) fn run(
+	xpath: &mut Context,
+	errors: &mut Vec<XmlValidationError>,
+) -> Result<()> {
 	h_1(xpath, errors)
 }
 

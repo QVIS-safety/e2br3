@@ -13,6 +13,7 @@ mod direct;
 mod input_contract_save;
 mod lb;
 mod lr;
+mod save;
 mod shell;
 
 pub use ae::*;
@@ -22,12 +23,14 @@ pub use direct::*;
 pub(crate) use input_contract_save::validate_row_payload;
 pub use lb::*;
 pub use lr::*;
+pub use save::*;
 pub use shell::*;
 
 use crate::web::rest::case_editor_dto::{
 	CaseEditorPagePatchRequest, CaseEditorPageRowBatchOperation,
 	CaseEditorPageRowBatchRequest, CaseEditorPageRowBatchResponse,
 	CaseEditorPageRowBatchResult, CaseFollowUpPagePatchRequest,
+	CaseFollowUpRowIdentity,
 };
 use axum::{
 	extract::{Path, State},
@@ -43,7 +46,7 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 macro_rules! repeatable_page_batch_handler {
-	($fn_name:ident, $page_id:literal) => {
+	($fn_name:ident, $page_id:literal, $collection_path:literal) => {
 		pub async fn $fn_name(
 			State(mm): State<ModelManager>,
 			ctx_w: CtxW,
@@ -60,7 +63,12 @@ macro_rules! repeatable_page_batch_handler {
 				concat!("editor/", $page_id, "/rows"),
 				move |ctx, mm| {
 					Box::pin(apply_editor_page_row_batch(
-						ctx, mm, case_id, $page_id, request,
+						ctx,
+						mm,
+						case_id,
+						$page_id,
+						$collection_path,
+						request,
 					))
 				},
 			)
@@ -69,17 +77,26 @@ macro_rules! repeatable_page_batch_handler {
 	};
 }
 
-repeatable_page_batch_handler!(patch_editor_lr_page_rows, "LR");
-repeatable_page_batch_handler!(patch_editor_dh_page_rows, "DH");
-repeatable_page_batch_handler!(patch_editor_ae_page_rows, "AE");
-repeatable_page_batch_handler!(patch_editor_lb_page_rows, "LB");
-repeatable_page_batch_handler!(patch_editor_dg_page_rows, "DG");
+repeatable_page_batch_handler!(
+	patch_editor_lr_page_rows,
+	"LR",
+	"literatureReferences"
+);
+repeatable_page_batch_handler!(
+	patch_editor_dh_page_rows,
+	"DH",
+	"patientInformation.pastDrugHistory"
+);
+repeatable_page_batch_handler!(patch_editor_ae_page_rows, "AE", "reactions");
+repeatable_page_batch_handler!(patch_editor_lb_page_rows, "LB", "testResults");
+repeatable_page_batch_handler!(patch_editor_dg_page_rows, "DG", "drugs");
 
 async fn apply_editor_page_row_batch(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	page_id: &'static str,
+	collection_path: &'static str,
 	request: CaseEditorPageRowBatchRequest,
 ) -> Result<(StatusCode, Json<CaseEditorPageRowBatchResponse>)> {
 	if request.operations.is_empty() {
@@ -112,6 +129,7 @@ async fn apply_editor_page_row_batch(
 			CaseEditorPageRowBatchOperation::Create {
 				client_row_index,
 				rows,
+				..
 			} => {
 				let patch = CaseEditorPagePatchRequest {
 					authorities: request.authorities.clone(),
@@ -119,7 +137,12 @@ async fn apply_editor_page_row_batch(
 				};
 				let row_id =
 					apply_editor_page_row_create(ctx, mm, case_id, page_id, &patch)
-						.await?;
+						.await
+						.map_err(|source| Error::CaseEditorRow {
+							collection_path,
+							client_row_index,
+							source: Box::new(source),
+						})?;
 				("create", client_row_index, row_id)
 			}
 			CaseEditorPageRowBatchOperation::Update {
@@ -134,7 +157,12 @@ async fn apply_editor_page_row_batch(
 				apply_editor_page_row_patch(
 					ctx, mm, case_id, page_id, row_id, &patch,
 				)
-				.await?;
+				.await
+				.map_err(|source| Error::CaseEditorRow {
+					collection_path,
+					client_row_index,
+					source: Box::new(source),
+				})?;
 				("update", client_row_index, row_id)
 			}
 			CaseEditorPageRowBatchOperation::Delete {
@@ -142,7 +170,12 @@ async fn apply_editor_page_row_batch(
 				client_row_index,
 			} => {
 				apply_editor_page_row_delete(ctx, mm, case_id, page_id, row_id)
-					.await?;
+					.await
+					.map_err(|source| Error::CaseEditorRow {
+						collection_path,
+						client_row_index,
+						source: Box::new(source),
+					})?;
 				("delete", client_row_index, row_id)
 			}
 		};
@@ -276,7 +309,7 @@ pub(crate) async fn apply_follow_up_page_patches(
 	mm: &ModelManager,
 	case_id: Uuid,
 	mut pages: CaseFollowUpPagePatchRequest,
-) -> Result<()> {
+) -> Result<Vec<CaseFollowUpRowIdentity>> {
 	let authorities = pages.ci.authorities.clone();
 	for request in [&pages.rp, &pages.sd, &pages.si, &pages.dm, &pages.nr]
 		.into_iter()
@@ -310,15 +343,28 @@ pub(crate) async fn apply_follow_up_page_patches(
 		direct::apply_editor_direct_page_patch(ctx, mm, case_id, page_id, request)
 			.await?;
 	}
-	for row in &pages.lr {
-		lr::apply_editor_lr_page_row_create(ctx, mm, case_id, &row.request).await?;
-	}
-	for row in &pages.dh {
-		dh::apply_editor_dh_page_row_create(ctx, mm, case_id, &row.request).await?;
+	let mut identities = Vec::new();
+	for (page_id, rows) in [("LR", &pages.lr), ("DH", &pages.dh)] {
+		for (client_row_index, row) in rows.iter().enumerate() {
+			let row_id = apply_editor_page_row_create(
+				ctx,
+				mm,
+				case_id,
+				page_id,
+				&row.request,
+			)
+			.await?;
+			identities.push(CaseFollowUpRowIdentity {
+				page_id,
+				client_row_index,
+				client_row_id: row.client_row_id.clone(),
+				row_id,
+			});
+		}
 	}
 
 	let mut reaction_ids = HashMap::new();
-	for row in &pages.ae {
+	for (client_row_index, row) in pages.ae.iter().enumerate() {
 		let client_row_id = row
 			.client_row_id
 			.as_deref()
@@ -341,13 +387,35 @@ pub(crate) async fn apply_follow_up_page_patches(
 				),
 			});
 		}
+		identities.push(CaseFollowUpRowIdentity {
+			page_id: "AE",
+			client_row_index,
+			client_row_id: row.client_row_id.clone(),
+			row_id,
+		});
 	}
-	for row in &pages.lb {
-		lb::apply_editor_lb_page_row_create(ctx, mm, case_id, &row.request).await?;
+	for (client_row_index, row) in pages.lb.iter().enumerate() {
+		let (row_id, _) =
+			lb::apply_editor_lb_page_row_create(ctx, mm, case_id, &row.request)
+				.await?;
+		identities.push(CaseFollowUpRowIdentity {
+			page_id: "LB",
+			client_row_index,
+			client_row_id: row.client_row_id.clone(),
+			row_id,
+		});
 	}
-	for row in &mut pages.dg {
+	for (client_row_index, row) in pages.dg.iter_mut().enumerate() {
 		remap_follow_up_dg_reaction_ids(&mut row.request, &reaction_ids)?;
-		dg::apply_editor_dg_page_row_create(ctx, mm, case_id, &row.request).await?;
+		let (row_id, _) =
+			dg::apply_editor_dg_page_row_create(ctx, mm, case_id, &row.request)
+				.await?;
+		identities.push(CaseFollowUpRowIdentity {
+			page_id: "DG",
+			client_row_index,
+			client_row_id: row.client_row_id.clone(),
+			row_id,
+		});
 	}
 
 	common::mark_editor_validation_summary_stale(
@@ -356,7 +424,8 @@ pub(crate) async fn apply_follow_up_page_patches(
 		case_id,
 		requested_authorities,
 	)
-	.await
+	.await?;
+	Ok(identities)
 }
 
 fn remap_follow_up_dg_reaction_ids(

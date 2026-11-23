@@ -33,7 +33,6 @@ pub mod narrative_sub_rest;
 pub mod parent_history_rest;
 pub mod patient_sub_rest;
 pub mod permission_profile_rest;
-pub mod receiver_rest;
 pub mod relatedness_assessment_rest;
 pub mod safety_report_sub_rest;
 pub mod section_presave_rest;

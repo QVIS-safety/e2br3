@@ -2,10 +2,8 @@ use super::super::common::{
 	direct_section_response, explicit_null_model_fields, json, optional_row_object,
 	reject_unknown_row_keys, string_field, uuid_eq, uuid_field, BTreeMap,
 	CaseEditorDirectSectionResponse, CtxW, Json, ListOptions, ModelManager, Path,
-	ReceiverInformationBmc, ReceiverInformationForCreate,
-	ReceiverInformationForUpdate, Result, SenderInformationBmc,
-	SenderInformationFilter, SenderInformationForCreate, SenderInformationForUpdate,
-	State, Uuid, Value,
+	Result, SenderInformationBmc, SenderInformationFilter,
+	SenderInformationForCreate, SenderInformationForUpdate, State, Uuid, Value,
 };
 use super::super::handler_macros::direct_page_projection_handler;
 
@@ -44,20 +42,6 @@ const SD_SENDER_PATCH_FIELDS: &[(&str, &[&str])] = &[
 	("fax", &["fax"]),
 	("email", &["email"]),
 ];
-const SD_RECEIVER_PATCH_FIELDS: &[(&str, &[&str])] = &[
-	("source_receiver_presave_id", &["sourceReceiverPresaveId"]),
-	("receiver_type", &["receiverType"]),
-	("organization_name", &["organizationName"]),
-	("department", &["department"]),
-	("street_address", &["streetAddress"]),
-	("city", &["city"]),
-	("state_province", &["stateProvince"]),
-	("postcode", &["postcode"]),
-	("country_code", &["countryCode"]),
-	("telephone", &["telephone"]),
-	("fax", &["fax"]),
-	("email", &["email"]),
-];
 pub(super) async fn apply_sd_page_rows_patch(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -65,11 +49,7 @@ pub(super) async fn apply_sd_page_rows_patch(
 	page_id: &'static str,
 	rows: &BTreeMap<String, Value>,
 ) -> Result<()> {
-	reject_unknown_row_keys(
-		page_id,
-		rows,
-		&["senderInformation", "receiverInformation"],
-	)?;
+	reject_unknown_row_keys(page_id, rows, &["senderInformation"])?;
 	if let Some(sender) = optional_row_object(page_id, rows, "senderInformation")? {
 		let update = SenderInformationForUpdate {
 			source_sender_presave_id: uuid_field(
@@ -178,63 +158,6 @@ pub(super) async fn apply_sd_page_rows_patch(
 			.await?;
 		}
 	}
-	if let Some(receiver) =
-		optional_row_object(page_id, rows, "receiverInformation")?
-	{
-		let update = ReceiverInformationForUpdate {
-			source_receiver_presave_id: uuid_field(
-				receiver,
-				&["sourceReceiverPresaveId"],
-			)?,
-			receiver_type: string_field(receiver, &["receiverType"]),
-			organization_name: string_field(receiver, &["organizationName"]),
-			department: string_field(receiver, &["department"]),
-			street_address: string_field(receiver, &["streetAddress"]),
-			city: string_field(receiver, &["city"]),
-			state_province: string_field(receiver, &["stateProvince"]),
-			postcode: string_field(receiver, &["postcode"]),
-			country_code: string_field(receiver, &["countryCode"]),
-			telephone: string_field(receiver, &["telephone"]),
-			fax: string_field(receiver, &["fax"]),
-			email: string_field(receiver, &["email"]),
-		};
-		if ReceiverInformationBmc::get_by_case_optional(ctx, mm, case_id)
-			.await?
-			.is_some()
-		{
-			let clear_fields =
-				explicit_null_model_fields(receiver, SD_RECEIVER_PATCH_FIELDS);
-			ReceiverInformationBmc::update_by_case_patch(
-				ctx,
-				mm,
-				case_id,
-				update,
-				&clear_fields,
-			)
-			.await?;
-		} else {
-			ReceiverInformationBmc::create(
-				ctx,
-				mm,
-				ReceiverInformationForCreate {
-					case_id,
-					source_receiver_presave_id: update.source_receiver_presave_id,
-					receiver_type: update.receiver_type,
-					organization_name: update.organization_name,
-					department: update.department,
-					street_address: update.street_address,
-					city: update.city,
-					state_province: update.state_province,
-					postcode: update.postcode,
-					country_code: update.country_code,
-					telephone: update.telephone,
-					fax: update.fax,
-					email: update.email,
-				},
-			)
-			.await?;
-		}
-	}
 	Ok(())
 }
 
@@ -253,9 +176,6 @@ pub(super) async fn load_editor_sd_data(
 	)
 	.await?;
 	let sender = sender_information.first().cloned();
-	let receiver =
-		ReceiverInformationBmc::get_by_case_optional(ctx, mm, case_id).await?;
-
 	Ok(json!({
 		"senderInformation": sender.map(|row| json!({
 			"id": row.id,
@@ -273,21 +193,6 @@ pub(super) async fn load_editor_sd_data(
 			"personGivenName": row.person_given_name,
 			"personMiddleName": row.person_middle_name,
 			"personFamilyName": row.person_family_name,
-			"telephone": row.telephone,
-			"fax": row.fax,
-			"email": row.email,
-		})),
-		"receiverInformation": receiver.map(|row| json!({
-			"id": row.id,
-			"sourceReceiverPresaveId": row.source_receiver_presave_id,
-			"receiverType": row.receiver_type,
-			"organizationName": row.organization_name,
-			"department": row.department,
-			"streetAddress": row.street_address,
-			"city": row.city,
-			"stateProvince": row.state_province,
-			"postcode": row.postcode,
-			"countryCode": row.country_code,
 			"telephone": row.telephone,
 			"fax": row.fax,
 			"email": row.email,

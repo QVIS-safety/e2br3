@@ -168,6 +168,41 @@ pub(super) async fn create_reaction_contract_fixture(
 		.to_string())
 }
 
+pub(super) async fn create_product_presave_contract_fixture(
+	app: &axum::Router,
+	cookie: &str,
+) -> Result<String> {
+	let (status, sender) = post_json(app, cookie, "/api/presaves/senders", json!({
+		"data":{"rows":{"sender":{"senderType":"2","organizationName":"Isolated reference sender"},"gateways":[],"responsiblePersons":[]}}
+	})).await?;
+	assert_eq!(status, StatusCode::CREATED, "{sender}");
+	let sender_id = sender["data"]["rows"]["sender"]["id"]
+		.as_str()
+		.ok_or("missing reference sender id")?;
+	let (status, body) = post_json(
+		app,
+		cookie,
+		"/api/presaves/products",
+		json!({"data":{"rows":{"product":{
+			"senderPresaveId": sender_id,
+			"productId": format!("EDITOR-PRODUCT-{}", Uuid::new_v4()),
+			"medicinalProduct": "Isolated editor contract product"
+		},"activeSubstances":[]}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let id = body["data"]["rows"]["product"]["id"]
+		.as_str()
+		.ok_or("missing product presave fixture id")?;
+	Uuid::parse_str(id)?;
+	let (status, saved) =
+		get_json(app, cookie, &format!("/api/presaves/products/{id}/details"))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	assert_eq!(saved["data"]["rows"]["product"]["id"], id);
+	Ok(id.to_string())
+}
+
 async fn create_test_result_fixture(
 	app: &axum::Router,
 	cookie: &str,

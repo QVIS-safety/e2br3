@@ -71,7 +71,7 @@ JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, gener
 - 기준 `2727d980`에 반영된 결함 수정: Drug·Reaction·TestResult legacy PUT의 삭제행 일반 수정 후 404 경로를 차단했다. Reaction의 공개 `deleted:true/false` 삭제·복원 PUT은 성공 응답과 같은 ID를 유지한다. Editor DG의 삭제행 PATCH/복원 허용 경로는 별도로 유지하며, 변경값을 보낸 거절 요청의 감사 불변과 복원 후 원값을 검사한다.
 - RE 수신자 배열: [review_receivers.rs](../api_cases/contract/review_receivers.rs)에 2→1→동일1→[]→동일[]와 Case GET/shell·실제 JSON 감사·거절 불변을 연결했다.
 
-Editor는 **scalar 373 + behavior 62 = 435개**를 registry에서 등록한다. Legacy GET 수기 검사 14개를 합친 API 실행 계약은 **449개**이며 공통 patch builder 자체 검사 2개는 별도다. canonical UI 필드 360개, HTTP operation 55개, 직접 Rust test 선언 수와 다른 집계다. [generated 파일](../api_editor/pages)은 수기 verifier 실행 등록이고, 필드별 [registry](../../../../../registry/editor-contracts)는 계약 원본이다. 같은 검사를 중복 구현한 것이 아니다.
+Editor는 **scalar 375 + behavior 62 = 437개**를 registry에서 등록한다. Legacy GET 수기 검사 18개를 합친 API 실행 계약은 **455개**이며 helper 자체 검사 7개는 별도다. canonical UI 필드 360개, HTTP operation 55개, 직접 Rust test 선언 수와 다른 집계다. [generated 파일](../api_editor/pages)은 수기 verifier 실행 등록이고, 필드별 [registry](../../../../../registry/editor-contracts)는 계약 원본이다. 같은 검사를 중복 구현한 것이 아니다. 등록은 실행 통과를 뜻하지 않는다.
 
 기존 9개 실행 단위 `api_cases`, `api_editor`, `api_presave`, `api_import`, `api_submission`, `api_terminology`, `api_administration`, `authz`, `xml`을 유지한다. 모델/DB assertion은 `lib-core`, HTTP는 `web-server`, XML 변환/XSD는 해당 target에 둔다. 이 명세 디렉터리는 새 Cargo target을 만들지 않는다.
 
@@ -84,7 +84,7 @@ Editor는 **scalar 373 + behavior 62 = 435개**를 registry에서 등록한다. 
 5. 감사 chain 손상 HTTP 보고, CIOMS 전체 필드·한글·잘림, 외부 XML fixture/Java/전송·기관 수용은 해당 명세의 공백이다. 정상 감사 assertion을 손상 탐지·규제 준수 인증으로 바꾸지 않는다.
 6. 사용자 지시에 따라 테스트·빌드·Clippy·DB·API·UI를 실행하지 않았다. 같은 commit의 선택 목록·실행 로그·환경/데이터 버전이 있어야 통과를 입증한다.
 
-이번 변경은 기존 Rust 테스트 파일 17개의 assertion과 공통 helper를 보강했다. 새 테스트 파일은 0개이고 새 테스트 선언·verifier 함수도 0개이므로 435/449 등록 수는 변하지 않는다.
+초기 명세 보강 당시에는 기존 Rust 테스트 파일 17개의 assertion과 공통 helper만 변경했다. 이후 추가된 UUID 참조 필드 실행을 포함한 현재 등록 수는 위 집계를 따른다. 과거 실행 결과를 새 등록 전체의 통과로 간주하지 않는다.
 
 ## 변경 시 정적 검증
 

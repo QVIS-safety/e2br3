@@ -106,10 +106,7 @@ pub(super) fn ensure_investigation_effective_time(
 	parser: &Parser,
 	xpath: &mut Context,
 ) -> Result<()> {
-	if has_nodes(
-		xpath,
-		"//hl7:investigationEvent/hl7:effectiveTime/hl7:low",
-	)? {
+	if has_nodes(xpath, "//hl7:investigationEvent/hl7:effectiveTime/hl7:low")? {
 		return Ok(());
 	}
 	if has_nodes(xpath, "//hl7:investigationEvent/hl7:effectiveTime")? {
@@ -278,27 +275,9 @@ pub(crate) fn reorder_patient_player_children(xpath: &mut Context) {
 	}
 }
 
-pub(super) fn clear_null_flavor_if_export_policy(
-	xpath: &mut Context,
-	rule_code: &str,
-	path: &str,
-) {
-	if should_clear_null_flavor_on_value(rule_code) {
-		remove_attr_first(xpath, path, "nullFlavor");
-	}
-}
-
 pub(super) fn fmt_date(date: Date) -> String {
 	let year = date.year();
 	let month: u8 = date.month().into();
 	let day = date.day();
 	format!("{year:04}{month:02}{day:02}")
-}
-
-pub(super) fn normalize_bl_value(value: &str) -> Option<&'static str> {
-	match value.trim().to_ascii_lowercase().as_str() {
-		"true" | "1" | "y" | "yes" => Some("true"),
-		"false" | "0" | "2" | "n" | "no" => Some("false"),
-		_ => None,
-	}
 }

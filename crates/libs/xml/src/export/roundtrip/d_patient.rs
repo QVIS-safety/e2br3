@@ -110,7 +110,7 @@ pub fn patch_d_patient(raw_xml: &[u8], patch: &DPatientPatch) -> Result<String> 
 				patch.autopsy_performed,
 				patch.autopsy_performed_null_flavor,
 				patch.autopsy_causes,
-			),
+			)?,
 		)?;
 	}
 
@@ -240,22 +240,16 @@ fn write_d_9_3(
 	autopsy_performed: Option<bool>,
 	autopsy_performed_null_flavor: Option<&str>,
 	causes: &[DPatientDeathCausePatch<'_>],
-) -> String {
+) -> Result<String> {
 	let mut out = String::from(
 		"<subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"5\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"autopsy\"/><value xsi:type=\"BL\"",
 	);
-	match autopsy_performed {
-		Some(true) => out.push_str(" value=\"true\""),
-		Some(false) => out.push_str(" value=\"false\""),
-		None if autopsy_performed_null_flavor.is_some() => {
-			out.push_str(" nullFlavor=\"");
-			if let Some(null_flavor) = autopsy_performed_null_flavor {
-				out.push_str(&xml_escape(null_flavor));
-			}
-			out.push('"');
-		}
-		None => {}
-	}
+	out.push_str(&field::attributes(
+		"D.9.3",
+		autopsy_performed,
+		autopsy_performed_null_flavor,
+		"value",
+	)?);
 	out.push_str("/>");
 	for cause in causes {
 		out.push_str("<outboundRelationship2 typeCode=\"DRIV\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"8\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causeOfDeath\"/><value xsi:type=\"CE\"");
@@ -281,7 +275,7 @@ fn write_d_9_3(
 		out.push_str("</value></observation></outboundRelationship2>");
 	}
 	out.push_str("</observation></subjectOf2>");
-	out
+	Ok(out)
 }
 
 #[cfg(test)]

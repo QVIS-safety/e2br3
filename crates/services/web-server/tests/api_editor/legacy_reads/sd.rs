@@ -17,7 +17,7 @@ async fn test_sd_legacy_read_projects_persisted_rows() -> Result<()> {
 	let case_id =
 		create_case_for_editor(&app, &cookie, "LEGACY-SD-READ", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/SD");
-	let (status,saved)=patch_json(&app,&cookie,&uri,json!({"authorities":["ich"],"rows":{"senderInformation":{"senderType":"2","organizationName":"Legacy sender"},"receiverInformation":{"receiverType":"2","organizationName":"Legacy receiver"}}})).await?;
+	let (status,saved)=patch_json(&app,&cookie,&uri,json!({"authorities":["ich"],"rows":{"senderInformation":{"senderType":"2","organizationName":"Legacy sender"}}})).await?;
 	assert_eq!(status, StatusCode::OK, "{saved}");
 	let sender_id = saved["rows"]["senderInformation"]["id"].clone();
 	let (status, body) =
@@ -28,10 +28,6 @@ async fn test_sd_legacy_read_projects_persisted_rows() -> Result<()> {
 	assert_eq!(
 		body["data"]["senderInformation"]["organizationName"],
 		"Legacy sender"
-	);
-	assert_eq!(
-		body["data"]["receiverInformation"]["organizationName"],
-		"Legacy receiver"
 	);
 	assert!(body["data"]["senderInformation"].get("deleted").is_none());
 	Ok(())

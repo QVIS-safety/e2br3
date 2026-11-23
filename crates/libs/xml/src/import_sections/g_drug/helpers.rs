@@ -1,10 +1,7 @@
 use crate::error::Error;
-use crate::import_sections::shared::{
-	first_attr, first_text, normalize_code, parse_xml_id_opt,
-};
+use crate::import_constraint::Context;
+use crate::import_sections::shared::{first_attr, first_text, parse_xml_id_opt};
 use crate::Result;
-use libxml::parser::Parser;
-use libxml::xpath::Context;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 
@@ -48,14 +45,7 @@ fn build_xpath(xml: &[u8]) -> Result<(libxml::tree::Document, Context)> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
@@ -72,9 +62,9 @@ fn normalize_characteristic_code(value: Option<&str>) -> String {
 		Some(value) => value,
 		None => "",
 	}
-		.trim()
-		.to_ascii_uppercase()
-		.replace(['.', '_', '-'], "")
+	.trim()
+	.to_ascii_uppercase()
+	.replace(['.', '_', '-'], "")
 }
 
 pub(crate) fn import_fda_specialized_product_category(
@@ -91,8 +81,8 @@ pub(crate) fn import_fda_specialized_product_category(
 			Some(display) => display,
 			None => "",
 		}
-			.trim()
-			.to_ascii_lowercase();
+		.trim()
+		.to_ascii_lowercase();
 		let code_value = characteristic
 			.value_code
 			.as_deref()
@@ -111,9 +101,11 @@ pub(crate) fn import_fda_specialized_product_category(
 fn read_pause_value(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
-) -> Option<Decimal> {
-	first_attr(xpath, node, "hl7:pauseQuantity", "value")
-		.and_then(|v| v.parse().ok())
+) -> Result<Option<Decimal>> {
+	crate::import_constraint::decimal(
+		first_attr(xpath, node, "hl7:pauseQuantity", "value"),
+		"G.k.9.i.3 interval",
+	)
 }
 
 fn read_pause_unit(
@@ -127,7 +119,7 @@ fn read_pause_unit(
 fn read_g_k_9_i_3_1a(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
-) -> Option<Decimal> {
+) -> Result<Option<Decimal>> {
 	read_pause_value(xpath, node)
 }
 
@@ -143,7 +135,7 @@ fn read_g_k_9_i_3_1b(
 fn read_g_k_9_i_3_2a(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
-) -> Option<Decimal> {
+) -> Result<Option<Decimal>> {
 	read_pause_value(xpath, node)
 }
 
@@ -157,11 +149,7 @@ fn read_g_k_9_i_3_2b(
 
 /// e2b:G.k.9.i.4
 fn read_g_k_9_i_4(xpath: &mut Context, node: &libxml::tree::Node) -> Option<String> {
-	normalize_code(
-		first_attr(xpath, node, "hl7:value", "code"),
-		&["1", "2", "3", "4"],
-		"drug_reaction_assessments.recurrence_action",
-	)
+	first_attr(xpath, node, "hl7:value", "code")
 }
 
 /// e2b:G.k.9.i.2.r.1
@@ -279,7 +267,7 @@ pub(crate) fn parse_drug_observations(
 					administration_start_map.insert(
 						reaction_id,
 						(
-							read_g_k_9_i_3_1a(&mut xpath, &rel),
+							read_g_k_9_i_3_1a(&mut xpath, &rel)?,
 							read_g_k_9_i_3_1b(&mut xpath, &rel),
 						),
 					);
@@ -287,7 +275,7 @@ pub(crate) fn parse_drug_observations(
 					last_dose_map.insert(
 						reaction_id,
 						(
-							read_g_k_9_i_3_2a(&mut xpath, &rel),
+							read_g_k_9_i_3_2a(&mut xpath, &rel)?,
 							read_g_k_9_i_3_2b(&mut xpath, &rel),
 						),
 					);

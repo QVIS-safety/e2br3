@@ -69,10 +69,7 @@ where
 	}
 }
 
-use lib_core::ctx::{
-	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
-	ROLE_USER,
-};
+use lib_core::ctx::{canonical_role, Ctx};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::Case;
 use lib_core::model::user::UserBmc;
@@ -307,13 +304,6 @@ fn current_user_matches_workflow_assignment(ctx: &Ctx, case: &Case) -> bool {
 	}
 }
 
-fn is_built_in_workflow_role(role: &str) -> bool {
-	matches!(
-		role,
-		ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY | ROLE_USER
-	)
-}
-
 pub async fn workflow_role_exists_and_is_active(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -322,9 +312,6 @@ pub async fn workflow_role_exists_and_is_active(
 	let role = canonical_role(role);
 	if role.is_empty() {
 		return Ok(false);
-	}
-	if is_built_in_workflow_role(&role) {
-		return Ok(true);
 	}
 	let roles = AdminSettingsBmc::known_workflow_roles(ctx, mm)
 		.await

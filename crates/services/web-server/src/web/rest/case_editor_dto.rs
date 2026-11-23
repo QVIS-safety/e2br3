@@ -35,7 +35,7 @@ pub struct CaseEditorShellDto {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorShellSafetyReportDto {
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -47,7 +47,7 @@ pub struct CaseEditorShellMessageHeaderDto {
 impl CaseEditorShellDto {
 	pub fn from_case_read_result(
 		value: CaseReadResult,
-		safety_report_id: String,
+		safety_report_id: Option<String>,
 		message_receiver_identifier: Option<String>,
 	) -> serde_json::Result<Self> {
 		let review_receivers = value
@@ -198,8 +198,8 @@ pub struct CaseEditorCiDocumentDto {
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorCiOtherIdentifierDto {
 	pub id: Uuid,
-	pub source: String,
-	pub case_identifier: String,
+	pub source: Option<String>,
+	pub case_identifier: Option<String>,
 	pub sequence_number: i32,
 	pub deleted: bool,
 }
@@ -208,7 +208,7 @@ pub struct CaseEditorCiOtherIdentifierDto {
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorCiLinkedReportDto {
 	pub id: Uuid,
-	pub linked_report_number: String,
+	pub linked_report_number: Option<String>,
 	pub sequence_number: i32,
 	pub deleted: bool,
 }
@@ -274,6 +274,7 @@ pub struct CaseEditorPageRowBatchRequest {
 pub enum CaseEditorPageRowBatchOperation {
 	Create {
 		client_row_index: usize,
+		client_row_id: Option<String>,
 		#[serde(default)]
 		rows: BTreeMap<String, Value>,
 	},
@@ -307,9 +308,47 @@ pub struct CaseEditorPageRowBatchResult {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CaseEditorPagesSaveRequest {
+	pub pages: Vec<CaseEditorPageSave>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "pageId", content = "request", deny_unknown_fields)]
+pub enum CaseEditorPageSave {
+	CI(CaseEditorPagePatchRequest),
+	RP(CaseEditorPagePatchRequest),
+	SD(CaseEditorPagePatchRequest),
+	SI(CaseEditorPagePatchRequest),
+	DM(CaseEditorPagePatchRequest),
+	NR(CaseEditorPagePatchRequest),
+	LR(CaseEditorPageRowBatchRequest),
+	DH(CaseEditorPageRowBatchRequest),
+	AE(CaseEditorPageRowBatchRequest),
+	LB(CaseEditorPageRowBatchRequest),
+	DG(CaseEditorPageRowBatchRequest),
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPagesSaveResponse {
+	pub case_id: Uuid,
+	pub pages: Vec<CaseEditorPageRowBatchResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CaseFollowUpRowPatchRequest {
 	pub client_row_id: Option<String>,
 	pub request: CaseEditorPagePatchRequest,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseFollowUpRowIdentity {
+	pub page_id: &'static str,
+	pub client_row_index: usize,
+	pub client_row_id: Option<String>,
+	pub row_id: Uuid,
 }
 
 #[derive(Debug, Deserialize)]
@@ -352,7 +391,7 @@ pub struct CaseEditorLbListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
 	pub deleted: bool,
-	pub test_name: String,
+	pub test_name: Option<String>,
 	pub test_date: Option<String>,
 	pub test_result_code: Option<String>,
 	pub test_result: Option<String>,
@@ -378,6 +417,7 @@ pub struct CaseEditorDgListRowDto {
 pub struct CaseEditorDhListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub drug_name: Option<String>,
 	pub mpid: Option<String>,
 	pub indication: Option<String>,

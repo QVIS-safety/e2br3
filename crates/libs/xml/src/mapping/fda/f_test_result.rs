@@ -26,7 +26,8 @@ impl FTestResultPaths {
 	pub const RESULT_UNIT: &'static str = "hl7:value/hl7:center/@unit";
 	pub const RESULT_LOW_UNIT: &'static str = "hl7:value/hl7:low/@unit";
 	pub const RESULT_HIGH_UNIT: &'static str = "hl7:value/hl7:high/@unit";
-	pub const RESULT_UNSTRUCTURED: &'static str = "hl7:value";
+	pub const RESULT_UNSTRUCTURED: &'static str =
+		"hl7:value[@xsi:type='ED' or @xsi:type='ST']";
 	pub const NORMAL_LOW: &'static str =
 		"hl7:referenceRange/hl7:observationRange[hl7:interpretationCode[@code='L']]/hl7:value/@value";
 	pub const NORMAL_HIGH: &'static str =

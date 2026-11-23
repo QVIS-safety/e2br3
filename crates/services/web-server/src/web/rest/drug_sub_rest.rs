@@ -221,7 +221,7 @@ pub(crate) async fn persist_editor_fda_devices(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
 	drug_id: Uuid,
-	devices: Vec<FdaDeviceReplaceInput>,
+	devices: Vec<serde_json::Value>,
 ) -> Result<()> {
 	let mut filter = FdaDeviceInformationFilter::default();
 	filter.drug_id = Some(modql::filter::OpValsValue::from(vec![
@@ -247,7 +247,98 @@ pub(crate) async fn persist_editor_fda_devices(
 		})?,
 		None => 1,
 	};
-	for device in devices {
+	for mut payload in devices {
+		let raw = payload.as_object_mut().ok_or_else(|| Error::BadRequest {
+			message: "FDA device must be an object".into(),
+		})?;
+		let id = raw
+			.get("id")
+			.filter(|value| !value.is_null())
+			.map(|value| serde_json::from_value::<Uuid>(value.clone()))
+			.transpose()?;
+		if let Some(persisted) = id.and_then(|id| existing_by_id.get(&id)) {
+			// The editor patches fields inside a replacement collection: omission preserves stored values.
+			let serde_json::Value::Object(stored) = serde_json::to_value(persisted)?
+			else {
+				return Err(Error::Service {
+					operation: "serialize FDA device",
+				});
+			};
+			for (key, value) in stored {
+				let mut camel_key = String::new();
+				for (index, part) in key.split('_').enumerate() {
+					if index == 0 {
+						camel_key.push_str(part);
+					} else {
+						let mut chars = part.chars();
+						if let Some(first) = chars.next() {
+							camel_key.extend(first.to_uppercase());
+						}
+						camel_key.extend(chars);
+					}
+				}
+				if !raw.contains_key(&key) && !raw.contains_key(&camel_key) {
+					raw.insert(key, value);
+				}
+			}
+			let mut filter = FdaDeviceCodeFilter::default();
+			filter.device_id = Some(modql::filter::OpValsValue::from(vec![
+				modql::filter::OpValValue::Eq(serde_json::json!(persisted
+					.id
+					.to_string())),
+			]));
+			let codes = FdaDeviceCodeBmc::list(
+				ctx,
+				mm,
+				Some(vec![filter]),
+				Some(modql::filter::ListOptions::default()),
+			)
+			.await?;
+			for (key, alias, element) in [
+				("follow_up_types", "followUpTypes", "follow_up_type"),
+				(
+					"device_problem_codes",
+					"deviceProblemCodes",
+					"device_problem",
+				),
+				("remedial_actions", "remedialActions", "remedial_action"),
+			] {
+				if !raw.contains_key(key) && !raw.contains_key(alias) {
+					raw.insert(
+						alias.into(),
+						serde_json::to_value(
+							codes
+								.iter()
+								.filter(|code| code.element == element)
+								.collect::<Vec<_>>(),
+						)?,
+					);
+				}
+				let input_key = if raw.contains_key(alias) { alias } else { key };
+				if let Some(serde_json::Value::Array(items)) = raw.get_mut(input_key)
+				{
+					for item in items {
+						if item.get("valueCode").is_some()
+							|| item.get("value_code").is_some()
+						{
+							continue;
+						}
+						let code_id = item
+							.get("id")
+							.map(|value| {
+								serde_json::from_value::<Uuid>(value.clone())
+							})
+							.transpose()?;
+						if let Some(code) = codes.iter().find(|code| {
+							Some(code.id) == code_id && code.element == element
+						}) {
+							item["valueCode"] = serde_json::json!(code.value_code);
+						}
+					}
+				}
+			}
+		}
+		let device: FdaDeviceReplaceInput = serde_json::from_value(payload)?;
 		let FdaDeviceReplaceInput {
 			id,
 			malfunction,

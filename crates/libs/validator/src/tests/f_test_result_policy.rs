@@ -10,7 +10,7 @@ fn empty_test_result() -> TestResult {
 		deleted: false,
 		test_date: None,
 		test_date_null_flavor: None,
-		test_name: "".to_string(),
+		test_name: None,
 		test_meddra_version: None,
 		test_meddra_code: None,
 		test_result_code: None,
@@ -38,6 +38,6 @@ fn test_payload_false_when_empty() {
 #[test]
 fn test_payload_true_with_name() {
 	let mut test = empty_test_result();
-	test.test_name = "LFT".to_string();
+	test.test_name = Some("LFT".to_string());
 	assert!(has_test_payload(&test));
 }

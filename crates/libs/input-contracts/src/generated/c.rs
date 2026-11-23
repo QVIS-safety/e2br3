@@ -231,14 +231,27 @@ pub fn c_1_6_1_r_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 }
 
 /// ICH.C.1.6.1.r.2.ALLOWED.VALUE
-pub fn c_1_6_1_r_2(_input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
-	Vec::new()
+pub fn c_1_6_1_r_2(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::base64(
+		&mut issues,
+		"ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+		input.value,
+	);
+	issues
 }
 
 /// ICH.C.1.7.ALLOWED.VALUE
+/// ICH.C.1.7.NULLFLAVOR.ALLOWED (R2 provenance is a submission requirement).
 pub fn c_1_7(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
 	crate::helpers::boolean(&mut issues, "ICH.C.1.7.ALLOWED.VALUE", input.value);
+	crate::helpers::null_flavor(
+		&mut issues,
+		"ICH.C.1.7.NULLFLAVOR.ALLOWED",
+		input.null_flavor,
+		&["NI"],
+	);
 	issues
 }
 

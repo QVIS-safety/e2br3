@@ -1,5 +1,82 @@
 use super::rows::camelize_value;
+
+#[cfg(test)]
+mod child_text_null_tests {
+	use super::*;
+
+	#[test]
+	fn presave_child_text_null_receiverconsigneedetailsforupdate(
+	) -> std::result::Result<(), serde_json::Error> {
+		for (input, expected) in [
+			(None, None),
+			(Some(serde_json::Value::Null), Some(String::new())),
+			(Some(serde_json::json!("")), Some(String::new())),
+			(
+				Some(serde_json::json!("Recorded")),
+				Some("Recorded".to_owned()),
+			),
+		] {
+			let mut object = serde_json::Map::new();
+			if let Some(value) = input {
+				for key in ["name", "phone", "email"] {
+					object.insert(key.to_owned(), value.clone());
+				}
+			}
+			let patch: ReceiverConsigneeDetailsForUpdate =
+				serde_json::from_value(serde_json::Value::Object(object))?;
+			let update = patch.into_update();
+			assert_eq!(
+				[update.name, update.phone, update.email],
+				[expected.clone(), expected.clone(), expected.clone()]
+			);
+		}
+		for key in ["name", "phone", "email"] {
+			let mut object = serde_json::Map::new();
+			object.insert(key.to_owned(), serde_json::json!(123));
+			assert!(serde_json::from_value::<ReceiverConsigneeDetailsForUpdate>(
+				serde_json::Value::Object(object)
+			)
+			.is_err());
+		}
+		Ok(())
+	}
+
+	#[test]
+	fn presave_child_text_null_receiverroutedetailsforupdate(
+	) -> std::result::Result<(), serde_json::Error> {
+		for (input, expected) in [
+			(None, None),
+			(Some(serde_json::Value::Null), Some(String::new())),
+			(Some(serde_json::json!("")), Some(String::new())),
+			(
+				Some(serde_json::json!("Recorded")),
+				Some("Recorded".to_owned()),
+			),
+		] {
+			let mut object = serde_json::Map::new();
+			if let Some(value) = input {
+				for key in ["batchReceiverIdentifier"] {
+					object.insert(key.to_owned(), value.clone());
+				}
+			}
+			let patch: ReceiverRouteDetailsForUpdate =
+				serde_json::from_value(serde_json::Value::Object(object))?;
+			let update = patch.into_update();
+			assert_eq!([update.batch_receiver_identifier], [expected.clone()]);
+		}
+		for key in ["batchReceiverIdentifier"] {
+			let mut object = serde_json::Map::new();
+			object.insert(key.to_owned(), serde_json::json!(123));
+			assert!(serde_json::from_value::<ReceiverRouteDetailsForUpdate>(
+				serde_json::Value::Object(object)
+			)
+			.is_err());
+		}
+		Ok(())
+	}
+}
 use super::shared::*;
+use lib_core::model::presave::deserialize_clearable_text;
 use serde_json::{json, Value};
 
 pub async fn create_receiver_presave(
@@ -203,8 +280,11 @@ pub struct ReceiverConsigneeDetailsForUpdate {
 	#[serde(default)]
 	pub deleted: bool,
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub phone: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub email: Option<String>,
 }
 
@@ -247,6 +327,7 @@ pub struct ReceiverRouteDetailsForUpdate {
 	pub sequence_number: Option<i32>,
 	pub authority: Option<String>,
 	pub receiver_label: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub batch_receiver_identifier: Option<String>,
 	pub message_receiver_identifier: Option<String>,
 	pub condition_page: Option<String>,

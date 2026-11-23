@@ -862,14 +862,8 @@ async fn upsert_mfds_product_substance_rows(
 			  total_amount_sequence, version, active) ",
 		);
 		qb.push_values(chunk, |mut b, row| {
-			let material_sequence = match row.material_sequence.as_deref() {
-				Some(value) => value,
-				None => "",
-			};
-			let total_amount_sequence = match row.total_amount_sequence.as_deref() {
-				Some(value) => value,
-				None => "",
-			};
+			let material_sequence = row.material_sequence.as_deref();
+			let total_amount_sequence = row.total_amount_sequence.as_deref();
 			b.push_bind(&row.item_seq)
 				.push_bind(&row.substance_code)
 				.push_bind(&row.substance_name_kr)
@@ -953,14 +947,8 @@ fn parse_mfds_products(
 		{
 			return Err("MFDS substance code and name must be non-empty".into());
 		}
-		let material_sequence = match row.material_sequence.as_deref() {
-			Some(value) => value,
-			None => "",
-		};
-		let total_amount_sequence = match row.total_amount_sequence.as_deref() {
-			Some(value) => value,
-			None => "",
-		};
+		let material_sequence = row.material_sequence.as_deref();
+		let total_amount_sequence = row.total_amount_sequence.as_deref();
 		if !seen_substances.insert((
 			row.item_seq.trim(),
 			row.substance_code.trim(),

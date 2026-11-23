@@ -135,7 +135,7 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 		calls.push((restore.clone(), true));
 		calls.push((restore, true));
 		calls.push((json!({owner:[{"id":id,field:"Restored"}]}), true));
-		for (rows, visible) in calls {
+		for (rows, restored) in calls {
 			let (status, after) = patch_and_reload(
 				&app,
 				&cookie,
@@ -149,17 +149,24 @@ pub(crate) async fn ci_soft_children_delete_restore_and_resave_are_stable(
 			let children = after["rows"][owner]
 				.as_array()
 				.ok_or("missing CI children after save")?;
-			assert_eq!(children.len(), if visible { 2 } else { 1 }, "{after}");
+			assert_eq!(children.len(), 2, "{after}");
 			assert_eq!(
 				children.iter().find(|row| row["id"] == sibling["id"]),
 				Some(&sibling),
 				"sibling changed"
 			);
-			let target = children.iter().find(|row| row["id"] == id);
-			if visible {
-				assert_eq!(target.ok_or("restored ID missing")?[field], "Restored");
+			let target = children
+				.iter()
+				.find(|row| row["id"] == id)
+				.ok_or("editable child ID missing")?;
+			assert_eq!(target["deleted"], !restored);
+			assert_eq!(target["sequenceNumber"], original[0]["sequenceNumber"]);
+			if restored {
+				assert_eq!(target[field], "Restored");
 			} else {
-				assert!(target.is_none(), "deleted row resurfaced");
+				let mut expected = original[0].clone();
+				expected["deleted"] = json!(true);
+				assert_eq!(target, &expected, "deletion changed retained values");
 			}
 		}
 	}
@@ -195,9 +202,9 @@ pub(crate) async fn ci_child_foreign_case_rejection_rolls_back_rows_and_audits(
 			&ctx,
 			&uri,
 			json!({"authorities":["ich"],"rows":{
-				"documentsHeldBySender":[{"documentDescription":"Document"}],
-				"otherCaseIdentifiers":[{"source":"Source","caseIdentifier":"ID"}],
-				"linkedReports":[{"linkedReportNumber":"LINK"}]
+				"documentsHeldBySender":[{"sequenceNumber":1,"documentDescription":"Document"}],
+				"otherCaseIdentifiers":[{"sequenceNumber":1,"source":"Source","caseIdentifier":"ID"}],
+				"linkedReports":[{"sequenceNumber":1,"linkedReportNumber":"LINK"}]
 			}}),
 		)
 		.await?;

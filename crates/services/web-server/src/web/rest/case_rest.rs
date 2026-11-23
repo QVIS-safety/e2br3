@@ -2,7 +2,7 @@ use crate::web::rest::compliance::{
 	capture_e_signature, ComplianceActionInput, ESignatureInput,
 };
 use crate::web::rest::{
-	case_editor_dto::CaseFollowUpPagePatchRequest,
+	case_editor_dto::{CaseFollowUpPagePatchRequest, CaseFollowUpRowIdentity},
 	case_editor_rest::apply_follow_up_page_patches,
 };
 use axum::extract::{Path, State};
@@ -838,7 +838,7 @@ pub struct CaseLifecycleItem {
 
 #[derive(Debug, Serialize)]
 pub struct CaseLifecycleResult {
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	pub current_case_id: Uuid,
 	pub items: Vec<CaseLifecycleItem>,
 }
@@ -940,6 +940,7 @@ pub struct CaseStatusToggleInput {
 pub struct CaseFollowUpCreateResult {
 	pub case_id: Uuid,
 	pub safety_report_version: i32,
+	pub row_identities: Vec<CaseFollowUpRowIdentity>,
 }
 
 // -- Shared helper (used by case_workflow_rest)
@@ -1157,7 +1158,6 @@ async fn create_follow_up_case_in_txn(
 			worldwide_unique_id: source_report.worldwide_unique_id,
 			nullification_code: None,
 			nullification_reason: None,
-			receiver_organization: source_report.receiver_organization,
 		},
 	)
 	.await
@@ -1171,7 +1171,8 @@ async fn create_follow_up_case_in_txn(
 		report.insert("safetyReportId".to_string(), json!(safety_report_id));
 		report.insert("safetyReportVersion".to_string(), json!(next_version));
 	}
-	apply_follow_up_page_patches(ctx, mm, case_id, pages).await?;
+	let row_identities =
+		apply_follow_up_page_patches(ctx, mm, case_id, pages).await?;
 
 	Ok((
 		axum::http::StatusCode::CREATED,
@@ -1179,6 +1180,7 @@ async fn create_follow_up_case_in_txn(
 			data: CaseFollowUpCreateResult {
 				case_id,
 				safety_report_version: next_version,
+				row_identities,
 			},
 		}),
 	))
@@ -1243,7 +1245,6 @@ async fn create_case_authorized(
 			worldwide_unique_id,
 			nullification_code: None,
 			nullification_reason: None,
-			receiver_organization: None,
 		},
 	)
 	.await
@@ -1881,12 +1882,7 @@ async fn get_case_lifecycle_authorized(
 )> {
 	let safety_report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, id).await?;
-	let safety_report_id = safety_report
-		.safety_report_id
-		.filter(|value| !value.trim().is_empty())
-		.ok_or_else(|| Error::BadRequest {
-			message: format!("case {id} has no safety report ID"),
-		})?;
+	let safety_report_id = safety_report.safety_report_id;
 	let versions = lib_rest_core::with_rls_read(mm, ctx, |dbx| {
 		let safety_report_id = safety_report_id.clone();
 		Box::pin(async move {
@@ -1901,11 +1897,12 @@ async fn get_case_lifecycle_authorized(
 					       c.updated_at
 					  FROM cases c
 					  JOIN safety_report_identification s ON s.case_id = c.id
-					 WHERE s.safety_report_id = $1
+					 WHERE ($1::text IS NOT NULL AND btrim($1) <> '' AND s.safety_report_id = $1) OR c.id = $2
 					 ORDER BY s.version ASC, c.created_at ASC, c.id ASC
 					"#,
 				)
-				.bind(safety_report_id),
+				.bind(safety_report_id)
+				.bind(id),
 			)
 			.await
 			.map_err(|err| Error::Model(err.into()))

@@ -174,15 +174,7 @@ pub fn parse_drug_additional_info_codes_json(
 		Some(raw) => serde_json::from_value(raw.clone())?,
 		None => Vec::new(),
 	};
-	Ok(entries
-		.into_iter()
-		.filter(|entry| {
-			entry
-				.value_code
-				.as_deref()
-				.is_some_and(|value| !value.trim().is_empty())
-		})
-		.collect())
+	Ok(entries)
 }
 
 fn characteristic_code_entry(
@@ -790,7 +782,7 @@ impl DrugInformationBmc {
 				 RETURNING id",
 			Self::TABLE
 		);
-		let (id,) = mm
+		let inserted = mm
 			.dbx()
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
@@ -832,7 +824,15 @@ impl DrugInformationBmc {
 					.bind(ctx.user_id())
 					.bind(drug_c.source_product_id),
 			)
-			.await?;
+			.await;
+		let (id,) = match inserted {
+			Ok(row) => row,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 
 		mm.dbx().commit_txn().await?;
 		Ok(id)
@@ -941,7 +941,7 @@ impl DrugInformationBmc {
 				 WHERE id = $1",
 			Self::TABLE
 		);
-		let result = mm
+		let updated = mm
 			.dbx()
 			.execute(
 				sqlx::query(&sql)
@@ -983,7 +983,15 @@ impl DrugInformationBmc {
 					.bind(clears)
 					.bind(drug_u.source_product_id),
 			)
-			.await?;
+			.await;
+		let result = match updated {
+			Ok(result) => result,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -1189,7 +1197,7 @@ impl DrugInformationBmc {
 			 WHERE id = $1 AND case_id = $2 AND ($36 OR deleted = false)",
 			Self::TABLE
 		);
-		let result = mm
+		let updated = mm
 			.dbx()
 			.execute(
 				sqlx::query(&sql)
@@ -1231,7 +1239,15 @@ impl DrugInformationBmc {
 					.bind(allow_deleted)
 					.bind(drug_u.source_product_id),
 			)
-			.await?;
+			.await;
+		let result = match updated {
+			Ok(result) => result,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -1373,12 +1389,24 @@ impl DrugActiveSubstanceBmc {
 		filters: Option<Vec<DrugActiveSubstanceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugActiveSubstance>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<DrugActiveSubstanceFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<DrugActiveSubstance>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1429,12 +1457,24 @@ impl DosageInformationBmc {
 		filters: Option<Vec<DosageInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DosageInformation>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<DosageInformationFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<DosageInformation>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1445,7 +1485,30 @@ impl DosageInformationBmc {
 		id: Uuid,
 		data: DosageInformationForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		Self::update_patch(ctx, mm, id, data, &[]).await
+	}
+
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: DosageInformationForUpdate,
+		clear_fields: &[&'static str],
+	) -> Result<()> {
+		let mut clear_fields = clear_fields.to_vec();
+		if data.first_administration_date.is_some() {
+			clear_fields.push("first_administration_date_raw");
+		}
+		if data.first_administration_date_raw.is_some() {
+			clear_fields.push("first_administration_date");
+		}
+		if data.last_administration_date.is_some() {
+			clear_fields.push("last_administration_date_raw");
+		}
+		if data.last_administration_date_raw.is_some() {
+			clear_fields.push("last_administration_date");
+		}
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, &clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -1485,12 +1548,24 @@ impl DrugIndicationBmc {
 		filters: Option<Vec<DrugIndicationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugIndication>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<DrugIndicationFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<DrugIndication>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1502,6 +1577,16 @@ impl DrugIndicationBmc {
 		data: DrugIndicationForUpdate,
 	) -> Result<()> {
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: DrugIndicationForUpdate,
+		clear_fields: &[&'static str],
+	) -> Result<()> {
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

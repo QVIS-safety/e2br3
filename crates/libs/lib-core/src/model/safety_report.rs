@@ -97,9 +97,6 @@ pub struct SafetyReportIdentification {
 	// C.1.11.2 - Nullification Reason
 	pub nullification_reason: Option<String>,
 
-	// Receiver Organization
-	pub receiver_organization: Option<String>,
-
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -133,7 +130,6 @@ pub struct SafetyReportIdentificationForCreate {
 	pub worldwide_unique_id: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
-	pub receiver_organization: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -165,7 +161,6 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub other_case_identifiers_exist_null_flavor: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
-	pub receiver_organization: Option<String>,
 }
 
 // -- SenderInformation
@@ -701,8 +696,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, combination_product_report_indicator_null_flavor, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $21, $12, $13, $14, $15, $16, $17, $18, $19, now(), now(), $20)
+			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, combination_product_report_indicator_null_flavor, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, created_at, updated_at, created_by)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $20, $12, $13, $14, $15, $16, $17, $18, now(), now(), $19)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -728,7 +723,6 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.other_case_identifiers_exist_null_flavor)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
-					.bind(data.receiver_organization)
 					.bind(ctx.user_id())
 					.bind(data.combination_product_report_indicator_null_flavor),
 			)
@@ -809,10 +803,8 @@ impl SafetyReportIdentificationBmc {
 		let clear_combination_product_report_indicator =
 			clear_combination_product_report_indicator
 				|| clear_fields.contains(&"combination_product_report_indicator");
-		let should_mark_nullified = matches!(
-			data.nullification_code.as_deref().map(str::trim),
-			Some("1")
-		);
+		let should_mark_nullified =
+			matches!(data.nullification_code.as_deref().map(str::trim), Some("1"));
 
 		if should_mark_nullified {
 			mm.dbx().begin_txn().await?;
@@ -859,27 +851,26 @@ impl SafetyReportIdentificationBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET safety_report_id = CASE WHEN 'safety_report_id' = ANY($26) THEN NULL ELSE COALESCE($2, safety_report_id) END,
-			     version = CASE WHEN 'version' = ANY($26) THEN NULL ELSE COALESCE($3, version) END,
-			     transmission_date = CASE WHEN 'transmission_date' = ANY($26) THEN NULL ELSE COALESCE($4, transmission_date) END,
+			 SET safety_report_id = CASE WHEN 'safety_report_id' = ANY($25) THEN NULL ELSE COALESCE($2, safety_report_id) END,
+			     version = CASE WHEN 'version' = ANY($25) THEN NULL ELSE COALESCE($3, version) END,
+			     transmission_date = CASE WHEN 'transmission_date' = ANY($25) THEN NULL ELSE COALESCE($4, transmission_date) END,
 			     report_type = CASE WHEN $5 THEN NULL ELSE COALESCE($6, report_type) END,
-			     date_first_received_from_source = CASE WHEN 'date_first_received_from_source' = ANY($26) THEN NULL ELSE COALESCE($7, date_first_received_from_source) END,
-			     date_of_most_recent_information = CASE WHEN 'date_of_most_recent_information' = ANY($26) THEN NULL ELSE COALESCE($8, date_of_most_recent_information) END,
+			     date_first_received_from_source = CASE WHEN 'date_first_received_from_source' = ANY($25) THEN NULL ELSE COALESCE($7, date_first_received_from_source) END,
+			     date_of_most_recent_information = CASE WHEN 'date_of_most_recent_information' = ANY($25) THEN NULL ELSE COALESCE($8, date_of_most_recent_information) END,
 			     fulfil_expedited_criteria = CASE WHEN $9 OR $11 IS NOT NULL THEN NULL ELSE COALESCE($10, fulfil_expedited_criteria) END,
-			     fulfil_expedited_criteria_null_flavor = CASE WHEN 'fulfil_expedited_criteria_null_flavor' = ANY($26) OR $10 IS NOT NULL THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria_null_flavor) END,
+			     fulfil_expedited_criteria_null_flavor = CASE WHEN 'fulfil_expedited_criteria_null_flavor' = ANY($25) OR $10 IS NOT NULL THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria_null_flavor) END,
 			     local_criteria_report_type = CASE WHEN $12 THEN NULL ELSE COALESCE($13, local_criteria_report_type) END,
-			     combination_product_report_indicator = CASE WHEN $14 OR $25 IS NOT NULL THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
-			     combination_product_report_indicator_null_flavor = CASE WHEN 'combination_product_report_indicator_null_flavor' = ANY($26) OR $15 IS NOT NULL THEN NULL ELSE COALESCE($25, combination_product_report_indicator_null_flavor) END,
-			     worldwide_unique_id = CASE WHEN 'worldwide_unique_id' = ANY($26) THEN NULL ELSE COALESCE($16, worldwide_unique_id) END,
-			     first_sender_type = CASE WHEN 'first_sender_type' = ANY($26) THEN NULL ELSE COALESCE($17, first_sender_type) END,
-			     additional_documents_available = CASE WHEN 'additional_documents_available' = ANY($26) THEN NULL ELSE COALESCE($18, additional_documents_available) END,
-			     other_case_identifiers_exist = CASE WHEN 'other_case_identifiers_exist' = ANY($26) OR $20 IS NOT NULL THEN NULL ELSE COALESCE($19, other_case_identifiers_exist) END,
-			     other_case_identifiers_exist_null_flavor = CASE WHEN 'other_case_identifiers_exist_null_flavor' = ANY($26) OR $19 IS NOT NULL THEN NULL ELSE COALESCE($20, other_case_identifiers_exist_null_flavor) END,
-			     nullification_code = CASE WHEN 'nullification_code' = ANY($26) THEN NULL ELSE COALESCE($21, nullification_code) END,
-			     nullification_reason = CASE WHEN 'nullification_reason' = ANY($26) THEN NULL ELSE COALESCE($22, nullification_reason) END,
-			     receiver_organization = CASE WHEN 'receiver_organization' = ANY($26) THEN NULL ELSE COALESCE($23, receiver_organization) END,
+			     combination_product_report_indicator = CASE WHEN $14 OR $24 IS NOT NULL THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
+			     combination_product_report_indicator_null_flavor = CASE WHEN 'combination_product_report_indicator_null_flavor' = ANY($25) OR $15 IS NOT NULL THEN NULL ELSE COALESCE($24, combination_product_report_indicator_null_flavor) END,
+			     worldwide_unique_id = CASE WHEN 'worldwide_unique_id' = ANY($25) THEN NULL ELSE COALESCE($16, worldwide_unique_id) END,
+			     first_sender_type = CASE WHEN 'first_sender_type' = ANY($25) THEN NULL ELSE COALESCE($17, first_sender_type) END,
+			     additional_documents_available = CASE WHEN 'additional_documents_available' = ANY($25) THEN NULL ELSE COALESCE($18, additional_documents_available) END,
+			     other_case_identifiers_exist = CASE WHEN 'other_case_identifiers_exist' = ANY($25) OR $20 IS NOT NULL THEN NULL ELSE COALESCE($19, other_case_identifiers_exist) END,
+			     other_case_identifiers_exist_null_flavor = CASE WHEN 'other_case_identifiers_exist_null_flavor' = ANY($25) OR $19 IS NOT NULL THEN NULL ELSE COALESCE($20, other_case_identifiers_exist_null_flavor) END,
+			     nullification_code = CASE WHEN 'nullification_code' = ANY($25) THEN NULL ELSE COALESCE($21, nullification_code) END,
+			     nullification_reason = CASE WHEN 'nullification_reason' = ANY($25) THEN NULL ELSE COALESCE($22, nullification_reason) END,
 			     updated_at = now(),
-			     updated_by = $24
+			     updated_by = $23
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -909,7 +900,6 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.other_case_identifiers_exist_null_flavor)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
-					.bind(data.receiver_organization)
 					.bind(ctx.user_id())
 					.bind(data.combination_product_report_indicator_null_flavor)
 					.bind(clears),
@@ -1221,12 +1211,24 @@ impl LiteratureReferenceBmc {
 		filters: Option<Vec<LiteratureReferenceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LiteratureReference>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<LiteratureReferenceFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<LiteratureReference>> {
 		let mut filters = match filters {
 			Some(filters) if !filters.is_empty() => filters,
 			Some(_) | None => vec![LiteratureReferenceFilter::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1277,12 +1279,24 @@ impl DocumentsHeldBySenderBmc {
 		filters: Option<Vec<DocumentsHeldBySenderFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DocumentsHeldBySender>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<DocumentsHeldBySenderFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<DocumentsHeldBySender>> {
 		let mut filters = match filters {
-			Some(filters) => filters,
-			None => vec![Default::default()],
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1378,12 +1392,24 @@ impl StudyRegistrationNumberBmc {
 		filters: Option<Vec<StudyRegistrationNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyRegistrationNumber>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<StudyRegistrationNumberFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<StudyRegistrationNumber>> {
 		let mut filters = match filters {
 			Some(filters) if !filters.is_empty() => filters,
 			Some(_) | None => vec![StudyRegistrationNumberFilter::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -1434,12 +1460,24 @@ impl StudyFdaCrossReportedIndBmc {
 		filters: Option<Vec<StudyFdaCrossReportedIndFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyFdaCrossReportedInd>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<StudyFdaCrossReportedIndFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<StudyFdaCrossReportedInd>> {
 		let mut filters = match filters {
 			Some(filters) if !filters.is_empty() => filters,
 			Some(_) | None => vec![StudyFdaCrossReportedIndFilter::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}

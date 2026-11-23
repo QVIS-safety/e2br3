@@ -4,6 +4,31 @@
 
 기준 backend는 `2727d980`이며 실행 상태는 **NOT_RUN**이다. 기준 이후 기존 verifier의 assertion과 공통 helper를 보강했지만 새 테스트 파일이나 테스트 선언·verifier 함수는 추가하지 않았다.
 
+<a id="atomic-pages"></a>
+## 여러 입력 섹션 원자 저장 (2026-11-22)
+
+`PATCH /api/cases/{case_id}/editor/pages`는 `{pages:[{pageId,request}]}`를 받는다.
+CI/RP/SD/SI/DM/NR의 request는 기존 direct page patch, LR/DH/AE/LB/DG는
+기존 row batch 형태다. 비어 있는 페이지 목록, 중복 페이지, 생략/null/빈
+authorities, 서로 다른 authorities는 거부한다. 변경되는 페이지만 보내며
+직접 페이지는 비어 있지 않은 rows, 반복 페이지는 operations가 필요하다.
+
+반복행 create에는 고유 `clientRowId`(`index-*`)와 `clientRowIndex`가 필요하다.
+페이지 내 중복 index/token은 거부한다. update/delete는 기존 `rowId`를 사용한다.
+응답은 `{caseId,pages:[{caseId,pageId,results:[{operation,clientRowIndex,rowId}]}]}`다.
+직접 페이지 results는 빈 배열이며 값은 기존 GET으로 다시 읽는다.
+
+기존 `case.child.update` 승인·scope·수정 가능 상태를 한 번 적용한 동일 트랜잭션
+안에서 기존 입력 계약과 저장 함수를 실행한다. 부모/AE를 종속 DH/DG보다 먼저
+저장하고, 신규 DG assessment의 임시 AE 참조를 실제 생성 ID로 연결한다. 어느
+페이지에서든 실패하면 앞선 값과 감사 기록도 롤백한다. 기관 제출 validation을
+실행하지 않으며 기존 validation 요약만 stale 처리한다. 여러 HTTP 호출을 묶는
+프론트 fallback은 제공하지 않는다.
+
+격리 회귀는 `tests/api_editor/rows/pages_save.rs`의 세 검사다. 전체 필드·기관
+조합, 네트워크 응답 유실 뒤 재시도, 프론트 동시 수정까지 통과했다는 뜻은 아니다.
+기존 단일 페이지 API와 row batch는 유지하며 그 create의 clientRowId는 선택이다.
+
 <a id="pages"></a>
 ## 요청과 응답
 
@@ -57,9 +82,9 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | DG | `drug` | 94 | 15 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
 
-N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 registry 등록은 scalar 373 + behavior 62 = 435개다. legacy GET 수기 14개를 더한 실행 계약은 449개이며 patch builder 자체 검사 2개는 별도다.
+N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 registry 등록은 scalar 375 + behavior 62 = 437개다. legacy GET 수기 18개를 더한 실행 계약은 455개이며 helper 자체 검사 7개는 별도다.
 
-위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor scalar 등록 365개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다.
+위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor field 등록 367개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다. 등록은 실행 통과를 뜻하지 않는다.
 
 ## 필드 저장 계약
 
@@ -80,7 +105,7 @@ N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 
 
 공통 필드 검사는 저장 → GET, 속성 누락 → GET, 저장값 설정 → clear → GET, 저장값 설정 → blank → GET, 잘못된 입력 거절 → GET을 수행한다. 성공 시 Case의 기존 status가 바뀌지 않아야 한다. 거절 시 페이지의 영속 projection이 직전 상태와 같아야 한다. 반복행의 기존 ID를 요청에 다시 사용하고 감사 레코드 ID가 교체되지 않았는지도 확인한다.
 
-`null`, `""`, 누락은 서로 다른 입력이다. CI의 비nullable 자식 텍스트는 null을 빈 문자열로 저장한다. LB `testName`은 draft에서 빈 문자열을 허용한다. `safetyReportId`, DG `drugCharacterization`·`medicinalProduct`, NR `caseNarrative`의 명시적 null/blank는 `422 / INPUT.NULL.REJECTED`다. FDA device code의 빈 값 거절은 각 input contract의 별도 규칙을 따른다. FDA device 목록은 replacement다. device scalar 누락은 null로 저장하며, NF가 아닌 문자열의 blank는 빈 문자열로 저장한다. 하위 code 객체에서 `valueCode`를 누락하면 `400 / INVALID_REQUEST`, detail `Invalid FDA device information`이며 기존 데이터는 보존된다. `fdaDevices` 자체를 보내지 않는 경우와 device 객체 내부의 필드를 생략하는 경우를 구분한다. 구체적인 예외는 필드 JSON에 명시하며 공통 기본값으로 덮지 않는다.
+`null`, `""`, 누락은 서로 다른 입력이다. CI의 비nullable 자식 텍스트는 null을 빈 문자열로 저장한다. LB `testName`은 draft에서 빈 문자열을 허용한다. `safetyReportId`, DG `drugCharacterization`·`medicinalProduct`의 명시적 null/blank는 `422 / INPUT.NULL.REJECTED`다. NR `caseNarrative`의 명시적 null/blank는 null로 저장하고 나머지 narrative 필드는 보존한다. H.1 필수 검증은 제출 시 유지한다. FDA device code의 빈 값 거절은 각 input contract의 별도 규칙을 따른다. FDA device 목록은 replacement다. device scalar 누락은 null로 저장하며, NF가 아닌 문자열의 blank는 빈 문자열로 저장한다. 하위 code 객체에서 `valueCode`를 누락하면 `400 / INVALID_REQUEST`, detail `Invalid FDA device information`이며 기존 데이터는 보존된다. `fdaDevices` 자체를 보내지 않는 경우와 device 객체 내부의 필드를 생략하는 경우를 구분한다. 구체적인 예외는 필드 JSON에 명시하며 공통 기본값으로 덮지 않는다.
 
 결합 필드 계약은 [fields/coupled_clear.rs](../api_editor/fields/coupled_clear.rs), 값/NF 전환은 [fields/null_flavor.rs](../api_editor/fields/null_flavor.rs), 필수값 거절과 변경 원자성은 [fields/required_values.rs](../api_editor/fields/required_values.rs)에 있다. 예를 들어 LB 수치 결과 clear는 qualifier도 지우지만 자유 텍스트를 보존해야 한다. DG PHPID의 null 처리와 blank 처리에서 동반 version 보존 여부도 구분한다.
 
@@ -132,7 +157,7 @@ N header의 8개 항목도 [N registry](../../../../../registry/editor-contracts
 
 CI의 실행 목록과 결과 gate는 같은 페이지 계약에서 기대 테스트 집합을 만든다. 선택한 범위에서 누락, ignored, 실패, 중복 실행 결과가 있으면 gate가 실패한다. 페이지 변경은 해당 페이지, 책임별 검증기 변경은 해당 책임, 공통 검증기·production 의존 변경은 영향을 받는 전체 범위로 넓힌다.
 
-DG의 `G.k.9.i.1`, `G.k.local.sourceProductPresaveId`는 실제 참조 레코드가 필요한 연결 필드다. 일반 scalar 검사에서 `execution.blocked`로 남기고 registry의 `automatedTests`가 지정한 relatedness/product 연결 API 검사를 별도로 요구한다. 이를 일반 scalar 검사 성공 수에 포함하지 않는다.
+DG의 `G.k.9.i.1`, `G.k.local.sourceProductPresaveId`는 `roundTripReference`로 격리 테스트 API가 생성한 Reaction 또는 Sender/Product Presave UUID를 사용한다. 고정 가짜 UUID나 null 저장을 참조값 왕복 성공으로 세지 않는다. Reaction 참조의 명시적 null/빈 문자열은 `422 CONSTRAINT_VIOLATION`, `INPUT.NULL.REJECTED`로 거절하고 생략은 기존 값을 보존한다. 다른 Case의 참조는 `404 ENTITY_UUID_NOT_FOUND`, 서로 다른 camel/snake alias는 `400 INVALID_REQUEST`로 거절하며 projection과 양쪽 Case 감사 불변을 검사한다. Product Presave 참조는 null로 지울 수 있고 생략은 보존한다. 이 격리 검사는 실제 임상 데이터나 조직 간 XML 보존의 증거가 아니다.
 
 이 개편에서는 사용자 지시에 따라 Rust/API/DB/Jest 테스트와 빌드를 실행하지 않는다. 생성물·명세·참조의 정적 일치 여부는 실행 통과 증거와 구별한다. 실제 CI 실행 로그가 나오기 전에는 이 명세로 새 검사의 통과나 완전한 데이터 무결성을 주장할 수 없다.
 

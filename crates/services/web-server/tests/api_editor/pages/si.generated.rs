@@ -20,8 +20,8 @@ mod fields {
     field_contract_test!(fda_c_5_6_r_local_indnumbernullflavor, "FDA.C.5.6.r.local.indNumberNullFlavor");
     #[serial_test::serial]
     #[tokio::test]
-    async fn registration_blank_values_can_be_replaced_by_null_flavors() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::fields::null_flavor::registration_blank_values_can_be_replaced_by_null_flavors("SI", "registration_blank_values_can_be_replaced_by_null_flavors").await
+    async fn registration_values_can_be_replaced_by_null_flavors() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::null_flavor::registration_values_can_be_replaced_by_null_flavors("SI", "registration_values_can_be_replaced_by_null_flavors").await
     }
 }
 mod rows {

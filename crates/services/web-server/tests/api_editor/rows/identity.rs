@@ -148,7 +148,7 @@ pub(crate) async fn fda_device_and_code_ids_survive_replacement(
 		&cookie,
 		&format!("{base}/DG/rows"),
 		json!({"authorities":["fda"],"rows":{"drug":{
-			"drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
+			"sequenceNumber":1, "drugCharacterization":"1", "medicinalProduct":"DEVICE TEST",
 			"fdaDevices":[{"deviceBrandName":"DEVICE-1","deviceUsage":"1","operatorOfDevice":"2","followUpTypes":[{"valueCode":"1"}],"remedialActions":[{"valueCode":"1"}],"deviceProblemCodes":[{"valueCode":"1234567"}]}]
 		}}}),
 	)

@@ -5,11 +5,11 @@ use lib_core::authorization::{
 	AuthorizationContext, AuthorizationDenial, AuthorizedMutation, AuthorizedRead,
 	AuthorizedSubject, CaseAuditTrailResource, CaseChildResource,
 	CaseCreateProposal, CaseResource, Collection, EnforcedScopeFilter, Existing,
-	ImportHistoryResource, NoticeResource, Parent, PolicySnapshotVersion,
-	PolicyRegistry, PresaveCreateProposal, PresaveResource, Proposed,
-	RequestAuthorizationSnapshot,
-	ResourceSet, SettingsResource, SubmissionResource, TerminologyImportProposal,
-	TerminologyResource, UserResource, XmlImportBatchProposal,
+	ImportHistoryResource, NoticeResource, Parent, PolicyRegistry,
+	PolicySnapshotVersion, PresaveCreateProposal, PresaveResource, Proposed,
+	RequestAuthorizationSnapshot, ResourceSet, SettingsResource, SubmissionResource,
+	TerminologyImportProposal, TerminologyResource, UserResource,
+	XmlImportBatchProposal,
 };
 use lib_core::ctx::{Ctx, ROLE_SYSTEM_ADMIN};
 use lib_core::model::authorization::{
@@ -152,12 +152,11 @@ where
 {
 	let dbx = begin_fact_transaction(request_ctx, mm).await?;
 	let result = async {
-		let action =
-			registry()?.subject_action(action_id).ok_or_else(|| {
-				Error::AccessDenied {
-					required_role: format!("registered {action_id} action"),
-				}
-			})?;
+		let action = registry()?.subject_action(action_id).ok_or_else(|| {
+			Error::AccessDenied {
+				required_role: format!("registered {action_id} action"),
+			}
+		})?;
 		let permit = authorize_subject(action, snapshot).map_err(denied)?;
 		let authorized_ctx =
 			rls_ctx_for_authorized_subject(request_ctx, snapshot, &permit)?;

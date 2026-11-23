@@ -36,7 +36,7 @@
       "payloadPath": "primarySourceReaction",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "primary_source_reaction", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -75,7 +75,7 @@
       "payloadPath": "primarySourceReactionTranslation",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "primary_source_reaction_translation", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -121,7 +121,7 @@
       "payloadPath": "reactionMeddraCodeLLT",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "reaction_meddra_code", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -168,7 +168,7 @@
       "nullFlavorPartnerCode": "E.i.4.local.reactionStartDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "start_date", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -214,7 +214,7 @@
       "payloadPath": "reactionOutcome",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "outcome", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -304,7 +304,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "reaction_language", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -349,7 +349,7 @@
       "payloadPath": "reactionMeddraVersionLLT",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "reaction_meddra_version", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -395,7 +395,7 @@
       "payloadPath": "termHighlighted",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "term_highlighted", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -800,7 +800,7 @@
       "auditItem": "Expectedness",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "expectedness", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -824,7 +824,7 @@
       "auditItem": "Severity",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "severity", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -871,7 +871,7 @@
       "nullFlavorPartnerCode": "E.i.5.local.reactionEndDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "end_date", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -918,7 +918,7 @@
       "payloadPath": "reactionDuration.value",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "duration_value", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1001,7 +1001,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "duration_unit", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1094,7 +1094,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "country_code", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1117,7 +1117,7 @@
       "domFieldNumber": "KR_DVC_AECL",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "mfds_device_ae_classification", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1140,7 +1140,7 @@
       "domFieldNumber": "KR_DVC_AEOUT",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "mfds_device_ae_outcome", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1255,7 +1255,7 @@
       "domFieldNumber": "KR_DVC_CC_OTH",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "mfds_device_cause_other", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1278,7 +1278,7 @@
       "domFieldNumber": "KR_DVC_ACT_RSN",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "mfds_device_action_reason", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1485,7 +1485,7 @@
       "domFieldNumber": "KR_DVC_ACT_OTH",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "mfds_device_action_other", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1509,7 +1509,7 @@
       "nullFlavorPartnerCode": "E.i.3.2a",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_death_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1533,7 +1533,7 @@
       "nullFlavorPartnerCode": "E.i.3.2b",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_life_threatening_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1557,7 +1557,7 @@
       "nullFlavorPartnerCode": "E.i.3.2c",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_hospitalization_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1581,7 +1581,7 @@
       "nullFlavorPartnerCode": "E.i.3.2d",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_disabling_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1605,7 +1605,7 @@
       "nullFlavorPartnerCode": "E.i.3.2e",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_congenital_anomaly_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1629,7 +1629,7 @@
       "nullFlavorPartnerCode": "E.i.3.2f",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "criteria_other_medically_important_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1653,7 +1653,7 @@
       "nullFlavorPartnerCode": "E.i.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1677,7 +1677,7 @@
       "nullFlavorPartnerCode": "E.i.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }
@@ -1702,7 +1702,7 @@
       "domFieldNumber": "FDA.E.i.3.2h",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "reactions", "column": "required_intervention_null_flavor", "record": {"source": "projection", "path": "reaction.id"}}
       }

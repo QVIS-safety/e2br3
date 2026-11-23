@@ -87,6 +87,7 @@ fn audit_table_page(table_name: &str) -> Option<&'static str> {
 		"study_information"
 		| "study_registration_numbers"
 		| "study_fda_cross_reported_inds" => Some("SI (C.5)"),
+		// Historical audit records remain readable after the editor entity is retired.
 		"receiver_information" => Some("SD (A.1 Receiver)"),
 		"patient_information"
 		| "patient_identifiers"
@@ -131,6 +132,26 @@ fn audit_business_field_label(
 	field: &str,
 ) -> Option<&'static str> {
 	Some(match (table_name, field) {
+		("safety_report_identification", "receiver_organization") => {
+			"Receiver Organization"
+		}
+		("receiver_information", "receiver_type") => "Receiver Type",
+		("receiver_information", "organization_name") => "Receiver Organization",
+		("receiver_information", "department") => "Receiver Department",
+		("receiver_information", "street_address") => "Receiver Street Address",
+		("receiver_information", "city") => "Receiver City",
+		("receiver_information", "state_province") => "Receiver State or Province",
+		("receiver_information", "postcode") => "Receiver Postcode",
+		("receiver_information", "country_code") => "Receiver Country Code",
+		("receiver_information", "telephone") => "Receiver Telephone",
+		("receiver_information", "fax") => "Receiver Fax",
+		("receiver_information", "email") => "Receiver Email",
+		("drug_information" | "reactions", "source_xml_id") => {
+			"Source XML Identifier"
+		}
+		("message_headers", "batch_transmission_date_raw") => {
+			"Original XML Batch Transmission Date (N.1.5)"
+		}
 		("cases", "mfds_report_type") => "MFDS Report Type (MFDS_REPORT_TYPE)",
 		("cases", "fda_report_type") => "FDA Report Type (FDA_REPORT_TYPE)",
 		("cases", "dg_prd_key") => "DG Product Key",
@@ -181,9 +202,6 @@ fn audit_business_field_label(
 		}
 		("safety_report_identification", "combination_product_report_indicator") => {
 			"FDA Combination Product Report Indicator (FDA.C.1.12)"
-		}
-		("safety_report_identification", "receiver_organization") => {
-			"Receiver Organization"
 		}
 		("safety_report_identification", "date_first_received_from_source") => {
 			"Date First Received from Source (C.1.4)"
@@ -288,17 +306,6 @@ fn audit_business_field_label(
 		("sender_information", "telephone") => "Sender's Telephone (C.3.4.6)",
 		("sender_information", "fax") => "Sender's Fax (C.3.4.7)",
 		("sender_information", "email") => "Sender's E-mail Address (C.3.4.8)",
-		("receiver_information", "receiver_type") => "Receiver Type",
-		("receiver_information", "organization_name") => "Receiver Organization",
-		("receiver_information", "department") => "Receiver Department",
-		("receiver_information", "street_address") => "Receiver Street Address",
-		("receiver_information", "city") => "Receiver City",
-		("receiver_information", "state_province") => "Receiver State or Province",
-		("receiver_information", "postcode") => "Receiver Postcode",
-		("receiver_information", "country_code") => "Receiver Country Code",
-		("receiver_information", "telephone") => "Receiver Telephone",
-		("receiver_information", "fax") => "Receiver Fax",
-		("receiver_information", "email") => "Receiver Email",
 		("literature_references", "reference_text") => {
 			"Literature Reference (C.4.r.1)"
 		}
@@ -1486,6 +1493,42 @@ pub async fn verify_audit_log_integrity(
 
 #[cfg(test)]
 mod tests {
+	#[test]
+	fn retired_receiver_audit_fields_remain_readable() {
+		for field in [
+			"receiver_type",
+			"organization_name",
+			"department",
+			"street_address",
+			"city",
+			"state_province",
+			"postcode",
+			"country_code",
+			"telephone",
+			"fax",
+			"email",
+			"source_receiver_presave_id",
+		] {
+			assert!(
+				super::audit_field_label("receiver_information", field).is_ok(),
+				"Historical receiver field {field} must remain readable"
+			);
+		}
+		assert!(super::audit_field_label(
+			"safety_report_identification",
+			"receiver_organization"
+		)
+		.is_ok());
+		assert!(
+			super::audit_field_label(
+				"receiver_information",
+				"unknown_retired_field"
+			)
+			.is_err(),
+			"Unknown history must still fail explicitly"
+		);
+	}
+
 	use super::*;
 	use serde_json::json;
 
@@ -1517,6 +1560,36 @@ mod tests {
 			entry_hash: None,
 			hash_version: 2,
 			created_at: OffsetDateTime::UNIX_EPOCH,
+		}
+	}
+
+	#[test]
+	fn audit_field_labels_cover_imported_xml_identity_and_raw_time() {
+		for (table, field, page, label) in [
+			(
+				"drug_information",
+				"source_xml_id",
+				"DG (G.k)",
+				"Source XML Identifier",
+			),
+			(
+				"reactions",
+				"source_xml_id",
+				"AE (E.i)",
+				"Source XML Identifier",
+			),
+			(
+				"message_headers",
+				"batch_transmission_date_raw",
+				"SD (N)",
+				"Original XML Batch Transmission Date (N.1.5)",
+			),
+		] {
+			assert_eq!(
+				audit_field_label(table, field)
+					.expect("imported field needs an explicit audit label"),
+				(page, label.to_string()),
+			);
 		}
 	}
 
@@ -1569,10 +1642,6 @@ mod tests {
 		assert_eq!(
 			audit_field_label("drug_active_substances", "substance_termid").unwrap(),
 			("DG (G.k)", "Substance Term ID (G.k.2.3.r.2b)".to_string())
-		);
-		assert_eq!(
-			audit_field_label("receiver_information", "receiver_type").unwrap(),
-			("SD (A.1 Receiver)", "Receiver Type".to_string())
 		);
 		assert_eq!(
 			audit_field_label("message_headers", "message_sender_identifier")

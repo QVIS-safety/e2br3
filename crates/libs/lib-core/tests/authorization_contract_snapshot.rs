@@ -2,8 +2,10 @@ use lib_core::authorization::{export_contract, policy_registry, Availability};
 
 #[test]
 fn catalog_hash_is_stable_for_canonical_registry_json() {
-	let first = export_contract(policy_registry()).unwrap();
-	let second = export_contract(policy_registry()).unwrap();
+	let first =
+		export_contract(policy_registry().expect("valid policy registry")).unwrap();
+	let second =
+		export_contract(policy_registry().expect("valid policy registry")).unwrap();
 	assert_eq!(first.catalog_hash, second.catalog_hash);
 	assert_eq!(first.canonical_json, second.canonical_json);
 	assert_eq!(first.catalog_hash.len(), 64);
@@ -19,7 +21,8 @@ fn catalog_hash_is_stable_for_canonical_registry_json() {
 
 #[test]
 fn generated_pdf_rows_preserve_reviewed_order_and_availability() {
-	let contract = export_contract(policy_registry()).unwrap();
+	let contract =
+		export_contract(policy_registry().expect("valid policy registry")).unwrap();
 	assert_eq!(
 		contract.pdf_rows.first().unwrap().grant_id,
 		"home.notice.read"
@@ -70,7 +73,8 @@ fn generated_pdf_rows_preserve_reviewed_order_and_availability() {
 
 #[test]
 fn generated_typescript_contains_registry_owned_symbols() {
-	let contract = export_contract(policy_registry()).unwrap();
+	let contract =
+		export_contract(policy_registry().expect("valid policy registry")).unwrap();
 	assert!(contract
 		.typescript
 		.contains("CaseReviewToggle: \"case.review.toggle\""));

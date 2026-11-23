@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
+async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -20,18 +20,23 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 	);
 	let created: Value = serde_json::from_slice(&bytes)?;
 	let id = created["data"]["id"].as_str().ok_or("missing case id")?;
+	let attachment =
+		"H4sIAAAAAAAAA8sszs9JLElNUcjLz0vOyczLTE7MUUgsKUlMzshNzSvhAgCw1cKiIAAAAA==";
 	for (method, path, data, expected) in [
 		(
 			"PATCH",
 			format!("/api/cases/{id}/editor/pages/CI"),
-			serde_json::json!({"authorities":["ich"], "rows":{"safetyReportIdentification":{"reportType":"1","transmissionDate":"20240101000000"}}}),
+			serde_json::json!({"authorities":["ich"], "rows":{
+				"safetyReportIdentification":{"reportType":"1","transmissionDate":"20240101000000"},
+				"documentsHeldBySender":[{"sequenceNumber":1,"documentDescription":"Isolated compressed attachment","includedDocument":attachment,"fileName":"attachment.txt","mediaType":"text/plain","representation":"B64","compression":"GZ"}]
+			}}),
 			StatusCode::OK,
 		),
 		(
-			"POST",
-			format!("/api/cases/{id}/patient"),
-			serde_json::json!({"data":{"case_id":id,"patient_initials":"N"}}),
-			StatusCode::CREATED,
+			"PATCH",
+			format!("/api/cases/{id}/editor/pages/NR"),
+			serde_json::json!({"authorities":["ich"],"rows":{"caseSummaryInformation":[{"sequenceNumber":1,"languageCode":"JA","summaryText":"Isolated draft summary"}]}}),
+			StatusCode::OK,
 		),
 		(
 			"POST",
@@ -47,6 +52,14 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 		let (status, bytes) =
 			request_json(&app, &cookie, method, path, Some(data)).await?;
 		assert_eq!(status, expected, "{}", String::from_utf8_lossy(&bytes));
+	}
+	let mut saved_pages = Vec::new();
+	for page in ["CI", "NR"] {
+		let path = format!("/api/cases/{id}/editor/pages/{page}?authorities=ich");
+		let (status, bytes) =
+			request_json(&app, &cookie, "GET", path.clone(), None).await?;
+		assert_eq!(status, StatusCode::OK);
+		saved_pages.push((path, serde_json::from_slice::<Value>(&bytes)?));
 	}
 	let (status, bytes) = request_json(
 		&app,
@@ -106,22 +119,61 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 					request_json(&app, &cookie, method, path, body).await?;
 				assert_eq!(
 					status,
-					StatusCode::BAD_REQUEST,
+					StatusCode::OK,
 					"{authority} {method}: {}",
 					String::from_utf8_lossy(&bytes)
 				);
-				let error: Value = serde_json::from_slice(&bytes)?;
-				let message = error["error"]["data"]["detail"]
-					.as_str()
-					.ok_or("missing export error")?;
-				if valid {
-					assert!(message.contains("Correct the highlighted case fields"));
+				let xml = if method == "GET" {
+					String::from_utf8(bytes.to_vec())?
 				} else {
-					assert!(
-						message.contains("Review export history for details"),
-						"{error}"
-					);
-				}
+					let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+					assert_eq!(archive.len(), 1);
+					let mut xml = String::new();
+					archive.by_index(0)?.read_to_string(&mut xml)?;
+					xml
+				};
+				let parsed =
+					xml::validation::validate_e2b_xml_basic(xml.as_bytes(), None)?;
+				assert!(parsed.ok, "{:?}", parsed.errors);
+				assert_eq!(
+					xml.matches("compression=\"GZ\"").count(),
+					1,
+					"compressed attachment metadata lost"
+				);
+				assert_eq!(
+					xml.matches(attachment).count(),
+					1,
+					"compressed payload changed"
+				);
+				let summaries =
+					xml::import_sections::h_narrative::parse_h_case_summaries(
+						xml.as_bytes(),
+					)?;
+				assert_eq!(summaries.len(), 1);
+				assert_eq!(summaries[0].language_code.as_deref(), Some("JA"));
+				assert_eq!(
+					summaries[0].summary_text.as_deref(),
+					Some("Isolated draft summary")
+				);
+				assert!(
+					xml::import_sections::d_patient::parse_d_patient(
+						xml.as_bytes()
+					)?
+					.is_none(),
+					"an absent patient must not be fabricated for draft export"
+				);
+				assert_eq!(
+					parsed.root_element.as_deref(),
+					Some("MCCI_IN200100UV01")
+				);
+				assert!(
+					xml.contains(batch),
+					"stored batch receiver must survive export"
+				);
+				assert!(
+					xml.contains(message),
+					"stored message receiver must survive export"
+				);
 			}
 		}
 	}
@@ -141,7 +193,7 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 	assert_eq!(
 		items
 			.iter()
-			.filter(|item| item["status"] == "error")
+			.filter(|item| item["status"] == "success")
 			.count(),
 		10
 	);
@@ -149,19 +201,25 @@ async fn test_manual_export_checks_n_routes_and_blocks_invalid_draft_cases(
 		items
 			.iter()
 			.filter(|item| item["status"] == "error")
-			.filter(|item| item["errorMessage"].as_str().is_some_and(|message| {
-				message.contains("export header validation failed")
-			}))
 			.count(),
-		4
+		0
 	);
+	for (path, before) in saved_pages {
+		let (status, bytes) = request_json(&app, &cookie, "GET", path, None).await?;
+		assert_eq!(status, StatusCode::OK);
+		assert_eq!(
+			serde_json::from_slice::<Value>(&bytes)?,
+			before,
+			"export changed stored metadata"
+		);
+	}
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Result<()>
-{
+async fn test_manual_export_preserves_missing_headers_and_records_serialization_errors(
+) -> Result<()> {
 	let original = std::env::var("E2BR3_EXPORT_VALIDATE").ok();
 
 	let mm = init_test_mm().await?;
@@ -171,7 +229,7 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm).expect("web server configuration");
 
-	// Missing required export data must fail and leave a downloadable error history.
+	// Incomplete data exports; unrepresentable XML data leaves downloadable error history.
 	let create_body = serde_json::json!({
 		"data": {
 			"safetyReportIdentification": {
@@ -227,7 +285,47 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 		String::from_utf8_lossy(&body)
 	);
 
-	// Missing batch receiver must fail before serialization, without a fallback.
+	// The missing batch receiver is emitted as absent, never filled from message receiver.
+	for (method, uri, input) in [
+		(
+			"GET",
+			format!("/api/cases/{case_id}/export/xml?authority=mfds"),
+			None,
+		),
+		(
+			"POST",
+			"/api/cases/export/xml".to_owned(),
+			Some(serde_json::json!({"case_ids":[case_id],"authority":"mfds"})),
+		),
+	] {
+		let (status, bytes) =
+			request_json(&app, &cookie, method, uri, input).await?;
+		assert_eq!(
+			status,
+			StatusCode::OK,
+			"{}",
+			String::from_utf8_lossy(&bytes)
+		);
+		let xml = if method == "GET" {
+			String::from_utf8(bytes.to_vec())?
+		} else {
+			let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+			let mut xml = String::new();
+			archive.by_index(0)?.read_to_string(&mut xml)?;
+			xml
+		};
+		assert_eq!(xpath_value(xml.as_bytes(), "count(/*[local-name()='MCCI_IN200100UV01']/*[local-name()='receiver']/*[local-name()='device']/*[local-name()='id']/@extension)")?, "0");
+	}
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/message-header"),
+		Some(serde_json::json!({"data":{"batch_sender_identifier":"bad\u{1}"}})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	// XML 1.0 cannot encode U+0001; silently deleting it would lose stored data.
 	for (method, uri, input) in [
 		(
 			"GET",
@@ -243,13 +341,10 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 		let (status, body) = request_json(&app, &cookie, method, uri, input).await?;
 		assert_eq!(
 			status,
-			StatusCode::BAD_REQUEST,
+			StatusCode::INTERNAL_SERVER_ERROR,
 			"{}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body).contains(
-			"N.1.4 Batch Receiver Identifier is required before XML export"
-		));
 	}
 	let (status, body) = request_json(
 		&app,
@@ -257,7 +352,7 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 		"PUT",
 		format!("/api/cases/{case_id}/message-header"),
 		Some(
-			serde_json::json!({ "data": { "batch_receiver_identifier": "RECEIVER01" } }),
+			serde_json::json!({ "data": { "batch_sender_identifier": "SENDER01" } }),
 		),
 	)
 	.await?;
@@ -276,18 +371,20 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 		),
 	] {
 		let (status, body) = request_json(&app, &cookie, method, uri, input).await?;
-		assert_eq!(
-			status,
-			StatusCode::BAD_REQUEST,
-			"{}",
-			String::from_utf8_lossy(&body)
-		);
-		let body: Value = serde_json::from_slice(&body)?;
-		assert_eq!(body["error"]["message"], "INVALID_REQUEST", "{body}");
-		assert_eq!(
-			body["error"]["data"]["detail"],
-			"D Patient Information is required for export.",
-			"{body}"
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+		let xml = if method == "GET" {
+			String::from_utf8(body.to_vec())?
+		} else {
+			let mut archive = zip::ZipArchive::new(Cursor::new(body))?;
+			assert_eq!(archive.len(), 1);
+			let mut xml = String::new();
+			archive.by_index(0)?.read_to_string(&mut xml)?;
+			xml
+		};
+		assert!(
+			xml::import_sections::d_patient::parse_d_patient(xml.as_bytes())?
+				.is_none(),
+			"fixing the header must allow export without inventing a patient"
 		);
 	}
 	let (status, body) = request_json(
@@ -303,34 +400,37 @@ async fn test_manual_export_rejects_missing_headers_and_records_errors() -> Resu
 	let items = history["data"]["items"]
 		.as_array()
 		.ok_or("missing export history")?;
-	assert_eq!(items.len(), 4);
-	assert!(items.iter().all(|item| item["status"] == "error"));
+	assert_eq!(items.len(), 6);
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "error")
+			.count(),
+		2
+	);
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "success")
+			.count(),
+		4
+	);
 	assert!(items.iter().all(|item| item["caseId"] == case_id && item["exportedBy"] == seed.admin.id.to_string()), "history must survive the failed export's outer transaction with the original user and case");
 	assert_eq!(
 		items
 			.iter()
-			.filter(|item| {
-				item["errorMessage"]
-					== "N.1.4 Batch Receiver Identifier is required before XML export"
-			})
+			.filter(|item| { item["errorMessage"] == "Export.InvalidXml" })
 			.count(),
 		2
 	);
-	let fda_errors: Vec<_> = items
+	let header_errors: Vec<_> = items
 		.iter()
-		.filter(|item| {
-			item["errorMessage"] == "D Patient Information is required for export."
-		})
+		.filter(|item| item["errorMessage"] == "Export.InvalidXml")
 		.collect();
-	assert_eq!(fda_errors.len(), 2);
-	let error = fda_errors[0];
+	assert_eq!(header_errors.len(), 2);
+	let error = header_errors[0];
 	let history_id = error["id"].as_str().ok_or("missing history id")?;
-	let file_name = format!(
-		"{}-{case_id}-fda.xml",
-		create_body["data"]["safetyReportIdentification"]["safetyReportId"]
-			.as_str()
-			.unwrap()
-	);
+	let file_name = format!("{case_id}-mfds.xml");
 	assert_eq!(error["fileName"], file_name);
 	assert!(items
 		.iter()

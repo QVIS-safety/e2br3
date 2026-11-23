@@ -1,6 +1,6 @@
 use super::{assert_malformed_row_id_rejected_without_mutation, patch_and_reload};
 use crate::case_editor_contract_web::support::create_case_for_editor;
-use crate::case_editor_contract_web::support::post_json;
+use crate::case_editor_contract_web::support::{get_json, post_json};
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
@@ -150,11 +150,48 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "delete attempt {attempt}: {body}");
-		for (owner, _) in &owners {
+		let counts = owners
+			.iter()
+			.map(|(owner, _)| {
+				(
+					*owner,
+					body["data"]["drug"][*owner].as_array().map(Vec::len),
+				)
+			})
+			.collect::<Vec<_>>();
+		assert_eq!(
+			counts,
+			vec![
+				("activeSubstances", Some(1)),
+				("dosageInformation", Some(1)),
+				("indications", Some(1))
+			],
+			"all deleted children must remain restorable"
+		);
+		for ((owner, id), (column, text)) in owners.iter().zip([
+			("substance_name", "Substance"),
+			("dosage_text", "Dosage"),
+			("indication_text", "Indication"),
+		]) {
+			let rows = body["data"]["drug"][*owner]
+				.as_array()
+				.ok_or("missing children")?;
+			assert_eq!(&rows[0]["id"], id);
+			assert_eq!(rows[0]["deleted"], true);
+			assert_eq!(rows[0][column], text);
+		}
+		for resource in ["active-substances", "dosages", "indications"] {
+			let (status, active) = get_json(
+				&app,
+				&cookie,
+				&format!("/api/cases/{case_id}/drugs/{drug_id}/{resource}"),
+			)
+			.await?;
+			assert_eq!(status, StatusCode::OK, "{active}");
 			assert_eq!(
-				body["data"]["drug"][*owner].as_array().map(Vec::len),
-				Some(0),
-				"{owner}: {body}"
+				active["data"],
+				json!([]),
+				"ordinary lists must exclude deleted {resource}"
 			);
 		}
 	}
@@ -177,12 +214,21 @@ pub(crate) async fn drug_child_rows_delete_restore_and_resave_are_stable(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::OK, "{body}");
-		for (owner, _) in &owners {
+		for ((owner, id), (column, text)) in owners.iter().zip([
+			("substance_name", "Substance"),
+			("dosage_text", "Dosage"),
+			("indication_text", "Indication"),
+		]) {
+			let rows = body["data"]["drug"][*owner]
+				.as_array()
+				.ok_or("missing children")?;
+			assert_eq!(rows.len(), 1);
+			assert_eq!(&rows[0]["id"], id);
 			assert_eq!(
-				body["data"]["drug"][*owner].as_array().map(Vec::len),
-				Some(0),
-				"{owner}: {body}"
+				rows[0]["deleted"], true,
+				"omission must not restore deleted {owner}"
 			);
+			assert_eq!(rows[0][column], text);
 		}
 	}
 	let restored = owners

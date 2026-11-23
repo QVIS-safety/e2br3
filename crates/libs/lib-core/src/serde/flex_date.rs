@@ -217,16 +217,14 @@ where
 	D: Deserializer<'de>,
 {
 	let value = Option::<String>::deserialize(deserializer)?;
-	Ok(value.map(|value| {
+	Ok(value.and_then(|value| {
 		let trimmed = value.trim();
 		let digits: String =
 			trimmed.chars().filter(|c| c.is_ascii_digit()).collect();
 		if matches!(digits.len(), 4 | 6) {
-			trimmed.to_string()
+			Some(trimmed.to_string())
 		} else {
-			// A present full-precision/empty value clears an older partial raw
-			// value through the update model's non-NULL field handling.
-			String::new()
+			None
 		}
 	}))
 }
@@ -241,13 +239,12 @@ where
 	let Some(v) = opt else { return Ok(None) };
 	Ok(match v {
 		FlexDateInput::Str(s) => normalize_e2b_datetime_str(&s),
-		FlexDateInput::YearOrdinal(year, ordinal) => match Date::from_ordinal_date(
-			year,
-			u16::max(1, ordinal),
-		) {
-			Ok(date) => Some(format_e2b_datetime(date)),
-			Err(_) => None,
-		},
+		FlexDateInput::YearOrdinal(year, ordinal) => {
+			match Date::from_ordinal_date(year, u16::max(1, ordinal)) {
+				Ok(date) => Some(format_e2b_datetime(date)),
+				Err(_) => None,
+			}
+		}
 		FlexDateInput::YearMonthDay(year, month, day) => {
 			let Ok(month) = Month::try_from(month) else {
 				return Ok(None);
@@ -297,11 +294,8 @@ where
 			{
 				let parsed = (|| -> Result<Date, ()> {
 					let year = value.get(0..4).ok_or(())?.parse().map_err(|_| ())?;
-					let month = value
-						.get(5..7)
-						.ok_or(())?
-						.parse::<u8>()
-						.map_err(|_| ())?;
+					let month =
+						value.get(5..7).ok_or(())?.parse::<u8>().map_err(|_| ())?;
 					let day = value.get(8..10).ok_or(())?.parse().map_err(|_| ())?;
 					Date::from_calendar_date(
 						year,
@@ -381,11 +375,11 @@ mod tests {
 		let full: Input =
 			serde_json::from_value(serde_json::json!({"value":"20240101"}))
 				.expect("full raw");
-		assert_eq!(full.value, Some(String::new()));
+		assert_eq!(full.value, None);
 
 		let empty: Input = serde_json::from_value(serde_json::json!({"value":""}))
 			.expect("empty raw");
-		assert_eq!(empty.value, Some(String::new()));
+		assert_eq!(empty.value, None);
 	}
 
 	#[derive(Deserialize)]

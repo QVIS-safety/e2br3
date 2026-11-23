@@ -162,13 +162,22 @@ pub(super) async fn assert_row_lifecycle_replay(
 			.collect();
 		let expected_ids: Vec<Value> = original_ids
 			.iter()
-			.filter(|id| !deleted || id.as_str() != Some(row_id))
+			.filter(|id| page == "LR" || !deleted || id.as_str() != Some(row_id))
 			.cloned()
 			.collect();
 		assert_eq!(
 			ids, expected_ids,
 			"{method} {uri} changed the row count/identity"
 		);
+		if page == "LR" {
+			let retained = list["rows"]["rows"]
+				.as_array()
+				.ok_or("missing LR editor rows")?
+				.iter()
+				.find(|row| row["id"].as_str() == Some(row_id))
+				.ok_or("LR editor lost restoration entry")?;
+			assert_eq!(retained["deleted"], deleted);
+		}
 	}
 	let mut guarded = vec![
 		("PATCH", row_uri.clone(), restore_request.clone()),

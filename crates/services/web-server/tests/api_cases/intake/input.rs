@@ -103,11 +103,16 @@ async fn test_follow_up_creation_preserves_scope_and_allocates_versions(
 
 	let mut follow_up_ids = Vec::new();
 	for expected_version in [2, 3] {
+		let mut pages = follow_up_pages("mfds");
+		pages["lb"] = json!([
+			{ "clientRowId": "index-lb-a", "request": { "authorities": ["mfds"], "rows": { "testResult": { "testName": "Identity A", "sequenceNumber": 2 } } } },
+			{ "clientRowId": "index-lb-b", "request": { "authorities": ["mfds"], "rows": { "testResult": { "testName": "Identity B", "sequenceNumber": 1 } } } }
+		]);
 		let (status, body) = post_json(
 			&app,
 			&cookie,
 			&format!("/api/cases/{source_case_id}/follow-up"),
-			follow_up_pages("mfds"),
+			pages,
 		)
 		.await?;
 		assert_eq!(status, StatusCode::CREATED, "{body:?}");
@@ -115,6 +120,30 @@ async fn test_follow_up_creation_preserves_scope_and_allocates_versions(
 		let created_id = body["data"]["caseId"]
 			.as_str()
 			.ok_or("missing follow-up id")?;
+		let identities = body["data"]["rowIdentities"]
+			.as_array()
+			.ok_or("missing row identities")?;
+		assert_eq!(identities.len(), 2);
+		for (index, (client_id, name, sequence)) in [
+			("index-lb-a", "Identity A", 2),
+			("index-lb-b", "Identity B", 1),
+		]
+		.into_iter()
+		.enumerate()
+		{
+			let identity = &identities[index];
+			assert_eq!(identity["pageId"], "LB");
+			assert_eq!(identity["clientRowIndex"], index);
+			assert_eq!(identity["clientRowId"], client_id);
+			let row_id =
+				identity["rowId"].as_str().ok_or("missing created row ID")?;
+			Uuid::parse_str(row_id)?;
+			let (row_status, row) = get_json(&app, &cookie, &format!("/api/cases/{created_id}/editor/pages/LB/rows/{row_id}?authorities=mfds")).await?;
+			assert_eq!(row_status, StatusCode::OK, "{row:?}");
+			assert_eq!(row["data"]["testResult"]["test_name"], name);
+			assert_eq!(row["data"]["testResult"]["sequence_number"], sequence);
+		}
+		assert_ne!(identities[0]["rowId"], identities[1]["rowId"]);
 		let (shell_status, shell) = get_json(
 			&app,
 			&cookie,

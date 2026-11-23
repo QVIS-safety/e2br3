@@ -1,5 +1,8 @@
 use crate::administration_support::request_json;
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use crate::common::{
+	cookie_header, init_test_mm, seed_company_org_with_users, seed_org_with_users,
+	Result,
+};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
 use serde_json::json;
@@ -116,6 +119,64 @@ async fn test_workflow_settings_reject_system_admin_role() -> Result<()> {
 		body.to_string().contains("unknown role 'system_admin'"),
 		"{body:?}"
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_settings_reject_sponsor_admin_for_wrong_org_type(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let cro = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let company = seed_company_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let app = web_server::app(mm).expect("web server configuration");
+
+	for (admin, correct_role, wrong_role) in [
+		(&cro.admin, "sponsor_admin_cro", "sponsor_admin_company"),
+		(&company.admin, "sponsor_admin_company", "sponsor_admin_cro"),
+	] {
+		let token = generate_web_token(&admin.email, admin.token_salt)?;
+		let cookie = cookie_header(&token.to_string());
+		let payload = |role| {
+			json!({
+				"data": {
+					"workflow_enabled": true,
+					"workflow": {
+						"statuses": [{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": [role],
+							"due_days": 0
+						}]
+					}
+				}
+			})
+		};
+		let (status, body) = request_json(
+			&app,
+			"PUT",
+			&cookie,
+			"/api/admin/settings",
+			Some(payload(correct_role)),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body:?}");
+
+		let (status, body) = request_json(
+			&app,
+			"PUT",
+			&cookie,
+			"/api/admin/settings",
+			Some(payload(wrong_role)),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+		assert!(
+			body.to_string()
+				.contains(&format!("unknown role '{wrong_role}'")),
+			"{body:?}"
+		);
+	}
 	Ok(())
 }
 

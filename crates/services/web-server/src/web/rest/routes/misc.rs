@@ -95,6 +95,14 @@ pub fn routes_import(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/import/xml/history", get(import_rest::list_import_history))
 		.route(
+			"/import/xml/product-links",
+			axum::routing::post(import_rest::inspect_product_links).layer(
+				axum::extract::DefaultBodyLimit::max(
+					import_rest::MAX_XML_REQUEST_BYTES,
+				),
+			),
+		)
+		.route(
 			"/import/xml/history/{id}/error.txt",
 			get(import_rest::download_import_history_error),
 		)

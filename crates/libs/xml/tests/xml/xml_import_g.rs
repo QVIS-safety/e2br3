@@ -86,7 +86,8 @@ fn import_g_drug_requires_medicinal_product_name() {
   </PORR_IN049016UV>
 </MCCI_IN200100UV01>"#;
 
-	let drugs =
-		parse_g_drugs(xml).expect("missing product name is not a parse error");
-	assert_eq!(drugs[0].medicinal_product, "");
+	let error = parse_g_drugs(xml).expect_err("product name is required by import");
+	assert!(error
+		.to_string()
+		.contains("medicinal product name is required"));
 }

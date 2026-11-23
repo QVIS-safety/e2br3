@@ -10,7 +10,7 @@
 
 `POST /api/import/xml`은 인증된 import mutation 권한과 enforced product scope를 요구한다. `multipart/form-data`의 `file` 또는 `xml` part와 그 part의 파일명, `productPresaveId` 또는 snake_case alias `product_presave_id` UUID가 필수다. `product_id`/`productId`는 거절한다. 선택한 Product presave는 삭제되지 않았고 scope 안에 있으며 비어 있지 않은 `productId`가 있어야 한다.
 
-단일 XML 또는 ZIP을 받는다. 한 `file`/`xml` part는 최대 50 MiB이고 라우터의 전체 multipart request limit은 50 MiB + 64 KiB다. 따라서 후자는 boundary와 다른 part까지 포함한다. ZIP은 XML 파일 하나당 압축 해제 25 MiB, 디렉터리와 비 XML 파일을 포함한 archive 전체 entry 128개, 선택된 XML entry의 압축 해제 합계 100 MiB로 제한된다. 그 뒤 normalize된 개별 XML은 기본 validator의 10 MiB `max_bytes` 검사를 다시 받으며, 초과는 transport 거절이 아니라 validation report의 오류가 된다. unsafe path, 대소문자 기준 중복 XML 파일명, 잘못된 ZIP, XML 없는 ZIP은 400이다. 각 XML은 normalize와 XSD/import validation 후 C.1.1/C.1.2 및 잠재 중복으로 `new`, `followUp`, `skip`, `error`를 결정한다.
+단일 XML 또는 ZIP을 받는다. 한 `file`/`xml` part는 최대 50 MiB이고 라우터의 전체 multipart request limit은 50 MiB + 64 KiB다. 따라서 후자는 boundary와 다른 part까지 포함한다. ZIP은 XML 파일 하나당 압축 해제 25 MiB, 디렉터리와 비 XML 파일을 포함한 archive 전체 entry 128개, 선택된 XML entry의 압축 해제 합계 100 MiB로 제한된다. 그 뒤 개별 XML은 기본 validator의 10 MiB `max_bytes` 검사를 다시 받으며, 초과는 transport 거절이 아니라 validation report의 오류가 된다. unsafe path, 대소문자 기준 중복 XML 파일명, 잘못된 ZIP, XML 없는 ZIP은 400이다. 한 XML에는 HL7 investigationEvent가 정확히 하나 있어야 한다. 보고서 번호·작성일이 없거나 빈 초안은 동일한 빈 값으로 중복 판정하지 않으며, 원문 값은 보존한다. 각 XML은 원문을 유지하며 XML 구조 검사와 공통 input-contracts 검사 후 C.1.1/C.1.2 및 잠재 중복으로 `new`, `followUp`, `skip`, `error`를 결정한다.
 
 정상 HTTP 응답은 일부 entry가 error/skipped여도 200일 수 있다.
 
@@ -21,6 +21,7 @@
       "caseNumber": "US-...",
       "status": "success|warning|skipped|error",
       "message": null,
+      "publicError": null,
       "caseId": "uuid-or-null",
       "caseVersion": 1,
       "decision": "new|followUp|skip|error",
@@ -37,6 +38,11 @@
 }
 ```
 
+개별 `error` 결과는 `message:null`이며 `publicError`에 기존 HTTP 오류 분류를 저장한다.
+형식은 `{ "httpStatus":400, "error":{ "message":"INVALID_REQUEST", "data":{ "req_uuid":"uuid", "detail":"Invalid XML input." } } }`다.
+이는 batch 응답 자체의 HTTP 상태가 아니라 실패한 entry의 분류다. 같은 공개 오류와 추적 ID가 이력에 보존되며,
+내부 진단문은 DB `error_message`에만 남는다. HTTP 200 또는 최상위 `caseId`만으로 성공을 추론하지 않는다.
+
 선택한 Product presave ID와 업무 `productId`는 imported drug/case 연결에 쓰인다. 설정이 켜진 경우 연결 Product의 sender presave를 imported sender 정보에 적용한다. 상품 연결은 [import 계약](../api_import/import_contract_web.rs)의 `test_import_selected_product_links_sender_without_overwriting_xml_sender`, 설정 효과는 [import settings](../api_import/import_settings_web.rs)의 `test_import_settings_apply_default_sender_only_when_enabled`, `test_import_settings_apply_product_linked_sender_by_imported_product_id`에서 확인한다.
 
 같은 settings 파일의 `test_import_settings_update_enabled_c1_dates`는 현재 지원하는 설정 조합 `(creation=true, mostRecent=true, firstReceived=false)`로 앞의 두 날짜가 import 시각의 날짜로 갱신되고, 최초 수신일은 원본 XML 값으로 유지되는지 검사한다. import 전후 UTC 날짜를 사용해 자정 경계를 허용한다. 모든 설정 조합을 검사하지는 않는다.
@@ -47,7 +53,7 @@
 
 ## Validation
 
-`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. XML normalize 후 기본 10 MiB validator로 검사한다. Normalize와 XSD 문서 파서는 오류 복구와 네트워크 접근을 끄며, 닫히지 않은 XML을 보정하여 수용하지 않는다. 활성 assertion은 valid XML의 `200`, `ok:true`, root element와 빈 errors, malformed XML의 `400`과 XML 관련 오류 body, XSD-invalid XML의 `200`, `ok:false`와 비어 있지 않은 errors를 실제 endpoint에서 확인한다. 전후 `cases`와 `xml_import_history` row count도 같음을 확인한다(runtime NOT_RUN). 용량 boundary와 권한 거절은 남아 있다.
+`POST /api/import/xml/validate`는 같은 multipart file reader, 50 MiB file-part limit, 50 MiB + 64 KiB request limit과 `import.xml.validate` mutation 권한을 사용한다. 이 endpoint에는 Product 선택과 파일명이 필요하지 않으며 `file` 또는 `xml` part만 필요하다. 원문 XML을 기본 10 MiB 구조 validator로 검사한다. 이 사전 검사에는 XSD·업무 규칙 검사가 없으며 필드 input-contracts 검사는 실제 import 파싱 시 수행한다. XML 파서는 오류 복구와 네트워크 접근을 끄며, 닫히지 않은 XML을 보정하여 수용하지 않는다. 활성 assertion은 valid XML의 `200`, `ok:true`, root element와 빈 errors, malformed XML의 `400`과 XML 관련 오류 body, 지원하지 않는 root XML의 `200`, `ok:false`와 비어 있지 않은 errors를 실제 endpoint에서 확인한다. 전후 `cases`와 `xml_import_history` row count도 같음을 확인한다(runtime NOT_RUN). 용량 boundary와 권한 거절은 남아 있다.
 
 <a id="history"></a>
 
@@ -59,14 +65,16 @@
 {"data":{"items":[{
   "id":"uuid", "uploadedFileName":"batch.zip", "sourceFileName":"case.xml",
   "caseId":"uuid-or-null", "caseNumber":"US-...", "status":"success|warning|skipped|error",
-  "errorMessage":null, "uploadedBy":"uuid", "uploaderEmail":"user@example.com",
+  "errorMessage":null, "publicError":null, "uploadedBy":"uuid", "uploaderEmail":"user@example.com",
   "uploadedAt":"2026-10-31T12:34:56Z"
 }]}}
 ```
 
 각 source XML마다 success/warning/skipped/error history를 별도 transaction으로 기록한다. [`import_history_web.rs::test_import_history_uploaded_at_is_rfc3339`](../api_import/import_history_web.rs)은 실제 import 뒤 200과 RFC3339 timestamp를 직접 확인한다. Case scope별 목록은 [`api_cases/scope/histories.rs`](../api_cases/scope/histories.rs#L179)에도 assertion이 있다.
 
-`GET /api/import/xml/history/{id}/error.txt`는 `import.history.read`와 해당 history context를 요구한다. error가 있으면 200, `text/plain; charset=utf-8`, attachment filename `import-error-{id}-{sanitized-source}.txt`를 반환한다. record 없음과 error detail 없음은 현재 source에서 400이다. 이 endpoint의 [활성 오류 다운로드 검사](../api_import/import_history_web.rs) `test_import_history_error_details_download_as_text`는 DB에 준비한 오류 이력으로 실제 GET 응답의 200, content type, 이력 ID를 포함한 파일명과 오류 본문을 확인한다.
+오류 이력의 `errorMessage`는 항상 null이며 `publicError`만 공개한다. 과거 미분류 오류의 `publicError:null`을 임의 분류하거나 성공으로 변경하지 않는다.
+
+`GET /api/import/xml/history/{id}/error.txt`는 `import.history.read`와 해당 history context를 요구한다. 구조화된 공개 오류가 있으면 200, `text/plain; charset=utf-8`, attachment filename `import-error-{id}-{sanitized-source}.txt`와 공개 오류 JSON만 반환한다. 원문 진단문은 다운로드하지 않는다. 과거 미분류 오류는 400 `INVALID_REQUEST`로 명시적으로 거절하며, record 없음과 error detail 없음도 400이다. [활성 오류 다운로드 검사](../api_import/import_history_web.rs) `test_import_history_error_details_download_as_text`는 미분류 오류의 거절과 구조화된 오류의 다운로드·이력 일치·원문 비노출을 검사한다. DB 기반 실행에는 private terminology snapshot이 필요하며 컴파일 통과만 실행 통과로 간주하지 않는다.
 
 ## 권한, 감사와 테스트 빈틈
 

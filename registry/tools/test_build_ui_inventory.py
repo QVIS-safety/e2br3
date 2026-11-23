@@ -329,14 +329,18 @@ class CanonicalUiInventoryTests(unittest.TestCase):
         for identity in self.document['coverage']['blockedExecutionFields']:
             self.assertTrue(fields[identity]['executionBlockers'])
 
-    def test_unrendered_companion_preserves_blocked_negative_evidence(self):
+    def test_unrendered_companion_has_negative_contract_without_claiming_ui_execution(self):
         code = 'C.1.local.fulfilExpeditedCriteriaNullFlavor'
         disposition = next(d for d in self.document['dispositions'] if d['code'] == code)
         contract = json.loads((self.registry / 'editor-contracts/ci.json').read_text())
         constraint = next(f['constraint'] for f in contract['fields'] if f['code'] == code)
-        self.assertEqual('blocked', constraint['status'])
-        self.assertIn({'kind': 'constraint_blocked', 'reason': constraint['reason']},
-                      disposition['executionBlockers'])
+        self.assertEqual({
+            'status': 'verified',
+            'ruleCode': 'ICH.C.1.7.NULLFLAVOR.ALLOWED',
+            'invalidValue': '__INVALID_NULL_FLAVOR__',
+        }, constraint)
+        self.assertEqual([], disposition['executionBlockers'])
+        self.assertEqual('NOT_RUN', disposition['executionEvidence'])
         self.assertNotIn(code, {f['code'] for f in self.document['fields']})
 
     def test_product_picker_requires_runtime_reference_without_free_invalid_input(self):

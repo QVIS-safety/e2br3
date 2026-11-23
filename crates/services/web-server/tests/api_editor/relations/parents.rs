@@ -152,8 +152,8 @@ pub(crate) async fn partial_narrative_and_children_keep_parent(
 	let app = web_server::app(mm).expect("web server configuration");
 	for rows in [
 		json!({"narrative": {"senderComments": "Persist this comment"}}),
-		json!({"caseSummaryInformation": [{"languageCode": "en", "summaryText": "Persist summary"}]}),
-		json!({"narrative": {"reporterComments": "Reporter comment"}, "senderDiagnoses": [{"diagnosisMeddraVersion": "28.1", "diagnosisMeddraCode": "10019211"}]}),
+		json!({"caseSummaryInformation": [{"sequenceNumber": 1, "languageCode": "en", "summaryText": "Persist summary"}]}),
+		json!({"narrative": {"reporterComments": "Reporter comment"}, "senderDiagnoses": [{"sequenceNumber": 1, "diagnosisMeddraVersion": "28.1", "diagnosisMeddraCode": "10019211"}]}),
 	] {
 		let case_id =
 			create_case_for_editor(&app, &cookie, "DRAFT-NR", &["ich"]).await?;
@@ -169,7 +169,11 @@ pub(crate) async fn partial_narrative_and_children_keep_parent(
 		let (_, saved) = get_json(&app, &cookie, &uri).await?;
 		let narrative_id = saved["rows"]["narrative"]["id"].clone();
 		assert!(narrative_id.is_string(), "{saved}");
-		assert_eq!(saved["rows"]["narrative"]["case_narrative"], "", "{saved}");
+		assert_eq!(
+			saved["rows"]["narrative"]["case_narrative"],
+			serde_json::Value::Null,
+			"{saved}"
+		);
 		if rows["narrative"]["senderComments"].is_string() {
 			assert_eq!(
 				saved["rows"]["narrative"]["sender_comments"],
@@ -215,7 +219,7 @@ pub(crate) async fn registration_creates_study_with_empty_name(
 	let case_id =
 		create_case_for_editor(&app, &cookie, "DRAFT-SI", &["ich"]).await?;
 	let uri = format!("/api/cases/{case_id}/editor/pages/SI");
-	let (status, body) = patch_json(&app, &cookie, &uri, json!({"authorities": ["ich"], "rows": {"studyRegistrationNumbers": [{"registrationNumber": "REG-TEST", "countryCode": "KR"}]}})).await?;
+	let (status, body) = patch_json(&app, &cookie, &uri, json!({"authorities": ["ich"], "rows": {"studyRegistrationNumbers": [{"sequenceNumber": 1, "registrationNumber": "REG-TEST", "countryCode": "KR"}]}})).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let (_, saved) = get_json(&app, &cookie, &uri).await?;
 	assert!(

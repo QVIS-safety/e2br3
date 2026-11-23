@@ -22,7 +22,7 @@ pub struct NarrativeInformation {
 	pub source_narrative_presave_id: Option<Uuid>,
 
 	// H.1 - Case Narrative
-	pub case_narrative: String,
+	pub case_narrative: Option<String>,
 
 	// H.2 - Reporter's Comments
 	pub reporter_comments: Option<String>,
@@ -45,7 +45,7 @@ pub struct NarrativeInformation {
 pub struct NarrativeInformationForCreate {
 	pub case_id: Uuid,
 	pub source_narrative_presave_id: Option<Uuid>,
-	pub case_narrative: String,
+	pub case_narrative: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
 	pub additional_information: Option<String>,
@@ -185,7 +185,7 @@ impl NarrativeInformationBmc {
 				 RETURNING id",
 			Self::TABLE
 		);
-		let (id,) = mm
+		let created = mm
 			.dbx()
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
@@ -197,7 +197,15 @@ impl NarrativeInformationBmc {
 					.bind(data.additional_information)
 					.bind(ctx.user_id()),
 			)
-			.await?;
+			.await;
+		let (id,) = match created {
+			Ok(row) => row,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 
 		mm.dbx().commit_txn().await?;
 		Ok(id)
@@ -289,7 +297,7 @@ impl NarrativeInformationBmc {
 				 WHERE case_id = $1",
 			Self::TABLE
 		);
-		let result = mm
+		let updated = mm
 			.dbx()
 			.execute(
 				sqlx::query(&sql)
@@ -301,7 +309,15 @@ impl NarrativeInformationBmc {
 					.bind(data.additional_information)
 					.bind(ctx.user_id()),
 			)
-			.await?;
+			.await;
+		let result = match updated {
+			Ok(result) => result,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -341,7 +357,7 @@ impl NarrativeInformationBmc {
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
-		let result = mm
+		let updated = mm
 			.dbx()
 			.execute(
 				sqlx::query(&sql)
@@ -354,7 +370,15 @@ impl NarrativeInformationBmc {
 					.bind(ctx.user_id())
 					.bind(clears),
 			)
-			.await?;
+			.await;
+		let result = match updated {
+			Ok(result) => result,
+			Err(error) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::from(error)
+					.resolve_inactive_presave_reference());
+			}
+		};
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -422,12 +446,24 @@ impl SenderDiagnosisBmc {
 		filters: Option<Vec<SenderDiagnosisFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<SenderDiagnosis>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &crate::ctx::Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<SenderDiagnosisFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<SenderDiagnosis>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -486,12 +522,24 @@ impl CaseSummaryInformationBmc {
 		filters: Option<Vec<CaseSummaryInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<CaseSummaryInformation>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &crate::ctx::Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<CaseSummaryInformationFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<CaseSummaryInformation>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}

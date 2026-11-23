@@ -3,6 +3,7 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
+use base64::{engine::general_purpose::STANDARD, Engine};
 use lib_core::model::case::{
 	CaseBmc, CaseForUpdate, SourceDocument, SourceDocumentBmc, SourceDocumentFilter,
 	SourceDocumentForCreate, SourceDocumentForUpdate,
@@ -589,6 +590,20 @@ pub async fn restore_primary_source(
 
 // -- Literature References (C.4.r)
 
+pub(super) fn validate_source_document_base64(
+	value: &str,
+	path: &str,
+) -> Result<()> {
+	STANDARD.decode(value).map_err(|_| {
+		Error::ConstraintViolation(lib_rest_core::ConstraintViolation {
+			rule_code: "LOCAL.SOURCE_DOCUMENT.BASE64".into(),
+			path: path.into(),
+			message: "Attachment content must be valid Base64.".into(),
+		})
+	})?;
+	Ok(())
+}
+
 /// POST /api/cases/{case_id}/source-documents
 pub async fn create_source_document(
 	State(mm): State<ModelManager>,
@@ -609,6 +624,9 @@ pub async fn create_source_document(
 				let ParamsForCreate { data } = params;
 				let mut data = data;
 				data.case_id = case_id;
+				if let Some(value) = data.source_document_base64.as_deref() {
+					validate_source_document_base64(value, "sourceDocumentBase64")?;
+				}
 				let id = SourceDocumentBmc::create(ctx, mm, data).await?;
 				mark_case_dirty_c(ctx, mm, case_id).await?;
 				let entity = SourceDocumentBmc::get(ctx, mm, id).await?;
@@ -673,6 +691,9 @@ pub async fn update_source_document(
 			Box::pin(async move {
 				let entity = SourceDocumentBmc::get(ctx, mm, id).await?;
 				ensure_case_scope(case_id, entity.case_id, id, "source_documents")?;
+				if let Some(value) = params.data.source_document_base64.as_deref() {
+					validate_source_document_base64(value, "sourceDocumentBase64")?;
+				}
 				SourceDocumentBmc::update(ctx, mm, id, params.data).await?;
 				mark_case_dirty_c(ctx, mm, case_id).await?;
 				let entity = SourceDocumentBmc::get(ctx, mm, id).await?;
@@ -710,6 +731,80 @@ pub async fn delete_source_document(
 	.await
 }
 
+fn validate_attachment_input(
+	value: Option<&str>,
+	path: &str,
+	check: fn(input_contracts::FieldInput<'_>) -> Vec<input_contracts::InputIssue>,
+) -> Result<()> {
+	let input = match value {
+		Some(value) => input_contracts::InputValue::String(value),
+		None => input_contracts::InputValue::Missing,
+	};
+	if let Some(issue) = check(input_contracts::FieldInput::new(input, None))
+		.into_iter()
+		.next()
+	{
+		return Err(Error::ConstraintViolation(
+			lib_rest_core::ConstraintViolation {
+				rule_code: issue.code.to_string(),
+				path: path.to_string(),
+				message: issue.message,
+			},
+		));
+	}
+	Ok(())
+}
+
+fn validate_included_document(value: Option<&str>) -> Result<()> {
+	validate_attachment_input(
+		value,
+		"includedDocument",
+		input_contracts::generated::c::c_1_6_1_r_2,
+	)
+}
+
+fn validate_literature_document(value: Option<&str>) -> Result<()> {
+	validate_attachment_input(
+		value,
+		"documentBase64",
+		input_contracts::generated::c::c_4_r_2,
+	)
+}
+
+#[cfg(test)]
+mod attachment_input_tests {
+	use super::*;
+
+	#[test]
+	fn legacy_attachments_share_scalar_contracts_without_submission_requirements() {
+		for (check, code, path) in [
+			(
+				validate_included_document as fn(Option<&str>) -> Result<()>,
+				"ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+				"includedDocument",
+			),
+			(
+				validate_literature_document,
+				"ICH.C.4.r.2.ALLOWED.VALUE",
+				"documentBase64",
+			),
+		] {
+			for value in ["%invalid-base64%", "A", "AA=", "TR=="] {
+				match check(Some(value)).expect_err("invalid encoding") {
+					Error::ConstraintViolation(detail) => {
+						assert_eq!(detail.rule_code, code);
+						assert_eq!(detail.path, path);
+					}
+					other => panic!("unexpected error: {other:?}"),
+				}
+			}
+			for value in [None, Some(""), Some("TQ=="), Some("TWE="), Some("TWFu")] {
+				check(value).expect("absent or valid content");
+			}
+		}
+	}
+}
+
 lib_rest_core::generate_patient_child_rest_fns! {
 	Bmc: DocumentsHeldBySenderBmc,
 	Entity: DocumentsHeldBySender,
@@ -727,7 +822,8 @@ lib_rest_core::generate_patient_child_rest_fns! {
 	ScopeFn: ensure_case_child_scope,
 	EntityName: "documents_held_by_sender",
 	DeleteResult: StatusCode,
-	DeleteResponse: no_content
+	DeleteResponse: no_content,
+	ValidateField: document_base64 => validate_included_document
 }
 
 lib_rest_core::generate_patient_child_rest_fns! {
@@ -747,7 +843,8 @@ lib_rest_core::generate_patient_child_rest_fns! {
 	ScopeFn: ensure_case_child_scope,
 	EntityName: "literature_references",
 	DeleteResult: StatusCode,
-	DeleteResponse: no_content
+	DeleteResponse: no_content,
+	ValidateField: document_base64 => validate_literature_document
 }
 
 // -- Study Information (C.5)

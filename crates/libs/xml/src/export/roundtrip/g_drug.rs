@@ -63,7 +63,9 @@ pub(crate) fn patch_g_drugs_for_authority(
 	let _ =
 		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-	ensure_primary_role(&mut doc, &parser, &mut xpath)?;
+	if !drugs.is_empty() {
+		ensure_primary_role(&mut doc, &parser, &mut xpath)?;
+	}
 	remove_nodes(
 		&mut xpath,
 		"//hl7:primaryRole/hl7:subjectOf2[hl7:organizer/hl7:code[@code='4' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]",
@@ -180,15 +182,30 @@ pub(crate) fn patch_g_drugs_for_authority(
 				.filter(|r| r.drug_reaction_assessment_id == assessment.id)
 				.collect();
 			rows.sort_by_key(|row| row.sequence_number);
-			for row in rows {
-				let related_fragment =
-					write_g_k_9_causality(drug.id, assessment, row, authority);
+			if rows.is_empty() {
+				let fragment =
+					write_g_k_9_causality(drug.id, assessment, None, authority)?;
 				append_fragment_child(
 					&mut doc,
 					&parser,
 					&mut xpath,
 					"//hl7:adverseEventAssessment",
-					&related_fragment,
+					&fragment,
+				)?;
+			}
+			for row in rows {
+				let fragment = write_g_k_9_causality(
+					drug.id,
+					assessment,
+					Some(row),
+					authority,
+				)?;
+				append_fragment_child(
+					&mut doc,
+					&parser,
+					&mut xpath,
+					"//hl7:adverseEventAssessment",
+					&fragment,
 				)?;
 			}
 		}

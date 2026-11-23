@@ -11,7 +11,7 @@ fn import_f_section_all_fields_from_scenario6() {
 	let first = &tests[0];
 	assert_eq!(first.test_date.as_deref(), Some("20090101"));
 	assert_eq!(first.test_date_null_flavor, None);
-	assert_eq!(first.test_name, "Calcium Level");
+	assert_eq!(first.test_name.as_deref(), Some("Calcium Level"));
 	assert_eq!(first.test_meddra_version.as_deref(), Some("12.0"));
 	assert_eq!(first.test_meddra_code.as_deref(), Some("10050520"));
 	assert_eq!(first.test_result_code.as_deref(), Some("2"));
@@ -29,7 +29,7 @@ fn import_f_section_all_fields_from_scenario6() {
 	let sixth = &tests[5];
 	assert_eq!(sixth.test_date.as_deref(), Some("20090101"));
 	assert_eq!(sixth.test_date_null_flavor, None);
-	assert_eq!(sixth.test_name, "");
+	assert_eq!(sixth.test_name, None);
 	assert_eq!(sixth.test_meddra_version.as_deref(), Some("12.0"));
 	assert_eq!(sixth.test_meddra_code.as_deref(), Some("10005362"));
 	assert_eq!(sixth.test_result_code, None);
@@ -55,7 +55,7 @@ fn import_f_section_parses_test_date_null_flavor() {
 	let first = &tests[0];
 	assert_eq!(first.test_date, None);
 	assert_eq!(first.test_date_null_flavor.as_deref(), Some("UNK"));
-	assert_eq!(first.test_name, "Calcium Level");
+	assert_eq!(first.test_name.as_deref(), Some("Calcium Level"));
 	assert_eq!(first.test_meddra_version.as_deref(), Some("12.0"));
 	assert_eq!(first.test_meddra_code.as_deref(), Some("10050520"));
 	assert_eq!(first.test_result_code.as_deref(), Some("2"));

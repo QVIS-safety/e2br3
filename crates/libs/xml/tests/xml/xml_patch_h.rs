@@ -20,7 +20,7 @@ fn patch_h_narrative_updates_raw_xml() {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
 		source_narrative_presave_id: None,
-		case_narrative: "Updated narrative".to_string(),
+		case_narrative: Some("Updated narrative".to_string()),
 		reporter_comments: Some("Reporter note".to_string()),
 		sender_comments: None,
 		additional_information: None,

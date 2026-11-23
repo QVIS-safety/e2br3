@@ -52,7 +52,6 @@ ALLOWED_FIELD_ROOTS = {
     "otherCaseIdentifiers",
     "patientInformation",
     "primarySources",
-    "receiverInformation",
     "reactions",
     "reviewReceivers",
     "safetyReportIdentification",

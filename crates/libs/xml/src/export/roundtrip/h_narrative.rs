@@ -26,7 +26,11 @@ pub fn patch_h_narrative(
 	let _ =
 		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-	write_h_1(&mut doc, &parser, &mut xpath, &narrative.case_narrative)?;
+	if let Some(text) = narrative.case_narrative.as_deref() {
+		write_h_1(&mut doc, &parser, &mut xpath, text)?;
+	} else {
+		remove_nodes(&mut xpath, "//hl7:investigationEvent/hl7:text");
+	}
 
 	remove_nodes(
 		&mut xpath,

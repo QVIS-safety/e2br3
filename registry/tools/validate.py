@@ -116,6 +116,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "notes",
 }
 FDA_SEVERITIES = {"rejection", "warning"}
+PRESAVE_WITHOUT_CASE_TRANSFER = {"local.receiver.1", "local.receiver.2"}
 BACKEND_MODELS = {
     "SafetyReportIdentification": "crates/libs/lib-core/src/model/safety_report.rs",
     "SenderInformation": "crates/libs/lib-core/src/model/safety_report.rs",
@@ -129,7 +130,6 @@ BACKEND_MODELS = {
     "SourceDocument": "crates/libs/lib-core/src/model/case.rs",
     "OtherCaseIdentifier": "crates/libs/lib-core/src/model/case_identifiers.rs",
     "LinkedReportNumber": "crates/libs/lib-core/src/model/case_identifiers.rs",
-    "ReceiverInformation": "crates/libs/lib-core/src/model/receiver.rs",
     "PatientInformation": "crates/libs/lib-core/src/model/patient.rs",
     "PatientIdentifier": "crates/libs/lib-core/src/model/patient.rs",
     "MedicalHistoryEpisode": "crates/libs/lib-core/src/model/patient.rs",
@@ -168,7 +168,6 @@ IGNORED_BACKEND_FIELDS = {
     "message_date_format",
     "message_format_release",
     "message_format_version",
-    "receiver_organization",
     "created_at",
     "updated_at",
     "created_by",
@@ -879,6 +878,8 @@ def validate_registry(
                 continue
             code = row["e2br3_code"]
             presave_section = presaves.section_by_code.get(code, "unknown")
+            if code in PRESAVE_WITHOUT_CASE_TRANSFER:
+                continue
             case_row = case_rows_by_code.get(code)
             if case_row is None:
                 result.add(f"{presave_section}: missing case registry join: {code}")

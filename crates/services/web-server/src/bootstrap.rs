@@ -237,12 +237,12 @@ async fn sync_org(
 						active = true,
 						updated_by = EXCLUDED.updated_by,
 						updated_at = NOW()
-					RETURNING id
+					RETURNING id, org_type
 				)
 				INSERT INTO app_settings (
 					organization_id, key, value, updated_by
 				)
-				SELECT id, 'system', app_settings_default_value(), $5
+				SELECT id, 'system', app_settings_default_value_for_org(org_type), $5
 				FROM synced_org
 				ON CONFLICT (organization_id, key) DO NOTHING
 				"#,

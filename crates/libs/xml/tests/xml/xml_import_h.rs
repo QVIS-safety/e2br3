@@ -1,5 +1,4 @@
 use xml::import_sections::h_narrative::parse_h_narrative;
-use xml::Error as XmlError;
 
 #[test]
 fn import_h_narrative_basic() {
@@ -13,11 +12,14 @@ fn import_h_narrative_basic() {
 		.expect("read sample xml");
 
 	let narrative = parse_h_narrative(&xml).expect("parse").unwrap();
-	assert!(!narrative.case_narrative.trim().is_empty());
+	assert!(narrative
+		.case_narrative
+		.as_deref()
+		.is_some_and(|text| !text.trim().is_empty()));
 }
 
 #[test]
-fn import_h_narrative_requires_case_narrative() {
+fn import_h_narrative_preserves_absent_section() {
 	let xml = br#"<?xml version="1.0" encoding="utf-8"?>
 <MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <PORR_IN049016UV>
@@ -29,11 +31,5 @@ fn import_h_narrative_requires_case_narrative() {
   </PORR_IN049016UV>
 </MCCI_IN200100UV01>"#;
 
-	let err = parse_h_narrative(xml).expect_err("missing narrative should fail");
-	match err {
-		XmlError::InvalidXml { message, .. } => {
-			assert!(message.contains("ICH.H.1.REQUIRED"));
-		}
-		other => panic!("unexpected error type: {other:?}"),
-	}
+	assert!(parse_h_narrative(xml).expect("absent section H").is_none());
 }

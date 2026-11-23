@@ -56,7 +56,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "drug_name", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -95,7 +95,7 @@
       "payloadPath": "mfdsMedicinalProductVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "mfds_medicinal_product_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -134,7 +134,7 @@
       "payloadPath": "mfdsMedicinalProductId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "mfds_medicinal_product_id", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -173,7 +173,7 @@
       "payloadPath": "mpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "mpid_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -222,7 +222,7 @@
       "payloadPath": "mpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "mpid", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -261,7 +261,7 @@
       "payloadPath": "phpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "phpid_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -310,7 +310,7 @@
       "payloadPath": "phpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "phpid", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -357,7 +357,7 @@
       "nullFlavorPartnerCode": "D.8.r.4.local.startDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "start_date", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -404,7 +404,7 @@
       "nullFlavorPartnerCode": "D.8.r.5.local.endDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "end_date", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -459,7 +459,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "indication_meddra_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -522,7 +522,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "indication_meddra_code", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -577,7 +577,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "reaction_meddra_version", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -640,7 +640,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "reaction_meddra_code", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -664,7 +664,7 @@
       "nullFlavorPartnerCode": "D.8.r.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "drug_name_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -688,7 +688,7 @@
       "nullFlavorPartnerCode": "D.8.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "start_date_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }
@@ -712,7 +712,7 @@
       "nullFlavorPartnerCode": "D.8.r.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "past_drug_history", "column": "end_date_null_flavor", "record": {"source": "projection", "path": "pastDrugHistory.id"}}
       }

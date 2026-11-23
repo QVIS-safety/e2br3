@@ -146,6 +146,7 @@ async fn test_import_export_submission_histories_follow_scope() -> Result<()> {
 			None,
 			XmlImportHistoryStatus::Error,
 			Some("invalid XML"),
+			None,
 		)
 		.await?;
 	}

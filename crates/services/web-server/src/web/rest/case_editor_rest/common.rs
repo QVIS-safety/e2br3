@@ -63,10 +63,6 @@ pub(super) use lib_core::model::patient::{
 pub(super) use lib_core::model::reaction::{
 	ReactionBmc, ReactionForCreate, ReactionForUpdate,
 };
-pub(super) use lib_core::model::receiver::{
-	ReceiverInformationBmc, ReceiverInformationForCreate,
-	ReceiverInformationForUpdate,
-};
 pub(super) use lib_core::model::safety_report::{
 	DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter,
 	DocumentsHeldBySenderForCreate, DocumentsHeldBySenderForUpdate,
@@ -138,7 +134,6 @@ pub(super) fn child_row_has_content(row: &Map<String, Value>) -> bool {
 			"id" | "deleted"
 				| "_delete" | "sequenceNumber"
 				| "drugReactionAssessmentId"
-				| "reactionId"
 				| "_deleteAssessment"
 		) {
 			return false;
@@ -397,19 +392,7 @@ pub(super) fn explicit_null_model_fields(
 			let value = std::iter::once(*field)
 				.chain(candidates.iter().copied())
 				.find_map(|path| value_at_path(row, path));
-			value
-				.is_some_and(|value| {
-					value.is_null()
-						|| (!matches!(
-							*field,
-							"test_name"
-								| "medicinal_product" | "drug_characterization"
-								| "case_narrative"
-						) && value
-							.as_str()
-							.is_some_and(|value| value.trim().is_empty()))
-				})
-				.then_some(*field)
+			value.is_some_and(Value::is_null).then_some(*field)
 		})
 		.collect()
 }
@@ -421,25 +404,6 @@ pub(super) fn row_model_value(
 	aliases: &[(&str, &[&str])],
 	extra: &[(&str, Value)],
 ) -> Value {
-	fn omit_blank_strings(value: &mut Value) {
-		match value {
-			Value::Object(map) => {
-				map.retain(|_, value| {
-					!value.as_str().is_some_and(|value| value.trim().is_empty())
-				});
-				for value in map.values_mut() {
-					omit_blank_strings(value);
-				}
-			}
-			Value::Array(values) => {
-				for value in values {
-					omit_blank_strings(value);
-				}
-			}
-			_ => {}
-		}
-	}
-
 	let mut map = row.clone();
 	for (target, aliases) in aliases {
 		insert_alias(&mut map, target, aliases);
@@ -447,25 +411,7 @@ pub(super) fn row_model_value(
 	for (key, value) in extra {
 		map.insert((*key).to_string(), value.clone());
 	}
-	let mut value = Value::Object(map);
-	omit_blank_strings(&mut value);
-	// These NOT NULL text columns use an empty string for an unfinished draft.
-	for (section, source, target) in [
-		("LB", "testName", "test_name"),
-		("DG", "medicinalProduct", "medicinal_product"),
-		("DG", "drugCharacterization", "drug_characterization"),
-	] {
-		if _section == section && _request_prefix.is_empty() {
-			if let Some(text) = row
-				.get(source)
-				.or_else(|| row.get(target))
-				.and_then(Value::as_str)
-			{
-				value[target] = json!(text);
-			}
-		}
-	}
-	value
+	Value::Object(map)
 }
 
 pub(super) fn parse_row_model<T: serde::de::DeserializeOwned>(

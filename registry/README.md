@@ -53,6 +53,13 @@ Do not use combined values such as `ICH+FDA`. If a field is FDA-specific, set
 `dictionaryInputs.checks` records **all structured** `max_length`,
 `allowed_value_constraint` (except descriptive prose), and `null_flavors`
 requirements, including the exact dictionary value so source drift fails CI.
+
+UUID-backed roundtrips use `roundTripReference` (`case-reaction` or
+`product-presave`) with a null `roundTripValue`, not an invented portable UUID.
+The isolated HTTP harness creates the referenced record through its API and uses
+the returned UUID for save/readback, omission, clear/blank boundaries and audit
+checks. Null is only the literal/clear serialization vector, not a successful
+positive-reference value. These isolated contracts are not dev browser evidence.
 `dictionaryInputs.guidance` mirrors dictionary `notes`, including reviewed
 official versions, URLs and field-specific conditions; stale guidance also fails.
 Requiredness, cross-field rules, and descriptive prose are not scalar input
@@ -72,7 +79,7 @@ nullFlavor overlay on D.1. N.1.1 is the one explicit `dictionaryExclusions`
 entry: the registry records no editable input. Together these account for all
 265 dictionary elements; accounting for an element does not mean all its
 requirements are enforced. After the 2026-11-19 official-source review there are
-381 executable scalar checks, 38 validator-owned requirements and 13 unresolved
+382 executable scalar checks, 37 validator-owned requirements and 13 unresolved
 requirements. The original 32 gaps all have source-backed guidance: three gained
 scalar checks, eight gained submission-marker bindings/tests, and parent age
 now correctly binds its existing `a` / `10.a` business rule.
@@ -85,6 +92,11 @@ only true without a nullFlavor or NI without a boolean is submission-valid.
 The 13 open requirements cover identity/provenance (2), regional identifiers (7),
 and terminology version/codes (4). These are implementation gaps,
 not unknown official requirements or passing checks.
+
+Included Documents (`C.1.6.1.r.2`) now uses the same Base64 input integrity
+check as Literature (`C.4.r.2`), including the editable raw payload input.
+Missing/empty draft attachments remain allowed; attachment presence, MIME and
+recipient-specific submission requirements remain separate business rules.
 
 Boundary values are isolated test fixtures, not production Case data. A
 `{"repeat":"X","count":100}` value expands to a boundary string in the test
@@ -127,6 +139,16 @@ EDQM/FDA SPL sources and system/version mappings; C.1.7 needs verified R2 import
 provenance, and C.1.8.1 needs original-sender / retransmission lifecycle enforcement.
 These are not covered by the seven new unit/country rules, and remain visibly
 unresolved in editor-contracts rather than being counted as validated.
+
+### Empty string persistence policy
+
+The application storage policy treats omitted fields as unchanged and explicit
+`null` as a clear of an optional value. The editor excludes manually emptied
+string inputs from saves; API row changes reject empty or whitespace-only strings
+with `INPUT.EMPTY.REJECTED`. SQL checks cover every current model string column
+and string-array element, including non-case tables. Required columns retain
+`NOT NULL`; legacy optional blanks migrate to SQL `NULL`. Historical JSON/XML
+payload contents are not rewritten. This policy does not change the ICH dictionary.
 
 ### Reviewed input baseline
 

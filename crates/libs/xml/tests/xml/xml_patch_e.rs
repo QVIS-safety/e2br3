@@ -2,8 +2,8 @@ use lib_core::model::reaction::Reaction;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::Uuid;
-use time::{Month, OffsetDateTime};
-use xml::raw::patch::patch_e_reactions;
+use time::OffsetDateTime;
+use xml::export::roundtrip::patch_e_reactions;
 
 #[test]
 fn patch_e_reaction_updates_raw_xml() {
@@ -20,6 +20,7 @@ fn patch_e_reaction_updates_raw_xml() {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
 		sequence_number: 1,
+		deleted: false,
 		primary_source_reaction: Some("Headache".to_string()),
 		primary_source_reaction_translation: None,
 		reaction_language: Some("en".to_string()),
@@ -40,6 +41,26 @@ fn patch_e_reaction_updates_raw_xml() {
 		criteria_other_medically_important: Some(false),
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: None,
+		required_intervention_null_flavor: None,
+		expectedness: None,
+		severity: None,
+		mfds_device_ae_classification: None,
+		mfds_device_ae_outcome: None,
+		mfds_device_cause_medical_device: None,
+		mfds_device_cause_procedure_issue: None,
+		mfds_device_cause_patient_condition: None,
+		mfds_device_cause_unable_to_assess: None,
+		mfds_device_cause_other: None,
+		mfds_device_action_reason: None,
+		mfds_device_action_recall: None,
+		mfds_device_action_repair: None,
+		mfds_device_action_inspection: None,
+		mfds_device_action_replacement: None,
+		mfds_device_action_improvement: None,
+		mfds_device_action_monitoring: None,
+		mfds_device_action_notification: None,
+		mfds_device_action_label_change: None,
+		mfds_device_action_other: None,
 		start_date: None,
 		start_date_null_flavor: None,
 		end_date: None,
@@ -80,15 +101,14 @@ fn patch_e_reaction_uses_comp_nodes_for_sxpr_effective_time() {
 	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
-	let start_date = time::Date::from_calendar_date(2024, Month::January, 2)
-		.expect("valid start");
-	let end_date =
-		time::Date::from_calendar_date(2024, Month::January, 5).expect("valid end");
+	let start_date = "20240102".to_string();
+	let end_date = "20240105".to_string();
 
 	let reaction = Reaction {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
 		sequence_number: 1,
+		deleted: false,
 		primary_source_reaction: Some("Headache".to_string()),
 		primary_source_reaction_translation: None,
 		reaction_language: Some("en".to_string()),
@@ -109,6 +129,26 @@ fn patch_e_reaction_uses_comp_nodes_for_sxpr_effective_time() {
 		criteria_other_medically_important: Some(false),
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: None,
+		required_intervention_null_flavor: None,
+		expectedness: None,
+		severity: None,
+		mfds_device_ae_classification: None,
+		mfds_device_ae_outcome: None,
+		mfds_device_cause_medical_device: None,
+		mfds_device_cause_procedure_issue: None,
+		mfds_device_cause_patient_condition: None,
+		mfds_device_cause_unable_to_assess: None,
+		mfds_device_cause_other: None,
+		mfds_device_action_reason: None,
+		mfds_device_action_recall: None,
+		mfds_device_action_repair: None,
+		mfds_device_action_inspection: None,
+		mfds_device_action_replacement: None,
+		mfds_device_action_improvement: None,
+		mfds_device_action_monitoring: None,
+		mfds_device_action_notification: None,
+		mfds_device_action_label_change: None,
+		mfds_device_action_other: None,
 		start_date: Some(start_date),
 		start_date_null_flavor: None,
 		end_date: Some(end_date),

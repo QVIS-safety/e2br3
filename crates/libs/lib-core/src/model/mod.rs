@@ -59,7 +59,6 @@ pub mod narrative; // Case narrative, sender diagnoses, case summaries
 pub mod message_header; // Batch/message transmission headers
 
 // E2B(R3) Section A - Receiver Information
-pub mod receiver; // Receiver details for routing to regulatory authorities
 
 // E2B(R3) G.k.9.i - Drug-Reaction Assessment
 pub mod drug_reaction_assessment; // Causality assessment linking drugs to reactions

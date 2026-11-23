@@ -644,7 +644,6 @@ async fn create_case_from_intake_in_txn(
 				.map(|generated| generated.worldwide_unique_id.clone()),
 			nullification_code: None,
 			nullification_reason: None,
-			receiver_organization: None,
 		},
 	)
 	.await?;

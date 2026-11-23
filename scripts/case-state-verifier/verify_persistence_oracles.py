@@ -79,7 +79,6 @@ source_ids = [seed[k]["id"] for k in ["sender", "receiver", "reporter", "product
 snapshot_sql = f"""
 SELECT jsonb_build_object(
   'sender', (SELECT to_jsonb(x) - ARRAY['updated_at','updated_by'] FROM sender_information x WHERE case_id='{case_id}'),
-  'receiver', (SELECT to_jsonb(x) - ARRAY['updated_at','updated_by'] FROM receiver_information x WHERE case_id='{case_id}'),
   'reporters', (SELECT COALESCE(jsonb_agg(to_jsonb(x) - ARRAY['updated_at','updated_by'] ORDER BY sequence_number),'[]') FROM primary_sources x WHERE case_id='{case_id}' AND NOT deleted),
   'study', (SELECT to_jsonb(x) - ARRAY['updated_at','updated_by'] FROM study_information x WHERE case_id='{case_id}'),
   'drugs', (SELECT COALESCE(jsonb_agg(to_jsonb(x) - ARRAY['updated_at','updated_by'] ORDER BY sequence_number),'[]') FROM drug_information x WHERE case_id='{case_id}' AND NOT deleted),
@@ -90,7 +89,6 @@ audit_sql = f"""
 SELECT jsonb_build_object(
   'caseAudit', (SELECT count(*) FROM audit_logs WHERE record_id IN (
     SELECT id FROM sender_information WHERE case_id='{case_id}' UNION ALL
-    SELECT id FROM receiver_information WHERE case_id='{case_id}' UNION ALL
     SELECT id FROM primary_sources WHERE case_id='{case_id}' UNION ALL
     SELECT id FROM study_information WHERE case_id='{case_id}' UNION ALL
     SELECT id FROM drug_information WHERE case_id='{case_id}' UNION ALL

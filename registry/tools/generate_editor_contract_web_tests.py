@@ -92,6 +92,13 @@ def validate_behavior_bindings(contract: dict, registry_root: Path) -> None:
         raise ValueError(f"{page}: missing row identity contracts")
     used = set()
     for field in contract["fields"]:
+        reference = field.get("roundTripReference")
+        if reference is not None and (
+            reference not in ("case-reaction", "product-presave")
+            or field.get("roundTripValue") is not None
+            or field.get("execution", {}).get("status") == "blocked"
+        ):
+            raise ValueError(f'{page}/{field["code"]}: invalid runtime roundtrip reference')
         if field.get("execution", {}).get("status") == "blocked":
             continue
         request = field["patch"]["owner"] + "." + field["payloadPath"]

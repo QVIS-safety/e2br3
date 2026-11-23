@@ -269,7 +269,8 @@ pub fn d_10_6(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		&mut issues,
 		"ICH.D.10.6.ALLOWED.VALUE",
 		input.value,
-		&["1", "2"],
+		// Stored legacy unknown (0) must survive transfers; submission checks ICH codes.
+		&["0", "1", "2"],
 	);
 	crate::helpers::null_flavor(
 		&mut issues,
@@ -719,7 +720,8 @@ pub fn d_5(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		&mut issues,
 		"ICH.D.5.ALLOWED.VALUE",
 		input.value,
-		&["1", "2"],
+		// Stored legacy unknown (0) must survive transfers; submission checks ICH codes.
+		&["0", "1", "2"],
 	);
 	crate::helpers::null_flavor(
 		&mut issues,

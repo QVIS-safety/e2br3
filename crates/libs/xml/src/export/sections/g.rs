@@ -1,4 +1,5 @@
 use super::*;
+use base64::Engine as _;
 
 pub(crate) async fn export_patch(
 	ctx: &Ctx,
@@ -266,30 +267,46 @@ fn write_g_k_6a(value: &DrugInformation) -> Option<&rust_decimal::Decimal> {
 }
 
 /// e2b:G.k.6b
-fn write_g_k_6b(value: &DrugInformation) -> Option<&'static str> {
-	normalize_gestation_unit(value.gestation_period_exposure_unit.as_deref()?)
+fn write_g_k_6b(value: &DrugInformation) -> Option<&str> {
+	let unit = value.gestation_period_exposure_unit.as_deref()?;
+	Some(match normalize_gestation_unit(unit) {
+		Some(mapped) => mapped,
+		// Unknown draft units are preserved; submission checks allowed values.
+		None => unit,
+	})
 }
 
 /// e2b:G.k.11
 fn write_g_k_11(value: &DrugInformation) -> Option<&str> {
-	value
-		.drug_additional_information
-		.as_deref()
-		.filter(|v| !v.trim().is_empty())
+	value.drug_additional_information.as_deref()
 }
 
 /// e2b:G.k.10.r
-fn write_g_k_10_r(value: &DrugInformation) -> Vec<&str> {
-	value
-		.drug_additional_info_codes_json
-		.as_ref()
-		.and_then(serde_json::Value::as_array)
-		.into_iter()
-		.flatten()
-		.filter_map(|entry| {
-			entry.get("value_code").and_then(serde_json::Value::as_str)
+fn write_g_k_10_r(value: &DrugInformation) -> Result<Vec<&str>> {
+	let Some(raw) = value.drug_additional_info_codes_json.as_ref() else {
+		return Ok(Vec::new());
+	};
+	let entries = raw.as_array().ok_or_else(|| Error::InvalidXml {
+		message: "G.k.10.r: stored codes must be an array".to_string(),
+		line: None,
+		column: None,
+	})?;
+	entries
+		.iter()
+		.enumerate()
+		.map(|(index, entry)| {
+			// Preserve draft strings; malformed storage cannot become a successful partial export.
+			entry
+				.get("value_code")
+				.and_then(serde_json::Value::as_str)
+				.ok_or_else(|| {
+					Error::InvalidXml {
+				message: format!("G.k.10.r: stored entry {index} requires a string value_code"),
+				line: None,
+				column: None,
+			}
+				})
 		})
-		.filter(|code| !code.trim().is_empty())
 		.collect()
 }
 
@@ -420,10 +437,7 @@ fn write_g_k_4_r_4(
 ) -> (Option<Date>, Option<&str>, Option<&str>) {
 	(
 		value.first_administration_date,
-		value
-			.first_administration_date_raw
-			.as_deref()
-			.and_then(partial_ts_lexeme),
+		value.first_administration_date_raw.as_deref(),
 		value.first_administration_date_null_flavor.as_deref(),
 	)
 }
@@ -434,18 +448,9 @@ fn write_g_k_4_r_5(
 ) -> (Option<Date>, Option<&str>, Option<&str>) {
 	(
 		value.last_administration_date,
-		value
-			.last_administration_date_raw
-			.as_deref()
-			.and_then(partial_ts_lexeme),
+		value.last_administration_date_raw.as_deref(),
 		value.last_administration_date_null_flavor.as_deref(),
 	)
-}
-
-fn partial_ts_lexeme(value: &str) -> Option<&str> {
-	let value = value.trim();
-	(matches!(value.len(), 4 | 6) && value.bytes().all(|byte| byte.is_ascii_digit()))
-		.then_some(value)
 }
 
 /// e2b:G.k.4.r.6a
@@ -454,8 +459,12 @@ fn write_g_k_4_r_6a(value: &DosageInformation) -> Option<&rust_decimal::Decimal>
 }
 
 /// e2b:G.k.4.r.6b
-fn write_g_k_4_r_6b(value: &DosageInformation) -> Option<&'static str> {
-	normalize_time_unit(value.duration_unit.as_deref()?)
+fn write_g_k_4_r_6b(value: &DosageInformation) -> Option<&str> {
+	let unit = value.duration_unit.as_deref()?;
+	Some(match normalize_time_unit(unit) {
+		Some(mapped) => mapped,
+		None => unit,
+	})
 }
 
 /// e2b:G.k.4.r.7
@@ -545,7 +554,7 @@ fn write_fda_g_k_12_device_characteristic(
 fn write_fda_g_k_12_device(
 	device: &FdaDeviceInformation,
 	codes: &[&FdaDeviceCode],
-) -> String {
+) -> Result<String> {
 	let mut out = String::from(
 		"<part classCode=\"PART\"><partProduct classCode=\"DEV\" determinerCode=\"KIND\">",
 	);
@@ -570,15 +579,12 @@ fn write_fda_g_k_12_device(
 			device.common_device_name_null_flavor.as_deref(),
 		),
 	] {
-		if let Some(value) = value {
-			out.push_str("<name>");
-			out.push_str(&xml_escape(value));
-			out.push_str("</name>");
-		} else if let Some(null_flavor) = null_flavor {
-			out.push_str("<name nullFlavor=\"");
-			out.push_str(&xml_escape(null_flavor));
-			out.push_str("\"/>");
-		}
+		out.push_str(&field::text_element(
+			"FDA.G.k.12 device name",
+			value,
+			null_flavor,
+			"name",
+		)?);
 	}
 
 	let has_manufacturer = write_fda_g_k_12_r_7_1a(device).is_some()
@@ -683,7 +689,7 @@ fn write_fda_g_k_12_device(
 		out.push_str("</lotNumberText></productInstanceInstance></instanceOfKind>");
 	}
 	out.push_str("</partProduct></part>");
-	out
+	Ok(out)
 }
 
 pub(crate) fn write_g_k_drug(
@@ -705,6 +711,20 @@ pub(crate) fn write_g_k_drug(
 		"<code code=\"4\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/>",
 	);
 	out.push_str("<component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
+	// Source references are mapping keys only, never foreign catalog UUIDs to insert.
+	out.push_str("<?e2br3-product-link-v1 ");
+	match drug.source_product_presave_id {
+		Some(id) => out.push_str(&id.to_string()),
+		None => out.push_str("none"),
+	}
+	out.push_str("?>");
+	if let Some(product_id) = &drug.source_product_id {
+		// Local snapshot metadata, not a cross-organization catalog reference or E2B code.
+		out.push_str(&format!(
+			"<?e2br3-source-product-id-v1 {}?>",
+			base64::engine::general_purpose::STANDARD.encode(product_id.as_bytes())
+		));
+	}
 	out.push_str("<id root=\"");
 	out.push_str(&xml_escape(&drug.id.to_string()));
 	out.push_str("\"/>");
@@ -731,10 +751,10 @@ pub(crate) fn write_g_k_drug(
 		&& (write_g_k_2_1_1b(drug).is_some() || write_g_k_2_1_1a(drug).is_some())
 	{
 		out.push_str("<code codeSystem=\"");
-			out.push_str(match drug.mpid_source_code_system.as_deref() {
-				Some(code_system) => code_system,
-				None => FDA_MPID_CODE_SYSTEM,
-			});
+		out.push_str(match drug.mpid_source_code_system.as_deref() {
+			Some(code_system) => code_system,
+			None => FDA_MPID_CODE_SYSTEM,
+		});
 		out.push('"');
 		if let Some(code) = write_g_k_2_1_1b(drug) {
 			out.push_str(" code=\"");
@@ -889,42 +909,14 @@ pub(crate) fn write_g_k_drug(
 				continue;
 			};
 			out.push_str("<part><partProduct><asManufacturedProduct><subjectOf><characteristic>");
-			let code = ch.code.as_deref().map(str::trim).filter(|v| !v.is_empty());
-			let code_system = ch
-				.code_system
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let code_display_name = ch
-				.code_display_name
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let value_type = ch
-				.value_type
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let value_value = ch
-				.value_value
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let value_code = ch
-				.value_code
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let value_code_system = ch
-				.value_code_system
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
-			let value_display_name = ch
-				.value_display_name
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty());
+			let code = ch.code.as_deref();
+			let code_system = ch.code_system.as_deref();
+			let code_display_name = ch.code_display_name.as_deref();
+			let value_type = ch.value_type.as_deref();
+			let value_value = ch.value_value.as_deref();
+			let value_code = ch.value_code.as_deref();
+			let value_code_system = ch.value_code_system.as_deref();
+			let value_display_name = ch.value_display_name.as_deref();
 			out.push_str("<code");
 			let use_value_code_as_code =
 				code.is_none() && value_value.is_none() && value_code.is_some();
@@ -1012,7 +1004,7 @@ pub(crate) fn write_g_k_drug(
 				.copied()
 				.filter(|code| code.device_id == device.id)
 				.collect();
-			out.push_str(&write_fda_g_k_12_device(device, &codes));
+			out.push_str(&write_fda_g_k_12_device(device, &codes)?);
 		}
 	}
 	out.push_str("</kindOfProduct>");
@@ -1028,7 +1020,13 @@ pub(crate) fn write_g_k_drug(
 	for assessment in assessments {
 		out.push_str(&write_g_k_9_i_recurrence(assessment));
 	}
-	for code in write_g_k_10_r(drug) {
+	let additional_codes = write_g_k_10_r(drug)?;
+	if additional_codes.is_empty() && drug.drug_additional_info_codes_json.is_some()
+	{
+		// Keep an explicitly empty collection distinct from an absent collection.
+		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/></observation></outboundRelationship2>");
+	}
+	for code in additional_codes {
 		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"CE\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.17\" code=\"");
 		out.push_str(&xml_escape(code));
 		out.push_str("\"/></observation></outboundRelationship2>");
@@ -1066,16 +1064,16 @@ pub(crate) fn write_g_k_drug(
 		out.push_str("/></observation></outboundRelationship2>");
 	}
 	if matches!(authority, RegulatoryAuthority::Fda) {
-		if let Some(code) = write_fda_g_k_10a(drug) {
-			out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\"/><value xsi:type=\"CE\" code=\"");
-			out.push_str(&xml_escape(code));
-			out.push_str("\"/></observation></outboundRelationship2>");
-		} else if let Some(null_flavor) =
-			drug.fda_additional_info_coded_null_flavor.as_deref()
-		{
-			out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\"/><value xsi:type=\"CE\" nullFlavor=\"");
-			out.push_str(&xml_escape(null_flavor));
-			out.push_str("\"/></observation></outboundRelationship2>");
+		let value = field::element(
+			"FDA.G.k.10a",
+			write_fda_g_k_10a(drug),
+			drug.fda_additional_info_coded_null_flavor.as_deref(),
+			"value",
+			"code",
+			" xsi:type=\"CE\"",
+		)?;
+		if !value.is_empty() {
+			out.push_str(&format!("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\"/>{value}</observation></outboundRelationship2>"));
 		}
 	}
 	if let Some(text) = write_g_k_11(drug) {
@@ -1085,6 +1083,10 @@ pub(crate) fn write_g_k_drug(
 	}
 	for dose in dosages {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
+		if let Some(continuing) = dose.continuing {
+			// Local transfer metadata, not an E2B code; lossless recipients must preserve processing instructions.
+			out.push_str(&format!("<?e2br3-dosage-continuing-v1 {continuing}?>"));
+		}
 		if let Some(text) = write_g_k_4_r_8(dose) {
 			out.push_str("<text>");
 			out.push_str(&xml_escape(text));
@@ -1100,7 +1102,8 @@ pub(crate) fn write_g_k_drug(
 			|| end.is_some()
 			|| end_raw.is_some()
 			|| end_null_flavor.is_some();
-		let has_duration = dose.duration_value.is_some();
+		let has_duration =
+			dose.duration_value.is_some() || dose.duration_unit.is_some();
 		let timing_parts = usize::from(has_frequency)
 			+ usize::from(has_bounds)
 			+ usize::from(has_duration);
@@ -1135,32 +1138,32 @@ pub(crate) fn write_g_k_drug(
 			} else {
 				"<effectiveTime xsi:type=\"IVL_TS\">"
 			});
-			if let Some(start) = start_raw {
-				out.push_str("<low value=\"");
-				out.push_str(&xml_escape(start));
-				out.push_str("\"/>");
-			} else if let Some(start) = start {
-				out.push_str("<low value=\"");
-				out.push_str(&fmt_ts(start, None));
-				out.push_str("\"/>");
-			} else if let Some(null_flavor) = start_null_flavor {
-				out.push_str("<low nullFlavor=\"");
-				out.push_str(&xml_escape(null_flavor));
-				out.push_str("\"/>");
-			}
-			if let Some(end) = end_raw {
-				out.push_str("<high value=\"");
-				out.push_str(&xml_escape(end));
-				out.push_str("\"/>");
-			} else if let Some(end) = end {
-				out.push_str("<high value=\"");
-				out.push_str(&fmt_ts(end, None));
-				out.push_str("\"/>");
-			} else if let Some(null_flavor) = end_null_flavor {
-				out.push_str("<high nullFlavor=\"");
-				out.push_str(&xml_escape(null_flavor));
-				out.push_str("\"/>");
-			}
+			let start = field::stored_date(
+				"G.k.4.r.4",
+				start.map(|date| fmt_ts(date, None)),
+				start_raw,
+			)?;
+			let end = field::stored_date(
+				"G.k.4.r.5",
+				end.map(|date| fmt_ts(date, None)),
+				end_raw,
+			)?;
+			out.push_str(&field::element(
+				"G.k.4.r.4",
+				start.as_deref(),
+				start_null_flavor,
+				"low",
+				"value",
+				"",
+			)?);
+			out.push_str(&field::element(
+				"G.k.4.r.5",
+				end.as_deref(),
+				end_null_flavor,
+				"high",
+				"value",
+				"",
+			)?);
 			out.push_str(if timing_parts > 1 {
 				"</comp>"
 			} else {
@@ -1169,56 +1172,51 @@ pub(crate) fn write_g_k_drug(
 		}
 		if has_duration {
 			out.push_str(if timing_parts > 1 {
-				"<comp xsi:type=\"IVL_TS\" operator=\"A\"><width value=\""
+				"<comp xsi:type=\"IVL_TS\" operator=\"A\"><width"
 			} else {
-				"<effectiveTime xsi:type=\"IVL_TS\"><width value=\""
+				"<effectiveTime xsi:type=\"IVL_TS\"><width"
 			});
 			if let Some(width) = write_g_k_4_r_6a(dose) {
+				out.push_str(" value=\"");
 				out.push_str(&xml_escape(&decimal_text(width)));
 				out.push('"');
-				if let Some(unit) = write_g_k_4_r_6b(dose) {
-					out.push_str(" unit=\"");
-					out.push_str(&xml_escape(unit));
-					out.push('"');
-				}
-				out.push_str(if timing_parts > 1 {
-					"/></comp>"
-				} else {
-					"/></effectiveTime>"
-				});
 			}
+			if let Some(unit) = write_g_k_4_r_6b(dose) {
+				out.push_str(" unit=\"");
+				out.push_str(&xml_escape(unit));
+				out.push('"');
+			}
+			out.push_str(if timing_parts > 1 {
+				"/></comp>"
+			} else {
+				"/></effectiveTime>"
+			});
 		}
 		if timing_parts > 1 {
 			out.push_str("</effectiveTime>");
 		}
 		if dose.route_of_administration.is_some()
 			|| dose.route_termid.is_some()
+			|| dose.route_termid_version.is_some()
 			|| dose.route_termid_code_system.is_some()
 			|| dose.route_of_administration_null_flavor.is_some()
 		{
 			out.push_str("<routeCode");
-			if let Some(null_flavor) =
-				dose.route_of_administration_null_flavor.as_deref()
-			{
-				out.push_str(" nullFlavor=\"");
-				out.push_str(&xml_escape(null_flavor));
-				out.push('"');
-			} else if let Some(code) = write_g_k_4_r_10_2b(dose) {
-				out.push_str(" code=\"");
-				out.push_str(&xml_escape(code));
+			out.push_str(&field::attributes(
+				"write_g_k_4_r_10_2b",
+				write_g_k_4_r_10_2b(dose),
+				dose.route_of_administration_null_flavor.as_deref(),
+				"code",
+			)?);
+			if let Some(code_system) = write_g_k_4_r_10_2_code_system(dose) {
+				out.push_str(" codeSystem=\"");
+				out.push_str(&xml_escape(code_system));
 				out.push('"');
 			}
-			if dose.route_of_administration_null_flavor.is_none() {
-				if let Some(code_system) = write_g_k_4_r_10_2_code_system(dose) {
-					out.push_str(" codeSystem=\"");
-					out.push_str(&xml_escape(code_system));
-					out.push('"');
-				}
-				if let Some(ver) = write_g_k_4_r_10_2a(dose) {
-					out.push_str(" codeSystemVersion=\"");
-					out.push_str(&xml_escape(ver));
-					out.push('"');
-				}
+			if let Some(ver) = write_g_k_4_r_10_2a(dose) {
+				out.push_str(" codeSystemVersion=\"");
+				out.push_str(&xml_escape(ver));
+				out.push('"');
 			}
 			if let Some(route) = write_g_k_4_r_10_1(dose) {
 				out.push_str("><originalText>");
@@ -1246,86 +1244,75 @@ pub(crate) fn write_g_k_drug(
 			|| dose.batch_lot_number_null_flavor.is_some()
 			|| dose.dose_form.is_some()
 			|| dose.dose_form_termid.is_some()
+			|| dose.dose_form_termid_version.is_some()
 			|| dose.dose_form_null_flavor.is_some()
 		{
 			out.push_str("<consumable><instanceOfKind>");
-			if let Some(batch) = write_g_k_4_r_7(dose) {
-				out.push_str("<productInstanceInstance><lotNumberText>");
-				out.push_str(&xml_escape(batch));
-				out.push_str("</lotNumberText></productInstanceInstance>");
-			} else if let Some(null_flavor) =
-				dose.batch_lot_number_null_flavor.as_deref()
-			{
-				out.push_str("<productInstanceInstance><id nullFlavor=\"NI\"/><lotNumberText nullFlavor=\"");
-				out.push_str(&xml_escape(null_flavor));
-				out.push_str("\"/></productInstanceInstance>");
+			let lot = field::text_element(
+				"G.k.4.r.7",
+				write_g_k_4_r_7(dose),
+				dose.batch_lot_number_null_flavor.as_deref(),
+				"lotNumberText",
+			)?;
+			if !lot.is_empty() {
+				out.push_str(&format!(
+					"<productInstanceInstance>{lot}</productInstanceInstance>"
+				));
 			}
 			if dose.dose_form.is_some()
 				|| dose.dose_form_termid.is_some()
+				|| dose.dose_form_termid_version.is_some()
 				|| dose.dose_form_null_flavor.is_some()
 			{
 				out.push_str("<kindOfProduct><formCode");
-				if let Some(null_flavor) = dose.dose_form_null_flavor.as_deref() {
-					out.push_str(" nullFlavor=\"");
-					out.push_str(&xml_escape(null_flavor));
+				out.push_str(&field::attributes(
+					"write_g_k_4_r_9_2b",
+					write_g_k_4_r_9_2b(dose),
+					dose.dose_form_null_flavor.as_deref(),
+					"code",
+				)?);
+				if let Some(ver) = write_g_k_4_r_9_2a(dose) {
+					out.push_str(" codeSystemVersion=\"");
+					out.push_str(&xml_escape(ver));
 					out.push('"');
-				} else if let Some(code) = write_g_k_4_r_9_2b(dose) {
-					out.push_str(" code=\"");
-					out.push_str(&xml_escape(code));
-					out.push('"');
-				}
-				if dose.dose_form_null_flavor.is_none() {
-					if let Some(ver) = write_g_k_4_r_9_2a(dose) {
-						out.push_str(" codeSystemVersion=\"");
-						out.push_str(&xml_escape(ver));
-						out.push('"');
-					}
 				}
 				out.push('>');
-				if dose.dose_form_null_flavor.is_none() {
-					if let Some(text) = write_g_k_4_r_9_1(dose) {
-						out.push_str("<originalText>");
-						out.push_str(&xml_escape(text));
-						out.push_str("</originalText>");
-					}
+				if let Some(text) = write_g_k_4_r_9_1(dose) {
+					out.push_str("<originalText>");
+					out.push_str(&xml_escape(text));
+					out.push_str("</originalText>");
 				}
 				out.push_str("</formCode></kindOfProduct>");
 			}
 			out.push_str("</instanceOfKind></consumable>");
 		}
 		if dose.parent_route_termid.is_some()
+			|| dose.parent_route_termid_version.is_some()
 			|| dose.parent_route_termid_code_system.is_some()
 			|| dose.parent_route.is_some()
 			|| dose.parent_route_null_flavor.is_some()
 		{
 			out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.4.r.11\"/><value");
 			out.push_str(" xsi:type=\"CE\"");
-			if let Some(null_flavor) = dose.parent_route_null_flavor.as_deref() {
-				out.push_str(" nullFlavor=\"");
-				out.push_str(&xml_escape(null_flavor));
-				out.push('"');
-			} else if let Some(code) = write_g_k_4_r_11_2b(dose) {
-				out.push_str(" code=\"");
-				out.push_str(&xml_escape(code));
+			out.push_str(&field::attributes(
+				"write_g_k_4_r_11_2b",
+				write_g_k_4_r_11_2b(dose),
+				dose.parent_route_null_flavor.as_deref(),
+				"code",
+			)?);
+			if let Some(code_system) = write_g_k_4_r_11_2_code_system(dose) {
+				out.push_str(" codeSystem=\"");
+				out.push_str(&xml_escape(code_system));
 				out.push('"');
 			}
-			if dose.parent_route_null_flavor.is_none() {
-				if let Some(code_system) = write_g_k_4_r_11_2_code_system(dose) {
-					out.push_str(" codeSystem=\"");
-					out.push_str(&xml_escape(code_system));
-					out.push('"');
-				}
-				if let Some(ver) = write_g_k_4_r_11_2a(dose) {
-					out.push_str(" codeSystemVersion=\"");
-					out.push_str(&xml_escape(ver));
-					out.push('"');
-				}
+			if let Some(ver) = write_g_k_4_r_11_2a(dose) {
+				out.push_str(" codeSystemVersion=\"");
+				out.push_str(&xml_escape(ver));
+				out.push('"');
 			}
 			out.push_str("><originalText>");
-			if dose.parent_route_null_flavor.is_none() {
-				if let Some(text) = write_g_k_4_r_11_1(dose) {
-					out.push_str(&xml_escape(text));
-				}
+			if let Some(text) = write_g_k_4_r_11_1(dose) {
+				out.push_str(&xml_escape(text));
 			}
 			out.push_str(
 				"</originalText></value></observation></outboundRelationship2>",
@@ -1333,8 +1320,10 @@ pub(crate) fn write_g_k_drug(
 		}
 		out.push_str("</substanceAdministration></outboundRelationship2>");
 	}
-	if write_g_k_2_5(drug) == Some(true) {
-		out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"6\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"blinded\"/><value xsi:type=\"BL\" value=\"true\"/></observation></outboundRelationship2>");
+	if let Some(blinded) = write_g_k_2_5(drug) {
+		out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"6\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"blinded\"/><value xsi:type=\"BL\"");
+		out.push_str(&field::attributes("G.k.2.5", Some(blinded), None, "value")?);
+		out.push_str("/></observation></outboundRelationship2>");
 	}
 	if let Some(action) = write_g_k_8(drug) {
 		out.push_str("<inboundRelationship typeCode=\"CAUS\"><act classCode=\"ACT\" moodCode=\"EVN\"><code code=\"");
@@ -1355,15 +1344,12 @@ pub(crate) fn write_g_k_drug(
 		}
 		out.push('>');
 		let (text, text_null_flavor) = write_g_k_7_r_1(ind);
-		if let Some(text) = text {
-			out.push_str("<originalText>");
-			out.push_str(&xml_escape(text));
-			out.push_str("</originalText>");
-		} else if let Some(null_flavor) = text_null_flavor {
-			out.push_str("<originalText nullFlavor=\"");
-			out.push_str(&xml_escape(null_flavor));
-			out.push_str("\"/>");
-		}
+		out.push_str(&field::text_element(
+			"G.k.7.r.1",
+			text,
+			text_null_flavor,
+			"originalText",
+		)?);
 		out.push_str("</value><performer typeCode=\"PRF\"><assignedEntity classCode=\"ASSIGNED\"><code code=\"3\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.21\" displayName=\"sourceReporter\"/></assignedEntity></performer></observation></inboundRelationship>");
 	}
 	out.push_str("</substanceAdministration></component></organizer></subjectOf2>");
@@ -1503,10 +1489,18 @@ pub(crate) fn write_g_k_causality_assessments(
 			.filter(|row| row.drug_reaction_assessment_id == assessment.id)
 			.collect();
 		rows.sort_by_key(|row| row.sequence_number);
+		if rows.is_empty() {
+			out.push_str(&write_g_k_9_causality(
+				drug.id, assessment, None, authority,
+			)?);
+		}
 		for row in rows {
 			out.push_str(&write_g_k_9_causality(
-				drug.id, assessment, row, authority,
-			));
+				drug.id,
+				assessment,
+				Some(row),
+				authority,
+			)?);
 		}
 	}
 	Ok(out)
@@ -1531,54 +1525,67 @@ pub(crate) fn write_fda_g_k_1_a_causality(drug: &DrugInformation) -> String {
 pub(crate) fn write_g_k_9_causality(
 	drug_id: sqlx::types::Uuid,
 	assessment: &DrugReactionAssessment,
-	relatedness: &RelatednessAssessment,
+	relatedness: Option<&RelatednessAssessment>,
 	authority: RegulatoryAuthority,
-) -> String {
+) -> Result<String> {
 	let mut out = String::new();
 	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
 	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
-	let mfds_result = matches!(authority, RegulatoryAuthority::Mfds)
-		.then(|| write_g_k_9_i_2_r_3_kr_2(relatedness))
-		.flatten();
-	if let Some(result) = mfds_result {
-		out.push_str("<value xsi:type=\"CE\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.6\" code=\"");
-		out.push_str(&xml_escape(result));
-		out.push_str("\"/>");
-	} else if matches!(authority, RegulatoryAuthority::Mfds) {
-		if let Some(null_flavor) =
-			relatedness.result_of_assessment_kr1_null_flavor.as_deref()
-		{
-			out.push_str("<value xsi:type=\"CE\" nullFlavor=\"");
-			out.push_str(&xml_escape(null_flavor));
-			out.push_str("\"/>");
-		} else if let Some(result) = write_g_k_9_i_2_r_3_kr_1(relatedness) {
-			out.push_str("<value xsi:type=\"CE\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.5\" code=\"");
-			out.push_str(&xml_escape(result));
-			out.push_str("\"/>");
+	if let Some(relatedness) = relatedness {
+		if matches!(authority, RegulatoryAuthority::Mfds) {
+			let kr1 = write_g_k_9_i_2_r_3_kr_1(relatedness);
+			let kr2 = write_g_k_9_i_2_r_3_kr_2(relatedness);
+
+			let (code, system) = match (kr1, kr2) {
+				(None, Some(code)) => {
+					(Some(code), "2.16.840.1.113883.3.989.5.1.10.1.6")
+				}
+				(code, None) => (code, "2.16.840.1.113883.3.989.5.1.10.1.5"),
+				(Some(_), Some(_)) => {
+					return Err(field::invalid(
+						"G.k.9.i.2.r.3.KR",
+						"conflicting result codes",
+					))
+				}
+			};
+			let fixed = if code.is_some() {
+				format!(" xsi:type=\"CE\" codeSystem=\"{system}\"")
+			} else {
+				" xsi:type=\"CE\"".to_owned()
+			};
+			out.push_str(&field::element(
+				"G.k.9.i.2.r.3.KR",
+				code,
+				relatedness.result_of_assessment_kr1_null_flavor.as_deref(),
+				"value",
+				"code",
+				&fixed,
+			)?);
+		} else if let Some(result) = write_g_k_9_i_2_r_3(relatedness) {
+			out.push_str(&format!(
+				"<value xsi:type=\"ST\">{}</value>",
+				xml_escape(result)
+			));
 		}
-	} else if let Some(result) = write_g_k_9_i_2_r_3(relatedness) {
-		out.push_str("<value xsi:type=\"ST\">");
-		out.push_str(&xml_escape(result));
-		out.push_str("</value>");
-	}
-	if let Some(method) = matches!(authority, RegulatoryAuthority::Mfds)
-		.then(|| write_g_k_9_i_2_r_2_kr_1(relatedness))
-		.flatten()
-	{
-		out.push_str(
+		if let Some(method) = matches!(authority, RegulatoryAuthority::Mfds)
+			.then(|| write_g_k_9_i_2_r_2_kr_1(relatedness))
+			.flatten()
+		{
+			out.push_str(
 			"<methodCode codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.4\" code=\"",
 		);
-		out.push_str(&xml_escape(method));
-		out.push_str("\"/>");
-	} else if let Some(method) = write_g_k_9_i_2_r_2(relatedness) {
-		out.push_str("<methodCode><originalText>");
-		out.push_str(&xml_escape(method));
-		out.push_str("</originalText></methodCode>");
-	}
-	if let Some(source) = write_g_k_9_i_2_r_1(relatedness) {
-		out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
-		out.push_str(&xml_escape(source));
-		out.push_str("</originalText></code></assignedEntity></author>");
+			out.push_str(&xml_escape(method));
+			out.push_str("\"/>");
+		} else if let Some(method) = write_g_k_9_i_2_r_2(relatedness) {
+			out.push_str("<methodCode><originalText>");
+			out.push_str(&xml_escape(method));
+			out.push_str("</originalText></methodCode>");
+		}
+		if let Some(source) = write_g_k_9_i_2_r_1(relatedness) {
+			out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
+			out.push_str(&xml_escape(source));
+			out.push_str("</originalText></code></assignedEntity></author>");
+		}
 	}
 	out.push_str("<subject1 typeCode=\"SUBJ\"><adverseEffectReference classCode=\"OBS\" moodCode=\"EVN\"><id root=\"");
 	out.push_str(&xml_escape(&write_g_k_9_i_1(assessment)));
@@ -1587,7 +1594,7 @@ pub(crate) fn write_g_k_9_causality(
 	out.push_str(&xml_escape(&drug_id.to_string()));
 	out.push_str("\"/></productUseReference></subject2>");
 	out.push_str("</causalityAssessment></component>");
-	out
+	Ok(out)
 }
 
 /// e2b:G.k.9.i.2.r.1
@@ -1626,10 +1633,7 @@ fn write_g_k_9_i_1(value: &DrugReactionAssessment) -> String {
 }
 
 pub(crate) fn write_g_k_1_causality(drug: &DrugInformation) -> String {
-	let code = drug.drug_characterization.trim();
-	if code.is_empty() {
-		return String::new();
-	}
+	let code = drug.drug_characterization.as_str();
 	let display_name = match write_g_k_1(drug) {
 		Some((_, name)) => format!(" displayName=\"{}\"", xml_escape(name)),
 		None => String::new(),
@@ -1942,6 +1946,116 @@ mod tests {
 	}
 
 	#[test]
+	fn export_import_preserves_dosage_versions_without_term_ids() {
+		let drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+		let mut dosage = test_dosage(drug.id);
+		dosage.dose_form_termid_version = Some("2026.1".to_string());
+		dosage.route_termid_version = Some("2026.2".to_string());
+		dosage.parent_route_termid_version = Some("2026.3".to_string());
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let fragment = write_g_k_drug(
+				&drug,
+				&[],
+				&[&dosage],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("export incomplete draft dosage");
+			let fresh = base_g_drug_skeleton()
+				.replace("{DRUGS}", &fragment)
+				.replace(
+					"{CAUSALITY}",
+					&write_g_k_causality_assessments(&drug, &[], &[], authority)
+						.expect("export drug role"),
+				);
+			let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+				fresh.as_bytes(),
+				std::slice::from_ref(&drug),
+				&[],
+				std::slice::from_ref(&dosage),
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("patch incomplete draft dosage");
+			for (mode, xml) in [("fresh", &fresh), ("patched", &patched)] {
+				let imported =
+					crate::import_sections::g_drug::parse_g_drugs(xml.as_bytes())
+						.expect(
+							"parse incomplete draft without submission validation",
+						);
+				assert_eq!(imported.len(), 1);
+				assert_eq!(imported[0].dosages.len(), 1);
+				let restored = &imported[0].dosages[0];
+				assert_eq!(restored.dosage_text, dosage.dosage_text);
+				assert_eq!(
+					[
+						restored.dose_form_termid_version.as_deref(),
+						restored.route_termid_version.as_deref(),
+						restored.parent_route_termid_version.as_deref()
+					],
+					[Some("2026.1"), Some("2026.2"), Some("2026.3")],
+					"{authority:?} {mode}: version-only fields must not disappear"
+				);
+				assert_eq!(
+					[
+						restored.dose_form_termid.as_deref(),
+						restored.route_termid.as_deref(),
+						restored.parent_route_termid.as_deref()
+					],
+					[None, None, None]
+				);
+			}
+			let mut cleared = dosage.clone();
+			cleared.dose_form_termid_version = None;
+			cleared.route_termid_version = None;
+			cleared.parent_route_termid_version = None;
+			let cleared_xml = crate::export::roundtrip::patch_g_drugs_for_authority(
+				fresh.as_bytes(),
+				std::slice::from_ref(&drug),
+				&[],
+				&[cleared],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("patch explicitly cleared versions");
+			let imported = crate::import_sections::g_drug::parse_g_drugs(
+				cleared_xml.as_bytes(),
+			)
+			.expect("parse explicitly cleared versions");
+			assert_eq!(imported.len(), 1);
+			assert_eq!(imported[0].dosages.len(), 1);
+			let restored = &imported[0].dosages[0];
+			assert_eq!(restored.dosage_text, dosage.dosage_text);
+			assert_eq!(
+				[
+					restored.dose_form_termid_version.as_deref(),
+					restored.route_termid_version.as_deref(),
+					restored.parent_route_termid_version.as_deref()
+				],
+				[None, None, None]
+			);
+		}
+	}
+
+	#[test]
 	fn export_g_preserves_partial_dosage_date_lexemes() {
 		let case_id = Uuid::new_v4();
 		let drug_id = Uuid::new_v4();
@@ -1954,8 +2068,45 @@ mod tests {
 			.expect("export XML");
 		assert!(xml.contains("<low value=\"200304\"/>"), "{xml}");
 		assert!(xml.contains("<high value=\"200305\"/>"), "{xml}");
-		assert_eq!(partial_ts_lexeme("20240101"), None);
-		assert_eq!(partial_ts_lexeme("2024-01"), None);
+	}
+
+	#[test]
+	fn dosage_raw_values_survive_and_conflicting_representations_fail() {
+		let drug = test_drug(Uuid::nil(), Uuid::nil());
+		let mut dosage = test_dosage(drug.id);
+		for raw in ["20240101010203+0900", "draft date", ""] {
+			dosage.first_administration_date_raw = Some(raw.to_owned());
+			let xml = export_g_drugs_xml(
+				std::slice::from_ref(&drug),
+				&[],
+				std::slice::from_ref(&dosage),
+				&[],
+				&[],
+				&[],
+				&[],
+			)
+			.expect("raw date");
+			assert!(xml.contains(&format!("<low value=\"{raw}\"/>")));
+		}
+		dosage.first_administration_date_null_flavor = Some("UNK".into());
+		assert!(export_g_drugs_xml(
+			std::slice::from_ref(&drug),
+			&[],
+			std::slice::from_ref(&dosage),
+			&[],
+			&[],
+			&[],
+			&[]
+		)
+		.is_err());
+		dosage.first_administration_date_null_flavor = None;
+		dosage.first_administration_date = Some(
+			time::Date::from_calendar_date(2024, time::Month::January, 1)
+				.expect("date"),
+		);
+		assert!(
+			export_g_drugs_xml(&[drug], &[], &[dosage], &[], &[], &[], &[]).is_err()
+		);
 	}
 
 	#[test]
@@ -2011,7 +2162,7 @@ mod tests {
 			RegulatoryAuthority::Fda,
 		)
 		.expect("export unblinded drug");
-		assert!(!fragment.contains("displayName=\"blinded\""), "{fragment}");
+		assert!(fragment.contains("value=\"false\""), "{fragment}");
 	}
 
 	#[test]
@@ -2092,6 +2243,397 @@ mod tests {
 	}
 
 	#[test]
+	fn local_source_product_metadata_preserves_exact_strings_and_absence() {
+		let source = std::fs::read(
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml"),
+		)
+		.expect("official example");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			for value in [
+				None,
+				Some(String::new()),
+				Some(" 제품 & <id> ?>\r\n\t ".to_owned()),
+				Some("한".repeat(255)),
+			] {
+				let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+				drug.source_product_id = value.clone();
+				drug.source_product_presave_id =
+					value.as_ref().map(|_| Uuid::from_u128(42));
+				let fragment = write_g_k_drug(
+					&drug,
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("export");
+				let fresh = base_g_drug_skeleton()
+					.replace("{DRUGS}", &fragment)
+					.replace(
+						"{CAUSALITY}",
+						&write_g_k_causality_assessments(&drug, &[], &[], authority)
+							.expect("role"),
+					);
+				let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+					&source,
+					std::slice::from_ref(&drug),
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("patch");
+				let errors = crate::validation::validate_e2b_xml_xsd(
+					patched.as_bytes(),
+					&crate::default_xsd_path().expect("schema"),
+				)
+				.expect("validate");
+				assert!(errors.is_empty(), "{errors:#?}");
+				for xml in [fresh, patched] {
+					let mut doc = libxml::parser::Parser::default()
+						.parse_string(xml.as_bytes())
+						.expect("XML");
+					let mut xpath =
+						libxml::xpath::Context::new(&doc).expect("XPath");
+					xpath
+						.register_namespace("hl7", "urn:hl7-org:v3")
+						.expect("namespace");
+					crate::export::shared::patch_doc::postprocess_export_doc(
+						&mut doc, &mut xpath,
+					)
+					.expect("postprocess");
+					let markers = xpath
+						.findnodes(
+							"//processing-instruction('e2br3-source-product-id-v1')",
+							None,
+						)
+						.expect("metadata");
+					assert_eq!(markers.iter().map(|node| node.get_content()).collect::<Vec<_>>(), value.iter().map(|value| base64::engine::general_purpose::STANDARD.encode(value.as_bytes())).collect::<Vec<_>>(), "{authority:?}: preserve absent and explicit empty separately");
+					let imported = crate::import_sections::g_drug::parse_g_drugs(
+						doc.to_string().as_bytes(),
+					)
+					.expect("import exact local string");
+					assert_eq!(imported.len(), 1);
+					use crate::import_sections::g_drug::product_links::SourceProductLink;
+					assert_eq!(
+						imported[0].source_product_link,
+						match drug.source_product_presave_id {
+							Some(id) => SourceProductLink::Linked(id),
+							None => SourceProductLink::Unlinked,
+						}
+					);
+					assert_eq!(
+						imported[0].source_product_id, value,
+						"{authority:?}: no trimming, inference or default"
+					);
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn local_continuing_metadata_preserves_false_true_and_absence() {
+		let source = std::fs::read(
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml"),
+		)
+		.expect("official FDA example");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+			let dosages: Vec<_> = [Some(false), Some(true), None]
+				.into_iter()
+				.enumerate()
+				.map(|(index, continuing)| {
+					let mut dose = test_dosage(drug.id);
+					dose.sequence_number = (index + 1) as i32;
+					dose.continuing = continuing;
+					dose.dosage_text = None;
+					dose
+				})
+				.collect();
+			let fragment = write_g_k_drug(
+				&drug,
+				&[],
+				&dosages.iter().collect::<Vec<_>>(),
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("export local values");
+			let fresh = base_g_drug_skeleton()
+				.replace("{DRUGS}", &fragment)
+				.replace(
+					"{CAUSALITY}",
+					&write_g_k_causality_assessments(&drug, &[], &[], authority)
+						.expect("role"),
+				);
+			let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+				&source,
+				std::slice::from_ref(&drug),
+				&[],
+				&dosages,
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("patch local values");
+			let errors = crate::validation::validate_e2b_xml_xsd(
+				patched.as_bytes(),
+				&crate::default_xsd_path().expect("official schema"),
+			)
+			.expect("schema validation");
+			assert!(errors.is_empty(), "{errors:#?}");
+			for (mode, xml) in [("fresh", fresh), ("patched", patched)] {
+				let mut doc = libxml::parser::Parser::default()
+					.parse_string(xml.as_bytes())
+					.expect("XML");
+				let mut xpath = libxml::xpath::Context::new(&doc).expect("XPath");
+				xpath
+					.register_namespace("hl7", "urn:hl7-org:v3")
+					.expect("namespace");
+				crate::export::shared::patch_doc::postprocess_export_doc(
+					&mut doc, &mut xpath,
+				)
+				.expect("postprocess");
+				let markers = xpath
+					.findnodes(
+						"//processing-instruction('e2br3-dosage-continuing-v1')",
+						None,
+					)
+					.expect("local metadata");
+				assert_eq!(
+					markers
+						.iter()
+						.map(|node| node.get_content())
+						.collect::<Vec<_>>(),
+					["false", "true"],
+					"{authority:?} {mode}: no default for absent value"
+				);
+				let imported = crate::import_sections::g_drug::parse_g_drugs(
+					doc.to_string().as_bytes(),
+				)
+				.expect("import local metadata");
+				assert_eq!(imported.len(), 1);
+				assert_eq!(imported[0].dosages.iter().map(|dose| dose.continuing).collect::<Vec<_>>(), [Some(false), Some(true), None], "{authority:?} {mode}: preserve each dosage value without inferring missing flags");
+			}
+		}
+	}
+
+	#[test]
+	fn additional_code_empty_collection_survives_fresh_and_patched_xml() {
+		let source = std::fs::read(
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml"),
+		)
+		.expect("official FDA example");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			for codes in [
+				None,
+				Some(serde_json::json!([])),
+				Some(serde_json::json!([{ "value_code": "2" }])),
+			] {
+				let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+				drug.drug_additional_info_codes_json = codes.clone();
+				let fragment = write_g_k_drug(
+					&drug,
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("export codes");
+				let fresh = base_g_drug_skeleton()
+					.replace("{DRUGS}", &fragment)
+					.replace(
+						"{CAUSALITY}",
+						&write_g_k_causality_assessments(&drug, &[], &[], authority)
+							.expect("role"),
+					);
+				let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+					&source,
+					std::slice::from_ref(&drug),
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("patch codes");
+				let errors = crate::validation::validate_e2b_xml_xsd(
+					patched.as_bytes(),
+					&crate::default_xsd_path().expect("official ICH schema"),
+				)
+				.expect("validate schema");
+				assert!(errors.is_empty(), "{authority:?}: {errors:#?}");
+				for (mode, xml) in [("fresh", fresh), ("patched", patched)] {
+					let mut doc = libxml::parser::Parser::default()
+						.parse_string(xml.as_bytes())
+						.expect("XML");
+					let mut xpath =
+						libxml::xpath::Context::new(&doc).expect("XPath");
+					xpath
+						.register_namespace("hl7", "urn:hl7-org:v3")
+						.expect("namespace");
+					crate::export::shared::patch_doc::postprocess_export_doc(
+						&mut doc, &mut xpath,
+					)
+					.expect("postprocess");
+					let imported = crate::import_sections::g_drug::parse_g_drugs(
+						doc.to_string().as_bytes(),
+					)
+					.expect("import codes");
+					assert_eq!(imported.len(), 1);
+					assert_eq!(imported[0].drug_additional_info_codes_json, codes, "{authority:?} {mode}: absence and explicit empty list must remain distinct");
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn additional_code_export_preserves_present_strings() {
+		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+		let codes = ["2", "", "  ", "10", "2", "ZZ", "<&\""];
+		drug.drug_additional_info_codes_json = Some(serde_json::Value::Array(
+			codes
+				.iter()
+				.map(|code| serde_json::json!({"value_code": code}))
+				.collect(),
+		));
+		let source = std::fs::read(
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("../../../docs/exporter/fda/FAERS2022Scenario1.xml"),
+		)
+		.expect("existing FDA fixture");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let fragment =
+				write_g_k_drug(&drug, &[], &[], &[], &[], &[], &[], &[], authority)
+					.expect("draft strings");
+			let fresh = base_g_drug_skeleton()
+				.replace("{DRUGS}", &fragment)
+				.replace(
+					"{CAUSALITY}",
+					&write_g_k_causality_assessments(&drug, &[], &[], authority)
+						.expect("role"),
+				);
+			let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+				&source,
+				std::slice::from_ref(&drug),
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				authority,
+			)
+			.expect("patch draft strings");
+			for xml in [fresh, patched] {
+				let mut doc = libxml::parser::Parser::default()
+					.parse_string(xml.as_bytes())
+					.expect("XML");
+				let mut xpath = libxml::xpath::Context::new(&doc).expect("XPath");
+				xpath
+					.register_namespace("hl7", "urn:hl7-org:v3")
+					.expect("namespace");
+				crate::export::shared::patch_doc::postprocess_export_doc(
+					&mut doc, &mut xpath,
+				)
+				.expect("postprocess");
+				let values = xpath.findnodes("//hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='9']]/hl7:value[@codeSystem='2.16.840.1.113883.3.989.2.1.1.17']", None).expect("additional codes");
+				let observed: Vec<String> = values
+					.iter()
+					.map(|node| node.get_property("code").expect("present code"))
+					.collect();
+				assert_eq!(
+					observed, codes,
+					"{authority:?}: draft code content/order changed"
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn additional_code_export_rejects_unrepresentable_storage() {
+		for raw in [
+			serde_json::json!(null),
+			serde_json::json!({}),
+			serde_json::json!("2"),
+			serde_json::json!([null]),
+			serde_json::json!([{}]),
+			serde_json::json!([{"value_code": null}]),
+			serde_json::json!([{"value_code": 2}]),
+			serde_json::json!([{"value_code": "2"}, {}]),
+		] {
+			let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+			drug.drug_additional_info_codes_json = Some(raw);
+			for authority in [
+				RegulatoryAuthority::Ich,
+				RegulatoryAuthority::Fda,
+				RegulatoryAuthority::Mfds,
+			] {
+				let error = write_g_k_drug(
+					&drug,
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect_err("must not silently omit malformed stored entries");
+				assert!(
+					matches!(error, Error::InvalidXml { message, .. } if message.starts_with("G.k.10.r:"))
+				);
+			}
+		}
+	}
+
+	#[test]
 	fn export_g_places_additional_info_after_the_product() {
 		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
 		drug.fda_additional_info_coded = Some("1".to_string());
@@ -2150,6 +2692,180 @@ mod tests {
 		assert!(xml.contains("<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><territory classCode=\"NAT\" determinerCode=\"INSTANCE\"><code code=\"US\" codeSystem=\"1.0.3166.1.2.2\"/>"), "{xml}");
 		assert!(xml.contains("displayName=\"gestationPeriod\"/><value xsi:type=\"PQ\" value=\"20\" unit=\"d\"/>"), "{xml}");
 		assert!(xml.contains("<width value=\"2\" unit=\"d\"/>"), "{xml}");
+	}
+
+	fn assert_draft_drug_units_transport(
+		duration: Option<Decimal>,
+		duration_unit: Option<&str>,
+		gestation: Option<Decimal>,
+		gestation_unit: Option<&str>,
+	) {
+		let source = std::fs::read(
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+				.join("../../../docs/exporter/fda/FAERS2022Scenario1.xml"),
+		)
+		.expect("existing FDA fixture");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			for (frequency, bounds) in
+				[(false, false), (true, false), (false, true), (true, true)]
+			{
+				let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+				drug.gestation_period_exposure_value = gestation;
+				drug.gestation_period_exposure_unit =
+					gestation_unit.map(str::to_string);
+				let mut dose = test_dosage(drug.id);
+				dose.duration_value = duration;
+				dose.duration_unit = duration_unit.map(str::to_string);
+				if duration.is_some() || duration_unit.is_some() {
+					dose.dosage_text = None;
+				}
+				if frequency {
+					dose.number_of_units = Some(Decimal::new(5, 1));
+					dose.frequency_unit = Some("d".to_string());
+				}
+				if bounds {
+					dose.first_administration_date_raw = Some("2024".to_string());
+					dose.last_administration_date_raw = Some("202401".to_string());
+				}
+				let fragment = write_g_k_drug(
+					&drug,
+					&[],
+					&[&dose],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("export partial drug timing");
+				let fresh = base_g_drug_skeleton()
+					.replace("{DRUGS}", &fragment)
+					.replace(
+						"{CAUSALITY}",
+						&write_g_k_causality_assessments(&drug, &[], &[], authority)
+							.expect("drug role"),
+					);
+				let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+					&source,
+					std::slice::from_ref(&drug),
+					&[],
+					std::slice::from_ref(&dose),
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("patch partial drug timing");
+				for (mode, xml) in [("fresh", fresh), ("patched", patched)] {
+					let mut doc = libxml::parser::Parser::default()
+						.parse_string(xml.as_bytes())
+						.expect("parse export");
+					let mut xpath =
+						libxml::xpath::Context::new(&doc).expect("XPath");
+					xpath
+						.register_namespace("hl7", "urn:hl7-org:v3")
+						.expect("namespace");
+					crate::export::shared::patch_doc::postprocess_export_doc(
+						&mut doc, &mut xpath,
+					)
+					.expect("postprocess draft");
+					let imported = crate::import_sections::g_drug::parse_g_drugs(
+						doc.to_string().as_bytes(),
+					);
+					if gestation_unit == Some("h") {
+						let nodes = xpath.findnodes("//hl7:organizer/hl7:component/hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='16']]/hl7:value", None).expect("gestation value");
+						assert_eq!(nodes.len(), 1);
+						assert_eq!(
+							nodes[0].get_attribute("unit").as_deref(),
+							Some("h")
+						);
+						assert_eq!(
+							nodes[0].get_attribute("value"),
+							gestation.map(|v| v.normalize().to_string())
+						);
+						// This exact import rejection remains a failed roundtrip, not preserved data.
+						let error = imported.expect_err("current input contract rejects unsupported gestation unit");
+						assert!(error.to_string().contains(
+							"gestationPeriodExposureUnit: ICH.G.k.6b.ALLOWED.VALUE:"
+						));
+						continue;
+					}
+					let imported = imported.expect("import partial drug timing");
+					assert_eq!(imported.len(), 1);
+					assert_eq!(
+						imported[0].gestation_period_exposure_value, gestation,
+						"{authority:?} {mode}"
+					);
+					assert_eq!(
+						imported[0].gestation_period_exposure_unit.as_deref(),
+						gestation_unit,
+						"{authority:?} {mode}"
+					);
+					assert_eq!(
+						imported[0].dosages.len(),
+						1,
+						"{authority:?} {mode}: dosage disappeared"
+					);
+					let row = &imported[0].dosages[0];
+					assert_eq!(row.duration_value, duration, "{authority:?} {mode}");
+					assert_eq!(
+						row.duration_unit.as_deref(),
+						duration_unit,
+						"{authority:?} {mode}"
+					);
+					assert_eq!(row.number_of_units, dose.number_of_units);
+					assert_eq!(row.frequency_unit, dose.frequency_unit);
+					assert_eq!(
+						row.start_date_raw,
+						dose.first_administration_date_raw
+					);
+					assert_eq!(row.end_date_raw, dose.last_administration_date_raw);
+				}
+			}
+		}
+	}
+
+	#[test]
+	fn draft_drug_duration_unit_only_is_preserved() {
+		for unit in ["d", "fortnight"] {
+			assert_draft_drug_units_transport(None, Some(unit), None, None);
+		}
+	}
+
+	#[test]
+	fn draft_drug_duration_unknown_unit_is_preserved() {
+		assert_draft_drug_units_transport(
+			Some(Decimal::new(15, 1)),
+			Some("fortnight"),
+			None,
+			None,
+		);
+	}
+
+	#[test]
+	fn draft_drug_gestation_unknown_unit_exports_but_import_still_rejects() {
+		for value in [None, Some(Decimal::new(15, 1))] {
+			assert_draft_drug_units_transport(None, None, value, Some("h"));
+		}
+	}
+
+	#[test]
+	fn draft_drug_duration_partial_controls_are_preserved() {
+		for (value, unit) in [
+			(None, None),
+			(Some(Decimal::new(15, 1)), None),
+			(Some(Decimal::new(15, 1)), Some("d")),
+		] {
+			assert_draft_drug_units_transport(value, unit, value, unit);
+		}
 	}
 
 	#[test]
@@ -2260,7 +2976,7 @@ mod tests {
 		assert!(xml.contains("<formCode nullFlavor=\"UNK\">"));
 		assert!(xml.contains("<value xsi:type=\"CE\" nullFlavor=\"NASK\">"));
 		assert!(xml.contains(
-			"<productInstanceInstance><id nullFlavor=\"NI\"/><lotNumberText nullFlavor=\"UNK\"/></productInstanceInstance>"
+			"<productInstanceInstance><lotNumberText nullFlavor=\"UNK\"/></productInstanceInstance>"
 		));
 	}
 
@@ -2349,6 +3065,7 @@ mod tests {
 		unnamed.device_brand_name = None;
 		unnamed.common_device_name = None;
 		assert!(!write_fda_g_k_12_device(&unnamed, &[])
+			.expect("serialize")
 			.contains("<name nullFlavor=\"NI\"/>"));
 		let codes = [
 			FdaDeviceCode {
@@ -2476,7 +3193,7 @@ mod tests {
 	fn preserves_invalid_g_k_1_for_non_blocking_export() {
 		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
 		drug.drug_characterization.clear();
-		assert!(write_g_k_1_causality(&drug).is_empty());
+		assert!(write_g_k_1_causality(&drug).contains("code=\"\""));
 
 		drug.drug_characterization = "9".to_string();
 		assert!(write_g_k_1_causality(&drug).contains("code=\"9\""));
@@ -2505,9 +3222,10 @@ mod tests {
 		let xml = write_g_k_9_causality(
 			Uuid::new_v4(),
 			&assessment,
-			&relatedness,
+			Some(&relatedness),
 			RegulatoryAuthority::Mfds,
-		);
+		)
+		.expect("serialize");
 
 		assert!(xml.contains("methodCode codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.4\" code=\"1\""));
 		assert!(xml.contains(
@@ -2521,9 +3239,10 @@ mod tests {
 		let xml = write_g_k_9_causality(
 			Uuid::new_v4(),
 			&assessment,
-			&null_flavor,
+			Some(&null_flavor),
 			RegulatoryAuthority::Mfds,
-		);
+		)
+		.expect("serialize");
 		assert!(xml.contains("<value xsi:type=\"CE\" nullFlavor=\"NA\"/>"));
 		assert!(!xml.contains("code=\"NA\""));
 	}
@@ -2545,6 +3264,61 @@ mod tests {
 			updated_at: OffsetDateTime::now_utc(),
 			created_by: Uuid::new_v4(),
 			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn parent_only_assessment_preserves_references_without_inventing_causality() {
+		let mut assessment = test_assessment();
+		assessment.recurrence_action = None;
+		assessment.reaction_recurred = None;
+		let drug = test_drug(assessment.drug_id, Uuid::new_v4());
+		let source = std::fs::read(concat!(
+			env!("CARGO_MANIFEST_DIR"),
+			"/../../../docs/exporter/fda/FAERS2022Scenario1.xml"
+		))
+		.expect("isolated XML fixture");
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			let fresh = write_g_k_causality_assessments(
+				&drug,
+				&[&assessment],
+				&[],
+				authority,
+			)
+			.expect("fresh export");
+			assert_eq!(
+				fresh.matches("code=\"39\"").count(),
+				1,
+				"parent-only association disappeared"
+			);
+			let patched = crate::export::roundtrip::patch_g_drugs_for_authority(
+				&source,
+				std::slice::from_ref(&drug),
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				std::slice::from_ref(&assessment),
+				&[],
+				authority,
+			)
+			.expect("patched export");
+			for xml in [format!("<root xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{fresh}</root>"), patched] {
+				let doc = libxml::parser::Parser::default().parse_string(&xml).expect("parse link");
+				let mut xpath = libxml::xpath::Context::new(&doc).expect("XPath");
+				xpath.register_namespace("hl7", "urn:hl7-org:v3").expect("namespace");
+				let rows = xpath.findnodes("//hl7:causalityAssessment[hl7:code[@code='39']]", None).expect("links");
+				assert_eq!(rows.len(), 1);
+				assert_eq!(xpath.findvalue("hl7:subject2/hl7:productUseReference/hl7:id/@root", Some(&rows[0])).expect("drug ref"), drug.id.to_string());
+				assert_eq!(xpath.findvalue("hl7:subject1/hl7:adverseEffectReference/hl7:id/@root", Some(&rows[0])).expect("reaction ref"), assessment.reaction_id.to_string());
+				assert!(xpath.findnodes("hl7:value | hl7:methodCode | hl7:author", Some(&rows[0])).expect("causality values").is_empty());
+			}
 		}
 	}
 

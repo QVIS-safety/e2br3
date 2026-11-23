@@ -1,4 +1,9 @@
 mod helpers;
+mod record;
+
+pub use record::{
+	check_input, normalize_decimal_lexeme, Check, InputRecord, RecordIssue,
+};
 
 pub mod generated;
 
@@ -83,7 +88,7 @@ mod tests {
 
 	#[test]
 	fn migrated_business_rules_do_not_reject_input() {
-		assert!(generated::c::c_1_6_1_r_2(FieldInput::new(
+		assert!(!generated::c::c_1_6_1_r_2(FieldInput::new(
 			InputValue::String("not-base64"),
 			None,
 		))
@@ -151,20 +156,17 @@ mod tests {
 	}
 
 	#[test]
-	fn non_nullable_storage_fields_reject_null_and_blank() {
+	fn protected_editor_fields_reject_clear_but_preserve_explicit_text() {
 		for check in [
 			generated::c::c_1_1,
 			generated::g::g_k_1,
 			generated::g::g_k_2_2,
-			generated::h::h_1,
 		] {
 			let issues = check(FieldInput::new(InputValue::Null, None));
 			assert_eq!(issues.len(), 1);
 			assert_eq!(issues[0].code, "INPUT.NULL.REJECTED");
-			assert_eq!(
-				check(FieldInput::new(InputValue::String("  "), None))[0].code,
-				"INPUT.NULL.REJECTED"
-			);
+			assert!(check(FieldInput::new(InputValue::String(""), None)).is_empty());
+
 			assert!(check(FieldInput::new(InputValue::Missing, None)).is_empty());
 		}
 	}
@@ -172,6 +174,7 @@ mod tests {
 	#[test]
 	fn business_required_editor_fields_allow_draft_clear() {
 		for check in [
+			generated::h::h_1,
 			generated::c::c_1_6_1,
 			generated::c::c_1_8_1,
 			generated::c::c_1_8_2,

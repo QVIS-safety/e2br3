@@ -106,7 +106,33 @@ fn export_e_reaction_basic() {
 			None,
 		)
 		.unwrap();
-	assert_eq!(required_intervention_null_flavor, "NI");
+	assert_eq!(required_intervention_null_flavor, "");
+	assert!(xpath
+		.findnodes("//hl7:observation[hl7:code[@code='7']]", None)
+		.expect("required intervention nodes")
+		.is_empty());
+	reaction.required_intervention_null_flavor = Some("NI".to_string());
+	let explicit_xml = export_e_reactions_xml_for_authority(
+		&[reaction.clone()],
+		RegulatoryAuthority::Fda,
+	)
+	.expect("export explicit NI");
+	let explicit_doc = parser
+		.parse_string(&explicit_xml)
+		.expect("parse explicit NI");
+	let mut explicit_xpath = Context::new(&explicit_doc).expect("explicit XPath");
+	explicit_xpath
+		.register_namespace("hl7", "urn:hl7-org:v3")
+		.expect("namespace");
+	assert_eq!(
+		explicit_xpath
+			.findvalue(
+				"//hl7:observation[hl7:code[@code='7']]/hl7:value/@nullFlavor",
+				None
+			)
+			.expect("explicit required intervention NI"),
+		"NI"
+	);
 
 	reaction.start_date = Some("202206".to_string());
 	reaction.end_date = Some("200509211242-08".to_string());

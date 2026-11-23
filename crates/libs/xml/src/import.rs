@@ -38,36 +38,55 @@ pub struct XmlImportRequest {
 	pub c_settings: CImportSettings,
 	pub product_presave_id: sqlx::types::Uuid,
 	pub product_id: String,
+	pub product_link_mappings:
+		Vec<crate::import_sections::g_drug::product_links::ProductLinkMapping>,
 }
 
-pub fn extract_safety_report_id_from_xml(xml: &[u8]) -> Result<String> {
+pub fn extract_safety_report_id_from_xml(xml: &[u8]) -> Result<Option<String>> {
 	shared::extract_safety_report_id(xml)
 }
 
 fn read_import_message_header(
 	header: &shared::MessageHeaderExtract,
 ) -> Result<(String, String, String, String)> {
+	let mut inputs = input_contracts::InputRecord::default();
 	let required = |value: &Option<String>, field: &str| {
-		value
-			.as_deref()
-			.map(str::trim)
-			.filter(|value| !value.is_empty())
-			.map(str::to_owned)
-			.ok_or_else(|| Error::InvalidImportRequest {
+		value.as_deref().map(str::to_owned).ok_or_else(|| {
+			Error::InvalidImportRequest {
 				message: format!("message header {field} missing"),
-			})
+			}
+		})
 	};
 	let message_number = required(&header.message_number, "number")?;
 	let message_sender = required(&header.message_sender, "sender")?;
 	let message_receiver = required(&header.message_receiver, "receiver")?;
-	let message_date = header
-		.message_date
-		.clone()
-		.and_then(shared::normalize_message_date)
-		.ok_or_else(|| Error::InvalidImportRequest {
-			message: "message header date missing or invalid".to_string(),
-		})?;
+	let message_date = required(&header.message_date, "date")?;
+	inputs.string(
+		"N.2.r.1",
+		Some(&message_number),
+		None,
+		input_contracts::generated::n::n_2_r_1,
+	);
+	inputs.string(
+		"N.2.r.2",
+		Some(&message_sender),
+		None,
+		input_contracts::generated::n::n_2_r_2,
+	);
+	inputs.string(
+		"N.2.r.3",
+		Some(&message_receiver),
+		None,
+		input_contracts::generated::n::n_2_r_3,
+	);
+	inputs.string(
+		"N.2.r.4",
+		Some(&message_date),
+		None,
+		input_contracts::generated::n::n_2_r_4,
+	);
 
+	crate::import_constraint::validate(&inputs)?;
 	Ok((
 		message_number,
 		message_sender,
@@ -105,6 +124,19 @@ pub async fn import_e2b_xml_in_txn(
 	mm: &ModelManager,
 	req: XmlImportRequest,
 ) -> Result<XmlImportResult> {
+	let report = crate::validation::validate_e2b_xml_for_import(&req.xml, None)?;
+	if !report.ok {
+		return Err(Error::InvalidXml {
+			message: report
+				.errors
+				.into_iter()
+				.map(|error| error.message)
+				.collect::<Vec<_>>()
+				.join("; "),
+			line: None,
+			column: None,
+		});
+	}
 	let product_id = req.product_id.trim();
 	if product_id.is_empty() {
 		return Err(Error::InvalidImportRequest {
@@ -115,6 +147,9 @@ pub async fn import_e2b_xml_in_txn(
 	let product_presave_id = req.product_presave_id;
 	let parsed = parse_e2b_xml(&req.xml)?;
 	let safety_report_id = shared::extract_safety_report_id(&req.xml)?;
+	let identity_key = safety_report_id
+		.as_deref()
+		.filter(|value| !value.trim().is_empty());
 	let transmission_date =
 		parse_c_safety_report(&req.xml)?.and_then(|report| report.transmission_date);
 	let header_extract = shared::extract_message_header(&req.xml)?;
@@ -123,19 +158,22 @@ pub async fn import_e2b_xml_in_txn(
 	// Serialize imports for the same organization/report ID. The lock is held
 	// by the outer import transaction, so the recheck below closes the race
 	// between the REST decision query and case creation.
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				"SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
+	if let Some(report_id) = identity_key {
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
+				)
+				.bind(format!(
+					"e2b-xml-import:{}:{}",
+					ctx.organization_id(),
+					report_id
+				)),
 			)
-			.bind(format!(
-				"e2b-xml-import:{}:{}",
-				ctx.organization_id(),
-				&safety_report_id
-			)),
-		)
-		.await
-		.map_err(model::Error::from)?;
+			.await
+			.map_err(model::Error::from)?;
+	}
+
 	let (duplicate_case, next_version) = {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await.map_err(model::Error::from)?;
@@ -164,8 +202,12 @@ pub async fn import_e2b_xml_in_txn(
 					 LIMIT 1
 					"#,
 				)
-				.bind(&safety_report_id)
-				.bind(&transmission_date)
+				.bind(identity_key)
+				.bind(
+					transmission_date
+						.as_deref()
+						.filter(|value| !value.trim().is_empty()),
+				)
 				.bind(ctx.organization_id()),
 			)
 			.await
@@ -180,17 +222,17 @@ pub async fn import_e2b_xml_in_txn(
 		let max_version: (Option<i32>,) = dbx
 			.fetch_one(
 				sqlx::query_as(sql)
-					.bind(&safety_report_id)
+					.bind(identity_key)
 					.bind(ctx.organization_id()),
 			)
 			.await
 			.map_err(model::Error::from)?;
 		dbx.commit_txn().await.map_err(model::Error::from)?;
-			let max_version = match max_version.0 {
-				Some(version) => version,
-				None => 0,
-			};
-			(duplicate_case, max_version + 1)
+		let max_version = match max_version.0 {
+			Some(version) => version,
+			None => 0,
+		};
+		(duplicate_case, max_version + 1)
 	};
 	if let Some((case_id, case_number, case_version)) = duplicate_case {
 		return Ok(XmlImportResult {
@@ -219,28 +261,21 @@ pub async fn import_e2b_xml_in_txn(
 	)
 	.await?;
 
-	let message_number =
-		shared::make_import_message_number(&message_number, case_id);
-	let has_header = MessageHeaderBmc::get_by_case(ctx, mm, case_id)
-		.await
-		.is_ok();
-	if !has_header {
-		MessageHeaderBmc::create(
-			ctx,
-			mm,
-			MessageHeaderForCreate {
-				case_id,
-				batch_sender_identifier: None,
-				batch_receiver_identifier: None,
-				batch_transmission_date: None,
-				message_number,
-				message_sender_identifier: message_sender,
-				message_receiver_identifier: message_receiver,
-				message_date,
-			},
-		)
-		.await?;
-	}
+	MessageHeaderBmc::create(
+		ctx,
+		mm,
+		MessageHeaderForCreate {
+			case_id,
+			batch_sender_identifier: None,
+			batch_receiver_identifier: None,
+			batch_transmission_date: None,
+			message_number,
+			message_sender_identifier: message_sender,
+			message_receiver_identifier: message_receiver,
+			message_date,
+		},
+	)
+	.await?;
 	MessageHeaderBmc::update_by_case(
 		ctx,
 		mm,
@@ -250,6 +285,9 @@ pub async fn import_e2b_xml_in_txn(
 			batch_sender_identifier: header_extract.batch_sender.clone(),
 			batch_receiver_identifier: header_extract.batch_receiver.clone(),
 			batch_transmission_date: None,
+			batch_transmission_date_raw: header_extract
+				.batch_transmission_date
+				.clone(),
 			message_number: None,
 			message_sender_identifier: None,
 			message_receiver_identifier: None,
@@ -263,7 +301,7 @@ pub async fn import_e2b_xml_in_txn(
 		mm,
 		&req.xml,
 		case_id,
-		&safety_report_id,
+		safety_report_id.as_deref(),
 		next_version,
 		Some(&header_extract),
 		&req.c_settings,
@@ -285,6 +323,7 @@ pub async fn import_e2b_xml_in_txn(
 		case_id,
 		&reaction_map,
 		product_presave_id,
+		&req.product_link_mappings,
 	)
 	.await?;
 
@@ -332,7 +371,7 @@ pub async fn import_e2b_xml_in_txn(
 	Ok(XmlImportResult {
 		skipped: false,
 		case_id: Some(case_id.to_string()),
-		case_number: Some(safety_report_id),
+		case_number: safety_report_id,
 		case_version: Some(i64::from(next_version)),
 		xml_key: None,
 		parsed_json_id: Some(version_id.to_string()),
@@ -353,6 +392,7 @@ mod tests {
 			batch_number: None,
 			batch_sender: None,
 			batch_receiver: None,
+			batch_transmission_date: None,
 		}
 	}
 
@@ -366,5 +406,38 @@ mod tests {
 	fn reads_complete_message_header() {
 		read_import_message_header(&header("case-id", "20260809000000"))
 			.expect("read header");
+	}
+
+	#[test]
+	fn preserves_message_identity_and_timestamp_lexeme() {
+		let number = "식".repeat(100);
+		for date in [
+			"2024",
+			"20240229123059.1234+0900",
+			"20241121010203-0400",
+			"20261121085336.179855+0000",
+		] {
+			let (actual_number, _, _, actual_date) =
+				read_import_message_header(&header(&number, date))
+					.expect("read header");
+			assert_eq!(actual_number, number);
+			assert_eq!(actual_date, date);
+		}
+	}
+
+	#[test]
+	fn rejects_invalid_header_input_instead_of_truncating_or_normalizing_it() {
+		for date in ["garbage20240229123059", "20241301123059"] {
+			assert!(read_import_message_header(&header("MESSAGE", date)).is_err());
+		}
+		assert!(
+			read_import_message_header(&header(&"식".repeat(101), "2024")).is_err()
+		);
+		assert_eq!(
+			read_import_message_header(&header(" MESSAGE ", "2024"))
+				.unwrap()
+				.0,
+			" MESSAGE "
+		);
 	}
 }

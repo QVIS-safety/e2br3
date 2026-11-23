@@ -645,7 +645,7 @@ fn case_country_codes(validation_ctx: &ValidationContext) -> Vec<String> {
 		add_identifier(report.worldwide_unique_id.as_deref());
 	}
 	for identifier in &validation_ctx.other_case_identifiers {
-		add_identifier(Some(identifier.case_identifier.as_str()));
+		add_identifier(identifier.case_identifier.as_deref());
 	}
 	for source in &validation_ctx.primary_sources {
 		add(source.country_code.as_deref());

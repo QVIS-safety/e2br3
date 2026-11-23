@@ -1,15 +1,13 @@
 // Section D importer (Patient) - FDA mapping.
 
 use crate::error::Error;
-use crate::import_constraint;
-use crate::import_sections::shared::{parse_date, parse_trimmed_bool_with_yes_no};
+use crate::import_constraint::Context;
+use crate::import_sections::shared::parse_trimmed_bool_with_yes_no;
 use crate::mapping::fda::d_patient::DPatientPaths;
 use crate::Result;
 use lib_core::regulatory::{
 	infer_regulatory_authority_from_receivers, RegulatoryAuthority,
 };
-use libxml::parser::Parser;
-use libxml::xpath::Context;
 use rust_decimal::Decimal;
 use sqlx::types::time::Date;
 
@@ -71,82 +69,80 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let patient_exists = xpath
-		.findnodes(DPatientPaths::PATIENT_NODE, None)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query patient information".to_string(),
-			line: None,
-			column: None,
-		})?
-		.into_iter()
-		.next()
-		.is_some();
-	if !patient_exists {
-		return Ok(None);
-	}
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let patient_exists = xpath
+			.findnodes(DPatientPaths::PATIENT_NODE, None)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query patient information".to_string(),
+				line: None,
+				column: None,
+			})?
+			.into_iter()
+			.next()
+			.is_some();
+		if !patient_exists {
+			return Ok(None);
+		}
 
-	let header = crate::import_sections::shared::extract_message_header(xml)?;
-	let authority = infer_regulatory_authority_from_receivers(
-		header.batch_receiver.as_deref(),
-		header.message_receiver.as_deref(),
-	);
-	let (patient_initials, patient_initials_null_flavor) =
-		read_d_1(&mut xpath, authority)?;
-	let (birth_date, birth_date_null_flavor) = read_d_2_1(&mut xpath)?;
-	let age_at_time_of_onset = read_d_2_2a(&mut xpath)?;
-	let age_unit = read_d_2_2b(&mut xpath)?;
-	let gestation_period = read_d_2_2_1a(&mut xpath)?;
-	let gestation_period_unit = read_d_2_2_1b(&mut xpath)?;
-	let age_group = read_d_2_3(&mut xpath)?;
-	let weight_kg = read_d_3(&mut xpath)?;
-	let height_cm = read_d_4(&mut xpath)?;
-	let (sex, sex_null_flavor) = read_d_5(&mut xpath)?;
-	let (last_menstrual_period_date, last_menstrual_period_date_null_flavor) =
-		read_d_6(&mut xpath)?;
-	let (medical_history_text, medical_history_text_null_flavor) =
-		read_d_7_2(&mut xpath)?;
-	let concomitant_therapy = read_d_7_3(&mut xpath)?;
-	let (race_codes, race_code_null_flavor) = read_fda_d_11_r_1(&mut xpath)?;
-	let (ethnicity_code, ethnicity_code_null_flavor) = read_fda_d_12(&mut xpath)?;
+		let header = crate::import_sections::shared::extract_message_header(xml)?;
+		let authority = infer_regulatory_authority_from_receivers(
+			header.batch_receiver.as_deref(),
+			header.message_receiver.as_deref(),
+		);
+		let (patient_initials, patient_initials_null_flavor) =
+			read_d_1(&mut xpath, authority)?;
+		let (birth_date, birth_date_null_flavor) = read_d_2_1(&mut xpath)?;
+		let age_at_time_of_onset = read_d_2_2a(&mut xpath)?;
+		let age_unit = read_d_2_2b(&mut xpath)?;
+		let gestation_period = read_d_2_2_1a(&mut xpath)?;
+		let gestation_period_unit = read_d_2_2_1b(&mut xpath)?;
+		let age_group = read_d_2_3(&mut xpath)?;
+		let weight_kg = read_d_3(&mut xpath)?;
+		let height_cm = read_d_4(&mut xpath)?;
+		let (sex, sex_null_flavor) = read_d_5(&mut xpath)?;
+		let (last_menstrual_period_date, last_menstrual_period_date_null_flavor) =
+			read_d_6(&mut xpath)?;
+		let (medical_history_text, medical_history_text_null_flavor) =
+			read_d_7_2(&mut xpath)?;
+		let concomitant_therapy = read_d_7_3(&mut xpath)?;
+		let (race_codes, race_code_null_flavor) = read_fda_d_11_r_1(&mut xpath)?;
+		let (ethnicity_code, ethnicity_code_null_flavor) =
+			read_fda_d_12(&mut xpath)?;
 
-	Ok(Some(DPatientImport {
-		patient_initials,
-		patient_initials_null_flavor,
-		birth_date,
-		birth_date_null_flavor,
-		sex,
-		sex_null_flavor,
-		age_at_time_of_onset,
-		age_unit,
-		gestation_period,
-		gestation_period_unit,
-		age_group,
-		weight_kg,
-		height_cm,
-		race_codes,
-		race_code_null_flavor,
-		ethnicity_code,
-		ethnicity_code_null_flavor,
-		last_menstrual_period_date,
-		last_menstrual_period_date_null_flavor,
-		medical_history_text,
-		medical_history_text_null_flavor,
-		concomitant_therapy,
-	}))
+		Ok(Some(DPatientImport {
+			patient_initials,
+			patient_initials_null_flavor,
+			birth_date,
+			birth_date_null_flavor,
+			sex,
+			sex_null_flavor,
+			age_at_time_of_onset,
+			age_unit,
+			gestation_period,
+			gestation_period_unit,
+			age_group,
+			weight_kg,
+			height_cm,
+			race_codes,
+			race_code_null_flavor,
+			ethnicity_code,
+			ethnicity_code_null_flavor,
+			last_menstrual_period_date,
+			last_menstrual_period_date_null_flavor,
+			medical_history_text,
+			medical_history_text_null_flavor,
+			concomitant_therapy,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:D.1
@@ -165,6 +161,7 @@ fn read_d_1(
 		"patientInitials",
 		"patientInitialsNullFlavor",
 		contract,
+		xpath,
 	)
 }
 
@@ -176,18 +173,19 @@ fn read_d_2_1(xpath: &mut Context) -> Result<(Option<Date>, Option<String>)> {
 		"patientBirthDate",
 		"patientBirthDateNullFlavor",
 		input_contracts::generated::d::d_2_1,
+		xpath,
 	)
 }
 
 /// e2b:D.2.2a
 fn read_d_2_2a(xpath: &mut Context) -> Result<Option<Decimal>> {
 	let raw = first_value_root(xpath, DPatientPaths::AGE_VALUE);
-	import_constraint::number_string(
+	xpath.inputs.number_string(
 		"patientAge.value",
 		raw.as_deref(),
 		input_contracts::generated::d::d_2_2a,
-	)?;
-	Ok(raw.and_then(|value| value.parse().ok()))
+	);
+	crate::import_constraint::decimal(raw, "patientAge.value")
 }
 
 /// e2b:D.2.2b
@@ -196,6 +194,7 @@ fn read_d_2_2b(xpath: &mut Context) -> Result<Option<String>> {
 		first_value_root(xpath, DPatientPaths::AGE_UNIT),
 		"patientAge.unit",
 		input_contracts::generated::d::d_2_2b,
+		xpath,
 	)
 }
 
@@ -205,6 +204,7 @@ fn read_d_2_2_1a(xpath: &mut Context) -> Result<Option<Decimal>> {
 		first_value_root(xpath, DPatientPaths::GESTATION_VALUE),
 		"gestationPeriod.value",
 		input_contracts::generated::d::d_2_2_1a,
+		xpath,
 	)
 }
 
@@ -214,6 +214,7 @@ fn read_d_2_2_1b(xpath: &mut Context) -> Result<Option<String>> {
 		first_value_root(xpath, DPatientPaths::GESTATION_UNIT),
 		"gestationPeriod.unit",
 		input_contracts::generated::d::d_2_2_1b,
+		xpath,
 	)
 }
 
@@ -223,6 +224,7 @@ fn read_d_2_3(xpath: &mut Context) -> Result<Option<String>> {
 		first_value_root(xpath, DPatientPaths::AGE_GROUP_CODE),
 		"patientAgeGroup",
 		input_contracts::generated::d::d_2_3,
+		xpath,
 	)
 }
 
@@ -232,6 +234,7 @@ fn read_d_3(xpath: &mut Context) -> Result<Option<Decimal>> {
 		first_value_root(xpath, DPatientPaths::WEIGHT_VALUE),
 		"patientWeight.value",
 		input_contracts::generated::d::d_3,
+		xpath,
 	)
 }
 
@@ -241,6 +244,7 @@ fn read_d_4(xpath: &mut Context) -> Result<Option<Decimal>> {
 		first_value_root(xpath, DPatientPaths::HEIGHT_VALUE),
 		"patientHeight.value",
 		input_contracts::generated::d::d_4,
+		xpath,
 	)
 }
 
@@ -252,6 +256,7 @@ fn read_d_5(xpath: &mut Context) -> Result<(Option<String>, Option<String>)> {
 		"patientSex",
 		"patientSexNullFlavor",
 		input_contracts::generated::d::d_5,
+		xpath,
 	)
 }
 
@@ -263,6 +268,7 @@ fn read_d_6(xpath: &mut Context) -> Result<(Option<Date>, Option<String>)> {
 		"lastMenstrualPeriodDate",
 		"lastMenstrualPeriodDateNullFlavor",
 		input_contracts::generated::d::d_6,
+		xpath,
 	)
 }
 
@@ -274,20 +280,21 @@ fn read_d_7_2(xpath: &mut Context) -> Result<(Option<String>, Option<String>)> {
 		"medicalHistoryText",
 		"medicalHistoryTextNullFlavor",
 		input_contracts::generated::d::d_7_2,
+		xpath,
 	)
 }
 
 /// e2b:D.7.3
 fn read_d_7_3(xpath: &mut Context) -> Result<Option<bool>> {
-	let value = parse_trimmed_bool_with_yes_no(
-		first_value_root(xpath, DPatientPaths::CONCOMITANT_THERAPY_VALUE).as_deref(),
-	);
-	import_constraint::boolean(
+	let raw = first_value_root(xpath, DPatientPaths::CONCOMITANT_THERAPY_VALUE);
+	let value = parse_trimmed_bool_with_yes_no(raw.as_deref());
+	xpath.inputs.boolean(
 		"concomitantTherapies",
+		raw.as_deref(),
 		value,
 		None,
 		input_contracts::generated::d::d_7_3,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -306,27 +313,27 @@ fn read_fda_d_11_r_1(xpath: &mut Context) -> Result<(Vec<String>, Option<String>
 		.collect::<Vec<_>>();
 	let null_flavor = first_value_root(xpath, DPatientPaths::RACE_CODE_NULL_FLAVOR);
 	if !race_codes.is_empty() {
-		import_constraint::string(
+		xpath.inputs.string(
 			"raceCodes",
 			Some(&race_codes[0]),
 			null_flavor.as_deref(),
 			input_contracts::generated::d::fda_d_11_r_1,
-		)?;
+		);
 	}
 	for (index, value) in race_codes.iter().enumerate() {
-		import_constraint::string(
+		xpath.inputs.string(
 			&format!("raceCodes.{index}"),
 			Some(value),
 			None,
 			input_contracts::generated::d::fda_d_11_r_1,
-		)?;
+		);
 	}
-	import_constraint::string(
+	xpath.inputs.string(
 		"raceCodeNullFlavor",
 		None,
 		null_flavor.as_deref(),
 		input_contracts::generated::d::fda_d_11_r_1,
-	)?;
+	);
 	Ok((race_codes, null_flavor))
 }
 
@@ -338,43 +345,36 @@ fn read_fda_d_12(xpath: &mut Context) -> Result<(Option<String>, Option<String>)
 		"ethnicityCode",
 		"ethnicityCodeNullFlavor",
 		input_contracts::generated::d::fda_d_12,
+		xpath,
 	)
 }
 
 fn first_value_root(xpath: &mut Context, path: &str) -> Option<String> {
-	match xpath.findvalue(path, None) {
-		Ok(value) if !value.trim().is_empty() => Some(value),
-		_ => None,
-	}
+	xpath.findvalues(path, None).ok()?.into_iter().next()
 }
 
 fn first_text_root(xpath: &mut Context, path: &str) -> Option<String> {
-	match xpath.findvalue(path, None) {
-		Ok(value) if !value.trim().is_empty() => Some(value),
-		_ => None,
-	}
+	crate::import_sections::shared::first_text_root(xpath, path)
 }
 
 fn input_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 
 fn input_decimal(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<Decimal>> {
-	import_constraint::number_string(field, value.as_deref(), check)?;
-	Ok(value.and_then(|value| value.parse().ok()))
+	xpath.inputs.number_string(field, value.as_deref(), check);
+	crate::import_constraint::decimal(value, field)
 }
 
 fn string_pair(
@@ -382,16 +382,12 @@ fn string_pair(
 	null_flavor: Option<String>,
 	field: &str,
 	_null_field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<(Option<String>, Option<String>)> {
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
 	Ok((value, null_flavor))
 }
 
@@ -400,13 +396,12 @@ fn date_pair(
 	null_flavor: Option<String>,
 	field: &str,
 	null_field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<(Option<Date>, Option<String>)> {
 	let (value, null_flavor) =
-		string_pair(value, null_flavor, field, null_field, check)?;
-	Ok((value.and_then(parse_date), null_flavor))
+		string_pair(value, null_flavor, field, null_field, check, xpath)?;
+	Ok((crate::import_constraint::date(value, field)?, null_flavor))
 }
 
 #[cfg(test)]

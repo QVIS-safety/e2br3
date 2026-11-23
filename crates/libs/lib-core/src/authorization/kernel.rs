@@ -142,11 +142,9 @@ fn contextual_policy<C: AuthorizationContext>(
 			DenialReason::InvalidPolicyRegistry,
 		)
 	})?;
-	let policy = registry
-		.action(action_id.as_str())
-		.ok_or_else(|| {
-			AuthorizationDenial::new(action_id.clone(), DenialReason::UnknownAction)
-		})?;
+	let policy = registry.action(action_id.as_str()).ok_or_else(|| {
+		AuthorizationDenial::new(action_id.clone(), DenialReason::UnknownAction)
+	})?;
 	if policy.decision_stage != DecisionStage::ContextRequired(C::kind()) {
 		return Err(AuthorizationDenial::new(
 			action_id.clone(),
@@ -267,6 +265,7 @@ mod tests {
 	fn subject_permit_preserves_snapshot_evidence() {
 		let snapshot = snapshot(&[], None);
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.subject_action("user.profile.read")
 			.expect("subject action must exist");
 
@@ -283,6 +282,7 @@ mod tests {
 	fn case_review_requires_grant_and_compatible_lifecycle() {
 		type Case = crate::authorization::Existing<CaseResource>;
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<Case>("case.review.toggle")
 			.unwrap();
 		let missing = snapshot(&[], None);
@@ -310,6 +310,7 @@ mod tests {
 			crate::authorization::Existing<crate::authorization::UserResource>;
 		let custom = snapshot(&["admin.edit"], None);
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<User>("user.update")
 			.unwrap();
 		assert!(authorize_contextual_mutation(
@@ -320,6 +321,7 @@ mod tests {
 		.is_ok());
 
 		let role_assignment = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<User>("user.update.role_assignment")
 			.unwrap();
 		let denial = authorize_contextual_mutation(
@@ -336,6 +338,7 @@ mod tests {
 		type UserProposal =
 			crate::authorization::Proposed<crate::authorization::UserCreateProposal>;
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<UserProposal>("user.create.built_in_role_assignment")
 			.expect("built-in role assignment action must exist");
 
@@ -394,6 +397,7 @@ mod tests {
 		type Users =
 			crate::authorization::Collection<crate::authorization::UserResource>;
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<Users>("user.list")
 			.unwrap();
 		let mut custom = snapshot(&["admin.read"], None);
@@ -427,6 +431,7 @@ mod tests {
 	fn read_permit_preserves_exact_context_evidence() {
 		type Cases = crate::authorization::Collection<CaseResource>;
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<Cases>("case.list")
 			.unwrap();
 		let reader = snapshot(&["case.read"], None);
@@ -446,6 +451,7 @@ mod tests {
 		type NewCase =
 			crate::authorization::Proposed<crate::authorization::CaseCreateProposal>;
 		let action = policy_registry()
+			.expect("valid policy registry")
 			.context_action::<NewCase>("case.create")
 			.unwrap();
 		let editor = snapshot(&["case.edit"], None);

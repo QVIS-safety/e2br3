@@ -64,7 +64,7 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - intake 공통 필드: `safety_report_id`, `date_of_most_recent_information`, `report_type`, reporter organization(+null flavor), sponsor study number(+null flavor), patient initials(+null flavor), investigation number(+null flavor), `age_d2_2a`, `sex_d5`(+null flavor), `dg_prd_key`, reaction MedDRA version/code, AE start date(+null flavor).
 - `POST /intake-check`은 위 필드를 `data`에 받고 `200 {duplicate,basis_complete,warnings,matches}`. report type별 활성 중복 기준과 필드 쌍을 검증한다.
 - `POST /from-intake`는 추가로 필수 `authority`, `date_of_most_recent_information`, `report_type`; 선택 `transmission_date`, `date_first_received_from_source`, `status`, `allow_duplicate_override`, MFDS/FDA report type, report year를 받는다. Case shell 하위 행을 transaction으로 만들고 `201 {case_id,safety_report_id,version}`.
-- `POST /{source_case_id}/follow-up`은 editor follow-up page patch request를 받고 새 Case ID와 safety-report version을 반환한다. source scope, 버전 증가, 복제 범위가 assertion 되어 있다.
+- `POST /{source_case_id}/follow-up`은 editor follow-up page patch request를 받고 `caseId`, `safetyReportVersion`, `rowIdentities`를 반환한다. 각 반복 행의 identity는 `pageId`, 요청 배열의 `clientRowIndex`, 요청의 `clientRowId`(없으면 `null`), 실제 생성된 `rowId`다. 조회 정렬 순서가 아닌 요청 행에 대응하며 LR/DH/AE/LB/DG를 포함한다. source scope, 버전 증가, 복제 범위 및 요청 순서와 조회 순서가 다른 LB 행의 ID 대응이 assertion 되어 있다.
 
 근거:
 
@@ -238,7 +238,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - [tests/api_cases/subresources/test_result.rs::test_test_results_support_50_character_normal_ranges](../api_cases/subresources/test_result.rs)
 - [tests/api_cases/subresources/lifecycle_general.rs::general_case_rows_enforce_scope_permission_lock_lifecycle_and_audit](../api_cases/subresources/lifecycle_general.rs)
 - [tests/api_editor/pages/lb.generated.rs::list_projection_includes_displayed_result_columns](../api_editor/pages/lb.generated.rs)
-- [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_but_blocks_export_and_submission](../api_submission/validation.rs)
+- [tests/api_submission/validation.rs::test_unavailable_meddra_allows_save_and_export_but_blocks_submission](../api_submission/validation.rs)
 
 <a id="patient"></a>
 ## Patient와 하위 리소스

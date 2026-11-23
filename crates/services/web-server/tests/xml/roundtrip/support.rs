@@ -34,10 +34,12 @@ pub(super) fn outbound_header(
 		}
 	};
 	xml::OutboundMessageHeader {
-		batch_number: "TEST-BATCH".to_string(),
-		batch_sender_identifier: "TEST-SENDER".to_string(),
-		batch_receiver_identifier: batch_receiver_identifier.to_string(),
-		batch_transmission_date: time::OffsetDateTime::now_utc(),
+		batch_number: Some("TEST-BATCH".to_string()),
+		batch_sender_identifier: Some("TEST-SENDER".to_string()),
+		batch_receiver_identifier: Some(batch_receiver_identifier.to_string()),
+		batch_transmission_date: Some("20241121010203+0000".to_string()),
+		message_number: "TEST-MESSAGE".to_string(),
+		message_date: "20241121010203+0000".to_string(),
 		message_sender_identifier: "TEST-SENDER".to_string(),
 		message_receiver_identifier: message_receiver_identifier.to_string(),
 	}

@@ -32,7 +32,7 @@ fn import_e_reaction_preserves_term_highlight_code() {
         </investigationEvent>
       </subject>
     </controlActProcess>
-  </PORR_IN049016UV01>
+  </PORR_IN049016UV>
 </MCCI_IN200100UV01>"#;
 
 	let reactions = parse_e_reactions(xml).expect("parse should succeed");

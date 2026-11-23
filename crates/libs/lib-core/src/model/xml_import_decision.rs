@@ -12,9 +12,9 @@ pub enum XmlImportDecisionAction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct XmlImportIncomingKey {
-	pub safety_report_id: String,
-	/// E2B C.1.2 (Date of Creation), normalized to YYYYMMDDHHMMSS.
-	pub transmission_date: String,
+	pub safety_report_id: Option<String>,
+	/// E2B C.1.2 (Date of Creation), preserving the sender's exact timestamp.
+	pub transmission_date: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,7 +29,7 @@ pub struct XmlImportExistingCase {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct XmlImportDuplicateMatch {
 	pub case_id: Uuid,
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	pub version: i32,
 }
 
@@ -51,9 +51,15 @@ pub fn decide_xml_import(
 	if let Some(existing) = existing_cases
 		.iter()
 		.filter(|case| {
-			case.safety_report_id == incoming.safety_report_id
+			!case.safety_report_id.trim().is_empty()
+				&& Some(case.safety_report_id.as_str())
+					== incoming.safety_report_id.as_deref()
+				&& incoming
+					.transmission_date
+					.as_deref()
+					.is_some_and(|value| !value.trim().is_empty())
 				&& case.transmission_date.as_deref()
-					== Some(incoming.transmission_date.as_str())
+					== incoming.transmission_date.as_deref()
 		})
 		.max_by_key(|case| case.version)
 	{
@@ -68,7 +74,11 @@ pub fn decide_xml_import(
 
 	if let Some(existing) = existing_cases
 		.iter()
-		.filter(|case| case.safety_report_id == incoming.safety_report_id)
+		.filter(|case| {
+			!case.safety_report_id.trim().is_empty()
+				&& Some(case.safety_report_id.as_str())
+					== incoming.safety_report_id.as_deref()
+		})
 		.max_by_key(|case| case.version)
 	{
 		return decision_from_existing(
@@ -84,7 +94,7 @@ pub fn decide_xml_import(
 	{
 		return decision_from_duplicate(
 			duplicate.case_id,
-			&duplicate.safety_report_id,
+			duplicate.safety_report_id.as_deref(),
 			duplicate.version,
 		);
 	}
@@ -102,13 +112,13 @@ pub fn decide_xml_import(
 
 fn decision_from_duplicate(
 	case_id: Uuid,
-	case_number: &str,
+	case_number: Option<&str>,
 	version: i32,
 ) -> XmlImportDecision {
 	XmlImportDecision {
 		action: XmlImportDecisionAction::New,
 		matched_case_id: Some(case_id),
-		matched_case_number: Some(case_number.to_string()),
+		matched_case_number: case_number.map(str::to_owned),
 		matched_case_version: Some(version),
 		message: Some(
 			"Potential duplicate matched on patient/event/product fields; imported with warning because the C.1.1/C.1.2 pair is not an exact match."
@@ -124,12 +134,16 @@ fn decision_from_existing(
 	version: i32,
 	existing_transmission_date: Option<&str>,
 ) -> XmlImportDecision {
-	let action =
-		if existing_transmission_date == Some(incoming.transmission_date.as_str()) {
-			XmlImportDecisionAction::Skip
-		} else {
-			XmlImportDecisionAction::FollowUp
-		};
+	let action = if incoming
+		.transmission_date
+		.as_deref()
+		.is_some_and(|value| !value.trim().is_empty())
+		&& existing_transmission_date == incoming.transmission_date.as_deref()
+	{
+		XmlImportDecisionAction::Skip
+	} else {
+		XmlImportDecisionAction::FollowUp
+	};
 	let message = match action {
 		XmlImportDecisionAction::Skip => {
 			"Existing case has the same C.1.1 and C.1.2; import skipped."
@@ -160,8 +174,8 @@ mod tests {
 
 	fn key(report_id: &str, transmission_date: &str) -> XmlImportIncomingKey {
 		XmlImportIncomingKey {
-			safety_report_id: report_id.to_string(),
-			transmission_date: transmission_date.to_string(),
+			safety_report_id: Some(report_id.to_string()),
+			transmission_date: Some(transmission_date.to_string()),
 		}
 	}
 
@@ -185,7 +199,7 @@ mod tests {
 	) -> XmlImportDuplicateMatch {
 		XmlImportDuplicateMatch {
 			case_id,
-			safety_report_id: report_id.to_string(),
+			safety_report_id: Some(report_id.to_string()),
 			version,
 		}
 	}
@@ -256,5 +270,62 @@ mod tests {
 
 		assert_eq!(decision.action, XmlImportDecisionAction::New);
 		assert_eq!(decision.matched_case_id, None);
+	}
+}
+
+#[cfg(test)]
+mod draft_identity_tests {
+	use super::*;
+
+	#[test]
+	fn missing_identity_is_not_an_exact_duplicate() {
+		let existing = XmlImportExistingCase {
+			case_id: Uuid::nil(),
+			safety_report_id: "REPORT".into(),
+			version: 1,
+			transmission_date: None,
+		};
+		let incoming = XmlImportIncomingKey {
+			safety_report_id: None,
+			transmission_date: None,
+		};
+		assert_eq!(
+			decide_xml_import(&incoming, std::slice::from_ref(&existing), &[])
+				.action,
+			XmlImportDecisionAction::New
+		);
+		let incoming = XmlImportIncomingKey {
+			safety_report_id: Some("REPORT".into()),
+			transmission_date: None,
+		};
+		assert_eq!(
+			decide_xml_import(&incoming, &[existing], &[]).action,
+			XmlImportDecisionAction::FollowUp
+		);
+	}
+	#[test]
+	fn empty_identity_and_timestamp_cannot_prove_a_duplicate() {
+		for value in ["", "  "] {
+			let mut incoming = XmlImportIncomingKey {
+				safety_report_id: Some(value.into()),
+				transmission_date: Some(value.into()),
+			};
+			let mut existing = XmlImportExistingCase {
+				case_id: Uuid::nil(),
+				safety_report_id: value.into(),
+				version: 1,
+				transmission_date: Some(value.into()),
+			};
+			assert_eq!(
+				decide_xml_import(&incoming, &[existing.clone()], &[]).action,
+				XmlImportDecisionAction::New
+			);
+			incoming.safety_report_id = Some("REPORT".into());
+			existing.safety_report_id = "REPORT".into();
+			assert_eq!(
+				decide_xml_import(&incoming, &[existing], &[]).action,
+				XmlImportDecisionAction::FollowUp
+			);
+		}
 	}
 }

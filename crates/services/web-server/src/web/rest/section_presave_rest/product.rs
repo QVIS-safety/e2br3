@@ -1,6 +1,80 @@
 use super::rows::camelize_value;
+
+#[cfg(test)]
+mod child_text_null_tests {
+	use super::*;
+
+	#[test]
+	fn presave_child_text_null_productactivesubstancedetailsforupdate(
+	) -> std::result::Result<(), serde_json::Error> {
+		for (input, expected) in [
+			(None, None),
+			(Some(serde_json::Value::Null), Some(String::new())),
+			(Some(serde_json::json!("")), Some(String::new())),
+			(
+				Some(serde_json::json!("Recorded")),
+				Some("Recorded".to_owned()),
+			),
+		] {
+			let mut object = serde_json::Map::new();
+			if let Some(value) = input {
+				for key in [
+					"substanceName",
+					"substanceTermIdVersion",
+					"substanceTermId",
+					"mfdsVersion",
+					"mfdsId",
+					"substanceStrengthUnit",
+				] {
+					object.insert(key.to_owned(), value.clone());
+				}
+			}
+			let patch: ProductActiveSubstanceDetailsForUpdate =
+				serde_json::from_value(serde_json::Value::Object(object))?;
+			let update = patch.into_update();
+			assert_eq!(
+				[
+					update.substance_name,
+					update.substance_termid_version,
+					update.substance_termid,
+					update.mfds_version,
+					update.mfds_id,
+					update.strength_unit
+				],
+				[
+					expected.clone(),
+					expected.clone(),
+					expected.clone(),
+					expected.clone(),
+					expected.clone(),
+					expected.clone()
+				]
+			);
+		}
+		for key in [
+			"substanceName",
+			"substanceTermIdVersion",
+			"substanceTermId",
+			"mfdsVersion",
+			"mfdsId",
+			"substanceStrengthUnit",
+		] {
+			let mut object = serde_json::Map::new();
+			object.insert(key.to_owned(), serde_json::json!(123));
+			assert!(
+				serde_json::from_value::<ProductActiveSubstanceDetailsForUpdate>(
+					serde_json::Value::Object(object)
+				)
+				.is_err()
+			);
+		}
+		Ok(())
+	}
+}
 use super::shared::*;
-use lib_core::model::presave::deserialize_patch_option;
+use lib_core::model::presave::{
+	deserialize_clearable_text, deserialize_patch_option,
+};
 use serde_json::{json, Value};
 
 pub async fn create_product_presave(
@@ -234,17 +308,23 @@ pub struct ProductActiveSubstanceDetailsForUpdate {
 	#[serde(default)]
 	pub deleted: bool,
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_name: Option<String>,
 	#[serde(rename = "substanceTermIdVersion")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_termid_version: Option<String>,
 	#[serde(rename = "substanceTermId")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub substance_termid: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_version: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub mfds_id: Option<String>,
 	#[serde(rename = "substanceStrengthValue")]
 	#[serde(default, deserialize_with = "deserialize_patch_option")]
 	pub strength_value: Option<Option<rust_decimal::Decimal>>,
 	#[serde(rename = "substanceStrengthUnit")]
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub strength_unit: Option<String>,
 }
 

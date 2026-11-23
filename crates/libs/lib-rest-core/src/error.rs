@@ -59,6 +59,11 @@ pub enum Error {
 		source: BoxError,
 	},
 	ConstraintViolation(ConstraintViolation),
+	CaseEditorRow {
+		collection_path: &'static str,
+		client_row_index: usize,
+		source: Box<Error>,
+	},
 
 	// -- External Modules
 	#[from]
@@ -103,6 +108,9 @@ impl Error {
 			Self::Export(error) => format!("Export.{}", xml_error_type(error)),
 			Self::Internal { operation, .. } => format!("Internal.{operation}"),
 			Self::ConstraintViolation(_) => "ConstraintViolation".into(),
+			Self::CaseEditorRow { source, .. } => {
+				format!("CaseEditorRow.{}", source.diagnostic_type())
+			}
 			Self::SerdeJson(_) => "SerdeJson".into(),
 		}
 	}
@@ -153,6 +161,7 @@ impl std::error::Error for Error {
 			Self::Model(error) => Some(error),
 			Self::Xml(error) | Self::Export(error) => Some(error),
 			Self::Internal { source, .. } => Some(source.as_ref()),
+			Self::CaseEditorRow { source, .. } => Some(source.as_ref()),
 			Self::SerdeJson(error) => Some(error),
 			_ => None,
 		}

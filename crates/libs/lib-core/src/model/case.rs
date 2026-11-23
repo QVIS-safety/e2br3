@@ -291,12 +291,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       	 WHERE u.id = c.workflow_assigned_user_id
 		       	 LIMIT 1
 		       ), 'ALL') AS wf_user,
-		       COALESCE((
-		       	SELECT NULLIF(ri.organization_name, '')
-		       	  FROM receiver_information ri
-		       	 WHERE ri.case_id = c.id
-		       	 LIMIT 1
-		       ), NULLIF(s.receiver_organization, ''), 'N/A') AS receiver,
+		       COALESCE(NULLIF(mh.message_receiver_identifier, ''), 'N/A') AS receiver,
 		       CASE WHEN c.raw_xml IS NULL THEN 'Manual' ELSE 'Import' END AS creation_type,
 		       (lower(c.status) IN ('reviewed', 'validated') OR
 		        (lower(c.status) = 'locked' AND
@@ -306,6 +301,7 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       c.status <> 'deleted' AS export_eligible
 		  FROM cases c
 		  LEFT JOIN safety_report_identification s ON s.case_id = c.id
+		  LEFT JOIN message_headers mh ON mh.case_id = c.id
 		 {where_clause}
 		 ORDER BY {order_clause}
 		"#
@@ -582,8 +578,10 @@ fn first_uuid_eq(values: &OpValsValue) -> Result<Option<Uuid>> {
 					message: "organization ID filter must be a string".to_string(),
 				});
 			};
-			return Uuid::parse_str(value).map(Some).map_err(|_| Error::Validation {
-				message: "organization ID filter must be a UUID".to_string(),
+			return Uuid::parse_str(value).map(Some).map_err(|_| {
+				Error::Validation {
+					message: "organization ID filter must be a UUID".to_string(),
+				}
 			});
 		}
 	}
@@ -1007,7 +1005,8 @@ impl CaseBmc {
 			        s.transmission_date,
 			        c.created_at
 			   FROM cases c
-			   LEFT JOIN safety_report_identification s ON s.case_id = c.id
+			   JOIN safety_report_identification s ON s.case_id = c.id
+			  WHERE s.safety_report_id IS NOT NULL AND btrim(s.safety_report_id) <> ''
 			  ORDER BY c.created_at DESC
 			  LIMIT 200",
 		))
@@ -1024,7 +1023,7 @@ impl CaseBmc {
 		study_ids: &[String],
 	) -> Result<CaseStatusSummary> {
 		let sql = format!("SELECT count(*) AS total,
-   count(*) FILTER (WHERE lower(trim(c.status)) NOT IN ('reviewed', 'validated', 'locked', 'submitted', 'nullified', 'archived')) AS draft,
+   count(*) FILTER (WHERE lower(trim(c.status)) = 'draft') AS draft,
    count(*) FILTER (WHERE lower(trim(c.status)) IN ('reviewed', 'validated')) AS qced,
    count(*) FILTER (WHERE lower(trim(c.status)) = 'locked') AS locked,
    count(*) FILTER (WHERE lower(trim(c.status)) = 'submitted') AS submitted

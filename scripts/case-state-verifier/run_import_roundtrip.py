@@ -223,7 +223,6 @@ try:
     assert_value(driver, "senderInformation.organizationName", seed["sender"]["label"])
     if os.environ.get("ADAPTIVE_SOURCE_MUTATION") == "1":
         mutate_sender_after_selection(driver)
-    import_record(driver, "Import Receiver", "Import Receiver Record", seed["receiver"]["label"], seed["receiver"]["label"])
     assert_value(driver, "senderInformation.organizationName", seed["sender"]["label"])
     save(driver, "SD")
 

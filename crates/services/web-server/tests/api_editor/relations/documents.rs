@@ -32,8 +32,8 @@ pub(crate) async fn source_document_delete_hides_the_target(
 		&cookie,
 		&uri,
 		json!({"authorities":["ich"],"rows":{
-			"otherCaseIdentifiers":[{"source":null,"caseIdentifier":null}],
-			"sourceDocuments":[{"sourceDocumentName":"DOC","deleted":false}]
+			"otherCaseIdentifiers":[{"sequenceNumber":1,"source":null,"caseIdentifier":null}],
+			"sourceDocuments":[{"sequenceNumber":1,"sourceDocumentName":"DOC","deleted":false}]
 		}}),
 	)
 	.await?;
@@ -129,7 +129,7 @@ pub(crate) async fn source_document_delete_hides_the_target(
 		&cookie,
 		&foreign_uri,
 		json!({"authorities":["ich"],"rows":{
-			"sourceDocuments":[{"sourceDocumentName":"FOREIGN-DOC","deleted":false}]
+			"sourceDocuments":[{"sequenceNumber":1,"sourceDocumentName":"FOREIGN-DOC","deleted":false}]
 		}}),
 	)
 	.await?;

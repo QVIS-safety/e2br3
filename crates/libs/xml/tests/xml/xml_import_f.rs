@@ -71,5 +71,5 @@ fn import_f_test_allows_missing_test_name() {
 
 	let tests =
 		parse_f_test_results(xml).expect("missing name is not a parse error");
-	assert_eq!(tests[0].test_name, "");
+	assert_eq!(tests[0].test_name, None);
 }

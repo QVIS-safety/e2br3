@@ -9,10 +9,12 @@ use lib_core::regulatory::RegulatoryAuthority;
 
 #[derive(Debug, Clone)]
 pub struct OutboundMessageHeader {
-	pub batch_number: String,
-	pub batch_sender_identifier: String,
-	pub batch_receiver_identifier: String,
-	pub batch_transmission_date: sqlx::types::time::OffsetDateTime,
+	pub batch_number: Option<String>,
+	pub batch_sender_identifier: Option<String>,
+	pub batch_receiver_identifier: Option<String>,
+	pub batch_transmission_date: Option<String>,
+	pub message_number: String,
+	pub message_date: String,
 	pub message_sender_identifier: String,
 	pub message_receiver_identifier: String,
 }
@@ -20,15 +22,19 @@ pub struct OutboundMessageHeader {
 #[derive(Debug, Clone)]
 pub struct ExportXmlOptions {
 	pub apply_comments: bool,
+	/// Internal documents belong in app-to-app downloads, never regulatory submissions.
+	pub include_source_documents: bool,
 	pub authority: RegulatoryAuthority,
 	pub outbound_message_header: OutboundMessageHeader,
 }
 
+pub(crate) mod field;
 pub(crate) mod mode;
 pub mod policy;
 pub mod roundtrip;
 pub mod sections;
 pub(crate) mod shared;
+mod xml_identity;
 
 pub async fn export_case_xml_with_options(
 	ctx: &Ctx,
@@ -36,12 +42,13 @@ pub async fn export_case_xml_with_options(
 	case_id: sqlx::types::Uuid,
 	options: ExportXmlOptions,
 ) -> Result<String> {
-	serialize_case_xml_for_authority(
+	serialize_case_xml(
 		ctx,
 		mm,
 		case_id,
 		options.authority,
 		&options.outbound_message_header,
+		options.include_source_documents,
 	)
 	.await
 	.map(|xml| apply_export_xml_options(xml, options.apply_comments))
@@ -54,6 +61,18 @@ pub async fn serialize_case_xml_for_authority(
 	authority: RegulatoryAuthority,
 	outbound_message_header: &OutboundMessageHeader,
 ) -> Result<String> {
+	serialize_case_xml(ctx, mm, case_id, authority, outbound_message_header, false)
+		.await
+}
+
+async fn serialize_case_xml(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	authority: RegulatoryAuthority,
+	outbound_message_header: &OutboundMessageHeader,
+	include_source_documents: bool,
+) -> Result<String> {
 	let mm = mm.new_with_txn()?;
 	mm.dbx().begin_txn().await.map_err(model::Error::from)?;
 	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
@@ -64,7 +83,7 @@ pub async fn serialize_case_xml_for_authority(
 		let case = CaseBmc::get(ctx, &mm, case_id).await.map_err(Error::from)?;
 		let xml =
 			build_fresh_export_from_db(ctx, &mm, case_id, &case, authority).await?;
-		apply_c_d_h_sections(
+		let xml = apply_c_d_h_sections(
 			ctx,
 			&mm,
 			case_id,
@@ -72,7 +91,14 @@ pub async fn serialize_case_xml_for_authority(
 			authority,
 			outbound_message_header,
 		)
-		.await
+		.await?;
+		let xml = xml_identity::preserve_imported_row_identities(&mm, case_id, xml)
+			.await?;
+		if include_source_documents {
+			crate::source_documents::export(&mm, case_id, xml).await
+		} else {
+			Ok(xml)
+		}
 	}
 	.await;
 	match result {
@@ -140,6 +166,33 @@ mod tests {
 	}
 
 	#[test]
+	fn empty_repeating_sections_do_not_invent_a_patient() {
+		let source = base_export_skeleton().as_bytes();
+		for (section, xml) in [
+			("E", patch_e_reactions(source, &[]).expect("empty E")),
+			("F", patch_f_test_results(source, &[]).expect("empty F")),
+			(
+				"G",
+				patch_g_drugs(source, &[], &[], &[], &[], &[], &[], &[], &[], &[])
+					.expect("empty G"),
+			),
+		] {
+			let doc = Parser::default().parse_string(xml).expect("parse export");
+			let mut xpath = Context::new(&doc).expect("xpath");
+			xpath
+				.register_namespace("hl7", "urn:hl7-org:v3")
+				.expect("namespace");
+			assert!(
+				xpath
+					.findnodes("//hl7:primaryRole", None)
+					.expect("patient roles")
+					.is_empty(),
+				"Empty {section} invented a patient"
+			);
+		}
+	}
+
+	#[test]
 	fn fresh_export_skeleton_contains_only_required_parent_structure() {
 		let xml = base_export_skeleton();
 		assert!(!xml.contains("FAERS2022Scenario"));
@@ -162,10 +215,10 @@ mod tests {
 
 	#[test]
 	fn fresh_export_skeleton_accepts_all_section_writers() {
-		let c = CSafetyReportPatch {
-			report_unique_id: "CASE-1",
+		let mut c = CSafetyReportPatch {
+			report_unique_id: Some("CASE-1"),
 			transmission_date: Some("20240101"),
-			report_type: "1",
+			report_type: Some("1"),
 			date_first_received: None,
 			date_most_recent: None,
 			fulfil_expedited: Some(false),
@@ -219,7 +272,7 @@ mod tests {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
 			source_narrative_presave_id: None,
-			case_narrative: "Narrative".to_string(),
+			case_narrative: Some("Narrative".to_string()),
 			reporter_comments: None,
 			sender_comments: None,
 			additional_information: None,
@@ -229,6 +282,27 @@ mod tests {
 			updated_by: None,
 		};
 
+		for (id, report_type) in [(None, None), (Some(""), Some("UNLISTED"))] {
+			c.report_unique_id = id;
+			c.report_type = report_type;
+			let xml = patch_c_safety_report(base_export_skeleton().as_bytes(), &c)
+				.expect("incomplete report");
+			let doc = Parser::default().parse_string(&xml).expect("XML");
+			let mut xpath = Context::new(&doc).expect("XPath");
+			xpath
+				.register_namespace("hl7", "urn:hl7-org:v3")
+				.expect("namespace");
+			for (path, attr, expected) in [
+                ("//hl7:investigationEvent/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.1']", "extension", id),
+                ("//hl7:investigationCharacteristic[hl7:code[@code='1']]/hl7:value", "code", report_type),
+            ] {
+                let nodes = xpath.findnodes(path, None).expect("field");
+                assert_eq!(nodes.len(), 1);
+                assert_eq!(nodes[0].get_attribute(attr).as_deref(), expected);
+            }
+		}
+		c.report_unique_id = Some("CASE-1");
+		c.report_type = Some("1");
 		let mut xml = patch_c_safety_report(base_export_skeleton().as_bytes(), &c)
 			.expect("write C");
 		xml = patch_d_patient(xml.as_bytes(), &d).expect("write D");

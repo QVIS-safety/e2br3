@@ -4,8 +4,6 @@
 mod fields {
     use crate::case_editor_contract_web::fields::field_contract_test;
     const PAGE_ID: &str = "DG";
-    // BLOCKED editor contract G.k.9.i.1: The value must be the UUID of a saved AE Reaction; the generated harness creates that UUID at runtime and cannot use a static roundTripValue.
-    // BLOCKED editor contract G.k.local.sourceProductPresaveId: A valid value must be the UUID returned by a real readable INFO ProductPresave; no static UUID can be a truthful portable roundtrip vector.
     field_contract_test!(fda_g_k_1_a, "FDA.G.k.1.a");
     field_contract_test!(fda_g_k_10_1, "FDA.G.k.10.1");
     field_contract_test!(fda_g_k_10a, "FDA.G.k.10a");
@@ -82,6 +80,7 @@ mod fields {
     field_contract_test!(g_k_7_r_2a, "G.k.7.r.2a");
     field_contract_test!(g_k_7_r_2b, "G.k.7.r.2b");
     field_contract_test!(g_k_8, "G.k.8");
+    field_contract_test!(g_k_9_i_1, "G.k.9.i.1");
     field_contract_test!(g_k_9_i_2_r_1, "G.k.9.i.2.r.1");
     field_contract_test!(g_k_9_i_2_r_2, "G.k.9.i.2.r.2");
     field_contract_test!(g_k_9_i_2_r_2_kr_1, "G.k.9.i.2.r.2.KR.1");
@@ -98,6 +97,12 @@ mod fields {
     field_contract_test!(g_k_local_dechallengeresult, "G.k.local.dechallengeResult");
     field_contract_test!(g_k_local_dosage_continuing, "G.k.local.dosage.continuing");
     field_contract_test!(g_k_local_expectedness, "G.k.local.expectedness");
+    field_contract_test!(g_k_local_sourceproductpresaveid, "G.k.local.sourceProductPresaveId");
+    #[serial_test::serial]
+    #[tokio::test]
+    async fn dosage_date_precision_transitions_preserve_values() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::coupled_clear::dosage_date_precision_transitions_preserve_values("DG", "dosage_date_precision_transitions_preserve_values").await
+    }
     #[serial_test::serial]
     #[tokio::test]
     async fn dosage_value_null_flavor_pairs_reject_simultaneous_values() -> crate::common::Result<()> {
@@ -110,8 +115,8 @@ mod fields {
     }
     #[serial_test::serial]
     #[tokio::test]
-    async fn blank_optional_text_clears_without_changing_omitted_sibling() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::fields::coupled_clear::blank_optional_text_clears_without_changing_omitted_sibling("DG", "blank_optional_text_clears_without_changing_omitted_sibling").await
+    async fn blank_optional_text_is_rejected_without_changing_siblings() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::coupled_clear::blank_optional_text_is_rejected_without_changing_siblings("DG", "blank_optional_text_is_rejected_without_changing_siblings").await
     }
     #[serial_test::serial]
     #[tokio::test]

@@ -75,7 +75,7 @@ pub async fn update_narrative_information(
 	ctx_w: CtxW,
 	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
 	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForUpdate<NarrativeInformationForUpdate>>,
+	Json(params): Json<ParamsForUpdate<serde_json::Value>>,
 ) -> Result<(StatusCode, Json<DataRestResult<NarrativeInformation>>)> {
 	let ctx = ctx_w.0;
 	lib_rest_core::with_authorized_case_child_mutation(
@@ -87,8 +87,32 @@ pub async fn update_narrative_information(
 		move |ctx, mm| {
 			Box::pin(async move {
 				let ParamsForUpdate { data } = params;
-				NarrativeInformationBmc::update_by_case(ctx, mm, case_id, data)
-					.await?;
+				let update: NarrativeInformationForUpdate =
+					serde_json::from_value(data.clone()).map_err(|_| {
+						lib_rest_core::Error::BadRequest {
+							message: "Invalid narrative fields.".into(),
+						}
+					})?;
+				let clear_fields: Vec<&str> = [
+					"source_narrative_presave_id",
+					"case_narrative",
+					"reporter_comments",
+					"sender_comments",
+					"additional_information",
+				]
+				.into_iter()
+				.filter(|field| {
+					data.get(*field).is_some_and(serde_json::Value::is_null)
+				})
+				.collect();
+				NarrativeInformationBmc::update_by_case_patch(
+					ctx,
+					mm,
+					case_id,
+					update,
+					&clear_fields,
+				)
+				.await?;
 				let entity =
 					NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await?;
 				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

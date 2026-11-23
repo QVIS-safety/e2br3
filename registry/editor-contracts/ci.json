@@ -36,7 +36,7 @@
       "payloadPath": "safetyReportId",
       "persistence": {
         "clear": {"effect": "reject", "input": null, "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "safety_report_id", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -75,7 +75,7 @@
       "payloadPath": "transmissionDate",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "transmission_date", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -121,7 +121,7 @@
       "payloadPath": "reportType",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "report_type", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -160,7 +160,7 @@
       "payloadPath": "dateFirstReceivedFromSource",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "date_first_received_from_source", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -199,7 +199,7 @@
       "payloadPath": "dateOfMostRecentInformation",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "date_of_most_recent_information", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -281,7 +281,7 @@
       "payloadPath": "[].documentDescription",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "documents_held_by_sender", "column": "title", "record": {"source": "projection", "path": "documentsHeldBySender[].id"}}
       }
@@ -296,9 +296,10 @@
           "checks": {
             "allowed_value_constraint": {
               "dictionaryValue": {"kind": "format", "enforcement": "case_validate", "format_name": "base64"},
-              "owner": "validator",
-              "ruleCodes": ["ICH.C.1.6.1.r.2.ALLOWED.VALUE"],
-              "reason": "Attachment encoding validation is delegated to the Case validator; draft document input is not rejected by the scalar input contract."
+              "owner": "input-contracts",
+              "ruleCode": "ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+              "valid": [{"value": "TQ==", "nullFlavor": null}, {"value": "TWE=", "nullFlavor": null}, {"value": "TWFu", "nullFlavor": null}],
+              "invalid": [{"value": "not-base64", "nullFlavor": null}, {"value": "T===", "nullFlavor": null}, {"value": "TR==", "nullFlavor": null}]
             }
           }
         }
@@ -312,13 +313,14 @@
       },
       "roundTripValue": "Q0ktZG9jdW1lbnQ=",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "The document payload is produced by the upload control and has no standalone typed input constraint."
+        "status": "verified",
+        "ruleCode": "ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+        "invalidValue": "***"
       },
       "payloadPath": "[].includedDocument",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "documents_held_by_sender", "column": "document_base64", "record": {"source": "projection", "path": "documentsHeldBySender[].id"}}
       }
@@ -414,7 +416,7 @@
       "payloadPath": "localCriteriaReportType",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "local_criteria_report_type", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -453,7 +455,7 @@
       "nullFlavorPartnerCode": "FDA.C.1.12.local.nullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "combination_product_report_indicator", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -502,7 +504,7 @@
       "payloadPath": "worldwideUniqueId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "worldwide_unique_id", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -548,7 +550,7 @@
       "payloadPath": "firstSenderType",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "first_sender_type", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -642,8 +644,8 @@
       },
       "payloadPath": "[].source",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": ""},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "other_case_identifiers", "column": "source_of_identifier", "record": {"source": "projection", "path": "otherCaseIdentifiers[].id"}}
       }
@@ -692,8 +694,8 @@
       },
       "payloadPath": "[].caseIdentifier",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": ""},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "other_case_identifiers", "column": "case_identifier", "record": {"source": "projection", "path": "otherCaseIdentifiers[].id"}}
       }
@@ -731,8 +733,8 @@
       },
       "payloadPath": "[].linkedReportNumber",
       "persistence": {
-        "clear": {"effect": "store", "input": null, "value": ""},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "linked_report_numbers", "column": "linked_report_number", "record": {"source": "projection", "path": "linkedReports[].id"}}
       }
@@ -778,7 +780,7 @@
       "payloadPath": "nullificationAmendmentCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "nullification_code", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -817,7 +819,7 @@
       "payloadPath": "nullificationReason",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "nullification_reason", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -839,7 +841,7 @@
       "payloadPath": "reportYear",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "cases", "column": "report_year", "record": {"source": "case"}}
       }
@@ -862,7 +864,7 @@
       "payloadPath": "[].sourceDocumentName",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "source_documents", "column": "source_document_name", "record": {"source": "projection", "path": "sourceDocuments[].id"}}
       }
@@ -886,7 +888,7 @@
       "nullFlavorPartnerCode": "C.1.9.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "other_case_identifiers_exist_null_flavor", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -909,7 +911,7 @@
       "domFieldNumber": "FDA_REPORT_TYPE",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "cases", "column": "fda_report_type", "record": {"source": "case"}}
       }
@@ -932,7 +934,7 @@
       "domFieldNumber": "MFDS_REPORT_TYPE",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "cases", "column": "mfds_report_type", "record": {"source": "case"}}
       }
@@ -948,14 +950,15 @@
       },
       "roundTripValue": "NI",
       "constraint": {
-        "status": "blocked",
-        "reason": "The positive API roundtrip persists NI, but out-of-set tokens are rejected by a generic request-parser 400 with no target-specific rule or issue path, so exact negative-field verification is unsupported."
+        "status": "verified",
+        "ruleCode": "ICH.C.1.7.NULLFLAVOR.ALLOWED",
+        "invalidValue": "__INVALID_NULL_FLAVOR__"
       },
       "payloadPath": "fulfilExpeditedCriteriaNullFlavor",
       "nullFlavorPartnerCode": "C.1.7",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "fulfil_expedited_criteria_null_flavor", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -979,7 +982,7 @@
       "nullFlavorPartnerCode": "FDA.C.1.12",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "safety_report_identification", "column": "combination_product_report_indicator_null_flavor", "record": {"source": "projection", "path": "safetyReportIdentification.id"}}
       }
@@ -987,9 +990,9 @@
   ],
   "fieldChecks": [
     {
-      "id": "non_nullable_ci_child_text_distinguishes_null_from_omission",
-      "verifier": "fields::coupled_clear::non_nullable_ci_child_text_distinguishes_null_from_omission",
-      "description": "non nullable ci child text distinguishes null from omission"
+      "id": "ci_child_text_distinguishes_null_from_omission",
+      "verifier": "fields::coupled_clear::ci_child_text_distinguishes_null_from_omission",
+      "description": "CI child text distinguishes explicit NULL from omission"
     },
     {
       "id": "report_year_rejects_non_numeric_input",

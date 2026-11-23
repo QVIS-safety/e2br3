@@ -996,7 +996,7 @@ pub(super) fn cioms_continuation_required(
 	}
 	data.narrative.as_ref().is_some_and(|narrative| {
 		[
-			Some(&narrative.case_narrative),
+			narrative.case_narrative.as_ref(),
 			narrative.reporter_comments.as_ref(),
 			narrative.sender_comments.as_ref(),
 			narrative.additional_information.as_ref(),
@@ -1164,8 +1164,10 @@ pub(super) fn render_cioms_continuation_pages(
 
 	let mut narrative_rows = Vec::new();
 	if let Some(narrative) = data.narrative.as_ref() {
-		let mut fields =
-			vec![("H.1 Case Narrative", narrative.case_narrative.as_str())];
+		let mut fields = Vec::new();
+		if let Some(text) = narrative.case_narrative.as_deref() {
+			fields.push(("H.1 Case Narrative", text));
+		}
 		if options.include_notation {
 			fields.extend(
 				[
@@ -1206,7 +1208,9 @@ pub(super) fn render_cioms_continuation_pages(
 			let value = join_present(
 				&[
 					test.test_date.as_ref().map(|date| format!("Date: {date}")),
-					Some(format!("F.r.2 Test: {}", test.test_name)),
+					test.test_name
+						.as_ref()
+						.map(|name| format!("F.r.2 Test: {name}")),
 					test.test_meddra_code
 						.clone()
 						.map(|code| format!("MedDRA: {code}")),

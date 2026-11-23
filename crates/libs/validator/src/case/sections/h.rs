@@ -23,7 +23,7 @@ const VOCABULARY_MESSAGE: &str = "Dictionary vocabulary constraint.";
 fn h_1(narrative: Option<&NarrativeInformation>, issues: &mut Vec<ValidationIssue>) {
 	const PATH: &str = "narrative.caseNarrative";
 	let present = narrative
-		.is_some_and(|narrative| has_text(Some(narrative.case_narrative.as_str())));
+		.is_some_and(|narrative| has_text(narrative.case_narrative.as_deref()));
 	require(
 		issues,
 		"ICH.H.1.REQUIRED",
@@ -38,7 +38,7 @@ fn h_1(narrative: Option<&NarrativeInformation>, issues: &mut Vec<ValidationIssu
 		PATH,
 		SECTION,
 		MAX_LENGTH_MESSAGE,
-		narrative.map(|narrative| narrative.case_narrative.as_str()),
+		narrative.and_then(|narrative| narrative.case_narrative.as_deref()),
 		100000,
 	);
 }

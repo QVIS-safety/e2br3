@@ -59,6 +59,29 @@ async fn test_test_results_support_50_character_normal_ranges() -> Result<()> {
 	assert_eq!(value["data"]["normal_low_value"], updated_low);
 	assert_eq!(value["data"]["normal_high_value"], updated_high);
 
+	for (patch, expected) in [
+		(json!({"test_name": null}), Value::Null),
+		(json!({}), Value::Null),
+		(json!({"test_name": ""}), json!("")),
+		(json!({"test_name": "  "}), json!("  ")),
+		(json!({}), json!("  ")),
+		(json!({"test_name": "ALT"}), json!("ALT")),
+	] {
+		let (status, body) = put_json_with_audit_reason(
+			&app,
+			&cookie,
+			format!("/api/cases/{case_id}/test-results/{test_result_id}"),
+			json!({"data": patch}),
+			"verify explicit clear versus omission",
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+		let value: Value = serde_json::from_slice(&body)?;
+		assert_eq!(value["data"]["test_name"], expected);
+		assert_eq!(value["data"]["normal_low_value"], updated_low);
+		assert_eq!(value["data"]["normal_high_value"], updated_high);
+	}
+
 	Ok(())
 }
 

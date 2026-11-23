@@ -9,16 +9,11 @@ pub(crate) async fn export_patch(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
-	raw_xml: &[u8],
+	xml: String,
 ) -> Result<String> {
-	let patient = match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
-		Ok(patient) => patient,
-		Err(model::Error::EntityUuidNotFound { .. }) => {
-			return Err(Error::MissingExportField {
-				field: "D Patient Information",
-			});
-		}
-		Err(error) => return Err(Error::from(error)),
+	let Some(patient) = fetch_patient_information(ctx, mm, case_id).await? else {
+		// Fresh exports must preserve an absent patient, not invent one for a draft.
+		return Ok(xml);
 	};
 	let death_info = fetch_death_info(mm, patient.id).await?;
 	let reported_causes =
@@ -26,7 +21,7 @@ pub(crate) async fn export_patch(
 	let autopsy_causes =
 		fetch_autopsy_causes(mm, death_info.as_ref().map(|death| death.id)).await?;
 	export_d_patient_patch(
-		raw_xml,
+		xml.as_bytes(),
 		&patient,
 		death_info.as_ref(),
 		&reported_causes,

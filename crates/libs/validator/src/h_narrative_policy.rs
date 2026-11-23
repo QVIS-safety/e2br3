@@ -3,7 +3,7 @@ use lib_core::model::narrative::NarrativeInformation;
 // Shared Section H policy used by exporter + case validators.
 
 pub fn has_case_narrative(narrative: &NarrativeInformation) -> bool {
-	!narrative.case_narrative.trim().is_empty()
+	super::has_text(narrative.case_narrative.as_deref())
 }
 
 pub fn has_narrative_payload(narrative: &NarrativeInformation) -> bool {

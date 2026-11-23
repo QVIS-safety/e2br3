@@ -1,7 +1,7 @@
 // Section F importer (Tests and Procedures) - FDA mapping.
 
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::import_sections::shared::parse_bool_literal;
 use crate::mapping::fda::f_test_result::FTestResultPaths;
 use crate::Result;
@@ -9,13 +9,11 @@ use lib_core::ctx::Ctx;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::test_result::{TestResultBmc, TestResultForCreate};
 use lib_core::model::ModelManager;
-use libxml::parser::Parser;
 use libxml::tree::Node;
-use libxml::xpath::Context;
 
 #[derive(Debug)]
 pub struct FTestResultImport {
-	pub test_name: String,
+	pub test_name: Option<String>,
 	pub test_date: Option<String>,
 	pub test_date_null_flavor: Option<String>,
 	pub test_meddra_version: Option<String>,
@@ -37,56 +35,53 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes =
-		xpath
-			.findnodes(FTestResultPaths::TEST_NODE, None)
-			.map_err(|_| Error::InvalidXml {
-				message: "Failed to query test results".to_string(),
-				line: None,
-				column: None,
-			})?;
+		let nodes =
+			xpath
+				.findnodes(FTestResultPaths::TEST_NODE, None)
+				.map_err(|_| Error::InvalidXml {
+					message: "Failed to query test results".to_string(),
+					line: None,
+					column: None,
+				})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let (test_date, test_date_null_flavor) = read_f_r_1(&mut xpath, &node)?;
-		let test_name = read_f_r_2_1(&mut xpath, &node)?;
-		let (test_result_value, test_result_qualifier) =
-			read_f_r_3_2(&mut xpath, &node)?;
+		let mut items = Vec::new();
+		for node in nodes {
+			let (test_date, test_date_null_flavor) = read_f_r_1(&mut xpath, &node)?;
+			let test_name = read_f_r_2_1(&mut xpath, &node)?;
+			let (test_result_value, test_result_qualifier) =
+				read_f_r_3_2(&mut xpath, &node)?;
 
-		items.push(FTestResultImport {
-			test_name,
-			test_date,
-			test_date_null_flavor,
-			test_meddra_version: read_f_r_2_2a(&mut xpath, &node)?,
-			test_meddra_code: read_f_r_2_2b(&mut xpath, &node)?,
-			test_result_code: read_f_r_3_1(&mut xpath, &node)?,
-			test_result_value,
-			test_result_qualifier,
-			test_result_unit: read_f_r_3_3(&mut xpath, &node)?,
-			result_unstructured: read_f_r_3_4(&mut xpath, &node)?,
-			normal_low_value: read_f_r_4(&mut xpath, &node)?,
-			normal_high_value: read_f_r_5(&mut xpath, &node)?,
-			comments: read_f_r_6(&mut xpath, &node)?,
-			more_info_available: read_f_r_7(&mut xpath, &node)?,
-		});
-	}
+			items.push(FTestResultImport {
+				test_name,
+				test_date,
+				test_date_null_flavor,
+				test_meddra_version: read_f_r_2_2a(&mut xpath, &node)?,
+				test_meddra_code: read_f_r_2_2b(&mut xpath, &node)?,
+				test_result_code: read_f_r_3_1(&mut xpath, &node)?,
+				test_result_value,
+				test_result_qualifier,
+				test_result_unit: read_f_r_3_3(&mut xpath, &node)?,
+				result_unstructured: read_f_r_3_4(&mut xpath, &node)?,
+				normal_low_value: read_f_r_4(&mut xpath, &node)?,
+				normal_high_value: read_f_r_5(&mut xpath, &node)?,
+				comments: read_f_r_6(&mut xpath, &node)?,
+				more_info_available: read_f_r_7(&mut xpath, &node)?,
+			});
+		}
 
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 pub(crate) async fn import_section_f(
@@ -135,33 +130,46 @@ fn read_f_r_1(
 	let value = first_attr(xpath, node, FTestResultPaths::TEST_DATE);
 	let null_flavor =
 		first_attr(xpath, node, FTestResultPaths::TEST_DATE_NULL_FLAVOR);
-	import_constraint::string(
+	xpath.inputs.string(
 		"testDate",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::f::f_r_1,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"testDateNullFlavor",
 		None,
 		None,
 		input_contracts::generated::f::f_r_1,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
 /// e2b:F.r.2.1
-fn read_f_r_2_1(xpath: &mut Context, node: &Node) -> Result<String> {
-	let value = first_text(xpath, node, FTestResultPaths::TEST_NAME);
-	import_constraint::string(
+fn read_f_r_2_1(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
+	let nodes = xpath
+		.findnodes(FTestResultPaths::TEST_NAME, Some(node))
+		.map_err(|_| Error::InvalidXml {
+			message: "Failed to query F.r.2.1 test name".to_string(),
+			line: None,
+			column: None,
+		})?;
+	let value = match nodes.as_slice() {
+		[] => None,
+		[node] => Some(node.get_content()),
+		_ => {
+			return Err(Error::InvalidImportRequest {
+				message: "F.r.2.1 must contain at most one test name".to_string(),
+			})
+		}
+	};
+	xpath.inputs.string(
 		"testName",
 		value.as_deref(),
 		None,
 		input_contracts::generated::f::f_r_2_1,
-	)?;
-	value.ok_or_else(|| Error::InvalidImportRequest {
-		message: "testName is required".to_string(),
-	})
+	);
+	Ok(value)
 }
 
 /// e2b:F.r.2.2a
@@ -170,6 +178,7 @@ fn read_f_r_2_2a(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, FTestResultPaths::TEST_MEDDRA_VERSION),
 		"testMeddraVersion",
 		input_contracts::generated::f::f_r_2_2a,
+		xpath,
 	)
 }
 
@@ -179,6 +188,7 @@ fn read_f_r_2_2b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, FTestResultPaths::TEST_MEDDRA_CODE),
 		"testMeddraCode",
 		input_contracts::generated::f::f_r_2_2b,
+		xpath,
 	)
 }
 
@@ -188,6 +198,7 @@ fn read_f_r_3_1(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, FTestResultPaths::RESULT_CODE),
 		"testResultCode",
 		input_contracts::generated::f::f_r_3_1,
+		xpath,
 	)
 }
 
@@ -223,12 +234,12 @@ fn read_f_r_3_2(
 	} else {
 		(None, None)
 	};
-	import_constraint::string(
+	xpath.inputs.string(
 		"testResult",
 		value.as_deref(),
 		None,
 		input_contracts::generated::f::f_r_3_2,
-	)?;
+	);
 	Ok((value, qualifier))
 }
 
@@ -250,6 +261,7 @@ fn read_f_r_3_3(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, unit_path),
 		"testUnit",
 		input_contracts::generated::f::f_r_3_3,
+		xpath,
 	)
 }
 
@@ -259,6 +271,7 @@ fn read_f_r_3_4(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_text(xpath, node, FTestResultPaths::RESULT_UNSTRUCTURED),
 		"testResultUnstructured",
 		input_contracts::generated::f::f_r_3_4,
+		xpath,
 	)
 }
 
@@ -268,6 +281,7 @@ fn read_f_r_4(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, FTestResultPaths::NORMAL_LOW),
 		"lowRange",
 		input_contracts::generated::f::f_r_4,
+		xpath,
 	)
 }
 
@@ -277,6 +291,7 @@ fn read_f_r_5(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, FTestResultPaths::NORMAL_HIGH),
 		"highRange",
 		input_contracts::generated::f::f_r_5,
+		xpath,
 	)
 }
 
@@ -286,36 +301,33 @@ fn read_f_r_6(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_text(xpath, node, FTestResultPaths::COMMENTS),
 		"comments",
 		input_contracts::generated::f::f_r_6,
+		xpath,
 	)
 }
 
 /// e2b:F.r.7
 fn read_f_r_7(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
-	let value = parse_bool_literal(
-		first_attr(xpath, node, FTestResultPaths::MORE_INFO).as_deref(),
-	);
-	import_constraint::boolean(
+	let raw = first_attr(xpath, node, FTestResultPaths::MORE_INFO);
+	let value = parse_bool_literal(raw.as_deref());
+	xpath.inputs.boolean(
 		"moreInformationAvailable",
+		raw.as_deref(),
 		value,
 		None,
 		input_contracts::generated::f::f_r_7,
-	)?;
+	);
 	Ok(value)
 }
 
 fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
-	xpath
-		.findvalues(expr, Some(node))
-		.ok()?
-		.into_iter()
-		.find(|v| !v.trim().is_empty())
+	xpath.findvalues(expr, Some(node)).ok()?.into_iter().next()
 }
 
 fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
+		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
 			return Some(content);
 		}
 	}
@@ -325,11 +337,10 @@ fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 fn input_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 
@@ -342,7 +353,7 @@ mod tests {
 		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><organizer><code code="3" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><observation><effectiveTime value="20260810"/></observation></component></organizer></MCCI_IN200100UV01>"#;
 		let results =
 			parse_f_test_results(xml).expect("missing name is not a parse error");
-		assert_eq!(results[0].test_name, "");
+		assert_eq!(results[0].test_name, None);
 	}
 
 	#[test]

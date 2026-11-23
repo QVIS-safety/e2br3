@@ -55,9 +55,6 @@ CREATE TABLE safety_report_identification (
     -- C.1.11.2 - Nullification Reason
     nullification_reason TEXT,
 
-    -- Receiver Organization
-    receiver_organization VARCHAR(200),
-
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -343,62 +340,11 @@ CREATE UNIQUE INDEX idx_primary_sources_active_sequence_unique
     ON primary_sources(case_id, sequence_number)
     WHERE deleted = false;
 
--- ============================================================================
--- SECTION A: Receiver Information
--- A.1.4 through A.1.5.10 - Receiver details for routing to regulatory authorities
--- ============================================================================
-
+-- Historical migrations still alter this table before the storage-removal migration drops it.
 CREATE TABLE receiver_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
-    source_receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE SET NULL,
-
-    -- A.1.4 - Receiver Type
-    receiver_type VARCHAR(1) CHECK (receiver_type IN ('1', '2', '3', '4', '5', '6')),
-    -- 1=Pharmaceutical company, 2=Regulatory authority, 3=Health professional
-    -- 4=Regional pharmacovigilance center, 5=WHO collaborating center, 6=Other
-
-    -- A.1.5.1 - Receiver Organization
-    organization_name VARCHAR(100),
-
-    -- A.1.5.2 - Receiver Department
-    department VARCHAR(60),
-
-    -- A.1.5.3 - Receiver Street Address
-    street_address VARCHAR(100),
-
-    -- A.1.5.4 - Receiver City
-    city VARCHAR(35),
-
-    -- A.1.5.5 - Receiver State/Province
-    state_province VARCHAR(40),
-
-    -- A.1.5.6 - Receiver Postcode
-    postcode VARCHAR(15),
-
-    -- A.1.5.7 - Receiver Country Code
-    country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
-
-    -- A.1.5.8 - Receiver Telephone
-    telephone VARCHAR(33),
-
-    -- A.1.5.9 - Receiver Fax
-    fax VARCHAR(33),
-
-    -- A.1.5.10 - Receiver Email
-    email VARCHAR(100),
-
-    -- Audit fields (standardized UUID-based)
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_receiver_per_case UNIQUE (case_id)
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE
 );
-
-CREATE INDEX idx_receiver_info_case ON receiver_information(case_id);
-CREATE INDEX idx_receiver_info_source_presave ON receiver_information(source_receiver_presave_id);
 
 -- ============================================================================
 -- C.1.9.r: Other Case Identifiers (Repeating)

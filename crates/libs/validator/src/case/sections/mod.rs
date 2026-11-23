@@ -77,6 +77,7 @@ fn retain_case_business_rules(issues: &mut Vec<ValidationIssue>) {
 				| "ICH.F.r.2.2a.ALLOWED.VALUE"
 				| "ICH.G.k.2.5.ALLOWED.VALUE"
 				| "ICH.G.k.7.r.2a.ALLOWED.VALUE"
+				| "ICH.G.k.10.r.ALLOWED.VALUE"
 				| "ICH.H.3.r.1a.ALLOWED.VALUE"
 		) || (!issue.code.ends_with(".LENGTH.MAX")
 			&& !issue.code.ends_with(".ALLOWED.VALUE")

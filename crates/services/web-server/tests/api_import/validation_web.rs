@@ -27,7 +27,7 @@ async fn persisted_counts(
 
 #[serial]
 #[tokio::test]
-async fn xml_validation_reports_valid_malformed_and_xsd_invalid_without_writes(
+async fn xml_validation_reports_valid_malformed_and_unsupported_root_without_writes(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -56,9 +56,13 @@ async fn xml_validation_reports_valid_malformed_and_xsd_invalid_without_writes(
 	);
 
 	let invalid = valid.replace("MCCI_IN200100UV01", "NOT_E2B_R3");
-	let (status, body) =
-		validate_xml_bytes(&app, &cookie, "xsd-invalid.xml", invalid.as_bytes())
-			.await?;
+	let (status, body) = validate_xml_bytes(
+		&app,
+		&cookie,
+		"unsupported-root.xml",
+		invalid.as_bytes(),
+	)
+	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["ok"], false, "{body:?}");
 	assert!(

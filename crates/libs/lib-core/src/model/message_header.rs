@@ -28,6 +28,7 @@ pub struct MessageHeader {
 
 	// N.1.5 - Date of Batch Transmission (Phase 1 addition)
 	pub batch_transmission_date: Option<OffsetDateTime>,
+	pub batch_transmission_date_raw: Option<String>,
 
 	// Message identification
 	pub message_type: String,           // ichicsr
@@ -59,11 +60,15 @@ pub struct MessageHeaderForCreate {
 }
 
 #[derive(Fields, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MessageHeaderForUpdate {
 	pub batch_number: Option<String>,
 	pub batch_sender_identifier: Option<String>,
 	pub batch_receiver_identifier: Option<String>,
 	pub batch_transmission_date: Option<OffsetDateTime>,
+	// Only the XML importer can provide the original timestamp lexeme.
+	#[serde(skip_deserializing)]
+	pub batch_transmission_date_raw: Option<String>,
 	pub message_number: Option<String>,
 	pub message_sender_identifier: Option<String>,
 	pub message_receiver_identifier: Option<String>,
@@ -106,6 +111,7 @@ impl MessageHeaderBmc {
 				batch_sender_identifier = EXCLUDED.batch_sender_identifier,
 				batch_receiver_identifier = EXCLUDED.batch_receiver_identifier,
 				batch_transmission_date = EXCLUDED.batch_transmission_date,
+				batch_transmission_date_raw = NULL,
 				message_number = EXCLUDED.message_number,
 				message_sender_identifier = EXCLUDED.message_sender_identifier,
 				message_receiver_identifier = EXCLUDED.message_receiver_identifier,
@@ -227,6 +233,14 @@ impl MessageHeaderBmc {
 		case_id: Uuid,
 		data: MessageHeaderForUpdate,
 	) -> Result<()> {
+		if data.batch_transmission_date.is_some()
+			&& data.batch_transmission_date_raw.is_some()
+		{
+			return Err(crate::model::Error::Validation {
+				message: "N.1.5 cannot have both timestamp and XML representations"
+					.to_string(),
+			});
+		}
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -241,7 +255,8 @@ impl MessageHeaderBmc {
 			 SET batch_number = COALESCE($2, batch_number),
 			     batch_sender_identifier = COALESCE($3, batch_sender_identifier),
 			     batch_receiver_identifier = COALESCE($4, batch_receiver_identifier),
-			     batch_transmission_date = COALESCE($5, batch_transmission_date),
+			     batch_transmission_date = CASE WHEN $11::text IS NOT NULL THEN NULL ELSE COALESCE($5, batch_transmission_date) END,
+			     batch_transmission_date_raw = CASE WHEN $5::timestamptz IS NOT NULL THEN NULL ELSE COALESCE($11, batch_transmission_date_raw) END,
 			     message_number = COALESCE($6, message_number),
 			     message_sender_identifier = COALESCE($7, message_sender_identifier),
 			     message_receiver_identifier = COALESCE($8, message_receiver_identifier),
@@ -264,7 +279,8 @@ impl MessageHeaderBmc {
 					.bind(data.message_sender_identifier)
 					.bind(data.message_receiver_identifier)
 					.bind(data.message_date)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(data.batch_transmission_date_raw),
 			)
 			.await
 		{

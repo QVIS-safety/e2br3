@@ -38,7 +38,6 @@ impl E2bFieldNotationBmc {
 						 UNION ALL SELECT case_id FROM linked_report_numbers WHERE id = $2
 						 UNION ALL SELECT case_id FROM primary_sources WHERE id = $2
 						 UNION ALL SELECT case_id FROM sender_information WHERE id = $2
-						 UNION ALL SELECT case_id FROM receiver_information WHERE id = $2
 						 UNION ALL SELECT case_id FROM literature_references WHERE id = $2
 						 UNION ALL SELECT case_id FROM study_information WHERE id = $2
 						 UNION ALL

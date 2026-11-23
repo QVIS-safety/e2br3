@@ -32,8 +32,8 @@ mod fields {
     field_contract_test!(fda_c_1_local_fdareporttype, "FDA.C.1.local.fdaReportType");
     #[serial_test::serial]
     #[tokio::test]
-    async fn non_nullable_ci_child_text_distinguishes_null_from_omission() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::fields::coupled_clear::non_nullable_ci_child_text_distinguishes_null_from_omission("CI", "non_nullable_ci_child_text_distinguishes_null_from_omission").await
+    async fn ci_child_text_distinguishes_null_from_omission() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::coupled_clear::ci_child_text_distinguishes_null_from_omission("CI", "ci_child_text_distinguishes_null_from_omission").await
     }
     #[serial_test::serial]
     #[tokio::test]

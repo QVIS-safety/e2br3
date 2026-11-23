@@ -300,7 +300,9 @@ pub fn parse_whodrug_sun(bytes: &[u8]) -> Result<Vec<String>> {
 		}
 		let cas = rec
 			.get(1)
-			.ok_or_else(|| bad_input("WHODrug C3 SUN.csv row is missing CAS number"))?
+			.ok_or_else(|| {
+				bad_input("WHODrug C3 SUN.csv row is missing CAS number")
+			})?
 			.trim();
 		if cas.len() != 10 || !cas.bytes().all(|value| value.is_ascii_digit()) {
 			return Err(bad_input(format!(
@@ -350,13 +352,11 @@ fn parse_whodrug_b3_zip_entries(
 ) -> Result<Vec<WhodrugRow>> {
 	let dd = official_zip_entry_by_basename(entries, WHODRUG_B3_DD.basename)
 		.ok_or_else(|| bad_input("Missing official WHODrug B3 DD.csv"))?;
-	let atc_by_code = match official_zip_entry_by_basename(
-		entries,
-		WHODRUG_B3_DDA.basename,
-	) {
-		Some(bytes) => parse_whodrug_positional_atc(bytes, WHODRUG_B3_DDA)?,
-		None => BTreeMap::new(),
-	};
+	let atc_by_code =
+		match official_zip_entry_by_basename(entries, WHODRUG_B3_DDA.basename) {
+			Some(bytes) => parse_whodrug_positional_atc(bytes, WHODRUG_B3_DDA)?,
+			None => BTreeMap::new(),
+		};
 
 	parse_whodrug_positional_products(dd, WHODRUG_B3_DD, &atc_by_code)
 }
@@ -1705,15 +1705,30 @@ fn looks_like_positional_whodrug_row(
 ) -> Result<()> {
 	let code_1 = rec
 		.get(format.code_1_idx)
-		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 1", format.source_name)))?
+		.ok_or_else(|| {
+			bad_input(format!(
+				"{} row {row_number} is missing code segment 1",
+				format.source_name
+			))
+		})?
 		.trim();
 	let code_2 = rec
 		.get(format.code_2_idx)
-		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 2", format.source_name)))?
+		.ok_or_else(|| {
+			bad_input(format!(
+				"{} row {row_number} is missing code segment 2",
+				format.source_name
+			))
+		})?
 		.trim();
 	let code_3 = rec
 		.get(format.code_3_idx)
-		.ok_or_else(|| bad_input(format!("{} row {row_number} is missing code segment 3", format.source_name)))?
+		.ok_or_else(|| {
+			bad_input(format!(
+				"{} row {row_number} is missing code segment 3",
+				format.source_name
+			))
+		})?
 		.trim();
 	if !is_digits(code_1) || !is_code_segment(code_2) || !is_code_segment(code_3) {
 		return Err(bad_input(format!(

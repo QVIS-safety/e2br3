@@ -1,7 +1,7 @@
 // Section H importer (Narrative) - FDA mapping.
 
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::mapping::fda::h_narrative::HNarrativePaths;
 use crate::Result;
 use lib_core::ctx::Ctx;
@@ -12,12 +12,10 @@ use lib_core::model::narrative::{
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
-use libxml::parser::Parser;
-use libxml::xpath::Context;
 
 #[derive(Debug)]
 pub struct HNarrativeImport {
-	pub case_narrative: String,
+	pub case_narrative: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
 }
@@ -42,30 +40,35 @@ pub fn parse_h_narrative(xml: &[u8]) -> Result<Option<HNarrativeImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let case_narrative = read_h_1(&mut xpath)?;
-	let reporter_comments = read_h_2(&mut xpath)?;
-	let sender_comments = read_h_4(&mut xpath)?;
+		let case_narrative = read_h_1(&mut xpath)?;
+		let reporter_comments = read_h_2(&mut xpath)?;
+		let sender_comments = read_h_4(&mut xpath)?;
+		if case_narrative.is_none()
+			&& reporter_comments.is_none()
+			&& sender_comments.is_none()
+			&& parse_h_sender_diagnoses(xml)?.is_empty()
+			&& parse_h_case_summaries(xml)?.is_empty()
+		{
+			return Ok(None);
+		}
 
-	Ok(Some(HNarrativeImport {
-		case_narrative,
-		reporter_comments,
-		sender_comments,
-	}))
+		Ok(Some(HNarrativeImport {
+			case_narrative,
+			reporter_comments,
+			sender_comments,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 pub fn parse_h_sender_diagnoses(xml: &[u8]) -> Result<Vec<HSenderDiagnosisImport>> {
@@ -74,22 +77,16 @@ pub fn parse_h_sender_diagnoses(xml: &[u8]) -> Result<Vec<HSenderDiagnosisImport
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:component1//hl7:observationEvent[hl7:code[@code='15'] and hl7:author/hl7:assignedEntity/hl7:code[@code='1']]",
 			None,
@@ -100,18 +97,21 @@ pub fn parse_h_sender_diagnoses(xml: &[u8]) -> Result<Vec<HSenderDiagnosisImport
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for (idx, node) in nodes.into_iter().enumerate() {
-		let (diagnosis_meddra_version, diagnosis_meddra_code) =
-			read_h_3_r_1(&mut xpath, &node)?;
-		items.push(HSenderDiagnosisImport {
-			sequence_number: (idx + 1) as i32,
-			diagnosis_meddra_version,
-			diagnosis_meddra_code,
-		});
-	}
+		let mut items = Vec::new();
+		for (idx, node) in nodes.into_iter().enumerate() {
+			let (diagnosis_meddra_version, diagnosis_meddra_code) =
+				read_h_3_r_1(&mut xpath, &node)?;
+			items.push(HSenderDiagnosisImport {
+				sequence_number: (idx + 1) as i32,
+				diagnosis_meddra_version,
+				diagnosis_meddra_code,
+			});
+		}
 
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 pub fn parse_h_case_summaries(xml: &[u8]) -> Result<Vec<HCaseSummaryImport>> {
@@ -120,22 +120,16 @@ pub fn parse_h_case_summaries(xml: &[u8]) -> Result<Vec<HCaseSummaryImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]",
 			None,
@@ -146,17 +140,20 @@ pub fn parse_h_case_summaries(xml: &[u8]) -> Result<Vec<HCaseSummaryImport>> {
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for (idx, node) in nodes.into_iter().enumerate() {
-		let (language_code, summary_text) = read_h_5_r_1(&mut xpath, &node)?;
-		items.push(HCaseSummaryImport {
-			sequence_number: (idx + 1) as i32,
-			language_code,
-			summary_text,
-		});
-	}
+		let mut items = Vec::new();
+		for (idx, node) in nodes.into_iter().enumerate() {
+			let (language_code, summary_text) = read_h_5_r_1(&mut xpath, &node)?;
+			items.push(HCaseSummaryImport {
+				sequence_number: (idx + 1) as i32,
+				language_code,
+				summary_text,
+			});
+		}
 
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 pub(crate) async fn import_section_h(
@@ -216,25 +213,22 @@ pub(crate) async fn import_section_h(
 }
 
 /// e2b:H.1
-fn read_h_1(xpath: &mut Context) -> Result<String> {
-	let value = first_text_root(xpath, HNarrativePaths::CASE_NARRATIVE);
-	import_constraint::string(
+fn read_h_1(xpath: &mut Context) -> Result<Option<String>> {
+	input_string(
+		first_text_root(xpath, HNarrativePaths::CASE_NARRATIVE)?,
 		"caseNarrative",
-		value.as_deref(),
-		None,
 		input_contracts::generated::h::h_1,
-	)?;
-	value.ok_or_else(|| Error::InvalidImportRequest {
-		message: "case narrative is required".to_string(),
-	})
+		xpath,
+	)
 }
 
 /// e2b:H.2
 fn read_h_2(xpath: &mut Context) -> Result<Option<String>> {
 	input_string(
-		first_text_root(xpath, HNarrativePaths::REPORTER_COMMENTS),
+		first_text_root(xpath, HNarrativePaths::REPORTER_COMMENTS)?,
 		"reporterComments",
 		input_contracts::generated::h::h_2,
+		xpath,
 	)
 }
 
@@ -246,14 +240,16 @@ fn read_h_3_r_1(
 ) -> Result<(Option<String>, Option<String>)> {
 	Ok((
 		input_string(
-			first_attr(xpath, node, "hl7:value", "codeSystemVersion"),
+			first_attr(xpath, node, "hl7:value", "codeSystemVersion")?,
 			"senderDiagnoses[].diagnosisMeddraVersion",
 			input_contracts::generated::h::h_3_r_1a,
+			xpath,
 		)?,
 		input_string(
-			first_attr(xpath, node, "hl7:value", "code"),
+			first_attr(xpath, node, "hl7:value", "code")?,
 			"senderDiagnoses[].diagnosisMeddraCode",
 			input_contracts::generated::h::h_3_r_1b,
+			xpath,
 		)?,
 	))
 }
@@ -261,9 +257,10 @@ fn read_h_3_r_1(
 /// e2b:H.4
 fn read_h_4(xpath: &mut Context) -> Result<Option<String>> {
 	input_string(
-		first_text_root(xpath, HNarrativePaths::SENDER_COMMENTS),
+		first_text_root(xpath, HNarrativePaths::SENDER_COMMENTS)?,
 		"senderComments",
 		input_contracts::generated::h::h_4,
+		xpath,
 	)
 }
 
@@ -273,19 +270,20 @@ fn read_h_5_r_1(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 ) -> Result<(Option<String>, Option<String>)> {
-	let language = normalize_lang3(first_attr(xpath, node, "hl7:value", "language"));
-	import_constraint::string(
+	let language = first_attr(xpath, node, "hl7:value", "language")?;
+	xpath.inputs.string(
 		"caseSummaryInformation[].languageCode",
 		language.as_deref(),
 		None,
 		input_contracts::generated::h::h_5_r_1b,
-	)?;
+	);
 	Ok((
 		language,
 		input_string(
-			first_text(xpath, node, "hl7:value"),
+			first_text(xpath, node, "hl7:value")?,
 			"caseSummaryInformation[].summaryText",
 			input_contracts::generated::h::h_5_r_1a,
+			xpath,
 		)?,
 	))
 }
@@ -293,44 +291,64 @@ fn read_h_5_r_1(
 fn input_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 
-fn first_text_root(xpath: &mut Context, expr: &str) -> Option<String> {
-	let nodes = xpath.findnodes(expr, None).ok()?;
+fn first_text_root(xpath: &mut Context, expr: &str) -> Result<Option<String>> {
+	let nodes = xpath.findnodes(expr, None).map_err(|_| Error::InvalidXml {
+		message: "Failed to query narrative text".into(),
+		line: None,
+		column: None,
+	})?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
-			return Some(content);
+		if !content.is_empty() {
+			return Ok(Some(content));
 		}
 	}
-	None
-}
-
-fn normalize_lang3(value: Option<String>) -> Option<String> {
-	let v = value?.trim().to_ascii_lowercase();
-	if v.len() == 3 && v.chars().all(|c| c.is_ascii_lowercase()) {
-		return Some(v);
-	}
-	None
+	Ok(None)
 }
 
 #[cfg(test)]
 mod tests {
-	use super::normalize_lang3;
+	use super::*;
 
 	#[test]
-	fn keeps_only_iso_639_2_language_codes() {
-		assert_eq!(
-			normalize_lang3(Some(" ENG ".into())).as_deref(),
-			Some("eng")
-		);
-		assert_eq!(normalize_lang3(Some("en".into())), None);
+	fn absent_h_is_not_invented_but_nested_only_h_is_retained() {
+		let empty = crate::export::base_export_skeleton();
+		assert!(parse_h_narrative(empty.as_bytes())
+			.expect("empty H")
+			.is_none());
+		for child in [
+			"<component1><observationEvent><code code='15'/><value code='10000001' codeSystemVersion='26.1'/><author><assignedEntity><code code='1'/></assignedEntity></author></observationEvent></component1>",
+			"<component><observationEvent><code code='36'/><value language='eng'>Summary only</value><author><assignedEntity><code code='2'/></assignedEntity></author></observationEvent></component>",
+		] {
+			let xml = empty.replace("</investigationEvent>", &format!("{child}</investigationEvent>"));
+			let imported = parse_h_narrative(xml.as_bytes()).expect("partial H").expect("retain nested H");
+			assert_eq!(imported.case_narrative, None);
+			assert_eq!(parse_h_sender_diagnoses(xml.as_bytes()).expect("diagnoses").len() + parse_h_case_summaries(xml.as_bytes()).expect("summaries").len(), 1);
+		}
+	}
+
+	#[test]
+	fn optional_h_1_still_checks_input_length() {
+		let xml = crate::export::base_export_skeleton()
+			.replace("<text/>", &format!("<text>{}</text>", "x".repeat(100001)));
+		assert!(parse_h_narrative(xml.as_bytes()).is_err());
+	}
+
+	#[test]
+	fn preserves_language_values_for_submission_validation() {
+		for value in ["en", "ENG", "eng"] {
+			let xml = format!("<investigationEvent xmlns='urn:hl7-org:v3'><component><observationEvent><code code='36'/><value language='{value}'/><author><assignedEntity><code code='2'/></assignedEntity></author></observationEvent></component></investigationEvent>");
+			let summaries =
+				parse_h_case_summaries(xml.as_bytes()).expect("draft summary");
+			assert_eq!(summaries[0].language_code.as_deref(), Some(value));
+		}
 	}
 }
 
@@ -338,15 +356,22 @@ fn first_text(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 	expr: &str,
-) -> Option<String> {
-	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
+) -> Result<Option<String>> {
+	let nodes =
+		xpath
+			.findnodes(expr, Some(node))
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query narrative child text".into(),
+				line: None,
+				column: None,
+			})?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
-			return Some(content);
+		if !content.is_empty() {
+			return Ok(Some(content));
 		}
 	}
-	None
+	Ok(None)
 }
 
 fn first_attr(
@@ -354,14 +379,21 @@ fn first_attr(
 	node: &libxml::tree::Node,
 	expr: &str,
 	attr: &str,
-) -> Option<String> {
-	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
+) -> Result<Option<String>> {
+	let nodes =
+		xpath
+			.findnodes(expr, Some(node))
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query narrative attribute".into(),
+				line: None,
+				column: None,
+			})?;
 	for n in nodes {
 		if let Some(value) = n.get_attribute(attr) {
 			if !value.trim().is_empty() {
-				return Some(value);
+				return Ok(Some(value));
 			}
 		}
 	}
-	None
+	Ok(None)
 }

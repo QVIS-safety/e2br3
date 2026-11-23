@@ -25,8 +25,8 @@ mod fields {
     }
     #[serial_test::serial]
     #[tokio::test]
-    async fn blank_test_name_keeps_meddra_selection() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::fields::coupled_clear::blank_test_name_keeps_meddra_selection("LB", "blank_test_name_keeps_meddra_selection").await
+    async fn blank_test_name_is_rejected_and_null_preserves_meddra() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::coupled_clear::blank_test_name_is_rejected_and_null_preserves_meddra("LB", "blank_test_name_is_rejected_and_null_preserves_meddra").await
     }
 }
 mod rows {
@@ -37,8 +37,8 @@ mod rows {
     }
     #[serial_test::serial]
     #[tokio::test]
-    async fn incomplete_test_result_creates_empty_name() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::rows::creation::incomplete_test_result_creates_empty_name("LB", "incomplete_test_result_creates_empty_name").await
+    async fn incomplete_test_result_preserves_absent_name() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::rows::creation::incomplete_test_result_preserves_absent_name("LB", "incomplete_test_result_preserves_absent_name").await
     }
     #[serial_test::serial]
     #[tokio::test]

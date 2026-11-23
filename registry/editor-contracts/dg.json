@@ -64,7 +64,7 @@
       "payloadPath": "drugCharacterization",
       "persistence": {
         "clear": {"effect": "reject", "input": null, "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "drug_characterization", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -103,7 +103,7 @@
       "payloadPath": "medicinalProduct",
       "persistence": {
         "clear": {"effect": "reject", "input": null, "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "medicinal_product", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -125,7 +125,7 @@
       "payloadPath": "drugBatchNumber",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "batch_lot_number", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -171,7 +171,7 @@
       "payloadPath": "drugActionTaken",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "action_taken", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -210,7 +210,7 @@
       "payloadPath": "mfdsMpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "mfds_mpid_version", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -276,7 +276,7 @@
       "payloadPath": "mfdsMpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "mfds_mpid", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -315,7 +315,7 @@
       "payloadPath": "mpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "mpid_version", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -364,7 +364,7 @@
       "payloadPath": "mpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "mpid", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -403,7 +403,7 @@
       "payloadPath": "phpidVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "phpid_version", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -452,7 +452,7 @@
       "payloadPath": "phpid",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "phpid", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -505,7 +505,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "obtain_drug_country", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -583,7 +583,7 @@
       "payloadPath": "drugAuthorizationNumber",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "drug_authorization_number", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -636,7 +636,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "manufacturer_country", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -675,7 +675,7 @@
       "payloadPath": "drugAuthorizationHolder",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "manufacturer_name", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -781,7 +781,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "cumulative_dose_first_reaction_unit", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -893,7 +893,7 @@
       "payloadPath": "gestationPeriodExposureUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "gestation_period_exposure_unit", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -932,7 +932,7 @@
       "payloadPath": "drugAdditionalInformation",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "drug_additional_information", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -1011,7 +1011,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.10a.local.fdaAdditionalInfoCodedNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "fda_additional_info_coded", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -1091,7 +1091,7 @@
       "payloadPath": "fdaSpecializedProductCategory",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "fda_specialized_product_category", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -1137,7 +1137,7 @@
       "payloadPath": "fdaOtherCharacterization",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "fda_other_characterization", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -1176,7 +1176,7 @@
       "payloadPath": "activeSubstances[].substanceName",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "substance_name", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1215,7 +1215,7 @@
       "payloadPath": "activeSubstances[].substanceTermIdVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "substance_termid_version", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1264,7 +1264,7 @@
       "payloadPath": "activeSubstances[].substanceTermId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "substance_termid", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1303,7 +1303,7 @@
       "payloadPath": "activeSubstances[].mfdsVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "mfds_version", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1376,7 +1376,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "mfds_id", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1478,7 +1478,7 @@
       "payloadPath": "activeSubstances[].substanceStrengthUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_active_substances", "column": "strength_unit", "record": {"source": "projection", "path": "drug.activeSubstances[].id"}}
       }
@@ -1605,7 +1605,7 @@
       "payloadPath": "dosageInformation[].doseUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dose_unit", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -1739,7 +1739,7 @@
       "payloadPath": "dosageInformation[].frequencyUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "frequency_unit", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -1779,7 +1779,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.4.local.firstAdministrationDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "first_administration_date", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -1819,7 +1819,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.5.local.lastAdministrationDateNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "last_administration_date", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -1950,7 +1950,7 @@
       "payloadPath": "dosageInformation[].durationUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "duration_unit", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2013,7 +2013,7 @@
       "payloadPath": "dosageInformation[].batchNumber",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "batch_lot_number", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2052,7 +2052,7 @@
       "payloadPath": "dosageInformation[].dosageText",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dosage_text", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2099,7 +2099,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.9.1.local.doseFormNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dose_form", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2148,7 +2148,7 @@
       "payloadPath": "dosageInformation[].doseFormTermIdVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dose_form_termid_version", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2197,7 +2197,7 @@
       "payloadPath": "dosageInformation[].doseFormTermId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dose_form_termid", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2259,7 +2259,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.10.1.local.routeOfAdministrationNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "route_of_administration", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2298,7 +2298,7 @@
       "payloadPath": "dosageInformation[].routeTermIdVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "route_termid_version", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2347,7 +2347,7 @@
       "payloadPath": "dosageInformation[].routeTermId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "route_termid", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2394,7 +2394,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.11.1.local.parentRouteOfAdministrationNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "parent_route", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2433,7 +2433,7 @@
       "payloadPath": "dosageInformation[].parentRouteTermIdVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "parent_route_termid_version", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2482,7 +2482,7 @@
       "payloadPath": "dosageInformation[].parentRouteTermId",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "parent_route_termid", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -2529,7 +2529,7 @@
       "nullFlavorPartnerCode": "G.k.7.r.1.local.indicationTextNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_indications", "column": "indication_text", "record": {"source": "projection", "path": "drug.indications[].id"}}
       }
@@ -2583,7 +2583,7 @@
       "payloadPath": "indications[].indicationMeddraVersion",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_indications", "column": "indication_meddra_version", "record": {"source": "projection", "path": "drug.indications[].id"}}
       }
@@ -2646,7 +2646,7 @@
       "payloadPath": "indications[].indicationMeddraCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_indications", "column": "indication_meddra_code", "record": {"source": "projection", "path": "drug.indications[].id"}}
       }
@@ -2744,7 +2744,7 @@
       "payloadPath": "drugReactionAssessments[].administrationStartIntervalUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_reaction_assessments", "column": "administration_start_interval_unit", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
       }
@@ -2842,7 +2842,7 @@
       "payloadPath": "drugReactionAssessments[].lastDoseIntervalUnit",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_reaction_assessments", "column": "last_dose_interval_unit", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
       }
@@ -2889,7 +2889,7 @@
       "payloadPath": "drugReactionAssessments[].recurrenceAction",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_reaction_assessments", "column": "recurrence_action", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
       }
@@ -2928,7 +2928,7 @@
       "payloadPath": "drugReactionAssessments[].sourceOfAssessment",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "source_of_assessment", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -2967,7 +2967,7 @@
       "payloadPath": "drugReactionAssessments[].methodOfAssessment",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "method_of_assessment", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -3006,7 +3006,7 @@
       "payloadPath": "drugReactionAssessments[].resultOfAssessment",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "result_of_assessment", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -3065,7 +3065,7 @@
       "payloadPath": "drugReactionAssessments[].resultOfAssessmentKr2",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "result_of_assessment_kr2", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -3089,7 +3089,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.10a",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_information", "column": "fda_additional_info_coded_null_flavor", "record": {"source": "projection", "path": "drug.id"}}
       }
@@ -3165,7 +3165,7 @@
       "payloadPath": "fdaDevices[].operatorOfDevice",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "operator_of_device", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3402,7 +3402,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.12.r.4.local.deviceBrandNameNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_brand_name", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3426,7 +3426,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.12.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_brand_name_null_flavor", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3473,7 +3473,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.12.r.5.local.commonDeviceNameNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "common_device_name", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3497,7 +3497,7 @@
       "nullFlavorPartnerCode": "FDA.G.k.12.r.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "common_device_name_null_flavor", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3536,7 +3536,7 @@
       "payloadPath": "fdaDevices[].deviceProductCode",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_product_code", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3575,7 +3575,7 @@
       "payloadPath": "fdaDevices[].manufacturerName",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "manufacturer_name", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3614,7 +3614,7 @@
       "payloadPath": "fdaDevices[].manufacturerAddress",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "manufacturer_address", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3653,7 +3653,7 @@
       "payloadPath": "fdaDevices[].manufacturerCity",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "manufacturer_city", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3692,7 +3692,7 @@
       "payloadPath": "fdaDevices[].manufacturerState",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "manufacturer_state", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3750,7 +3750,7 @@
       "payloadPath": "fdaDevices[].manufacturerCountry",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "manufacturer_country", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3796,7 +3796,7 @@
       "payloadPath": "fdaDevices[].deviceUsage",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_usage", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3835,7 +3835,7 @@
       "payloadPath": "fdaDevices[].deviceLotNumber",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": ""},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": {"effect": "store", "value": null},
         "audit": {"table": "fda_device_information", "column": "device_lot_number", "record": {"source": "projection", "path": "drug.fdaDevices[].id"}}
       }
@@ -3910,7 +3910,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.10.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "route_of_administration_null_flavor", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -3934,7 +3934,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.11.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "parent_route_null_flavor", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -3958,7 +3958,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.4",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "first_administration_date_raw", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -3982,7 +3982,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.5",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "last_administration_date_raw", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -4006,7 +4006,7 @@
       "nullFlavorPartnerCode": "G.k.4.r.9.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "dosage_information", "column": "dose_form_null_flavor", "record": {"source": "projection", "path": "drug.dosageInformation[].id"}}
       }
@@ -4030,7 +4030,7 @@
       "nullFlavorPartnerCode": "G.k.7.r.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_indications", "column": "indication_text_null_flavor", "record": {"source": "projection", "path": "drug.indications[].id"}}
       }
@@ -4053,10 +4053,7 @@
         "owner": "drug"
       },
       "roundTripValue": null,
-      "execution": {
-        "status": "blocked",
-        "reason": "The value must be the UUID of a saved AE Reaction; the generated harness creates that UUID at runtime and cannot use a static roundTripValue."
-      },
+      "roundTripReference": "case-reaction",
       "control": {
         "kind": "radix_select",
         "dynamicOptions": {
@@ -4070,7 +4067,13 @@
         "reason": "The value is a saved Reaction UUID selected from AE; execution requires rowPrerequisites.drugReactionAssessments."
       },
       "auditItem": "Record metadata: Reaction ID",
-      "payloadPath": "drugReactionAssessments[].reactionId"
+      "payloadPath": "drugReactionAssessments[].reactionId",
+      "persistence": {
+        "clear": {"effect": "reject", "input": null, "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
+        "omission": "preserve",
+        "audit": {"table": "drug_reaction_assessments", "column": "reaction_id", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
+      }
     },
     {
       "code": "G.k.9.i.2.r.2.KR.1",
@@ -4126,7 +4129,7 @@
       "payloadPath": "drugReactionAssessments[].methodOfAssessmentKr1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "method_of_assessment_kr1", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -4209,7 +4212,7 @@
       "nullFlavorPartnerCode": "G.k.9.i.2.r.3.KR.1.local.resultOfAssessmentKr1NullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "result_of_assessment_kr1", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -4233,7 +4236,7 @@
       "nullFlavorPartnerCode": "G.k.9.i.2.r.3.KR.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "relatedness_assessments", "column": "result_of_assessment_kr1_null_flavor", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].id"}}
       }
@@ -4258,7 +4261,7 @@
       "auditItem": "Reaction Abated After Stopping Drug (CIOMS Item 20)",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_reaction_assessments", "column": "dechallenge_result", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
       }
@@ -4283,7 +4286,7 @@
       "auditItem": "Local Assessment Expectedness",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "drug_reaction_assessments", "column": "expectedness", "record": {"source": "projection", "path": "drug.drugReactionAssessments[].drugReactionAssessmentId"}}
       }
@@ -4306,22 +4309,26 @@
           "InfoRead"
         ]
       },
-      "execution": {
-        "status": "blocked",
-        "reason": "A valid value must be the UUID returned by a real readable INFO ProductPresave; no static UUID can be a truthful portable roundtrip vector.",
-        "prerequisites": [
-          "Authenticated user has INFO list and read permissions.",
-          "Create or select a real INFO ProductPresave and use its returned UUID."
-        ]
-      },
+      "roundTripReference": "product-presave",
       "constraint": {
         "status": "not_applicable",
         "reason": "The picker only permits organization-visible production ProductPresaves returned by INFO and exposes no independent invalid-value input surface."
       },
-      "payloadPath": "sourceProductPresaveId"
+      "payloadPath": "sourceProductPresaveId",
+      "persistence": {
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
+        "omission": "preserve",
+        "audit": {"table": "drug_information", "column": "source_product_presave_id", "record": {"source": "projection", "path": "drug.id"}}
+      }
     }
   ],
   "fieldChecks": [
+    {
+      "id": "dosage_date_precision_transitions_preserve_values",
+      "verifier": "fields::coupled_clear::dosage_date_precision_transitions_preserve_values",
+      "description": "Full and partial dosage dates replace each other without empty-string sentinels; explicit NULL clears both representations."
+    },
     {
       "id": "dosage_value_null_flavor_pairs_reject_simultaneous_values",
       "verifier": "fields::null_flavor::dosage_value_null_flavor_pairs_reject_simultaneous_values",
@@ -4333,9 +4340,9 @@
       "description": "clearing phpid survives dg row reload"
     },
     {
-      "id": "blank_optional_text_clears_without_changing_omitted_sibling",
-      "verifier": "fields::coupled_clear::blank_optional_text_clears_without_changing_omitted_sibling",
-      "description": "blank optional text clears without changing omitted sibling"
+      "id": "blank_optional_text_is_rejected_without_changing_siblings",
+      "verifier": "fields::coupled_clear::blank_optional_text_is_rejected_without_changing_siblings",
+      "description": "Blank optional text is rejected without changing stored fields"
     },
     {
       "id": "blank_required_drug_values_preserve_children",

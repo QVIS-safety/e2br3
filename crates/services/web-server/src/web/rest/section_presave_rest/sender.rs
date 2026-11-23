@@ -1,6 +1,130 @@
 use super::rows::camelize_value;
+
+#[cfg(test)]
+mod child_text_null_tests {
+	use super::*;
+
+	#[test]
+	fn presave_child_text_null_sendergatewaydetailsforupdate(
+	) -> std::result::Result<(), serde_json::Error> {
+		for (input, expected) in [
+			(None, None),
+			(Some(serde_json::Value::Null), Some(String::new())),
+			(Some(serde_json::json!("")), Some(String::new())),
+			(
+				Some(serde_json::json!("Recorded")),
+				Some("Recorded".to_owned()),
+			),
+		] {
+			let mut object = serde_json::Map::new();
+			if let Some(value) = input {
+				for key in [
+					"senderIdentifier",
+					"routingIdentifier",
+					"cdeSenderIdentifier",
+					"cdrSenderIdentifier",
+				] {
+					object.insert(key.to_owned(), value.clone());
+				}
+			}
+			let patch: SenderGatewayDetailsForUpdate =
+				serde_json::from_value(serde_json::Value::Object(object))?;
+			let update = patch.into_update();
+			assert_eq!(
+				[
+					update.sender_identifier,
+					update.routing_identifier,
+					update.cde_sender_identifier,
+					update.cdr_sender_identifier
+				],
+				[
+					expected.clone(),
+					expected.clone(),
+					expected.clone(),
+					expected.clone()
+				]
+			);
+		}
+		for key in [
+			"senderIdentifier",
+			"routingIdentifier",
+			"cdeSenderIdentifier",
+			"cdrSenderIdentifier",
+		] {
+			let mut object = serde_json::Map::new();
+			object.insert(key.to_owned(), serde_json::json!(123));
+			assert!(serde_json::from_value::<SenderGatewayDetailsForUpdate>(
+				serde_json::Value::Object(object)
+			)
+			.is_err());
+		}
+		Ok(())
+	}
+}
 use super::shared::*;
+use lib_core::model::presave::deserialize_clearable_text;
 use serde_json::Value;
+
+#[cfg(test)]
+mod contact_patch_tests {
+	use super::*;
+
+	#[test]
+	fn sender_contact_patch_preserves_explicit_null(
+	) -> std::result::Result<(), serde_json::Error> {
+		let omitted: SenderResponsiblePersonDetailsForUpdate =
+			serde_json::from_value(serde_json::json!({}))?;
+		let omitted = omitted.into_update();
+		assert_eq!(
+			[
+				omitted.department,
+				omitted.person_title,
+				omitted.person_given_name,
+				omitted.person_middle_name,
+				omitted.person_family_name
+			],
+			[None, None, None, None, None]
+		);
+		let cleared: SenderResponsiblePersonDetailsForUpdate =
+			serde_json::from_value(
+				serde_json::json!({"department": null, "personTitle": null, "personGivenName": null, "personMiddleName": null, "personFamilyName": null}),
+			)?;
+		let cleared = cleared.into_update();
+		assert_eq!(
+			[
+				cleared.department,
+				cleared.person_title,
+				cleared.person_given_name,
+				cleared.person_middle_name,
+				cleared.person_family_name
+			],
+			[
+				Some(String::new()),
+				Some(String::new()),
+				Some(String::new()),
+				Some(String::new()),
+				Some(String::new())
+			]
+		);
+		for value in ["", "Retained"] {
+			let patch: SenderResponsiblePersonDetailsForUpdate =
+				serde_json::from_value(
+					serde_json::json!({"personGivenName": value}),
+				)?;
+			assert_eq!(
+				patch.into_update().person_given_name.as_deref(),
+				Some(value)
+			);
+		}
+		assert!(
+			serde_json::from_value::<SenderResponsiblePersonDetailsForUpdate>(
+				serde_json::json!({"personGivenName": 123})
+			)
+			.is_err()
+		);
+		Ok(())
+	}
+}
 
 pub async fn create_sender_presave(
 	State(mm): State<ModelManager>,
@@ -226,9 +350,13 @@ pub struct SenderGatewayDetailsForUpdate {
 	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
 	pub gateway_authority: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub sender_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub routing_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub cde_sender_identifier: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 }
@@ -283,10 +411,15 @@ pub struct SenderResponsiblePersonDetailsForUpdate {
 	pub id: Option<Uuid>,
 	pub deleted: Option<bool>,
 	pub sequence_number: Option<i32>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub department: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_title: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_given_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_middle_name: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_clearable_text")]
 	pub person_family_name: Option<String>,
 	pub is_default: Option<bool>,
 }

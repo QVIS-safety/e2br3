@@ -31,7 +31,7 @@ fn summary_issues(summary: &CaseSummaryInformation) -> Vec<ValidationIssue> {
 #[test]
 fn rule_ich_h_1_required() {
 	let mut good = narrative();
-	good.case_narrative = "Narrative".into();
+	good.case_narrative = Some("Narrative".into());
 	let (mut invalid, mut repaired) = (Vec::new(), Vec::new());
 	h_1(None, &mut invalid);
 	h_1(Some(&good), &mut repaired);

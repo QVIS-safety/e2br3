@@ -3,7 +3,6 @@
 /// ICH.H.1.LENGTH.MAX
 pub fn h_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();
-	crate::helpers::reject_null(&mut issues, input.value);
 	crate::helpers::max_length(
 		&mut issues,
 		"ICH.H.1.LENGTH.MAX",

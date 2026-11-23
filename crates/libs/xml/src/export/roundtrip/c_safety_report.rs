@@ -105,7 +105,7 @@ pub fn patch_c_safety_report(
 			sender_base,
 			patch.sender_person_title,
 			patch.sender_person_title_null_flavor,
-		);
+		)?;
 	}
 	if patch.sender_person_given_name.is_some()
 		|| patch.sender_person_given_name_null_flavor.is_some()
@@ -115,7 +115,7 @@ pub fn patch_c_safety_report(
 			sender_base,
 			patch.sender_person_given_name,
 			patch.sender_person_given_name_null_flavor,
-		);
+		)?;
 	}
 	if patch.sender_person_middle_name.is_some()
 		|| patch.sender_person_middle_name_null_flavor.is_some()
@@ -125,7 +125,7 @@ pub fn patch_c_safety_report(
 			sender_base,
 			patch.sender_person_middle_name,
 			patch.sender_person_middle_name_null_flavor,
-		);
+		)?;
 	}
 	if patch.sender_person_family_name.is_some()
 		|| patch.sender_person_family_name_null_flavor.is_some()
@@ -135,7 +135,7 @@ pub fn patch_c_safety_report(
 			sender_base,
 			patch.sender_person_family_name,
 			patch.sender_person_family_name_null_flavor,
-		);
+		)?;
 	}
 	if let Some(v) = patch.sender_department {
 		write_c_3_3_1(&mut xpath, sender_base, v);
@@ -157,8 +157,7 @@ fn ensure_c_3_nodes(
 	base: &str,
 	patch: &CSafetyReportPatch<'_>,
 ) -> Result<()> {
-	let value =
-		|value: Option<&str>| value.is_some_and(|value| !value.trim().is_empty());
+	let value = |value: Option<&str>| value.is_some();
 	let present = |value_, null_flavor| value(value_) || value(null_flavor);
 	let mut ensure = |parent: &str, path: &str, fragment: &str| {
 		let nodes = xpath.findnodes(path, None).map_err(|_| Error::InvalidXml {
@@ -366,15 +365,14 @@ fn write_c_1_1(
 	doc: &mut Document,
 	parser: &Parser,
 	xpath: &mut Context,
-	report_unique_id: &str,
+	report_unique_id: Option<&str>,
 ) -> Result<()> {
 	ensure_investigation_id(doc, parser, xpath, "2.16.840.1.113883.3.989.2.1.3.1")?;
-	set_attr_first(
+	field::set("C.1.1",
 		xpath,
 		"//hl7:controlActProcess/hl7:subject/hl7:investigationEvent/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.1']",
-		"extension",
-		report_unique_id,
-	);
+		report_unique_id, None, Some("extension"),
+	)?;
 	Ok(())
 }
 
@@ -472,13 +470,14 @@ fn write_c_1_7(
 		"BL",
 	)?;
 	let path = "//hl7:component/hl7:observationEvent[hl7:code[@code='23' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value";
-	if let Some(value) = fulfil_expedited {
-		remove_attr_first(xpath, path, "nullFlavor");
-		set_attr_first(xpath, path, "value", if value { "true" } else { "false" });
-	} else if let Some(null_flavor) = null_flavor {
-		remove_attr_first(xpath, path, "value");
-		set_attr_first(xpath, path, "nullFlavor", null_flavor);
-	}
+	field::set(
+		"C.1.7",
+		xpath,
+		path,
+		fulfil_expedited.map(|v| if v { "true" } else { "false" }),
+		null_flavor,
+		Some("value"),
+	)?;
 	Ok(())
 }
 
@@ -509,7 +508,7 @@ fn write_c_1_3(
 	doc: &mut Document,
 	parser: &Parser,
 	xpath: &mut Context,
-	report_type: &str,
+	report_type: Option<&str>,
 ) -> Result<()> {
 	// Run after component writers to preserve investigationEvent schema order.
 	ensure_investigation_characteristic(
@@ -522,7 +521,7 @@ fn write_c_1_3(
 	)?;
 	let path = "//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.23']]/hl7:value";
 	set_attr_first(xpath, path, "type", "CE");
-	set_attr_first(xpath, path, "code", report_type);
+	field::set("C.1.3", xpath, path, report_type, None, Some("code"))?;
 	remove_nodes(xpath, &format!("{path}/hl7:originalText"));
 	Ok(())
 }
@@ -556,14 +555,16 @@ fn write_c_1_9_1(
 	}
 	set_xsi_type_first(xpath, path, "BL")?;
 	remove_nodes(xpath, &format!("{path}/hl7:originalText"));
-	if let Some(value) = patch.other_case_identifiers_exist {
-		remove_attr_first(xpath, path, "nullFlavor");
-		set_attr_first(xpath, path, "value", if value { "true" } else { "false" });
-	} else if let Some(null_flavor) = patch.other_case_identifiers_exist_null_flavor
-	{
-		remove_attr_first(xpath, path, "value");
-		set_attr_first(xpath, path, "nullFlavor", null_flavor);
-	}
+	field::set(
+		"C.1.9.1",
+		xpath,
+		path,
+		patch
+			.other_case_identifiers_exist
+			.map(|v| if v { "true" } else { "false" }),
+		patch.other_case_identifiers_exist_null_flavor,
+		Some("value"),
+	)?;
 	Ok(())
 }
 
@@ -577,11 +578,14 @@ fn write_c_1_8_2(
 	let relationship =
 		"//hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='1']]";
 	if let Some(value) = first_sender_type {
-		let nodes = xpath.findnodes(relationship, None).map_err(|_| Error::InvalidXml {
-			message: format!("Failed to evaluate XPath: {relationship}"),
-			line: None,
-			column: None,
-		})?;
+		let nodes =
+			xpath
+				.findnodes(relationship, None)
+				.map_err(|_| Error::InvalidXml {
+					message: format!("Failed to evaluate XPath: {relationship}"),
+					line: None,
+					column: None,
+				})?;
 		if nodes.is_empty() {
 			append_fragment_child(
 				doc,
@@ -685,7 +689,7 @@ fn write_fda_c_1_7_1(
 			"codeSystem",
 			"2.16.840.1.113883.3.989.5.1.2.2.1.1.1",
 		);
-		clear_null_flavor_if_export_policy(xpath, "FDA.C.1.7.1.REQUIRED", &path);
+		remove_attr_first(xpath, &path, "nullFlavor");
 	} else {
 		remove_nodes(xpath, component);
 	}
@@ -716,23 +720,14 @@ fn write_fda_c_1_12(
 		"BL",
 	)?;
 	let path = format!("{component}/hl7:value");
-	if let Some(value) = combination_product_indicator {
-		let value = normalize_bl_value(value).ok_or_else(|| Error::InvalidXml {
-			message: format!("Invalid boolean value: {value}"),
-			line: None,
-			column: None,
-		})?;
-		set_attr_first(
-			xpath,
-			&path,
-			"value",
-			value,
-		);
-		clear_null_flavor_if_export_policy(xpath, "FDA.C.1.12.REQUIRED", &path);
-	} else if let Some(null_flavor) = combination_product_indicator_null_flavor {
-		remove_attr_first(xpath, &path, "value");
-		set_attr_first(xpath, &path, "nullFlavor", null_flavor);
-	}
+	field::set(
+		"FDA.C.1.12",
+		xpath,
+		&path,
+		combination_product_indicator,
+		combination_product_indicator_null_flavor,
+		Some("value"),
+	)?;
 	Ok(())
 }
 
@@ -783,13 +778,13 @@ fn write_c_3_3_2(
 	base: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}//hl7:assignedPerson/hl7:name/hl7:prefix"),
 		value,
 		null_flavor,
-	);
+	)
 }
 
 /// e2b:C.3.3.3
@@ -798,13 +793,13 @@ fn write_c_3_3_3(
 	base: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}//hl7:assignedPerson/hl7:name/hl7:given"),
 		value,
 		null_flavor,
-	);
+	)
 }
 
 /// e2b:C.3.3.4
@@ -813,13 +808,13 @@ fn write_c_3_3_4(
 	base: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}//hl7:assignedPerson/hl7:name/hl7:given[2]"),
 		value,
 		null_flavor,
-	);
+	)
 }
 
 /// e2b:C.3.3.5
@@ -828,13 +823,13 @@ fn write_c_3_3_5(
 	base: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}//hl7:assignedPerson/hl7:name/hl7:family"),
 		value,
 		null_flavor,
-	);
+	)
 }
 
 fn set_text_or_null_flavor(
@@ -842,16 +837,8 @@ fn set_text_or_null_flavor(
 	path: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
-	if let Some(value) = value.filter(|value| !value.trim().is_empty()) {
-		remove_attr_first(xpath, path, "nullFlavor");
-		set_text_first(xpath, path, value);
-	} else if let Some(null_flavor) =
-		null_flavor.filter(|value| !value.trim().is_empty())
-	{
-		set_text_first(xpath, path, "");
-		set_attr_first(xpath, path, "nullFlavor", null_flavor);
-	}
+) -> Result<()> {
+	field::set(path, xpath, path, value, null_flavor, None)
 }
 
 /// e2b:C.3.4.1
@@ -922,16 +909,13 @@ fn write_c_3_4_telecom(
 }
 
 fn normalized_c_3_4_telecom(prefix: &str, value: Option<&str>) -> Option<String> {
-	value
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.and_then(|value| {
-			let body = match value.strip_prefix(prefix) {
-				Some(body) => body.trim(),
-				None => value.trim(),
-			};
-			(!body.is_empty()).then(|| format!("{prefix}{body}"))
-		})
+	value.map(|value| {
+		if value.starts_with(prefix) {
+			value.to_owned()
+		} else {
+			format!("{prefix}{value}")
+		}
+	})
 }
 
 #[cfg(test)]

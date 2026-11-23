@@ -145,8 +145,6 @@ TRANSFER_SPECS = {
         TransferSpec("SenderPresaveGateway", "sender_identifier", "MessageHeader", "message_sender_identifier", (transfer_call("messageHeader.messageSenderIdentifier", "routingGateway.senderId"),)),
     ),
     "receiver": (
-        TransferSpec("ReceiverPresave", "organization_name", "ReceiverInformation", "organization_name", (transfer_call("receiverInformation.organizationName", "d.receiverOrganization"),)),
-        TransferSpec("ReceiverPresave", "receiver_type", "ReceiverInformation", "receiver_type", (value_assignment("receiverType", "receiverTypeCode(d.receiverType)"), transfer_call("receiverInformation.receiverType", "receiverType"))),
         TransferSpec("ReceiverPresaveRoute", "batch_receiver_identifier", "MessageHeader", "batch_receiver_identifier", (transfer_call("messageHeader.batchReceiverIdentifier", "route.batchReceiverIdentifier"),)),
         TransferSpec("ReceiverPresaveRoute", "message_receiver_identifier", "MessageHeader", "message_receiver_identifier", (transfer_call("messageHeader.messageReceiverIdentifier", "route.messageReceiverIdentifier"),)),
     ),

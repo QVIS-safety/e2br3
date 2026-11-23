@@ -62,7 +62,7 @@ fn f_r_2_1(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		"[F.r.2.1] Test name (free text) is required when [F.r.1] is populated and [F.r.2.2b] is not populated.",
 		test.test_date.is_some()
 			&& !has_text(test.test_meddra_code.as_deref())
-			&& !has_text(Some(test.test_name.as_str())),
+			&& !has_text(test.test_name.as_deref()),
 	);
 	max_length(
 		issues,
@@ -70,7 +70,7 @@ fn f_r_2_1(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		&path,
 		SECTION,
 		MAX_LENGTH_MESSAGE,
-		Some(test.test_name.as_str()),
+		test.test_name.as_deref(),
 		250,
 	);
 }
@@ -110,7 +110,7 @@ fn f_r_2_2b(idx: usize, test: &TestResult, issues: &mut Vec<ValidationIssue>) {
 		SECTION,
 		"[F.r.2.2b] Test name MedDRA code is required when [F.r.1] is populated and [F.r.2.1] is not populated.",
 		test.test_date.is_some()
-			&& !has_text(Some(test.test_name.as_str()))
+			&& !has_text(test.test_name.as_deref())
 			&& !has_text(test.test_meddra_code.as_deref()),
 	);
 	max_length(

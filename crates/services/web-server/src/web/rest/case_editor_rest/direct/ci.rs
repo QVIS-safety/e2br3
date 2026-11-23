@@ -63,7 +63,6 @@ const CI_SAFETY_REPORT_PATCH_FIELDS: &[(&str, &[&str])] = &[
 	),
 	("nullification_code", &["nullificationAmendmentCode"]),
 	("nullification_reason", &["nullificationReason"]),
-	("receiver_organization", &["receiverOrganization"]),
 ];
 const CI_CASE_PATCH_FIELDS: &[(&str, &[&str])] = &[
 	("report_year", &["reportYear"]),
@@ -127,34 +126,37 @@ pub(super) async fn load_editor_ci_data(
 			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
 			Err(err) => return Err(err.into()),
 		};
-	let other_case_identifiers = OtherCaseIdentifierBmc::list(
+	let other_case_identifiers = OtherCaseIdentifierBmc::list_with_deleted(
 		ctx,
 		mm,
 		Some(vec![OtherCaseIdentifierFilter {
 			case_id: Some(uuid_eq(case_id)),
 			..Default::default()
 		}]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		true,
 	)
 	.await?;
-	let linked_reports = LinkedReportNumberBmc::list(
+	let linked_reports = LinkedReportNumberBmc::list_with_deleted(
 		ctx,
 		mm,
 		Some(vec![LinkedReportNumberFilter {
 			case_id: Some(uuid_eq(case_id)),
 			..Default::default()
 		}]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		true,
 	)
 	.await?;
-	let documents_held_by_sender = DocumentsHeldBySenderBmc::list(
+	let documents_held_by_sender = DocumentsHeldBySenderBmc::list_with_deleted(
 		ctx,
 		mm,
 		Some(vec![DocumentsHeldBySenderFilter {
 			case_id: Some(uuid_eq(case_id)),
 			..Default::default()
 		}]),
-		Some(ListOptions::default()),
+		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		true,
 	)
 	.await?;
 	let source_documents = SourceDocumentBmc::list(
@@ -365,17 +367,6 @@ struct CiSourceDocumentRowPatch {
 	sequence_number: Option<i32>,
 }
 
-fn non_nullable_text_patch(
-	row: &Map<String, Value>,
-	key: &str,
-	value: Option<String>,
-) -> Option<String> {
-	match row.get(key) {
-		Some(Value::Null) => Some(String::new()),
-		_ => value,
-	}
-}
-
 fn ci_row_error(owner: &str, err: serde_json::Error) -> Error {
 	Error::BadRequest {
 		message: format!("CI.{owner} has an invalid row payload: {err}"),
@@ -540,7 +531,6 @@ pub(super) async fn apply_ci_rows_patch(
 					&["nullificationAmendmentCode"],
 				),
 				nullification_reason: string_field(row, &["nullificationReason"]),
-				receiver_organization: string_field(row, &["receiverOrganization"]),
 			},
 			&clear_fields,
 		)
@@ -691,35 +681,27 @@ pub(super) async fn apply_ci_rows_patch(
 				if patch.deleted == Some(false) && current.deleted {
 					OtherCaseIdentifierBmc::restore(ctx, mm, id).await?;
 				}
-				OtherCaseIdentifierBmc::update(
+				OtherCaseIdentifierBmc::update_patch(
 					ctx,
 					mm,
 					id,
 					OtherCaseIdentifierForUpdate {
-						source_of_identifier: non_nullable_text_patch(
-							raw_patch,
-							"source",
-							patch.source,
-						),
-						case_identifier: non_nullable_text_patch(
-							raw_patch,
-							"caseIdentifier",
-							patch.case_identifier,
-						),
+						source_of_identifier: patch.source,
+						case_identifier: patch.case_identifier,
 					},
+					&explicit_null_model_fields(
+						raw_patch,
+						&[
+							("source_of_identifier", &["source"]),
+							("case_identifier", &["caseIdentifier"]),
+						],
+					),
 				)
 				.await?;
 			} else {
 				if patch.deleted == Some(true) {
 					continue;
 				}
-				let source = patch.source.ok_or_else(|| Error::BadRequest {
-					message: "case identifier source is required".into(),
-				})?;
-				let case_identifier =
-					patch.case_identifier.ok_or_else(|| Error::BadRequest {
-						message: "case identifier is required".into(),
-					})?;
 				OtherCaseIdentifierBmc::create(
 					ctx,
 					mm,
@@ -730,8 +712,8 @@ pub(super) async fn apply_ci_rows_patch(
 								message: "sequenceNumber is required".into(),
 							}
 						})?,
-						source_of_identifier: source,
-						case_identifier,
+						source_of_identifier: patch.source,
+						case_identifier: patch.case_identifier,
 					},
 				)
 				.await?;
@@ -768,28 +750,20 @@ pub(super) async fn apply_ci_rows_patch(
 				if patch.deleted == Some(false) && current.deleted {
 					LinkedReportNumberBmc::restore(ctx, mm, id).await?;
 				}
-				LinkedReportNumberBmc::update(
+				LinkedReportNumberBmc::update_patch(
 					ctx,
 					mm,
 					id,
 					LinkedReportNumberForUpdate {
-						linked_report_number: non_nullable_text_patch(
-							raw_patch,
-							"linkedReportNumber",
-							patch.linked_report_number,
-						),
+						linked_report_number: patch.linked_report_number,
 					},
+					&explicit_null_model_fields(
+						raw_patch,
+						&[("linked_report_number", &["linkedReportNumber"])],
+					),
 				)
 				.await?;
 			} else {
-				let linked_report_number =
-					patch
-						.linked_report_number
-						.ok_or_else(|| Error::BadRequest {
-							message:
-								"CI.linkedReports[].linkedReportNumber is required"
-									.to_string(),
-						})?;
 				LinkedReportNumberBmc::create(
 					ctx,
 					mm,
@@ -800,7 +774,7 @@ pub(super) async fn apply_ci_rows_patch(
 								message: "sequenceNumber is required".into(),
 							}
 						})?,
-						linked_report_number,
+						linked_report_number: patch.linked_report_number,
 					},
 				)
 				.await?;

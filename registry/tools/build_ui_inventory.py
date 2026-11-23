@@ -15,7 +15,7 @@ ROOT_PAGES = {
     'case': 'CI', 'safetyReportIdentification': 'CI', 'caseSummaryInformation': 'CI',
     'documentsHeldBySender': 'CI', 'sourceDocuments': 'CI', 'linkedReports': 'CI',
     'otherCaseIdentifiers': 'CI', 'primarySources': 'RP', 'senderInformation': 'SD',
-    'receiverInformation': 'SD', 'studyInformation': 'SI', 'patientInformation': 'DM',
+    'studyInformation': 'SI', 'patientInformation': 'DM',
     'reactions': 'AE', 'testResults': 'LB', 'drugs': 'DG', 'literatureReferences': 'LR',
     'narrative': 'NR', 'reviewReceivers': 'RE', 'messageHeader': 'N',
 }

@@ -1,13 +1,10 @@
 // Section C importer (Safety Report Identification) - FDA mapping.
 
 use crate::error::Error;
-use crate::import_constraint;
-use crate::import_sections::shared::{parse_date, parse_trimmed_bool_with_yes_no};
+use crate::import_constraint::Context;
+use crate::import_sections::shared::parse_trimmed_bool_with_yes_no;
 use crate::mapping::fda::c_safety_report::CSafetyReportPaths;
 use crate::Result;
-use libxml::parser::Parser;
-use libxml::xpath::Context;
-use sqlx::types::time::Date;
 
 mod helpers;
 mod runtime;
@@ -41,125 +38,122 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let transmission_date = read_c_1_2(&mut xpath)?;
+		let transmission_date = read_c_1_2(&mut xpath)?;
 
-	let report_type = read_c_1_3(&mut xpath)?;
+		let report_type = read_c_1_3(&mut xpath)?;
 
-	let date_first_received_from_source = read_c_1_4(&mut xpath)?;
-	let date_of_most_recent_information = read_c_1_5(&mut xpath)?;
-	let additional_documents_available = read_c_1_6_1(&mut xpath)?;
-	let fulfil_expedited_criteria = read_c_1_7(&mut xpath)?;
-	let local_criteria_report_type = read_fda_c_1_7_1(&mut xpath)?;
-	let (
-		combination_product_report_indicator,
-		combination_product_report_indicator_null_flavor,
-	) = read_fda_c_1_12(&mut xpath)?;
-	let worldwide_unique_id = read_c_1_8_1(&mut xpath)?;
-	let first_sender_type = read_c_1_8_2(&mut xpath)?;
-	let (other_case_identifiers_exist, other_case_identifiers_exist_null_flavor) =
-		read_c_1_9_1(&mut xpath)?;
-	let nullification_code = read_c_1_11_1(&mut xpath)?;
-	let nullification_reason = read_c_1_11_2(&mut xpath)?;
+		let date_first_received_from_source = read_c_1_4(&mut xpath)?;
+		let date_of_most_recent_information = read_c_1_5(&mut xpath)?;
+		let additional_documents_available = read_c_1_6_1(&mut xpath)?;
+		let fulfil_expedited_criteria = read_c_1_7(&mut xpath)?;
+		let local_criteria_report_type = read_fda_c_1_7_1(&mut xpath)?;
+		let (
+			combination_product_report_indicator,
+			combination_product_report_indicator_null_flavor,
+		) = read_fda_c_1_12(&mut xpath)?;
+		let worldwide_unique_id = read_c_1_8_1(&mut xpath)?;
+		let first_sender_type = read_c_1_8_2(&mut xpath)?;
+		let (other_case_identifiers_exist, other_case_identifiers_exist_null_flavor) =
+			read_c_1_9_1(&mut xpath)?;
+		let nullification_code = read_c_1_11_1(&mut xpath)?;
+		let nullification_reason = read_c_1_11_2(&mut xpath)?;
 
-	Ok(Some(CSafetyReportImport {
-		transmission_date,
-		report_type,
-		date_first_received_from_source,
-		date_of_most_recent_information,
-		fulfil_expedited_criteria,
-		fulfil_expedited_criteria_null_flavor: first_value_root(
-			&mut xpath,
-			CSafetyReportPaths::FULFIL_EXPEDITED_NULL_FLAVOR,
-		),
-		additional_documents_available,
-		local_criteria_report_type,
-		combination_product_report_indicator,
-		combination_product_report_indicator_null_flavor,
-		worldwide_unique_id,
-		first_sender_type,
-		other_case_identifiers_exist,
-		other_case_identifiers_exist_null_flavor,
-		nullification_code,
-		nullification_reason,
-	}))
+		Ok(Some(CSafetyReportImport {
+			transmission_date,
+			report_type,
+			date_first_received_from_source,
+			date_of_most_recent_information,
+			fulfil_expedited_criteria,
+			fulfil_expedited_criteria_null_flavor: first_value_root(
+				&mut xpath,
+				CSafetyReportPaths::FULFIL_EXPEDITED_NULL_FLAVOR,
+			),
+			additional_documents_available,
+			local_criteria_report_type,
+			combination_product_report_indicator,
+			combination_product_report_indicator_null_flavor,
+			worldwide_unique_id,
+			first_sender_type,
+			other_case_identifiers_exist,
+			other_case_identifiers_exist_null_flavor,
+			nullification_code,
+			nullification_reason,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.1.2
 fn read_c_1_2(xpath: &mut Context) -> Result<Option<String>> {
 	let raw = first_value_root(xpath, CSafetyReportPaths::DATE_OF_CREATION);
-	let value = raw.and_then(|raw| normalize_datetime(&raw));
-	import_constraint::string(
+	let value = raw;
+	xpath.inputs.string(
 		"transmissionDate",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_2,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.3
 fn read_c_1_3(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::TYPE_OF_REPORT_CODE);
-	import_constraint::string(
+	xpath.inputs.string(
 		"reportType",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_3,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.4
 fn read_c_1_4(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::DATE_FIRST_RECEIVED);
-	import_constraint::string(
+	xpath.inputs.string(
 		"dateFirstReceivedFromSource",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_4,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.5
 fn read_c_1_5(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::DATE_MOST_RECENT);
-	import_constraint::string(
+	xpath.inputs.string(
 		"dateOfMostRecentInformation",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_5,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.6.1
 fn read_c_1_6_1(xpath: &mut Context) -> Result<Option<bool>> {
-	let value = parse_trimmed_bool_with_yes_no(
-		first_value_root(xpath, CSafetyReportPaths::ADDITIONAL_DOCUMENTS_AVAILABLE)
-			.as_deref(),
-	);
-	import_constraint::boolean(
+	let raw =
+		first_value_root(xpath, CSafetyReportPaths::ADDITIONAL_DOCUMENTS_AVAILABLE);
+	let value = parse_trimmed_bool_with_yes_no(raw.as_deref());
+	xpath.inputs.boolean(
 		"additionalDocumentsAvailable",
+		raw.as_deref(),
 		value,
 		None,
 		input_contracts::generated::c::c_1_6_1,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -169,12 +163,13 @@ fn read_c_1_7(xpath: &mut Context) -> Result<Option<bool>> {
 	let value = parse_trimmed_bool_with_yes_no(raw.as_deref());
 	let null_flavor =
 		first_value_root(xpath, CSafetyReportPaths::FULFIL_EXPEDITED_NULL_FLAVOR);
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"fulfilExpeditedCriteria",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_1_7,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -184,12 +179,12 @@ fn read_fda_c_1_7_1(xpath: &mut Context) -> Result<Option<String>> {
 		xpath,
 		CSafetyReportPaths::FDA_LOCAL_CRITERIA_REPORT_TYPE_CODE,
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"localCriteriaReportType",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::fda_c_1_7_1,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -199,41 +194,40 @@ fn read_fda_c_1_12(xpath: &mut Context) -> Result<(Option<String>, Option<String
 		xpath,
 		CSafetyReportPaths::FDA_COMBINATION_PRODUCT_INDICATOR_VALUE,
 	);
-	let value = normalize_fda_combination_product_indicator(raw.clone());
 	let null_flavor = first_value_root(
 		xpath,
 		CSafetyReportPaths::FDA_COMBINATION_PRODUCT_INDICATOR_NULL_FLAVOR,
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"combinationProductReportIndicator",
 		raw.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::fda_c_1_12,
-	)?;
-	Ok((value, null_flavor))
+	);
+	Ok((raw, null_flavor))
 }
 
 /// e2b:C.1.8.1
 fn read_c_1_8_1(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::WORLDWIDE_UNIQUE_ID_EXT);
-	import_constraint::string(
+	xpath.inputs.string(
 		"worldwideUniqueId",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_8_1,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.8.2
 fn read_c_1_8_2(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::FIRST_SENDER_TYPE);
-	import_constraint::string(
+	xpath.inputs.string(
 		"firstSenderType",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_8_2,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -246,106 +240,51 @@ fn read_c_1_9_1(xpath: &mut Context) -> Result<(Option<bool>, Option<String>)> {
 		xpath,
 		CSafetyReportPaths::OTHER_CASE_IDENTIFIERS_EXIST_NULL_FLAVOR,
 	);
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"otherCaseIdentifiersExist",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_1_9_1,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
 /// e2b:C.1.11.1
 fn read_c_1_11_1(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_value_root(xpath, CSafetyReportPaths::NULLIFICATION_CODE);
-	import_constraint::string(
+	xpath.inputs.string(
 		"nullificationAmendmentCode",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_11_1,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.11.2
 fn read_c_1_11_2(xpath: &mut Context) -> Result<Option<String>> {
 	let value = first_text_root(xpath, CSafetyReportPaths::NULLIFICATION_REASON);
-	import_constraint::string(
+	xpath.inputs.string(
 		"nullificationReason",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_11_2,
-	)?;
+	);
 	Ok(value)
 }
 
 fn first_value_root(xpath: &mut Context, path: &str) -> Option<String> {
-	match xpath.findvalue(path, None) {
-		Ok(value) if !value.trim().is_empty() => Some(value),
-		_ => None,
-	}
+	xpath.findvalues(path, None).ok()?.into_iter().next()
 }
 
 fn first_text_root(xpath: &mut Context, path: &str) -> Option<String> {
-	match xpath.findvalue(path, None) {
-		Ok(value) if !value.trim().is_empty() => Some(value),
-		_ => None,
-	}
-}
-
-fn normalize_fda_combination_product_indicator(
-	value: Option<String>,
-) -> Option<String> {
-	parse_trimmed_bool_with_yes_no(value.as_deref()).map(|value| value.to_string())
-}
-
-fn normalize_datetime(value: &str) -> Option<String> {
-	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
-	if digits.len() < 8 {
-		return None;
-	}
-	let date = parse_date(digits.clone())?;
-	if digits.len() >= 14 {
-		Some(digits[..14].to_string())
-	} else {
-		Some(format_datetime(date))
-	}
-}
-
-fn format_datetime(date: Date) -> String {
-	format!(
-		"{:04}{:02}{:02}000000",
-		date.year(),
-		u8::from(date.month()),
-		date.day()
-	)
+	crate::import_sections::shared::first_text_root(xpath, path)
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{
-		normalize_fda_combination_product_indicator, parse_c_safety_report,
-	};
-
-	#[test]
-	fn fda_combination_product_import_normalizes_to_boolean_strings() {
-		assert_eq!(
-			normalize_fda_combination_product_indicator(Some("true".to_string())),
-			Some("true".to_string())
-		);
-		assert_eq!(
-			normalize_fda_combination_product_indicator(Some("1".to_string())),
-			Some("true".to_string())
-		);
-		assert_eq!(
-			normalize_fda_combination_product_indicator(Some("0".to_string())),
-			Some("false".to_string())
-		);
-		assert_eq!(
-			normalize_fda_combination_product_indicator(Some("unknown".to_string())),
-			None
-		);
-	}
+	use super::parse_c_safety_report;
 
 	#[test]
 	fn import_accepts_n_2_r_4_c_1_2_mismatch() {

@@ -115,8 +115,8 @@ mod rows {
     }
     #[serial_test::serial]
     #[tokio::test]
-    async fn empty_parent_child_objects_create_draft_rows() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::rows::creation::empty_parent_child_objects_create_draft_rows("DM", "empty_parent_child_objects_create_draft_rows").await
+    async fn parent_child_drafts_require_sequence() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::rows::creation::parent_child_drafts_require_sequence("DM", "parent_child_drafts_require_sequence").await
     }
 }
 mod relations {

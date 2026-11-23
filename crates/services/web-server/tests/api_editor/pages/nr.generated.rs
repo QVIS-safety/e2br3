@@ -19,8 +19,8 @@ mod fields {
     }
     #[serial_test::serial]
     #[tokio::test]
-    async fn narrative_blank_rejection_preserves_saved_comments() -> crate::common::Result<()> {
-        crate::case_editor_contract_web::fields::required_values::narrative_blank_rejection_preserves_saved_comments("NR", "narrative_blank_rejection_preserves_saved_comments").await
+    async fn narrative_clear_preserves_saved_comments() -> crate::common::Result<()> {
+        crate::case_editor_contract_web::fields::required_values::narrative_clear_preserves_saved_comments("NR", "narrative_clear_preserves_saved_comments").await
     }
 }
 mod rows {

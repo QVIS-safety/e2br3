@@ -155,9 +155,8 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 			"expected CI/SI export XML to contain `{expected}`"
 		);
 	}
-	// N.2.r.1/N.2.r.4 derive from C.1.1/C.1.2, not legacy message-header values.
-	assert!(!xml.contains(&sentinel_msg_number));
-	assert!(!xml.contains("20240601112233"));
+	assert!(xml.contains(&sentinel_msg_number));
+	assert!(xml.contains("20240601112233"));
 	let expected_study_type = format!(
 		"<code code=\"{sentinel_study_type_reaction}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>"
 	);

@@ -9,8 +9,7 @@ use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::Uuid;
 use time::OffsetDateTime;
-use xml::raw::patch::patch_g_drugs;
-use xml::Error as XmlError;
+use xml::export::roundtrip::patch_g_drugs;
 
 #[test]
 fn patch_g_drug_updates_raw_xml() {
@@ -57,6 +56,7 @@ fn patch_g_drug_updates_raw_xml() {
 		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_other_characterization: None,
+		deleted: false,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),
@@ -70,6 +70,8 @@ fn patch_g_drug_updates_raw_xml() {
 		&[] as &[DosageInformation],
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
+		&[],
+		&[],
 		&[] as &[DrugReactionAssessment],
 		&[] as &[RelatednessAssessment],
 	)
@@ -86,7 +88,7 @@ fn patch_g_drug_updates_raw_xml() {
 }
 
 #[test]
-fn patch_g_drug_normalizes_characterization_for_causality() {
+fn patch_g_drug_preserves_missing_characterization_without_default() {
 	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 		.parent()
 		.and_then(|p| p.parent())
@@ -130,29 +132,32 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_other_characterization: None,
+		deleted: false,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),
 		updated_by: None,
 	};
 
-	let err = patch_g_drugs(
+	let patched = patch_g_drugs(
 		&xml,
 		&[drug],
 		&[] as &[DrugActiveSubstance],
 		&[] as &[DosageInformation],
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
+		&[],
+		&[],
 		&[] as &[DrugReactionAssessment],
 		&[] as &[RelatednessAssessment],
 	)
-	.expect_err("missing drug characterization should fail");
-	match err {
-		XmlError::InvalidXml { message, .. } => {
-			assert!(message.contains("ICH.G.k.1.REQUIRED"));
-		}
-		other => panic!("unexpected error type: {other:?}"),
-	}
+	.expect("draft export");
+	let doc = Parser::default().parse_string(&patched).expect("XML");
+	let mut xpath = Context::new(&doc).expect("XPath");
+	xpath
+		.register_namespace("hl7", "urn:hl7-org:v3")
+		.expect("namespace");
+	assert!(xpath.findnodes("//hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='1']]/hl7:value[@code]", None).expect("role nodes").is_empty());
 }
 
 #[test]
@@ -203,6 +208,7 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_other_characterization: None,
+		deleted: false,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),
@@ -219,6 +225,7 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		recurrence_action: None,
 		reaction_recurred: None,
 		dechallenge_result: None,
+		expectedness: None,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),
@@ -249,6 +256,8 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		&[] as &[DosageInformation],
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
+		&[],
+		&[],
 		&[assessment],
 		&[relatedness],
 	)

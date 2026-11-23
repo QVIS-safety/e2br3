@@ -221,8 +221,8 @@ impl UserBmc {
 	}
 
 	fn normalize_role(role: Option<String>) -> Result<String> {
-		let role = role
-			.ok_or_else(|| Error::Store("role is required".to_string()))?;
+		let role =
+			role.ok_or_else(|| Error::Store("role is required".to_string()))?;
 		let role = canonical_role(&role);
 		if role.is_empty() {
 			return Err(Error::Store("role is required".to_string()));

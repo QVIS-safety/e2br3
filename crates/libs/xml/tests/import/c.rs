@@ -21,7 +21,10 @@ fn import_c_section_all_fields_from_scenario6() {
 		.expect("parse")
 		.expect("section C should exist");
 
-	assert_eq!(report.transmission_date.as_deref(), Some("20220614151617"));
+	assert_eq!(
+		report.transmission_date.as_deref(),
+		Some("20220614151617-0500")
+	);
 	assert_eq!(report.report_type.as_deref(), Some("1"));
 	assert_eq!(
 		report.date_first_received_from_source.as_deref(),
@@ -92,7 +95,10 @@ fn import_settings_preserve_official_inbound_dates() {
 	)
 	.expect("inbound source dates must not block import");
 
-	assert_eq!(report.transmission_date.as_deref(), Some("20140714151617"));
+	assert_eq!(
+		report.transmission_date.as_deref(),
+		Some("20140714151617-0500")
+	);
 	assert_eq!(
 		report.date_first_received_from_source.as_deref(),
 		Some("20220614101010-0500")

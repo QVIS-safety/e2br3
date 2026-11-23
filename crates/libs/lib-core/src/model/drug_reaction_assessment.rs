@@ -466,12 +466,24 @@ impl RelatednessAssessmentBmc {
 		filters: Option<Vec<RelatednessAssessmentFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<RelatednessAssessment>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<RelatednessAssessmentFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<RelatednessAssessment>> {
 		let mut filters = match filters {
 			Some(filters) => filters,
 			None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}

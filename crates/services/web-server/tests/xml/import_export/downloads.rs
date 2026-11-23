@@ -225,12 +225,7 @@ async fn test_import_then_export_xml() -> Result<()> {
 					assert!(!zipped_xml.contains("<!--"));
 				}
 				if index == 0 {
-					assert_eq!(
-						entry.name(),
-						format!(
-							"{unique_safety_report_id}-{case_id}-{authority}.xml"
-						)
-					);
+					assert_eq!(entry.name(), format!("{case_id}-{authority}.xml"));
 					assert!(zipped_xml.contains(&unique_safety_report_id));
 				}
 			}

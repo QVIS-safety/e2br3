@@ -22,9 +22,7 @@ pub(crate) fn max_length(
 }
 
 pub(crate) fn reject_null(issues: &mut Vec<InputIssue>, value: InputValue<'_>) {
-	if value == InputValue::Null
-		|| matches!(value, InputValue::String(value) if value.trim().is_empty())
-	{
+	if value == InputValue::Null {
 		push(issues, "INPUT.NULL.REJECTED", "cannot be null".to_string());
 	}
 }
@@ -323,7 +321,6 @@ fn valid_e2b_datetime(value: &str) -> bool {
 		|| fraction.is_some_and(|fraction| {
 			digits.len() != 14
 				|| fraction.is_empty()
-				|| fraction.len() > 4
 				|| !fraction.bytes().all(|byte| byte.is_ascii_digit())
 		}) {
 		return false;
@@ -367,6 +364,25 @@ mod tests {
 		identifier, valid_decimal, valid_dotted_version, valid_e2b_datetime,
 	};
 	use crate::InputValue;
+
+	#[test]
+	fn timestamp_fraction_preserves_hl7_ts_precision() {
+		for fraction in ["1", "1234", "179855", "123456789", "12345678901234567890"]
+		{
+			assert!(
+				valid_e2b_datetime(&format!("20261121085336.{fraction}+0000")),
+				"{fraction}"
+			);
+		}
+		for value in [
+			"20261121085336.+0000",
+			"20261121085336.12x+0000",
+			"202611210853.12345+0000",
+			"20260230085336.123456+0000",
+		] {
+			assert!(!valid_e2b_datetime(value), "{value}");
+		}
+	}
 
 	#[test]
 	fn primitive_contracts_cover_boundaries() {

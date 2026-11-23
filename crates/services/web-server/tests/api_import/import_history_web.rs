@@ -119,6 +119,30 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 	.await?;
 	tx.commit().await?;
 
+	let legacy = get_response(
+		&app,
+		&cookie,
+		&format!("/api/import/xml/history/{history_id}/error.txt"),
+	)
+	.await?;
+	assert_eq!(legacy.status(), StatusCode::BAD_REQUEST);
+	let body = to_bytes(legacy.into_body(), usize::MAX).await?;
+	assert!(
+		!std::str::from_utf8(&body)?.contains("schema validation failed on line 14")
+	);
+	let public_error = json!({"httpStatus":400,"error":{"message":"INVALID_REQUEST","data":{
+		"req_uuid":uuid::Uuid::new_v4(),"detail":"XML schema validation failed."
+	}}});
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query("UPDATE xml_import_history SET public_error=$1 WHERE id=$2")
+		.bind(&public_error)
+		.bind(history_id)
+		.execute(&mut *tx)
+		.await?;
+	tx.commit().await?;
+
 	let response = get_response(
 		&app,
 		&cookie,
@@ -146,9 +170,20 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 	);
 
 	let body = to_bytes(response.into_body(), usize::MAX).await?;
-	assert_eq!(
-		std::str::from_utf8(&body)?,
-		"schema validation failed on line 14"
+	assert_eq!(serde_json::from_slice::<Value>(&body)?, public_error);
+	let (status, history) =
+		get_json(&app, &cookie, "/api/import/xml/history").await?;
+	assert_eq!(status, StatusCode::OK);
+	let row = history["data"]["items"]
+		.as_array()
+		.ok_or("history items")?
+		.iter()
+		.find(|row| row["id"] == history_id.to_string())
+		.ok_or("history row")?;
+	assert_eq!(row["errorMessage"], Value::Null);
+	assert_eq!(row["publicError"], public_error);
+	assert!(
+		!std::str::from_utf8(&body)?.contains("schema validation failed on line 14")
 	);
 
 	Ok(())

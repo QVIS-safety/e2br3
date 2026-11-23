@@ -36,7 +36,7 @@ where
 	Option::<T>::deserialize(deserializer).map(Some)
 }
 
-fn deserialize_clearable_text<'de, D>(
+pub fn deserialize_clearable_text<'de, D>(
 	deserializer: D,
 ) -> std::result::Result<Option<String>, D::Error>
 where

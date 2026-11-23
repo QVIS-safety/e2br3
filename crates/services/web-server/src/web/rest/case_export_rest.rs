@@ -97,37 +97,14 @@ async fn safety_report_id_for_case(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
 	case_id: Uuid,
-) -> Result<String> {
-	SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::Model)?
-		.safety_report_id
-		.filter(|value| !value.trim().is_empty())
-		.ok_or_else(|| Error::BadRequest {
-			message: format!("case {case_id} has no safety report ID"),
-		})
+) -> Result<Option<String>> {
+	Ok(SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
+		.await?
+		.safety_report_id)
 }
 
-fn export_file_name(
-	safety_report_id: &str,
-	case_id: Uuid,
-	authority: RegulatoryAuthority,
-) -> String {
-	format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
-}
-
-fn export_client_error(error: Error) -> Error {
-	match error {
-		Error::BadRequest { message }
-			if message.starts_with("export header validation failed:") =>
-		{
-			Error::BadRequest {
-				message: "XML export header validation failed. Review export history for details."
-					.to_string(),
-			}
-		}
-		other => other,
-	}
+fn export_file_name(case_id: Uuid, authority: RegulatoryAuthority) -> String {
+	format!("{case_id}-{}.xml", authority.as_str())
 }
 
 async fn generate_case_xml_for_authority(
@@ -138,10 +115,9 @@ async fn generate_case_xml_for_authority(
 	include_notation: Option<bool>,
 	settings: &mut Option<runtime_settings::RuntimeSettings>,
 ) -> Result<String> {
-	let mut header = MessageHeaderBmc::get_by_case(ctx, mm, id)
+	let header = MessageHeaderBmc::get_by_case(ctx, mm, id)
 		.await
 		.map_err(Error::Model)?;
-	header.batch_transmission_date = Some(OffsetDateTime::now_utc());
 	let outbound_message_header = export_message_header(&header)?;
 	let settings = match settings {
 		Some(settings) => settings,
@@ -149,38 +125,14 @@ async fn generate_case_xml_for_authority(
 	};
 	let options = ExportXmlOptions {
 		apply_comments: settings.resolve_notation(include_notation),
+		include_source_documents: true,
 		authority,
 		outbound_message_header,
 	};
-	let xml = export_case_xml_with_options(ctx, mm, id, options)
+	// Downloads serialize stored data; regulatory validation gates submission only.
+	export_case_xml_with_options(ctx, mm, id, options)
 		.await
-		.map_err(Error::Export)?;
-	let errors =
-		xml::validation::validate_export_message_header(xml.as_bytes(), authority)
-			.map_err(Error::Export)?;
-	if !errors.is_empty() {
-		return Err(Error::BadRequest {
-			message: format!(
-				"export header validation failed: {}",
-				errors
-					.iter()
-					.map(|error| error.message.as_str())
-					.collect::<Vec<_>>()
-					.join("; ")
-			),
-		});
-	}
-	let validation =
-		validator::validate_case_for_authority(ctx, mm, id, authority).await?;
-	if !validation.ok {
-		return Err(Error::BadRequest {
-			message: format!(
-				"Cannot export: {} validation issue(s). Correct the highlighted case fields.",
-				validation.issue_count
-			),
-		});
-	}
-	Ok(xml)
+		.map_err(Error::Export)
 }
 
 // -- Handlers
@@ -212,9 +164,9 @@ async fn export_case_authorized(
 	id: Uuid,
 	query: ExportCaseQuery,
 ) -> Result<Response> {
-	let safety_report_id = safety_report_id_for_case(ctx, mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
-	let file_name = export_file_name(&safety_report_id, id, authority);
+	let safety_report_id = safety_report_id_for_case(ctx, mm, id).await?;
+	let file_name = export_file_name(id, authority);
 	let xml = match generate_case_xml_for_authority(
 		ctx,
 		mm,
@@ -239,7 +191,7 @@ async fn export_case_authorized(
 				mm,
 				ctx,
 				id,
-				Some(safety_report_id.as_str()),
+				safety_report_id.as_deref(),
 				&file_name,
 				"error",
 				Some(error_message.as_str()),
@@ -250,14 +202,14 @@ async fn export_case_authorized(
 					"failed to record xml export error history: {record_err}"
 				);
 			}
-			return Err(export_client_error(err));
+			return Err(err);
 		}
 	};
 	XmlExportHistoryBmc::record(
 		mm,
 		ctx,
 		id,
-		Some(safety_report_id.as_str()),
+		safety_report_id.as_deref(),
 		&file_name,
 		"success",
 		None,
@@ -344,8 +296,7 @@ async fn export_cases_zip_authorized(
 			let safety_report_id =
 				safety_report_id_for_case(ctx, mm, case_id).await?;
 			{
-				let file_name =
-					export_file_name(&safety_report_id, case_id, authority);
+				let file_name = export_file_name(case_id, authority);
 				let xml = match generate_case_xml_for_authority(
 					ctx,
 					mm,
@@ -372,7 +323,7 @@ async fn export_cases_zip_authorized(
 							mm,
 							ctx,
 							case_id,
-							Some(safety_report_id.as_str()),
+							safety_report_id.as_deref(),
 							&file_name,
 							"error",
 							Some(error_message.as_str()),
@@ -383,7 +334,7 @@ async fn export_cases_zip_authorized(
 								"failed to record xml export error history: {record_err}"
 							);
 						}
-						return Err(export_client_error(err));
+						return Err(err);
 					}
 				};
 				zip.start_file(file_name.clone(), options)
@@ -409,7 +360,7 @@ async fn export_cases_zip_authorized(
 					})?;
 				history.push(XmlExportHistoryCreate {
 					case_id,
-					case_number: Some(safety_report_id),
+					case_number: safety_report_id,
 					file_name,
 					status: "success".to_string(),
 					error_message: None,

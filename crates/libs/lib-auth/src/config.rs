@@ -2,8 +2,7 @@ use lib_utils::envs::{get_env_b64u_as_u8s, get_env_parse};
 use std::sync::OnceLock;
 
 pub fn auth_config() -> lib_utils::envs::Result<&'static AuthConfig> {
-	static INSTANCE: OnceLock<lib_utils::envs::Result<AuthConfig>> =
-		OnceLock::new();
+	static INSTANCE: OnceLock<lib_utils::envs::Result<AuthConfig>> = OnceLock::new();
 
 	match INSTANCE.get_or_init(AuthConfig::load_from_env) {
 		Ok(config) => Ok(config),

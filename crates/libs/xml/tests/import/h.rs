@@ -14,8 +14,8 @@ fn import_h_section_all_fields_from_scenario6() {
 	let summaries = parse_h_case_summaries(&xml).expect("parse case summaries");
 
 	assert_eq!(
-		narrative.case_narrative,
-		"Case Narrative Including Clinical Course, Therapeutic Measures,\n\t\t\t\t\t"
+		narrative.case_narrative.as_deref(),
+		Some("Case Narrative Including Clinical Course, Therapeutic Measures,\n\t\t\t\t\t")
 	);
 	assert_eq!(
 		narrative.reporter_comments.as_deref(),

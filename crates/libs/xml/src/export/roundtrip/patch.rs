@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::export::policy::should_clear_null_flavor_on_value;
+use crate::export::field;
 use crate::export::sections::f::write_f_r_test_result;
 use crate::export::sections::g::{
 	write_fda_g_k_1_a_causality, write_g_k_1_causality, write_g_k_9_causality,

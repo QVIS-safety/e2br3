@@ -12,10 +12,6 @@ use lib_core::model::case_identifiers::{
 use lib_core::model::presave::{
 	SenderPresave, SenderPresaveBmc, SenderPresaveResponsiblePersonBmc,
 };
-use lib_core::model::receiver::{
-	ReceiverInformationBmc, ReceiverInformationForCreate,
-	ReceiverInformationForUpdate,
-};
 use lib_core::model::safety_report::{
 	DocumentsHeldBySenderBmc, DocumentsHeldBySenderForCreate,
 	DocumentsHeldBySenderForUpdate, LiteratureReferenceBmc,
@@ -67,9 +63,9 @@ pub(crate) async fn import_section_c(
 	mm: &ModelManager,
 	xml: &[u8],
 	case_id: Uuid,
-	safety_report_id: &str,
+	safety_report_id: Option<&str>,
 	version: i32,
-	header: Option<&shared::MessageHeaderExtract>,
+	_header: Option<&shared::MessageHeaderExtract>,
 	settings: &CImportSettings,
 ) -> Result<()> {
 	import_c_1_safety_report(
@@ -79,7 +75,6 @@ pub(crate) async fn import_section_c(
 		case_id,
 		safety_report_id,
 		version,
-		header,
 		settings,
 	)
 	.await?;
@@ -89,7 +84,7 @@ pub(crate) async fn import_section_c(
 	import_c_4_documents_held_by_sender(ctx, mm, xml, case_id).await?;
 	import_c_4_literature_references(ctx, mm, xml, case_id).await?;
 	import_c_5_study_information(ctx, mm, xml, case_id).await?;
-	import_c_6_receiver_information(ctx, mm, xml, case_id).await?;
+	crate::source_documents::import(ctx, mm, xml, case_id).await?;
 	Ok(())
 }
 
@@ -98,9 +93,8 @@ async fn import_c_1_safety_report(
 	mm: &ModelManager,
 	xml: &[u8],
 	case_id: Uuid,
-	safety_report_id: &str,
+	safety_report_id: Option<&str>,
 	version: i32,
-	header: Option<&shared::MessageHeaderExtract>,
 	settings: &CImportSettings,
 ) -> Result<()> {
 	let mut report =
@@ -111,12 +105,12 @@ async fn import_c_1_safety_report(
 	apply_c_safety_report_import_settings(
 		&mut report,
 		settings,
-		settings.import_date.ok_or_else(|| Error::InvalidImportRequest {
-			message: "import date is required".to_string(),
-		})?,
+		settings
+			.import_date
+			.ok_or_else(|| Error::InvalidImportRequest {
+				message: "import date is required".to_string(),
+			})?,
 	)?;
-
-	let receiver_organization = header.and_then(|h| h.message_receiver.clone());
 
 	mm.dbx()
 		.execute(
@@ -141,12 +135,11 @@ async fn import_c_1_safety_report(
 					other_case_identifiers_exist_null_flavor,
 					nullification_code,
 					nullification_reason,
-					receiver_organization,
 					created_at,
 					updated_at,
 					created_by
 				) VALUES (
-					$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,NOW(),NOW(),$21
+					$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW(),NOW(),$20
 				)
 				ON CONFLICT (case_id) DO UPDATE SET
 					safety_report_id = EXCLUDED.safety_report_id,
@@ -167,9 +160,8 @@ async fn import_c_1_safety_report(
 					other_case_identifiers_exist_null_flavor = EXCLUDED.other_case_identifiers_exist_null_flavor,
 					nullification_code = EXCLUDED.nullification_code,
 					nullification_reason = EXCLUDED.nullification_reason,
-					receiver_organization = EXCLUDED.receiver_organization,
 					updated_at = NOW(),
-					updated_by = $21",
+					updated_by = $20",
 			)
 			.bind(case_id)
 			.bind(safety_report_id)
@@ -190,7 +182,6 @@ async fn import_c_1_safety_report(
 			.bind(report.other_case_identifiers_exist_null_flavor)
 			.bind(report.nullification_code)
 			.bind(report.nullification_reason)
-			.bind(receiver_organization)
 			.bind(ctx.user_id()),
 		)
 		.await
@@ -553,8 +544,8 @@ async fn import_c_4_case_identifiers(
 				OtherCaseIdentifierForCreate {
 					case_id,
 					sequence_number: seq,
-					source_of_identifier: entry.source_of_identifier,
-					case_identifier: entry.case_identifier,
+					source_of_identifier: Some(entry.source_of_identifier),
+					case_identifier: Some(entry.case_identifier),
 				},
 			)
 			.await?;
@@ -593,7 +584,7 @@ async fn import_c_4_case_identifiers(
 				LinkedReportNumberForCreate {
 					case_id,
 					sequence_number: seq,
-					linked_report_number: entry.linked_report_number,
+					linked_report_number: Some(entry.linked_report_number),
 				},
 			)
 			.await?;
@@ -851,77 +842,6 @@ async fn import_c_5_study_information(
 	{
 		mm.dbx().execute(sqlx::query("INSERT INTO study_fda_cross_reported_inds (study_information_id, ind_number, ind_number_null_flavor, sequence_number, created_at, updated_at, created_by) VALUES ($1,$2,$3,$4,NOW(),NOW(),$5)").bind(study_id).bind(ind_number).bind(ind_number_null_flavor).bind((idx + 1) as i32).bind(ctx.user_id())).await.map_err(model::Error::from)?;
 	}
-	Ok(())
-}
-
-async fn import_c_6_receiver_information(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	xml: &[u8],
-	case_id: Uuid,
-) -> Result<()> {
-	let Some(receiver) = c_helpers::parse_receiver_information(xml)? else {
-		return Ok(());
-	};
-	let receiver_type = receiver.receiver_type;
-	let organization_name = receiver.organization_name;
-	let department = receiver.department;
-	let street_address = receiver.street_address;
-	let city = receiver.city;
-	let state_province = receiver.state_province;
-	let postcode = receiver.postcode;
-	let country_code = receiver.country_code;
-	let telephone = receiver.telephone;
-	let fax = receiver.fax;
-	let email = receiver.email;
-
-	if ReceiverInformationBmc::get_by_case_optional(ctx, mm, case_id)
-		.await?
-		.is_some()
-	{
-		ReceiverInformationBmc::update_by_case(
-			ctx,
-			mm,
-			case_id,
-			ReceiverInformationForUpdate {
-				source_receiver_presave_id: None,
-				receiver_type,
-				organization_name,
-				department,
-				street_address,
-				city,
-				state_province,
-				postcode,
-				country_code,
-				telephone,
-				fax,
-				email,
-			},
-		)
-		.await?;
-	} else {
-		let _ = ReceiverInformationBmc::create(
-			ctx,
-			mm,
-			ReceiverInformationForCreate {
-				case_id,
-				source_receiver_presave_id: None,
-				receiver_type,
-				organization_name,
-				department,
-				street_address,
-				city,
-				state_province,
-				postcode,
-				country_code,
-				telephone,
-				fax,
-				email,
-			},
-		)
-		.await?;
-	}
-
 	Ok(())
 }
 

@@ -5,8 +5,7 @@ use libxml::tree::{Document, Namespace, Node, NodeType};
 use libxml::xpath::Context;
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use sqlx::types::time::{Date, OffsetDateTime};
-use time::UtcOffset;
+use sqlx::types::time::Date;
 
 pub(crate) fn set_attr_first(
 	xpath: &mut Context,
@@ -124,19 +123,6 @@ fn xsi_namespace(node: &Node) -> Option<Namespace> {
 	None
 }
 
-pub(crate) fn fmt_datetime(dt: OffsetDateTime) -> String {
-	let dt = dt.to_offset(UtcOffset::UTC);
-	format!(
-		"{:04}{:02}{:02}{:02}{:02}{:02}+0000",
-		dt.year(),
-		u8::from(dt.month()),
-		dt.day(),
-		dt.hour(),
-		dt.minute(),
-		dt.second()
-	)
-}
-
 pub(crate) fn fmt_date(date: Date) -> String {
 	format!(
 		"{:04}{:02}{:02}",
@@ -147,7 +133,6 @@ pub(crate) fn fmt_date(date: Date) -> String {
 }
 
 pub(crate) fn fmt_date_lexeme(value: &str) -> String {
-	let value = value.trim();
 	if value.len() == 10
 		&& value.as_bytes()[4] == b'-'
 		&& value.as_bytes()[7] == b'-'
@@ -369,6 +354,7 @@ mod tests {
 		assert_eq!(fmt_date_lexeme("2026-04-07"), "20260407");
 		assert_eq!(fmt_date_lexeme("202604"), "202604");
 		assert_eq!(fmt_date_lexeme("invalid"), "invalid");
+		assert_eq!(fmt_date_lexeme(" 202604 "), " 202604 ");
 	}
 
 	#[test]

@@ -83,7 +83,7 @@ pub(super) fn test_result() -> TestResult {
 		sequence_number: 1,
 		test_date: None,
 		test_date_null_flavor: None,
-		test_name: String::new(),
+		test_name: None,
 		test_meddra_version: None,
 		test_meddra_code: None,
 		test_result_code: None,
@@ -163,7 +163,7 @@ fn length_issues_for(test: TestResult) -> Vec<(String, String)> {
 #[test]
 fn allowed_value_rule_flags_invalid_test_result_code() {
 	let mut test = test_result();
-	test.test_name = "ALT".to_string();
+	test.test_name = Some("ALT".to_string());
 	test.test_date = Some("20200101".to_string());
 	test.test_result_code = Some("9".to_string());
 
@@ -173,7 +173,7 @@ fn allowed_value_rule_flags_invalid_test_result_code() {
 #[test]
 fn numeric_rule_flags_non_numeric_test_result_value() {
 	let mut test = test_result();
-	test.test_name = "ALT".to_string();
+	test.test_name = Some("ALT".to_string());
 	test.test_date = Some("20200101".to_string());
 	test.test_result_value = Some("not-numeric".to_string());
 
@@ -196,7 +196,7 @@ fn test_payload_without_name_flags_test_name() {
 #[test]
 fn test_name_without_date_flags_date_and_result_group() {
 	let mut test = test_result();
-	test.test_name = "ALT".to_string();
+	test.test_name = Some("ALT".to_string());
 
 	assert_eq!(
 		codes_for(test),
@@ -244,7 +244,7 @@ fn meddra_code_without_version_flags_version() {
 #[test]
 fn result_value_without_unit_flags_unit() {
 	let mut test = test_result();
-	test.test_name = "ALT".to_string();
+	test.test_name = Some("ALT".to_string());
 	test.test_result_value = Some("15".to_string());
 
 	assert_eq!(
@@ -259,7 +259,7 @@ fn result_value_without_unit_flags_unit() {
 #[test]
 fn max_length_rules_cover_f_test_result_text_fields() {
 	let mut test = test_result();
-	test.test_name = "T".repeat(251);
+	test.test_name = Some("T".repeat(251));
 	test.test_meddra_version = Some("V".repeat(5));
 	test.test_meddra_code = Some("M".repeat(9));
 	test.test_result_code = Some("RC".to_string());
@@ -319,7 +319,7 @@ fn more_information_requires_additional_documents() {
 #[test]
 fn golden_f_issue_metadata() {
 	let mut test = test_result();
-	test.test_name = "ALT".to_string();
+	test.test_name = Some("ALT".to_string());
 	test.test_result_code = Some("9".to_string());
 	let mut ctx = empty_ctx();
 	ctx.tests.push(test);

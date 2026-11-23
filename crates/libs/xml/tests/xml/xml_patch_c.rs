@@ -14,9 +14,9 @@ fn patch_c_section_updates_values() {
 	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 	let patch = CSafetyReportPatch {
-		report_unique_id: "SR-TEST-123",
+		report_unique_id: Some("SR-TEST-123"),
 		transmission_date: Some("20240115"),
-		report_type: "1",
+		report_type: Some("1"),
 		date_first_received: Some("20240110"),
 		date_most_recent: Some("20240115"),
 		fulfil_expedited: Some(true),
@@ -92,9 +92,9 @@ fn sender_patch<'a>(
 	email: Option<&'a str>,
 ) -> CSafetyReportPatch<'a> {
 	CSafetyReportPatch {
-		report_unique_id: "SENDER-TEST",
+		report_unique_id: Some("SENDER-TEST"),
 		transmission_date: None,
-		report_type: "1",
+		report_type: Some("1"),
 		date_first_received: None,
 		date_most_recent: None,
 		fulfil_expedited: Some(false),
@@ -317,9 +317,9 @@ fn patch_c_1_9_1_exports_boolean_value_without_ce_children() {
 			r#"<value xsi:type="CE" code="legacy"><originalText>legacy</originalText></value>"#,
 		);
 	let patch = CSafetyReportPatch {
-		report_unique_id: "FAERS2022Scenario1",
+		report_unique_id: Some("FAERS2022Scenario1"),
 		transmission_date: None,
-		report_type: "1",
+		report_type: Some("1"),
 		date_first_received: None,
 		date_most_recent: None,
 		fulfil_expedited: Some(true),
@@ -407,9 +407,9 @@ fn patch_c_uses_persisted_c1_2() {
 	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 	let patch = CSafetyReportPatch {
-		report_unique_id: "SR-TEST-124",
+		report_unique_id: Some("SR-TEST-124"),
 		transmission_date: Some("20240115"),
-		report_type: "1",
+		report_type: Some("1"),
 		date_first_received: Some("20240110"),
 		date_most_recent: Some("20240115"),
 		fulfil_expedited: Some(true),
@@ -476,9 +476,9 @@ fn patch_c_keeps_investigation_event_order_when_adding_components() {
 </MCCI_IN200100UV01>"#;
 
 	let patch = CSafetyReportPatch {
-		report_unique_id: "CASE-1",
+		report_unique_id: Some("CASE-1"),
 		transmission_date: Some("20240115"),
-		report_type: "1",
+		report_type: Some("1"),
 		date_first_received: Some("20240110"),
 		date_most_recent: Some("20240115"),
 		fulfil_expedited: Some(true),
@@ -565,9 +565,9 @@ fn patch_c_keeps_order_when_adding_local_criteria_component() {
 </MCCI_IN200100UV01>"#;
 
 	let patch = CSafetyReportPatch {
-		report_unique_id: "CASE-2",
+		report_unique_id: Some("CASE-2"),
 		transmission_date: Some("20240115"),
-		report_type: "2",
+		report_type: Some("2"),
 		date_first_received: Some("20240110"),
 		date_most_recent: Some("20240115"),
 		fulfil_expedited: Some(true),
@@ -662,9 +662,9 @@ fn patch_c_exports_sender_health_professional_type_kr1() {
 </MCCI_IN200100UV01>"#;
 
 	let patch = CSafetyReportPatch {
-		report_unique_id: "CASE-3",
+		report_unique_id: Some("CASE-3"),
 		transmission_date: Some("20240115"),
-		report_type: "2",
+		report_type: Some("2"),
 		date_first_received: Some("20240110"),
 		date_most_recent: Some("20240115"),
 		fulfil_expedited: Some(true),

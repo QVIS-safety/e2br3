@@ -326,7 +326,7 @@ pub(crate) async fn deleted_test_result_can_be_read_and_restored_with_case_and_a
 		scope_other_audits_before
 	);
 
-	let (status, _) = patch_json(
+	let (status, rejection) = patch_json(
 		&app,
 		&admin_cookie,
 		&row_uri,
@@ -338,7 +338,21 @@ pub(crate) async fn deleted_test_result_can_be_read_and_restored_with_case_and_a
 		}}}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST);
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{rejection}");
+	assert_eq!(rejection["error"]["message"], "CONSTRAINT_VIOLATION");
+	assert_eq!(
+		rejection["error"]["data"]["detail"]["ruleCode"],
+		"LOCAL.F.r.testResultQualifier.REQUIRES.VALUE"
+	);
+	assert_eq!(
+		get_json(&app, &admin_cookie, &row_uri).await?,
+		scope_detail_before
+	);
+	assert_eq!(
+		crate::case_editor_contract_web::audit::case_audit_ids(&mm, &ctx, &case_id)
+			.await?,
+		scope_audits_before
+	);
 	let (status, body) = get_json(&app, &admin_cookie, &row_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["data"]["testResult"]["deleted"], true, "{body}");

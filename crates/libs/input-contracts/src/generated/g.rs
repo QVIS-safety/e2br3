@@ -752,6 +752,12 @@ pub fn g_k_4_r_7(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		input.value,
 		35,
 	);
+	crate::helpers::null_flavor(
+		&mut issues,
+		"ICH.G.k.4.r.7.NULLFLAVOR.ALLOWED",
+		input.null_flavor,
+		&["UNK"],
+	);
 	issues
 }
 

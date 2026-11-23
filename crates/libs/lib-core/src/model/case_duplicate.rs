@@ -48,7 +48,7 @@ pub struct DuplicateBasisAssessment {
 #[derive(Debug, Serialize)]
 pub struct CaseIntakeDuplicateMatch {
 	pub case_id: Uuid,
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	pub version: i32,
 	pub status: String,
 	pub created_at: String,
@@ -70,7 +70,7 @@ pub struct CaseIntakeDuplicateMatch {
 #[derive(Debug, FromRow)]
 struct DuplicateScanRow {
 	case_id: Uuid,
-	safety_report_id: String,
+	safety_report_id: Option<String>,
 	version: i32,
 	status: String,
 	created_at: sqlx::types::time::OffsetDateTime,

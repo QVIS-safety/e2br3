@@ -1,12 +1,10 @@
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::import_sections::shared::{
-	first_attr, first_text, first_value, first_value_root, normalize_code,
-	parse_bool_attr, parse_bool_with_yes_no, parse_date,
+	first_attr, first_text, first_value, first_value_root, parse_bool_literal,
+	parse_bool_with_yes_no,
 };
 use crate::Result;
-use libxml::parser::Parser;
-use libxml::xpath::Context;
 use rust_decimal::Decimal;
 use sqlx::types::time::Date;
 
@@ -130,11 +128,10 @@ pub(crate) struct ParentImport {
 fn input_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 
@@ -142,45 +139,36 @@ fn input_date(
 	value: Option<String>,
 	null_flavor: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<(Option<Date>, Option<String>)> {
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
-	Ok((value.and_then(parse_date), null_flavor))
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
+	Ok((crate::import_constraint::date(value, field)?, null_flavor))
 }
 
 fn input_ts(
 	value: Option<String>,
 	null_flavor: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<(Option<String>, Option<String>)> {
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
 	Ok((value, null_flavor))
 }
 
 fn input_number(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<Decimal>> {
-	import_constraint::number_string(field, value.as_deref(), check)?;
-	Ok(value.and_then(|value| value.parse().ok()))
+	xpath.inputs.number_string(field, value.as_deref(), check);
+	crate::import_constraint::decimal(value, field)
 }
 
 pub(crate) fn parse_patient_identifiers(
@@ -191,60 +179,57 @@ pub(crate) fn parse_patient_identifiers(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
-		.findnodes("//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity", None)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query patient identifiers".to_string(),
-			line: None,
-			column: None,
-		})?;
+		let nodes = xpath
+			.findnodes("//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity", None)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query patient identifiers".to_string(),
+				line: None,
+				column: None,
+			})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let identifier_type_code =
-			read_d_local_patient_identifier_type_code(&mut xpath, &node);
-		let (identifier_value, identifier_value_null_flavor) =
-			read_d_local_patient_identifier_value(
-				&mut xpath,
-				&node,
-				identifier_type_code.as_deref(),
-			)?;
-		if let (Some(identifier_type_code), Some(identifier_value)) =
-			(identifier_type_code.clone(), identifier_value)
-		{
-			items.push(PatientIdentifierImport {
-				identifier_type_code,
-				identifier_value: Some(identifier_value),
-				identifier_value_null_flavor: None,
-			});
-		} else if let (
-			Some(identifier_type_code),
-			Some(identifier_value_null_flavor),
-		) = (identifier_type_code, identifier_value_null_flavor)
-		{
-			items.push(PatientIdentifierImport {
-				identifier_type_code,
-				identifier_value: None,
-				identifier_value_null_flavor: Some(identifier_value_null_flavor),
-			});
+		let mut items = Vec::new();
+		for node in nodes {
+			let identifier_type_code =
+				read_d_local_patient_identifier_type_code(&mut xpath, &node);
+			let (identifier_value, identifier_value_null_flavor) =
+				read_d_local_patient_identifier_value(
+					&mut xpath,
+					&node,
+					identifier_type_code.as_deref(),
+				)?;
+			if let (Some(identifier_type_code), Some(identifier_value)) =
+				(identifier_type_code.clone(), identifier_value)
+			{
+				items.push(PatientIdentifierImport {
+					identifier_type_code,
+					identifier_value: Some(identifier_value),
+					identifier_value_null_flavor: None,
+				});
+			} else if let (
+				Some(identifier_type_code),
+				Some(identifier_value_null_flavor),
+			) = (identifier_type_code, identifier_value_null_flavor)
+			{
+				items.push(PatientIdentifierImport {
+					identifier_type_code,
+					identifier_value: None,
+					identifier_value_null_flavor: Some(identifier_value_null_flavor),
+				});
+			}
 		}
-	}
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:D.local.patientIdentifier.typeCode
@@ -252,11 +237,7 @@ fn read_d_local_patient_identifier_type_code(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 ) -> Option<String> {
-	normalize_code(
-		first_attr(xpath, node, "hl7:code", "code"),
-		&["1", "2", "3", "4"],
-		"patient_identifiers.identifier_type_code",
-	)
+	first_attr(xpath, node, "hl7:code", "code")
 }
 
 /// e2b:D.local.patientIdentifier.value
@@ -272,30 +253,30 @@ fn read_d_local_patient_identifier_value(
 	let value = first_attr(xpath, node, "hl7:id", "extension");
 	let null_flavor = first_attr(xpath, node, "hl7:id", "nullFlavor");
 	match type_code {
-		Some("1") => import_constraint::string(
+		Some("1") => xpath.inputs.string(
 			"gpMedicalRecordNumber",
 			value.as_deref(),
 			null_flavor.as_deref(),
 			input_contracts::generated::d::d_1_1_1,
-		)?,
-		Some("2") => import_constraint::string(
+		),
+		Some("2") => xpath.inputs.string(
 			"specialistRecordNumber",
 			value.as_deref(),
 			null_flavor.as_deref(),
 			input_contracts::generated::d::d_1_1_2,
-		)?,
-		Some("3") => import_constraint::string(
+		),
+		Some("3") => xpath.inputs.string(
 			"hospitalRecordNumber",
 			value.as_deref(),
 			null_flavor.as_deref(),
 			input_contracts::generated::d::d_1_1_3,
-		)?,
-		Some("4") => import_constraint::string(
+		),
+		Some("4") => xpath.inputs.string(
 			"investigationNumber",
 			value.as_deref(),
 			null_flavor.as_deref(),
 			input_contracts::generated::d::d_1_1_4,
-		)?,
+		),
 		_ => {}
 	}
 	Ok((value, null_flavor))
@@ -309,22 +290,16 @@ pub(crate) fn parse_medical_history(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:observation",
 			None,
@@ -335,34 +310,39 @@ pub(crate) fn parse_medical_history(
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let code_system = first_attr(&mut xpath, &node, "hl7:code", "codeSystem");
-		if code_system.as_deref() != Some("2.16.840.1.113883.6.163") {
-			continue;
+		let mut items = Vec::new();
+		for node in nodes {
+			let code_system =
+				first_attr(&mut xpath, &node, "hl7:code", "codeSystem");
+			if code_system.as_deref() != Some("2.16.840.1.113883.6.163") {
+				continue;
+			}
+			let (meddra_version, meddra_code) = read_d_7_1_r_1(&mut xpath, &node)?;
+			let (start_date, start_date_null_flavor) =
+				read_d_7_1_r_2(&mut xpath, &node)?;
+			let (continuing, continuing_null_flavor) =
+				read_d_7_1_r_3(&mut xpath, &node)?;
+			let (end_date, end_date_null_flavor) =
+				read_d_7_1_r_4(&mut xpath, &node)?;
+			let comments = read_d_7_1_r_5(&mut xpath, &node)?;
+			let family_history = read_d_7_1_r_6(&mut xpath, &node)?;
+			items.push(MedicalHistoryImport {
+				meddra_version,
+				meddra_code,
+				start_date,
+				start_date_null_flavor,
+				continuing,
+				continuing_null_flavor,
+				end_date,
+				end_date_null_flavor,
+				comments,
+				family_history,
+			});
 		}
-		let (meddra_version, meddra_code) = read_d_7_1_r_1(&mut xpath, &node)?;
-		let (start_date, start_date_null_flavor) =
-			read_d_7_1_r_2(&mut xpath, &node)?;
-		let (continuing, continuing_null_flavor) =
-			read_d_7_1_r_3(&mut xpath, &node)?;
-		let (end_date, end_date_null_flavor) = read_d_7_1_r_4(&mut xpath, &node)?;
-		let comments = read_d_7_1_r_5(&mut xpath, &node)?;
-		let family_history = read_d_7_1_r_6(&mut xpath, &node)?;
-		items.push(MedicalHistoryImport {
-			meddra_version,
-			meddra_code,
-			start_date,
-			start_date_null_flavor,
-			continuing,
-			continuing_null_flavor,
-			end_date,
-			end_date_null_flavor,
-			comments,
-			family_history,
-		});
-	}
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:D.7.1.r.1a
@@ -376,11 +356,13 @@ fn read_d_7_1_r_1(
 			first_attr(xpath, node, "hl7:code", "codeSystemVersion"),
 			"medicalHistoryEpisodes[].meddraVersion",
 			input_contracts::generated::d::d_7_1_r_1a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, "hl7:code", "code"),
 			"medicalHistoryEpisodes[].meddraCode",
 			input_contracts::generated::d::d_7_1_r_1b,
+			xpath,
 		)?,
 	))
 }
@@ -395,6 +377,7 @@ fn read_d_7_1_r_2(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:low", "nullFlavor"),
 		"medicalHistoryEpisodes[].startDate",
 		input_contracts::generated::d::d_7_1_r_2,
+		xpath,
 	)
 }
 
@@ -405,20 +388,22 @@ fn read_d_7_1_r_3(
 ) -> Result<(Option<bool>, Option<String>)> {
 	let path =
 		"hl7:inboundRelationship/hl7:observation[hl7:code[@code='13']]/hl7:value";
-	let value = parse_bool_attr(xpath, node, path, "value");
+	let raw = first_attr(xpath, node, path, "value");
+	let value = parse_bool_literal(raw.as_deref());
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"medicalHistoryEpisodes[].continuing",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_7_1_r_3,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"medicalHistoryEpisodes[].continuingNullFlavor",
 		None,
 		None,
 		input_contracts::generated::d::d_7_1_r_3,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -432,6 +417,7 @@ fn read_d_7_1_r_4(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:high", "nullFlavor"),
 		"medicalHistoryEpisodes[].endDate",
 		input_contracts::generated::d::d_7_1_r_4,
+		xpath,
 	)
 }
 
@@ -444,7 +430,7 @@ fn read_d_7_1_r_5(
 		xpath,
 		node,
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='10']]/hl7:value",
-	), "medicalHistoryEpisodes[].comments", input_contracts::generated::d::d_7_1_r_5)
+	), "medicalHistoryEpisodes[].comments", input_contracts::generated::d::d_7_1_r_5, xpath,)
 }
 
 /// e2b:D.7.1.r.6
@@ -452,18 +438,20 @@ fn read_d_7_1_r_6(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 ) -> Result<Option<bool>> {
-	let value = parse_bool_attr(
+	let raw = first_attr(
 		xpath,
 		node,
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='38']]/hl7:value",
 		"value",
 	);
-	import_constraint::boolean(
+	let value = parse_bool_literal(raw.as_deref());
+	xpath.inputs.boolean(
 		"medicalHistoryEpisodes[].familyHistory",
+		raw.as_deref(),
 		value,
 		None,
 		input_contracts::generated::d::d_7_1_r_6,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -475,22 +463,16 @@ pub(crate) fn parse_past_drug_history(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='2' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:substanceAdministration",
 			None,
@@ -501,46 +483,51 @@ pub(crate) fn parse_past_drug_history(
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let (drug_name, drug_name_null_flavor) = read_d_8_r_1(&mut xpath, &node)?;
-		let (mfds_medicinal_product_version, mfds_medicinal_product_id) =
-			read_d_8_r_1_kr(&mut xpath, &node)?;
-		let (
-			mpid_version,
-			mpid,
-			mpid_source_code_system,
-			mpid_source_code_system_version,
-		) = read_d_8_r_2(&mut xpath, &node)?;
-		let (phpid_version, phpid) = read_d_8_r_3(&mut xpath, &node)?;
-		let (start_date, start_date_null_flavor) = read_d_8_r_4(&mut xpath, &node)?;
-		let (end_date, end_date_null_flavor) = read_d_8_r_5(&mut xpath, &node)?;
-		let (indication_meddra_version, indication_meddra_code) =
-			read_d_8_r_6(&mut xpath, &node)?;
-		let (reaction_meddra_version, reaction_meddra_code) =
-			read_d_8_r_7(&mut xpath, &node)?;
-		items.push(PastDrugHistoryImport {
-			drug_name,
-			drug_name_null_flavor,
-			mpid,
-			mpid_version,
-			mpid_source_code_system,
-			mpid_source_code_system_version,
-			mfds_medicinal_product_version,
-			mfds_medicinal_product_id,
-			phpid,
-			phpid_version,
-			start_date,
-			start_date_null_flavor,
-			end_date,
-			end_date_null_flavor,
-			indication_meddra_version,
-			indication_meddra_code,
-			reaction_meddra_version,
-			reaction_meddra_code,
-		});
-	}
-	Ok(items)
+		let mut items = Vec::new();
+		for node in nodes {
+			let (drug_name, drug_name_null_flavor) =
+				read_d_8_r_1(&mut xpath, &node)?;
+			let (mfds_medicinal_product_version, mfds_medicinal_product_id) =
+				read_d_8_r_1_kr(&mut xpath, &node)?;
+			let (
+				mpid_version,
+				mpid,
+				mpid_source_code_system,
+				mpid_source_code_system_version,
+			) = read_d_8_r_2(&mut xpath, &node)?;
+			let (phpid_version, phpid) = read_d_8_r_3(&mut xpath, &node)?;
+			let (start_date, start_date_null_flavor) =
+				read_d_8_r_4(&mut xpath, &node)?;
+			let (end_date, end_date_null_flavor) = read_d_8_r_5(&mut xpath, &node)?;
+			let (indication_meddra_version, indication_meddra_code) =
+				read_d_8_r_6(&mut xpath, &node)?;
+			let (reaction_meddra_version, reaction_meddra_code) =
+				read_d_8_r_7(&mut xpath, &node)?;
+			items.push(PastDrugHistoryImport {
+				drug_name,
+				drug_name_null_flavor,
+				mpid,
+				mpid_version,
+				mpid_source_code_system,
+				mpid_source_code_system_version,
+				mfds_medicinal_product_version,
+				mfds_medicinal_product_id,
+				phpid,
+				phpid_version,
+				start_date,
+				start_date_null_flavor,
+				end_date,
+				end_date_null_flavor,
+				indication_meddra_version,
+				indication_meddra_code,
+				reaction_meddra_version,
+				reaction_meddra_code,
+			});
+		}
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 const PRODUCT: &str = "hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct";
@@ -553,12 +540,12 @@ fn read_d_8_r_1(
 	let path = format!("{PRODUCT}/hl7:name");
 	let value = first_text(xpath, node, &path);
 	let null_flavor = first_attr(xpath, node, &path, "nullFlavor");
-	import_constraint::string(
+	xpath.inputs.string(
 		"drugName",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_8_r_1,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -576,11 +563,13 @@ fn read_d_8_r_1_kr(
 			first_attr(xpath, node, &path, "codeSystemVersion"),
 			"mfdsMedicinalProductVersion",
 			input_contracts::generated::d::mfds_d_8_r_1_kr_1a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, &path, "code"),
 			"mfdsMedicinalProductId",
 			input_contracts::generated::d::mfds_d_8_r_1_kr_1b,
+			xpath,
 		)?,
 	))
 }
@@ -604,11 +593,13 @@ fn read_d_8_r_2(
 			Some(mpid.clone()),
 			"mpid",
 			input_contracts::generated::d::d_8_r_2b,
+			xpath,
 		)?;
 		let source_version = input_string(
 			first_attr(xpath, node, &fda_code, "codeSystemVersion"),
 			"mpidSourceCodeSystemVersion",
 			input_contracts::generated::d::mfds_d_8_r_1_kr_1a,
+			xpath,
 		)?;
 		return Ok((
 			None,
@@ -623,12 +614,14 @@ fn read_d_8_r_2(
 				.or_else(|| first_attr(xpath, node, &fda_code, "codeSystemVersion")),
 			"mpidVersion",
 			input_contracts::generated::d::d_8_r_2a,
+			xpath,
 		)?,
 		input_string(
 			first_value(xpath, node, &format!("{base}/hl7:id/@extension"))
 				.or_else(|| first_attr(xpath, node, &fda_code, "code")),
 			"mpid",
 			input_contracts::generated::d::d_8_r_2b,
+			xpath,
 		)?,
 		None,
 		None,
@@ -651,11 +644,13 @@ fn read_d_8_r_3(
 			),
 			"phpidVersion",
 			input_contracts::generated::d::d_8_r_3a,
+			xpath,
 		)?,
 		input_string(
 			first_value(xpath, node, &format!("{base}/hl7:id/@extension)[1]")),
 			"phpid",
 			input_contracts::generated::d::d_8_r_3b,
+			xpath,
 		)?,
 	))
 }
@@ -670,6 +665,7 @@ fn read_d_8_r_4(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:low", "nullFlavor"),
 		"startDate",
 		input_contracts::generated::d::d_8_r_4,
+		xpath,
 	)
 }
 
@@ -683,6 +679,7 @@ fn read_d_8_r_5(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:high", "nullFlavor"),
 		"endDate",
 		input_contracts::generated::d::d_8_r_5,
+		xpath,
 	)
 }
 
@@ -692,12 +689,8 @@ fn read_meddra_pair(
 	relationship: &str,
 	version_field: &str,
 	code_field: &str,
-	version_check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
-	code_check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	version_check: input_contracts::Check,
+	code_check: input_contracts::Check,
 ) -> Result<(Option<String>, Option<String>)> {
 	let path = format!("hl7:outboundRelationship2[@typeCode='{relationship}']/hl7:observation/hl7:value");
 	Ok((
@@ -705,11 +698,13 @@ fn read_meddra_pair(
 			first_attr(xpath, node, &path, "codeSystemVersion"),
 			version_field,
 			version_check,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, &path, "code"),
 			code_field,
 			code_check,
+			xpath,
 		)?,
 	))
 }
@@ -754,44 +749,39 @@ pub(crate) fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let (date_of_death, date_of_death_null_flavor) = read_d_9_1(&mut xpath)?;
-	let (autopsy_performed, autopsy_performed_null_flavor) = read_d_9_3(&mut xpath)?;
+		let (date_of_death, date_of_death_null_flavor) = read_d_9_1(&mut xpath)?;
+		let (autopsy_performed, autopsy_performed_null_flavor) =
+			read_d_9_3(&mut xpath)?;
 
-	let mut reported_causes = Vec::new();
-	let reported_nodes = xpath
-		.findnodes("//hl7:observation[hl7:code[@code='32']]/hl7:value", None)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query reported causes of death".to_string(),
-			line: None,
-			column: None,
-		})?;
-	for node in reported_nodes {
-		let (meddra_version, meddra_code, comments) =
-			read_d_9_2_r(&mut xpath, &node)?;
-		reported_causes.push(DeathCauseImport {
-			meddra_version,
-			meddra_code,
-			comments,
-		});
-	}
+		let mut reported_causes = Vec::new();
+		let reported_nodes = xpath
+			.findnodes("//hl7:observation[hl7:code[@code='32']]/hl7:value", None)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query reported causes of death".to_string(),
+				line: None,
+				column: None,
+			})?;
+		for node in reported_nodes {
+			let (meddra_version, meddra_code, comments) =
+				read_d_9_2_r(&mut xpath, &node)?;
+			reported_causes.push(DeathCauseImport {
+				meddra_version,
+				meddra_code,
+				comments,
+			});
+		}
 
-	let mut autopsy_causes = Vec::new();
-	let autopsy_nodes = xpath
+		let mut autopsy_causes = Vec::new();
+		let autopsy_nodes = xpath
 		.findnodes(
 			"//hl7:observation[hl7:code[@code='5']]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='8']]/hl7:value",
 			None,
@@ -801,34 +791,37 @@ pub(crate) fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 			line: None,
 			column: None,
 		})?;
-	for node in autopsy_nodes {
-		let (meddra_version, meddra_code, comments) =
-			read_d_9_4_r(&mut xpath, &node)?;
-		autopsy_causes.push(DeathCauseImport {
-			meddra_version,
-			meddra_code,
-			comments,
-		});
-	}
+		for node in autopsy_nodes {
+			let (meddra_version, meddra_code, comments) =
+				read_d_9_4_r(&mut xpath, &node)?;
+			autopsy_causes.push(DeathCauseImport {
+				meddra_version,
+				meddra_code,
+				comments,
+			});
+		}
 
-	if date_of_death.is_none()
-		&& date_of_death_null_flavor.is_none()
-		&& autopsy_performed.is_none()
-		&& autopsy_performed_null_flavor.is_none()
-		&& reported_causes.is_empty()
-		&& autopsy_causes.is_empty()
-	{
-		return Ok(None);
-	}
+		if date_of_death.is_none()
+			&& date_of_death_null_flavor.is_none()
+			&& autopsy_performed.is_none()
+			&& autopsy_performed_null_flavor.is_none()
+			&& reported_causes.is_empty()
+			&& autopsy_causes.is_empty()
+		{
+			return Ok(None);
+		}
 
-	Ok(Some(DeathImport {
-		date_of_death,
-		date_of_death_null_flavor,
-		autopsy_performed,
-		autopsy_performed_null_flavor,
-		reported_causes,
-		autopsy_causes,
-	}))
+		Ok(Some(DeathImport {
+			date_of_death,
+			date_of_death_null_flavor,
+			autopsy_performed,
+			autopsy_performed_null_flavor,
+			reported_causes,
+			autopsy_causes,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:D.9.1
@@ -838,34 +831,34 @@ fn read_d_9_1(xpath: &mut Context) -> Result<(Option<Date>, Option<String>)> {
 		first_value_root(xpath, "//hl7:deceasedTime/@nullFlavor"),
 		"patientDeath.dateOfDeath",
 		input_contracts::generated::d::d_9_1,
+		xpath,
 	)
 }
 
 /// e2b:D.9.3
 fn read_d_9_3(xpath: &mut Context) -> Result<(Option<bool>, Option<String>)> {
-	let value = parse_bool_with_yes_no(
-		first_value_root(
-			xpath,
-			"//hl7:observation[hl7:code[@code='5']]/hl7:value/@value",
-		)
-		.as_deref(),
+	let raw = first_value_root(
+		xpath,
+		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@value",
 	);
+	let value = parse_bool_with_yes_no(raw.as_deref());
 	let null_flavor = first_value_root(
 		xpath,
 		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@nullFlavor",
 	);
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"patientDeath.autopsyPerformed",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_9_3,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"patientDeath.autopsyPerformedNullFlavor",
 		None,
 		None,
 		input_contracts::generated::d::d_9_3,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -881,16 +874,19 @@ fn read_d_9_2_r(
 			node.get_attribute("codeSystemVersion"),
 			"patientDeath.reportedCausesOfDeath[].meddraVersion",
 			input_contracts::generated::d::d_9_2_r_1a,
+			xpath,
 		)?,
 		input_string(
 			node.get_attribute("code"),
 			"patientDeath.reportedCausesOfDeath[].meddraCode",
 			input_contracts::generated::d::d_9_2_r_1b,
+			xpath,
 		)?,
 		input_string(
 			first_text(xpath, node, "hl7:originalText"),
 			"patientDeath.reportedCausesOfDeath[].causeText",
 			input_contracts::generated::d::d_9_2_r_2,
+			xpath,
 		)?,
 	))
 }
@@ -907,16 +903,19 @@ fn read_d_9_4_r(
 			node.get_attribute("codeSystemVersion"),
 			"patientDeath.autopsyCausesOfDeath[].meddraVersion",
 			input_contracts::generated::d::d_9_4_r_1a,
+			xpath,
 		)?,
 		input_string(
 			node.get_attribute("code"),
 			"patientDeath.autopsyCausesOfDeath[].meddraCode",
 			input_contracts::generated::d::d_9_4_r_1b,
+			xpath,
 		)?,
 		input_string(
 			first_text(xpath, node, "hl7:originalText"),
 			"patientDeath.autopsyCausesOfDeath[].causeText",
 			input_contracts::generated::d::d_9_4_r_2,
+			xpath,
 		)?,
 	))
 }
@@ -929,18 +928,18 @@ fn read_d_10_1(
 	let value = first_text(xpath, node, "hl7:associatedPerson/hl7:name");
 	let null_flavor =
 		first_attr(xpath, node, "hl7:associatedPerson/hl7:name", "nullFlavor");
-	import_constraint::string(
+	xpath.inputs.string(
 		"parentInformation.parentIdentification",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_10_1,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"parentInformation.parentIdentificationNullFlavor",
 		None,
 		None,
 		input_contracts::generated::d::d_10_1,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -955,6 +954,7 @@ fn read_d_10_2_1(
 		first_attr(xpath, node, path, "nullFlavor"),
 		"parentInformation.parentBirthDate",
 		input_contracts::generated::d::d_10_2_1,
+		xpath,
 	)
 }
 
@@ -968,6 +968,7 @@ fn read_d_10_2_2a(
 		first_attr(xpath, node, path, "value"),
 		"parentInformation.parentAge.value",
 		input_contracts::generated::d::d_10_2_2a,
+		xpath,
 	)
 }
 
@@ -985,6 +986,7 @@ fn read_d_10_2_2b(
 		),
 		"parentInformation.parentAge.unit",
 		input_contracts::generated::d::d_10_2_2b,
+		xpath,
 	)
 }
 
@@ -999,6 +1001,7 @@ fn read_d_10_3(
 		first_attr(xpath, node, path, "nullFlavor"),
 		"parentInformation.parentLastMenstrualPeriodDate",
 		input_contracts::generated::d::d_10_3,
+		xpath,
 	)
 }
 
@@ -1016,6 +1019,7 @@ fn read_d_10_4(
 		),
 		"parentInformation.parentWeight.value",
 		input_contracts::generated::d::d_10_4,
+		xpath,
 	)
 }
 
@@ -1033,6 +1037,7 @@ fn read_d_10_5(
 		),
 		"parentInformation.parentHeight.value",
 		input_contracts::generated::d::d_10_5,
+		xpath,
 	)
 }
 
@@ -1044,18 +1049,18 @@ fn read_d_10_6(
 	let path = "hl7:associatedPerson/hl7:administrativeGenderCode";
 	let value = first_attr(xpath, node, path, "code");
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::string(
+	xpath.inputs.string(
 		"parentInformation.parentSex",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_10_6,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"parentInformation.parentSexNullFlavor",
 		None,
 		None,
 		input_contracts::generated::d::d_10_6,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -1064,7 +1069,7 @@ fn read_d_10_7_2(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 ) -> Result<Option<String>> {
-	input_string(first_text(xpath, node, "hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value"), "parentInformation.medicalHistoryText", input_contracts::generated::d::d_10_7_2)
+	input_string(first_text(xpath, node, "hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value"), "parentInformation.medicalHistoryText", input_contracts::generated::d::d_10_7_2, xpath,)
 }
 
 /// e2b:D.10.7.1.r.1a
@@ -1078,11 +1083,13 @@ fn read_d_10_7_1_r_1(
 			first_attr(xpath, node, "hl7:code", "codeSystemVersion"),
 			"parentInformation.medicalHistoryEpisodes[].meddraVersion",
 			input_contracts::generated::d::d_10_7_1_r_1a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, "hl7:code", "code"),
 			"parentInformation.medicalHistoryEpisodes[].meddraCode",
 			input_contracts::generated::d::d_10_7_1_r_1b,
+			xpath,
 		)?,
 	))
 }
@@ -1097,6 +1104,7 @@ fn read_d_10_7_1_r_2(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:low", "nullFlavor"),
 		"parentInformation.medicalHistoryEpisodes[].startDate",
 		input_contracts::generated::d::d_10_7_1_r_2,
+		xpath,
 	)
 }
 
@@ -1107,20 +1115,22 @@ fn read_d_10_7_1_r_3(
 ) -> Result<(Option<bool>, Option<String>)> {
 	let path =
 		"hl7:inboundRelationship/hl7:observation[hl7:code[@code='13']]/hl7:value";
-	let value = parse_bool_attr(xpath, node, path, "value");
+	let raw = first_attr(xpath, node, path, "value");
+	let value = parse_bool_literal(raw.as_deref());
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"parentInformation.medicalHistoryEpisodes[].continuing",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::d::d_10_7_1_r_3,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"parentInformation.medicalHistoryEpisodes[].continuingNullFlavor",
 		None,
 		None,
 		input_contracts::generated::d::d_10_7_1_r_3,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -1134,6 +1144,7 @@ fn read_d_10_7_1_r_4(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:high", "nullFlavor"),
 		"parentInformation.medicalHistoryEpisodes[].endDate",
 		input_contracts::generated::d::d_10_7_1_r_4,
+		xpath,
 	)
 }
 
@@ -1146,7 +1157,7 @@ fn read_d_10_7_1_r_5(
 		xpath,
 		node,
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='10']]/hl7:value",
-	), "parentInformation.medicalHistoryEpisodes[].comments", input_contracts::generated::d::d_10_7_1_r_5)
+	), "parentInformation.medicalHistoryEpisodes[].comments", input_contracts::generated::d::d_10_7_1_r_5, xpath,)
 }
 
 /// e2b:D.10.8.r.1
@@ -1159,6 +1170,7 @@ fn read_d_10_8_r_1(
 		first_text(xpath, node, &path),
 		"parentInformation.pastDrugHistory[].drugName",
 		input_contracts::generated::d::d_10_8_r_1,
+		xpath,
 	)
 }
 
@@ -1174,11 +1186,13 @@ fn read_d_10_8_r_1_kr(
 			first_attr(xpath, node, &path, "codeSystemVersion"),
 			"parentInformation.pastDrugHistory[].mfdsMedicinalProductVersion",
 			input_contracts::generated::d::mfds_d_10_8_r_1_kr_1a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, &path, "code"),
 			"parentInformation.pastDrugHistory[].mfdsMedicinalProductId",
 			input_contracts::generated::d::mfds_d_10_8_r_1_kr_1b,
+			xpath,
 		)?,
 	))
 }
@@ -1195,11 +1209,13 @@ fn read_d_10_8_r_2(
 			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion")),
 			"parentInformation.pastDrugHistory[].mpidVersion",
 			input_contracts::generated::d::d_10_8_r_2a,
+			xpath,
 		)?,
 		input_string(
 			first_value(xpath, node, &format!("{base}/hl7:id/@extension")),
 			"parentInformation.pastDrugHistory[].mpid",
 			input_contracts::generated::d::d_10_8_r_2b,
+			xpath,
 		)?,
 	))
 }
@@ -1220,11 +1236,13 @@ fn read_d_10_8_r_3(
 			),
 			"parentInformation.pastDrugHistory[].phpidVersion",
 			input_contracts::generated::d::d_10_8_r_3a,
+			xpath,
 		)?,
 		input_string(
 			first_value(xpath, node, &format!("{base}/hl7:id/@extension)[1]")),
 			"parentInformation.pastDrugHistory[].phpid",
 			input_contracts::generated::d::d_10_8_r_3b,
+			xpath,
 		)?,
 	))
 }
@@ -1239,6 +1257,7 @@ fn read_d_10_8_r_4(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:low", "nullFlavor"),
 		"parentInformation.pastDrugHistory[].startDate",
 		input_contracts::generated::d::d_10_8_r_4,
+		xpath,
 	)
 }
 
@@ -1252,6 +1271,7 @@ fn read_d_10_8_r_5(
 		first_attr(xpath, node, "hl7:effectiveTime/hl7:high", "nullFlavor"),
 		"parentInformation.pastDrugHistory[].endDate",
 		input_contracts::generated::d::d_10_8_r_5,
+		xpath,
 	)
 }
 
@@ -1268,11 +1288,13 @@ fn read_d_10_8_r_6(
 			first_attr(xpath, node, path, "codeSystemVersion"),
 			"parentInformation.pastDrugHistory[].indicationMeddraVersion",
 			input_contracts::generated::d::d_10_8_r_6a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, path, "code"),
 			"parentInformation.pastDrugHistory[].indicationMeddraCode",
 			input_contracts::generated::d::d_10_8_r_6b,
+			xpath,
 		)?,
 	))
 }
@@ -1290,11 +1312,13 @@ fn read_d_10_8_r_7(
 			first_attr(xpath, node, path, "codeSystemVersion"),
 			"parentInformation.pastDrugHistory[].reactionMeddraVersion",
 			input_contracts::generated::d::d_10_8_r_7a,
+			xpath,
 		)?,
 		input_string(
 			first_attr(xpath, node, path, "code"),
 			"parentInformation.pastDrugHistory[].reactionMeddraCode",
 			input_contracts::generated::d::d_10_8_r_7b,
+			xpath,
 		)?,
 	))
 }
@@ -1305,50 +1329,44 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
-		.findnodes(
-			"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]",
-			None,
-		)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query parent information".to_string(),
-			line: None,
-			column: None,
-		})?;
-	let Some(node) = nodes.first() else {
-		return Ok(None);
-	};
+		let nodes = xpath
+			.findnodes(
+				"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]",
+				None,
+			)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query parent information".to_string(),
+				line: None,
+				column: None,
+			})?;
+		let Some(node) = nodes.first() else {
+			return Ok(None);
+		};
 
-	let (parent_identification, parent_identification_null_flavor) =
-		read_d_10_1(&mut xpath, node)?;
-	let (parent_birth_date, parent_birth_date_null_flavor) =
-		read_d_10_2_1(&mut xpath, node)?;
-	let parent_age = read_d_10_2_2a(&mut xpath, node)?;
-	let parent_age_unit = read_d_10_2_2b(&mut xpath, node)?;
-	let (last_menstrual_period_date, last_menstrual_period_date_null_flavor) =
-		read_d_10_3(&mut xpath, node)?;
-	let weight_kg = read_d_10_4(&mut xpath, node)?;
-	let height_cm = read_d_10_5(&mut xpath, node)?;
-	let (sex, sex_null_flavor) = read_d_10_6(&mut xpath, node)?;
-	let medical_history_text = read_d_10_7_2(&mut xpath, node)?;
+		let (parent_identification, parent_identification_null_flavor) =
+			read_d_10_1(&mut xpath, node)?;
+		let (parent_birth_date, parent_birth_date_null_flavor) =
+			read_d_10_2_1(&mut xpath, node)?;
+		let parent_age = read_d_10_2_2a(&mut xpath, node)?;
+		let parent_age_unit = read_d_10_2_2b(&mut xpath, node)?;
+		let (last_menstrual_period_date, last_menstrual_period_date_null_flavor) =
+			read_d_10_3(&mut xpath, node)?;
+		let weight_kg = read_d_10_4(&mut xpath, node)?;
+		let height_cm = read_d_10_5(&mut xpath, node)?;
+		let (sex, sex_null_flavor) = read_d_10_6(&mut xpath, node)?;
+		let medical_history_text = read_d_10_7_2(&mut xpath, node)?;
 
-	let mut medical_history = Vec::new();
-	let history_nodes = xpath
+		let mut medical_history = Vec::new();
+		let history_nodes = xpath
 		.findnodes(
 			"hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation",
 			Some(node),
@@ -1358,33 +1376,34 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 			line: None,
 			column: None,
 		})?;
-	for obs in history_nodes {
-		let code_system = first_attr(&mut xpath, &obs, "hl7:code", "codeSystem");
-		if code_system.as_deref() != Some("2.16.840.1.113883.6.163") {
-			continue;
+		for obs in history_nodes {
+			let code_system = first_attr(&mut xpath, &obs, "hl7:code", "codeSystem");
+			if code_system.as_deref() != Some("2.16.840.1.113883.6.163") {
+				continue;
+			}
+			let (meddra_version, meddra_code) = read_d_10_7_1_r_1(&mut xpath, &obs)?;
+			let (start_date, start_date_null_flavor) =
+				read_d_10_7_1_r_2(&mut xpath, &obs)?;
+			let (continuing, continuing_null_flavor) =
+				read_d_10_7_1_r_3(&mut xpath, &obs)?;
+			let (end_date, end_date_null_flavor) =
+				read_d_10_7_1_r_4(&mut xpath, &obs)?;
+			let comments = read_d_10_7_1_r_5(&mut xpath, &obs)?;
+			medical_history.push(ParentMedicalHistoryImport {
+				meddra_version,
+				meddra_code,
+				start_date,
+				start_date_null_flavor,
+				continuing,
+				continuing_null_flavor,
+				end_date,
+				end_date_null_flavor,
+				comments,
+			});
 		}
-		let (meddra_version, meddra_code) = read_d_10_7_1_r_1(&mut xpath, &obs)?;
-		let (start_date, start_date_null_flavor) =
-			read_d_10_7_1_r_2(&mut xpath, &obs)?;
-		let (continuing, continuing_null_flavor) =
-			read_d_10_7_1_r_3(&mut xpath, &obs)?;
-		let (end_date, end_date_null_flavor) = read_d_10_7_1_r_4(&mut xpath, &obs)?;
-		let comments = read_d_10_7_1_r_5(&mut xpath, &obs)?;
-		medical_history.push(ParentMedicalHistoryImport {
-			meddra_version,
-			meddra_code,
-			start_date,
-			start_date_null_flavor,
-			continuing,
-			continuing_null_flavor,
-			end_date,
-			end_date_null_flavor,
-			comments,
-		});
-	}
 
-	let mut past_drugs = Vec::new();
-	let drug_nodes = xpath
+		let mut past_drugs = Vec::new();
+		let drug_nodes = xpath
 		.findnodes(
 			"hl7:subjectOf2/hl7:organizer[hl7:code[@code='2']]/hl7:component/hl7:substanceAdministration",
 			Some(node),
@@ -1394,63 +1413,213 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 			line: None,
 			column: None,
 		})?;
-	for obs in drug_nodes {
-		let drug_name = read_d_10_8_r_1(&mut xpath, &obs)?;
-		let (mpid_version, mpid) = read_d_10_8_r_2(&mut xpath, &obs)?;
-		let (mfds_medicinal_product_version, mfds_medicinal_product_id) =
-			read_d_10_8_r_1_kr(&mut xpath, &obs)?;
-		let (start_date, start_date_null_flavor) =
-			read_d_10_8_r_4(&mut xpath, &obs)?;
-		let (end_date, end_date_null_flavor) = read_d_10_8_r_5(&mut xpath, &obs)?;
-		let (indication_meddra_version, indication_meddra_code) =
-			read_d_10_8_r_6(&mut xpath, &obs)?;
-		let (reaction_meddra_version, reaction_meddra_code) =
-			read_d_10_8_r_7(&mut xpath, &obs)?;
-		let (phpid_version, phpid) = read_d_10_8_r_3(&mut xpath, &obs)?;
-		past_drugs.push(PastDrugHistoryImport {
-			drug_name,
-			drug_name_null_flavor: None,
-			mpid,
-			mpid_version,
-			mpid_source_code_system: None,
-			mpid_source_code_system_version: None,
-			mfds_medicinal_product_version,
-			mfds_medicinal_product_id,
-			phpid,
-			phpid_version,
-			start_date,
-			start_date_null_flavor,
-			end_date,
-			end_date_null_flavor,
-			indication_meddra_version,
-			indication_meddra_code,
-			reaction_meddra_version,
-			reaction_meddra_code,
-		});
-	}
+		for obs in drug_nodes {
+			let drug_name = read_d_10_8_r_1(&mut xpath, &obs)?;
+			let (mpid_version, mpid) = read_d_10_8_r_2(&mut xpath, &obs)?;
+			let (mfds_medicinal_product_version, mfds_medicinal_product_id) =
+				read_d_10_8_r_1_kr(&mut xpath, &obs)?;
+			let (start_date, start_date_null_flavor) =
+				read_d_10_8_r_4(&mut xpath, &obs)?;
+			let (end_date, end_date_null_flavor) =
+				read_d_10_8_r_5(&mut xpath, &obs)?;
+			let (indication_meddra_version, indication_meddra_code) =
+				read_d_10_8_r_6(&mut xpath, &obs)?;
+			let (reaction_meddra_version, reaction_meddra_code) =
+				read_d_10_8_r_7(&mut xpath, &obs)?;
+			let (phpid_version, phpid) = read_d_10_8_r_3(&mut xpath, &obs)?;
+			past_drugs.push(PastDrugHistoryImport {
+				drug_name,
+				drug_name_null_flavor: None,
+				mpid,
+				mpid_version,
+				mpid_source_code_system: None,
+				mpid_source_code_system_version: None,
+				mfds_medicinal_product_version,
+				mfds_medicinal_product_id,
+				phpid,
+				phpid_version,
+				start_date,
+				start_date_null_flavor,
+				end_date,
+				end_date_null_flavor,
+				indication_meddra_version,
+				indication_meddra_code,
+				reaction_meddra_version,
+				reaction_meddra_code,
+			});
+		}
 
-	Ok(Some(ParentImport {
-		parent_identification,
-		parent_identification_null_flavor,
-		parent_birth_date,
-		parent_birth_date_null_flavor,
-		parent_age,
-		parent_age_unit,
-		last_menstrual_period_date,
-		last_menstrual_period_date_null_flavor,
-		weight_kg,
-		height_cm,
-		sex,
-		sex_null_flavor,
-		medical_history_text,
-		medical_history,
-		past_drugs,
-	}))
+		Ok(Some(ParentImport {
+			parent_identification,
+			parent_identification_null_flavor,
+			parent_birth_date,
+			parent_birth_date_null_flavor,
+			parent_age,
+			parent_age_unit,
+			last_menstrual_period_date,
+			last_menstrual_period_date_null_flavor,
+			weight_kg,
+			height_cm,
+			sex,
+			sex_null_flavor,
+			medical_history_text,
+			medical_history,
+			past_drugs,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn patient_identifier_import_preserves_each_type_and_masking() {
+		for type_code in ["1", "2", "3", "4"] {
+			for (attributes, expected, null_flavor) in [
+				("extension=\"RECORD-123\"", Some("RECORD-123"), None),
+				("nullFlavor=\"MSK\"", None, Some("MSK")),
+			] {
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><asIdentifiedEntity><id {attributes}/><code code="{type_code}"/></asIdentifiedEntity></player1></primaryRole></root>"#
+				);
+				let rows = parse_patient_identifiers(xml.as_bytes())
+					.expect("parse identifier");
+				assert_eq!(rows.len(), 1);
+				assert_eq!(rows[0].identifier_type_code, type_code);
+				assert_eq!(rows[0].identifier_value.as_deref(), expected);
+				assert_eq!(
+					rows[0].identifier_value_null_flavor.as_deref(),
+					null_flavor
+				);
+			}
+			for attributes in [
+				"extension=\"RECORD-123\" nullFlavor=\"MSK\"",
+				"nullFlavor=\"UNK\"",
+			] {
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><asIdentifiedEntity><id {attributes}/><code code="{type_code}"/></asIdentifiedEntity></player1></primaryRole></root>"#
+				);
+				assert!(
+					parse_patient_identifiers(xml.as_bytes()).is_err(),
+					"type {type_code}: {attributes}"
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn death_import_preserves_date_boolean_and_allowed_null_flavors() {
+		for (literal, expected) in [("true", true), ("false", false)] {
+			let xml = format!(
+				r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><deceasedTime value="20260804"/></player1><subjectOf2><observation><code code="5"/><value value="{literal}"/></observation></subjectOf2></primaryRole></root>"#
+			);
+			let death = parse_patient_death(xml.as_bytes())
+				.expect("parse")
+				.expect("death");
+			assert_eq!(
+				death.date_of_death,
+				Some(
+					Date::from_calendar_date(2026, time::Month::August, 4)
+						.expect("date")
+				)
+			);
+			assert_eq!(death.date_of_death_null_flavor, None);
+			assert_eq!(death.autopsy_performed, Some(expected));
+			assert_eq!(death.autopsy_performed_null_flavor, None);
+		}
+		for date_nf in ["MSK", "ASKU", "NASK"] {
+			for autopsy_nf in ["UNK", "ASKU", "NASK"] {
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><deceasedTime nullFlavor="{date_nf}"/></player1><subjectOf2><observation><code code="5"/><value nullFlavor="{autopsy_nf}"/></observation></subjectOf2></primaryRole></root>"#
+				);
+				let death = parse_patient_death(xml.as_bytes())
+					.expect("parse")
+					.expect("death");
+				assert_eq!(death.date_of_death, None);
+				assert_eq!(
+					death.date_of_death_null_flavor.as_deref(),
+					Some(date_nf)
+				);
+				assert_eq!(death.autopsy_performed, None);
+				assert_eq!(
+					death.autopsy_performed_null_flavor.as_deref(),
+					Some(autopsy_nf)
+				);
+				assert!(parse_patient_death(
+					xml.replace(
+						"<deceasedTime ",
+						"<deceasedTime value=\"20260804\" "
+					)
+					.as_bytes()
+				)
+				.is_err());
+				assert!(parse_patient_death(
+					xml.replace("<value ", "<value value=\"false\" ").as_bytes()
+				)
+				.is_err());
+			}
+		}
+	}
+
+	#[test]
+	fn death_import_rejects_invalid_boolean_instead_of_losing_its_value() {
+		for attributes in
+			["value=\"invalid\"", "value=\"invalid\" nullFlavor=\"UNK\""]
+		{
+			let xml = format!(
+				r#"<root xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><observation><code code="5"/><value {attributes}/></observation></subjectOf2></primaryRole></root>"#
+			);
+			assert!(parse_patient_death(xml.as_bytes()).is_err(), "{attributes}");
+		}
+	}
+
+	#[test]
+	fn parent_import_preserves_birth_date_age_unit_and_null_flavor() {
+		let xml = r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1><role><code code="PRN"/><associatedPerson><birthTime value="19881123"/></associatedPerson><subjectOf2><observation><code code="3"/><value value="37" unit="a"/></observation></subjectOf2></role></player1></primaryRole></root>"#;
+		let parent = parse_parent_information(xml.as_bytes())
+			.expect("parse")
+			.expect("parent");
+		assert_eq!(
+			parent.parent_birth_date,
+			Some(
+				Date::from_calendar_date(1988, time::Month::November, 23)
+					.expect("date")
+			)
+		);
+		assert_eq!(parent.parent_birth_date_null_flavor, None);
+		assert_eq!(parent.parent_age, Some(Decimal::new(37, 0)));
+		assert_eq!(parent.parent_age_unit.as_deref(), Some("a"));
+		for null_flavor in ["MSK", "ASKU", "NASK"] {
+			let masked = xml.replace(
+				"value=\"19881123\"",
+				&format!("nullFlavor=\"{null_flavor}\""),
+			);
+			let parent = parse_parent_information(masked.as_bytes())
+				.expect("parse")
+				.expect("parent");
+			assert_eq!(parent.parent_birth_date, None);
+			assert_eq!(
+				parent.parent_birth_date_null_flavor.as_deref(),
+				Some(null_flavor)
+			);
+			assert_eq!(parent.parent_age, Some(Decimal::new(37, 0)));
+			assert_eq!(parent.parent_age_unit.as_deref(), Some("a"));
+			assert!(parse_parent_information(
+				masked
+					.replace("<birthTime ", "<birthTime value=\"19881123\" ")
+					.as_bytes()
+			)
+			.is_err());
+		}
+		assert!(parse_parent_information(
+			xml.replace("value=\"19881123\"", "nullFlavor=\"UNK\"")
+				.as_bytes()
+		)
+		.is_err());
+	}
 
 	#[test]
 	fn patient_repeated_sections_exclude_parent_rows() {

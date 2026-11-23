@@ -44,7 +44,7 @@
       "nullFlavorPartnerCode": "C.4.r.local.referenceTextNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "literature_references", "column": "reference_text", "record": {"source": "projection", "path": "literatureReference.id"}}
       }
@@ -68,7 +68,7 @@
       "nullFlavorPartnerCode": "C.4.r.1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "literature_references", "column": "reference_text_null_flavor", "record": {"source": "projection", "path": "literatureReference.id"}}
       }
@@ -107,7 +107,7 @@
       "payloadPath": "documentBase64",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "literature_references", "column": "document_base64", "record": {"source": "projection", "path": "literatureReference.id"}}
       }

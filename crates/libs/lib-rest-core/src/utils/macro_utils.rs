@@ -277,6 +277,7 @@ macro_rules! generate_patient_child_rest_fns {
 		EntityName: $entity_name:literal,
 		DeleteResult: $delete_result:ty,
 		DeleteResponse: $delete_response:ident
+		$(, ValidateField: $validate_field:ident => $validate_fn:path)?
 	) => {
 		pub async fn $create_fn(
 			axum::extract::State(mm): axum::extract::State<
@@ -300,6 +301,7 @@ macro_rules! generate_patient_child_rest_fns {
 			let $crate::rest_params::ParamsForCreate { data } = params;
 			let mut data = data;
 			data.$parent_field = parent_id;
+			$($validate_fn(data.$validate_field.as_deref())?;)?
 			let id = $bmc::create(&ctx, &mm, data).await?;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			Ok((
@@ -401,6 +403,7 @@ macro_rules! generate_patient_child_rest_fns {
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			$scope_fn(&ctx, &mm, case_id, entity.$parent_field, id, $entity_name)
 				.await?;
+			$($validate_fn(data.$validate_field.as_deref())?;)?
 			$bmc::update(&ctx, &mm, id, data).await?;
 			let entity = $bmc::get(&ctx, &mm, id).await?;
 			Ok((

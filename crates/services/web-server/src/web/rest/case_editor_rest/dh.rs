@@ -42,6 +42,7 @@ async fn load_editor_dh_list_rows(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
+	include_deleted: bool,
 ) -> Result<Vec<CaseEditorDhListRowDto>> {
 	let patient = match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
 		Ok(patient) => patient,
@@ -57,17 +58,19 @@ async fn load_editor_dh_list_rows(
 			.to_string()))])),
 		..Default::default()
 	};
-	Ok(PastDrugHistoryBmc::list(
+	Ok(PastDrugHistoryBmc::list_with_deleted(
 		ctx,
 		mm,
 		Some(vec![filter]),
 		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		include_deleted,
 	)
 	.await?
 	.into_iter()
 	.map(|history| CaseEditorDhListRowDto {
 		id: history.id,
 		sequence_number: history.sequence_number,
+		deleted: history.deleted,
 		drug_name: history.drug_name,
 		mpid: history.mpid,
 		indication: history.indication_meddra_code,
@@ -82,6 +85,7 @@ repeatable_list_handler!(
 	list_editor_dh,
 	CaseEditorDhListRowDto,
 	load_editor_dh_list_rows,
+	include_deleted,
 );
 
 pub async fn get_editor_dh_page_projection(
@@ -103,7 +107,13 @@ pub async fn get_editor_dh_page_projection(
 		"editor/DH",
 		move |ctx, mm| {
 			Box::pin(async move {
-				let rows = load_editor_dh_list_rows(ctx, mm, case_id).await?;
+				let rows = load_editor_dh_list_rows(
+					ctx,
+					mm,
+					case_id,
+					query.include_deleted == Some(true),
+				)
+				.await?;
 				let authorities = query_authorities_csv(&query)?;
 				let rows = if query.include_rows == Some(true) {
 					repeatable_rows_with_details(json!(rows), |row_id| {

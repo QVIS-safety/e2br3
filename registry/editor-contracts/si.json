@@ -54,7 +54,7 @@
       "nullFlavorPartnerCode": "C.5.1.r.1.local.registrationNumberNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_registration_numbers", "column": "registration_number", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
@@ -125,7 +125,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_registration_numbers", "column": "country_code", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
@@ -172,7 +172,7 @@
       "nullFlavorPartnerCode": "C.5.2.local.studyNameNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "study_name", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -219,7 +219,7 @@
       "nullFlavorPartnerCode": "C.5.3.local.sponsorStudyNumberNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "sponsor_study_number", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -277,7 +277,7 @@
       "payloadPath": "studyTypeReaction",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "study_type_reaction", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -316,7 +316,7 @@
       "payloadPath": "studyTypeReactionKr1",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "study_type_reaction_kr1", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -355,7 +355,7 @@
       "payloadPath": "fdaIndNumberOccurred",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "fda_ind_number_occurred", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -394,7 +394,7 @@
       "payloadPath": "fdaPreAndaNumberOccurred",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "fda_pre_anda_number_occurred", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -441,7 +441,7 @@
       "nullFlavorPartnerCode": "FDA.C.5.6.r.local.indNumberNullFlavor",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_fda_cross_reported_inds", "column": "ind_number", "record": {"source": "projection", "path": "studyInformation.fdaCrossReportedIndNumbers[].id"}}
       }
@@ -465,7 +465,7 @@
       "nullFlavorPartnerCode": "FDA.C.5.6.r",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_fda_cross_reported_inds", "column": "ind_number_null_flavor", "record": {"source": "projection", "path": "studyInformation.fdaCrossReportedIndNumbers[].id"}}
       }
@@ -499,7 +499,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_registration_numbers", "column": "registration_number_null_flavor", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
@@ -533,7 +533,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_registration_numbers", "column": "country_code_null_flavor", "record": {"source": "projection", "path": "studyRegistrationNumbers[].id"}}
       }
@@ -557,7 +557,7 @@
       "nullFlavorPartnerCode": "C.5.2",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "study_name_null_flavor", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -581,7 +581,7 @@
       "nullFlavorPartnerCode": "C.5.3",
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "study_information", "column": "sponsor_study_number_null_flavor", "record": {"source": "projection", "path": "studyInformation.id"}}
       }
@@ -589,9 +589,9 @@
   ],
   "fieldChecks": [
     {
-      "id": "registration_blank_values_can_be_replaced_by_null_flavors",
-      "verifier": "fields::null_flavor::registration_blank_values_can_be_replaced_by_null_flavors",
-      "description": "registration blank values can be replaced by null flavors"
+      "id": "registration_values_can_be_replaced_by_null_flavors",
+      "verifier": "fields::null_flavor::registration_values_can_be_replaced_by_null_flavors",
+      "description": "Registration values can be cleared with NULL and replaced by null flavors"
     }
   ],
   "collections": [
@@ -641,6 +641,7 @@
               "studyRegistrationNumbers": [
                 {
                   "registrationNumber": "",
+                  "sequenceNumber": 1,
                   "countryCode": "KR"
                 }
               ]
@@ -652,7 +653,7 @@
           {
             "rows": {
               "studyRegistrationNumbers": [
-                {}
+                { "sequenceNumber": 1 }
               ]
             },
             "collection": "studyRegistrationNumbers",

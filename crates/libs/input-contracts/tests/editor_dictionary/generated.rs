@@ -33,6 +33,7 @@ dictionary_test!(ci_c_1_4_allowed_value_constraint, "CI", "C.1.4", "C.1.4", "all
 dictionary_test!(ci_c_1_5_allowed_value_constraint, "CI", "C.1.5", "C.1.5", "allowed_value_constraint", input_contracts::generated::c::c_1_5);
 dictionary_test!(ci_c_1_6_1_allowed_value_constraint, "CI", "C.1.6.1", "C.1.6.1", "allowed_value_constraint", input_contracts::generated::c::c_1_6_1);
 dictionary_test!(ci_c_1_6_1_r_1_max_length, "CI", "C.1.6.1.r.1", "C.1.6.1.r.1", "max_length", input_contracts::generated::c::c_1_6_1_r_1);
+dictionary_test!(ci_c_1_6_1_r_2_allowed_value_constraint, "CI", "C.1.6.1.r.2", "C.1.6.1.r.2", "allowed_value_constraint", input_contracts::generated::c::c_1_6_1_r_2);
 dictionary_test!(ci_c_1_7_allowed_value_constraint, "CI", "C.1.7", "C.1.7", "allowed_value_constraint", input_contracts::generated::c::c_1_7);
 dictionary_test!(ci_fda_c_1_7_1_max_length, "CI", "FDA.C.1.7.1", "FDA.C.1.7.1", "max_length", input_contracts::generated::c::fda_c_1_7_1);
 dictionary_test!(ci_fda_c_1_7_1_allowed_value_constraint, "CI", "FDA.C.1.7.1", "FDA.C.1.7.1", "allowed_value_constraint", input_contracts::generated::c::fda_c_1_7_1);

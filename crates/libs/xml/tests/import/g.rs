@@ -57,7 +57,16 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first.gestation_period_exposure_value, Some(decimal("10")));
 	assert_eq!(first.gestation_period_exposure_unit.as_deref(), Some("wk"));
 	assert_eq!(first.action_taken.as_deref(), Some("2"));
-	assert_eq!(first.fda_additional_info_coded.as_deref(), Some("4"));
+	// The fixture's ICH codes must not be mistaken for the separate FDA code.
+	assert_eq!(first.fda_additional_info_coded.as_deref(), Some("1"));
+	assert_eq!(
+		first.drug_additional_info_codes_json,
+		Some(serde_json::json!([
+			{ "value_code": "4" },
+			{ "value_code": "9" },
+			{ "value_code": "10" }
+		]))
+	);
 	assert_eq!(
 		first.fda_specialized_product_category.as_deref(),
 		Some("C102835")

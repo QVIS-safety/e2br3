@@ -92,6 +92,7 @@ async fn prepare_submission_xml(
 		case_id,
 		ExportXmlOptions {
 			apply_comments: true,
+			include_source_documents: false,
 			authority,
 			outbound_message_header: export_message_header(&header)?,
 		},
@@ -152,12 +153,10 @@ pub async fn prepare_outbound_message_header(
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
 	let report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await?;
-	required_header_value(
+	let message_number = required_header_value(
 		"C.1.1 Safety Report ID",
 		report.safety_report_id.as_deref(),
 	)?;
-	// Follow-ups share C.1.1 but each persisted version needs its own message ID.
-	let message_number = format!("MSG-{case_id}");
 	let message_date = required_header_value(
 		"C.1.2 Date of Creation",
 		report.transmission_date.as_deref(),
@@ -296,43 +295,37 @@ pub fn export_message_header(
 	header: &MessageHeader,
 ) -> Result<OutboundMessageHeader> {
 	Ok(OutboundMessageHeader {
-		batch_number: required_header_value(
-			"N.1.2 Batch Number",
-			header.batch_number.as_deref(),
-		)?,
-		batch_sender_identifier: required_header_value(
-			"N.1.3 Batch Sender Identifier",
-			header.batch_sender_identifier.as_deref(),
-		)?,
-		batch_receiver_identifier: required_header_value(
-			"N.1.4 Batch Receiver Identifier",
-			header.batch_receiver_identifier.as_deref(),
-		)?,
-		batch_transmission_date: header.batch_transmission_date.ok_or_else(
-			|| Error::BadRequest {
-				message:
-					"N.1.5 Batch Transmission Date is required before XML export"
-						.to_string(),
+		batch_number: header.batch_number.clone(),
+		batch_sender_identifier: header.batch_sender_identifier.clone(),
+		batch_receiver_identifier: header.batch_receiver_identifier.clone(),
+		batch_transmission_date: match (&header.batch_transmission_date_raw, header.batch_transmission_date) {
+			(Some(raw), None) => Some(raw.clone()),
+			(None, Some(date)) => {
+				let date = date.to_offset(time::UtcOffset::UTC);
+				let mut timestamp = lib_utils::time::format_e2b_timestamp(date);
+				if date.nanosecond() != 0 {
+					timestamp.push('.');
+					timestamp.push_str(format!("{:09}", date.nanosecond()).trim_end_matches('0'));
+				}
+				timestamp.push_str("+0000");
+				Some(timestamp)
 			},
-		)?,
-		message_sender_identifier: required_header_value(
-			"N.2.r.2 Message Sender Identifier",
-			Some(&header.message_sender_identifier),
-		)?,
-		message_receiver_identifier: required_header_value(
-			"N.2.r.3 Message Receiver Identifier",
-			Some(&header.message_receiver_identifier),
-		)?,
+			(None, None) => None,
+			(Some(_), Some(_)) => return Err(Error::BadRequest { message: "N.1.5 Batch Transmission Date has conflicting stored representations".to_string() }),
+		},
+		message_number: header.message_number.clone(),
+		message_date: header.message_date.clone(),
+		message_sender_identifier: header.message_sender_identifier.clone(),
+		message_receiver_identifier: header.message_receiver_identifier.clone(),
 	})
 }
 
 fn required_header_value(field: &str, value: Option<&str>) -> Result<String> {
 	value
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
+		.filter(|value| !value.trim().is_empty())
 		.map(str::to_string)
 		.ok_or_else(|| Error::BadRequest {
-			message: format!("{field} is required before XML export"),
+			message: format!("{field} is required before submission"),
 		})
 }
 
@@ -353,6 +346,18 @@ fn required_env_identifier(name: &'static str) -> Result<String> {
 
 #[cfg(test)]
 mod header_tests {
+	#[test]
+	fn imported_timestamp_is_not_a_silently_ignored_public_write() {
+		use lib_core::model::message_header::MessageHeaderForUpdate;
+		assert!(serde_json::from_value::<MessageHeaderForUpdate>(
+			serde_json::json!({"batch_transmission_date_raw": "2024"})
+		)
+		.is_err());
+		assert!(serde_json::from_value::<MessageHeaderForUpdate>(
+			serde_json::json!({"batch_number": "BATCH"})
+		)
+		.is_ok());
+	}
 	use super::*;
 
 	fn valid_header() -> MessageHeader {
@@ -365,6 +370,7 @@ mod header_tests {
 			batch_receiver_identifier: Some("RECEIVER".to_string()),
 			batch_transmission_date: Some(now),
 			message_type: "ichicsr".to_string(),
+			batch_transmission_date_raw: None,
 			message_format_version: "2.1".to_string(),
 			message_format_release: "2.0".to_string(),
 			message_number: "CASE".to_string(),
@@ -380,14 +386,88 @@ mod header_tests {
 	}
 
 	#[test]
+	fn export_preserves_imported_batch_timestamp_precision_and_offset() {
+		for raw in [
+			"2024",
+			"202402",
+			"20240229123059.1234+0900",
+			"20241121010203-0400",
+		] {
+			let mut header = valid_header();
+			header.batch_transmission_date = None;
+			header.batch_transmission_date_raw = Some(raw.to_string());
+			assert_eq!(
+				export_message_header(&header)
+					.expect("stored raw timestamp")
+					.batch_transmission_date
+					.as_deref(),
+				Some(raw)
+			);
+		}
+		let mut header = valid_header();
+		header.batch_transmission_date_raw = Some("2024".to_string());
+		assert!(
+			export_message_header(&header).is_err(),
+			"ambiguous representations must fail"
+		);
+		header.batch_transmission_date_raw = None;
+		header.batch_transmission_date = None;
+		assert_eq!(
+			export_message_header(&header)
+				.expect("incomplete download")
+				.batch_transmission_date,
+			None
+		);
+	}
+
+	#[test]
+	fn export_preserves_typed_batch_timestamp_fraction() {
+		for (input, expected) in [
+			(
+				"2024-02-29T12:30:59.123456789+09:00",
+				"20240229033059.123456789+0000",
+			),
+			("2024-02-29T12:30:59.000001Z", "20240229123059.000001+0000"),
+			("2024-02-29T12:30:59Z", "20240229123059+0000"),
+		] {
+			let mut header = valid_header();
+			header.batch_transmission_date = Some(
+				OffsetDateTime::parse(
+					input,
+					&time::format_description::well_known::Rfc3339,
+				)
+				.unwrap(),
+			);
+			assert_eq!(
+				export_message_header(&header)
+					.unwrap()
+					.batch_transmission_date
+					.as_deref(),
+				Some(expected)
+			);
+		}
+	}
+
+	#[test]
+	fn export_reads_message_identity_and_date_without_report_substitution() {
+		let mut header = valid_header();
+		header.message_number = " MESSAGE-ID ".to_string();
+		header.message_date = "20240229123059.1234+0900".to_string();
+		let exported = export_message_header(&header).unwrap();
+		assert_eq!(exported.message_number, header.message_number);
+		assert_eq!(exported.message_date, header.message_date);
+	}
+
+	#[test]
 	fn incomplete_generated_header_never_reaches_xml_export() {
 		for field in [
 			"batch_number",
 			"batch_sender_identifier",
 			"batch_receiver_identifier",
-			"batch_transmission_date",
 			"message_sender_identifier",
 			"message_receiver_identifier",
+			"message_number",
+			"message_date",
 		] {
 			let mut header = valid_header();
 			match field {
@@ -396,13 +476,14 @@ mod header_tests {
 				"batch_receiver_identifier" => {
 					header.batch_receiver_identifier = None
 				}
-				"batch_transmission_date" => header.batch_transmission_date = None,
 				"message_sender_identifier" => {
 					header.message_sender_identifier.clear()
 				}
 				"message_receiver_identifier" => {
 					header.message_receiver_identifier.clear()
 				}
+				"message_number" => header.message_number.clear(),
+				"message_date" => header.message_date.clear(),
 				_ => unreachable!(),
 			}
 			assert!(

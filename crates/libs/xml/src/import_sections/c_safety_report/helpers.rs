@@ -1,15 +1,11 @@
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::import_sections::shared::{
-	first_attr, first_text, first_text_root, first_value_root, normalize_code,
-	normalize_iso2, telecom_first_in_node,
+	first_attr, first_text, telecom_first_in_node,
 };
 use crate::mapping::mfds::c_safety_report::CMfdsSafetyReportPaths;
 use crate::Result;
-use lib_core::model::receiver::ReceiverInformationForUpdate;
-use libxml::parser::Parser;
 use libxml::tree::NodeType;
-use libxml::xpath::Context;
 
 pub(crate) struct SenderImport {
 	pub(crate) sender_type: Option<String>,
@@ -115,7 +111,7 @@ pub(crate) struct StudyImport {
 
 #[derive(Debug)]
 pub(crate) struct StudyRegistrationImport {
-	pub(crate) registration_number: String,
+	pub(crate) registration_number: Option<String>,
 	pub(crate) registration_number_null_flavor: Option<String>,
 	pub(crate) country_code: Option<String>,
 	pub(crate) country_code_null_flavor: Option<String>,
@@ -132,11 +128,10 @@ fn sender_text(
 fn sender_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 
@@ -145,19 +140,14 @@ fn sender_string_with_null_flavor(
 	node: Option<&libxml::tree::Node>,
 	path: &str,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
 ) -> Result<(Option<String>, Option<String>)> {
 	let value = sender_text(xpath, node, path);
 	let null_flavor =
 		node.and_then(|node| first_attr(xpath, node, path, "nullFlavor"));
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
 	Ok((value, null_flavor))
 }
 
@@ -174,12 +164,12 @@ fn read_c_3_1(
 			"code",
 		)
 	});
-	import_constraint::string(
+	xpath.inputs.string(
 		"senderType",
 		raw.as_deref(),
 		None,
 		input_contracts::generated::c::c_3_1,
-	)?;
+	);
 	Ok(raw)
 }
 
@@ -200,6 +190,7 @@ fn read_c_3_1_kr_1(
 		raw,
 		"healthProfessionalTypeKr1",
 		input_contracts::generated::c::mfds_c_3_1_kr_1,
+		xpath,
 	)
 }
 
@@ -209,12 +200,12 @@ fn read_c_3_2(
 	node: Option<&libxml::tree::Node>,
 ) -> Result<Option<String>> {
 	let value = node.and_then(|node| first_text(xpath, node, "./hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name"));
-	import_constraint::string(
+	xpath.inputs.string(
 		"organizationName",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_3_2,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -227,6 +218,7 @@ fn read_c_3_3_1(
 		sender_text(xpath, node, "./hl7:representedOrganization/hl7:name"),
 		"department",
 		input_contracts::generated::c::c_3_3_1,
+		xpath,
 	)
 }
 
@@ -303,6 +295,7 @@ fn read_c_3_4_1(
 		read_sender_address(xpath, node, "streetAddressLine"),
 		"streetAddress",
 		input_contracts::generated::c::c_3_4_1,
+		xpath,
 	)
 }
 /// e2b:C.3.4.2
@@ -314,6 +307,7 @@ fn read_c_3_4_2(
 		read_sender_address(xpath, node, "city"),
 		"city",
 		input_contracts::generated::c::c_3_4_2,
+		xpath,
 	)
 }
 /// e2b:C.3.4.3
@@ -325,6 +319,7 @@ fn read_c_3_4_3(
 		read_sender_address(xpath, node, "state"),
 		"state",
 		input_contracts::generated::c::c_3_4_3,
+		xpath,
 	)
 }
 /// e2b:C.3.4.4
@@ -336,6 +331,7 @@ fn read_c_3_4_4(
 		read_sender_address(xpath, node, "postalCode"),
 		"postcode",
 		input_contracts::generated::c::c_3_4_4,
+		xpath,
 	)
 }
 
@@ -356,6 +352,7 @@ fn read_c_3_4_5(
 		raw.map(|value| value.to_ascii_uppercase()),
 		"countryCode",
 		input_contracts::generated::c::c_3_4_5,
+		xpath,
 	)
 }
 
@@ -376,6 +373,7 @@ fn read_c_3_4_6(
 		read_sender_telecom(xpath, node, "tel:"),
 		"telephone",
 		input_contracts::generated::c::c_3_4_6,
+		xpath,
 	)
 }
 /// e2b:C.3.4.7
@@ -387,6 +385,7 @@ fn read_c_3_4_7(
 		read_sender_telecom(xpath, node, "fax:"),
 		"fax",
 		input_contracts::generated::c::c_3_4_7,
+		xpath,
 	)
 }
 /// e2b:C.3.4.8
@@ -398,6 +397,7 @@ fn read_c_3_4_8(
 		read_sender_telecom(xpath, node, "mailto:"),
 		"email",
 		input_contracts::generated::c::c_3_4_8,
+		xpath,
 	)
 }
 
@@ -407,21 +407,15 @@ pub(crate) fn parse_sender_information(xml: &[u8]) -> Result<Option<SenderImport
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let sender_node = xpath
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let sender_node = xpath
 		.findnodes(
 			"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity[hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']]",
 			None,
@@ -434,42 +428,48 @@ pub(crate) fn parse_sender_information(xml: &[u8]) -> Result<Option<SenderImport
 		.into_iter()
 		.next();
 
-	let sender_type = read_c_3_1(&mut xpath, sender_node.as_ref())?;
-	let organization_name = read_c_3_2(&mut xpath, sender_node.as_ref())?;
-	let (person_title, person_title_null_flavor) =
-		read_c_3_3_2(&mut xpath, sender_node.as_ref())?;
-	let (person_given_name, person_given_name_null_flavor) =
-		read_c_3_3_3(&mut xpath, sender_node.as_ref())?;
-	let (person_middle_name, person_middle_name_null_flavor) =
-		read_c_3_3_4(&mut xpath, sender_node.as_ref())?;
-	let (person_family_name, person_family_name_null_flavor) =
-		read_c_3_3_5(&mut xpath, sender_node.as_ref())?;
+		if sender_node.is_none() {
+			return Ok(None);
+		}
+		let sender_type = read_c_3_1(&mut xpath, sender_node.as_ref())?;
+		let organization_name = read_c_3_2(&mut xpath, sender_node.as_ref())?;
+		let (person_title, person_title_null_flavor) =
+			read_c_3_3_2(&mut xpath, sender_node.as_ref())?;
+		let (person_given_name, person_given_name_null_flavor) =
+			read_c_3_3_3(&mut xpath, sender_node.as_ref())?;
+		let (person_middle_name, person_middle_name_null_flavor) =
+			read_c_3_3_4(&mut xpath, sender_node.as_ref())?;
+		let (person_family_name, person_family_name_null_flavor) =
+			read_c_3_3_5(&mut xpath, sender_node.as_ref())?;
 
-	Ok(Some(SenderImport {
-		sender_type,
-		health_professional_type_kr1: read_c_3_1_kr_1(
-			&mut xpath,
-			sender_node.as_ref(),
-		)?,
-		organization_name,
-		department: read_c_3_3_1(&mut xpath, sender_node.as_ref())?,
-		person_title,
-		person_title_null_flavor,
-		person_given_name,
-		person_given_name_null_flavor,
-		person_middle_name,
-		person_middle_name_null_flavor,
-		person_family_name,
-		person_family_name_null_flavor,
-		street_address: read_c_3_4_1(&mut xpath, sender_node.as_ref())?,
-		city: read_c_3_4_2(&mut xpath, sender_node.as_ref())?,
-		state: read_c_3_4_3(&mut xpath, sender_node.as_ref())?,
-		postcode: read_c_3_4_4(&mut xpath, sender_node.as_ref())?,
-		country_code: read_c_3_4_5(&mut xpath, sender_node.as_ref())?,
-		telephone: read_c_3_4_6(&mut xpath, sender_node.as_ref())?,
-		fax: read_c_3_4_7(&mut xpath, sender_node.as_ref())?,
-		email: read_c_3_4_8(&mut xpath, sender_node.as_ref())?,
-	}))
+		Ok(Some(SenderImport {
+			sender_type,
+			health_professional_type_kr1: read_c_3_1_kr_1(
+				&mut xpath,
+				sender_node.as_ref(),
+			)?,
+			organization_name,
+			department: read_c_3_3_1(&mut xpath, sender_node.as_ref())?,
+			person_title,
+			person_title_null_flavor,
+			person_given_name,
+			person_given_name_null_flavor,
+			person_middle_name,
+			person_middle_name_null_flavor,
+			person_family_name,
+			person_family_name_null_flavor,
+			street_address: read_c_3_4_1(&mut xpath, sender_node.as_ref())?,
+			city: read_c_3_4_2(&mut xpath, sender_node.as_ref())?,
+			state: read_c_3_4_3(&mut xpath, sender_node.as_ref())?,
+			postcode: read_c_3_4_4(&mut xpath, sender_node.as_ref())?,
+			country_code: read_c_3_4_5(&mut xpath, sender_node.as_ref())?,
+			telephone: read_c_3_4_6(&mut xpath, sender_node.as_ref())?,
+			fax: read_c_3_4_7(&mut xpath, sender_node.as_ref())?,
+			email: read_c_3_4_8(&mut xpath, sender_node.as_ref())?,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 fn read_reporter_text_with_null_flavor(
@@ -477,18 +477,13 @@ fn read_reporter_text_with_null_flavor(
 	node: &libxml::tree::Node,
 	path: &str,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
 ) -> Result<(Option<String>, Option<String>)> {
 	let value = first_text(xpath, node, path);
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
 	Ok((value, null_flavor))
 }
 
@@ -507,16 +502,12 @@ fn input_pair(
 	field: &str,
 	value: Option<String>,
 	null_flavor: Option<String>,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<(Option<String>, Option<String>)> {
-	import_constraint::string(
-		field,
-		value.as_deref(),
-		null_flavor.as_deref(),
-		check,
-	)?;
+	xpath
+		.inputs
+		.string(field, value.as_deref(), null_flavor.as_deref(), check);
 	Ok((value, null_flavor))
 }
 
@@ -685,18 +676,18 @@ fn read_c_2_r_2_7(
 		".//hl7:assignedEntity/hl7:telecom[not(@value='mailto' or starts-with(@value,'mailto:'))][1]",
 		"nullFlavor",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"reporterTelephone",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_2_r_2_7,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"reporterTelephoneNullFlavor",
 		None,
 		None,
 		input_contracts::generated::c::c_2_r_2_7,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -713,18 +704,18 @@ fn read_fda_c_2_r_2_8(
 		".//hl7:assignedEntity/hl7:telecom[@value='mailto' or starts-with(@value,'mailto:')][1]",
 		"nullFlavor",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"reporterEmail",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::fda_c_2_r_2_8,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"reporterEmailNullFlavor",
 		None,
 		None,
 		input_contracts::generated::c::fda_c_2_r_2_8,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -735,12 +726,12 @@ fn read_c_2_r_3(
 ) -> Result<Option<String>> {
 	let value = first_attr(xpath, node, "../hl7:priorityNumber", "value")
 		.filter(|value| !value.trim().is_empty());
-	import_constraint::string(
+	xpath.inputs.string(
 		"primarySourceForRegulatoryPurposes",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_2_r_5,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -753,18 +744,18 @@ fn read_c_2_r_4(
 	let path = ".//hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.6' or @nullFlavor]";
 	let value = first_attr(xpath, node, path, "code");
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::string(
+	xpath.inputs.string(
 		"qualification",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_2_r_4,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"qualificationNullFlavor",
 		None,
 		None,
 		input_contracts::generated::c::c_2_r_4,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -779,12 +770,12 @@ fn read_c_2_r_4_kr_1(
 		CMfdsSafetyReportPaths::QUALIFICATION_KR1_CODE,
 		"code",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"qualificationKr1",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::mfds_c_2_r_4_kr_1,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -797,12 +788,12 @@ fn read_c_2_r_5(
 	let value = first_attr(xpath, node, path, "code")
 		.map(|value| value.to_ascii_uppercase());
 	let null_flavor = first_attr(xpath, node, path, "nullFlavor");
-	import_constraint::string(
+	xpath.inputs.string(
 		"reporterCountry",
 		value.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_2_r_3,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -812,21 +803,15 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let nodes = xpath
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let nodes = xpath
 		.findnodes(
 			"//hl7:outboundRelationship[@typeCode='SPRT'][hl7:relatedInvestigation/hl7:code[@code='2']]/hl7:relatedInvestigation",
 			None,
@@ -836,114 +821,118 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 			line: None,
 			column: None,
 		})?;
-	let mut items = Vec::new();
-	for node in nodes {
-		let (reporter_title, reporter_title_null_flavor) =
-			read_c_2_r_1_1(&mut xpath, &node)?;
-		let (reporter_given_name, reporter_given_name_null_flavor) =
-			read_c_2_r_1_2(&mut xpath, &node)?;
-		let (reporter_middle_name, reporter_middle_name_null_flavor) =
-			read_c_2_r_1_3(&mut xpath, &node)?;
-		let (reporter_family_name, reporter_family_name_null_flavor) =
-			read_c_2_r_1_4(&mut xpath, &node)?;
-		let (
-			organization,
-			organization_null_flavor,
-			department,
-			department_null_flavor,
-		) = read_c_2_r_2_1_2(&mut xpath, &node)?;
-		let (street, street_null_flavor) = read_c_2_r_2_3(&mut xpath, &node)?;
-		let (city, city_null_flavor) = read_c_2_r_2_4(&mut xpath, &node)?;
-		let (state, state_null_flavor) = read_c_2_r_2_5(&mut xpath, &node)?;
-		let (postcode, postcode_null_flavor) = read_c_2_r_2_6(&mut xpath, &node)?;
-		let (telephone, telephone_null_flavor) = read_c_2_r_2_7(&mut xpath, &node)?;
-		let (email, email_null_flavor) = read_fda_c_2_r_2_8(&mut xpath, &node)?;
-		let country_code = read_c_2_r_5(&mut xpath, &node)?;
-		let (qualification, qualification_null_flavor) =
-			read_c_2_r_4(&mut xpath, &node)?;
-		let qualification_kr1 = read_c_2_r_4_kr_1(&mut xpath, &node)?;
-		let primary_source_regulatory = read_c_2_r_3(&mut xpath, &node)?;
+		let mut items = Vec::new();
+		for node in nodes {
+			let (reporter_title, reporter_title_null_flavor) =
+				read_c_2_r_1_1(&mut xpath, &node)?;
+			let (reporter_given_name, reporter_given_name_null_flavor) =
+				read_c_2_r_1_2(&mut xpath, &node)?;
+			let (reporter_middle_name, reporter_middle_name_null_flavor) =
+				read_c_2_r_1_3(&mut xpath, &node)?;
+			let (reporter_family_name, reporter_family_name_null_flavor) =
+				read_c_2_r_1_4(&mut xpath, &node)?;
+			let (
+				organization,
+				organization_null_flavor,
+				department,
+				department_null_flavor,
+			) = read_c_2_r_2_1_2(&mut xpath, &node)?;
+			let (street, street_null_flavor) = read_c_2_r_2_3(&mut xpath, &node)?;
+			let (city, city_null_flavor) = read_c_2_r_2_4(&mut xpath, &node)?;
+			let (state, state_null_flavor) = read_c_2_r_2_5(&mut xpath, &node)?;
+			let (postcode, postcode_null_flavor) =
+				read_c_2_r_2_6(&mut xpath, &node)?;
+			let (telephone, telephone_null_flavor) =
+				read_c_2_r_2_7(&mut xpath, &node)?;
+			let (email, email_null_flavor) = read_fda_c_2_r_2_8(&mut xpath, &node)?;
+			let country_code = read_c_2_r_5(&mut xpath, &node)?;
+			let (qualification, qualification_null_flavor) =
+				read_c_2_r_4(&mut xpath, &node)?;
+			let qualification_kr1 = read_c_2_r_4_kr_1(&mut xpath, &node)?;
+			let primary_source_regulatory = read_c_2_r_3(&mut xpath, &node)?;
 
-		let has_importable_content = [
-			reporter_title.as_ref(),
-			reporter_title_null_flavor.as_ref(),
-			reporter_given_name.as_ref(),
-			reporter_given_name_null_flavor.as_ref(),
-			reporter_middle_name.as_ref(),
-			reporter_middle_name_null_flavor.as_ref(),
-			reporter_family_name.as_ref(),
-			reporter_family_name_null_flavor.as_ref(),
-			organization.as_ref(),
-			organization_null_flavor.as_ref(),
-			department.as_ref(),
-			department_null_flavor.as_ref(),
-			street.as_ref(),
-			street_null_flavor.as_ref(),
-			city.as_ref(),
-			city_null_flavor.as_ref(),
-			state.as_ref(),
-			state_null_flavor.as_ref(),
-			postcode.as_ref(),
-			postcode_null_flavor.as_ref(),
-			telephone.as_ref(),
-			telephone_null_flavor.as_ref(),
-			country_code.as_ref(),
-			email.as_ref(),
-			email_null_flavor.as_ref(),
-			qualification.as_ref(),
-			qualification_null_flavor.as_ref(),
-			qualification_kr1.as_ref(),
-			primary_source_regulatory.as_ref(),
-		]
-		.into_iter()
-		.any(|value| value.is_some());
+			let has_importable_content = [
+				reporter_title.as_ref(),
+				reporter_title_null_flavor.as_ref(),
+				reporter_given_name.as_ref(),
+				reporter_given_name_null_flavor.as_ref(),
+				reporter_middle_name.as_ref(),
+				reporter_middle_name_null_flavor.as_ref(),
+				reporter_family_name.as_ref(),
+				reporter_family_name_null_flavor.as_ref(),
+				organization.as_ref(),
+				organization_null_flavor.as_ref(),
+				department.as_ref(),
+				department_null_flavor.as_ref(),
+				street.as_ref(),
+				street_null_flavor.as_ref(),
+				city.as_ref(),
+				city_null_flavor.as_ref(),
+				state.as_ref(),
+				state_null_flavor.as_ref(),
+				postcode.as_ref(),
+				postcode_null_flavor.as_ref(),
+				telephone.as_ref(),
+				telephone_null_flavor.as_ref(),
+				country_code.as_ref(),
+				email.as_ref(),
+				email_null_flavor.as_ref(),
+				qualification.as_ref(),
+				qualification_null_flavor.as_ref(),
+				qualification_kr1.as_ref(),
+				primary_source_regulatory.as_ref(),
+			]
+			.into_iter()
+			.any(|value| value.is_some());
 
-		if !has_importable_content {
-			continue;
+			if !has_importable_content {
+				continue;
+			}
+
+			items.push(PrimarySourceImport {
+				reporter_title,
+				reporter_title_null_flavor,
+				reporter_given_name,
+				reporter_given_name_null_flavor,
+				reporter_middle_name,
+				reporter_middle_name_null_flavor,
+				reporter_family_name,
+				reporter_family_name_null_flavor,
+				organization,
+				organization_null_flavor,
+				department,
+				department_null_flavor,
+				street,
+				street_null_flavor,
+				city,
+				city_null_flavor,
+				state,
+				state_null_flavor,
+				postcode,
+				postcode_null_flavor,
+				telephone,
+				telephone_null_flavor,
+				country_code,
+				email,
+				email_null_flavor,
+				qualification,
+				qualification_null_flavor,
+				qualification_kr1,
+				primary_source_regulatory,
+			});
 		}
 
-		items.push(PrimarySourceImport {
-			reporter_title,
-			reporter_title_null_flavor,
-			reporter_given_name,
-			reporter_given_name_null_flavor,
-			reporter_middle_name,
-			reporter_middle_name_null_flavor,
-			reporter_family_name,
-			reporter_family_name_null_flavor,
-			organization,
-			organization_null_flavor,
-			department,
-			department_null_flavor,
-			street,
-			street_null_flavor,
-			city,
-			city_null_flavor,
-			state,
-			state_null_flavor,
-			postcode,
-			postcode_null_flavor,
-			telephone,
-			telephone_null_flavor,
-			country_code,
-			email,
-			email_null_flavor,
-			qualification,
-			qualification_null_flavor,
-			qualification_kr1,
-			primary_source_regulatory,
-		});
-	}
-
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
 	use super::{
 		parse_documents_held_by_sender, parse_literature_references,
-		parse_primary_sources, parse_receiver_information, parse_sender_information,
-		parse_study_information,
+		parse_primary_sources, parse_sender_information, parse_study_information,
 	};
 
 	fn scenario6_xml() -> Vec<u8> {
@@ -985,6 +974,45 @@ mod tests {
 	}
 
 	#[test]
+	fn sender_export_preserves_absent_and_explicit_empty_text() {
+		use crate::export::roundtrip::{patch_c_safety_report, CSafetyReportPatch};
+		for value in [None, Some(""), Some("Sender value")] {
+			let patch = CSafetyReportPatch {
+				sender_org_name: Some("Isolated sender"),
+				sender_city: value,
+				sender_department: value,
+				sender_person_given_name: value,
+				sender_person_family_name: value,
+				sender_person_title: value,
+				sender_street_address: value,
+				sender_state: value,
+				sender_postcode: value,
+				..Default::default()
+			};
+			let xml = patch_c_safety_report(
+				crate::export::base_export_skeleton().as_bytes(),
+				&patch,
+			)
+			.expect("export");
+			let sender = parse_sender_information(xml.as_bytes())
+				.expect("parse")
+				.expect("sender");
+			for (field, actual) in [
+				("city", sender.city),
+				("department", sender.department),
+				("person_given_name", sender.person_given_name),
+				("person_family_name", sender.person_family_name),
+				("person_title", sender.person_title),
+				("street_address", sender.street_address),
+				("state", sender.state),
+				("postcode", sender.postcode),
+			] {
+				assert_eq!(actual.as_deref(), value, "{field}");
+			}
+		}
+	}
+
+	#[test]
 	fn reporter_email_null_flavor_stays_separate_from_telephone() {
 		let xml = primary_source_xml(
 			r#"<telecom value="tel:+821012345678"/><telecom value="mailto" nullFlavor="NASK"/>"#,
@@ -992,6 +1020,15 @@ mod tests {
 		let sources = parse_primary_sources(xml.as_bytes()).expect("parse");
 		assert_eq!(sources[0].email_null_flavor.as_deref(), Some("NASK"));
 		assert_eq!(sources[0].telephone_null_flavor, None);
+	}
+
+	#[test]
+	fn absent_sender_import_does_not_create_an_empty_sender() {
+		let xml = primary_source_xml("<assignedPerson><name><given>Reporter only</given></name></assignedPerson>");
+		assert!(parse_sender_information(xml.as_bytes())
+			.expect("parse absent sender")
+			.is_none());
+		assert!(parse_sender_information(b"<broken>").is_err());
 	}
 
 	#[test]
@@ -1028,6 +1065,102 @@ mod tests {
 		assert_eq!(documents[0].document_base64.as_deref(), Some("QUJD"));
 		assert_eq!(literature[0].file_name.as_deref(), Some("paper.txt"));
 		assert_eq!(literature[0].document_base64.as_deref(), Some("REVG"));
+	}
+
+	#[test]
+	fn attachment_import_preserves_explicit_blank_metadata() {
+		for code in ["1", "2"] {
+			for value in ["", "  ", "stored-value"] {
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><reference><document><code code="{code}" codeSystem="2.16.840.1.113883.3.989.2.1.1.27"/><text mediaType="{value}" representation="{value}" compression="{value}"><reference value="{value}"/>QUJD</text></document></reference></root>"#
+				);
+				let entries = if code == "1" {
+					parse_documents_held_by_sender(xml.as_bytes())
+						.expect("held document")
+						.into_iter()
+						.map(|row| {
+							(
+								row.document_base64,
+								row.file_name,
+								row.media_type,
+								row.representation,
+								row.compression,
+							)
+						})
+						.collect::<Vec<_>>()
+				} else {
+					parse_literature_references(xml.as_bytes())
+						.expect("literature")
+						.into_iter()
+						.map(|row| {
+							(
+								row.document_base64,
+								row.file_name,
+								row.media_type,
+								row.representation,
+								row.compression,
+							)
+						})
+						.collect::<Vec<_>>()
+				};
+				assert_eq!(entries.len(), 1);
+				assert_eq!(
+					entries[0],
+					(
+						Some("QUJD".to_string()),
+						Some(value.to_string()),
+						Some(value.to_string()),
+						Some(value.to_string()),
+						Some(value.to_string())
+					),
+					"document code {code}"
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn attachment_import_preserves_cdata_content_and_mixed_text_order() {
+		for code in ["1", "2"] {
+			for content in [
+				"<![CDATA[QUJD]]>",
+				"Q<![CDATA[UJ]]>D",
+				"<![CDATA[Q U\nJ\tD]]>",
+				"Q<!-- not content --><![CDATA[UJ]]><reference value=\"file.txt\"/>D",
+			] {
+				let xml = format!(r#"<root xmlns="urn:hl7-org:v3"><reference><document><code code="{code}" codeSystem="2.16.840.1.113883.3.989.2.1.1.27"/><text representation="B64">{content}</text></document></reference></root>"#);
+				let values: Vec<_> = if code == "1" {
+					parse_documents_held_by_sender(xml.as_bytes()).expect("held attachment").into_iter().map(|row| row.document_base64).collect()
+				} else {
+					parse_literature_references(xml.as_bytes()).expect("literature attachment").into_iter().map(|row| row.document_base64).collect()
+				};
+				assert_eq!(values, vec![Some("QUJD".to_string())], "document code {code}, content {content}");
+			}
+		}
+	}
+
+	#[test]
+	fn attachment_import_rejects_invalid_base64_inside_cdata() {
+		for (code, field) in [
+			("1", "documentsHeldBySender[].includedDocument"),
+			("2", "literatureReferences[].documentBase64"),
+		] {
+			for content in ["<![CDATA[%%%]]>", "QUJD<![CDATA[%]]>", "<![CDATA[A]]>"]
+			{
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><reference><document><code code="{code}" codeSystem="2.16.840.1.113883.3.989.2.1.1.27"/><text representation="B64">{content}</text></document></reference></root>"#
+				);
+				let result = if code == "1" {
+					parse_documents_held_by_sender(xml.as_bytes()).map(|_| ())
+				} else {
+					parse_literature_references(xml.as_bytes()).map(|_| ())
+				};
+				let error = result.expect_err(
+					"Invalid CDATA content must not disappear before validation",
+				);
+				assert!(error.to_string().contains(field));
+			}
+		}
 	}
 
 	#[test]
@@ -1220,17 +1353,95 @@ mod tests {
 		assert_eq!(study.study_name.as_deref(), Some("Profound Study"));
 		assert_eq!(study.sponsor_study_number.as_deref(), Some("4555-3"));
 		assert_eq!(study.registrations.len(), 2);
-		assert_eq!(study.registrations[0].registration_number, "23489-34");
-		assert_eq!(study.registrations[0].country_code.as_deref(), Some("US"));
-		assert_eq!(study.registrations[1].registration_number, "876444");
-		assert_eq!(study.registrations[1].country_code.as_deref(), Some("FR"));
-
-		let receiver = parse_receiver_information(&xml).expect("parse receiver");
 		assert_eq!(
-			receiver.and_then(|receiver| receiver.organization_name),
-			None,
-			"receiver ID must not be imported as organization name"
+			study.registrations[0].registration_number.as_deref(),
+			Some("23489-34")
 		);
+		assert_eq!(study.registrations[0].country_code.as_deref(), Some("US"));
+		assert_eq!(
+			study.registrations[1].registration_number.as_deref(),
+			Some("876444")
+		);
+		assert_eq!(study.registrations[1].country_code.as_deref(), Some("FR"));
+	}
+
+	#[test]
+	fn study_import_preserves_fda_authorization_numbers_without_ich_duplicates() {
+		let xml = br#"<root xmlns="urn:hl7-org:v3"><researchStudy>
+<id root="2.16.840.1.113883.3.989.2.1.3.5" extension="STUDY-1"/>
+<authorization><studyRegistration><id root="2.16.840.1.113883.3.989.5.1.2.2.1.2.1" extension="123456"/></studyRegistration></authorization>
+<authorization><studyRegistration><id root="2.16.840.1.113883.3.989.5.1.2.2.1.2.2" extension="654321"/></studyRegistration></authorization>
+<authorization><studyRegistration><id root="2.16.840.1.113883.3.989.5.1.2.2.1.2.3" extension="789012"/></studyRegistration></authorization>
+<authorization><studyRegistration><id root="2.16.840.1.113883.3.989.5.1.2.2.1.2.3" extension="345678"/></studyRegistration></authorization>
+</researchStudy></root>"#;
+		let study = parse_study_information(xml).expect("parse").expect("study");
+		assert_eq!(study.fda_ind_number_occurred.as_deref(), Some("123456"));
+		assert_eq!(
+			study.fda_pre_anda_number_occurred.as_deref(),
+			Some("654321")
+		);
+		assert_eq!(
+			study.cross_reported_inds,
+			vec![(Some("789012".into()), None), (Some("345678".into()), None)]
+		);
+		assert!(
+			study.registrations.is_empty(),
+			"FDA numbers are not C.5.1 registration rows"
+		);
+	}
+
+	#[test]
+	fn study_registration_import_keeps_null_flavors_without_inventing_values() {
+		for null_flavor in ["ASKU", "NASK"] {
+			let xml = format!(
+				r#"<root xmlns="urn:hl7-org:v3"><researchStudy><authorization><studyRegistration><id root="2.16.840.1.113883.3.989.2.1.3.6" nullFlavor="{null_flavor}"/><author><territorialAuthority><governingPlace><code nullFlavor="{null_flavor}"/></governingPlace></territorialAuthority></author></studyRegistration></authorization></researchStudy></root>"#
+			);
+			let study = parse_study_information(xml.as_bytes())
+				.expect("parse")
+				.expect("study");
+			assert_eq!(study.registrations.len(), 1);
+			let registration = &study.registrations[0];
+			assert_eq!(registration.registration_number.as_deref(), None);
+			assert_eq!(
+				registration.registration_number_null_flavor.as_deref(),
+				Some(null_flavor)
+			);
+			assert_eq!(registration.country_code, None);
+			assert_eq!(
+				registration.country_code_null_flavor.as_deref(),
+				Some(null_flavor)
+			);
+			let country_only = xml.replace(
+				&format!(
+					r#"<id root="2.16.840.1.113883.3.989.2.1.3.6" nullFlavor="{null_flavor}"/>"#
+				),
+				"",
+			);
+			let country_only = parse_study_information(country_only.as_bytes())
+				.expect("country-only draft")
+				.expect("study");
+			assert_eq!(country_only.registrations.len(), 1);
+			assert_eq!(country_only.registrations[0].registration_number, None);
+			assert_eq!(
+				country_only.registrations[0].registration_number_null_flavor,
+				None
+			);
+			assert_eq!(
+				country_only.registrations[0]
+					.country_code_null_flavor
+					.as_deref(),
+				Some(null_flavor)
+			);
+			assert!(parse_study_information(
+				xml.replace("nullFlavor=", "extension=\"REG-1\" nullFlavor=")
+					.as_bytes()
+			)
+			.is_err());
+			assert!(parse_study_information(
+				xml.replace(null_flavor, "UNK").as_bytes()
+			)
+			.is_err());
+		}
 	}
 
 	#[test]
@@ -1266,74 +1477,77 @@ pub(crate) fn parse_other_case_identifiers(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
-		.findnodes(
-			"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:id",
-			None,
-		)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query other case identifiers".to_string(),
-			line: None,
-			column: None,
-		})?;
+		let nodes = xpath
+			.findnodes(
+				"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:id",
+				None,
+			)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query other case identifiers".to_string(),
+				line: None,
+				column: None,
+			})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let source = read_c_1_9_1_r_1(&node)?;
-		let extension = read_c_1_9_1_r_2(&node)?;
-		let Some(source) = source else {
-			continue;
-		};
-		let Some(case_identifier) = extension else {
-			continue;
-		};
-		if source.trim().is_empty() || case_identifier.trim().is_empty() {
-			continue;
+		let mut items = Vec::new();
+		for node in nodes {
+			let source = read_c_1_9_1_r_1(&node, &mut xpath)?;
+			let extension = read_c_1_9_1_r_2(&node, &mut xpath)?;
+			let Some(source) = source else {
+				continue;
+			};
+			let Some(case_identifier) = extension else {
+				continue;
+			};
+			if source.trim().is_empty() || case_identifier.trim().is_empty() {
+				continue;
+			}
+			items.push(OtherCaseIdentifierImport {
+				source_of_identifier: source,
+				case_identifier,
+			});
 		}
-		items.push(OtherCaseIdentifierImport {
-			source_of_identifier: source,
-			case_identifier,
-		});
-	}
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.1.9.1.r.1
-fn read_c_1_9_1_r_1(node: &libxml::tree::Node) -> Result<Option<String>> {
+fn read_c_1_9_1_r_1(
+	node: &libxml::tree::Node,
+	xpath: &mut Context,
+) -> Result<Option<String>> {
 	let value = node.get_attribute("assigningAuthorityName");
-	import_constraint::string(
+	xpath.inputs.string(
 		"otherCaseIdentifiers[].source",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_9_1_r_1,
-	)?;
+	);
 	Ok(value)
 }
 
 /// e2b:C.1.9.1.r.2
-fn read_c_1_9_1_r_2(node: &libxml::tree::Node) -> Result<Option<String>> {
+fn read_c_1_9_1_r_2(
+	node: &libxml::tree::Node,
+	xpath: &mut Context,
+) -> Result<Option<String>> {
 	let value = node.get_attribute("extension");
-	import_constraint::string(
+	xpath.inputs.string(
 		"otherCaseIdentifiers[].caseIdentifier",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_9_1_r_2,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1343,22 +1557,16 @@ pub(crate) fn parse_linked_reports(xml: &[u8]) -> Result<Vec<LinkedReportImport>
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:investigationEvent/hl7:outboundRelationship[@typeCode='SPRT']/hl7:relatedInvestigation/hl7:subjectOf2/hl7:controlActEvent/hl7:id",
 			None,
@@ -1369,31 +1577,37 @@ pub(crate) fn parse_linked_reports(xml: &[u8]) -> Result<Vec<LinkedReportImport>
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let extension = read_c_1_10_r(&node)?;
-		let Some(linked_report_number) = extension else {
-			continue;
-		};
-		if linked_report_number.trim().is_empty() {
-			continue;
+		let mut items = Vec::new();
+		for node in nodes {
+			let extension = read_c_1_10_r(&node, &mut xpath)?;
+			let Some(linked_report_number) = extension else {
+				continue;
+			};
+			if linked_report_number.trim().is_empty() {
+				continue;
+			}
+			items.push(LinkedReportImport {
+				linked_report_number,
+			});
 		}
-		items.push(LinkedReportImport {
-			linked_report_number,
-		});
-	}
-	Ok(items)
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.1.10.r
-fn read_c_1_10_r(node: &libxml::tree::Node) -> Result<Option<String>> {
+fn read_c_1_10_r(
+	node: &libxml::tree::Node,
+	xpath: &mut Context,
+) -> Result<Option<String>> {
 	let value = node.get_attribute("extension");
-	import_constraint::string(
+	xpath.inputs.string(
 		"linkedReports[].linkedReportNumber",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_10_r,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1405,22 +1619,16 @@ pub(crate) fn parse_documents_held_by_sender(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:reference/hl7:document[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.27']]",
 			None,
@@ -1431,21 +1639,29 @@ pub(crate) fn parse_documents_held_by_sender(
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for node in nodes {
-		let title = read_c_1_6_1_r_1(&mut xpath, &node)?;
-		let (document_base64, file_name, media_type, representation, compression) =
-			read_c_1_6_1_r_2(&mut xpath, &node)?;
-		items.push(DocumentHeldImport {
-			title,
-			document_base64,
-			file_name,
-			media_type,
-			representation,
-			compression,
-		});
-	}
-	Ok(items)
+		let mut items = Vec::new();
+		for node in nodes {
+			let title = read_c_1_6_1_r_1(&mut xpath, &node)?;
+			let (
+				document_base64,
+				file_name,
+				media_type,
+				representation,
+				compression,
+			) = read_c_1_6_1_r_2(&mut xpath, &node)?;
+			items.push(DocumentHeldImport {
+				title,
+				document_base64,
+				file_name,
+				media_type,
+				representation,
+				compression,
+			});
+		}
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.1.6.1.r.1
@@ -1454,12 +1670,12 @@ fn read_c_1_6_1_r_1(
 	node: &libxml::tree::Node,
 ) -> Result<Option<String>> {
 	let value = first_text(xpath, node, "hl7:title");
-	import_constraint::string(
+	xpath.inputs.string(
 		"documentsHeldBySender[].documentDescription",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_6_1_r_1,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1478,16 +1694,16 @@ fn read_c_1_6_1_r_2(
 	Option<String>,
 )> {
 	let values = read_document_content(xpath, node)?;
-	import_constraint::string(
+	xpath.inputs.string(
 		"documentsHeldBySender[].includedDocument",
 		values.0.as_deref(),
 		None,
 		input_contracts::generated::c::c_1_6_1_r_2,
-	)?;
-	import_constraint::base64(
+	);
+	xpath.inputs.base64(
 		"documentsHeldBySender[].includedDocument",
 		values.0.as_deref(),
-	)?;
+	);
 	Ok(values)
 }
 
@@ -1501,8 +1717,7 @@ fn read_document_content(
 	Option<String>,
 	Option<String>,
 )> {
-	let representation = first_attr(xpath, node, "hl7:text", "representation");
-	let document = xpath
+	let text = xpath
 		.findnodes("hl7:text", Some(node))
 		.map_err(|_| Error::InvalidXml {
 			message: "Failed to query document text".to_string(),
@@ -1510,11 +1725,21 @@ fn read_document_content(
 			column: None,
 		})?
 		.into_iter()
-		.next()
+		.next();
+	let representation = text
+		.as_ref()
+		.and_then(|text| text.get_property("representation"));
+	let document = text
+		.as_ref()
 		.map(|text| {
 			text.get_child_nodes()
 				.into_iter()
-				.filter(|child| child.get_type() == Some(NodeType::TextNode))
+				.filter(|child| {
+					matches!(
+						child.get_type(),
+						Some(NodeType::TextNode | NodeType::CDataSectionNode)
+					)
+				})
 				.map(|child| child.get_content())
 				.collect::<String>()
 		})
@@ -1526,12 +1751,24 @@ fn read_document_content(
 				value
 			}
 		});
+	let file_name = xpath
+		.findnodes("hl7:text/hl7:reference", Some(node))
+		.map_err(|_| Error::InvalidXml {
+			message: "Failed to query document file reference".to_string(),
+			line: None,
+			column: None,
+		})?
+		.into_iter()
+		.next()
+		.and_then(|reference| reference.get_property("value"));
 	Ok((
 		document,
-		first_attr(xpath, node, "hl7:text/hl7:reference", "value"),
-		first_attr(xpath, node, "hl7:text", "mediaType"),
+		file_name,
+		text.as_ref()
+			.and_then(|text| text.get_property("mediaType")),
 		representation,
-		first_attr(xpath, node, "hl7:text", "compression"),
+		text.as_ref()
+			.and_then(|text| text.get_property("compression")),
 	))
 }
 
@@ -1543,22 +1780,16 @@ pub(crate) fn parse_literature_references(
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath
+		let nodes = xpath
 		.findnodes(
 			"//hl7:reference/hl7:document[hl7:code[@code='2' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.27']]",
 			None,
@@ -1569,23 +1800,31 @@ pub(crate) fn parse_literature_references(
 			column: None,
 		})?;
 
-	let mut items = Vec::new();
-	for (idx, node) in nodes.into_iter().enumerate() {
-		let (reference_text, reference_text_null_flavor) =
-			read_c_4_r_1(&mut xpath, &node, idx)?;
-		let (document_base64, file_name, media_type, representation, compression) =
-			read_c_4_r_2(&mut xpath, &node)?;
-		items.push(LiteratureImport {
-			reference_text,
-			reference_text_null_flavor,
-			document_base64,
-			file_name,
-			media_type,
-			representation,
-			compression,
-		});
-	}
-	Ok(items)
+		let mut items = Vec::new();
+		for (idx, node) in nodes.into_iter().enumerate() {
+			let (reference_text, reference_text_null_flavor) =
+				read_c_4_r_1(&mut xpath, &node, idx)?;
+			let (
+				document_base64,
+				file_name,
+				media_type,
+				representation,
+				compression,
+			) = read_c_4_r_2(&mut xpath, &node)?;
+			items.push(LiteratureImport {
+				reference_text,
+				reference_text_null_flavor,
+				document_base64,
+				file_name,
+				media_type,
+				representation,
+				compression,
+			});
+		}
+		Ok(items)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.4.r.1
@@ -1604,18 +1843,18 @@ fn read_c_4_r_1(
 	.or_else(|| first_attr(xpath, node, "hl7:title", "nullFlavor"));
 	let text = first_text(xpath, node, "hl7:bibliographicDesignationText")
 		.or_else(|| first_text(xpath, node, "hl7:title"));
-	import_constraint::string(
+	xpath.inputs.string(
 		"referenceText",
 		text.as_deref(),
 		null_flavor.as_deref(),
 		input_contracts::generated::c::c_4_r_1,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"referenceTextNullFlavor",
 		None,
 		None,
 		input_contracts::generated::c::c_4_r_1,
-	)?;
+	);
 	Ok((text, null_flavor))
 }
 
@@ -1634,16 +1873,15 @@ fn read_c_4_r_2(
 	Option<String>,
 )> {
 	let values = read_document_content(xpath, node)?;
-	import_constraint::string(
+	xpath.inputs.string(
 		"literatureReferences[].documentBase64",
 		values.0.as_deref(),
 		None,
 		input_contracts::generated::c::c_4_r_2,
-	)?;
-	import_constraint::base64(
-		"literatureReferences[].documentBase64",
-		values.0.as_deref(),
-	)?;
+	);
+	xpath
+		.inputs
+		.base64("literatureReferences[].documentBase64", values.0.as_deref());
 	Ok(values)
 }
 
@@ -1653,81 +1891,78 @@ pub(crate) fn parse_study_information(xml: &[u8]) -> Result<Option<StudyImport>>
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let nodes = xpath.findnodes("//hl7:researchStudy", None).map_err(|_| {
-		Error::InvalidXml {
-			message: "Failed to query study information".to_string(),
-			line: None,
-			column: None,
-		}
-	})?;
-	let Some(node) = nodes.first() else {
-		return Ok(None);
-	};
+		let nodes = xpath.findnodes("//hl7:researchStudy", None).map_err(|_| {
+			Error::InvalidXml {
+				message: "Failed to query study information".to_string(),
+				line: None,
+				column: None,
+			}
+		})?;
+		let Some(node) = nodes.first() else {
+			return Ok(None);
+		};
 
-	let (study_name, study_name_null_flavor) = read_c_5_2(&mut xpath, node)?;
-	let (sponsor_study_number, sponsor_study_number_null_flavor) =
-		read_c_5_3(&mut xpath, node)?;
-	let study_type_reaction = read_c_5_4(&mut xpath, node)?;
-	let study_type_reaction_kr1 = read_c_5_4_kr_1(&mut xpath, node)?;
-	let fda_ind_number_occurred = read_fda_c_5_5a(&mut xpath, node)?;
-	let fda_pre_anda_number_occurred = read_fda_c_5_5b(&mut xpath, node)?;
-	let cross_reported_inds = read_fda_c_5_6_r(&mut xpath, node)?;
+		let (study_name, study_name_null_flavor) = read_c_5_2(&mut xpath, node)?;
+		let (sponsor_study_number, sponsor_study_number_null_flavor) =
+			read_c_5_3(&mut xpath, node)?;
+		let study_type_reaction = read_c_5_4(&mut xpath, node)?;
+		let study_type_reaction_kr1 = read_c_5_4_kr_1(&mut xpath, node)?;
+		let fda_ind_number_occurred = read_fda_c_5_5a(&mut xpath, node)?;
+		let fda_pre_anda_number_occurred = read_fda_c_5_5b(&mut xpath, node)?;
+		let cross_reported_inds = read_fda_c_5_6_r(&mut xpath, node)?;
 
-	let reg_nodes = xpath
-		.findnodes(".//hl7:studyRegistration", Some(node))
+		let reg_nodes = xpath
+		.findnodes("hl7:authorization/hl7:studyRegistration[not(hl7:id/@root) or hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.6']]", Some(node))
 		.map_err(|_| Error::InvalidXml {
 			message: "Failed to query study registrations".to_string(),
 			line: None,
 			column: None,
 		})?;
-	let mut registrations = Vec::new();
-	for reg in reg_nodes {
-		let (registration_number, registration_number_null_flavor) =
-			read_c_5_1_r_1(&mut xpath, &reg)?;
-		let Some(registration_number) = registration_number.or_else(|| {
-			registration_number_null_flavor
-				.as_ref()
-				.map(|_| String::new())
-		}) else {
-			continue;
-		};
-		let (country_code, country_code_null_flavor) =
-			read_c_5_1_r_2(&mut xpath, &reg)?;
-		registrations.push(StudyRegistrationImport {
-			registration_number,
-			registration_number_null_flavor,
-			country_code,
-			country_code_null_flavor,
-		});
-	}
+		let mut registrations = Vec::new();
+		for reg in reg_nodes {
+			let (registration_number, registration_number_null_flavor) =
+				read_c_5_1_r_1(&mut xpath, &reg)?;
+			let (country_code, country_code_null_flavor) =
+				read_c_5_1_r_2(&mut xpath, &reg)?;
+			if registration_number.is_none()
+				&& registration_number_null_flavor.is_none()
+				&& country_code.is_none()
+				&& country_code_null_flavor.is_none()
+			{
+				continue;
+			}
+			registrations.push(StudyRegistrationImport {
+				registration_number,
+				registration_number_null_flavor,
+				country_code,
+				country_code_null_flavor,
+			});
+		}
 
-	Ok(Some(StudyImport {
-		study_name,
-		study_name_null_flavor,
-		sponsor_study_number,
-		sponsor_study_number_null_flavor,
-		study_type_reaction,
-		study_type_reaction_kr1,
-		fda_ind_number_occurred,
-		fda_pre_anda_number_occurred,
-		registrations,
-		cross_reported_inds,
-	}))
+		Ok(Some(StudyImport {
+			study_name,
+			study_name_null_flavor,
+			sponsor_study_number,
+			sponsor_study_number_null_flavor,
+			study_type_reaction,
+			study_type_reaction_kr1,
+			fda_ind_number_occurred,
+			fda_pre_anda_number_occurred,
+			registrations,
+			cross_reported_inds,
+		}))
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:C.5.1.r.1
@@ -1740,6 +1975,7 @@ fn read_c_5_1_r_1(
 		first_attr(xpath, node, "hl7:id", "extension"),
 		first_attr(xpath, node, "hl7:id", "nullFlavor"),
 		input_contracts::generated::c::c_5_1_r_1,
+		xpath,
 	)
 }
 
@@ -1756,6 +1992,7 @@ fn read_c_5_1_r_2(
 		value,
 		first_attr(xpath, node, path, "nullFlavor"),
 		input_contracts::generated::c::c_5_1_r_2,
+		xpath,
 	)
 }
 
@@ -1770,6 +2007,7 @@ fn read_c_5_2(
 		value,
 		null_flavor,
 		input_contracts::generated::c::c_5_2,
+		xpath,
 	)
 }
 
@@ -1783,6 +2021,7 @@ fn read_c_5_3(
 		first_attr(xpath, node, "hl7:id", "extension"),
 		first_attr(xpath, node, "hl7:id", "nullFlavor"),
 		input_contracts::generated::c::c_5_3,
+		xpath,
 	)
 }
 
@@ -1792,12 +2031,12 @@ fn read_c_5_4(
 	node: &libxml::tree::Node,
 ) -> Result<Option<String>> {
 	let value = first_attr(xpath, node, "hl7:code", "code");
-	import_constraint::string(
+	xpath.inputs.string(
 		"studyTypeReaction",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::c_5_4,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1812,12 +2051,12 @@ fn read_c_5_4_kr_1(
 		"//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.5.1.10.1.7']]/hl7:value",
 		"code",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"studyTypeReactionKr1",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::mfds_c_5_4_kr_1,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1829,15 +2068,15 @@ fn read_fda_c_5_5a(
 	let value = first_attr(
 		xpath,
 		node,
-		"hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.1']",
+		"hl7:authorization/hl7:studyRegistration/hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.1']",
 		"extension",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"fdaIndNumberOccurred",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::fda_c_5_5a,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1849,15 +2088,15 @@ fn read_fda_c_5_5b(
 	let value = first_attr(
 		xpath,
 		node,
-		"hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.2']",
+		"hl7:authorization/hl7:studyRegistration/hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.2']",
 		"extension",
 	);
-	import_constraint::string(
+	xpath.inputs.string(
 		"fdaPreAndaNumberOccurred",
 		value.as_deref(),
 		None,
 		input_contracts::generated::c::fda_c_5_5b,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -1869,7 +2108,7 @@ fn read_fda_c_5_6_r(
 ) -> Result<Vec<(Option<String>, Option<String>)>> {
 	xpath
 		.findnodes(
-			"hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']",
+			"hl7:authorization/hl7:studyRegistration/hl7:id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']",
 			Some(node),
 		)
 		.map_err(|_| Error::InvalidXml {
@@ -1884,153 +2123,7 @@ fn read_fda_c_5_6_r(
 				id.get_property("extension"),
 				id.get_property("nullFlavor"),
 				input_contracts::generated::c::fda_c_5_6_r,
-			)
+			 xpath,)
 		})
 		.collect()
-}
-
-pub(crate) fn parse_receiver_information(
-	xml: &[u8],
-) -> Result<Option<ReceiverInformationForUpdate>> {
-	let xml_str = std::str::from_utf8(xml).map_err(|err| Error::InvalidXml {
-		message: format!("XML not valid UTF-8: {err}"),
-		line: None,
-		column: None,
-	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
-	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
-		message: "Failed to initialize XPath context".to_string(),
-		line: None,
-		column: None,
-	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let receiver_node = xpath
-		.findnodes("//hl7:receiver/hl7:device", None)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query receiver information".to_string(),
-			line: None,
-			column: None,
-		})?
-		.into_iter()
-		.next();
-
-	let organization_name = read_receiver_organization_name(&mut xpath);
-
-	if organization_name.is_none() {
-		return Ok(None);
-	}
-
-	Ok(Some(ReceiverInformationForUpdate {
-		source_receiver_presave_id: None,
-		receiver_type: normalize_code(
-			read_receiver_type(&mut xpath),
-			&["1", "2", "3", "4", "5", "6"],
-			"receiver_information.receiver_type",
-		),
-		organization_name,
-		department: read_receiver_department(&mut xpath),
-		street_address: read_receiver_street_address(&mut xpath),
-		city: read_receiver_city(&mut xpath),
-		state_province: read_receiver_state_province(&mut xpath),
-		postcode: read_receiver_postcode(&mut xpath),
-		country_code: normalize_iso2(
-			read_receiver_country(&mut xpath),
-			"receiver_information.country_code",
-		),
-		telephone: read_receiver_telephone(&mut xpath, receiver_node.as_ref()),
-		fax: read_receiver_fax(&mut xpath, receiver_node.as_ref()),
-		email: read_receiver_email(&mut xpath, receiver_node.as_ref()),
-	}))
-}
-
-/// e2b:local.receiver.1
-fn read_receiver_type(xpath: &mut Context) -> Option<String> {
-	first_value_root(xpath, "//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:code/@code")
-}
-
-/// e2b:local.receiver.2
-fn read_receiver_organization_name(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:name",
-	)
-}
-
-/// e2b:local.receiver.3
-fn read_receiver_department(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:desc",
-	)
-}
-
-/// e2b:local.receiver.4
-fn read_receiver_street_address(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:streetAddressLine",
-	)
-}
-
-/// e2b:local.receiver.5
-fn read_receiver_city(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:city",
-	)
-}
-
-/// e2b:local.receiver.6
-fn read_receiver_state_province(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:state",
-	)
-}
-
-/// e2b:local.receiver.7
-fn read_receiver_postcode(xpath: &mut Context) -> Option<String> {
-	first_text_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:postalCode",
-	)
-}
-
-/// e2b:local.receiver.country
-fn read_receiver_country(xpath: &mut Context) -> Option<String> {
-	first_value_root(
-		xpath,
-		"//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:country/@code",
-	)
-}
-
-/// e2b:local.receiver.8
-fn read_receiver_telephone(
-	xpath: &mut Context,
-	node: Option<&libxml::tree::Node>,
-) -> Option<String> {
-	node.and_then(|node| telecom_first_in_node(xpath, node, "tel:"))
-}
-
-/// e2b:local.receiver.9
-fn read_receiver_fax(
-	xpath: &mut Context,
-	node: Option<&libxml::tree::Node>,
-) -> Option<String> {
-	node.and_then(|node| telecom_first_in_node(xpath, node, "fax:"))
-}
-
-/// e2b:local.receiver.10
-fn read_receiver_email(
-	xpath: &mut Context,
-	node: Option<&libxml::tree::Node>,
-) -> Option<String> {
-	node.and_then(|node| telecom_first_in_node(xpath, node, "mailto:"))
 }

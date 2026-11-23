@@ -502,7 +502,11 @@ fn ci(
 		"fulfilExpeditedCriteria",
 		"safetyReportIdentification.fulfilExpeditedCriteria",
 		InputType::Boolean,
-		None,
+		Some((
+			"fulfilExpeditedCriteriaNullFlavor",
+			"safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor",
+			"ICH.C.1.7.NULLFLAVOR.ALLOWED",
+		)),
 		changed_paths,
 		outer_indexes,
 		input_contracts::generated::c::c_1_7,
@@ -2381,6 +2385,28 @@ fn lb(
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
 ) -> Result<()> {
+	for request_path in ["testResultQualifier", "test_result_qualifier"] {
+		validate_field(
+			row,
+			request_path,
+			"testResults[].testResultQualifier",
+			InputType::String,
+			None,
+			changed_paths,
+			outer_indexes,
+			|input| match input.value {
+				input_contracts::InputValue::Missing
+				| input_contracts::InputValue::Null
+				| input_contracts::InputValue::String(
+					"EQ" | "LT" | "LE" | "GT" | "GE",
+				) => Vec::new(),
+				_ => vec![InputIssue {
+					code: "LOCAL.F.r.testResultQualifier.ALLOWED.VALUE",
+					message: "must be one of: EQ, LT, LE, GT, GE".to_string(),
+				}],
+			},
+		)?;
+	}
 	validate_field(
 		row,
 		"comments",

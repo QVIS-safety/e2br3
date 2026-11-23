@@ -102,7 +102,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 
 #[serial]
 #[tokio::test]
-async fn test_unavailable_meddra_allows_save_but_blocks_export_and_submission(
+async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 ) -> Result<()> {
 	clear_esg_env();
 	let mm = init_test_mm().await?;
@@ -122,7 +122,11 @@ async fn test_unavailable_meddra_allows_save_but_blocks_export_and_submission(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/reactions/{reaction_id}"),
-		json!({ "data": { "reaction_meddra_version": "12.0" } }),
+		// Isolate the unavailable dictionary from the fixture's invalid FDA intervention value.
+		json!({ "data": {
+			"reaction_meddra_version": "12.0",
+			"required_intervention_null_flavor": "NI"
+		} }),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{saved:?}");
@@ -182,12 +186,16 @@ async fn test_unavailable_meddra_allows_save_but_blocks_export_and_submission(
 		let body = to_bytes(response.into_body(), usize::MAX).await?;
 		assert_eq!(
 			status,
-			StatusCode::BAD_REQUEST,
+			StatusCode::OK,
 			"{authority}: {}",
 			String::from_utf8_lossy(&body)
 		);
-		assert!(String::from_utf8_lossy(&body)
-			.contains("Correct the highlighted case fields"));
+		let parsed = xml::validation::validate_e2b_xml_basic(&body, None)?;
+		assert!(parsed.ok, "{:?}", parsed.errors);
+		assert_eq!(parsed.root_element.as_deref(), Some("MCCI_IN200100UV01"));
+		assert!(
+			String::from_utf8_lossy(&body).contains("codeSystemVersion=\"12.0\"")
+		);
 		if authority != "ich" {
 			let (status, error) = post_json(
 				&app,

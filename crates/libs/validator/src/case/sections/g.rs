@@ -77,12 +77,18 @@ fn decimal_text(value: Option<Decimal>) -> Option<String> {
 }
 
 fn additional_info_codes(drug: &DrugInformation) -> serde_json::Result<Vec<String>> {
-	Ok(parse_drug_additional_info_codes_json(
+	parse_drug_additional_info_codes_json(
 		drug.drug_additional_info_codes_json.as_ref(),
 	)?
 	.into_iter()
-	.filter_map(|entry| entry.value_code)
-	.collect())
+	.map(|entry| {
+		entry.value_code.ok_or_else(|| {
+			<serde_json::Error as serde::de::Error>::custom(
+				"G.k.10.r entry requires value_code",
+			)
+		})
+	})
+	.collect()
 }
 
 /// ICH.G.k.1.REQUIRED
@@ -489,7 +495,7 @@ fn g_k_10_r(idx: usize, drug: &DrugInformation, issues: &mut Vec<ValidationIssue
 		&path,
 		values.iter().all(|value| {
 			matches!(
-				value.trim(),
+				value.as_str(),
 				"1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11"
 			)
 		}),

@@ -1,5 +1,4 @@
 use super::*;
-use lib_core::e2b::null_flavor::E2bNullFlavorValue;
 use lib_core::model::test_result::TestResultBmc;
 
 pub(crate) async fn export_patch(
@@ -60,15 +59,15 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 		out.push('"');
 	}
 	let test_name = write_f_r_2_1(result);
-	if !test_name.trim().is_empty() {
+	if let Some(test_name) = &test_name {
 		out.push_str(" displayName=\"");
-		out.push_str(&test_name);
+		out.push_str(test_name);
 		out.push('"');
 	}
 	out.push('>');
-	if !test_name.trim().is_empty() {
+	if let Some(test_name) = &test_name {
 		out.push_str("<originalText>");
-		out.push_str(&test_name);
+		out.push_str(test_name);
 		out.push_str("</originalText>");
 	}
 	out.push_str("</code>");
@@ -76,27 +75,34 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 	if let Some(val) = write_f_r_3_2(result) {
 		let unit = write_f_r_3_3(result);
 		out.push_str("<value xsi:type=\"IVL_PQ\">");
-		match match result.test_result_qualifier.as_deref() {
-			Some(qualifier) => qualifier,
-			None => "EQ",
-		} {
-			"LT" => {
+		match result.test_result_qualifier.as_deref() {
+			Some("LT") => {
 				out.push_str("<low nullFlavor=\"NINF\"/>");
 				write_f_r_3_bound(&mut out, "high", val, unit, Some(false));
 			}
-			"LE" => {
+			Some("LE") => {
 				out.push_str("<low nullFlavor=\"NINF\"/>");
 				write_f_r_3_bound(&mut out, "high", val, unit, Some(true));
 			}
-			"GT" => {
+			Some("GT") => {
 				write_f_r_3_bound(&mut out, "low", val, unit, Some(false));
 				out.push_str("<high nullFlavor=\"PINF\"/>");
 			}
-			"GE" => {
+			Some("GE") => {
 				write_f_r_3_bound(&mut out, "low", val, unit, Some(true));
 				out.push_str("<high nullFlavor=\"PINF\"/>");
 			}
-			_ => write_f_r_3_bound(&mut out, "center", val, unit, None),
+			None | Some("EQ") => {
+				write_f_r_3_bound(&mut out, "center", val, unit, None)
+			}
+			Some(value) => {
+				return Err(field::invalid(
+					"F.r.3.2",
+					format!(
+						"cannot represent qualifier {value:?} as an XML interval"
+					),
+				))
+			}
 		}
 		out.push_str("</value>");
 	} else if let Some(text) = write_f_r_3_4(result) {
@@ -148,31 +154,19 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 
 /// e2b:F.r.1
 fn write_f_r_1(result: &TestResult) -> Result<String> {
-	let field = E2bNullFlavorValue::from_parts(
+	field::element(
+		"F.r.1",
 		result.test_date.as_deref(),
 		result.test_date_null_flavor.as_deref(),
+		"effectiveTime",
+		"value",
+		"",
 	)
-	.map_err(|err| Error::InvalidXml {
-		message: format!("Invalid F.r.1 test date nullFlavor: {err}"),
-		line: None,
-		column: None,
-	})?;
-
-	match field {
-		Some(E2bNullFlavorValue::Value { value }) => {
-			Ok(format!("<effectiveTime value=\"{}\"/>", xml_escape(value)))
-		}
-		Some(E2bNullFlavorValue::NullFlavor { null_flavor }) => Ok(format!(
-			"<effectiveTime nullFlavor=\"{}\"/>",
-			xml_escape(null_flavor.as_str())
-		)),
-		None => Ok(String::new()),
-	}
 }
 
 /// e2b:F.r.2.1
-fn write_f_r_2_1(value: &TestResult) -> String {
-	xml_escape(&value.test_name)
+fn write_f_r_2_1(value: &TestResult) -> Option<String> {
+	value.test_name.as_deref().map(xml_escape)
 }
 
 /// e2b:F.r.2.2a
@@ -269,7 +263,7 @@ mod tests {
 			sequence_number: 1,
 			test_date: None,
 			test_date_null_flavor: None,
-			test_name: "Result".to_string(),
+			test_name: Some("Result".to_string()),
 			test_meddra_version: None,
 			test_meddra_code: None,
 			test_result_code: None,
@@ -303,7 +297,7 @@ mod tests {
 		let xml = write_f_r_test_result(&result).expect("export date NullFlavor");
 		assert!(xml.contains("<effectiveTime nullFlavor=\"UNK\"/>"));
 
-		result.test_name.clear();
+		result.test_name = None;
 		result.test_meddra_code = Some("10006824".to_string());
 		let xml =
 			write_f_r_test_result(&result).expect("export MedDRA-only test name");
@@ -312,6 +306,20 @@ mod tests {
 		));
 		assert!(!xml.contains("displayName=\"\""));
 		assert!(!xml.contains("<originalText></originalText>"));
+		for name in [None, Some(""), Some("  "), Some("ALT & AST")] {
+			result.test_name = name.map(str::to_owned);
+			let xml =
+				write_f_r_test_result(&result).expect("export exact test name");
+			let document = format!("<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{xml}</MCCI_IN200100UV01>");
+			let imported =
+				crate::import_sections::f_test_result::parse_f_test_results(
+					document.as_bytes(),
+				)
+				.expect("import exact test name");
+			assert_eq!(imported.len(), 1);
+			assert_eq!(imported[0].test_name.as_deref(), name);
+			assert_eq!(imported[0].test_meddra_code, result.test_meddra_code);
+		}
 	}
 
 	#[test]
@@ -323,7 +331,7 @@ mod tests {
 			sequence_number: 1,
 			test_date: None,
 			test_date_null_flavor: None,
-			test_name: "Result".to_string(),
+			test_name: Some("Result".to_string()),
 			test_meddra_version: None,
 			test_meddra_code: None,
 			test_result_code: Some("N".to_string()),
@@ -384,7 +392,7 @@ mod tests {
 			sequence_number: 1,
 			test_date: None,
 			test_date_null_flavor: None,
-			test_name: "Result".to_string(),
+			test_name: Some("Result".to_string()),
 			test_meddra_version: None,
 			test_meddra_code: None,
 			test_result_code: None,

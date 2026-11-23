@@ -4,6 +4,7 @@ mod legacy_reads;
 mod relations;
 mod rows;
 mod support;
+mod xml_fields;
 
 #[rustfmt::skip]
 #[path = "pages/ae.generated.rs"]

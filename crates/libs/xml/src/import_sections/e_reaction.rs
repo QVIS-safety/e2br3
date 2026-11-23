@@ -1,7 +1,7 @@
 // Section E importer (Reaction/Event) - FDA mapping.
 
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::import_sections::shared::{
 	parse_bool_literal, parse_xml_id_opt, ImportIdMap,
 };
@@ -10,9 +10,7 @@ use crate::Result;
 use lib_core::ctx::Ctx;
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
 use lib_core::model::ModelManager;
-use libxml::parser::Parser;
 use libxml::tree::Node;
-use libxml::xpath::Context;
 use sqlx::types::Uuid;
 
 #[derive(Debug)]
@@ -75,168 +73,168 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 		line: None,
 		column: None,
 	})?;
-	let parser = Parser::default();
-	let doc = parser
-		.parse_string(xml_str)
-		.map_err(|err| Error::InvalidXml {
-			message: format!("XML parse error: {err}"),
-			line: None,
-			column: None,
-		})?;
+	let doc = crate::import_sections::shared::parse_import_xml(xml_str)?;
 	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
 		message: "Failed to initialize XPath context".to_string(),
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let _ =
-		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let _ = xpath
+			.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-	let nodes = xpath
-		.findnodes(EReactionPaths::REACTION_NODE, None)
-		.map_err(|_| Error::InvalidXml {
-			message: "Failed to query reactions".to_string(),
-			line: None,
-			column: None,
-		})?;
+		let nodes = xpath
+			.findnodes(EReactionPaths::REACTION_NODE, None)
+			.map_err(|_| Error::InvalidXml {
+				message: "Failed to query reactions".to_string(),
+				line: None,
+				column: None,
+			})?;
 
-	let mut imports: Vec<EReactionImport> = Vec::new();
-	for node in nodes {
-		let xml_id = parse_xml_id_opt(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::XML_ID_ROOT,
-		));
-		let translation_text = read_e_i_1_1b(&mut xpath, &node)?;
-		let primary = read_e_i_1_1a(&mut xpath, &node)?;
-		let reaction_meddra_version = read_e_i_2_1a(&mut xpath, &node)?;
-		let reaction_meddra_code = read_e_i_2_1b(&mut xpath, &node)?;
-		let reaction_language = read_e_i_1_2(&mut xpath, &node)?;
-		let term_highlighted = read_e_i_3_1(&mut xpath, &node)?;
-		let (criteria_death, criteria_death_null_flavor) =
-			read_e_i_3_2a(&mut xpath, &node)?;
-		let (criteria_life_threatening, criteria_life_threatening_null_flavor) =
-			read_e_i_3_2b(&mut xpath, &node)?;
-		let (criteria_hospitalization, criteria_hospitalization_null_flavor) =
-			read_e_i_3_2c(&mut xpath, &node)?;
-		let (criteria_disabling, criteria_disabling_null_flavor) =
-			read_e_i_3_2d(&mut xpath, &node)?;
-		let (criteria_congenital_anomaly, criteria_congenital_anomaly_null_flavor) =
-			read_e_i_3_2e(&mut xpath, &node)?;
-		let (
-			criteria_other_medically_important,
-			criteria_other_medically_important_null_flavor,
-		) = read_e_i_3_2f(&mut xpath, &node)?;
-		let serious = read_e_i_serious([
-			criteria_death,
-			criteria_life_threatening,
-			criteria_hospitalization,
-			criteria_disabling,
-			criteria_congenital_anomaly,
-			criteria_other_medically_important,
-		]);
+		let mut imports: Vec<EReactionImport> = Vec::new();
+		for node in nodes {
+			let xml_id = parse_xml_id_opt(first_attr(
+				&mut xpath,
+				&node,
+				EReactionPaths::XML_ID_ROOT,
+			));
+			let translation_text = read_e_i_1_1b(&mut xpath, &node)?;
+			let primary = read_e_i_1_1a(&mut xpath, &node)?;
+			let reaction_meddra_version = read_e_i_2_1a(&mut xpath, &node)?;
+			let reaction_meddra_code = read_e_i_2_1b(&mut xpath, &node)?;
+			let reaction_language = read_e_i_1_2(&mut xpath, &node)?;
+			let term_highlighted = read_e_i_3_1(&mut xpath, &node)?;
+			let (criteria_death, criteria_death_null_flavor) =
+				read_e_i_3_2a(&mut xpath, &node)?;
+			let (criteria_life_threatening, criteria_life_threatening_null_flavor) =
+				read_e_i_3_2b(&mut xpath, &node)?;
+			let (criteria_hospitalization, criteria_hospitalization_null_flavor) =
+				read_e_i_3_2c(&mut xpath, &node)?;
+			let (criteria_disabling, criteria_disabling_null_flavor) =
+				read_e_i_3_2d(&mut xpath, &node)?;
+			let (
+				criteria_congenital_anomaly,
+				criteria_congenital_anomaly_null_flavor,
+			) = read_e_i_3_2e(&mut xpath, &node)?;
+			let (
+				criteria_other_medically_important,
+				criteria_other_medically_important_null_flavor,
+			) = read_e_i_3_2f(&mut xpath, &node)?;
+			let serious = read_e_i_serious([
+				criteria_death,
+				criteria_life_threatening,
+				criteria_hospitalization,
+				criteria_disabling,
+				criteria_congenital_anomaly,
+				criteria_other_medically_important,
+			]);
 
-		let (required_intervention, required_intervention_null_flavor) =
-			read_fda_e_i_3_2h(&mut xpath, &node)?;
-		let expectedness = read_e_local_expectedness(&mut xpath, &node);
-		let severity = read_e_local_severity(&mut xpath, &node);
-		let mfds_device_ae_classification =
-			read_e_i_kr_device_ae_classification(&mut xpath, &node);
-		let mfds_device_ae_outcome =
-			read_e_i_kr_device_ae_outcome(&mut xpath, &node);
-		let mfds_device_cause_medical_device =
-			read_e_i_kr_device_cause_medical_device(&mut xpath, &node);
-		let mfds_device_cause_procedure_issue =
-			read_e_i_kr_device_cause_procedure_issue(&mut xpath, &node);
-		let mfds_device_cause_patient_condition =
-			read_e_i_kr_device_cause_patient_condition(&mut xpath, &node);
-		let mfds_device_cause_unable_to_assess =
-			read_e_i_kr_device_cause_unable_to_assess(&mut xpath, &node);
-		let mfds_device_cause_other =
-			read_e_i_kr_device_cause_other(&mut xpath, &node);
-		let mfds_device_action_reason =
-			read_e_i_kr_device_action_reason(&mut xpath, &node);
-		let mfds_device_action_recall =
-			read_e_i_kr_device_action_recall(&mut xpath, &node);
-		let mfds_device_action_repair =
-			read_e_i_kr_device_action_repair(&mut xpath, &node);
-		let mfds_device_action_inspection =
-			read_e_i_kr_device_action_inspection(&mut xpath, &node);
-		let mfds_device_action_replacement =
-			read_e_i_kr_device_action_replacement(&mut xpath, &node);
-		let mfds_device_action_improvement =
-			read_e_i_kr_device_action_improvement(&mut xpath, &node);
-		let mfds_device_action_monitoring =
-			read_e_i_kr_device_action_monitoring(&mut xpath, &node);
-		let mfds_device_action_notification =
-			read_e_i_kr_device_action_notification(&mut xpath, &node);
-		let mfds_device_action_label_change =
-			read_e_i_kr_device_action_label_change(&mut xpath, &node);
-		let mfds_device_action_other =
-			read_e_i_kr_device_action_other(&mut xpath, &node);
-		let (start_date, start_date_null_flavor) = read_e_i_4(&mut xpath, &node)?;
-		let (end_date, end_date_null_flavor) = read_e_i_5(&mut xpath, &node)?;
-		let duration_value = read_e_i_6a(&mut xpath, &node)?;
-		let duration_unit = read_e_i_6b(&mut xpath, &node)?;
-		let outcome = read_e_i_7(&mut xpath, &node)?;
-		let medical_confirmation = read_e_i_8(&mut xpath, &node)?;
-		let country_code = read_e_i_9(&mut xpath, &node)?;
+			let (required_intervention, required_intervention_null_flavor) =
+				read_fda_e_i_3_2h(&mut xpath, &node)?;
+			let expectedness = read_e_local_expectedness(&mut xpath, &node);
+			let severity = read_e_local_severity(&mut xpath, &node);
+			let mfds_device_ae_classification =
+				read_e_i_kr_device_ae_classification(&mut xpath, &node);
+			let mfds_device_ae_outcome =
+				read_e_i_kr_device_ae_outcome(&mut xpath, &node);
+			let mfds_device_cause_medical_device =
+				read_e_i_kr_device_cause_medical_device(&mut xpath, &node);
+			let mfds_device_cause_procedure_issue =
+				read_e_i_kr_device_cause_procedure_issue(&mut xpath, &node);
+			let mfds_device_cause_patient_condition =
+				read_e_i_kr_device_cause_patient_condition(&mut xpath, &node);
+			let mfds_device_cause_unable_to_assess =
+				read_e_i_kr_device_cause_unable_to_assess(&mut xpath, &node);
+			let mfds_device_cause_other =
+				read_e_i_kr_device_cause_other(&mut xpath, &node);
+			let mfds_device_action_reason =
+				read_e_i_kr_device_action_reason(&mut xpath, &node);
+			let mfds_device_action_recall =
+				read_e_i_kr_device_action_recall(&mut xpath, &node);
+			let mfds_device_action_repair =
+				read_e_i_kr_device_action_repair(&mut xpath, &node);
+			let mfds_device_action_inspection =
+				read_e_i_kr_device_action_inspection(&mut xpath, &node);
+			let mfds_device_action_replacement =
+				read_e_i_kr_device_action_replacement(&mut xpath, &node);
+			let mfds_device_action_improvement =
+				read_e_i_kr_device_action_improvement(&mut xpath, &node);
+			let mfds_device_action_monitoring =
+				read_e_i_kr_device_action_monitoring(&mut xpath, &node);
+			let mfds_device_action_notification =
+				read_e_i_kr_device_action_notification(&mut xpath, &node);
+			let mfds_device_action_label_change =
+				read_e_i_kr_device_action_label_change(&mut xpath, &node);
+			let mfds_device_action_other =
+				read_e_i_kr_device_action_other(&mut xpath, &node);
+			let (start_date, start_date_null_flavor) =
+				read_e_i_4(&mut xpath, &node)?;
+			let (end_date, end_date_null_flavor) = read_e_i_5(&mut xpath, &node)?;
+			let duration_value = read_e_i_6a(&mut xpath, &node)?;
+			let duration_unit = read_e_i_6b(&mut xpath, &node)?;
+			let outcome = read_e_i_7(&mut xpath, &node)?;
+			let medical_confirmation = read_e_i_8(&mut xpath, &node)?;
+			let country_code = read_e_i_9(&mut xpath, &node)?;
 
-		imports.push(EReactionImport {
-			xml_id,
-			primary_source_reaction: primary,
-			primary_source_reaction_translation: translation_text,
-			reaction_language,
-			reaction_meddra_version,
-			reaction_meddra_code,
-			term_highlighted,
-			serious,
-			criteria_death,
-			criteria_death_null_flavor,
-			criteria_life_threatening,
-			criteria_life_threatening_null_flavor,
-			criteria_hospitalization,
-			criteria_hospitalization_null_flavor,
-			criteria_disabling,
-			criteria_disabling_null_flavor,
-			criteria_congenital_anomaly,
-			criteria_congenital_anomaly_null_flavor,
-			criteria_other_medically_important,
-			criteria_other_medically_important_null_flavor,
-			required_intervention,
-			required_intervention_null_flavor,
-			expectedness,
-			severity,
-			mfds_device_ae_classification,
-			mfds_device_ae_outcome,
-			mfds_device_cause_medical_device,
-			mfds_device_cause_procedure_issue,
-			mfds_device_cause_patient_condition,
-			mfds_device_cause_unable_to_assess,
-			mfds_device_cause_other,
-			mfds_device_action_reason,
-			mfds_device_action_recall,
-			mfds_device_action_repair,
-			mfds_device_action_inspection,
-			mfds_device_action_replacement,
-			mfds_device_action_improvement,
-			mfds_device_action_monitoring,
-			mfds_device_action_notification,
-			mfds_device_action_label_change,
-			mfds_device_action_other,
-			start_date,
-			start_date_null_flavor,
-			end_date,
-			end_date_null_flavor,
-			duration_value,
-			duration_unit,
-			outcome,
-			medical_confirmation,
-			country_code,
-		});
-	}
+			imports.push(EReactionImport {
+				xml_id,
+				primary_source_reaction: primary,
+				primary_source_reaction_translation: translation_text,
+				reaction_language,
+				reaction_meddra_version,
+				reaction_meddra_code,
+				term_highlighted,
+				serious,
+				criteria_death,
+				criteria_death_null_flavor,
+				criteria_life_threatening,
+				criteria_life_threatening_null_flavor,
+				criteria_hospitalization,
+				criteria_hospitalization_null_flavor,
+				criteria_disabling,
+				criteria_disabling_null_flavor,
+				criteria_congenital_anomaly,
+				criteria_congenital_anomaly_null_flavor,
+				criteria_other_medically_important,
+				criteria_other_medically_important_null_flavor,
+				required_intervention,
+				required_intervention_null_flavor,
+				expectedness,
+				severity,
+				mfds_device_ae_classification,
+				mfds_device_ae_outcome,
+				mfds_device_cause_medical_device,
+				mfds_device_cause_procedure_issue,
+				mfds_device_cause_patient_condition,
+				mfds_device_cause_unable_to_assess,
+				mfds_device_cause_other,
+				mfds_device_action_reason,
+				mfds_device_action_recall,
+				mfds_device_action_repair,
+				mfds_device_action_inspection,
+				mfds_device_action_replacement,
+				mfds_device_action_improvement,
+				mfds_device_action_monitoring,
+				mfds_device_action_notification,
+				mfds_device_action_label_change,
+				mfds_device_action_other,
+				start_date,
+				start_date_null_flavor,
+				end_date,
+				end_date_null_flavor,
+				duration_value,
+				duration_unit,
+				outcome,
+				medical_confirmation,
+				country_code,
+			});
+		}
 
-	Ok(imports)
+		Ok(imports)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
 /// e2b:E.i.1.1a
@@ -245,6 +243,7 @@ fn read_e_i_1_1a(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_text(xpath, node, EReactionPaths::PRIMARY_TEXT),
 		"primarySourceReaction",
 		input_contracts::generated::e::e_i_1_1a,
+		xpath,
 	)
 }
 
@@ -254,6 +253,7 @@ fn read_e_i_1_1b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_text(xpath, node, EReactionPaths::TRANSLATION_TEXT),
 		"primarySourceReactionTranslation",
 		input_contracts::generated::e::e_i_1_2,
+		xpath,
 	)
 }
 
@@ -263,6 +263,7 @@ fn read_e_i_1_2(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::PRIMARY_LANG),
 		"reactionLanguage",
 		input_contracts::generated::e::e_i_1_1b,
+		xpath,
 	)
 }
 
@@ -272,6 +273,7 @@ fn read_e_i_2_1a(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::MEDDRA_VERSION),
 		"reactionMeddraVersionLLT",
 		input_contracts::generated::e::e_i_2_1a,
+		xpath,
 	)
 }
 
@@ -281,18 +283,19 @@ fn read_e_i_2_1b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::MEDDRA_CODE),
 		"reactionMeddraCodeLLT",
 		input_contracts::generated::e::e_i_2_1b,
+		xpath,
 	)
 }
 
 /// e2b:E.i.3.1
 fn read_e_i_3_1(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	let code = first_attr(xpath, node, EReactionPaths::TERM_HIGHLIGHT_CODE);
-	import_constraint::string(
+	xpath.inputs.string(
 		"termHighlighted",
 		code.as_deref(),
 		None,
 		input_contracts::generated::e::e_i_3_1,
-	)?;
+	);
 	Ok(code)
 }
 
@@ -309,13 +312,18 @@ fn read_seriousness(
 	null_flavor_path: &str,
 	field: &str,
 	_null_field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
 ) -> Result<(Option<bool>, Option<String>)> {
-	let value = parse_bool_literal(first_attr(xpath, node, value_path).as_deref());
+	let raw = first_attr(xpath, node, value_path);
+	let value = parse_bool_literal(raw.as_deref());
 	let null_flavor = first_attr(xpath, node, null_flavor_path);
-	import_constraint::boolean(field, value, null_flavor.as_deref(), check)?;
+	xpath.inputs.boolean(
+		field,
+		raw.as_deref(),
+		value,
+		null_flavor.as_deref(),
+		check,
+	);
 	Ok((value, null_flavor))
 }
 
@@ -427,18 +435,19 @@ fn read_fda_e_i_3_2h(
 		node,
 		EReactionPaths::REQUIRED_INTERVENTION_NULL_FLAVOR,
 	);
-	import_constraint::boolean(
+	xpath.inputs.boolean(
 		"requiredIntervention",
+		raw.as_deref(),
 		value,
 		null_flavor.as_deref(),
 		input_contracts::generated::e::fda_e_i_3_2h,
-	)?;
-	import_constraint::string(
+	);
+	xpath.inputs.string(
 		"requiredInterventionNullFlavor",
 		None,
 		None,
 		input_contracts::generated::e::fda_e_i_3_2h,
-	)?;
+	);
 	Ok((value, null_flavor))
 }
 
@@ -449,13 +458,13 @@ fn read_date(
 	null_flavor_path: &str,
 	field: &str,
 	_null_field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
 ) -> Result<(Option<String>, Option<String>)> {
 	let raw = first_attr(xpath, node, value_path);
 	let null_flavor = first_attr(xpath, node, null_flavor_path);
-	import_constraint::string(field, raw.as_deref(), null_flavor.as_deref(), check)?;
+	xpath
+		.inputs
+		.string(field, raw.as_deref(), null_flavor.as_deref(), check);
 	Ok((raw, null_flavor))
 }
 
@@ -497,12 +506,12 @@ fn read_e_i_6a(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	let raw = raw
 		.map(|value| value.trim().to_string())
 		.filter(|value| !value.is_empty());
-	import_constraint::string(
+	xpath.inputs.string(
 		"reactionDuration.value",
 		raw.as_deref(),
 		None,
 		input_contracts::generated::e::e_i_6a,
-	)?;
+	);
 	Ok(raw)
 }
 
@@ -512,14 +521,18 @@ fn read_e_i_6b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::DURATION_UNIT),
 		"reactionDuration.unit",
 		input_contracts::generated::e::e_i_6b,
+		xpath,
 	)?;
 	let Some(unit) = unit else {
 		return Ok(None);
 	};
-	let unit = match crate::mapping::fda::e_reaction::reaction_duration_unit_from_ucum(&unit) {
-		Some(mapped) => mapped,
-		None => &unit,
-	};
+	let unit =
+		match crate::mapping::fda::e_reaction::reaction_duration_unit_from_ucum(
+			&unit,
+		) {
+			Some(mapped) => mapped,
+			None => &unit,
+		};
 	Ok(Some(unit.to_string()))
 }
 
@@ -529,20 +542,21 @@ fn read_e_i_7(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::OUTCOME_CODE),
 		"reactionOutcome",
 		input_contracts::generated::e::e_i_7,
+		xpath,
 	)
 }
 
 /// e2b:E.i.8
 fn read_e_i_8(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
-	let value = parse_bool_literal(
-		first_attr(xpath, node, EReactionPaths::MEDICAL_CONFIRMATION).as_deref(),
-	);
-	import_constraint::boolean(
+	let raw = first_attr(xpath, node, EReactionPaths::MEDICAL_CONFIRMATION);
+	let value = parse_bool_literal(raw.as_deref());
+	xpath.inputs.boolean(
 		"medicalConfirmation",
+		raw.as_deref(),
 		value,
 		None,
 		input_contracts::generated::e::e_i_8,
-	)?;
+	);
 	Ok(value)
 }
 
@@ -552,6 +566,7 @@ fn read_e_i_9(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		first_attr(xpath, node, EReactionPaths::COUNTRY_CODE),
 		"reactionCountry",
 		input_contracts::generated::e::e_i_9,
+		xpath,
 	)?
 	.map(|value| value.to_ascii_uppercase()))
 }
@@ -816,6 +831,17 @@ pub(crate) async fn import_section_e(
 		)
 		.await?;
 		if let Some(xml_id) = reaction.xml_id {
+			mm.dbx()
+				.fetch_one(
+					sqlx::query_as::<_, (Uuid,)>(
+						"UPDATE reactions SET source_xml_id = $1 WHERE id = $2 AND case_id = $3 RETURNING id",
+					)
+					.bind(&xml_id)
+					.bind(rec_id)
+					.bind(case_id),
+				)
+				.await
+				.map_err(lib_core::model::Error::from)?;
 			map.insert_xml_id(xml_id, rec_id);
 		}
 		map.push_sequence(rec_id);
@@ -832,18 +858,14 @@ fn normalize_xml_bool(value: &str) -> Option<bool> {
 }
 
 fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
-	xpath
-		.findvalues(expr, Some(node))
-		.ok()?
-		.into_iter()
-		.find(|v| !v.trim().is_empty())
+	xpath.findvalues(expr, Some(node)).ok()?.into_iter().next()
 }
 
 fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
+		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
 			return Some(content);
 		}
 	}
@@ -853,11 +875,10 @@ fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 fn input_string(
 	value: Option<String>,
 	field: &str,
-	check: impl for<'a> Fn(
-		input_contracts::FieldInput<'a>,
-	) -> Vec<input_contracts::InputIssue>,
+	check: input_contracts::Check,
+	xpath: &mut Context,
 ) -> Result<Option<String>> {
-	import_constraint::string(field, value.as_deref(), None, check)?;
+	xpath.inputs.string(field, value.as_deref(), None, check);
 	Ok(value)
 }
 

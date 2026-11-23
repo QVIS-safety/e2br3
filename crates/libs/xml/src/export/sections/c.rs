@@ -64,20 +64,8 @@ fn set_text_or_null_flavor(
 	path: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
-	let value = value.map(str::trim).filter(|value| !value.is_empty());
-	let null_flavor = null_flavor.map(str::trim).filter(|value| !value.is_empty());
-	if let Ok(nodes) = xpath.findnodes(path, None) {
-		for mut node in nodes.into_iter().take(1) {
-			if let Some(value) = value {
-				let _ = node.remove_attribute("nullFlavor");
-				let _ = node.set_content(value);
-			} else if let Some(null_flavor) = null_flavor {
-				let _ = node.set_content("");
-				let _ = node.set_attribute("nullFlavor", null_flavor);
-			}
-		}
-	}
+) -> Result<()> {
+	field::set(path, xpath, path, value, null_flavor, None)
 }
 
 fn set_telecom_or_null_flavor(
@@ -85,24 +73,30 @@ fn set_telecom_or_null_flavor(
 	path: &str,
 	value: Option<&str>,
 	null_flavor: Option<&str>,
-) {
-	let value = value.map(str::trim).filter(|value| !value.is_empty());
-	let null_flavor = null_flavor.map(str::trim).filter(|value| !value.is_empty());
-	if let Ok(nodes) = xpath.findnodes(path, None) {
-		for mut node in nodes.into_iter().take(1) {
-			if let Some(value) = value {
-				let telecom_value = if value.contains(':') {
-					value.to_string()
-				} else {
-					format!("tel:{value}")
-				};
-				let _ = node.remove_attribute("nullFlavor");
-				let _ = node.set_attribute("value", &telecom_value);
-			} else if let Some(null_flavor) = null_flavor {
-				let _ = node.set_attribute("value", "tel");
-				let _ = node.set_attribute("nullFlavor", null_flavor);
-			}
+	scheme: &str,
+) -> Result<()> {
+	field::resolve(path, value, null_flavor)?;
+	let value = value.map(|value| {
+		if value.contains(':') {
+			value.to_owned()
+		} else {
+			format!("{scheme}:{value}")
 		}
+	});
+	if null_flavor.is_some() {
+		// The URI scheme identifies which telecom field the nullFlavor belongs to.
+		field::set(path, xpath, path, None, null_flavor, None)?;
+		let nodes = xpath
+			.findnodes(path, None)
+			.map_err(|_| field::invalid(path, "invalid telecom XPath"))?;
+		for mut node in nodes.into_iter().take(1) {
+			node.set_attribute("value", scheme).map_err(|error| {
+				field::invalid(path, format!("write telecom scheme: {error:?}"))
+			})?;
+		}
+		Ok(())
+	} else {
+		field::set(path, xpath, path, value.as_deref(), None, Some("value"))
 	}
 }
 
@@ -151,27 +145,17 @@ fn apply_c_2_primary_source_values(
 		primary,
 		authority,
 		&relationship,
-		&base,
 	)?;
-	let has_organization = primary
-		.organization
-		.as_deref()
-		.is_some_and(|v| !v.trim().is_empty())
-		|| primary
-			.organization_null_flavor
-			.as_deref()
-			.is_some_and(|v| !v.trim().is_empty());
+	let has_organization = primary.organization.as_deref().is_some()
+		|| primary.organization_null_flavor.as_deref().is_some();
 
-	write_c_2_r_1_1(xpath, &base, primary);
-	write_c_2_r_1_2(xpath, &base, primary);
-	if primary
-		.reporter_middle_name
-		.as_deref()
-		.is_some_and(|v| !v.trim().is_empty())
+	write_c_2_r_1_1(xpath, &base, primary)?;
+	write_c_2_r_1_2(xpath, &base, primary)?;
+	if primary.reporter_middle_name.as_deref().is_some()
 		|| primary
 			.reporter_middle_name_null_flavor
 			.as_deref()
-			.is_some_and(|v| !v.trim().is_empty())
+			.is_some()
 	{
 		if xpath_is_empty(
 			xpath,
@@ -185,17 +169,11 @@ fn apply_c_2_primary_source_values(
 				"<given/>",
 			)?;
 		}
-		write_c_2_r_1_3(xpath, &base, primary);
+		write_c_2_r_1_3(xpath, &base, primary)?;
 	}
-	write_c_2_r_1_4(xpath, &base, primary);
-	let has_department = primary
-		.department
-		.as_deref()
-		.is_some_and(|v| !v.trim().is_empty())
-		|| primary
-			.department_null_flavor
-			.as_deref()
-			.is_some_and(|v| !v.trim().is_empty());
+	write_c_2_r_1_4(xpath, &base, primary)?;
+	let has_department = primary.department.as_deref().is_some()
+		|| primary.department_null_flavor.as_deref().is_some();
 	if (has_organization || has_department)
 		&& xpath_is_empty(xpath, &format!("{base}/hl7:representedOrganization"))?
 	{
@@ -222,17 +200,17 @@ fn apply_c_2_primary_source_values(
 	} else {
 		format!("{base}/hl7:representedOrganization/hl7:name")
 	};
-	write_c_2_r_2_1(xpath, &organization_path, primary);
+	write_c_2_r_2_1(xpath, &organization_path, primary)?;
 	if has_department {
-		write_c_2_r_2_2(xpath, &base, primary);
+		write_c_2_r_2_2(xpath, &base, primary)?;
 	}
-	write_c_2_r_2_3(xpath, &base, primary);
-	write_c_2_r_2_4(xpath, &base, primary);
-	write_c_2_r_2_5(xpath, &base, primary);
-	write_c_2_r_2_6(xpath, &base, primary);
-	write_c_2_r_2_7(xpath, &base, primary);
+	write_c_2_r_2_3(xpath, &base, primary)?;
+	write_c_2_r_2_4(xpath, &base, primary)?;
+	write_c_2_r_2_5(xpath, &base, primary)?;
+	write_c_2_r_2_6(xpath, &base, primary)?;
+	write_c_2_r_2_7(xpath, &base, primary)?;
 	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
-		write_fda_c_2_r_2_8(xpath, &base, primary);
+		write_fda_c_2_r_2_8(xpath, &base, primary)?;
 	} else {
 		remove_nodes(
 			xpath,
@@ -253,7 +231,7 @@ fn apply_c_2_primary_source_values(
 			)?;
 		}
 	}
-	write_c_2_r_4(xpath, &base, primary);
+	write_c_2_r_4(xpath, &base, primary)?;
 	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds) {
 		write_c_2_r_4_kr_1(doc, parser, xpath, &base, primary)?;
 	}
@@ -263,130 +241,173 @@ fn apply_c_2_primary_source_values(
 }
 
 /// e2b:C.2.r.1.1
-fn write_c_2_r_1_1(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_1_1(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:prefix"),
 		value.reporter_title.as_deref(),
 		value.reporter_title_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.1.2
-fn write_c_2_r_1_2(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_1_2(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[1]"),
 		value.reporter_given_name.as_deref(),
 		value.reporter_given_name_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.1.3
-fn write_c_2_r_1_3(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_1_3(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
 		value.reporter_middle_name.as_deref(),
 		value.reporter_middle_name_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.1.4
-fn write_c_2_r_1_4(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_1_4(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:family"),
 		value.reporter_family_name.as_deref(),
 		value.reporter_family_name_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.1
-fn write_c_2_r_2_1(xpath: &mut Context, path: &str, value: &PrimarySource) {
+fn write_c_2_r_2_1(
+	xpath: &mut Context,
+	path: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		path,
 		value.organization.as_deref(),
 		value.organization_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.2
-fn write_c_2_r_2_2(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_2(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:representedOrganization/hl7:name"),
 		value.department.as_deref(),
 		value.department_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.3
-fn write_c_2_r_2_3(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_3(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:addr/hl7:streetAddressLine"),
 		value.street.as_deref(),
 		value.street_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.4
-fn write_c_2_r_2_4(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_4(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:addr/hl7:city"),
 		value.city.as_deref(),
 		value.city_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.5
-fn write_c_2_r_2_5(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_5(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:addr/hl7:state"),
 		value.state.as_deref(),
 		value.state_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.6
-fn write_c_2_r_2_6(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_6(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_text_or_null_flavor(
 		xpath,
 		&format!("{base}/hl7:addr/hl7:postalCode"),
 		value.postcode.as_deref(),
 		value.postcode_null_flavor.as_deref(),
-	);
+	)
 }
 
 /// e2b:C.2.r.2.7
-fn write_c_2_r_2_7(xpath: &mut Context, base: &str, value: &PrimarySource) {
+fn write_c_2_r_2_7(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
 	set_telecom_or_null_flavor(
 		xpath,
-		&format!("{base}/hl7:telecom[starts-with(@value,'tel:') or @nullFlavor]"),
+		&format!("{base}/hl7:telecom[starts-with(@value,'tel')]"),
 		value.telephone.as_deref(),
 		value.telephone_null_flavor.as_deref(),
-	);
+		"tel",
+	)
 }
 
 /// e2b:FDA.C.2.r.2.8
-fn write_fda_c_2_r_2_8(xpath: &mut Context, base: &str, value: &PrimarySource) {
-	let path = format!("{base}/hl7:telecom[starts-with(@value,'mailto')]");
-	if let Some(email) = value.email.as_deref() {
-		let email = if email.contains(':') {
-			email.to_string()
-		} else {
-			format!("mailto:{email}")
-		};
-		set_attr_first(xpath, &path, "value", &email);
-		remove_attr_first(xpath, &path, "nullFlavor");
-	} else if let Some(null_flavor) = value.email_null_flavor.as_deref() {
-		set_attr_first(xpath, &path, "value", "mailto");
-		set_attr_first(xpath, &path, "nullFlavor", null_flavor);
-	}
+fn write_fda_c_2_r_2_8(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
+	set_telecom_or_null_flavor(
+		xpath,
+		&format!("{base}/hl7:telecom[starts-with(@value,'mailto')]"),
+		value.email.as_deref(),
+		value.email_null_flavor.as_deref(),
+		"mailto",
+	)
 }
 
 /// e2b:C.2.r.3
@@ -404,22 +425,19 @@ fn write_c_2_r_3(xpath: &mut Context, base: &str, value: &PrimarySource) {
 }
 
 /// e2b:C.2.r.4
-fn write_c_2_r_4(xpath: &mut Context, base: &str, value: &PrimarySource) {
-	let path = format!("{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code");
-	match (
+fn write_c_2_r_4(
+	xpath: &mut Context,
+	base: &str,
+	value: &PrimarySource,
+) -> Result<()> {
+	field::set(
+		"C.2.r.4",
+		xpath,
+		&format!("{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code"),
 		value.qualification.as_deref(),
 		value.qualification_null_flavor.as_deref(),
-	) {
-		(Some(code), _) => {
-			set_attr_first(xpath, &path, "code", code);
-			remove_attr_first(xpath, &path, "nullFlavor");
-		}
-		(None, Some(null_flavor)) => {
-			set_attr_first(xpath, &path, "nullFlavor", null_flavor);
-			remove_attr_first(xpath, &path, "code");
-		}
-		(None, None) => {}
-	}
+		Some("code"),
+	)
 }
 
 /// e2b:C.2.r.4.KR.1
@@ -457,16 +475,10 @@ fn ensure_primary_source_author_nodes(
 	primary: &PrimarySource,
 	authority: lib_core::regulatory::RegulatoryAuthority,
 	relationship: &str,
-	base: &str,
 ) -> Result<()> {
-	if !xpath_is_empty(xpath, base)? {
-		return Ok(());
-	}
+	remove_nodes(xpath, &format!("{relationship}/hl7:relatedInvestigation/hl7:subjectOf2[hl7:controlActEvent/hl7:author/hl7:assignedEntity]"));
 	let present = |value: Option<&str>, null_flavor: Option<&str>| {
-		[value, null_flavor]
-			.into_iter()
-			.flatten()
-			.any(|value| !value.trim().is_empty())
+		value.is_some() || null_flavor.is_some()
 	};
 	let title = if present(
 		primary.reporter_title.as_deref(),
@@ -485,7 +497,11 @@ fn ensure_primary_source_author_nodes(
 		primary.reporter_middle_name_null_flavor.as_deref(),
 	);
 	let given = if given_name { "<given/>" } else { "" };
-	let middle = if middle_name && given_name { "<given/>" } else { "" };
+	let middle = if middle_name && given_name {
+		"<given/>"
+	} else {
+		""
+	};
 	let family = if present(
 		primary.reporter_family_name.as_deref(),
 		primary.reporter_family_name_null_flavor.as_deref(),
@@ -511,12 +527,7 @@ fn ensure_primary_source_author_nodes(
 	} else {
 		""
 	};
-	let location = if primary
-		.country_code
-		.as_deref()
-		.filter(|value| !value.trim().is_empty())
-		.is_some()
-	{
+	let location = if primary.country_code.as_deref().is_some() {
 		"<asLocatedEntity classCode=\"LOCE\"><location classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code codeSystem=\"1.0.3166.1.2.2\"/></location></asLocatedEntity>"
 	} else {
 		""
@@ -532,34 +543,60 @@ fn ensure_primary_source_author_nodes(
 	let street = if present(
 		primary.street.as_deref(),
 		primary.street_null_flavor.as_deref(),
-	) { "<streetAddressLine/>" } else { "" };
-	let city = if present(primary.city.as_deref(), primary.city_null_flavor.as_deref()) {
-		"<city/>"
-	} else { "" };
+	) {
+		"<streetAddressLine/>"
+	} else {
+		""
+	};
+	let city =
+		if present(primary.city.as_deref(), primary.city_null_flavor.as_deref()) {
+			"<city/>"
+		} else {
+			""
+		};
 	let state = if present(
 		primary.state.as_deref(),
 		primary.state_null_flavor.as_deref(),
-	) { "<state/>" } else { "" };
+	) {
+		"<state/>"
+	} else {
+		""
+	};
 	let postcode = if present(
 		primary.postcode.as_deref(),
 		primary.postcode_null_flavor.as_deref(),
-	) { "<postalCode/>" } else { "" };
+	) {
+		"<postalCode/>"
+	} else {
+		""
+	};
 	let address = if !street.is_empty()
 		|| !city.is_empty()
 		|| !state.is_empty()
 		|| !postcode.is_empty()
 	{
 		format!("<addr>{street}{city}{state}{postcode}</addr>")
-	} else { String::new() };
+	} else {
+		String::new()
+	};
 	let telephone = if present(
 		primary.telephone.as_deref(),
 		primary.telephone_null_flavor.as_deref(),
-	) { "<telecom value=\"tel:\"/>" } else { "" };
-	let email = if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
+	) {
+		"<telecom value=\"tel:\"/>"
+	} else {
+		""
+	};
+	let email =
+		if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
 			&& present(
 				primary.email.as_deref(),
 				primary.email_null_flavor.as_deref(),
-			) { "<telecom value=\"mailto:\"/>" } else { "" };
+			) {
+			"<telecom value=\"mailto:\"/>"
+		} else {
+			""
+		};
 	let has_organization = present(
 		primary.organization.as_deref(),
 		primary.organization_null_flavor.as_deref(),
@@ -571,7 +608,9 @@ fn ensure_primary_source_author_nodes(
 	let organization = if has_department {
 		let nested = if has_organization {
 			"<assignedEntity classCode=\"ASSIGNED\"><representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization></assignedEntity>"
-		} else { "" };
+		} else {
+			""
+		};
 		format!("<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/>{nested}</representedOrganization>")
 	} else if has_organization {
 		"<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization>".to_string()
@@ -583,12 +622,11 @@ fn ensure_primary_source_author_nodes(
 	);
 
 	if xpath_is_empty(xpath, relationship)? {
-		let priority = if primary
-			.primary_source_regulatory
-			.as_deref()
-			.filter(|value| !value.trim().is_empty())
-			.is_some()
-		{ "<priorityNumber/>" } else { "" };
+		let priority = if primary.primary_source_regulatory.as_deref().is_some() {
+			"<priorityNumber/>"
+		} else {
+			""
+		};
 		append_fragment_child(
 			doc,
 			parser,
@@ -662,11 +700,7 @@ pub(crate) fn apply_c_1_report_relationships(
 
 /// e2b:C.1.6.1.r.1
 fn write_c_1_6_1_r_1(value: &DocumentsHeldBySender) -> String {
-	match value
-		.title
-		.as_deref()
-		.filter(|v| !v.trim().is_empty())
-	{
+	match value.title.as_deref() {
 		Some(value) => format!("<title>{}</title>", xml_escape(value)),
 		None => String::new(),
 	}
@@ -694,63 +728,66 @@ fn write_attachment_text(
 	media_type: Option<&str>,
 	representation: Option<&str>,
 	compression: Option<&str>,
-	authority: lib_core::regulatory::RegulatoryAuthority,
+	_authority: lib_core::regulatory::RegulatoryAuthority,
 	_field_code: &str,
 ) -> Result<String> {
-	let Some(document) = document.filter(|value| !value.trim().is_empty()) else {
+	if [document, file_name, media_type, representation, compression]
+		.iter()
+		.all(Option::is_none)
+	{
 		return Ok(String::new());
-	};
-	let file_name = file_name.map(str::trim).filter(|value| !value.is_empty());
-	let mut media_type = match media_type.map(str::trim).filter(|value| !value.is_empty()) {
-		Some(media_type) => media_type,
-		None => "application/octet-stream",
-	};
-	if authority == lib_core::regulatory::RegulatoryAuthority::Fda {
-		if let Some(fda_media_type) =
-			file_name.and_then(lib_core::regulatory::fda_attachment_media_type)
-		{
-			media_type = fda_media_type;
+	}
+	// Draft transport preserves stored attributes; submission validation owns media compatibility.
+	let mut out = String::from("<text");
+	for (name, value) in [
+		("mediaType", media_type),
+		("representation", representation),
+		("compression", compression),
+	] {
+		if let Some(value) = value {
+			out.push_str(&format!(" {name}=\"{}\"", xml_escape(value)));
 		}
 	}
-	let reference = match file_name {
-		Some(value) => format!("<reference value=\"{}\"/>", xml_escape(value)),
-		None => String::new(),
-	};
-	let representation = match representation.map(str::trim).filter(|value| !value.is_empty()) {
-		Some(representation) => representation,
-		None => "B64",
-	};
-	let compression = match compression.map(str::trim).filter(|value| !value.is_empty()) {
-		Some(value) => format!(" compression=\"{}\"", xml_escape(value)),
-		None => String::new(),
-	};
-	Ok(format!(
-		"<text mediaType=\"{}\" representation=\"{}\"{}>{}{}</text>",
-		xml_escape(media_type),
-		xml_escape(representation),
-		compression,
-		reference,
-		xml_escape(document)
-	))
+	out.push('>');
+	if let Some(value) = file_name {
+		out.push_str(&format!("<reference value=\"{}\"/>", xml_escape(value)));
+	}
+	if let Some(value) = document {
+		out.push_str(&xml_escape(value));
+	}
+	out.push_str("</text>");
+	Ok(out)
 }
 
 fn write_c_1_9_1(value: &OtherCaseIdentifier) -> String {
-	format!("<subjectOf1 typeCode=\"SUBJ\"><controlActEvent classCode=\"CACT\" moodCode=\"EVN\"><id root=\"2.16.840.1.113883.3.989.2.1.3.3\" assigningAuthorityName=\"{}\" extension=\"{}\"/></controlActEvent></subjectOf1>", write_c_1_9_1_r_1(value), write_c_1_9_1_r_2(value))
+	format!("<subjectOf1 typeCode=\"SUBJ\"><controlActEvent classCode=\"CACT\" moodCode=\"EVN\"><id root=\"2.16.840.1.113883.3.989.2.1.3.3\"{}{}/></controlActEvent></subjectOf1>", write_c_1_9_1_r_1(value), write_c_1_9_1_r_2(value))
 }
 
 /// e2b:C.1.9.1.r.1
 fn write_c_1_9_1_r_1(value: &OtherCaseIdentifier) -> String {
-	xml_escape(&value.source_of_identifier)
+	match &value.source_of_identifier {
+		Some(source) => {
+			format!(" assigningAuthorityName=\"{}\"", xml_escape(source))
+		}
+		None => String::new(),
+	}
 }
 
 /// e2b:C.1.9.1.r.2
 fn write_c_1_9_1_r_2(value: &OtherCaseIdentifier) -> String {
-	xml_escape(&value.case_identifier)
+	match &value.case_identifier {
+		Some(identifier) => format!(" extension=\"{}\"", xml_escape(identifier)),
+		None => String::new(),
+	}
 }
 
 /// e2b:C.1.10.r
 fn write_c_1_10_r(value: &LinkedReportNumber) -> String {
-	format!("<outboundRelationship typeCode=\"SPRT\"><relatedInvestigation classCode=\"INVSTG\" moodCode=\"EVN\"><code nullFlavor=\"NA\"/><subjectOf2 typeCode=\"SUBJ\"><controlActEvent classCode=\"CACT\" moodCode=\"EVN\"><id root=\"2.16.840.1.113883.3.989.2.1.3.2\" extension=\"{}\"/></controlActEvent></subjectOf2></relatedInvestigation></outboundRelationship>", xml_escape(&value.linked_report_number))
+	let extension = match &value.linked_report_number {
+		Some(number) => format!(" extension=\"{}\"", xml_escape(number)),
+		None => String::new(),
+	};
+	format!("<outboundRelationship typeCode=\"SPRT\"><relatedInvestigation classCode=\"INVSTG\" moodCode=\"EVN\"><code nullFlavor=\"NA\"/><subjectOf2 typeCode=\"SUBJ\"><controlActEvent classCode=\"CACT\" moodCode=\"EVN\"><id root=\"2.16.840.1.113883.3.989.2.1.3.2\"{extension}/></controlActEvent></subjectOf2></relatedInvestigation></outboundRelationship>")
 }
 
 pub fn export_c_safety_report_patch(
@@ -760,20 +797,10 @@ pub fn export_c_safety_report_patch(
 	sender: Option<&SenderInformation>,
 	authority: lib_core::regulatory::RegulatoryAuthority,
 ) -> Result<String> {
-	let report_unique_id = report
-		.safety_report_id
-		.as_deref()
-		.filter(|value| !value.trim().is_empty())
-		.ok_or(Error::MissingExportField { field: "C.1.1" })?;
-	let report_type = report
-		.report_type
-		.as_deref()
-		.filter(|value| !value.trim().is_empty())
-		.ok_or(Error::MissingExportField { field: "C.1.3" })?;
 	let patch = CSafetyReportPatch {
-		report_unique_id,
+		report_unique_id: report.safety_report_id.as_deref(),
 		transmission_date: report.transmission_date.as_deref(),
-		report_type,
+		report_type: report.report_type.as_deref(),
 		date_first_received: report.date_first_received_from_source.as_deref(),
 		date_most_recent: report.date_of_most_recent_information.as_deref(),
 		fulfil_expedited: report.fulfil_expedited_criteria,
@@ -845,7 +872,35 @@ pub fn export_c_safety_report_patch(
 		sender_email: sender.and_then(|s| s.email.as_deref()),
 	};
 
-	patch_c_safety_report(raw_xml, &patch)
+	let xml = patch_c_safety_report(raw_xml, &patch)?;
+	if sender.is_some() {
+		Ok(xml)
+	} else {
+		remove_absent_sender(&xml)
+	}
+}
+
+fn remove_absent_sender(xml: &str) -> Result<String> {
+	let doc = crate::import_sections::shared::parse_import_xml(xml)?;
+	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
+		message: "Failed to initialize sender XPath context".to_string(),
+		line: None,
+		column: None,
+	})?;
+	xpath
+		.register_namespace("hl7", "urn:hl7-org:v3")
+		.map_err(|_| Error::InvalidXml {
+			message: "Failed to register sender XML namespace".to_string(),
+			line: None,
+			column: None,
+		})?;
+	let nodes = xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author[hl7:assignedEntity/hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']]", None).map_err(|_| Error::InvalidXml {
+		message: "Failed to query absent sender nodes".to_string(), line: None, column: None,
+	})?;
+	for mut node in nodes {
+		node.unlink_node();
+	}
+	Ok(doc.to_string())
 }
 
 #[cfg(test)]
@@ -854,6 +909,22 @@ mod primary_source_null_flavor_tests {
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
 	use std::collections::BTreeSet;
+
+	#[test]
+	fn absent_sender_export_removes_only_sender_author() {
+		let xml = crate::export::base_export_skeleton().replace("</investigationEvent>", "<outboundRelationship><relatedInvestigation><subjectOf2><controlActEvent><author><assignedEntity><id extension=\"reporter-kept\"/></assignedEntity></author></controlActEvent></subjectOf2></relatedInvestigation></outboundRelationship></investigationEvent>");
+		let output = remove_absent_sender(&xml).expect("remove absent sender");
+		let doc = Parser::default()
+			.parse_string(output)
+			.expect("parse export");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		assert!(xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author", None).expect("sender").is_empty());
+		assert_eq!(xpath.findvalue("//hl7:relatedInvestigation//hl7:author/hl7:assignedEntity/hl7:id/@extension", None).expect("reporter"), "reporter-kept");
+		assert!(remove_absent_sender("<broken>").is_err());
+	}
 
 	fn source() -> PrimarySource {
 		PrimarySource {
@@ -1282,7 +1353,143 @@ mod primary_source_null_flavor_tests {
 	}
 
 	#[test]
-	fn fda_attachment_keeps_file_name_and_infers_media_type() {
+	fn draft_attachment_preserves_absent_and_literal_attributes() {
+		for fields in [
+			(None, None, None, None, None),
+			(Some("QUJD"), None, None, None, None),
+			(
+				Some("QUJD"),
+				Some(" report.pdf "),
+				Some(" text/plain "),
+				Some(" B64 "),
+				Some(" GZ "),
+			),
+			(Some("QUJD"), Some(""), Some(""), Some(""), Some("")),
+		] {
+			assert_draft_attachment_fields(fields);
+		}
+	}
+
+	#[test]
+	fn draft_attachment_preserves_metadata_without_content() {
+		for fields in [
+			(
+				None,
+				Some("report.pdf"),
+				Some("application/pdf"),
+				Some("B64"),
+				None,
+			),
+			(
+				Some(""),
+				Some("empty.txt"),
+				Some("text/plain"),
+				Some("B64"),
+				None,
+			),
+			(None, None, None, None, Some("GZ")),
+		] {
+			assert_draft_attachment_fields(fields);
+		}
+	}
+
+	#[test]
+	fn draft_attachment_preserves_stored_media_type_despite_filename() {
+		assert_draft_attachment_fields((
+			Some("QUJD"),
+			Some("report.pdf"),
+			Some("text/plain"),
+			Some("B64"),
+			None,
+		));
+	}
+
+	fn assert_draft_attachment_fields(
+		fields: (
+			Option<&str>,
+			Option<&str>,
+			Option<&str>,
+			Option<&str>,
+			Option<&str>,
+		),
+	) {
+		let (content, name, media, representation, compression) = fields;
+		for authority in [
+			lib_core::regulatory::RegulatoryAuthority::Ich,
+			lib_core::regulatory::RegulatoryAuthority::Fda,
+			lib_core::regulatory::RegulatoryAuthority::Mfds,
+		] {
+			for field in ["C.1.6.1.r.2", "C.4.r.2"] {
+				let fragment = write_attachment_text(
+					content,
+					name,
+					media,
+					representation,
+					compression,
+					authority,
+					field,
+				)
+				.expect("draft export");
+				let xml = format!("<root xmlns=\"urn:hl7-org:v3\"><investigationEvent><reference><document>{fragment}</document></reference></investigationEvent></root>");
+				let mut doc =
+					Parser::default().parse_string(xml.as_bytes()).expect("XML");
+				let mut xpath = Context::new(&doc).expect("XPath");
+				xpath
+					.register_namespace("hl7", "urn:hl7-org:v3")
+					.expect("namespace");
+				crate::export::shared::patch_doc::postprocess_export_doc(
+					&mut doc, &mut xpath,
+				)
+				.expect("postprocess");
+				let texts = xpath
+					.findnodes("//hl7:document/hl7:text", None)
+					.expect("attachment");
+				if [content, name, media, representation, compression]
+					.iter()
+					.all(Option::is_none)
+				{
+					assert!(texts.is_empty());
+					continue;
+				}
+				assert_eq!(
+					texts.len(),
+					1,
+					"{authority:?} {field}: stored attachment disappeared"
+				);
+				for (key, expected) in [
+					("mediaType", media),
+					("representation", representation),
+					("compression", compression),
+				] {
+					assert_eq!(
+						texts[0].get_property(key).as_deref(),
+						expected,
+						"{authority:?} {field} {key}"
+					);
+				}
+				let names = xpath
+					.findnodes("//hl7:text/hl7:reference", None)
+					.expect("file name");
+				assert_eq!(names.len(), usize::from(name.is_some()));
+				if let Some(name) = name {
+					assert_eq!(
+						names[0].get_property("value").as_deref(),
+						Some(name)
+					);
+				}
+				assert_eq!(
+					texts[0].get_content(),
+					match content {
+						Some(value) => value,
+						None => "",
+					}
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn fda_attachment_keeps_file_name_and_stored_media_type() {
 		let authority = lib_core::regulatory::RegulatoryAuthority::Fda;
 		let xml = write_attachment_text(
 			Some("QUJD"),
@@ -1295,7 +1502,7 @@ mod primary_source_null_flavor_tests {
 		)
 		.expect("valid FDA attachment");
 		assert!(xml.contains("<reference value=\"report.pdf\"/>QUJD"));
-		let corrected = write_attachment_text(
+		let mismatched = write_attachment_text(
 			Some("QUJD"),
 			Some("report.pdf"),
 			Some("text/plain"),
@@ -1305,7 +1512,7 @@ mod primary_source_null_flavor_tests {
 			"C.4.r.2",
 		)
 		.expect("semantic media mismatch must not block export");
-		assert!(corrected.contains("mediaType=\"application/pdf\""));
+		assert!(mismatched.contains("mediaType=\"text/plain\""));
 	}
 
 	#[test]
@@ -1353,7 +1560,7 @@ pub(crate) fn apply_c_4_literature(
 
 	let mut fragment = String::new();
 	for item in references {
-		let bibliographic = write_c_4_r_1(item);
+		let bibliographic = write_c_4_r_1(item)?;
 		let attachment = write_c_4_r_2(item, authority)?;
 		fragment.push_str(&format!(
 			"<reference typeCode=\"REFR\"><document classCode=\"DOC\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.27\"/>{attachment}{bibliographic}</document></reference>"
@@ -1387,26 +1594,13 @@ pub(crate) fn apply_c_4_literature(
 }
 
 /// e2b:C.4.r.1
-fn write_c_4_r_1(item: &LiteratureReference) -> String {
-	let text = match item.reference_text.as_deref() {
-		Some(text) => text.trim(),
-		None => "",
-	};
-	if !text.is_empty() {
-		return format!(
-			"<bibliographicDesignationText>{}</bibliographicDesignationText>",
-			xml_escape(text)
-		);
-	}
-	match item.reference_text_null_flavor.as_deref() {
-		Some(value) => {
-			format!(
-				"<bibliographicDesignationText nullFlavor=\"{}\"/>",
-				xml_escape(value)
-			)
-		}
-		None => "<bibliographicDesignationText/>".to_string(),
-	}
+fn write_c_4_r_1(item: &LiteratureReference) -> Result<String> {
+	field::text_element(
+		"write_c_4_r_1",
+		item.reference_text.as_deref(),
+		item.reference_text_null_flavor.as_deref(),
+		"bibliographicDesignationText",
+	)
 }
 
 /// e2b:C.4.r.2
@@ -1447,16 +1641,15 @@ pub(crate) fn apply_c_5_study(
 
 	let mut auth_xml = String::new();
 	for reg in registrations {
-		if reg
-			.registration_number
-			.as_deref()
-			.is_none_or(|value| value.trim().is_empty())
+		if reg.registration_number.as_deref().is_none()
 			&& reg.registration_number_null_flavor.is_none()
+			&& reg.country_code.as_deref().is_none()
+			&& reg.country_code_null_flavor.is_none()
 		{
 			continue;
 		}
-		let country_xml = write_c_5_1_r_2(reg);
-		let id_xml = write_c_5_1_r_1(reg);
+		let country_xml = write_c_5_1_r_2(reg)?;
+		let id_xml = write_c_5_1_r_1(reg)?;
 		auth_xml.push_str(&format!(
 			"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\">{id_xml}{country_xml}</studyRegistration></authorization>"
 		));
@@ -1464,14 +1657,19 @@ pub(crate) fn apply_c_5_study(
 
 	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
 		let mut fda_ids = vec![write_fda_c_5_5a(study), write_fda_c_5_5b(study)];
-		fda_ids.extend(cross_reported_inds.iter().map(write_fda_c_5_6_r));
+		fda_ids.extend(
+			cross_reported_inds
+				.iter()
+				.map(write_fda_c_5_6_r)
+				.collect::<Result<Vec<_>>>()?,
+		);
 		for id in fda_ids.into_iter().filter(|id| !id.is_empty()) {
 			auth_xml.push_str(&format!("<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\">{id}</studyRegistration></authorization>"));
 		}
 	}
 
-	let sponsor_id_xml = write_c_5_3(study);
-	let title_xml = write_c_5_2(study);
+	let sponsor_id_xml = write_c_5_3(study)?;
+	let title_xml = write_c_5_2(study)?;
 	let study_type = write_c_5_4(study);
 	let regional_study_type =
 		if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds) {
@@ -1516,83 +1714,58 @@ pub(crate) fn apply_c_5_study(
 }
 
 /// e2b:C.5.1.r.1
-fn write_c_5_1_r_1(value: &StudyRegistrationNumber) -> String {
-	let Some(registration_number) = value
-		.registration_number
-		.as_deref()
-		.filter(|value| !value.trim().is_empty())
-	else {
-		return match value.registration_number_null_flavor.as_deref() {
-			Some(null_flavor) => {
-				format!(
-					"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
-					xml_escape(null_flavor)
-				)
-			}
-			None => String::new(),
-		};
-	};
-	format!(
-		"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
-		xml_escape(registration_number)
+fn write_c_5_1_r_1(value: &StudyRegistrationNumber) -> Result<String> {
+	field::element(
+		"write_c_5_1_r_1",
+		value.registration_number.as_deref(),
+		value.registration_number_null_flavor.as_deref(),
+		"id",
+		"extension",
+		" root=\"2.16.840.1.113883.3.989.2.1.3.6\"",
 	)
 }
 
 /// e2b:C.5.1.r.2
-fn write_c_5_1_r_2(value: &StudyRegistrationNumber) -> String {
-	match (value.country_code.as_deref().filter(|v| !v.trim().is_empty()), value.country_code_null_flavor.as_deref()) {
-		(Some(code), _) => format!("<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"{}\" codeSystem=\"1.0.3166.1.2.2\"/></governingPlace></territorialAuthority></author>", xml_escape(code)),
-		(None, Some(null_flavor)) => format!("<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code nullFlavor=\"{}\" codeSystem=\"1.0.3166.1.2.2\"/></governingPlace></territorialAuthority></author>", xml_escape(null_flavor)),
-		(None, None) => String::new(),
+fn write_c_5_1_r_2(value: &StudyRegistrationNumber) -> Result<String> {
+	let code = field::element(
+		"C.5.1.r.2",
+		value.country_code.as_deref(),
+		value.country_code_null_flavor.as_deref(),
+		"code",
+		"code",
+		" codeSystem=\"1.0.3166.1.2.2\"",
+	)?;
+	if code.is_empty() {
+		return Ok(String::new());
 	}
+	Ok(format!("<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\">{code}</governingPlace></territorialAuthority></author>"))
 }
 
 /// e2b:C.5.2
-fn write_c_5_2(value: &StudyInformation) -> String {
-	let name = match value.study_name.as_deref() {
-		Some(name) => name.trim(),
-		None => "",
-	};
-	if !name.is_empty() {
-		return format!("<title>{}</title>", xml_escape(name));
-	}
-	match value.study_name_null_flavor.as_deref() {
-		Some(value) => format!("<title nullFlavor=\"{}\"/>", xml_escape(value)),
-		None => "<title/>".to_string(),
-	}
+fn write_c_5_2(value: &StudyInformation) -> Result<String> {
+	field::text_element(
+		"write_c_5_2",
+		value.study_name.as_deref(),
+		value.study_name_null_flavor.as_deref(),
+		"title",
+	)
 }
 
 /// e2b:C.5.3
-fn write_c_5_3(value: &StudyInformation) -> String {
-	let number = match value.sponsor_study_number.as_deref() {
-		Some(number) => number.trim(),
-		None => "",
-	};
-	if !number.is_empty() {
-		return format!(
-			"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
-			xml_escape(number)
-		);
-	}
-	match value.sponsor_study_number_null_flavor.as_deref() {
-		Some(null_flavor) => {
-			format!(
-				"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
-				xml_escape(null_flavor)
-			)
-		}
-		None => String::new(),
-	}
+fn write_c_5_3(value: &StudyInformation) -> Result<String> {
+	field::element(
+		"write_c_5_3",
+		value.sponsor_study_number.as_deref(),
+		value.sponsor_study_number_null_flavor.as_deref(),
+		"id",
+		"extension",
+		" root=\"2.16.840.1.113883.3.989.2.1.3.5\"",
+	)
 }
 
 /// e2b:C.5.4
 fn write_c_5_4(value: &StudyInformation) -> String {
-	match value
-		.study_type_reaction
-		.as_deref()
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-	{
+	match value.study_type_reaction.as_deref() {
 		Some(value) => {
 			format!(
 				"<code code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>",
@@ -1605,7 +1778,7 @@ fn write_c_5_4(value: &StudyInformation) -> String {
 
 /// e2b:C.5.4.KR.1
 fn write_c_5_4_kr_1(value: &StudyInformation) -> String {
-	match value.study_type_reaction_kr1.as_deref().filter(|v| !v.trim().is_empty()) {
+	match value.study_type_reaction_kr1.as_deref() {
 		Some(value) => format!("<subjectOf2 typeCode=\"SUBJ\"><investigationCharacteristic classCode=\"OBS\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.7\" codeSystemVersion=\"1.0\" displayName=\"otherStudiesType\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.3\" codeSystemVersion=\"1.0\"/></investigationCharacteristic></subjectOf2>", xml_escape(value)),
 		None => String::new(),
 	}
@@ -1628,27 +1801,22 @@ fn write_fda_c_5_5b(value: &StudyInformation) -> String {
 }
 
 /// e2b:FDA.C.5.6.r
-fn write_fda_c_5_6_r(value: &StudyFdaCrossReportedInd) -> String {
-	if let Some(number) =
-		value.ind_number.as_deref().filter(|v| !v.trim().is_empty())
-	{
-		format!(
-			"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.3\"/>",
-			xml_escape(number)
-		)
-	} else if let Some(null_flavor) = value.ind_number_null_flavor.as_deref() {
-		format!(
-			"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.3\"/>",
-			xml_escape(null_flavor)
-		)
-	} else {
-		String::new()
-	}
+fn write_fda_c_5_6_r(value: &StudyFdaCrossReportedInd) -> Result<String> {
+	field::element(
+		"write_fda_c_5_6_r",
+		value.ind_number.as_deref(),
+		value.ind_number_null_flavor.as_deref(),
+		"id",
+		"extension",
+		" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.3\"",
+	)
 }
 
 fn write_fda_study_id(value: Option<&str>, root: &str) -> String {
-	match value.filter(|v| !v.trim().is_empty()) {
-		Some(value) => format!("<id extension=\"{}\" root=\"{root}\"/>", xml_escape(value)),
+	match value {
+		Some(value) => {
+			format!("<id extension=\"{}\" root=\"{root}\"/>", xml_escape(value))
+		}
 		None => String::new(),
 	}
 }
@@ -1777,16 +1945,77 @@ mod study_writer_strictness_tests {
 	}
 
 	#[test]
+	fn study_registration_export_preserves_country_only_rows() {
+		for (country, null_flavor) in [
+			(Some("US"), None),
+			(None, Some("ASKU")),
+			(None, Some("NASK")),
+		] {
+			let parser = Parser::default();
+			let mut doc = parser
+				.parse_string(
+					r#"<root xmlns="urn:hl7-org:v3"><primaryRole><player1/></primaryRole></root>"#,
+				)
+				.expect("XML");
+			let mut xpath = Context::new(&doc).expect("XPath");
+			xpath
+				.register_namespace("hl7", "urn:hl7-org:v3")
+				.expect("namespace");
+			let mut registration = registration();
+			registration.registration_number = None;
+			registration.country_code = country.map(str::to_owned);
+			registration.country_code_null_flavor = null_flavor.map(str::to_owned);
+			apply_c_5_study(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				Some(&study()),
+				&[registration],
+				&[],
+				lib_core::regulatory::RegulatoryAuthority::Ich,
+			)
+			.expect("export");
+			assert_eq!(
+				xpath
+					.findnodes("//hl7:studyRegistration", None)
+					.expect("registration")
+					.len(),
+				1
+			);
+			assert!(xpath
+				.findnodes("//hl7:studyRegistration/hl7:id", None)
+				.expect("absent identifier")
+				.is_empty());
+			for (attribute, expected) in
+				[("code", country), ("nullFlavor", null_flavor)]
+			{
+				let values = xpath.findvalues(&format!("//hl7:studyRegistration/hl7:author/hl7:territorialAuthority/hl7:governingPlace/hl7:code/@{attribute}"), None).expect("country attribute");
+				assert_eq!(
+					values,
+					expected.into_iter().map(str::to_owned).collect::<Vec<_>>()
+				);
+			}
+		}
+	}
+
+	#[test]
 	fn study_writers_omit_missing_values_and_keep_explicit_null_flavors() {
 		let mut registration = registration();
-		assert!(write_c_5_1_r_1(&registration).is_empty());
+		registration.registration_number = None;
+		assert!(write_c_5_1_r_1(&registration)
+			.expect("serialize")
+			.is_empty());
 		registration.registration_number_null_flavor = Some("ASKU".to_string());
-		assert!(write_c_5_1_r_1(&registration).contains("nullFlavor=\"ASKU\""));
+		assert!(write_c_5_1_r_1(&registration)
+			.expect("serialize")
+			.contains("nullFlavor=\"ASKU\""));
 
 		let mut study = study();
-		assert!(write_c_5_3(&study).is_empty());
+		assert!(write_c_5_3(&study).expect("serialize").is_empty());
 		study.sponsor_study_number_null_flavor = Some("NASK".to_string());
-		assert!(write_c_5_3(&study).contains("nullFlavor=\"NASK\""));
+		assert!(write_c_5_3(&study)
+			.expect("serialize")
+			.contains("nullFlavor=\"NASK\""));
 		assert!(write_c_5_4(&study).is_empty());
 		study.study_type_reaction = Some("1".to_string());
 		assert_eq!(
@@ -1840,8 +2069,8 @@ mod relationship_order_tests {
 			id: sqlx::types::Uuid::nil(),
 			case_id: sqlx::types::Uuid::nil(),
 			sequence_number: 1,
-			source_of_identifier: "QVIS Safety CRO".to_string(),
-			case_identifier: "KR-QVIS-PRIOR-2026-004".to_string(),
+			source_of_identifier: Some("QVIS Safety CRO".to_string()),
+			case_identifier: Some("KR-QVIS-PRIOR-2026-004".to_string()),
 			deleted: false,
 			created_at: OffsetDateTime::UNIX_EPOCH,
 			updated_at: OffsetDateTime::UNIX_EPOCH,

@@ -360,7 +360,7 @@ pub(super) async fn load_editor_si_data(
 	.next();
 	let (study_registration_numbers, fda_cross_reported_ind_numbers) =
 		if let Some(ref study) = study_information {
-			let registrations = StudyRegistrationNumberBmc::list(
+			let registrations = StudyRegistrationNumberBmc::list_with_deleted(
 				ctx,
 				mm,
 				Some(vec![StudyRegistrationNumberFilter {
@@ -368,9 +368,10 @@ pub(super) async fn load_editor_si_data(
 					..Default::default()
 				}]),
 				Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+				true,
 			)
 			.await?;
-			let cross_reported = StudyFdaCrossReportedIndBmc::list(
+			let cross_reported = StudyFdaCrossReportedIndBmc::list_with_deleted(
 				ctx,
 				mm,
 				Some(vec![StudyFdaCrossReportedIndFilter {
@@ -378,6 +379,7 @@ pub(super) async fn load_editor_si_data(
 					..Default::default()
 				}]),
 				Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+				true,
 			)
 			.await?;
 			(registrations, cross_reported)

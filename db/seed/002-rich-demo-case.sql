@@ -7,7 +7,6 @@ DECLARE
     v_case_id UUID := 'd2000000-0000-0000-0000-000000000001';
     v_case_version_id UUID := 'd2000000-0000-0000-0000-000000000002';
     v_message_header_id UUID := 'd2000000-0000-0000-0000-000000000003';
-    v_receiver_info_id UUID := 'd2000000-0000-0000-0000-000000000004';
     v_safety_ident_id UUID := 'd2000000-0000-0000-0000-000000000005';
     v_sender_info_id UUID := 'd2000000-0000-0000-0000-000000000006';
     v_study_info_id UUID := 'd2000000-0000-0000-0000-000000000007';
@@ -100,32 +99,18 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO receiver_information (
-        id, case_id, receiver_type, organization_name, department, street_address,
-        city, state_province, postcode, country_code, telephone, fax, email,
-        created_by, updated_by, created_at, updated_at
-    )
-    VALUES (
-        v_receiver_info_id, v_case_id, '2', 'U.S. FDA', 'CDER Pharmacovigilance',
-        '10903 New Hampshire Ave', 'Silver Spring', 'MD', '20993', 'US',
-        '+1-301-555-0100', '+1-301-555-0101', 'cder-safety@example.gov',
-        v_user_id, v_user_id, NOW(), NOW()
-    )
-    ON CONFLICT (id) DO NOTHING;
-
     INSERT INTO safety_report_identification (
         id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source,
         date_of_most_recent_information, fulfil_expedited_criteria,
         local_criteria_report_type, combination_product_report_indicator,
         worldwide_unique_id, first_sender_type, additional_documents_available,
-        receiver_organization, other_case_identifiers_exist,
+        other_case_identifiers_exist,
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
         v_safety_ident_id, v_case_id, 'DEMO-RICH-2026-0001', 1, '20260410103000', '1', DATE '2026-04-07',
         DATE '2026-04-09', true, '1', true,
-        'KR-QVIS-2026-0001', '1', true,
-        'Food and Drug Administration', true,
+        'KR-QVIS-2026-0001', '1', true, true,
         v_user_id, v_user_id, NOW(), NOW()
     )
     ON CONFLICT (id) DO NOTHING;

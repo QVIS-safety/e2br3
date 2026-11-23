@@ -60,6 +60,7 @@ pub struct XmlImportHistoryRow {
 	pub case_number: Option<String>,
 	pub status: String,
 	pub error_message: Option<String>,
+	pub public_error: Option<serde_json::Value>,
 	pub uploaded_by: Uuid,
 	pub uploader_email: Option<String>,
 	pub uploaded_at: OffsetDateTime,
@@ -70,7 +71,9 @@ pub struct XmlImportHistoryRow {
 pub struct XmlImportHistoryErrorRow {
 	pub case_id: Option<Uuid>,
 	pub source_file_name: String,
+	pub status: String,
 	pub error_message: Option<String>,
+	pub public_error: Option<serde_json::Value>,
 }
 
 // -- XmlImportHistoryBmc
@@ -87,6 +90,7 @@ impl XmlImportHistoryBmc {
 		case_number: Option<&str>,
 		status: XmlImportHistoryStatus,
 		error_message: Option<&str>,
+		public_error: Option<&serde_json::Value>,
 	) -> Result<()> {
 		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
 			.await?;
@@ -99,8 +103,9 @@ impl XmlImportHistoryBmc {
 					case_number,
 					status,
 					error_message,
+					public_error,
 					uploaded_by
-				) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 			)
 			.bind(uploaded_file_name)
 			.bind(source_file_name)
@@ -108,6 +113,7 @@ impl XmlImportHistoryBmc {
 			.bind(case_number)
 			.bind(status.as_str())
 			.bind(error_message)
+			.bind(public_error)
 			.bind(ctx.user_id()),
 		)
 		.await?;
@@ -124,6 +130,7 @@ impl XmlImportHistoryBmc {
 		case_number: Option<&str>,
 		status: XmlImportHistoryStatus,
 		error_message: Option<&str>,
+		public_error: Option<&serde_json::Value>,
 	) -> Result<()> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
@@ -136,6 +143,7 @@ impl XmlImportHistoryBmc {
 			case_number,
 			status,
 			error_message,
+			public_error,
 		)
 		.await
 		{
@@ -168,6 +176,7 @@ impl XmlImportHistoryBmc {
 					       h.case_number,
 					       h.status,
 					       h.error_message,
+					       h.public_error,
 					       h.uploaded_by,
 					       u.email AS uploader_email,
 					       h.uploaded_at
@@ -213,7 +222,7 @@ impl XmlImportHistoryBmc {
 		let row = dbx
 			.fetch_optional(
 				sqlx::query_as::<_, XmlImportHistoryErrorRow>(
-					"SELECT case_id, source_file_name, error_message
+					"SELECT case_id, source_file_name, status, error_message, public_error
 					   FROM xml_import_history
 					  WHERE id = $1",
 				)

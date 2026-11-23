@@ -6,9 +6,9 @@ pub struct DPatientDeathCausePatch<'a> {
 
 #[derive(Default)]
 pub struct CSafetyReportPatch<'a> {
-	pub report_unique_id: &'a str,
+	pub report_unique_id: Option<&'a str>,
 	pub transmission_date: Option<&'a str>,
-	pub report_type: &'a str,
+	pub report_type: Option<&'a str>,
 	pub date_first_received: Option<&'a str>,
 	pub date_most_recent: Option<&'a str>,
 	pub fulfil_expedited: Option<bool>,

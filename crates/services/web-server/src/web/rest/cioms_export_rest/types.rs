@@ -176,7 +176,7 @@ fn cioms_reaction_description(data: &CiomsCaseData) -> String {
 		let result = join_present(
 			&[
 				test.test_date.as_ref().map(|date| format!("Date: {date}")),
-				Some(test.test_name.clone()),
+				test.test_name.clone(),
 				test.test_result_code
 					.clone()
 					.map(|code| format!("Code: {code}")),
@@ -196,9 +196,13 @@ fn cioms_reaction_description(data: &CiomsCaseData) -> String {
 			entries.push(format!("Test {}: {result}", test.sequence_number));
 		}
 	}
-	if let Some(narrative) = data.narrative.as_ref() {
-		if !narrative.case_narrative.trim().is_empty() {
-			entries.push(format!("Case narrative: {}", narrative.case_narrative));
+	if let Some(text) = data
+		.narrative
+		.as_ref()
+		.and_then(|row| row.case_narrative.as_deref())
+	{
+		if !text.trim().is_empty() {
+			entries.push(format!("Case narrative: {text}"));
 		}
 	}
 	entries.join("\n")

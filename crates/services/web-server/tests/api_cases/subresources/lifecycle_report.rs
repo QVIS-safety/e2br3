@@ -122,30 +122,6 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		deleted_get_status: StatusCode::NOT_FOUND,
 	};
 
-	let receiver_path = format!("/api/cases/{case_id}/receiver");
-	let receiver_create =
-		json!({"data":{"case_id":case_id,"organization_name":"Lifecycle receiver"}});
-	let (receiver_id, _) = create_lifecycle_row(
-		&app,
-		&cookie,
-		&receiver_path,
-		receiver_create.clone(),
-		"receiver information",
-	)
-	.await?;
-	let receiver_contract = SingletonLifecycleContract {
-		name: "receiver information",
-		table: "receiver_information",
-		id: receiver_id,
-		path: receiver_path,
-		update: json!({"data":{"organization_name":"Updated lifecycle receiver"}}),
-		changed_field: "organization_name",
-		changed_value: json!("Updated lifecycle receiver"),
-		create: receiver_create,
-		delete_status: StatusCode::NO_CONTENT,
-		deleted_get_status: StatusCode::OK,
-	};
-
 	let report_path = format!("/api/cases/{case_id}/safety-report");
 	let report_create = json!({"data":{
 		"case_id":case_id,
@@ -168,9 +144,9 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		table: "safety_report_identification",
 		id: report_id,
 		path: report_path.clone(),
-		update: json!({"data":{"receiver_organization":"Lifecycle authority"}}),
-		changed_field: "receiver_organization",
-		changed_value: json!("Lifecycle authority"),
+		update: json!({"data":{"safety_report_id":"LC-SR-2"}}),
+		changed_field: "safety_report_id",
+		changed_value: json!("LC-SR-2"),
 		create: report_create,
 		delete_status: StatusCode::NO_CONTENT,
 		deleted_get_status: StatusCode::NOT_FOUND,
@@ -344,7 +320,7 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		&ctx,
 		case_id,
 		&case_rows,
-		&[&message_contract, &receiver_contract, &report_contract],
+		&[&message_contract, &report_contract],
 	)
 	.await?;
 
@@ -364,7 +340,7 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		)
 		.await?;
 	}
-	for contract in [&message_contract, &receiver_contract, &report_contract] {
+	for contract in [&message_contract, &report_contract] {
 		assert_singleton_policy(
 			&app,
 			&cookie,
@@ -385,7 +361,7 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 	]) {
 		assert_locked_row_mutation(&app, &cookie, &mm, &ctx, contract).await?;
 	}
-	for contract in [&message_contract, &receiver_contract, &report_contract] {
+	for contract in [&message_contract, &report_contract] {
 		assert_locked_singleton(&app, &cookie, &mm, &ctx, contract).await?;
 	}
 	toggle_case_lock(&app, &cookie, case_id).await?;
@@ -450,7 +426,7 @@ async fn report_rows_enforce_scope_permission_lock_lifecycle_and_audit() -> Resu
 		source_create,
 	)
 	.await?;
-	for contract in [&message_contract, &receiver_contract, &report_contract] {
+	for contract in [&message_contract, &report_contract] {
 		assert_hard_singleton_lifecycle(&app, &cookie, &mm, &ctx, contract).await?;
 	}
 	Ok(())

@@ -1,9 +1,8 @@
 use crate::error::Error;
-use crate::import_constraint;
+use crate::import_constraint::Context;
 use crate::Result;
 use libxml::parser::{Parser, ParserOptions};
 use libxml::tree::{Document, Node};
-use libxml::xpath::Context;
 use sqlx::types::time::Date;
 use sqlx::types::Uuid;
 use std::collections::HashMap;
@@ -113,11 +112,7 @@ pub(crate) fn first_attr(
 	attr: &str,
 ) -> Option<String> {
 	let expr = format!("{expr}/@{attr}");
-	xpath
-		.findvalues(&expr, Some(node))
-		.ok()?
-		.into_iter()
-		.find(|v| !v.trim().is_empty())
+	xpath.findvalues(&expr, Some(node)).ok()?.into_iter().next()
 }
 
 pub(crate) fn first_value(
@@ -125,11 +120,7 @@ pub(crate) fn first_value(
 	node: &Node,
 	expr: &str,
 ) -> Option<String> {
-	xpath
-		.findvalues(expr, Some(node))
-		.ok()?
-		.into_iter()
-		.find(|v| !v.trim().is_empty())
+	xpath.findvalues(expr, Some(node)).ok()?.into_iter().next()
 }
 
 pub(crate) fn first_text(
@@ -140,7 +131,7 @@ pub(crate) fn first_text(
 	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
+		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
 			return Some(content);
 		}
 	}
@@ -148,31 +139,18 @@ pub(crate) fn first_text(
 }
 
 pub(crate) fn first_value_root(xpath: &mut Context, expr: &str) -> Option<String> {
-	xpath
-		.findvalues(expr, None)
-		.ok()?
-		.into_iter()
-		.find(|v| !v.trim().is_empty())
+	xpath.findvalues(expr, None).ok()?.into_iter().next()
 }
 
 pub(crate) fn first_text_root(xpath: &mut Context, expr: &str) -> Option<String> {
 	let nodes = xpath.findnodes(expr, None).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if !content.trim().is_empty() {
+		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
 			return Some(content);
 		}
 	}
 	None
-}
-
-pub(crate) fn parse_bool_attr(
-	xpath: &mut Context,
-	node: &Node,
-	expr: &str,
-	attr: &str,
-) -> Option<bool> {
-	parse_bool_literal(first_attr(xpath, node, expr, attr).as_deref())
 }
 
 /// Case-insensitive true/false/1/0, without trimming.
@@ -206,46 +184,6 @@ pub(crate) fn parse_xml_id_opt(value: Option<String>) -> Option<String> {
 		return None;
 	}
 	Some(value)
-}
-
-pub(crate) fn normalize_code(
-	value: Option<String>,
-	allowed: &[&str],
-	field: &str,
-) -> Option<String> {
-	match value {
-		Some(v) => {
-			let trimmed = v.trim();
-			if allowed.contains(&trimmed) {
-				return Some(trimmed.to_string());
-			}
-			let digit = trimmed.chars().next().filter(|c| c.is_ascii_digit());
-			if let Some(d) = digit {
-				let s = d.to_string();
-				if allowed.contains(&s.as_str()) {
-					eprintln!(
-						"[import_e2b_xml] coercing {field} value={trimmed} -> {s}"
-					);
-					return Some(s);
-				}
-			}
-			eprintln!("[import_e2b_xml] dropping invalid {field} value={trimmed}");
-			None
-		}
-		None => None,
-	}
-}
-
-pub(crate) fn normalize_iso2(value: Option<String>, field: &str) -> Option<String> {
-	let v = value?.trim().to_string();
-	let len = v.len();
-	let upper = v.to_ascii_uppercase();
-	if len == 2 && upper.chars().all(|c| c.is_ascii_uppercase()) {
-		Some(upper)
-	} else {
-		tracing::warn!(field, value = %v, len, "dropping invalid ISO-3166-1 alpha-2");
-		None
-	}
 }
 
 pub(crate) fn telecom_first_in_node(
@@ -289,25 +227,6 @@ fn parse_date_preserves_existing_normalization_and_calendar_checks() {
 	}
 }
 
-pub(crate) fn normalize_message_date(value: String) -> Option<String> {
-	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
-	if digits.len() < 14 {
-		return None;
-	}
-	Some(digits[0..14].to_string())
-}
-
-pub(crate) fn make_import_message_number(base: &str, case_id: Uuid) -> String {
-	let suffix = case_id.to_string();
-	let max_base = 100usize.saturating_sub(1 + suffix.len());
-	let truncated = if base.len() > max_base {
-		base[..max_base].to_string()
-	} else {
-		base.to_string()
-	};
-	format!("{truncated}-{suffix}")
-}
-
 #[derive(Debug)]
 pub(crate) struct MessageHeaderExtract {
 	pub(crate) message_number: Option<String>,
@@ -317,6 +236,7 @@ pub(crate) struct MessageHeaderExtract {
 	pub(crate) batch_number: Option<String>,
 	pub(crate) batch_sender: Option<String>,
 	pub(crate) batch_receiver: Option<String>,
+	pub(crate) batch_transmission_date: Option<String>,
 }
 
 pub(crate) fn extract_message_header(xml: &[u8]) -> Result<MessageHeaderExtract> {
@@ -331,40 +251,121 @@ pub(crate) fn extract_message_header(xml: &[u8]) -> Result<MessageHeaderExtract>
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let batch_dates = xpath
+			.findvalues("/hl7:MCCI_IN200100UV01/hl7:creationTime/@value", None)
+			.map_err(|_| Error::InvalidImportRequest {
+				message: "N.1.5 XPath evaluation failed".to_string(),
+			})?;
+		let batch_transmission_date = match batch_dates.as_slice() {
+			[] => None,
+			[value] => Some(value.clone()),
+			_ => {
+				return Err(Error::InvalidImportRequest {
+					message: "N.1.5 must contain at most one timestamp".to_string(),
+				})
+			}
+		};
+		xpath.inputs.string(
+			"N.1.5",
+			batch_transmission_date.as_deref(),
+			None,
+			input_contracts::generated::n::n_1_5,
+		);
 
-	let mut first_value = |expr: &str| -> Result<Option<String>> {
-		Ok(xpath
-			.findvalues(expr, None)
-			.map_err(|_| Error::InvalidXml {
-				message: format!("Failed to query message header path: {expr}"),
-				line: None,
-				column: None,
-			})?
-			.into_iter()
-			.find(|v| !v.trim().is_empty()))
-	};
+		let mut first_value = |expr: &str| -> Result<Option<String>> {
+			Ok(xpath
+				.findvalues(expr, None)
+				.map_err(|_| Error::InvalidXml {
+					message: format!("Failed to query message header path: {expr}"),
+					line: None,
+					column: None,
+				})?
+				.into_iter()
+				.next())
+		};
 
-	Ok(MessageHeaderExtract {
-		message_number: first_value("//hl7:PORR_IN049016UV/hl7:id/@extension")?,
-		message_sender: first_value(
-			"//hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id/@extension",
-		)?,
-		message_receiver: first_value(
-			"//hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
-		)?,
-		message_date: first_value("//hl7:PORR_IN049016UV/hl7:creationTime/@value")?,
-		batch_number: first_value("/hl7:MCCI_IN200100UV01/hl7:id/@extension")?,
-		batch_sender: first_value(
-			"/hl7:MCCI_IN200100UV01/hl7:sender/hl7:device/hl7:id/@extension",
-		)?,
-		batch_receiver: first_value(
-			"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:id/@extension",
-		)?,
-	})
+		Ok(MessageHeaderExtract {
+			batch_transmission_date,
+			message_number: first_value("//hl7:PORR_IN049016UV/hl7:id/@extension")?,
+			message_sender: first_value(
+				"//hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id/@extension",
+			)?,
+			message_receiver: first_value(
+				"//hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
+			)?,
+			message_date: first_value(
+				"//hl7:PORR_IN049016UV/hl7:creationTime/@value",
+			)?,
+			batch_number: first_value("/hl7:MCCI_IN200100UV01/hl7:id/@extension")?,
+			batch_sender: first_value(
+				"/hl7:MCCI_IN200100UV01/hl7:sender/hl7:device/hl7:id/@extension",
+			)?,
+			batch_receiver: first_value(
+				"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:id/@extension",
+			)?,
+		})
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
-pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<String> {
+#[cfg(test)]
+mod batch_date_tests {
+	use super::extract_message_header;
+	#[test]
+	fn preserves_batch_timestamp_lexemes_without_inventing_missing_components() {
+		for value in [
+			"",
+			" ",
+			"20261121085336.179855+0000",
+			"20261121085336.123456789+0000",
+			"20240229123059.123456+0900",
+			"2024",
+			"202402",
+			"20240229123059.1234+0900",
+			"20241121010203-0400",
+			"20241121010203",
+		] {
+			let xml = format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><creationTime value="{value}"/></MCCI_IN200100UV01>"#
+			);
+			assert_eq!(
+				extract_message_header(xml.as_bytes())
+					.expect("header")
+					.batch_transmission_date
+					.as_deref(),
+				Some(value)
+			);
+		}
+		let missing = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"/>"#;
+		assert_eq!(
+			extract_message_header(missing)
+				.expect("missing value remains absent")
+				.batch_transmission_date,
+			None
+		);
+	}
+	#[test]
+	fn rejects_invalid_or_ambiguous_batch_timestamp() {
+		for value in [
+			"not-a-date",
+			"20230229123059+0900",
+			"20241121010203+9999",
+			"20240229123059.123x56+0900",
+		] {
+			let xml = format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><creationTime value="{value}"/></MCCI_IN200100UV01>"#
+			);
+			assert!(extract_message_header(xml.as_bytes()).is_err(), "{value}");
+		}
+		let duplicate = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><creationTime value="2024"/><creationTime value="2025"/></MCCI_IN200100UV01>"#;
+		assert!(extract_message_header(duplicate).is_err());
+	}
+}
+
+pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<Option<String>> {
 	let xml_str = std::str::from_utf8(xml).map_err(|err| Error::InvalidXml {
 		message: format!("XML not valid UTF-8: {err}"),
 		line: None,
@@ -376,9 +377,10 @@ pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<String> {
 		line: None,
 		column: None,
 	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let result = (|| -> Result<_> {
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
-	let candidates = xpath
+		let candidates = xpath
 		.findvalues(
 			"//hl7:investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.1']/@extension",
 			None,
@@ -388,31 +390,37 @@ pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<String> {
 			line: None,
 			column: None,
 		})?;
-	for value in candidates {
-		if !value.trim().is_empty() {
-			import_constraint::string(
-				"safetyReportId",
-				Some(&value),
-				None,
-				input_contracts::generated::c::c_1_1,
-			)?;
-			return Ok(value);
-		}
-	}
-
-	Err(Error::InvalidXml {
-		message: "safety_report_id not found".to_string(),
-		line: None,
-		column: None,
-	})
+		let value = match candidates.as_slice() {
+			[] => None,
+			[value] => Some(value.clone()),
+			_ => {
+				return Err(Error::InvalidXml {
+					message: "multiple C.1.1 identifiers cannot identify one case"
+						.into(),
+					line: None,
+					column: None,
+				})
+			}
+		};
+		xpath.inputs.string(
+			"safetyReportId",
+			value.as_deref(),
+			None,
+			input_contracts::generated::c::c_1_1,
+		);
+		Ok(value)
+	})()?;
+	xpath.validate()?;
+	Ok(result)
 }
 
-fn parse_import_xml(xml: &str) -> Result<Document> {
+pub(crate) fn parse_import_xml(xml: &str) -> Result<Document> {
 	Parser::default()
 		.parse_string_with_options(
 			xml,
 			ParserOptions {
 				recover: false,
+				no_net: true,
 				no_error: true,
 				no_warning: true,
 				..Default::default()
@@ -485,7 +493,7 @@ mod tests {
 
 		let extracted = extract_safety_report_id(xml).expect("extract C.1.1");
 
-		assert_eq!(extracted, "CASE-C-1-1");
+		assert_eq!(extracted.as_deref(), Some("CASE-C-1-1"));
 	}
 
 	#[test]
@@ -511,7 +519,10 @@ mod tests {
 			</MCCI_IN200100UV01>
 		"#;
 
-		assert_eq!(extract_safety_report_id(xml).unwrap(), "CASE-ID");
+		assert_eq!(
+			extract_safety_report_id(xml).unwrap().as_deref(),
+			Some("CASE-ID")
+		);
 	}
 
 	#[test]
@@ -522,8 +533,8 @@ mod tests {
 		));
 
 		assert_eq!(
-			extract_safety_report_id(xml).unwrap(),
-			"US-APHARMA-8744554B-UPDATE-TESTING222"
+			extract_safety_report_id(xml).unwrap().as_deref(),
+			Some("US-APHARMA-8744554B-UPDATE-TESTING222")
 		);
 	}
 

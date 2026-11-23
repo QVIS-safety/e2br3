@@ -226,15 +226,6 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			Body::empty(),
 		)
 		.await?;
-		if !validation_ok {
-			if export_status != StatusCode::BAD_REQUEST {
-				failures.push(format!(
-					"{}: invalid case export returned {}",
-					fixture.filename, export_status
-				));
-			}
-			continue;
-		}
 		if export_status != StatusCode::OK {
 			failures.push(format!(
 				"{}: export failed {} {}",
@@ -242,6 +233,14 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 				export_status,
 				String::from_utf8_lossy(&export_bytes)
 			));
+			continue;
+		}
+
+		let parsed = xml::validation::validate_e2b_xml_basic(&export_bytes, None)?;
+		assert!(parsed.ok, "{:?}", parsed.errors);
+		assert_eq!(parsed.root_element.as_deref(), Some("MCCI_IN200100UV01"));
+		if !validation_ok {
+			// Draft downloads need not pass submission rules or XSD validation.
 			continue;
 		}
 

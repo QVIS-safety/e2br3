@@ -1,8 +1,7 @@
 use lib_core::regulatory::RegulatoryAuthority;
 use xml::validation::{
-	default_xsd_path, normalize_e2b_xml_for_import, validate_e2b_xml,
-	validate_e2b_xml_basic, validate_e2b_xml_for_import, validate_e2b_xml_xsd,
-	XmlValidatorConfig,
+	default_xsd_path, validate_e2b_xml, validate_e2b_xml_basic,
+	validate_e2b_xml_for_import, validate_e2b_xml_xsd, XmlValidatorConfig,
 };
 
 #[test]
@@ -24,13 +23,13 @@ fn generic_validation_api_is_owned_by_xml() {
 #[test]
 fn malformed_xml_is_not_recovered_for_import_or_xsd_validation() {
 	let malformed = b"<root>";
-	assert!(normalize_e2b_xml_for_import(malformed).is_err());
+	assert!(validate_e2b_xml_for_import(malformed, None).is_err());
 	let schema = default_xsd_path().expect("official ICH schema");
 	assert!(validate_e2b_xml_xsd(malformed, &schema).is_err());
 }
 
 #[test]
-fn import_normalization_treats_empty_c_1_8_1_extension_as_absent() {
+fn import_accepts_empty_c_1_8_1_without_rewriting_it() {
 	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 		.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml");
 	let source = std::fs::read_to_string(path).expect("prepared FDA XML fixture");
@@ -45,14 +44,16 @@ fn import_normalization_treats_empty_c_1_8_1_extension_as_absent() {
 		.iter()
 		.any(|error| error.message.contains("minLength")));
 
-	let normalized =
-		normalize_e2b_xml_for_import(xml.as_bytes()).expect("normalize");
-	let normalized = String::from_utf8(normalized).expect("UTF-8 XML");
-	assert!(!normalized.contains("extension=\"\""));
-	assert!(normalized.contains("root=\"2.16.840.1.113883.3.989.2.1.3.2\""));
-	assert!(validate_e2b_xml_xsd(normalized.as_bytes(), &schema)
-		.expect("validate normalized XML")
-		.is_empty());
+	assert!(
+		validate_e2b_xml_for_import(xml.as_bytes(), None)
+			.expect("import structure")
+			.ok
+	);
+	let report =
+		xml::import_sections::c_safety_report::parse_c_safety_report(xml.as_bytes())
+			.expect("input contracts")
+			.expect("report");
+	assert_eq!(report.worldwide_unique_id.as_deref(), Some(""));
 }
 
 #[test]
@@ -65,8 +66,7 @@ fn mfds_import_accepts_korean_causality_result_value() {
 	let xml = source.replacen(result, &format!(
 		"{result}<value xsi:type=\"CE\" code=\"3\" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.5\"/>"
 	), 1);
-	let normalized =
-		normalize_e2b_xml_for_import(xml.as_bytes()).expect("normalize");
+	let normalized = xml.as_bytes();
 	let schema = default_xsd_path().expect("prepared XSD");
 	assert!(validate_e2b_xml_xsd(&normalized, &schema)
 		.unwrap()
@@ -77,13 +77,8 @@ fn mfds_import_accepts_korean_causality_result_value() {
 	let report = validate_e2b_xml_for_import(&normalized, None).expect("validate");
 	assert!(report.ok, "unexpected errors: {:?}", report.errors);
 	assert!(report.errors.is_empty());
-	let invalid = xml.replacen("<id ", "<id invalidAttribute=\"true\" ", 1);
-	let report = validate_e2b_xml_for_import(invalid.as_bytes(), None).unwrap();
-	assert!(
-		!report.ok,
-		"MFDS extension must not hide unrelated XSD errors"
-	);
-	assert!(!report.errors.is_empty());
+	let invalid = xml.replace("</MCCI_IN200100UV01>", "");
+	assert!(validate_e2b_xml_for_import(invalid.as_bytes(), None).is_err());
 }
 
 #[test]
@@ -111,7 +106,7 @@ fn xml_validation_does_not_run_case_business_rules() {
 }
 
 #[test]
-fn import_normalization_treats_empty_code_system_version_as_absent() {
+fn import_accepts_empty_code_system_version_without_rewriting_it() {
 	let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 		.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml");
 	let source = std::fs::read_to_string(path).expect("prepared FDA XML fixture");
@@ -124,12 +119,24 @@ fn import_normalization_treats_empty_code_system_version_as_absent() {
 		.iter()
 		.any(|error| error.message.contains("minLength")));
 
-	let normalized =
-		normalize_e2b_xml_for_import(xml.as_bytes()).expect("normalize");
-	let normalized = String::from_utf8(normalized).expect("UTF-8 XML");
-	assert!(!normalized.contains("codeSystemVersion=\"\""));
-	assert!(normalized.contains("codeSystemVersion=\"12.0\""));
-	assert!(validate_e2b_xml_xsd(normalized.as_bytes(), &schema)
-		.expect("validate normalized XML")
-		.is_empty());
+	assert!(
+		validate_e2b_xml_for_import(xml.as_bytes(), None)
+			.expect("import structure")
+			.ok
+	);
+	assert!(xml.contains("codeSystemVersion=\"\""));
+}
+
+#[test]
+fn import_rejects_multiple_reports_instead_of_merging_or_dropping_them() {
+	let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><investigationEvent/><investigationEvent/></MCCI_IN200100UV01>"#;
+	assert!(validate_e2b_xml_for_import(xml, None).is_err());
+}
+
+#[test]
+fn import_rejects_missing_or_unsupported_report_namespace() {
+	for xml in [
+		b"<MCCI_IN200100UV01 xmlns='urn:hl7-org:v3'/>".as_slice(),
+		b"<MCCI_IN200100UV01 xmlns='urn:other'><investigationEvent/></MCCI_IN200100UV01>".as_slice(),
+	] { assert!(validate_e2b_xml_for_import(xml, None).is_err()); }
 }

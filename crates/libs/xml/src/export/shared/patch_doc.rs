@@ -1,54 +1,20 @@
 use crate::export::policy::{
-	export_attribute_strip_spec_for_rule, export_normalization_spec_for_rule,
-	export_xpath_for_rule, export_xpaths_for_rule, has_export_policy_directive,
-	ExportNormalizeKind, ExportPolicyDirective, EXPORT_NORMALIZE_INVALID_CODE_RULES,
-	EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
-	EXPORT_RULE_FDA_REQUIRED_INTERVENTION, EXPORT_RULE_GK11_EMPTY_PRUNE,
-	EXPORT_RULE_OPTIONAL_PATH_EMPTY_PRUNE, EXPORT_RULE_PLACEHOLDER_VALUE_PRUNE,
-	EXPORT_RULE_RACE_EMPTY_PRUNE, EXPORT_RULE_RACE_NI_PRUNE,
-	EXPORT_RULE_STRUCTURAL_EMPTY_PRUNE, EXPORT_RULE_SUMMARY_LANGUAGE_JA_FORBIDDEN,
+	export_xpaths_for_rule, EXPORT_RULE_STRUCTURAL_EMPTY_PRUNE,
 };
 use crate::export_utils::{remove_xsi_type, set_xsi_type};
 use libxml::tree::{Document, Node, NodeType};
 use libxml::xpath::Context;
 
 pub(crate) fn postprocess_export_doc(
-	doc: &mut Document,
+	_doc: &mut Document,
 	xpath: &mut Context,
 ) -> crate::Result<()> {
 	normalize_export_values(xpath)?;
-	prune_optional_nodes(doc, xpath);
+	prune_empty_structural_nodes(xpath);
 	Ok(())
 }
 
 fn normalize_export_values(xpath: &mut Context) -> crate::Result<()> {
-	for rule_code in EXPORT_NORMALIZE_INVALID_CODE_RULES {
-		if !has_export_policy_directive(
-			rule_code,
-			ExportPolicyDirective::NormalizeInvalidCodeToNullFlavorNi,
-		) {
-			continue;
-		}
-		let Some(spec) = export_normalization_spec_for_rule(rule_code) else {
-			continue;
-		};
-		if let Ok(nodes) = xpath.findnodes(spec.xpath, None) {
-			for mut node in nodes {
-				let value = match node.get_attribute(spec.attribute) {
-					Some(value) => value,
-					None => String::new(),
-				};
-				let valid = matches_normalization_kind(value.trim(), spec.kind);
-				if !valid {
-					let _ = node.set_attribute("nullFlavor", "NI");
-					let _ = node.remove_attribute(spec.attribute);
-					let _ = node.remove_attribute("codeSystem");
-					let _ = node.remove_attribute("codeSystemVersion");
-				}
-			}
-		}
-	}
-
 	if let Ok(nodes) = xpath.findnodes("//*[@type]", None) {
 		for mut node in nodes {
 			if let Some(value) = node.get_attribute("type") {
@@ -73,146 +39,6 @@ fn normalize_export_values(xpath: &mut Context) -> crate::Result<()> {
 	Ok(())
 }
 
-fn matches_normalization_kind(value: &str, kind: ExportNormalizeKind) -> bool {
-	match kind {
-		ExportNormalizeKind::AsciiDigitsLen(len) => {
-			value.len() == len && value.chars().all(|c| c.is_ascii_digit())
-		}
-		ExportNormalizeKind::AsciiUpperLen(len) => {
-			value.len() == len && value.chars().all(|c| c.is_ascii_uppercase())
-		}
-	}
-}
-
-fn prune_optional_nodes(_doc: &mut Document, xpath: &mut Context) {
-	if has_export_policy_directive(
-		EXPORT_RULE_OPTIONAL_PATH_EMPTY_PRUNE,
-		ExportPolicyDirective::RemoveOptionalPathEmptyNodes,
-	) {
-		let optional_paths = include_str!("../../fda_optional_paths.txt");
-		for raw in optional_paths
-			.lines()
-			.map(str::trim)
-			.filter(|l| !l.is_empty())
-		{
-			let xp = path_to_xpath(raw);
-			if let Ok(nodes) = xpath.findnodes(&xp, None) {
-				for node in nodes {
-					if node.get_name() == "substanceAdministration"
-						&& node.get_parent().is_some_and(|parent| {
-							parent.get_name() == "outboundRelationship2"
-								&& parent.get_attribute("typeCode").as_deref()
-									== Some("FLFS")
-						}) {
-						continue;
-					}
-					if !node_has_real_data(&node) {
-						let mut n = node;
-						n.unlink_node();
-					}
-				}
-			}
-		}
-	}
-
-	prune_placeholder_nodes(xpath);
-	if has_export_policy_directive(
-		EXPORT_RULE_STRUCTURAL_EMPTY_PRUNE,
-		ExportPolicyDirective::RemoveEmptyStructuralNodes,
-	) {
-		prune_empty_structural_nodes(xpath);
-	}
-}
-
-fn prune_placeholder_nodes(xpath: &mut Context) {
-	if has_export_policy_directive(
-		EXPORT_RULE_PLACEHOLDER_VALUE_PRUNE,
-		ExportPolicyDirective::RemovePlaceholderValueNodes,
-	) {
-		for path in export_xpaths_for_rule(EXPORT_RULE_PLACEHOLDER_VALUE_PRUNE) {
-			unlink_nodes(xpath, path, true);
-		}
-	}
-
-	if has_export_policy_directive(
-		EXPORT_RULE_RACE_NI_PRUNE,
-		ExportPolicyDirective::RemoveRaceNiNodes,
-	) {
-		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_RACE_NI_PRUNE) {
-			unlink_nodes(xpath, path, true);
-		}
-	}
-	if has_export_policy_directive(
-		EXPORT_RULE_RACE_EMPTY_PRUNE,
-		ExportPolicyDirective::RemoveRaceEmptyNodes,
-	) {
-		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_RACE_EMPTY_PRUNE) {
-			unlink_nodes(xpath, path, true);
-		}
-	}
-
-	if has_export_policy_directive(
-		EXPORT_RULE_GK11_EMPTY_PRUNE,
-		ExportPolicyDirective::RemoveEmptyGk11Relationships,
-	) {
-		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_GK11_EMPTY_PRUNE) {
-			unlink_nodes(xpath, path, false);
-		}
-	}
-
-	if has_export_policy_directive(
-		EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
-		ExportPolicyDirective::RemoveDocumentTextCompression,
-	) {
-		if let Some(spec) = export_attribute_strip_spec_for_rule(
-			EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
-		) {
-			remove_attribute_on_nodes(xpath, spec.xpath, spec.attribute);
-		}
-	}
-
-	if has_export_policy_directive(
-		EXPORT_RULE_SUMMARY_LANGUAGE_JA_FORBIDDEN,
-		ExportPolicyDirective::RemoveSummaryLanguageJa,
-	) {
-		if let Some(spec) = export_attribute_strip_spec_for_rule(
-			EXPORT_RULE_SUMMARY_LANGUAGE_JA_FORBIDDEN,
-		) {
-			remove_attribute_on_nodes(xpath, spec.xpath, spec.attribute);
-		}
-	}
-
-	if has_export_policy_directive(
-		EXPORT_RULE_FDA_REQUIRED_INTERVENTION,
-		ExportPolicyDirective::RequiredInterventionNullFlavorNi,
-	) {
-		if let Some(path) =
-			export_xpath_for_rule(EXPORT_RULE_FDA_REQUIRED_INTERVENTION)
-		{
-			if let Ok(nodes) = xpath.findnodes(path, None) {
-				for mut node in nodes {
-					if !required_intervention_rule_applies(&node) {
-						continue;
-					}
-					let val = match node.get_attribute("value") {
-						Some(value) => value,
-						None => String::new(),
-					};
-					let trimmed = val.trim();
-					if !trimmed.is_empty() && !looks_placeholder(trimmed) {
-						let _ = node.remove_attribute("nullFlavor");
-						continue;
-					}
-					let _ = node.remove_attribute("value");
-					if node.get_attribute("nullFlavor").is_none() {
-						let _ = node.set_attribute("nullFlavor", "NI");
-					}
-				}
-			}
-		}
-	}
-}
-
 fn prune_empty_structural_nodes(xpath: &mut Context) {
 	for path in export_xpaths_for_rule(EXPORT_RULE_STRUCTURAL_EMPTY_PRUNE) {
 		if let Ok(nodes) = xpath.findnodes(path, None) {
@@ -230,50 +56,12 @@ fn prune_empty_structural_nodes(xpath: &mut Context) {
 	}
 }
 
-fn path_to_xpath(path: &str) -> String {
-	let mut out = String::from("/");
-	for (i, part) in path.split('/').enumerate() {
-		if i > 0 {
-			out.push('/');
-		}
-		out.push_str("hl7:");
-		out.push_str(part);
-	}
-	out
-}
-
-fn remove_attribute_on_nodes(xpath: &mut Context, node_xpath: &str, attr: &str) {
-	if let Ok(nodes) = xpath.findnodes(node_xpath, None) {
-		for mut node in nodes {
-			let _ = node.remove_attribute(attr);
-		}
-	}
-}
-
-fn unlink_nodes(
-	xpath: &mut Context,
-	node_xpath: &str,
-	unlink_parent_if_present: bool,
-) {
-	if let Ok(nodes) = xpath.findnodes(node_xpath, None) {
-		for mut node in nodes {
-			if unlink_parent_if_present {
-				if let Some(mut parent) = node.get_parent() {
-					parent.unlink_node();
-					continue;
-				}
-			}
-			node.unlink_node();
-		}
-	}
-}
-
 fn node_has_real_data(node: &Node) -> bool {
 	if node.get_type() != Some(NodeType::ElementNode) {
 		return false;
 	}
 	let content = node.get_content();
-	if !content.trim().is_empty() && !looks_placeholder(content.trim()) {
+	if !content.is_empty() {
 		return true;
 	}
 	for attr in [
@@ -287,10 +75,8 @@ fn node_has_real_data(node: &Node) -> bool {
 		"codeSystemVersion",
 		"nullFlavor",
 	] {
-		if let Some(val) = node.get_attribute(attr) {
-			if !val.trim().is_empty() && !looks_placeholder(val.trim()) {
-				return true;
-			}
+		if node.get_attribute(attr).is_some() {
+			return true;
 		}
 	}
 	for child in node.get_child_nodes() {
@@ -303,91 +89,116 @@ fn node_has_real_data(node: &Node) -> bool {
 	false
 }
 
-fn looks_placeholder(value: &str) -> bool {
-	let v = value.trim();
-	if v.is_empty() {
-		return true;
-	}
-	let Some(first) = v.chars().next() else {
-		return false;
-	};
-	if !first.is_ascii_uppercase() || !v.contains('.') {
-		return false;
-	}
-	if !v.chars().any(|c| c.is_ascii_digit()) {
-		return false;
-	}
-	v.chars()
-		.all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
-}
-
-fn required_intervention_rule_applies(value_node: &Node) -> bool {
-	let mut current = value_node.clone();
-	let mut reaction_observation: Option<Node> = None;
-
-	for _ in 0..4 {
-		let Some(parent) = current.get_parent() else {
-			break;
-		};
-		if parent.get_name() == "observation"
-			&& child_observation_code(&parent).as_deref() == Some("29")
-		{
-			reaction_observation = Some(parent);
-			break;
-		}
-		current = parent;
-	}
-
-	let other_medically_important = reaction_observation
-		.as_ref()
-		.is_some_and(reaction_has_other_medically_important_true);
-
-	other_medically_important
-}
-
-fn reaction_has_other_medically_important_true(reaction_obs: &Node) -> bool {
-	for rel in reaction_obs.get_child_nodes() {
-		if rel.get_name() != "outboundRelationship2" {
-			continue;
-		}
-		for obs in rel.get_child_nodes() {
-			if obs.get_name() != "observation"
-				|| child_observation_code(&obs).as_deref() != Some("26")
-			{
-				continue;
-			}
-			for child in obs.get_child_nodes() {
-				if child.get_name() != "value" {
-					continue;
-				}
-					let explicit_true = child
-						.get_attribute("value")
-						.is_some_and(|v| v.eq_ignore_ascii_case("true") || v == "1");
-					let coded_true = child
-						.get_attribute("code")
-						.is_some_and(|v| v == "true" || v == "1");
-				if explicit_true || coded_true {
-					return true;
-				}
-			}
-		}
-	}
-	false
-}
-
-fn child_observation_code(obs: &Node) -> Option<String> {
-	obs.get_child_nodes().into_iter().find_map(|child| {
-		if child.get_name() == "code" {
-			child.get_attribute("code")
-		} else {
-			None
-		}
-	})
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn postprocess_preserves_placeholder_shaped_stored_values() {
+		// Isolated draft lexemes, not clinical data or a submission-validity claim.
+		let mut doc = libxml::parser::Parser::default().parse_string(br#"<root xmlns="urn:hl7-org:v3">
+<observation><value code="G.k.10.r"/></observation>
+<investigationCharacteristic><code code="3" codeSystem="2.16.840.1.113883.3.989.2.1.1.23"/><value code="C.1.11.1"/></investigationCharacteristic>
+<observation><value code="D.2.3"/></observation>
+<observation><value value="4" unit="D.2.2.1b"/></observation>
+<observation><value code="AB.123"/></observation>
+<observation>AB.123</observation>
+</root>"#).expect("parse isolated draft lexemes");
+		let mut xpath = Context::new(&doc).expect("XPath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		let before = doc.to_string();
+		postprocess_export_doc(&mut doc, &mut xpath)
+			.expect("postprocess draft export");
+		assert_eq!(
+			doc.to_string(),
+			before,
+			"stored values must not be guessed to be template placeholders"
+		);
+	}
+
+	#[test]
+	fn postprocess_preserves_draft_codes_and_explicit_null_flavors() {
+		let parser = libxml::parser::Parser::default();
+		let mut doc = parser.parse_string(br#"<root xmlns="urn:hl7-org:v3">
+<value code="draft-term" codeSystem="2.16.840.1.113883.6.163" codeSystemVersion="24.1"/>
+<value code="123" codeSystem="2.16.840.1.113883.6.163" codeSystemVersion="24.1"/>
+<value nullFlavor="UNK" codeSystem="2.16.840.1.113883.6.163" codeSystemVersion="24.1"/>
+<value code="10019211" codeSystem="2.16.840.1.113883.6.163" codeSystemVersion="24.1"/>
+<code code="us" codeSystem="1.0.3166.1.2.2" codeSystemVersion="isolated"/>
+<code code="USA" codeSystem="1.0.3166.1.2.2" codeSystemVersion="isolated"/>
+<code nullFlavor="UNK" codeSystem="1.0.3166.1.2.2" codeSystemVersion="isolated"/>
+<code code="US" codeSystem="1.0.3166.1.2.2" codeSystemVersion="isolated"/>
+</root>"#).expect("parse isolated draft codes");
+		let mut xpath = Context::new(&doc).expect("XPath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		let attributes = |context: &mut Context| {
+			context
+				.findnodes("/hl7:root/*", None)
+				.expect("draft nodes")
+				.iter()
+				.map(|node| {
+					["code", "codeSystem", "codeSystemVersion", "nullFlavor"]
+						.map(|attribute| node.get_attribute(attribute))
+				})
+				.collect::<Vec<_>>()
+		};
+		let before = attributes(&mut xpath);
+		assert_eq!(before.len(), 8);
+		postprocess_export_doc(&mut doc, &mut xpath)
+			.expect("postprocess draft export");
+		assert_eq!(
+			attributes(&mut xpath),
+			before,
+			"export must not replace explicit draft values or UNK with NI"
+		);
+	}
+
+	#[test]
+	fn postprocess_preserves_document_compression_and_summary_language() {
+		let parser = libxml::parser::Parser::default();
+		let mut doc = parser.parse_string(br#"<root xmlns="urn:hl7-org:v3"><document><text mediaType="text/plain" representation="B64" compression="GZ">H4sIAAAAAAAAA8sszs9JLElNUcjLz0vOyczLTE7MUUgsKUlMzshNzSvhAgCw1cKiIAAAAA==</text></document><component><observationEvent><code code="36"/><value language="JA">Isolated draft summary</value></observationEvent></component></root>"#).expect("parse isolated fixture");
+		let mut xpath = Context::new(&doc).expect("XPath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		postprocess_export_doc(&mut doc, &mut xpath)
+			.expect("postprocess draft export");
+		assert_eq!(
+			[
+				xpath
+					.findvalue("//hl7:document/hl7:text/@compression", None)
+					.expect("compression"),
+				xpath
+					.findvalue("//hl7:observationEvent/hl7:value/@language", None)
+					.expect("language"),
+			],
+			["GZ", "JA"],
+			"stored metadata must not be deleted to satisfy submission rules"
+		);
+		assert_eq!(xpath.findvalue("//hl7:document/hl7:text", None).expect("document bytes"), "H4sIAAAAAAAAA8sszs9JLElNUcjLz0vOyczLTE7MUUgsKUlMzshNzSvhAgCw1cKiIAAAAA==");
+		assert_eq!(
+			xpath
+				.findvalue("//hl7:observationEvent/hl7:value", None)
+				.expect("summary text"),
+			"Isolated draft summary"
+		);
+		assert_eq!(
+			xpath
+				.findvalue("//hl7:document/hl7:text/@mediaType", None)
+				.expect("media type"),
+			"text/plain"
+		);
+		assert_eq!(
+			xpath
+				.findvalue("//hl7:document/hl7:text/@representation", None)
+				.expect("representation"),
+			"B64"
+		);
+	}
 
 	#[test]
 	fn postprocess_does_not_invent_null_flavor_for_empty_text() {
@@ -422,5 +233,21 @@ mod tests {
 				.expect("read explicit nullFlavor"),
 			"UNK"
 		);
+	}
+}
+
+#[cfg(test)]
+mod lossless_tests {
+	use super::*;
+	#[test]
+	fn postprocessing_never_synthesizes_null_flavor_or_drops_empty_stored_text() {
+		let mut doc = libxml::parser::Parser::default().parse_string(r#"<root xmlns="urn:hl7-org:v3"><observation><code code="29"/><outboundRelationship2><observation><code code="26"/><value value="true"/></observation></outboundRelationship2><outboundRelationship2><observation><code code="7"/><value/></observation></outboundRelationship2></observation><observation><code code="C17049" codeSystem="2.16.840.1.113883.3.26.1.1"/><value code="NI"/></observation><outboundRelationship2><observation><code code="2"/><value/></observation></outboundRelationship2></root>"#).expect("fixture");
+		let mut xpath = Context::new(&doc).expect("XPath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		let before = doc.to_string();
+		postprocess_export_doc(&mut doc, &mut xpath).expect("postprocess");
+		assert_eq!(doc.to_string(), before);
 	}
 }

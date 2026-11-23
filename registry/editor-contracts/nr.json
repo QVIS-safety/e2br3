@@ -35,8 +35,8 @@
       },
       "payloadPath": "caseNarrative",
       "persistence": {
-        "clear": {"effect": "reject", "input": null, "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.NULL.REJECTED"},
+        "clear": {"effect": "store", "input": null, "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "narrative_information", "column": "case_narrative", "record": {"source": "projection", "path": "narrative.id"}}
       }
@@ -78,7 +78,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "narrative_information", "column": "reporter_comments", "record": {"source": "projection", "path": "narrative.id"}}
       }
@@ -120,7 +120,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "narrative_information", "column": "sender_comments", "record": {"source": "projection", "path": "narrative.id"}}
       }
@@ -145,7 +145,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "narrative_information", "column": "additional_information", "record": {"source": "projection", "path": "narrative.id"}}
       }
@@ -209,7 +209,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "sender_diagnoses", "column": "diagnosis_meddra_version", "record": {"source": "projection", "path": "senderDiagnoses[].id"}}
       }
@@ -282,7 +282,7 @@
       ],
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "sender_diagnoses", "column": "diagnosis_meddra_code", "record": {"source": "projection", "path": "senderDiagnoses[].id"}}
       }
@@ -332,7 +332,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "case_summary_information", "column": "language_code", "record": {"source": "projection", "path": "caseSummaryInformation[].id"}}
       }
@@ -376,7 +376,7 @@
       },
       "persistence": {
         "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "store", "input": "", "value": null},
+        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
         "omission": "preserve",
         "audit": {"table": "case_summary_information", "column": "summary_text", "record": {"source": "projection", "path": "caseSummaryInformation[].id"}}
       }
@@ -389,9 +389,9 @@
       "description": "summary language and text clear together"
     },
     {
-      "id": "narrative_blank_rejection_preserves_saved_comments",
-      "verifier": "fields::required_values::narrative_blank_rejection_preserves_saved_comments",
-      "description": "narrative blank rejection preserves saved comments"
+      "id": "narrative_clear_preserves_saved_comments",
+      "verifier": "fields::required_values::narrative_clear_preserves_saved_comments",
+      "description": "draft narrative preserves explicit blank and whitespace text, clears only explicit null, and preserves saved comments and omitted narrative"
     }
   ],
   "collections": [
@@ -421,7 +421,7 @@
     {
       "id": "narrative_rows_delete_restore_and_resave_are_stable",
       "verifier": "relations::nr_rows::narrative_rows_delete_restore_and_resave_are_stable",
-      "description": "NR child deletion is repeatable, omission and empty lists do not restore rows, and explicit restore plus resave preserve ids and counts"
+      "description": "NR deleted children remain visible for restore with their values and ids; omission and empty lists do not restore them, and explicit restore plus resave preserve ids and counts"
     },
     {
       "id": "mixed_foreign_children_rollback",

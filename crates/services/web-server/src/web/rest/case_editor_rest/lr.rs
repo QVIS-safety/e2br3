@@ -27,7 +27,7 @@ async fn load_editor_lr_list_rows(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<Value>> {
-	Ok(LiteratureReferenceBmc::list(
+	Ok(LiteratureReferenceBmc::list_with_deleted(
 		ctx,
 		mm,
 		Some(vec![LiteratureReferenceFilter {
@@ -35,6 +35,7 @@ async fn load_editor_lr_list_rows(
 			..Default::default()
 		}]),
 		Some(ListOptions::from_order_bys(vec!["sequence_number", "id"])),
+		true,
 	)
 	.await?
 	.into_iter()

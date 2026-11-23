@@ -49,8 +49,8 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 			"medicinal_product",
 			"Before",
 			json!({"drugCharacterization":"1", "medicinalProduct":"Before"}),
-			"INPUT.NULL.REJECTED",
-			"drugs.0.medicinalProduct",
+			"INPUT.EMPTY.REJECTED",
+			"drug.medicinalProduct",
 		),
 		(
 			"DG",
@@ -59,8 +59,8 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 			"drug_characterization",
 			"1",
 			json!({"drugCharacterization":"1", "medicinalProduct":"Before"}),
-			"INPUT.NULL.REJECTED",
-			"drugs.0.drugCharacterization",
+			"INPUT.EMPTY.REJECTED",
+			"drug.drugCharacterization",
 		),
 	] {
 		let id =
@@ -68,9 +68,10 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 		let uri = format!("/api/cases/{id}/editor/pages/{section}/rows");
 		let mut row = row;
 		if section == "DG" {
-			row["activeSubstances"] = json!([{}]);
-			row["dosageInformation"] = json!([{}]);
-			row["indications"] = json!([{}]);
+			row["sequenceNumber"] = json!(1);
+			row["activeSubstances"] = json!([{"sequenceNumber":1}]);
+			row["dosageInformation"] = json!([{"sequenceNumber":1}]);
+			row["indications"] = json!([{"sequenceNumber":1}]);
 		}
 		let (status, body) = post_json(
 			&app,
@@ -93,7 +94,10 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 		assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
 		assert_eq!(body["error"]["data"]["detail"]["ruleCode"], rule_code);
 		assert_eq!(body["error"]["data"]["detail"]["path"], path);
-		assert_eq!(body["error"]["data"]["detail"]["message"], "cannot be null");
+		assert_eq!(
+			body["error"]["data"]["detail"]["message"],
+			"empty strings are not allowed; use null to clear the field"
+		);
 		let (_, saved) = get_json(&app, &cookie, &detail).await?;
 		assert_eq!(saved, before, "{body}");
 		assert_eq!(saved["data"][owner][column], initial, "{saved}");
@@ -111,7 +115,7 @@ pub(crate) async fn blank_required_drug_values_preserve_children(
 	Ok(())
 }
 
-pub(crate) async fn narrative_blank_rejection_preserves_saved_comments(
+pub(crate) async fn narrative_clear_preserves_saved_comments(
 	_page_id: &str,
 	_check_id: &str,
 ) -> crate::common::Result<()> {
@@ -124,7 +128,7 @@ pub(crate) async fn narrative_blank_rejection_preserves_saved_comments(
 	let uri = format!("/api/cases/{id}/editor/pages/NR");
 	for (value, expected) in [
 		(json!("Before"), json!("Before")),
-		(json!(""), serde_json::Value::Null),
+		(json!(null), serde_json::Value::Null),
 	] {
 		let (status, body) = patch_json(
 			&app,
@@ -144,29 +148,46 @@ pub(crate) async fn narrative_blank_rejection_preserves_saved_comments(
 		&app,
 		&cookie,
 		&uri,
-		json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":"Before"}}}),
+		json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":"Before", "senderComments":"Keep comments"}}}),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	let (_, before) = get_json(&app, &cookie, &uri).await?;
-	let (status, body) = patch_json(
-		&app,
-		&cookie,
-		&uri,
-		json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":""}}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
-	assert_eq!(
-		body["error"]["data"]["detail"],
-		json!({
-			"message": "cannot be null",
-			"path": "narrative.caseNarrative",
-			"ruleCode": "INPUT.NULL.REJECTED"
-		})
-	);
-	let (_, after) = get_json(&app, &cookie, &uri).await?;
-	assert_eq!(after, before);
+	for value in [json!(""), json!(" \n\t"), json!(null)] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&uri,
+			json!({"authorities":["ich"],"rows":{"narrative":{"caseNarrative":value}}}),
+		)
+		.await?;
+		let expected = if value.is_null() {
+			assert_eq!(status, StatusCode::OK, "{body}");
+			json!(null)
+		} else {
+			assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+			assert_eq!(
+				body["error"]["data"]["detail"]["ruleCode"],
+				"INPUT.EMPTY.REJECTED"
+			);
+			json!("Before")
+		};
+		let (_, after) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(after["rows"]["narrative"]["case_narrative"], expected);
+		assert_eq!(
+			after["rows"]["narrative"]["sender_comments"],
+			"Keep comments"
+		);
+		let (status, body) = patch_json(
+			&app, &cookie, &uri,
+			json!({"authorities":["ich"],"rows":{"narrative":{"senderComments":"Keep comments"}}}),
+		).await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		let (_, after_omission) = get_json(&app, &cookie, &uri).await?;
+		assert_eq!(
+			after_omission["rows"]["narrative"]["case_narrative"],
+			expected
+		);
+	}
 
 	Ok(())
 }
@@ -198,9 +219,9 @@ pub(crate) async fn blank_safety_report_id_is_rejected(
 	assert_eq!(
 		body["error"]["data"]["detail"],
 		json!({
-			"message": "cannot be null",
+			"message": "empty strings are not allowed; use null to clear the field",
 			"path": "safetyReportIdentification.safetyReportId",
-			"ruleCode": "INPUT.NULL.REJECTED"
+			"ruleCode": "INPUT.EMPTY.REJECTED"
 		})
 	);
 	let (_, after) = get_json(&app, &cookie, &uri).await?;

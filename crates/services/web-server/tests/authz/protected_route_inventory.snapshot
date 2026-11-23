@@ -239,6 +239,7 @@ GET /api/users/me/profile
 GET /api/users/me/routing
 GET /api/users/workflow-options
 GET /api/users/{id}
+PATCH /api/cases/{case_id}/editor/pages
 PATCH /api/cases/{case_id}/editor/pages/AE/rows
 PATCH /api/cases/{case_id}/editor/pages/AE/rows/{row_id}
 PATCH /api/cases/{case_id}/editor/pages/CI

@@ -1,3 +1,4 @@
+use super::super::safety_report_sub_rest::validate_source_document_base64;
 #[cfg(test)]
 use super::common::json;
 use super::common::{
@@ -102,9 +103,6 @@ fn input_value<'a>(value: &'a Value, value_type: InputType) -> InputValue<'a> {
 		return InputValue::Null;
 	}
 	match (value_type, value) {
-		(InputType::String, Value::String(value)) if value.trim().is_empty() => {
-			InputValue::Null
-		}
 		(InputType::String, Value::String(value)) => InputValue::String(value),
 		(InputType::Boolean, Value::Bool(value)) => InputValue::Boolean(*value),
 		(InputType::Number, Value::Number(value)) => InputValue::Number(value),
@@ -201,9 +199,39 @@ pub(super) fn validate_direct_rows(
 	fda: bool,
 ) -> Result<()> {
 	for (key, value) in rows {
-		reject_control_characters(value, &format!("{section}.{key}"))?;
+		validate_request_strings(value, key)?;
 	}
 	if section == "CI" {
+		if let Some(value) = rows.get("sourceDocuments") {
+			if let Some(documents) = value.as_array() {
+				for (index, value) in documents.iter().enumerate() {
+					let row = as_object(section, "sourceDocuments", value)?;
+					if bool_field(row, &["deleted"]) == Some(true) {
+						continue;
+					}
+					match row.get("sourceDocumentBase64") {
+						None | Some(Value::Null) => {}
+						Some(Value::String(value)) => {
+							validate_source_document_base64(
+								value,
+								&format!(
+									"sourceDocuments.{index}.sourceDocumentBase64"
+								),
+							)?
+						}
+						_ => {
+							return Err(violation(
+								"LOCAL.SOURCE_DOCUMENT.BASE64",
+								&format!(
+									"sourceDocuments.{index}.sourceDocumentBase64"
+								),
+								"Attachment content must be valid Base64.",
+							))
+						}
+					}
+				}
+			}
+		}
 		if let Some(row) = optional_row_object(section, rows, "case")? {
 			validate_field(
 				row,
@@ -276,6 +304,13 @@ pub(super) fn validate_direct_rows(
 							&[
 								"fulfilExpeditedCriteria",
 								"fulfil_expedited_criteria",
+							],
+						),
+						(
+							"fulfilExpeditedCriteriaNullFlavor",
+							&[
+								"fulfilExpeditedCriteriaNullFlavor",
+								"fulfil_expedited_criteria_null_flavor",
 							],
 						),
 						(
@@ -391,6 +426,7 @@ pub(super) fn validate_direct_rows(
 				for value in items {
 					let row = as_object(section, owner, value)?;
 					if bool_field(row, &["deleted", "_delete"]) == Some(true) {
+						normalized_items.push(Value::Null);
 						continue;
 					}
 					normalized_items.push(Value::Object(normalized_direct_object(
@@ -1438,30 +1474,32 @@ where
 			.filter(|value| !value.is_empty()),
 			_ => None,
 		};
-		if !matches!(value, InputValue::Missing | InputValue::Null)
-			&& null_flavor_value.is_some()
-		{
-			let (_, null_flavor_path, code) = companion.ok_or_else(|| {
-				violation(
-					"INPUT.TYPE",
-					frontend_path,
-					"missing NullFlavor companion",
-				)
-			})?;
-			let path = concrete_frontend_path(null_flavor_path, &concrete_indexes);
-			return Err(violation(
-				code,
-				&path,
-				"value and NullFlavor cannot both be set",
-			));
-		}
-		if let Some(issue) = check(FieldInput {
-			value,
-			null_flavor: null_flavor_value,
-		})
+		if let Some(issue) = input_contracts::check_input(
+			FieldInput {
+				value,
+				null_flavor: null_flavor_value,
+			},
+			&check,
+		)
 		.into_iter()
 		.next()
 		{
+			if issue.code == "INPUT.VALUE_NULLFLAVOR.CONFLICT" {
+				let (_, null_flavor_path, code) = companion.ok_or_else(|| {
+					violation(
+						"INPUT.TYPE",
+						frontend_path,
+						"missing NullFlavor companion",
+					)
+				})?;
+				let path =
+					concrete_frontend_path(null_flavor_path, &concrete_indexes);
+				return Err(violation(
+					code,
+					&path,
+					"value and NullFlavor cannot both be set",
+				));
+			}
 			let issue_path = null_flavor
 				.filter(|(_, _, code)| *code == issue.code)
 				.map_or(frontend_path, |(_, path, _)| path);
@@ -1488,12 +1526,19 @@ fn validate_row_payload_with_indexes(
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
 ) -> Result<()> {
-	reject_control_characters(&Value::Object(row.clone()), row_key)?;
+	validate_request_strings(&Value::Object(row.clone()), row_key)?;
 	validate_section_fields(section, row, changed_paths, outer_indexes, false)
 }
 
-fn reject_control_characters(value: &Value, path: &str) -> Result<()> {
+fn validate_request_strings(value: &Value, path: &str) -> Result<()> {
 	match value {
+		Value::String(text) if text.trim().is_empty() => {
+			return Err(violation(
+				"INPUT.EMPTY.REJECTED",
+				path,
+				"empty strings are not allowed; use null to clear the field",
+			));
+		}
 		Value::String(text)
 			if text.chars().any(|character| {
 				character.is_control() && !matches!(character, '\t' | '\n' | '\r')
@@ -1507,12 +1552,12 @@ fn reject_control_characters(value: &Value, path: &str) -> Result<()> {
 		}
 		Value::Array(values) => {
 			for (index, value) in values.iter().enumerate() {
-				reject_control_characters(value, &format!("{path}.{index}"))?;
+				validate_request_strings(value, &format!("{path}.{index}"))?;
 			}
 		}
 		Value::Object(fields) => {
 			for (key, value) in fields {
-				reject_control_characters(value, &format!("{path}.{key}"))?;
+				validate_request_strings(value, &format!("{path}.{key}"))?;
 			}
 		}
 		_ => {}
@@ -1523,6 +1568,110 @@ fn reject_control_characters(value: &Value, path: &str) -> Result<()> {
 #[cfg(test)]
 mod input_contract_save_tests {
 	use super::*;
+
+	#[test]
+	fn request_strings_reject_blank_values_at_any_depth_and_preserve_null() {
+		for blank in ["", " ", "\n\t"] {
+			let value = json!({"children": [{"value": blank}]});
+			let issue = constraint_violation(
+				validate_request_strings(&value, "row").unwrap_err(),
+			);
+			assert_eq!(issue.rule_code, "INPUT.EMPTY.REJECTED");
+			assert_eq!(issue.path, "row.children.0.value");
+		}
+		validate_request_strings(
+			&json!({"value": null, "number": 0, "flag": false, "text": " retained "}),
+			"row",
+		)
+		.unwrap();
+	}
+
+	#[test]
+	fn included_document_checks_encoding_without_requiring_a_complete_draft() {
+		for value in [
+			json!("%invalid-base64%"),
+			json!("A"),
+			json!("AA="),
+			json!("TR=="),
+			json!(true),
+			json!(12),
+			json!({}),
+		] {
+			let rows = BTreeMap::from([(
+				"documentsHeldBySender".into(),
+				json!([
+					{"deleted":true,"includedDocument":"%bad%"},
+					{"includedDocument":value}
+				]),
+			)]);
+			let detail = constraint_violation(
+				validate_direct_rows("CI", &rows, false)
+					.expect_err("invalid content"),
+			);
+			assert_eq!(
+				detail.rule_code,
+				if value.is_string() {
+					"ICH.C.1.6.1.r.2.ALLOWED.VALUE"
+				} else {
+					"INPUT.TYPE"
+				}
+			);
+			assert_eq!(detail.path, "documentsHeldBySender.1.includedDocument");
+		}
+		for row in [
+			json!({}),
+			json!({"includedDocument":null}),
+			json!({"includedDocument":"AP8Q"}),
+			json!({"deleted":true,"includedDocument":"%bad%"}),
+		] {
+			validate_direct_rows(
+				"CI",
+				&BTreeMap::from([("documentsHeldBySender".into(), json!([row]))]),
+				false,
+			)
+			.expect("incomplete draft or deletion");
+		}
+	}
+
+	#[test]
+	fn source_document_rejects_malformed_base64_with_original_row_index() {
+		for value in [
+			json!("%invalid-base64%"),
+			json!("A"),
+			json!("AA="),
+			json!(true),
+			json!(12),
+		] {
+			let rows = BTreeMap::from([(
+				"sourceDocuments".into(),
+				json!([
+					{"deleted":true,"sourceDocumentBase64":"%bad%"},
+					{"sourceDocumentBase64":value}
+				]),
+			)]);
+			let detail = constraint_violation(
+				validate_direct_rows("CI", &rows, false)
+					.expect_err("reject corrupt content"),
+			);
+			assert_eq!(detail.rule_code, "LOCAL.SOURCE_DOCUMENT.BASE64");
+			assert_eq!(detail.path, "sourceDocuments.1.sourceDocumentBase64");
+		}
+	}
+
+	#[test]
+	fn source_document_allows_absent_null_or_valid_base64_and_deletion() {
+		for row in [
+			json!({}),
+			json!({"sourceDocumentBase64":null}),
+			json!({"sourceDocumentBase64":"AP8Q"}),
+			json!({"sourceDocumentBase64":"AA=="}),
+			json!({"deleted":true,"sourceDocumentBase64":"%bad%"}),
+		] {
+			let rows = BTreeMap::from([("sourceDocuments".into(), json!([row]))]);
+			validate_direct_rows("CI", &rows, false)
+				.expect("draft attachment or deletion");
+		}
+	}
 
 	fn error_message(error: Error) -> String {
 		match error {
@@ -1538,6 +1687,115 @@ mod input_contract_save_tests {
 		match error {
 			Error::ConstraintViolation(detail) => detail,
 			other => panic!("expected constraint violation, got {other:?}"),
+		}
+	}
+
+	#[test]
+	fn lb_qualifier_rejects_unknown_codes_and_types_for_both_aliases() {
+		for field in ["testResultQualifier", "test_result_qualifier"] {
+			for token in [
+				json!("ZZ"),
+				json!("BAD"),
+				json!("eq"),
+				json!(" EQ "),
+				json!(true),
+				json!(1),
+				json!([]),
+				json!({}),
+			] {
+				let row = Map::from_iter([(field.to_string(), token.clone())]);
+				let detail = constraint_violation(
+					validate_row_payload("LB", "testResult", &row, None)
+						.expect_err("invalid qualifier"),
+				);
+				assert_eq!(detail.path, "testResults.0.testResultQualifier");
+				assert_eq!(
+					detail.rule_code,
+					if token.is_string() {
+						"LOCAL.F.r.testResultQualifier.ALLOWED.VALUE"
+					} else {
+						"INPUT.TYPE"
+					}
+				);
+			}
+			for token in [
+				Value::Null,
+				json!("EQ"),
+				json!("LT"),
+				json!("LE"),
+				json!("GT"),
+				json!("GE"),
+			] {
+				let row = Map::from_iter([(field.to_string(), token)]);
+				validate_row_payload("LB", "testResult", &row, None)
+					.expect("valid optional qualifier");
+			}
+		}
+		validate_row_payload("LB", "testResult", &Map::new(), None)
+			.expect("omission allowed");
+		let row =
+			json!({"testResultQualifier": "EQ", "test_result_qualifier": "BAD"});
+		assert!(validate_row_payload(
+			"LB",
+			"testResult",
+			row.as_object().expect("row"),
+			None
+		)
+		.is_err());
+	}
+
+	#[test]
+	fn c17_null_flavor_rejects_invalid_representation_before_mutation() {
+		for field in [
+			"fulfilExpeditedCriteriaNullFlavor",
+			"fulfil_expedited_criteria_null_flavor",
+		] {
+			for (token, rule) in [
+				(json!("BAD"), "ICH.C.1.7.NULLFLAVOR.ALLOWED"),
+				(
+					json!("__INVALID_NULL_FLAVOR__"),
+					"ICH.C.1.7.NULLFLAVOR.ALLOWED",
+				),
+				(json!(true), "INPUT.TYPE"),
+				(json!(1), "INPUT.TYPE"),
+				(json!([]), "INPUT.TYPE"),
+			] {
+				let rows = BTreeMap::from([(
+					"safetyReportIdentification".to_string(),
+					json!({(field): token}),
+				)]);
+				for fda in [false, true] {
+					let detail = constraint_violation(
+						validate_direct_rows("CI", &rows, fda)
+							.expect_err("invalid NullFlavor"),
+					);
+					assert_eq!(detail.rule_code, rule);
+					assert_eq!(detail.path, "safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor");
+				}
+			}
+			for token in [Value::Null, json!("NI")] {
+				let rows = BTreeMap::from([(
+					"safetyReportIdentification".to_string(),
+					json!({(field): token}),
+				)]);
+				validate_direct_rows("CI", &rows, false)
+					.expect("valid draft representation");
+			}
+		}
+		for value in [true, false] {
+			let rows = BTreeMap::from([(
+				"safetyReportIdentification".to_string(),
+				json!({"fulfilExpeditedCriteria": value, "fulfilExpeditedCriteriaNullFlavor": "NI"}),
+			)]);
+			let detail = constraint_violation(
+				validate_direct_rows("CI", &rows, false)
+					.expect_err("mutually exclusive values"),
+			);
+			assert_eq!(detail.rule_code, "ICH.C.1.7.NULLFLAVOR.ALLOWED");
+			assert_eq!(
+				detail.path,
+				"safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor"
+			);
 		}
 	}
 
@@ -1782,11 +2040,8 @@ mod input_contract_save_tests {
 			"narrative".to_string(),
 			json!({ "caseNarrative": null }),
 		)]);
-		let detail = constraint_violation(
-			validate_direct_rows("NR", &null_rows, false).unwrap_err(),
-		);
-		assert_eq!(detail.rule_code, "INPUT.NULL.REJECTED");
-		assert_eq!(detail.path, "narrative.caseNarrative");
+		validate_direct_rows("NR", &null_rows, false)
+			.expect("draft narrative clear");
 
 		let sender_rows = BTreeMap::from([(
 			"senderInformation".to_string(),
@@ -1900,7 +2155,7 @@ mod input_contract_save_tests {
 	}
 
 	#[test]
-	fn input_contract_save_treats_blank_si_registration_values_as_null() {
+	fn input_contract_save_rejects_blank_si_registration_values() {
 		for row in [
 			json!({
 				"registrationNumber": "",
@@ -1915,7 +2170,13 @@ mod input_contract_save_tests {
 				("studyInformation".to_string(), json!({})),
 				("studyRegistrationNumbers".to_string(), json!([row])),
 			]);
-			validate_direct_rows("SI", &rows, false).unwrap();
+			assert_eq!(
+				constraint_violation(
+					validate_direct_rows("SI", &rows, false).unwrap_err()
+				)
+				.rule_code,
+				"INPUT.EMPTY.REJECTED"
+			);
 		}
 
 		let rows = BTreeMap::from([

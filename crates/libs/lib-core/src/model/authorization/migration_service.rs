@@ -584,7 +584,7 @@ mod tests {
 	#[test]
 	fn inactive_legacy_profiles_do_not_block_reconciliation() {
 		let grants = grants_for_legacy_profile(
-			crate::authorization::policy_registry(),
+			crate::authorization::policy_registry().expect("valid policy registry"),
 			false,
 			json!({"historical": "unsupported"}),
 		)
@@ -595,7 +595,7 @@ mod tests {
 	#[test]
 	fn active_legacy_profiles_still_require_valid_privileges() {
 		let error = grants_for_legacy_profile(
-			crate::authorization::policy_registry(),
+			crate::authorization::policy_registry().expect("valid policy registry"),
 			true,
 			json!({"historical": "unsupported"}),
 		)
@@ -606,7 +606,7 @@ mod tests {
 	#[test]
 	fn active_legacy_profiles_reject_unknown_disabled_menu_rows() {
 		let error = grants_for_legacy_profile(
-			crate::authorization::policy_registry(),
+			crate::authorization::policy_registry().expect("valid policy registry"),
 			true,
 			json!([{
 				"menu_key": "not_in_the_reviewed_contract",

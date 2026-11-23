@@ -7,7 +7,7 @@ fn empty_narrative() -> NarrativeInformation {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
 		source_narrative_presave_id: None,
-		case_narrative: "".to_string(),
+		case_narrative: None,
 		reporter_comments: None,
 		sender_comments: None,
 		additional_information: None,

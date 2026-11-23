@@ -1549,16 +1549,6 @@ pub struct Reaction {
 
         self.assertEqual([], result.errors)
 
-    def test_repository_receiver_information_has_complete_backend_inventory(self):
-        registry_root = Path(__file__).resolve().parents[1]
-
-        result = validate.validate_registry(
-            registry_root,
-            backend_models={"ReceiverInformation": "crates/libs/lib-core/src/model/receiver.rs"},
-        )
-
-        self.assertEqual([], result.errors)
-
     def test_repository_c5_study_information_has_complete_backend_inventory(self):
         registry_root = Path(__file__).resolve().parents[1]
 

@@ -24,10 +24,10 @@ pub struct OtherCaseIdentifier {
 	pub sequence_number: i32,
 
 	// C.1.9.1.r.1 - Source of the Case Identifier
-	pub source_of_identifier: String,
+	pub source_of_identifier: Option<String>,
 
 	// C.1.9.1.r.2 - Case Identifier
-	pub case_identifier: String,
+	pub case_identifier: Option<String>,
 
 	pub deleted: bool,
 
@@ -42,8 +42,8 @@ pub struct OtherCaseIdentifier {
 pub struct OtherCaseIdentifierForCreate {
 	pub case_id: Uuid,
 	pub sequence_number: i32,
-	pub source_of_identifier: String,
-	pub case_identifier: String,
+	pub source_of_identifier: Option<String>,
+	pub case_identifier: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -70,7 +70,7 @@ pub struct LinkedReportNumber {
 	pub sequence_number: i32,
 
 	// C.1.10.r - Linked Report Number
-	pub linked_report_number: String,
+	pub linked_report_number: Option<String>,
 
 	pub deleted: bool,
 
@@ -85,7 +85,7 @@ pub struct LinkedReportNumber {
 pub struct LinkedReportNumberForCreate {
 	pub case_id: Uuid,
 	pub sequence_number: i32,
-	pub linked_report_number: String,
+	pub linked_report_number: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -131,12 +131,24 @@ impl OtherCaseIdentifierBmc {
 		filters: Option<Vec<OtherCaseIdentifierFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<OtherCaseIdentifier>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<OtherCaseIdentifierFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<OtherCaseIdentifier>> {
 		let mut filters = match filters {
-			Some(filters) => filters,
-			None => vec![Default::default()],
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -148,6 +160,16 @@ impl OtherCaseIdentifierBmc {
 		data: OtherCaseIdentifierForUpdate,
 	) -> Result<()> {
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: OtherCaseIdentifierForUpdate,
+		clear_fields: &[&'static str],
+	) -> Result<()> {
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -187,12 +209,24 @@ impl LinkedReportNumberBmc {
 		filters: Option<Vec<LinkedReportNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LinkedReportNumber>> {
+		Self::list_with_deleted(ctx, mm, filters, list_options, false).await
+	}
+
+	pub async fn list_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<LinkedReportNumberFilter>>,
+		list_options: Option<ListOptions>,
+		include_deleted: bool,
+	) -> Result<Vec<LinkedReportNumber>> {
 		let mut filters = match filters {
-			Some(filters) => filters,
-			None => vec![Default::default()],
+			Some(filters) if !filters.is_empty() => filters,
+			Some(_) | None => vec![Default::default()],
 		};
-		for filter in &mut filters {
-			filter.deleted = Some(OpValBool::Eq(false).into());
+		if !include_deleted {
+			for filter in &mut filters {
+				filter.deleted = Some(OpValBool::Eq(false).into());
+			}
 		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
@@ -204,6 +238,16 @@ impl LinkedReportNumberBmc {
 		data: LinkedReportNumberForUpdate,
 	) -> Result<()> {
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn update_patch(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: LinkedReportNumberForUpdate,
+		clear_fields: &[&'static str],
+	) -> Result<()> {
+		base_uuid::update_patch::<Self, _>(ctx, mm, id, data, clear_fields).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

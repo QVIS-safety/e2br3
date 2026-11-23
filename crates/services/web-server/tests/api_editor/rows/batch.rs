@@ -53,6 +53,10 @@ async fn repeatable_row_batch_rolls_back_data_and_audit_on_validation_failure(
 	.await?;
 	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
 	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION", "{body}");
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"], "reactions.1.reactionStartDate",
+		"{body}"
+	);
 
 	let (_, after) = get_json(&app, &cookie, &row_uri).await?;
 	assert_eq!(
