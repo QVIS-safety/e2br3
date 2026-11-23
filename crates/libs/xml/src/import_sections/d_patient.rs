@@ -5,9 +5,6 @@ use crate::import_constraint::Context;
 use crate::import_sections::shared::parse_trimmed_bool_with_yes_no;
 use crate::mapping::fda::d_patient::DPatientPaths;
 use crate::Result;
-use lib_core::regulatory::{
-	infer_regulatory_authority_from_receivers, RegulatoryAuthority,
-};
 use rust_decimal::Decimal;
 use sqlx::types::time::Date;
 
@@ -91,13 +88,7 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 			return Ok(None);
 		}
 
-		let header = crate::import_sections::shared::extract_message_header(xml)?;
-		let authority = infer_regulatory_authority_from_receivers(
-			header.batch_receiver.as_deref(),
-			header.message_receiver.as_deref(),
-		);
-		let (patient_initials, patient_initials_null_flavor) =
-			read_d_1(&mut xpath, authority)?;
+		let (patient_initials, patient_initials_null_flavor) = read_d_1(&mut xpath)?;
 		let (birth_date, birth_date_null_flavor) = read_d_2_1(&mut xpath)?;
 		let age_at_time_of_onset = read_d_2_2a(&mut xpath)?;
 		let age_unit = read_d_2_2b(&mut xpath)?;
@@ -146,21 +137,13 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 }
 
 /// e2b:D.1
-fn read_d_1(
-	xpath: &mut Context,
-	authority: RegulatoryAuthority,
-) -> Result<(Option<String>, Option<String>)> {
-	let contract = if authority == RegulatoryAuthority::Fda {
-		input_contracts::generated::d::fda_d_1
-	} else {
-		input_contracts::generated::d::d_1
-	};
+fn read_d_1(xpath: &mut Context) -> Result<(Option<String>, Option<String>)> {
 	string_pair(
 		first_text_root(xpath, DPatientPaths::PATIENT_NAME),
 		first_value_root(xpath, DPatientPaths::PATIENT_NAME_NULL_FLAVOR),
 		"patientInitials",
 		"patientInitialsNullFlavor",
-		contract,
+		input_contracts::generated::d::d_1,
 		xpath,
 	)
 }

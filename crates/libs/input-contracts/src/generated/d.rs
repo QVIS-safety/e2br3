@@ -49,7 +49,7 @@ pub fn d_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		&mut issues,
 		"ICH.D.1.NULLFLAVOR.ALLOWED",
 		input.null_flavor,
-		&["MSK", "UNK", "ASKU", "NASK"],
+		&["MSK", "UNK", "ASKU", "NASK", "NA"],
 	);
 	issues
 }
