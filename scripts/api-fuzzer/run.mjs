@@ -58,8 +58,17 @@ export function generate(pick, tag, authority) {
   return plan;
 }
 
+export function advanceCaseRandomness(pick, tag, authority, hops) {
+  pick(3);
+  generate(pick, tag, authority);
+  for (let h = 0; h < hops; h++) {
+    pick(4);
+    pick(3);
+  }
+}
+
 async function main() {
-  const { values: args } = parseArgs({ options: { 'backend-pid': { type: 'string' }, environment: { type: 'string' }, seed: { type: 'string', default: '20261123' }, cases: { type: 'string', default: '100' }, hops: { type: 'string', default: '5' }, output: { type: 'string' } } });
+  const { values: args } = parseArgs({ options: { 'backend-pid': { type: 'string' }, environment: { type: 'string' }, seed: { type: 'string', default: '20261123' }, cases: { type: 'string', default: '100' }, 'case-index': { type: 'string' }, hops: { type: 'string', default: '5' }, output: { type: 'string' } } });
   assert.match(args['backend-pid'], /^[1-9][0-9]*$/, 'Supply --backend-pid of the isolated UI backend');
   const env = Object.fromEntries(readFileSync(`/proc/${args['backend-pid']}/environ`, 'utf8').split('\0').filter(Boolean).map(s => { const i = s.indexOf('='); return [s.slice(0, i), s.slice(i + 1)]; }));
   assert.equal(readFileSync(`/proc/${args['backend-pid']}/comm`, 'utf8').trim(), 'web-server');
@@ -72,12 +81,16 @@ async function main() {
   const origin = `http://${env.SERVICE_BIND_ADDR}`;
   const { compareCrossOrganizationXmlSnapshots } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-cross-organization.mjs')));
   const seed = Number(args.seed), count = Number(args.cases), hops = Number(args.hops), pick = random(seed);
+  const caseIndex = args['case-index'] === undefined ? null : Number(args['case-index']);
   for (const n of [count, hops]) assert.ok(Number.isSafeInteger(n) && n > 0);
+  if (caseIndex !== null) assert.ok(Number.isSafeInteger(caseIndex) && caseIndex >= 0);
+  const firstCase = caseIndex === null ? 0 : caseIndex;
+  const lastCase = caseIndex === null ? count : caseIndex + 1;
   const output = resolve(args.output === undefined ? `${root}/tmp/api-fuzzer/${Date.now()}-${seed}` : args.output);
   mkdirSync(dirname(output), { recursive: true, mode: 0o700 });
   mkdirSync(output, { recursive: false, mode: 0o700 });
   const save = (name, data) => writeFileSync(`${output}/${name}`, typeof data === 'string' ? data : JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
-  const report = { seed, count, hops, origin, database: db.pathname.slice(1), revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), fixture: 'synthetic MedDRA 28.1/99999999; isolated HTTP test only', status: 'running', organizations: [], cases: [], requests: 0, transfers: 0, checkedFields: [], failures: [] };
+  const report = { seed, count: lastCase - firstCase, caseIndex, hops, origin, database: db.pathname.slice(1), revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), fixture: 'synthetic MedDRA 28.1/99999999; isolated HTTP test only', status: 'running', organizations: [], cases: [], requests: 0, transfers: 0, checkedFields: [], failures: [] };
   report.sources = Object.fromEntries([
     fileURLToPath(import.meta.url),
     ...pages.map(p => `${root}/registry/editor-contracts/${p.toLowerCase()}.json`),
@@ -185,7 +198,10 @@ async function main() {
       organizations.push(org);
       report.organizations.push({ id: org.id, users: org.users.map(u => u.id), sender: org.sender, product: org.product }); checkpoint();
     }
-    for (let c = 0; c < count; c++) {
+    for (let c = 0; c < firstCase; c++) {
+      advanceCaseRandomness(pick, `${runTag}-${c}`, ['ich', 'fda', 'mfds'][c % 3], hops);
+    }
+    for (let c = firstCase; c < lastCase; c++) {
       context = `case-${c}`; phase = 'generate-save';
       const item = { index: c, status: 'running', transfers: [] }; report.cases.push(item);
       try {

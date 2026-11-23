@@ -70,7 +70,10 @@ pub(crate) async fn fetch_case_summaries(
 		ctx,
 		mm,
 		Some(vec![filter]),
-		Some(ListOptions::default()),
+		Some(ListOptions {
+			order_bys: Some("sequence_number".into()),
+			..Default::default()
+		}),
 	)
 	.await
 	.map_err(Error::from)

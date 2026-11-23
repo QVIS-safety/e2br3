@@ -260,7 +260,10 @@ pub(super) async fn load_editor_nr_data(
 				narrative_id: Some(uuid_eq(narrative.id)),
 				..Default::default()
 			}]),
-			Some(ListOptions::default()),
+			Some(ListOptions {
+				order_bys: Some("sequence_number".into()),
+				..Default::default()
+			}),
 			true,
 		)
 		.await?;

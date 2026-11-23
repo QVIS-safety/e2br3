@@ -1,12 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { random, project, generate } from './run.mjs';
+import { random, project, generate, advanceCaseRandomness } from './run.mjs';
 
 test('seed reproduces full case plans and changes with a different seed', () => {
   const plans = seed => { const pick = random(seed); return Array.from({ length: 12 }, (_, i) => generate(pick, `case-${i}`, ['ich', 'fda', 'mfds'][i % 3])); };
   assert.deepEqual(plans(42), plans(42));
   assert.notDeepEqual(plans(42), plans(43));
   for (const seed of [0, -1, NaN, 2 ** 32]) assert.throws(() => random(seed));
+});
+test('case selection advances to the same random plan', () => {
+  const seed = 20261125, index = 13, hops = 5, tag = c => `run-${c}`;
+  const sequential = random(seed);
+  let expected;
+  for (let c = 0; c <= index; c++) {
+    const actor = sequential(3);
+    const plan = generate(sequential, tag(c), ['ich', 'fda', 'mfds'][c % 3]);
+    if (c === index) expected = { actor, plan };
+    for (let h = 0; h < hops; h++) {
+      sequential(4);
+      sequential(3);
+    }
+  }
+  const selected = random(seed);
+  for (let c = 0; c < index; c++) advanceCaseRandomness(selected, tag(c), ['ich', 'fda', 'mfds'][c % 3], hops);
+  assert.deepEqual({ actor: selected(3), plan: generate(selected, tag(index), 'fda') }, expected);
 });
 test('projection retains ordering, grouping, duplicates and null/empty distinctions', () => {
   const value = { rows: [{ items: [{ v: null }, { v: false }, { v: 0 }] }, { items: [{ v: '' }, { v: [] }, { v: [] }] }] };

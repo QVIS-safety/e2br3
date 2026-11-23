@@ -22,6 +22,14 @@ node scripts/api-fuzzer/run.mjs \
   --seed 20261123 --cases 100 --hops 5
 ```
 
+Reproduce one indexed case without running the preceding cases:
+
+```sh
+node scripts/api-fuzzer/run.mjs \
+  --environment bombadil_api_fuzz_example --backend-pid SERVER_PID \
+  --seed 20261123 --case-index 13 --hops 5
+```
+
 Requires Linux `/proc`, Node 22+, the existing built backend, PostgreSQL/UI-runner dependencies, bootstrap accounts, and the frontend checkout containing `scripts/bombadil/xml-cross-organization.mjs` and `xml-preservation.mjs`. No npm dependencies are added. The runner verifies the process name, loopback bind address, exact named test database, and explicit fixture flag before making requests. Credentials/cookies are never logged. The bootstrap account is read from the repository bootstrap constants and only used in that verified test environment.
 
 `--cases` and `--hops` default to 100 and 5. Cases rotate through all five source organizations and ICH/FDA/MFDS; users, next organization, values and row counts are seeded. Each case retains one authority across its hops, so changing formats cannot excuse regional data loss. C.1.2 deliberately advances before each hop to exercise follow-up versions on return visits. Expected target versions come from previously observed cases in the run. Intentional mutations are saved before exporting.
