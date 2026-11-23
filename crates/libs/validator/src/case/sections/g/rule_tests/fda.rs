@@ -36,10 +36,10 @@ fn verify_fda(code: &str) {
 			let mut collector_ctx = fixture::empty_ctx();
 			let mut other = fixture::drug();
 			other.id = Uuid::from_u128(2);
-			other.drug_characterization = "2".into();
+			other.drug_characterization = Some("2".into());
 			let mut suspect = fixture::drug();
 			suspect.id = Uuid::from_u128(1);
-			suspect.drug_characterization = "1".into();
+			suspect.drug_characterization = Some("1".into());
 			collector_ctx.drugs = vec![other, suspect];
 			collector_ctx.safety_report = Some(report("1"));
 			collector_ctx
@@ -216,7 +216,7 @@ fn verify_fda(code: &str) {
 				.unwrap()
 				.combination_product_report_indicator = Some("1".into());
 			let mut role_four = fixture::drug();
-			role_four.drug_characterization = "4".into();
+			role_four.drug_characterization = Some("4".into());
 			receiver_ctx.drugs.push(role_four);
 			let mut malfunctioning = device();
 			malfunctioning.drug_id = receiver_ctx.drugs[0].id;
@@ -395,7 +395,7 @@ fn fda_route_issues(receiver: &str, roles: &[u8]) -> Vec<ValidationIssue> {
 	ctx.message_header = Some(header(receiver));
 	for role in roles {
 		let mut drug = fixture::drug();
-		drug.drug_characterization = role.to_string();
+		drug.drug_characterization = Some(role.to_string());
 		ctx.drugs.push(drug);
 	}
 	let mut issues = Vec::new();
@@ -408,12 +408,14 @@ fn fda_route_pair(
 	let mut x = fixture::empty_ctx();
 	x.safety_report = Some(report("2"));
 	let mut d = fixture::drug();
-	d.drug_characterization = match c {
-		"FDA.R0070" => "4",
-		"FDA.R0071" => "2",
-		_ => "2",
-	}
-	.into();
+	d.drug_characterization = Some(
+		match c {
+			"FDA.R0070" => "4",
+			"FDA.R0071" => "2",
+			_ => "2",
+		}
+		.into(),
+	);
 	x.drugs.push(d);
 	x.message_header = Some(match c {
 		"FDA.R0069" => header(crate::FDA_MSG_RECEIVER_CDER),
@@ -423,7 +425,7 @@ fn fda_route_pair(
 	});
 	let mut b = vec![];
 	fda_g_k_1_route(&x, false, &mut b);
-	x.drugs[0].drug_characterization = "1".into();
+	x.drugs[0].drug_characterization = Some("1".into());
 	let mut g = vec![];
 	fda_g_k_1_route(&x, false, &mut g);
 	("drugs.0.drugCharacterization", b, g)
@@ -434,7 +436,7 @@ fn fda_assessment_pair(
 	let mut x = fixture::empty_ctx();
 	x.safety_report = Some(report("2"));
 	let mut d = fixture::drug();
-	d.drug_characterization = "1".into();
+	d.drug_characterization = Some("1".into());
 	x.drugs.push(d);
 	if c != "FDA.G.k.9.REQUIRED" {
 		x.drug_reaction_assessments.push(fixture::assessment());
@@ -479,7 +481,7 @@ fn fda_assessment_pair(
 	};
 	let mut other_drug = fixture::drug();
 	other_drug.id = Uuid::from_u128(2);
-	other_drug.drug_characterization = "2".into();
+	other_drug.drug_characterization = Some("2".into());
 	x.drugs.push(other_drug);
 	let mut other_assessment = fixture::assessment();
 	other_assessment.id = Uuid::from_u128(2);

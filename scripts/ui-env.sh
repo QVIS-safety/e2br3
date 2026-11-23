@@ -121,13 +121,14 @@ if [[ "${UI_TEST_TERMINOLOGY_FIXTURE:-0}" == "1" ]]; then
 	}
 	psql "$admin_ui_url" -v ON_ERROR_STOP=1 -f "$repo_root/scripts/db/seed-bombadil-test-terminology.sql" \
 		>"$log_dir/terminology-fixture.log" 2>&1
+	export SERVICE_BOOTSTRAP_ENABLED=true
 fi
 
 export SERVICE_DB_URL="$ui_url"
 export SERVICE_MIGRATION_DB_URL="$ui_url"
 export SERVICE_BIND_ADDR="127.0.0.1:$backend_port"
 export SKIP_DEV_INIT=1
-export E2BR3_PUBLIC_ORIGIN="${E2BR3_PUBLIC_ORIGIN:-http://127.0.0.1:$frontend_port}"
+export E2BR3_PUBLIC_ORIGIN="${UI_PUBLIC_ORIGIN:-http://127.0.0.1:$frontend_port}"
 export E2BR3_DEFAULT_MESSAGE_SENDER="${E2BR3_DEFAULT_MESSAGE_SENDER:-TEST-SENDER}"
 export E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH="${E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH:-TEST-ICH}"
 export E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA="${E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA:-TEST-FDA}"

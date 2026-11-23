@@ -1371,7 +1371,9 @@ fn apply_d_8_past_drugs(
 			} else {
 				String::new()
 			};
-		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
+		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
+			|| drug.mpid_version.is_some()
+		{
 			identifiers.push_str(&write_history_product_identifier(
 				"MPID",
 				write_d_8_r_2b(&drug),
@@ -2038,7 +2040,13 @@ mod tests {
 		assert!(fda_fragment.contains(
 			"<code codeSystem=\"2.16.840.1.113883.6.69\" code=\"MP&amp;&lt;&gt;&quot;\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;\"/>"
 		));
-		assert!(!fda_fragment.contains("code=\"MPID\""));
+		assert!(fda_fragment.contains(mpid));
+		let imported =
+			crate::import_sections::d_patient::helpers::parse_past_drug_history(
+				fda_fragment.as_bytes(),
+			)
+			.expect("import FDA past drug");
+		assert_eq!(imported[0].mpid_version.as_deref(), Some("MPV&<>\""));
 	}
 
 	#[test]

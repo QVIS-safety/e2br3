@@ -589,6 +589,23 @@ fn read_d_8_r_2(
 	let fda_code =
 		format!("{PRODUCT}/hl7:code[@codeSystem='2.16.840.1.113883.6.69']");
 	if let Some(mpid) = first_attr(xpath, node, &fda_code, "code") {
+		if let Some(identifier) =
+			first_value(xpath, node, &format!("{base}/hl7:id/@extension"))
+		{
+			if identifier != mpid {
+				return Err(Error::InvalidImportRequest {
+					message:
+						"D.8.r.2b contains conflicting FDA and MPID identifiers"
+							.to_owned(),
+				});
+			}
+		}
+		let editor_version = input_string(
+			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion")),
+			"mpidVersion",
+			input_contracts::generated::d::d_8_r_2a,
+			xpath,
+		)?;
 		input_string(
 			Some(mpid.clone()),
 			"mpid",
@@ -602,7 +619,7 @@ fn read_d_8_r_2(
 			xpath,
 		)?;
 		return Ok((
-			None,
+			editor_version,
 			Some(mpid),
 			Some("2.16.840.1.113883.6.69".to_string()),
 			source_version,
@@ -1735,6 +1752,31 @@ mod tests {
 		assert_eq!(past_drug.mpid_version.as_deref(), Some("MPID-V1"));
 		assert_eq!(past_drug.phpid.as_deref(), Some("PHPID-EXACT"));
 		assert_eq!(past_drug.phpid_version.as_deref(), Some("PHPID-V1"));
+	}
+
+	#[test]
+	fn fda_history_preserves_editor_version_and_rejects_conflicts() {
+		for (identifier, version, expected_error) in [
+			("59762-2858", "1", None),
+			("OTHER", "1", Some("conflicting FDA and MPID identifiers")),
+			("59762-2858", "12345678901", Some("ICH.D.8.r.2a.LENGTH.MAX")),
+		] {
+			let xml = format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>CureAll</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></primaryRole></MCCI_IN200100UV01>"#
+			);
+			let result = parse_past_drug_history(xml.as_bytes());
+			if let Some(expected) = expected_error {
+				let error = result.expect_err("reject ambiguous or invalid MPID");
+				assert!(error.to_string().contains(expected), "{error}");
+			} else {
+				let rows = result.expect("import both versions");
+				assert_eq!(rows[0].mpid_version.as_deref(), Some(version));
+				assert_eq!(
+					rows[0].mpid_source_code_system_version.as_deref(),
+					Some("201411011202")
+				);
+			}
+		}
 	}
 
 	#[test]

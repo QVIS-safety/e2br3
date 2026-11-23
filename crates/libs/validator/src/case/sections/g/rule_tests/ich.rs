@@ -104,7 +104,7 @@ fn verify_ich(code: &str) {
 			let mut b = vec![];
 			g_k_1(&[], &mut b);
 			let mut d = fixture::drug();
-			d.drug_characterization = "1".into();
+			d.drug_characterization = Some("1".into());
 			let mut g = vec![];
 			g_k_1(&[d], &mut g);
 			("drugs", b, g)
@@ -113,7 +113,7 @@ fn verify_ich(code: &str) {
 			if code.contains("AGGREGATE") {
 				for role in ["3", "4"] {
 					let mut accepted = fixture::drug();
-					accepted.drug_characterization = role.into();
+					accepted.drug_characterization = Some(role.into());
 					let mut issues = Vec::new();
 					g_k_1(&[accepted], &mut issues);
 					assert!(!issues.iter().any(|issue| issue.code == code));
@@ -121,10 +121,10 @@ fn verify_ich(code: &str) {
 			}
 			let mut d = fixture::drug();
 			d.drug_characterization =
-				if code.contains("AGGREGATE") { "2" } else { "" }.into();
+				code.contains("AGGREGATE").then(|| "2".to_string());
 			let mut b = vec![];
 			g_k_1(&[d.clone()], &mut b);
-			d.drug_characterization = "1".into();
+			d.drug_characterization = Some("1".into());
 			let mut g = vec![];
 			g_k_1(&[d], &mut g);
 			("drugs.0.drugCharacterization", b, g)
@@ -144,7 +144,7 @@ fn verify_ich(code: &str) {
 			let mut d = fixture::drug();
 			let mut b = vec![];
 			g_k_2_2(&[d.clone()], &mut b);
-			d.medicinal_product = "p".into();
+			d.medicinal_product = Some("p".into());
 			let mut g = vec![];
 			g_k_2_2(&[d], &mut g);
 			("drugs.0.medicinalProduct", b, g)

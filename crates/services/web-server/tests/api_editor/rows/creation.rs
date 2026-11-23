@@ -170,13 +170,49 @@ pub(crate) async fn blank_product_rejects_creation_without_a_row(
 	assert_eq!(
 		body["error"]["data"]["detail"],
 		json!({
-			"message": "cannot be null",
-			"path": "drugs.0.medicinalProduct",
-			"ruleCode": "INPUT.NULL.REJECTED"
+			"message": "empty strings are not allowed; use null to clear the field",
+			"path": "drug.medicinalProduct",
+			"ruleCode": "INPUT.EMPTY.REJECTED"
 		})
 	);
 	let (_, after) = get_json(&app, &cookie, &uri).await?;
 	assert_eq!(after, before);
+
+	let draft_case_id =
+		create_case_for_editor(&app, &cookie, "INCOMPLETE-DG", &["ich"]).await?;
+	let draft_uri = format!("/api/cases/{draft_case_id}/editor/pages/DG");
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("{draft_uri}/rows"),
+		json!({"authorities": ["ich"], "rows": {"drug": {
+			"sequenceNumber": 1,
+			"manufacturerName": "Draft manufacturer"
+		}}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let row_id = body["rowId"].as_str().ok_or("missing row id")?;
+	let (status, saved) =
+		get_json(&app, &cookie, &format!("{draft_uri}/rows/{row_id}")).await?;
+	assert_eq!(status, StatusCode::OK, "{saved}");
+	assert!(saved["data"]["drug"]["drug_characterization"].is_null());
+	assert!(saved["data"]["drug"]["medicinal_product"].is_null());
+	let (status, report) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{draft_case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{report}");
+	let codes = report["data"]["issues"]
+		.as_array()
+		.ok_or("missing validation issues")?
+		.iter()
+		.filter_map(|issue| issue["code"].as_str())
+		.collect::<Vec<_>>();
+	assert!(codes.contains(&"ICH.G.k.1.REQUIRED"), "{report}");
+	assert!(codes.contains(&"ICH.G.k.2.2.REQUIRED"), "{report}");
 
 	Ok(())
 }

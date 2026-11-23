@@ -145,8 +145,8 @@ pub fn export_g_drugs_xml(
 }
 
 /// e2b:G.k.2.2
-fn write_g_k_2_2(value: &DrugInformation) -> &str {
-	&value.medicinal_product
+fn write_g_k_2_2(value: &DrugInformation) -> Option<&str> {
+	value.medicinal_product.as_deref()
 }
 
 /// e2b:G.k.2.1.1a
@@ -784,10 +784,14 @@ pub(crate) fn write_g_k_drug(
 		}
 		out.push_str("/>");
 	}
-	out.push_str("<name>");
-	out.push_str(&xml_escape(product_name));
-	out.push_str("</name>");
-	if !matches!(authority, RegulatoryAuthority::Fda)
+	if let Some(product_name) = product_name {
+		out.push_str("<name>");
+		out.push_str(&xml_escape(product_name));
+		out.push_str("</name>");
+	}
+	// Keep the editor version distinct from the FDA source code-system version.
+	if (!matches!(authority, RegulatoryAuthority::Fda)
+		|| drug.mpid_version.is_some())
 		&& (write_g_k_2_1_1b(drug).is_some() || write_g_k_2_1_1a(drug).is_some())
 	{
 		out.push_str("<asIdentifiedEntity classCode=\"IDENT\"><id");
@@ -1662,7 +1666,9 @@ fn write_g_k_9_i_1(value: &DrugReactionAssessment) -> String {
 }
 
 pub(crate) fn write_g_k_1_causality(drug: &DrugInformation) -> String {
-	let code = drug.drug_characterization.as_str();
+	let Some(code) = drug.drug_characterization.as_deref() else {
+		return String::new();
+	};
 	let display_name = match write_g_k_1(drug) {
 		Some((_, name)) => format!(" displayName=\"{}\"", xml_escape(name)),
 		None => String::new(),
@@ -1676,7 +1682,7 @@ pub(crate) fn write_g_k_1_causality(drug: &DrugInformation) -> String {
 
 /// e2b:G.k.1
 fn write_g_k_1(value: &DrugInformation) -> Option<(&str, &'static str)> {
-	match value.drug_characterization.trim() {
+	match value.drug_characterization.as_deref()?.trim() {
 		"1" => Some(("1", "Suspect")),
 		"2" => Some(("2", "Concomitant")),
 		"3" => Some(("3", "Interacting")),
@@ -1797,8 +1803,8 @@ mod tests {
 			source_product_id: None,
 			sequence_number: 1,
 			deleted: false,
-			drug_characterization: "1".to_string(),
-			medicinal_product: "Drug A".to_string(),
+			drug_characterization: Some("1".to_string()),
+			medicinal_product: Some("Drug A".to_string()),
 			mpid: Some("BASE-MPID".to_string()),
 			mpid_version: Some("BASE-V1".to_string()),
 			mpid_source_code_system: None,
@@ -2195,6 +2201,91 @@ mod tests {
 	}
 
 	#[test]
+	fn fda_mpid_version_roundtrip_preserves_editor_and_source_values() {
+		let root =
+			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+		let source =
+			std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))
+				.expect("official FDA example");
+		for (editor_version, source_version) in [
+			(Some("1"), None),
+			(Some("1234567890"), None),
+			(Some("V&<>\""), Some("201411011202")),
+			(None, Some("201411011202")),
+			(None, None),
+		] {
+			let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+			drug.mpid_version = editor_version.map(str::to_owned);
+			drug.mpid_source_code_system =
+				source_version.map(|_| "2.16.840.1.113883.6.69".to_owned());
+			drug.mpid_source_code_system_version = source_version.map(str::to_owned);
+			let fragment = write_g_k_drug(
+				&drug,
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				RegulatoryAuthority::Fda,
+			)
+			.expect("export FDA drug");
+			let xml = format!(
+				"<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{fragment}{}</MCCI_IN200100UV01>", write_g_k_1_causality(&drug)
+			);
+			let imported =
+				crate::import_sections::g_drug::parse_g_drugs(xml.as_bytes())
+					.expect("import exported FDA drug");
+			assert_eq!(imported.len(), 1);
+			assert_eq!(imported[0].mpid, drug.mpid);
+			assert_eq!(imported[0].mpid_version.as_deref(), editor_version);
+			assert_eq!(
+				imported[0].mpid_source_code_system_version.as_deref(),
+				source_version.or(editor_version)
+			);
+			let exported = crate::export::roundtrip::patch_g_drugs_for_authority(
+				&source,
+				std::slice::from_ref(&drug),
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				RegulatoryAuthority::Fda,
+			)
+			.expect("export complete FDA message");
+			let errors = crate::validation::validate_e2b_xml_xsd(
+				exported.as_bytes(),
+				&crate::default_xsd_path().expect("official schema"),
+			)
+			.expect("validate FDA XML");
+			assert!(errors.is_empty(), "{errors:#?}");
+			drug.mpid_version = imported[0].mpid_version.clone();
+			let ich = write_g_k_drug(
+				&drug,
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				&[],
+				RegulatoryAuthority::Ich,
+			)
+			.expect("export imported version to ICH");
+			let ich = format!("<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{ich}{}</MCCI_IN200100UV01>", write_g_k_1_causality(&drug));
+			let ich_imported =
+				crate::import_sections::g_drug::parse_g_drugs(ich.as_bytes())
+					.expect("read ICH version");
+			assert_eq!(ich_imported[0].mpid_version.as_deref(), editor_version);
+		}
+	}
+
+	#[test]
 	fn export_fda_g_k_2_1_preserves_ndc_code() {
 		let drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
 		let fragment = write_g_k_drug(
@@ -2213,7 +2304,7 @@ mod tests {
 		assert!(fragment.contains(
 			"<code codeSystem=\"2.16.840.1.113883.6.69\" code=\"BASE-MPID\" codeSystemVersion=\"BASE-V1\"/>"
 		));
-		assert!(!fragment.contains("code=\"MPID\""));
+		assert!(fragment.contains("code=\"MPID\""));
 	}
 
 	#[test]
@@ -3258,12 +3349,12 @@ mod tests {
 	}
 
 	#[test]
-	fn preserves_invalid_g_k_1_for_non_blocking_export() {
+	fn omits_missing_and_preserves_invalid_g_k_1_for_non_blocking_export() {
 		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
-		drug.drug_characterization.clear();
-		assert!(write_g_k_1_causality(&drug).contains("code=\"\""));
+		drug.drug_characterization = None;
+		assert!(write_g_k_1_causality(&drug).is_empty());
 
-		drug.drug_characterization = "9".to_string();
+		drug.drug_characterization = Some("9".to_string());
 		assert!(write_g_k_1_causality(&drug).contains("code=\"9\""));
 	}
 

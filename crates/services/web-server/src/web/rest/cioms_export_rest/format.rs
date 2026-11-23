@@ -234,7 +234,10 @@ pub(super) fn drug_name(drug: Option<&DrugInformation>) -> String {
 	let Some(drug) = drug else {
 		return String::new();
 	};
-	drug.medicinal_product.clone()
+	let Some(name) = drug.medicinal_product.as_ref() else {
+		return String::new();
+	};
+	name.clone()
 }
 
 pub(super) fn reporter_name(source: Option<&PrimarySource>) -> String {
@@ -273,7 +276,7 @@ pub(super) fn sender_address(sender: Option<&SenderInformation>) -> String {
 pub(super) fn concomitant_drugs_text(data: &CiomsCaseData) -> String {
 	data.drugs
 		.iter()
-		.filter(|drug| drug.drug_characterization != "1")
+		.filter(|drug| drug.drug_characterization.as_deref() != Some("1"))
 		.map(|drug| {
 			let dosage =
 				data.dosages
@@ -315,7 +318,7 @@ pub(super) fn concomitant_drugs_text(data: &CiomsCaseData) -> String {
 				.join(", ");
 			join_present(
 				&[
-					Some(drug.medicinal_product.clone()),
+					drug.medicinal_product.clone(),
 					(!dosage.is_empty())
 						.then(|| format!("Dose/route/dates: {dosage}")),
 					(!indications.is_empty())

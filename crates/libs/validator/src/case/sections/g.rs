@@ -104,35 +104,29 @@ fn g_k_1(drugs: &[DrugInformation], issues: &mut Vec<ValidationIssue>) {
 	);
 	for (idx, drug) in drugs.iter().enumerate() {
 		let path = format!("drugs.{idx}.drugCharacterization");
+		let value = drug.drug_characterization.as_deref();
 		required_field(
 			issues,
 			"ICH.G.k.1.REQUIRED",
 			&path,
 			"[G.k.1] is required.",
-			has_text(Some(drug.drug_characterization.as_str())),
+			has_text(value),
 		);
 		allowed(
 			issues,
 			"ICH.G.k.1.ALLOWED.VALUE",
 			&path,
-			valid_code(
-				Some(drug.drug_characterization.as_str()),
-				&["1", "2", "3", "4"],
-			),
+			valid_code(value, &["1", "2", "3", "4"]),
 		);
-		length(
-			issues,
-			"ICH.G.k.1.LENGTH.MAX",
-			&path,
-			Some(drug.drug_characterization.as_str()),
-			1,
-		);
+		length(issues, "ICH.G.k.1.LENGTH.MAX", &path, value, 1);
 	}
 	if !drugs.is_empty()
-		&& !drugs
-			.iter()
-			.any(|drug| matches!(drug.drug_characterization.trim(), "1" | "3" | "4"))
-	{
+		&& !drugs.iter().any(|drug| {
+			matches!(
+				drug.drug_characterization.as_deref().map(str::trim),
+				Some("1" | "3" | "4")
+			)
+		}) {
 		crate::push_business_issue(
 			issues,
 			"ICH.G.k.1.AGGREGATE.REQUIRED",
@@ -233,7 +227,7 @@ fn g_k_2_1_2b(
 fn g_k_2_2(drugs: &[DrugInformation], issues: &mut Vec<ValidationIssue>) {
 	for (idx, drug) in drugs.iter().enumerate() {
 		let path = format!("drugs.{idx}.medicinalProduct");
-		let value = Some(drug.medicinal_product.as_str());
+		let value = drug.medicinal_product.as_deref();
 		required_field(
 			issues,
 			"ICH.G.k.2.2.REQUIRED",
@@ -1773,12 +1767,13 @@ fn fda_g_k_1_a(
 	value: Option<&str>,
 	combination_product: bool,
 	malfunction: bool,
-	drug_characterization: &str,
+	drug_characterization: Option<&str>,
 	required_when_allowed: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let allowed_context =
-		combination_product && malfunction && drug_characterization.trim() == "4";
+	let allowed_context = combination_product
+		&& malfunction
+		&& drug_characterization.map(str::trim) == Some("4");
 	let value = value.map(str::trim).filter(|value| !value.is_empty());
 	reject_when(
 		issues,
@@ -1832,7 +1827,7 @@ fn fda_g_k_1_route(
 	let Some(first) = validation_ctx.drugs.first() else {
 		return;
 	};
-	let role = first.drug_characterization.trim();
+	let role = first.drug_characterization.as_deref().map(str::trim);
 	let batch_receiver = validation_ctx
 		.message_header
 		.as_ref()
@@ -1842,11 +1837,12 @@ fn fda_g_k_1_route(
 		.as_ref()
 		.map(|header| header.message_receiver_identifier.as_str());
 	if message_receiver == Some(crate::FDA_MSG_RECEIVER_CDER) {
-		if !validation_ctx
-			.drugs
-			.iter()
-			.any(|drug| matches!(drug.drug_characterization.trim(), "1" | "3" | "4"))
-		{
+		if !validation_ctx.drugs.iter().any(|drug| {
+			matches!(
+				drug.drug_characterization.as_deref().map(str::trim),
+				Some("1" | "3" | "4")
+			)
+		}) {
 			crate::push_business_issue(
 				issues,
 				"FDA.R0069",
@@ -1875,7 +1871,12 @@ fn fda_g_k_1_route(
 		if let Some((code, allowed, qualifying)) = rule {
 			let mut invalid_role = false;
 			for (idx, drug) in validation_ctx.drugs.iter().enumerate() {
-				if !allowed.contains(&drug.drug_characterization.trim()) {
+				if !drug
+					.drug_characterization
+					.as_deref()
+					.map(str::trim)
+					.is_some_and(|role| allowed.contains(&role))
+				{
 					invalid_role = true;
 					crate::push_business_issue(
 						issues,
@@ -1887,7 +1888,10 @@ fn fda_g_k_1_route(
 			}
 			if !invalid_role
 				&& !validation_ctx.drugs.iter().any(|drug| {
-					qualifying.contains(&drug.drug_characterization.trim())
+					drug.drug_characterization
+						.as_deref()
+						.map(str::trim)
+						.is_some_and(|role| qualifying.contains(&role))
 				}) {
 				crate::push_business_issue(
 					issues,
@@ -1904,9 +1908,9 @@ fn fda_g_k_1_route(
 		.flatten()
 		.any(|receiver| receiver.to_ascii_uppercase().contains("VAERS"));
 	let invalid = (is_fda_postmarket_batch_receiver(batch_receiver)
-		&& !matches!(role, "1" | "3")
-		&& !(first_product_malfunction && role == "4"))
-		|| (vaers && !matches!(role, "1" | "3"));
+		&& !matches!(role, Some("1" | "3"))
+		&& !(first_product_malfunction && role == Some("4")))
+		|| (vaers && !matches!(role, Some("1" | "3")));
 	if invalid {
 		crate::push_business_issue(
 			issues,
@@ -1964,10 +1968,9 @@ fn fda_g_k_9(
 		.enumerate()
 		.map(|(idx, drug)| (drug.id, idx))
 		.collect::<HashMap<_, _>>();
-	let first_suspect_idx = validation_ctx
-		.drugs
-		.iter()
-		.position(|drug| drug.drug_characterization.trim() == "1");
+	let first_suspect_idx = validation_ctx.drugs.iter().position(|drug| {
+		drug.drug_characterization.as_deref().map(str::trim) == Some("1")
+	});
 	if validation_ctx.drug_reaction_assessments.is_empty()
 		|| (first_suspect_idx.is_some()
 			&& !validation_ctx
@@ -1975,8 +1978,10 @@ fn fda_g_k_9(
 				.iter()
 				.any(|assessment| {
 					drug_indices.get(&assessment.drug_id).is_some_and(|idx| {
-						validation_ctx.drugs[*idx].drug_characterization.trim()
-							== "1"
+						validation_ctx.drugs[*idx]
+							.drug_characterization
+							.as_deref()
+							.map(str::trim) == Some("1")
 					})
 				})) {
 		let Some(drug_idx) = first_suspect_idx else {
@@ -1998,8 +2003,11 @@ fn fda_g_k_9(
 		let Some(drug_idx) = drug_indices.get(&assessment.drug_id).copied() else {
 			continue;
 		};
-		let is_suspect =
-			validation_ctx.drugs[drug_idx].drug_characterization.trim() == "1";
+		let is_suspect = validation_ctx.drugs[drug_idx]
+			.drug_characterization
+			.as_deref()
+			.map(str::trim)
+			== Some("1");
 		let Some(relatedness_base) = relatedness_bases.get(&assessment.id).copied()
 		else {
 			continue;
@@ -2250,7 +2258,7 @@ fn collect_fda_rules(
 		}
 		if malfunction_this_drug {
 			has_malfunction = true;
-			if drug.drug_characterization.trim() == "1" {
+			if drug.drug_characterization.as_deref().map(str::trim) == Some("1") {
 				has_malfunction_suspect = true;
 			}
 		}
@@ -2266,7 +2274,7 @@ fn collect_fda_rules(
 			drug.fda_other_characterization.as_deref(),
 			combination_true,
 			malfunction_this_drug,
-			&drug.drug_characterization,
+			drug.drug_characterization.as_deref(),
 			!vaers,
 			issues,
 		);
@@ -2284,11 +2292,9 @@ fn collect_fda_rules(
 		);
 	}
 	fda_d_1_malfunction(validation_ctx, combination_true, has_malfunction, issues);
-	if let Some(drug_idx) = validation_ctx
-		.drugs
-		.iter()
-		.position(|drug| drug.drug_characterization.trim() == "1")
-	{
+	if let Some(drug_idx) = validation_ctx.drugs.iter().position(|drug| {
+		drug.drug_characterization.as_deref().map(str::trim) == Some("1")
+	}) {
 		fda_g_k_12(
 			drug_idx,
 			local_criteria == Some("5"),

@@ -29,8 +29,8 @@ fn patch_g_drug_updates_raw_xml() {
 		source_product_presave_id: None,
 		source_product_id: None,
 		sequence_number: 1,
-		drug_characterization: "1".to_string(),
-		medicinal_product: "Drug A".to_string(),
+		drug_characterization: Some("1".to_string()),
+		medicinal_product: Some("Drug A".to_string()),
 		mpid: None,
 		mpid_version: None,
 		mpid_source_code_system: None,
@@ -105,8 +105,8 @@ fn patch_g_drug_preserves_missing_characterization_without_default() {
 		source_product_presave_id: None,
 		source_product_id: None,
 		sequence_number: 1,
-		drug_characterization: "".to_string(),
-		medicinal_product: "Drug B".to_string(),
+		drug_characterization: None,
+		medicinal_product: None,
 		mpid: None,
 		mpid_version: None,
 		mpid_source_code_system: None,
@@ -158,6 +158,24 @@ fn patch_g_drug_preserves_missing_characterization_without_default() {
 		.register_namespace("hl7", "urn:hl7-org:v3")
 		.expect("namespace");
 	assert!(xpath.findnodes("//hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='1']]/hl7:value[@code]", None).expect("role nodes").is_empty());
+	assert!(xpath
+		.findnodes(
+			&format!(
+				"//hl7:substanceAdministration[hl7:id[@root='{drug_id}']]/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name"
+			),
+			None,
+		)
+		.expect("product name nodes")
+		.is_empty());
+	assert!(xpath
+		.findnodes(
+			&format!(
+				"//hl7:causalityAssessment[hl7:code[@code='20'] and hl7:subject2/hl7:productUseReference/hl7:id[@root='{drug_id}']]"
+			),
+			None,
+		)
+		.expect("role causality nodes")
+		.is_empty());
 }
 
 #[test]
@@ -181,8 +199,8 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		source_product_presave_id: None,
 		source_product_id: None,
 		sequence_number: 1,
-		drug_characterization: "1".to_string(),
-		medicinal_product: "Drug A".to_string(),
+		drug_characterization: Some("1".to_string()),
+		medicinal_product: Some("Drug A".to_string()),
 		mpid: None,
 		mpid_version: None,
 		mpid_source_code_system: None,

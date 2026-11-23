@@ -219,7 +219,7 @@ impl CiomsFormData {
 		let suspect_drug = data
 			.drugs
 			.iter()
-			.find(|drug| drug.drug_characterization == "1");
+			.find(|drug| drug.drug_characterization.as_deref() == Some("1"));
 		let suspect_drug_id = suspect_drug.map(|drug| drug.id);
 		let suspect_dosage = suspect_drug_id.and_then(|drug_id| {
 			data.dosages.iter().find(|dosage| dosage.drug_id == drug_id)

@@ -2,8 +2,7 @@ use super::super::safety_report_sub_rest::validate_source_document_base64;
 #[cfg(test)]
 use super::common::json;
 use super::common::{
-	as_object, bool_field, optional_row_object, string_field, BTreeMap, Error, Map,
-	Result, Value,
+	as_object, bool_field, optional_row_object, BTreeMap, Error, Map, Result, Value,
 };
 use input_contracts::{FieldInput, InputIssue, InputValue};
 use lib_rest_core::ConstraintViolation;
@@ -867,22 +866,56 @@ pub(super) fn validate_direct_rows(
 							"{section}.patientIdentifiers must be an array"
 						),
 					})?;
-				for value in identifiers {
+				for (identifier_index, value) in identifiers.iter().enumerate() {
 					let row = as_object(section, "patientIdentifiers", value)?;
 					if bool_field(row, &["deleted", "_delete"]) == Some(true) {
 						continue;
 					}
-					let Some(target) = string_field(
-						row,
-						&["identifierTypeCode", "identifier_type_code"],
-					)
-					.and_then(|code| match code.as_str() {
+					let type_value = row
+						.get("identifierTypeCode")
+						.or_else(|| row.get("identifier_type_code"));
+					let type_path = format!(
+						"patientIdentifiers.{identifier_index}.identifierTypeCode"
+					);
+					let type_code = match type_value {
+						Some(Value::String(code)) => Some(code.as_str()),
+						Some(Value::Null) => {
+							return Err(violation(
+								"INPUT.NULL.REJECTED",
+								&type_path,
+								"cannot be null",
+							))
+						}
+						Some(_) => {
+							return Err(violation(
+								"INPUT.TYPE",
+								&type_path,
+								"must be a string",
+							))
+						}
+						None if row.get("id").is_some() => None,
+						None => {
+							return Err(violation(
+								"INPUT.REQUIRED",
+								&type_path,
+								"is required for a new row",
+							))
+						}
+					};
+					let Some(target) = type_code.and_then(|code| match code {
 						"1" => Some("gpMedicalRecordNumber"),
 						"2" => Some("specialistRecordNumber"),
 						"3" => Some("hospitalRecordNumber"),
 						"4" => Some("investigationNumber"),
 						_ => None,
 					}) else {
+						if type_code.is_some() {
+							return Err(violation(
+								"INPUT.ALLOWED.VALUE",
+								&type_path,
+								"must be one of: 1, 2, 3, 4",
+							));
+						}
 						continue;
 					};
 					let mut identifier_normalized = Map::new();
@@ -1527,7 +1560,74 @@ fn validate_row_payload_with_indexes(
 	outer_indexes: &[usize],
 ) -> Result<()> {
 	validate_request_strings(&Value::Object(row.clone()), row_key)?;
+	if section == "DG" && row_key == "drug" {
+		validate_fda_device_code_identities(row)?;
+	}
 	validate_section_fields(section, row, changed_paths, outer_indexes, false)
+}
+
+fn validate_fda_device_code_identities(row: &Map<String, Value>) -> Result<()> {
+	let Some(devices) = row.get("fdaDevices") else {
+		return Ok(());
+	};
+	let devices = devices.as_array().ok_or_else(|| {
+		violation("INPUT.TYPE", "drugs.0.fdaDevices", "must be an array")
+	})?;
+	for (device_index, device) in devices.iter().enumerate() {
+		let device = device.as_object().ok_or_else(|| {
+			violation(
+				"INPUT.TYPE",
+				&format!("drugs.0.fdaDevices.{device_index}"),
+				"must be an object",
+			)
+		})?;
+		for group in ["followUpTypes", "deviceProblemCodes", "remedialActions"] {
+			let Some(codes) = device.get(group) else {
+				continue;
+			};
+			let codes = codes.as_array().ok_or_else(|| {
+				violation(
+					"INPUT.TYPE",
+					&format!("drugs.0.fdaDevices.{device_index}.{group}"),
+					"must be an array",
+				)
+			})?;
+			for (code_index, code) in codes.iter().enumerate() {
+				let path = format!(
+					"drugs.0.fdaDevices.{device_index}.{group}.{code_index}.valueCode"
+				);
+				let code = code.as_object().ok_or_else(|| {
+					violation("INPUT.TYPE", &path, "code row must be an object")
+				})?;
+				match code.get("valueCode").or_else(|| code.get("value_code")) {
+					Some(Value::String(_)) => {}
+					Some(Value::Null) => {
+						return Err(violation(
+							"INPUT.NULL.REJECTED",
+							&path,
+							"cannot be null",
+						))
+					}
+					Some(_) => {
+						return Err(violation(
+							"INPUT.TYPE",
+							&path,
+							"must be a string",
+						))
+					}
+					None if code.get("id").is_some() => {}
+					None => {
+						return Err(violation(
+							"INPUT.REQUIRED",
+							&path,
+							"is required for a new row",
+						))
+					}
+				}
+			}
+		}
+	}
+	Ok(())
 }
 
 fn validate_request_strings(value: &Value, path: &str) -> Result<()> {
@@ -1735,15 +1835,13 @@ mod input_contract_save_tests {
 			.expect("omission allowed");
 		let row =
 			json!({"testResultQualifier": "EQ", "test_result_qualifier": "BAD"});
-		assert!(
-			validate_row_payload(
-				"LB",
-				"testResult",
-				row.as_object().expect("row"),
-				None
-			)
-			.is_err()
-		);
+		assert!(validate_row_payload(
+			"LB",
+			"testResult",
+			row.as_object().expect("row"),
+			None
+		)
+		.is_err());
 	}
 
 	#[test]
@@ -2126,6 +2224,57 @@ mod input_contract_save_tests {
 		);
 		assert_eq!(detail.rule_code, "ICH.D.1.1.1.LENGTH.MAX");
 		assert_eq!(detail.path, "patientInformation.gpMedicalRecordNumber");
+	}
+
+	#[test]
+	fn structural_row_identities_are_rejected_by_the_input_contract() {
+		let missing_type = BTreeMap::from([(
+			"patientIdentifiers".to_string(),
+			json!([{"sequenceNumber": 1, "identifierValue": "PATIENT-1"}]),
+		)]);
+		let detail = constraint_violation(
+			validate_direct_rows("DM", &missing_type, false).unwrap_err(),
+		);
+		assert_eq!(detail.rule_code, "INPUT.REQUIRED");
+		assert_eq!(detail.path, "patientIdentifiers.0.identifierTypeCode");
+
+		let invalid_type = BTreeMap::from([(
+			"patientIdentifiers".to_string(),
+			json!([{"sequenceNumber": 1, "identifierTypeCode": "9"}]),
+		)]);
+		let detail = constraint_violation(
+			validate_direct_rows("DM", &invalid_type, false).unwrap_err(),
+		);
+		assert_eq!(detail.rule_code, "INPUT.ALLOWED.VALUE");
+
+		let missing_device_code = json!({
+			"fdaDevices": [{"followUpTypes": [{}]}]
+		});
+		let detail = constraint_violation(
+			validate_row_payload(
+				"DG",
+				"drug",
+				missing_device_code.as_object().unwrap(),
+				None,
+			)
+			.unwrap_err(),
+		);
+		assert_eq!(detail.rule_code, "INPUT.REQUIRED");
+		assert_eq!(
+			detail.path,
+			"drugs.0.fdaDevices.0.followUpTypes.0.valueCode"
+		);
+
+		let existing_device_code = json!({
+			"fdaDevices": [{"followUpTypes": [{"id": "7b6d03c4-b4c2-4b97-b48c-738b23e7712f"}]}]
+		});
+		validate_row_payload(
+			"DG",
+			"drug",
+			existing_device_code.as_object().unwrap(),
+			None,
+		)
+		.expect("an existing code row may omit an unchanged valueCode");
 	}
 
 	#[test]

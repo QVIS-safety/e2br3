@@ -26,11 +26,11 @@ pub struct DrugInformation {
 	pub source_product_id: Option<String>,
 	pub sequence_number: i32,
 
-	// G.k.1 - Drug role (MANDATORY)
-	pub drug_characterization: String,
+	// G.k.1 - Drug role (mandatory for submission, nullable while drafting)
+	pub drug_characterization: Option<String>,
 
 	// G.k.2.2 - Product name
-	pub medicinal_product: String,
+	pub medicinal_product: Option<String>,
 
 	// G.k.2.4-5 - Product identifiers
 	pub mpid: Option<String>,
@@ -94,10 +94,8 @@ pub struct DrugInformationForCreate {
 	pub source_product_presave_id: Option<Uuid>,
 	pub source_product_id: Option<String>,
 	pub sequence_number: i32,
-	#[serde(default)]
-	pub drug_characterization: String,
-	#[serde(default)]
-	pub medicinal_product: String,
+	pub drug_characterization: Option<String>,
+	pub medicinal_product: Option<String>,
 	pub drug_authorization_number: Option<String>,
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,

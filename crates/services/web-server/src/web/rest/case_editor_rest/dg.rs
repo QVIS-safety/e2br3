@@ -1202,16 +1202,6 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 					}
 				})?),
 			),
-			(
-				"drug_characterization",
-				json!(string_field(
-					row,
-					&["drugCharacterization", "drugRole", "drug_characterization",],
-				)
-				.ok_or_else(|| Error::BadRequest {
-					message: "drug characterization is required".into()
-				})?),
-			),
 		],
 	);
 	let create = parse_row_model::<DrugInformationForCreate>("DG", "drug", model)?;

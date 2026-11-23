@@ -755,6 +755,23 @@ fn read_mpid(
 	Option<String>,
 )> {
 	if let Some(mpid) = first_attr(xpath, node, GDrugPaths::FDA_MPID) {
+		if let Some(identifier) =
+			first_attr(xpath, node, GDrugPaths::IDENTIFIED_MPID)
+		{
+			if identifier != mpid {
+				return Err(Error::InvalidImportRequest {
+					message:
+						"G.k.2.1.1b contains conflicting FDA and MPID identifiers"
+							.to_owned(),
+				});
+			}
+		}
+		let editor_version = input_string(
+			first_attr(xpath, node, GDrugPaths::IDENTIFIED_MPID_VERSION),
+			"mpidVersion",
+			input_contracts::generated::g::g_k_2_1_1a,
+			xpath,
+		)?;
 		xpath.inputs.string(
 			"mpid",
 			Some(&mpid),
@@ -769,7 +786,7 @@ fn read_mpid(
 		)?;
 		return Ok((
 			Some(mpid),
-			None,
+			editor_version,
 			Some("2.16.840.1.113883.6.69".to_string()),
 			version,
 		));
@@ -2177,6 +2194,21 @@ mod tests {
 				error.to_string().contains("INPUT.EMPTY.REJECTED"),
 				"{error}"
 			);
+		}
+	}
+
+	#[test]
+	fn fda_mpid_rejects_conflicting_identifiers_and_invalid_editor_version() {
+		for (identifier, version, expected) in [
+			("OTHER", "1", "conflicting FDA and MPID identifiers"),
+			("59762-2858", "12345678901", "ICH.G.k.2.1.1a.LENGTH.MAX"),
+		] {
+			let xml = with_drug_role(&format!(
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>Drug A</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></MCCI_IN200100UV01>"#
+			));
+			let error = parse_g_drugs(xml.as_bytes())
+				.expect_err("reject ambiguous or invalid MPID");
+			assert!(error.to_string().contains(expected), "{error}");
 		}
 	}
 

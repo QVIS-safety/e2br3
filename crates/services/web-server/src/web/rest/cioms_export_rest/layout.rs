@@ -3,7 +3,7 @@ use super::*;
 fn selected_suspect_drug(data: &CiomsCaseData) -> Option<&DrugInformation> {
 	data.drugs
 		.iter()
-		.find(|drug| drug.drug_characterization == "1")
+		.find(|drug| drug.drug_characterization.as_deref() == Some("1"))
 }
 
 fn cioms_item_20_result<'a>(
@@ -105,11 +105,11 @@ pub(super) fn render_landscape_cioms(
 	let suspect_drug = data
 		.drugs
 		.iter()
-		.find(|drug| drug.drug_characterization == "1");
+		.find(|drug| drug.drug_characterization.as_deref() == Some("1"));
 	let suspect_drug_count = data
 		.drugs
 		.iter()
-		.filter(|drug| drug.drug_characterization == "1")
+		.filter(|drug| drug.drug_characterization.as_deref() == Some("1"))
 		.count()
 		.max(1);
 	let patient = data.patient.as_ref();
@@ -474,11 +474,11 @@ fn render_portrait_cioms(
 	let suspect_drug = data
 		.drugs
 		.iter()
-		.find(|drug| drug.drug_characterization == "1");
+		.find(|drug| drug.drug_characterization.as_deref() == Some("1"));
 	let suspect_drug_count = data
 		.drugs
 		.iter()
-		.filter(|drug| drug.drug_characterization == "1")
+		.filter(|drug| drug.drug_characterization.as_deref() == Some("1"))
 		.count()
 		.max(1);
 	let suspect_assessment = suspect_drug.and_then(|drug| {
@@ -1081,7 +1081,7 @@ pub(super) fn render_cioms_continuation_pages(
 						row.drug_id
 					),
 				})?;
-			let drug_name = drug.medicinal_product.as_str();
+			let drug_name = drug.medicinal_product.as_deref();
 			let action = drug_action_text(drug.action_taken.as_deref());
 			let interval = join_present(
 				&[
@@ -1135,7 +1135,9 @@ pub(super) fn render_cioms_continuation_pages(
 			);
 			let causality = join_present(
 				&[
-					(!drug_name.is_empty()).then(|| format!("Drug: {drug_name}")),
+					drug_name
+						.filter(|name| !name.is_empty())
+						.map(|name| format!("Drug: {name}")),
 					(!action.is_empty()).then(|| {
 						format!("G.k.8 Action(s) Taken with Drug: {action}")
 					}),
@@ -1249,15 +1251,20 @@ pub(super) fn render_cioms_continuation_pages(
 
 	let mut drug_rows = Vec::new();
 	for drug in &data.drugs {
-		let role = if drug.drug_characterization == "1" {
-			"Suspect"
-		} else {
-			"Concomitant"
-		};
-		let mut values = vec![format!(
-			"G.k.1 Role: {role} | G.k.2.2 Product: {}",
-			drug.medicinal_product
-		)];
+		let mut values = Vec::new();
+		if let Some(role) = drug.drug_characterization.as_deref() {
+			values.push(format!(
+				"G.k.1 Role: {}",
+				if role == "1" {
+					"Suspect"
+				} else {
+					"Concomitant"
+				}
+			));
+		}
+		if let Some(product) = drug.medicinal_product.as_deref() {
+			values.push(format!("G.k.2.2 Product: {product}"));
+		}
 		if let Some(action) = drug.action_taken.as_deref() {
 			values.push(format!(
 				"G.k.8 Action(s) Taken with Drug: {}",

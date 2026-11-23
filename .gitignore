@@ -101,3 +101,7 @@ __pycache__/
 # Allow vscode
 # !.vscode # Commented by default
 .output/
+
+# Isolated API fuzzer evidence
+/tmp/api-fuzzer/
+/tmp/ui-env/

@@ -84,8 +84,8 @@ pub(super) fn drug() -> DrugInformation {
 		source_product_presave_id: None,
 		source_product_id: None,
 		sequence_number: 1,
-		drug_characterization: String::new(),
-		medicinal_product: String::new(),
+		drug_characterization: None,
+		medicinal_product: None,
 		mpid: None,
 		mpid_version: None,
 		mpid_source_code_system: None,
@@ -434,7 +434,8 @@ fn additional_code_validation_rejects_missing_blank_and_noncanonical_entries() {
 			RegulatoryAuthority::Fda,
 			RegulatoryAuthority::Mfds,
 		] {
-			let report = crate::build_report(authority, drug.case_id, issues.clone());
+			let report =
+				crate::build_report(authority, drug.case_id, issues.clone());
 			assert!(!report.ok);
 			assert_eq!(report.issue_count, 1);
 			assert_eq!(report.issues[0].code, "ICH.G.k.10.r.ALLOWED.VALUE");
@@ -465,7 +466,7 @@ fn allowed_value_rules_cover_g_drug_and_reaction_codes() {
 	let mut ctx = empty_ctx();
 	let mut drug = drug();
 	drug.id = Uuid::from_u128(1);
-	drug.drug_characterization = "9".to_string();
+	drug.drug_characterization = Some("9".to_string());
 	drug.investigational_product_blinded = Some(false);
 	drug.action_taken = Some("8".to_string());
 	drug.drug_additional_info_codes_json = Some(json!([
@@ -682,12 +683,12 @@ fn indication_and_reaction_assessment_pair_rules_are_preserved() {
 fn max_length_rules_cover_g_drug_fields() {
 	let mut ctx = empty_ctx();
 	let mut drug = drug();
-	drug.drug_characterization = "12".to_string();
+	drug.drug_characterization = Some("12".to_string());
 	drug.mpid_version = Some("12345678901".to_string());
 	drug.mpid = Some("x".repeat(1001));
 	drug.phpid_version = Some("12345678901".to_string());
 	drug.phpid = Some("x".repeat(251));
-	drug.medicinal_product = "x".repeat(251);
+	drug.medicinal_product = Some("x".repeat(251));
 	drug.obtain_drug_country = Some("USA".to_string());
 	drug.drug_authorization_number = Some("x".repeat(36));
 	drug.manufacturer_country = Some("USA".to_string());
@@ -868,14 +869,14 @@ fn aggregate_identity_rules_cover_drug_and_ingredient_fallbacks() {
 	let mut ctx = empty_ctx();
 	let mut drug = drug();
 	drug.id = Uuid::from_u128(1);
-	drug.drug_characterization = "2".to_string();
+	drug.drug_characterization = Some("2".to_string());
 	ctx.drugs.push(drug);
 
 	let codes = codes_for(&ctx);
 	assert!(codes.contains(&"ICH.G.k.1.AGGREGATE.REQUIRED".to_string()));
 	assert!(codes.contains(&"ICH.G.k.2.3.r.REQUIRED".to_string()));
 
-	ctx.drugs[0].drug_characterization = "1".to_string();
+	ctx.drugs[0].drug_characterization = Some("1".to_string());
 	let mut substance = substance();
 	substance.drug_id = Uuid::from_u128(1);
 	substance.substance_name = Some("ingredient".to_string());
@@ -980,7 +981,7 @@ fn golden_g_issue_metadata() {
 	g_k_1(&[], &mut issues);
 
 	let mut value = drug();
-	value.drug_characterization = "9".to_string();
+	value.drug_characterization = Some("9".to_string());
 	value.mpid = Some("MPID".to_string());
 	value.mpid_version = None;
 	g_k_1(&[value.clone()], &mut issues);

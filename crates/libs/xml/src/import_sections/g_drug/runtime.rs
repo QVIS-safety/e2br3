@@ -86,8 +86,8 @@ async fn import_drugs(
 				source_product_presave_id: product_link,
 				source_product_id: drug.source_product_id.clone(),
 				sequence_number: drug.sequence_number,
-				drug_characterization: drug.drug_characterization.clone(),
-				medicinal_product: drug.medicinal_product.clone(),
+				drug_characterization: Some(drug.drug_characterization.clone()),
+				medicinal_product: Some(drug.medicinal_product.clone()),
 				..Default::default()
 			},
 		)

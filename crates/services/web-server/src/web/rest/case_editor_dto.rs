@@ -405,9 +405,9 @@ pub struct CaseEditorDgListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
 	pub deleted: bool,
-	pub drug_role: String,
+	pub drug_role: Option<String>,
 	pub dg_prd_key: Option<String>,
-	pub medicinal_product: String,
+	pub medicinal_product: Option<String>,
 	pub action_taken: Option<String>,
 	pub warning_count: i32,
 }
