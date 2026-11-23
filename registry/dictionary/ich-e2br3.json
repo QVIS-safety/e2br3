@@ -1519,13 +1519,12 @@
       "conformance": "required",
       "data_type": "AN",
       "max_length": "60",
-      "allowed_values": "Free Text  nullFlavor: MSK, ASKU, NASK, UNK, NA",
+      "allowed_values": "Free Text  nullFlavor: MSK, ASKU, NASK, UNK",
       "null_flavors": [
         "MSK",
         "UNK",
         "ASKU",
-        "NASK",
-        "NA"
+        "NASK"
       ],
       "profiles": {
         "mfds": "mandatory"

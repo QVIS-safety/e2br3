@@ -59,7 +59,7 @@
               "invalid": [{"value": {"repeat": "X", "count": 61}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 61}, "nullFlavor": null}]
             },
             "null_flavors": {
-              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK", "NA"],
+              "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK"],
               "owner": "input-contracts",
               "ruleCode": "ICH.D.1.NULLFLAVOR.ALLOWED",
               "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}, {"value": null, "nullFlavor": "NA"}],
