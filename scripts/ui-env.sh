@@ -114,6 +114,15 @@ if [[ "$upgrade_reused_database" -eq 1 ]]; then
 	DATABASE_URL="$admin_ui_url" "$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db"
 fi
 
+if [[ "${UI_TEST_TERMINOLOGY_FIXTURE:-0}" == "1" ]]; then
+	[[ "$name" == bombadil_* ]] || {
+		printf 'UI_TEST_TERMINOLOGY_FIXTURE requires a bombadil_* UI environment name\n' >&2
+		exit 2
+	}
+	psql "$admin_ui_url" -v ON_ERROR_STOP=1 -f "$repo_root/scripts/db/seed-bombadil-test-terminology.sql" \
+		>"$log_dir/terminology-fixture.log" 2>&1
+fi
+
 export SERVICE_DB_URL="$ui_url"
 export SERVICE_MIGRATION_DB_URL="$ui_url"
 export SERVICE_BIND_ADDR="127.0.0.1:$backend_port"
