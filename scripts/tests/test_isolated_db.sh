@@ -47,6 +47,7 @@ printf '%s\n' "$*" >"$FAKE_LOG_DIR/cargo.args"
 	printf 'SERVICE_MIGRATION_DB_URL=%s\n' "$SERVICE_MIGRATION_DB_URL"
 	printf 'SKIP_DEV_INIT=%s\n' "$SKIP_DEV_INIT"
 	printf 'E2BR3_TEST_DATABASE_NAME=%s\n' "$E2BR3_TEST_DATABASE_NAME"
+	printf 'AUDIT_MAPPING_DATABASE_URL=%s\n' "$AUDIT_MAPPING_DATABASE_URL"
 } >"$FAKE_LOG_DIR/cargo.env"
 if [[ "${FAKE_CARGO_WAIT:-0}" -eq 1 ]]; then
 	printf '%s\n' "$$" >"$FAKE_LOG_DIR/cargo.pid"
@@ -83,8 +84,10 @@ assert_success_contract() {
 		"$runner" -p lib-core --test rbac_grant_profiles \
 		>"$case_dir/stdout" 2>"$case_dir/stderr"
 
-	local test_url migration_url database_name
+	local test_url migration_url database_name audit_url
 	test_url="$(sed -n 's/^SERVICE_DB_URL=//p' "$case_dir/cargo.env")"
+	audit_url="$(sed -n 's/^AUDIT_MAPPING_DATABASE_URL=//p' "$case_dir/cargo.env")"
+	[[ "$audit_url" == "$test_url" ]]
 	migration_url="$(sed -n 's/^SERVICE_MIGRATION_DB_URL=//p' "$case_dir/cargo.env")"
 	database_name="$(sed -n 's/^E2BR3_TEST_DATABASE_NAME=//p' "$case_dir/cargo.env")"
 

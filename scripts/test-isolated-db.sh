@@ -164,6 +164,7 @@ export SERVICE_DB_URL="$test_url"
 export SERVICE_MIGRATION_DB_URL="$test_url"
 export SKIP_DEV_INIT=1
 export E2BR3_TEST_DATABASE_NAME="$database_name"
+export AUDIT_MAPPING_DATABASE_URL="$test_url"
 
 needs_terminology="$(python3 "$repo_root/scripts/ci_test_plan.py" terminology-snapshot -- "$@")"
 case "$needs_terminology" in

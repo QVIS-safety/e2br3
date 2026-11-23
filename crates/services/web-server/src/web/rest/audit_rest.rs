@@ -934,6 +934,8 @@ fn audit_business_field_label(
 		("case_workflow_events", "actor_role_id") => "Workflow Actor Role",
 		("case_workflow_events", "used_admin_override") => "Admin Override Used",
 		("case_workflow_events", "override_reason") => "Admin Override Reason",
+		("case_submissions", "authority") => "Submission Authority",
+		("case_submissions", "submitted_xml") => "Submitted XML",
 		("case_submissions", "gateway") => "Submission Gateway",
 		("case_submissions", "remote_submission_id") => "Remote Submission ID",
 		("case_submissions", "status") => "Submission Status",
@@ -1594,6 +1596,20 @@ mod tests {
 	}
 
 	#[test]
+	fn audit_field_labels_cover_retained_submission_fields() {
+		for (field, label) in [
+			("authority", "Submission Authority"),
+			("submitted_xml", "Submitted XML"),
+		] {
+			assert_eq!(
+				audit_field_label("case_submissions", field)
+					.expect("retained submission fields need explicit labels"),
+				("RE", label.to_string()),
+			);
+		}
+	}
+
+	#[test]
 	fn audit_field_label_maps_reference_ci_fields() {
 		assert_eq!(
 			audit_field_label("source_documents", "source_document_name").unwrap(),
@@ -1719,10 +1735,9 @@ mod tests {
 	}
 
 	#[tokio::test]
-	#[ignore = "requires an explicit dedicated UI database; read-only schema/history coverage"]
 	async fn audit_field_labels_cover_live_schema_and_history() {
 		let url = std::env::var("AUDIT_MAPPING_DATABASE_URL").expect(
-			"set AUDIT_MAPPING_DATABASE_URL to a dedicated e2br3_ui_ database",
+			"set AUDIT_MAPPING_DATABASE_URL to an isolated e2br3_ui_ or e2br3_test_ database",
 		);
 		let pool = sqlx::PgPool::connect(&url).await.unwrap();
 		let database: String = sqlx::query_scalar("SELECT current_database()")
@@ -1730,8 +1745,8 @@ mod tests {
 			.await
 			.unwrap();
 		assert!(
-			database.starts_with("e2br3_ui_"),
-			"dedicated UI database required"
+			database.starts_with("e2br3_ui_") || database.starts_with("e2br3_test_"),
+			"isolated UI or test database required"
 		);
 		let fields: Vec<(String, String)> = sqlx::query_as(
 			r#"
