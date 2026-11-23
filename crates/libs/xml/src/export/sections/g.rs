@@ -296,16 +296,20 @@ fn write_g_k_10_r(value: &DrugInformation) -> Result<Vec<&str>> {
 		.enumerate()
 		.map(|(index, entry)| {
 			// Preserve draft strings; malformed storage cannot become a successful partial export.
-			entry
-				.get("value_code")
-				.and_then(serde_json::Value::as_str)
-				.ok_or_else(|| {
-					Error::InvalidXml {
-				message: format!("G.k.10.r: stored entry {index} requires a string value_code"),
+			match entry {
+				serde_json::Value::String(value) => Some(value.as_str()),
+				serde_json::Value::Object(value) => {
+					value.get("value_code").and_then(serde_json::Value::as_str)
+				}
+				_ => None,
+			}
+			.ok_or_else(|| Error::InvalidXml {
+				message: format!(
+					"G.k.10.r: stored entry {index} requires a string value_code"
+				),
 				line: None,
 				column: None,
-			}
-				})
+			})
 		})
 		.collect()
 }
@@ -568,6 +572,14 @@ fn write_fda_g_k_12_device(
 			out.push('"');
 		}
 		out.push_str("/>");
+	}
+	// FDA maps brand and common name by position, including a missing brand slot.
+	if device.device_brand_name.is_none()
+		&& device.device_brand_name_null_flavor.is_none()
+		&& (device.common_device_name.is_some()
+			|| device.common_device_name_null_flavor.is_some())
+	{
+		out.push_str("<name/>");
 	}
 	for (value, null_flavor) in [
 		(
@@ -1310,13 +1322,14 @@ pub(crate) fn write_g_k_drug(
 				out.push_str(&xml_escape(ver));
 				out.push('"');
 			}
-			out.push_str("><originalText>");
-			if let Some(text) = write_g_k_4_r_11_1(dose) {
-				out.push_str(&xml_escape(text));
-			}
-			out.push_str(
-				"</originalText></value></observation></outboundRelationship2>",
-			);
+			out.push('>');
+			out.push_str(&field::text_element(
+				"G.k.4.r.11.1",
+				write_g_k_4_r_11_1(dose),
+				None,
+				"originalText",
+			)?);
+			out.push_str("</value></observation></outboundRelationship2>");
 		}
 		out.push_str("</substanceAdministration></outboundRelationship2>");
 	}
@@ -1532,7 +1545,11 @@ pub(crate) fn write_g_k_9_causality(
 	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
 	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
 	if let Some(relatedness) = relatedness {
-		if matches!(authority, RegulatoryAuthority::Mfds) {
+		let regional_result = matches!(authority, RegulatoryAuthority::Mfds)
+			&& (relatedness.result_of_assessment_kr1.is_some()
+				|| relatedness.result_of_assessment_kr2.is_some()
+				|| relatedness.result_of_assessment_kr1_null_flavor.is_some());
+		if regional_result {
 			let kr1 = write_g_k_9_i_2_r_3_kr_1(relatedness);
 			let kr2 = write_g_k_9_i_2_r_3_kr_2(relatedness);
 
@@ -1553,14 +1570,19 @@ pub(crate) fn write_g_k_9_causality(
 			} else {
 				" xsi:type=\"CE\"".to_owned()
 			};
-			out.push_str(&field::element(
+			let attributes = field::attributes(
 				"G.k.9.i.2.r.3.KR",
 				code,
 				relatedness.result_of_assessment_kr1_null_flavor.as_deref(),
-				"value",
 				"code",
-				&fixed,
-			)?);
+			)?;
+			let text = field::text_element(
+				"G.k.9.i.2.r.3",
+				write_g_k_9_i_2_r_3(relatedness),
+				None,
+				"originalText",
+			)?;
+			out.push_str(&format!("<value{fixed}{attributes}>{text}</value>"));
 		} else if let Some(result) = write_g_k_9_i_2_r_3(relatedness) {
 			out.push_str(&format!(
 				"<value xsi:type=\"ST\">{}</value>",
@@ -1575,7 +1597,14 @@ pub(crate) fn write_g_k_9_causality(
 			"<methodCode codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.4\" code=\"",
 		);
 			out.push_str(&xml_escape(method));
-			out.push_str("\"/>");
+			out.push_str("\">");
+			out.push_str(&field::text_element(
+				"G.k.9.i.2.r.2",
+				write_g_k_9_i_2_r_2(relatedness),
+				None,
+				"originalText",
+			)?);
+			out.push_str("</methodCode>");
 		} else if let Some(method) = write_g_k_9_i_2_r_2(relatedness) {
 			out.push_str("<methodCode><originalText>");
 			out.push_str(&xml_escape(method));
@@ -2459,7 +2488,7 @@ mod tests {
 			for codes in [
 				None,
 				Some(serde_json::json!([])),
-				Some(serde_json::json!([{ "value_code": "2" }])),
+				Some(serde_json::json!(["2"])),
 			] {
 				let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
 				drug.drug_additional_info_codes_json = codes.clone();
@@ -2592,6 +2621,27 @@ mod tests {
 					"{authority:?}: draft code content/order changed"
 				);
 			}
+		}
+	}
+
+	#[test]
+	fn additional_codes_export_both_documented_storage_shapes() {
+		for raw in [
+			serde_json::json!(["1", "2"]),
+			serde_json::json!([{"value_code":"1"},{"value_code":"2"}]),
+		] {
+			let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+			drug.drug_additional_info_codes_json = Some(raw);
+			assert_eq!(write_g_k_10_r(&drug).expect("stored codes"), vec!["1", "2"]);
+			let derived = lib_core::model::drug::derive_drug_characteristics(&drug)
+				.expect("export snapshot");
+			assert_eq!(
+				derived
+					.iter()
+					.map(|row| row.value_code.as_deref())
+					.collect::<Vec<_>>(),
+				vec![Some("1"), Some("2")]
+			);
 		}
 	}
 
@@ -2972,6 +3022,14 @@ mod tests {
 
 		let xml = export_g_drugs_xml(&[drug], &[], &[dosage], &[], &[], &[], &[])
 			.expect("export xml");
+		assert!(!xml.contains("<originalText></originalText>"));
+		let imported = crate::import_sections::g_drug::parse_g_drugs(xml.as_bytes())
+			.expect("nullFlavor-only routes import");
+		assert_eq!(
+			imported[0].dosages[0].parent_route_null_flavor.as_deref(),
+			Some("NASK")
+		);
+
 		assert!(xml.contains("<routeCode nullFlavor=\"ASKU\"/>"));
 		assert!(xml.contains("<formCode nullFlavor=\"UNK\">"));
 		assert!(xml.contains("<value xsi:type=\"CE\" nullFlavor=\"NASK\">"));
@@ -3067,6 +3125,16 @@ mod tests {
 		assert!(!write_fda_g_k_12_device(&unnamed, &[])
 			.expect("serialize")
 			.contains("<name nullFlavor=\"NI\"/>"));
+		unnamed.common_device_name = Some("Generic & device".to_owned());
+		let sparse =
+			write_fda_g_k_12_device(&unnamed, &[]).expect("common name alone");
+		assert!(sparse.contains("<name/><name>Generic &amp; device</name>"));
+		unnamed.common_device_name = None;
+		unnamed.common_device_name_null_flavor = Some("NI".to_owned());
+		assert!(write_fda_g_k_12_device(&unnamed, &[])
+			.expect("common name NF")
+			.contains("<name/><name nullFlavor=\"NI\"/>"));
+
 		let codes = [
 			FdaDeviceCode {
 				id: Uuid::new_v4(),
@@ -3231,7 +3299,11 @@ mod tests {
 		assert!(xml.contains(
 			"codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.5\" code=\"3\""
 		));
-		assert!(!xml.contains("free text"));
+		assert_eq!(
+			xml.matches("<originalText>free text</originalText>")
+				.count(),
+			2
+		);
 
 		let mut null_flavor = relatedness;
 		null_flavor.result_of_assessment_kr1 = None;
@@ -3243,7 +3315,7 @@ mod tests {
 			RegulatoryAuthority::Mfds,
 		)
 		.expect("serialize");
-		assert!(xml.contains("<value xsi:type=\"CE\" nullFlavor=\"NA\"/>"));
+		assert!(xml.contains("<value xsi:type=\"CE\" nullFlavor=\"NA\"><originalText>free text</originalText></value>"));
 		assert!(!xml.contains("code=\"NA\""));
 	}
 

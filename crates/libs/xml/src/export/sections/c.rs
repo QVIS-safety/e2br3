@@ -185,7 +185,7 @@ fn apply_c_2_primary_source_values(
 			"<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization>",
 		)?;
 	}
-	let organization_path = if has_department {
+	let organization_path = if has_organization {
 		let nested = format!("{base}/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name");
 		if xpath_is_empty(xpath, &nested)? {
 			append_fragment_child(
@@ -496,12 +496,13 @@ fn ensure_primary_source_author_nodes(
 		primary.reporter_middle_name.as_deref(),
 		primary.reporter_middle_name_null_flavor.as_deref(),
 	);
-	let given = if given_name { "<given/>" } else { "" };
-	let middle = if middle_name && given_name {
+	// Positional given[2] needs an empty first slot, not an invented first name.
+	let given = if given_name || middle_name {
 		"<given/>"
 	} else {
 		""
 	};
+	let middle = if middle_name { "<given/>" } else { "" };
 	let family = if present(
 		primary.reporter_family_name.as_deref(),
 		primary.reporter_family_name_null_flavor.as_deref(),
@@ -535,6 +536,8 @@ fn ensure_primary_source_author_nodes(
 	let assigned_person = if !name.is_empty()
 		|| !qualification.is_empty()
 		|| !location.is_empty()
+		|| (matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds)
+			&& primary.qualification_kr1.is_some())
 	{
 		format!("<assignedPerson classCode=\"PSN\" determinerCode=\"INSTANCE\">{name}{qualification}{location}</assignedPerson>")
 	} else {
@@ -966,6 +969,67 @@ mod primary_source_null_flavor_tests {
 			updated_at: OffsetDateTime::UNIX_EPOCH,
 			created_by: Uuid::nil(),
 			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn sparse_reporter_fields_keep_their_xml_positions() {
+		for nf in [None, Some("ASKU")] {
+			let parser = Parser::default();
+			let mut doc = parser
+				.parse_string(crate::export::base_export_skeleton())
+				.expect("skeleton");
+			let mut xpath = Context::new(&doc).expect("xpath");
+			xpath
+				.register_namespace("hl7", "urn:hl7-org:v3")
+				.expect("namespace");
+			let mut primary = source();
+			primary.reporter_given_name_null_flavor = None;
+			primary.city_null_flavor = None;
+			primary.reporter_middle_name = nf.is_none().then(|| "Middle".to_owned());
+			primary.reporter_middle_name_null_flavor = nf.map(str::to_owned);
+			primary.organization = nf.is_none().then(|| "Organization".to_owned());
+			primary.organization_null_flavor = nf.map(str::to_owned);
+			primary.qualification_kr1 = Some("1".to_owned());
+			apply_c_2_primary_sources(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&[primary],
+				lib_core::regulatory::RegulatoryAuthority::Mfds,
+			)
+			.expect("export sparse fields");
+			assert_eq!(
+				xpath
+					.findvalue(
+						"count(//hl7:assignedPerson/hl7:name/hl7:given)",
+						None
+					)
+					.expect("given slots"),
+				"2"
+			);
+			assert_eq!(
+				xpath
+					.findvalue("//hl7:assignedPerson/hl7:name/hl7:given[1]", None)
+					.expect("absent first name"),
+				""
+			);
+			let organization = "//hl7:assignedEntity/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name";
+			match nf {
+				Some(nf) => assert_eq!(
+					xpath
+						.findvalue(&format!("{organization}/@nullFlavor"), None)
+						.expect("organization NF"),
+					nf
+				),
+				None => assert_eq!(
+					xpath.findvalue(organization, None).expect("organization"),
+					"Organization"
+				),
+			}
+			assert!(doc
+				.to_string()
+				.contains("codeSystem=\"2.16.840.1.113883.3.989.5.1.10.1.1\""));
 		}
 	}
 
@@ -1680,35 +1744,50 @@ pub(crate) fn apply_c_5_study(
 	let fragment = format!(
 		"<subjectOf1 typeCode=\"SBJ\"><researchStudy classCode=\"CLNTRL\" moodCode=\"EVN\">{sponsor_id_xml}{study_type}{title_xml}{auth_xml}</researchStudy></subjectOf1>"
 	);
-	let xml = doc.to_string();
-	if let Some(injected) = insert_c_5_study(&xml, &fragment) {
-		let new_doc =
-			parser
-				.parse_string(&injected)
-				.map_err(|err| Error::InvalidXml {
-					message: format!("XML parse error after study injection: {err}"),
-					line: None,
-					column: None,
-				})?;
-		*doc = new_doc;
-		*xpath = Context::new(doc).map_err(|_| Error::InvalidXml {
-			message: "Failed to initialize XPath context after study injection"
-				.to_string(),
-			line: None,
-			column: None,
-		})?;
-		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-		let _ = xpath
-			.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-		if !regional_study_type.is_empty() {
-			append_fragment_child(
-				doc,
-				parser,
-				xpath,
-				"//hl7:investigationEvent",
-				&regional_study_type,
-			)?;
+	// A study belongs to primaryRole even when no patient demographics are stored.
+	if xpath_is_empty(xpath, "//hl7:primaryRole")? {
+		let mut parent = String::from("//hl7:investigationEvent");
+		for (path, fragment) in [
+			("component", "<component typeCode=\"COMP\"/>"),
+			(
+				"adverseEventAssessment",
+				"<adverseEventAssessment classCode=\"INVSTG\" moodCode=\"EVN\"/>",
+			),
+			("subject1", "<subject1 typeCode=\"SBJ\"/>"),
+			("primaryRole", "<primaryRole classCode=\"INVSBJ\"/>"),
+		] {
+			let child = format!("{parent}/hl7:{path}");
+			if xpath_is_empty(xpath, &child)? {
+				append_fragment_child(doc, parser, xpath, &parent, fragment)?;
+			}
+			parent = child;
 		}
+	}
+	let parent = "//hl7:primaryRole";
+	append_fragment_child(doc, parser, xpath, parent, &fragment)?;
+	// researchStudy precedes subjectOf2 in the role's HL7 sequence.
+	let studies = xpath
+		.findnodes(&format!("{parent}/hl7:subjectOf1[hl7:researchStudy]"), None)
+		.map_err(|_| field::invalid("C.5", "cannot locate study XML"))?;
+	let next = xpath
+		.findnodes(&format!("{parent}/hl7:subjectOf2[1]"), None)
+		.map_err(|_| field::invalid("C.5", "cannot locate role relationships"))?;
+	if let Some(mut next) = next.into_iter().next() {
+		for mut study in studies {
+			study.unlink();
+			next.add_prev_sibling(&mut study).map_err(|error| {
+				field::invalid("C.5", format!("cannot order study: {error:?}"))
+			})?;
+		}
+	}
+	if !regional_study_type.is_empty() {
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			"//hl7:investigationEvent",
+			&regional_study_type,
+		)?;
 	}
 	Ok(())
 }
@@ -1917,6 +1996,51 @@ mod study_writer_strictness_tests {
 	}
 
 	#[test]
+	fn study_without_patient_is_written_once_without_inventing_demographics() {
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(crate::export::base_export_skeleton())
+			.expect("skeleton");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		remove_nodes(&mut xpath, "//hl7:primaryRole");
+		let mut study = study();
+		study.study_name = Some("Research & safety".to_owned());
+		for _ in 0..2 {
+			apply_c_5_study(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				Some(&study),
+				&[],
+				&[],
+				lib_core::regulatory::RegulatoryAuthority::Ich,
+			)
+			.expect("study export");
+		}
+		assert_eq!(
+			xpath
+				.findvalue("count(//hl7:researchStudy)", None)
+				.expect("count"),
+			"1"
+		);
+		assert_eq!(
+			xpath
+				.findvalue("//hl7:researchStudy/hl7:title", None)
+				.expect("title"),
+			"Research & safety"
+		);
+		assert_eq!(
+			xpath
+				.findvalue("count(//hl7:primaryRole/hl7:player1)", None)
+				.expect("no patient"),
+			"0"
+		);
+	}
+
+	#[test]
 	fn mfds_study_type_uses_the_investigation_event_shape() {
 		let mut study = study();
 		study.study_type_reaction_kr1 = Some("4".to_string());
@@ -2023,22 +2147,6 @@ mod study_writer_strictness_tests {
 			"<code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>"
 		);
 	}
-}
-
-fn insert_c_5_study(xml: &str, fragment: &str) -> Option<String> {
-	let primary_start = xml.find("<primaryRole")?;
-	let primary_end = xml[primary_start..].find("</primaryRole>")? + primary_start;
-	let body_start = xml[primary_start..].find('>')? + primary_start + 1;
-	let body = &xml[body_start..primary_end];
-	let insert_at = match body.find("<subjectOf2") {
-		Some(index) => body_start + index,
-		None => primary_end,
-	};
-	let mut out = String::with_capacity(xml.len() + fragment.len() + 8);
-	out.push_str(&xml[..insert_at]);
-	out.push_str(fragment);
-	out.push_str(&xml[insert_at..]);
-	Some(out)
 }
 
 fn insert_c_1_or_c_4(xml: &str, fragment: &str) -> Option<String> {

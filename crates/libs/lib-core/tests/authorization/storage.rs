@@ -21,7 +21,7 @@ async fn normalized_catalog_matches_the_registry() -> Result<()> {
 			"SELECT count(*) FROM authorization_grant_catalog"
 		)
 		.await?,
-		policy_registry().grants().len() as i64
+		policy_registry()?.grants().len() as i64
 	);
 	assert_eq!(
 		scalar_string(
@@ -29,7 +29,7 @@ async fn normalized_catalog_matches_the_registry() -> Result<()> {
 			"SELECT catalog_hash FROM authorization_catalog_state WHERE singleton"
 		)
 		.await?,
-		export_contract(policy_registry())?.catalog_hash
+		export_contract(policy_registry()?)?.catalog_hash
 	);
 	assert_eq!(
 		scalar_i64(
@@ -113,7 +113,7 @@ async fn fixed_built_ins_and_enabled_memberships_are_normalized() -> Result<()> 
 async fn runtime_custom_role_writer_cannot_mutate_a_built_in_role() -> Result<()> {
 	let database = init_authorization_test_db().await?;
 	let runtime = database.runtime_pool().await?;
-	let built_in_id = policy_registry()
+	let built_in_id = policy_registry()?
 		.built_in_identities()
 		.first()
 		.ok_or("missing built-in identity")?
@@ -212,7 +212,7 @@ async fn runtime_role_writer_rejects_a_custom_role_as_assignment_authority(
 	let actor_id = uuid::Uuid::new_v4();
 	let target_id = uuid::Uuid::new_v4();
 	let custom_role_id = uuid::Uuid::new_v4();
-	let operational_role_id = policy_registry()
+	let operational_role_id = policy_registry()?
 		.built_in_identities()
 		.iter()
 		.find(|identity| {
@@ -429,7 +429,7 @@ async fn deleted_in_use_profile_is_rejected_without_partial_cleanup() -> Result<
 
 	let error = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await
 	.unwrap_err();
@@ -491,7 +491,7 @@ async fn inactive_assigned_custom_role_does_not_block_startup_reconciliation(
 
 	let report = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	assert!(report.assignments >= 1);
@@ -705,14 +705,14 @@ async fn unknown_active_role_rolls_back_and_persists_rejection() -> Result<()> {
 	.await?;
 	let error = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await
 	.unwrap_err();
 	assert!(matches!(error, AuthorizationMigrationError::Rejected(_)));
 	let repeated = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await
 	.unwrap_err();
@@ -769,7 +769,7 @@ async fn reviewed_obsolete_menu_flags_are_dropped_during_one_way_backfill(
 	.await?;
 	AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	assert_eq!(
@@ -803,7 +803,7 @@ async fn genuinely_unknown_menu_flag_still_blocks_backfill() -> Result<()> {
 	.await?;
 	let error = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await
 	.unwrap_err();
@@ -844,7 +844,7 @@ async fn conflicting_catalog_hash_fails_closed() -> Result<()> {
 	.await?;
 	let error = AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await
 	.unwrap_err();
@@ -932,7 +932,7 @@ async fn reviewed_catalog_predecessor_upgrades_explicitly() -> Result<()> {
 	.await?;
 	assert_eq!(
 		stored,
-		export_contract(policy_registry())?.catalog_hash,
+		export_contract(policy_registry()?)?.catalog_hash,
 		"only the reviewed predecessor should advance to the deployed catalog"
 	);
 	database.close().await?;

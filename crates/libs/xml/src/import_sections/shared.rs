@@ -131,7 +131,7 @@ pub(crate) fn first_text(
 	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
+		if !content.is_empty() {
 			return Some(content);
 		}
 	}
@@ -146,11 +146,35 @@ pub(crate) fn first_text_root(xpath: &mut Context, expr: &str) -> Option<String>
 	let nodes = xpath.findnodes(expr, None).ok()?;
 	for n in nodes {
 		let content = n.get_content();
-		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
+		if !content.is_empty() {
 			return Some(content);
 		}
 	}
 	None
+}
+
+#[cfg(test)]
+mod empty_text_tests {
+	use super::*;
+
+	#[test]
+	fn empty_positional_slots_are_absent_but_supplied_text_is_unchanged() {
+		let doc = Parser::default().parse_string(r#"<root><name/><name nullFlavor="NI"/><name> actual </name><name nullFlavor="NI">conflict</name></root>"#).expect("XML");
+		let mut xpath = Context::new(&doc).expect("XPath");
+		let root = doc.get_root_element().expect("root");
+		for (path, expected) in [
+			("name[1]", None),
+			("name[2]", None),
+			("name[3]", Some(" actual ")),
+			("name[4]", Some("conflict")),
+		] {
+			assert_eq!(first_text(&mut xpath, &root, path).as_deref(), expected);
+			assert_eq!(
+				first_text_root(&mut xpath, &format!("/root/{path}")).as_deref(),
+				expected
+			);
+		}
+	}
 }
 
 /// Case-insensitive true/false/1/0, without trimming.

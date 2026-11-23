@@ -316,6 +316,11 @@ fn ensure_c_3_nodes(
 		) {
 			ensure(
 				&format!("{base}/hl7:assignedPerson/hl7:name"),
+				&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[1]"),
+				"<given/>",
+			)?;
+			ensure(
+				&format!("{base}/hl7:assignedPerson/hl7:name"),
 				&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
 				"<given/>",
 			)?;

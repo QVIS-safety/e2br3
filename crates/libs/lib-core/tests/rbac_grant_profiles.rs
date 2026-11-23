@@ -24,8 +24,9 @@ fn legacy_field(value: &str) -> GrantUiField {
 }
 
 #[test]
-fn every_pdf_row_maps_to_exactly_its_canonical_grant_or_is_reserved() {
-	let registry = policy_registry();
+fn every_pdf_row_maps_to_exactly_its_canonical_grant_or_is_reserved(
+) -> Result<(), Box<dyn std::error::Error>> {
+	let registry = policy_registry()?;
 	let grants = registry.grants().collect::<Vec<_>>();
 	assert_eq!(grants.len(), 18, "the UI specification defines 18 rows");
 
@@ -49,11 +50,13 @@ fn every_pdf_row_maps_to_exactly_its_canonical_grant_or_is_reserved() {
 			),
 		}
 	}
+	Ok(())
 }
 
 #[test]
-fn migration_aliases_translate_to_their_canonical_grants() {
-	let registry = policy_registry();
+fn migration_aliases_translate_to_their_canonical_grants(
+) -> Result<(), Box<dyn std::error::Error>> {
+	let registry = policy_registry()?;
 	for alias in registry.legacy_aliases() {
 		let (menu_key, field) = alias
 			.legacy_id
@@ -72,6 +75,7 @@ fn migration_aliases_translate_to_their_canonical_grants() {
 			alias.legacy_id
 		);
 	}
+	Ok(())
 }
 
 #[test]
@@ -92,7 +96,8 @@ fn current_role_writes_reject_migration_only_menu_aliases() {
 }
 
 #[test]
-fn canonical_implications_expand_only_in_the_registry() {
+fn canonical_implications_expand_only_in_the_registry(
+) -> Result<(), Box<dyn std::error::Error>> {
 	let direct = grant_ids_for_menu_privileges(
 		&[privilege("admin", GrantUiField::CanEdit)],
 		false,
@@ -103,11 +108,12 @@ fn canonical_implications_expand_only_in_the_registry() {
 		vec!["admin.edit"]
 	);
 
-	let effective = policy_registry()
+	let effective = policy_registry()?
 		.effective_grants(direct.iter().map(|id| id.as_str()))
 		.unwrap();
 	assert!(effective.iter().any(|id| id.as_str() == "admin.edit"));
 	assert!(effective.iter().any(|id| id.as_str() == "admin.read"));
+	Ok(())
 }
 
 #[test]

@@ -216,7 +216,7 @@ pub async fn apply_authorization_migrations(
 	.await?;
 	AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	Ok(())

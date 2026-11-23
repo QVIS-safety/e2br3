@@ -4,7 +4,7 @@ use lib_core::authorization::{
 };
 
 fn misuse(snapshot: &RequestAuthorizationSnapshot) {
-	let action = policy_registry()
+	let action = policy_registry().expect("valid policy registry")
 		.context_action::<Existing<CaseResource>>("case.read")
 		.unwrap();
 	let _ = authorize_subject(action, snapshot);

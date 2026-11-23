@@ -974,7 +974,7 @@ mod tests {
 	}
 
 	#[test]
-	fn sender_export_preserves_absent_and_explicit_empty_text() {
+	fn sender_import_treats_empty_xml_slots_as_absent() {
 		use crate::export::roundtrip::{patch_c_safety_report, CSafetyReportPatch};
 		for value in [None, Some(""), Some("Sender value")] {
 			let patch = CSafetyReportPatch {
@@ -1007,7 +1007,11 @@ mod tests {
 				("state", sender.state),
 				("postcode", sender.postcode),
 			] {
-				assert_eq!(actual.as_deref(), value, "{field}");
+				assert_eq!(
+					actual.as_deref(),
+					value.filter(|text| !text.is_empty()),
+					"{field}"
+				);
 			}
 		}
 	}

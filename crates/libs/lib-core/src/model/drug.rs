@@ -171,7 +171,18 @@ pub fn parse_drug_additional_info_codes_json(
 	value: Option<&JsonValue>,
 ) -> serde_json::Result<Vec<DrugAdditionalInfoCodeEntry>> {
 	let entries: Vec<DrugAdditionalInfoCodeEntry> = match value {
-		Some(raw) => serde_json::from_value(raw.clone())?,
+		Some(raw) => {
+			let entries: Vec<JsonValue> = serde_json::from_value(raw.clone())?;
+			entries
+				.into_iter()
+				.map(|entry| match entry {
+					JsonValue::String(value) => Ok(DrugAdditionalInfoCodeEntry {
+						value_code: Some(value),
+					}),
+					entry => serde_json::from_value(entry),
+				})
+				.collect::<serde_json::Result<Vec<_>>>()?
+		}
 		None => Vec::new(),
 	};
 	Ok(entries)

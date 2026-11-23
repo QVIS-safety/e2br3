@@ -1001,6 +1001,19 @@ fn write_d_10_8_r_7b(value: &ParentPastDrugHistory) -> Option<&str> {
 	value.reaction_meddra_code.as_deref()
 }
 
+fn write_history_product_identifier(
+	kind: &str,
+	id: Option<&str>,
+	version: Option<&str>,
+) -> Result<String> {
+	if id.is_none() && version.is_none() {
+		return Ok(String::new());
+	}
+	let id = field::element(kind, id, None, "id", "extension", "")?;
+	let version = field::attributes(kind, version, None, "codeSystemVersion")?;
+	Ok(format!("<asIdentifiedEntity classCode=\"IDENT\">{id}<code code=\"{kind}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"{version}/></asIdentifiedEntity>"))
+}
+
 fn write_d_10_8_r_parent_past_drug(
 	drug: &ParentPastDrugHistory,
 	include_mfds: bool,
@@ -1031,37 +1044,19 @@ fn write_d_10_8_r_parent_past_drug(
 		String::new()
 	};
 
-	let mut identifiers = String::new();
-	if let Some(id) = write_d_10_8_r_2b(drug) {
-		let mut code_attrs = String::from(
-			"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
-		);
-		if let Some(version) = write_d_10_8_r_2a(drug) {
-			code_attrs.push_str(&format!(
-				" codeSystemVersion=\"{}\"",
-				xml_escape(version)
-			));
-		}
-		identifiers.push_str(&format!(
-			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-			xml_escape(id)
-		));
-	}
-	if let Some(id) = write_d_10_8_r_3b(drug) {
-		let mut code_attrs = String::from(
-			"code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
-		);
-		if let Some(version) = write_d_10_8_r_3a(drug) {
-			code_attrs.push_str(&format!(
-				" codeSystemVersion=\"{}\"",
-				xml_escape(version)
-			));
-		}
-		identifiers.push_str(&format!(
-			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-			xml_escape(id)
-		));
-	}
+	let identifiers = format!(
+		"{}{}",
+		write_history_product_identifier(
+			"MPID",
+			write_d_10_8_r_2b(drug),
+			write_d_10_8_r_2a(drug)
+		)?,
+		write_history_product_identifier(
+			"PHPID",
+			write_d_10_8_r_3b(drug),
+			write_d_10_8_r_3a(drug)
+		)?
+	);
 
 	let (start, start_null) = write_d_10_8_r_4(drug);
 	let (end, end_null) = write_d_10_8_r_5(drug);
@@ -1376,41 +1371,18 @@ fn apply_d_8_past_drugs(
 			} else {
 				String::new()
 			};
-		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
-			&& write_d_8_r_2b(&drug).is_some()
-		{
-			let Some(id) = write_d_8_r_2b(&drug) else {
-				continue;
-			};
-			let mut code_attrs = String::from(
-				"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
-			);
-			if let Some(version) = write_d_8_r_2a(&drug) {
-				code_attrs.push_str(&format!(
-					" codeSystemVersion=\"{}\"",
-					xml_escape(version)
-				));
-			}
-			identifiers.push_str(&format!(
-				"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-				xml_escape(id)
-			));
+		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
+			identifiers.push_str(&write_history_product_identifier(
+				"MPID",
+				write_d_8_r_2b(&drug),
+				write_d_8_r_2a(&drug),
+			)?);
 		}
-		if let Some(id) = write_d_8_r_3b(&drug) {
-			let mut code_attrs = String::from(
-				"code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
-			);
-			if let Some(version) = write_d_8_r_3a(&drug) {
-				code_attrs.push_str(&format!(
-					" codeSystemVersion=\"{}\"",
-					xml_escape(version)
-				));
-			}
-			identifiers.push_str(&format!(
-				"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
-				xml_escape(id)
-			));
-		}
+		identifiers.push_str(&write_history_product_identifier(
+			"PHPID",
+			write_d_8_r_3b(&drug),
+			write_d_8_r_3a(&drug),
+		)?);
 
 		let (start, start_null) = write_d_8_r_4(&drug);
 		let (end, end_null) = write_d_8_r_5(&drug);
@@ -1953,6 +1925,24 @@ mod tests {
 				.expect("parent sex code system"),
 			"1.0.5218"
 		);
+	}
+
+	#[test]
+	fn history_identifier_preserves_version_without_identifier_value() {
+		for kind in ["MPID", "PHPID"] {
+			let xml =
+				write_history_product_identifier(kind, None, Some("version & 1"))
+					.expect("version only");
+			assert!(xml.contains("codeSystemVersion=\"version &amp; 1\""));
+			assert!(!xml.contains("<id"));
+			assert!(write_history_product_identifier(kind, None, None)
+				.expect("absent")
+				.is_empty());
+			let xml = write_history_product_identifier(kind, Some("id & 2"), None)
+				.expect("identifier only");
+			assert!(xml.contains("extension=\"id &amp; 2\""));
+			assert!(!xml.contains("codeSystemVersion"));
+		}
 	}
 
 	#[test]

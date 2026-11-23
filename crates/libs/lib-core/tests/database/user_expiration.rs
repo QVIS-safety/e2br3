@@ -25,7 +25,7 @@ async fn test_expired_user_is_soft_deactivated() -> Result<()> {
 	assert_eq!(database, std::env::var("E2BR3_TEST_DATABASE_NAME")?);
 	AuthorizationMigrationService::reconcile_registry_storage(
 		&migration_pool,
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	migration_pool.close().await;

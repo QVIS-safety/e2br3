@@ -22,7 +22,7 @@ async fn allowed_event_rolls_back_with_mutation_but_denial_survives() -> Result<
 	apply_authorization_isolation_migration(&database).await?;
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		OffsetDateTime::now_utc(),

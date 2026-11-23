@@ -1,3 +1,4 @@
+use crate::import_sections::shared::first_text;
 // Section E importer (Reaction/Event) - FDA mapping.
 
 use crate::error::Error;
@@ -517,23 +518,12 @@ fn read_e_i_6a(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 
 /// e2b:E.i.6b
 fn read_e_i_6b(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
-	let unit = input_string(
+	input_string(
 		first_attr(xpath, node, EReactionPaths::DURATION_UNIT),
 		"reactionDuration.unit",
 		input_contracts::generated::e::e_i_6b,
 		xpath,
-	)?;
-	let Some(unit) = unit else {
-		return Ok(None);
-	};
-	let unit =
-		match crate::mapping::fda::e_reaction::reaction_duration_unit_from_ucum(
-			&unit,
-		) {
-			Some(mapped) => mapped,
-			None => &unit,
-		};
-	Ok(Some(unit.to_string()))
+	)
 }
 
 /// e2b:E.i.7
@@ -861,17 +851,6 @@ fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 	xpath.findvalues(expr, Some(node)).ok()?.into_iter().next()
 }
 
-fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
-	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
-	for n in nodes {
-		let content = n.get_content();
-		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
-			return Some(content);
-		}
-	}
-	None
-}
-
 fn input_string(
 	value: Option<String>,
 	field: &str,
@@ -904,19 +883,12 @@ mod split_null_flavor_tests {
 	}
 
 	#[test]
-	fn imports_ucum_duration_units_and_preserves_unknown_units() {
-		for (ucum, stored) in [
-			("10.a", "800"),
-			("a", "801"),
-			("mo", "802"),
-			("wk", "803"),
-			("d", "804"),
-			("h", "805"),
-		] {
-			let xml = reaction_with_duration_unit(ucum);
+	fn preserves_duration_units_without_code_conversion() {
+		for unit in ["10.a", "a", "mo", "wk", "d", "h", "804"] {
+			let xml = reaction_with_duration_unit(unit);
 			let reactions = parse_e_reactions(xml.as_bytes())
 				.expect("supported UCUM reaction duration unit");
-			assert_eq!(reactions[0].duration_unit.as_deref(), Some(stored));
+			assert_eq!(reactions[0].duration_unit.as_deref(), Some(unit));
 			assert_eq!(reactions[0].duration_value.as_deref(), Some("1"));
 		}
 
@@ -933,7 +905,7 @@ mod split_null_flavor_tests {
 		assert_eq!(reaction.start_date.as_deref(), Some("20081009"));
 		assert_eq!(reaction.end_date.as_deref(), Some("20081201"));
 		assert_eq!(reaction.duration_value.as_deref(), Some("54"));
-		assert_eq!(reaction.duration_unit.as_deref(), Some("804"));
+		assert_eq!(reaction.duration_unit.as_deref(), Some("d"));
 	}
 
 	#[test]
@@ -942,7 +914,7 @@ mod split_null_flavor_tests {
 		let reaction = parse_e_reactions(xml).expect("parse").remove(0);
 
 		assert_eq!(reaction.duration_value.as_deref(), Some("1.00"));
-		assert_eq!(reaction.duration_unit.as_deref(), Some("803"));
+		assert_eq!(reaction.duration_unit.as_deref(), Some("wk"));
 	}
 
 	#[test]
@@ -951,7 +923,7 @@ mod split_null_flavor_tests {
 		let reaction = parse_e_reactions(xml).expect("parse").remove(0);
 
 		assert_eq!(reaction.duration_value.as_deref(), Some("24"));
-		assert_eq!(reaction.duration_unit.as_deref(), Some("805"));
+		assert_eq!(reaction.duration_unit.as_deref(), Some("h"));
 	}
 
 	#[test]

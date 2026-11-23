@@ -1,3 +1,4 @@
+use crate::import_sections::shared::first_text;
 // Section G importer (Drug/Biological) - FDA mapping.
 
 use crate::error::Error;
@@ -1028,7 +1029,7 @@ fn read_g_k_10_r(
 			null_flavor.as_deref(),
 			input_contracts::generated::g::g_k_10_r,
 		);
-		codes.push(serde_json::json!({ "value_code": code }));
+		codes.push(serde_json::Value::String(code));
 	}
 	Ok(Some(serde_json::Value::Array(codes)))
 }
@@ -1695,17 +1696,6 @@ fn find_nodes(
 	})
 }
 
-fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
-	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
-	for n in nodes {
-		let content = n.get_content();
-		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
-			return Some(content);
-		}
-	}
-	None
-}
-
 fn invalid_field(field: &str, detail: impl std::fmt::Display) -> Error {
 	Error::InvalidXml {
 		message: format!("ICH.{field}: {detail}"),
@@ -1838,9 +1828,7 @@ mod tests {
 			assert_eq!(drugs.len(), 1);
 			assert_eq!(
 				drugs[0].drug_additional_info_codes_json,
-				Some(
-					serde_json::json!([{ "value_code": "2" }, { "value_code": "10" }, { "value_code": "2" }])
-				)
+				Some(serde_json::json!(["2", "10", "2"]))
 			);
 			assert_eq!(
 				drugs[0].fda_additional_info_coded.as_deref(),

@@ -24,7 +24,7 @@ async fn revisions(database: &AuthorizationTestDb) -> Result<(i64, i64)> {
 async fn registered_fact_triggers_are_complete() -> Result<()> {
 	let database = init_authorization_test_db().await?;
 	apply_authorization_revision_migration(&database).await?;
-	RevisionRepository::verify_fact_triggers(database.pool(), policy_registry())
+	RevisionRepository::verify_fact_triggers(database.pool(), policy_registry()?)
 		.await?;
 	database.close().await?;
 	Ok(())
@@ -38,10 +38,12 @@ async fn disabled_fact_trigger_fails_readiness_verification() -> Result<()> {
 	sqlx::query("ALTER TABLE users DISABLE TRIGGER authz_revision_principal_users")
 		.execute(database.pool())
 		.await?;
-	let error =
-		RevisionRepository::verify_fact_triggers(database.pool(), policy_registry())
-			.await
-			.unwrap_err();
+	let error = RevisionRepository::verify_fact_triggers(
+		database.pool(),
+		policy_registry()?,
+	)
+	.await
+	.unwrap_err();
 	assert!(matches!(error, sqlx::Error::Protocol(_)));
 	database.close().await?;
 	Ok(())
@@ -53,7 +55,7 @@ async fn clean_bootstrap_installs_the_same_registered_revision_triggers(
 ) -> Result<()> {
 	let database = init_clean_bootstrap_authorization_test_db().await?;
 	apply_authorization_revision_migration(&database).await?;
-	RevisionRepository::verify_fact_triggers(database.pool(), policy_registry())
+	RevisionRepository::verify_fact_triggers(database.pool(), policy_registry()?)
 		.await?;
 	database.close().await?;
 	Ok(())
@@ -138,7 +140,7 @@ async fn organization_fact_changes_advance_only_organization_revision() -> Resul
 	.await?;
 	AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 
@@ -411,7 +413,7 @@ async fn unrelated_updates_and_idempotent_reconciliation_do_not_advance_revision
 	.await?;
 	AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	assert_eq!(revisions(&database).await?, before);

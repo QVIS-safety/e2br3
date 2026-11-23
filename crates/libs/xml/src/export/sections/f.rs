@@ -109,6 +109,11 @@ pub(crate) fn write_f_r_test_result(result: &TestResult) -> Result<String> {
 		out.push_str("<value xsi:type=\"ED\">");
 		out.push_str(&xml_escape(text));
 		out.push_str("</value>");
+	} else if let Some(unit) = write_f_r_3_3(result) {
+		out.push_str(&format!(
+			"<value xsi:type=\"IVL_PQ\"><center unit=\"{}\"/></value>",
+			xml_escape(unit)
+		));
 	}
 	if let Some(code) = write_f_r_3_1(result) {
 		out.push_str("<interpretationCode code=\"");
@@ -281,6 +286,14 @@ mod tests {
 			created_by: Uuid::new_v4(),
 			updated_by: None,
 		};
+		let mut unit_only = result.clone();
+		unit_only.test_result_value = None;
+		unit_only.test_result_qualifier = None;
+		let unit_xml =
+			write_f_r_test_result(&unit_only).expect("unit without result");
+		assert!(unit_xml.contains("<center unit=\"mg/dL\"/>"));
+		assert!(!unit_xml.contains("value=\"10\""));
+
 		let xml = write_f_r_test_result(&result).expect("export");
 		assert!(
 			xml.contains("<low value=\"10\" unit=\"mg/dL\" inclusive=\"true\"/>")

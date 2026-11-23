@@ -1,3 +1,4 @@
+use crate::import_sections::shared::first_text;
 // Section F importer (Tests and Procedures) - FDA mapping.
 
 use crate::error::Error;
@@ -321,17 +322,6 @@ fn read_f_r_7(xpath: &mut Context, node: &Node) -> Result<Option<bool>> {
 
 fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 	xpath.findvalues(expr, Some(node)).ok()?.into_iter().next()
-}
-
-fn first_text(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
-	let nodes = xpath.findnodes(expr, Some(node)).ok()?;
-	for n in nodes {
-		let content = n.get_content();
-		if n.get_attribute("nullFlavor").is_none() || !content.is_empty() {
-			return Some(content);
-		}
-	}
-	None
 }
 
 fn input_string(

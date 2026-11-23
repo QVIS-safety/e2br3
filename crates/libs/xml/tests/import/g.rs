@@ -61,11 +61,7 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first.fda_additional_info_coded.as_deref(), Some("1"));
 	assert_eq!(
 		first.drug_additional_info_codes_json,
-		Some(serde_json::json!([
-			{ "value_code": "4" },
-			{ "value_code": "9" },
-			{ "value_code": "10" }
-		]))
+		Some(serde_json::json!(["4", "9", "10"]))
 	);
 	assert_eq!(
 		first.fda_specialized_product_category.as_deref(),

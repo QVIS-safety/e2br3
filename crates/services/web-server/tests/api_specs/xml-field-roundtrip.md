@@ -224,3 +224,108 @@ cargo clippy --locked --all-features -p web-server --test api_editor -- \
 실행 로그는 `/tmp/xml-field-stages-run-20261122.log`다.
 이번에는 단계별 진단과 분류만 추가했다. serializer/parser와 저장 동작은 수정하지 않았고,
 새 회귀 검사는 여전히 124건 때문에 실패한다. XSD 적합성이나 모든 값 조합의 보장을 뜻하지 않는다.
+
+## 2026-11-23 exporter 매핑 수정 후 재검사
+
+동일한 1,184개 시나리오를 격리 PostgreSQL DB에서 다시 실행했다.
+**1,166개 통과, 18개 실패**이며, 실패한 18개도 export HTTP 200이다.
+앞서 확인한 exporter 출력 오류·값 미출력·필드 위치 불일치는 재현되지 않았다.
+실패 시나리오를 제외하거나 값 비교를 완화하지 않았다.
+
+수정한 출력 경로:
+
+- 환자 정보가 없어도 연구 정보의 XML 구조를 생성한다. 환자 이름이나 nullFlavor는 합성하지 않는다.
+- 신고자 조직명은 부서 유무와 관계없이 사전에 정의된 중첩 조직명 위치에 쓴다.
+- 신고자·발신자의 중간 이름과 FDA 일반기기명은 앞의 이름이 없어도 두 번째 위치를 유지한다.
+  빈 첫 번째 XML 노드는 구조상 자리이며, 공통 텍스트 reader는 이를 DB의 빈 문자열로 저장하지 않는다.
+- MFDS 자격만 있는 신고자도 자격을 기록할 부모 노드를 생성한다.
+- 환자·부모 과거약물의 MPID/PHPID 버전은 식별자 값 없이도 출력한다.
+- 결과 숫자 없이 저장한 검사 단위를 출력한다.
+- MFDS 인과성의 공통 자유문자 결과를 출력한다. 지역 코드와 자유문자가 함께 있으면
+  하나의 CE value와 originalText로 보존하고, 지역 평가방법 코드와 자유문자도 함께 보존한다.
+- 약물 추가정보 코드는 저장 API의 문자열 배열과 기존 구조화 배열 각각에서 실제 코드를 출력한다.
+  잘못된 원소를 건너뛰거나 다른 값으로 대체하지 않는다.
+- 모체 투여 경로가 nullFlavor뿐이면 빈 originalText를 생성하지 않는다.
+- FDA 전문 제품 분류는 표시 이름 존재 여부에 의존하지 않고 코드로 복원한다.
+
+마지막 두 왕복 실행 사이에는 별도 input-contract 수정도 작업 트리에 반영됐다.
+FDA.D.1의 NA 재입력 통과를 exporter 단독 수정의 효과로 계산하지 않는다.
+날짜/raw 빈 문자열 충돌은 앞선 저장 계층 수정과 DB 마이그레이션으로 해결된 항목이다.
+
+남은 실패는 다음과 같다. 전체 왕복 테스트의 종료 코드는 여전히 실패이며,
+exporter 수정 완료를 전체 import/export 통과로 해석하지 않는다.
+
+| 항목 | 실패 수 | 남은 차이 |
+|---|---:|---|
+| G.k.9.i.3.1a/b, G.k.9.i.3.2a/b | 12 | XML에 있는 투여–반응 시간 간격을 importer가 재투여 반응 노드 없이는 저장하지 않음 |
+| E.i.6b | 3 | XML의 `d`를 importer가 `804`로 변환 |
+| G.k.10.r | 3 | 코드는 XML에 있으나 재입력 후 `["1"]`이 `[{"value_code":"1"}]`로 바뀜 |
+
+근거: `/tmp/export-mapping-final-report.json`, `/tmp/export-mapping-final.log`.
+이 검사는 결정적 fixture를 사용한 필드별 검사다. 모든 필드 조합이나 제출용 XSD·기관
+업무 규칙 통과를 보장하지 않는다.
+
+추가 검증:
+
+- XML 단위 검사 241개, 약물 추가정보 validator 검사 3개 통과.
+- `lib-core`, `xml`, `web-server` 운영 코드의 CI 금지 패턴 Clippy 통과.
+- `xml --all-targets` 및 `web-server --test api_editor` Clippy 통과.
+- 전체 선택 Clippy는 기존 `lib-core` 권한 테스트의 컴파일 오류 35개로 실패한다.
+  `policy_registry()`의 `Result` 반환을 처리하지 않는 호출이며, exporter 변경과 별개다.
+  이 실패를 숨기거나 lint 규칙을 변경하지 않았다.
+
+검사 원본은 `/home/opc/e2br3/runtime-dev/exporter-mapping-20261123/`에도 보관했다.
+
+실제 서버 검증:
+
+- 최종 `cargo build -p web-server --bin web-server` 통과 후 전용 UI runner를 시작했다.
+- 공유 `e2br3_dev`의 기존 데이터를 전용 `e2br3_ui_exporter_mapping` DB로 복사했다.
+  복원 시 빠진 앱 역할 권한은 UI runner의 신규 DB 권한과 동일하게 전용 DB에 부여했다.
+- 백엔드 health HTTP 204, 프론트 HTTP 200 확인.
+- 기존 51개 케이스 × ICH/FDA/MFDS = 153건 export 모두 HTTP 200, XML 파싱 성공.
+- 신고자 조직·부서·중간 이름, 연구명·연구 식별자, 발신자 중간 이름에 대해
+  DB와 XML 값/nullFlavor를 708회 대조해 불일치 0건.
+  이 중 실제 값이 있는 대조는 351회이며, 나머지는 부재 상태 보존 검사다.
+  희소 값/nullFlavor의 개별 경로는 위 단위·필드 왕복 검사가 검증한다.
+- 원본 공유 DB에는 이번 export 검증 요청을 보내지 않았다.
+
+실제 데이터 근거는 같은 디렉터리의 `live-export-results.json`,
+`live-value-comparison.json`, `exports/`에 보관했다.
+
+## 2026-11-23 importer 잔여 차이 수정
+
+위 검사에서 남은 18건의 원인을 다음과 같이 수정했다.
+
+- G.k.9.i.3: 재투여 반응 관측과 연결되지 않은 SAS/SAE 시간 간격도 약물·반응
+  참조별 assessment로 저장한다. 시작·마지막 투여 간격은 같은 반응에 합치고,
+  재투여 관측이 이미 있으면 그 레코드에 결합해 중복 assessment를 만들지 않는다.
+  재투여 여부나 빠진 값·단위는 합성하지 않는다.
+- E.i.6b: XML에서 읽은 단위를 input contract 검사 후 그대로 보존한다.
+  `d`를 `804`로 바꾸는 import 변환을 제거했다. 기존 DB의 레거시 코드를
+  내보내는 exporter 호환 경로는 유지하며 기존 행을 마이그레이션하지 않는다.
+- G.k.10.r: API와 동일한 문자열 배열로 저장한다. 순서·중복 코드, 부재와
+  명시적 빈 배열의 차이는 유지한다. 기존 객체 배열의 export 지원도 유지한다.
+- 권한·사용자 만료 테스트의 `policy_registry()` 호출은 `Result` 오류를 `?`로
+  전달하도록 수정했다. 컴파일 실패 fixture도 레지스트리 생성 성공을 확인한 뒤
+  원래 의도한 권한 타입 오류를 검사한다. 운영 권한 정책이나 Clippy 규칙은 바꾸지 않았다.
+
+시간 간격은 값만/단위만/둘 다, 재투여 관측 유무, 여러 반응과 두 종류의 간격을
+결합하는 회귀 검사로 확인한다. 단위·추가정보 검사는 변경된 저장 표현을 직접 비교한다.
+
+전체 필드 왕복 검사 결과는 **1,187개 통과, 실패 0개**다. 앞선 18개 실패가
+모두 통과했고 기존 시나리오를 제거하거나 비교 조건을 완화하지 않았다.
+직전 검사보다 3개 늘어난 항목은 별도 D.1 input-contract 변경으로 추가된
+ICH/FDA/MFDS의 `ich-e2br3/D.1/NA` 시나리오다.
+XML 전체 테스트 313개와 권한 프로필 테스트 5개도 통과했다.
+
+근거는 `/home/opc/e2br3/runtime-dev/importer-mapping-20261123/`의
+`field-roundtrip-report.json`, `field-roundtrip.log`, `xml-tests.log`, `rbac-tests.log`다.
+
+권한 타입 컴파일 실패 검사(3개 fixture), 격리 DB의 사용자 만료 테스트도 통과했다.
+사용자 만료 테스트에는 필수 `SERVICE_DB_MAX_CONNECTIONS=10`을 명시했다.
+동일한 CI Clippy 선택(`lib-core`, `xml`, `web-server/api_editor`)의 운영 코드
+금지 패턴 검사, 전체 테스트 대상 검사, API 테스트 검사가 모두 통과했다.
+앞서 보고한 35개 오류와 그 뒤 드러난 사용자 만료 테스트의 같은 오류 1개가 해소됐다.
+
+최종 `cargo build -p web-server --bin web-server`도 통과했다.
+이 importer 수정 이후 서버 재시작과 실제 데이터 재입력 검증은 미실행 상태다.

@@ -2,9 +2,7 @@
 
 pub struct EReactionPaths;
 
-pub(crate) use lib_core::model::reaction::{
-	reaction_duration_unit_from_ucum, reaction_duration_unit_to_ucum,
-};
+pub(crate) use lib_core::model::reaction::reaction_duration_unit_to_ucum;
 
 impl EReactionPaths {
 	// Base reaction observation node

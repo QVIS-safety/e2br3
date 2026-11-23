@@ -15,7 +15,7 @@ use sqlx::FromRow;
 
 // -- Reaction
 
-// XML import and the editor store these legacy codes; validation uses their UCUM meaning.
+// Export and validation still recognize legacy stored codes alongside UCUM units.
 const REACTION_DURATION_UNITS: &[(&str, &str)] = &[
 	("800", "10.a"),
 	("801", "a"),

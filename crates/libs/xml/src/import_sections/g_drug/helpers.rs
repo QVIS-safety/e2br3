@@ -3,7 +3,7 @@ use crate::import_constraint::Context;
 use crate::import_sections::shared::{first_attr, first_text, parse_xml_id_opt};
 use crate::Result;
 use rust_decimal::Decimal;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub(crate) struct DrugObservationImport {
@@ -77,21 +77,14 @@ pub(crate) fn import_fda_specialized_product_category(
 	for characteristic in characteristics {
 		let normalized =
 			normalize_characteristic_code(characteristic.code.as_deref());
-		let display = match characteristic.code_display_name.as_deref() {
-			Some(display) => display,
-			None => "",
-		}
-		.trim()
-		.to_ascii_lowercase();
+
 		let code_value = characteristic
 			.value_code
 			.as_deref()
 			.map(str::trim)
 			.filter(|value| !value.is_empty())
 			.map(str::to_string);
-		if matches!(normalized.as_str(), "FDAGK101" | "C94031")
-			&& display == "fda specialized product category"
-		{
+		if matches!(normalized.as_str(), "FDAGK101" | "C94031") {
 			specialized_product_category = code_value;
 		}
 	}
@@ -177,7 +170,7 @@ fn read_g_k_9_i_2_r_3(
 	xpath: &mut Context,
 	node: &libxml::tree::Node,
 ) -> Option<String> {
-	first_text(xpath, node, "hl7:causalityAssessment/hl7:value[not(@code)]")
+	first_text(xpath, node, "hl7:causalityAssessment/hl7:value[not(@code) and not(@nullFlavor) and not(hl7:originalText)] | hl7:causalityAssessment/hl7:value/hl7:originalText")
 }
 
 /// e2b:G.k.9.i.2.r.3.KR.1
@@ -296,7 +289,7 @@ pub(crate) fn parse_drug_observations(
 				administration_start_interval_unit,
 			) = match reaction_xml_id
 				.as_ref()
-				.and_then(|id| administration_start_map.get(id).cloned())
+				.and_then(|id| administration_start_map.remove(id))
 			{
 				Some(interval) => interval,
 				None => (None, None),
@@ -304,7 +297,7 @@ pub(crate) fn parse_drug_observations(
 			let (last_dose_interval_value, last_dose_interval_unit) =
 				match reaction_xml_id
 					.as_ref()
-					.and_then(|id| last_dose_map.get(id).cloned())
+					.and_then(|id| last_dose_map.remove(id))
 				{
 					Some(interval) => interval,
 					None => (None, None),
@@ -320,6 +313,37 @@ pub(crate) fn parse_drug_observations(
 				last_dose_interval_unit,
 				reaction_recurred,
 				rechallenge_action,
+			});
+		}
+		// Time intervals independently establish a drug/reaction relationship.
+		let remaining_ids: BTreeSet<_> = administration_start_map
+			.keys()
+			.chain(last_dose_map.keys())
+			.cloned()
+			.collect();
+		for reaction_id in remaining_ids {
+			let (
+				administration_start_interval_value,
+				administration_start_interval_unit,
+			) = match administration_start_map.remove(&reaction_id) {
+				Some(interval) => interval,
+				None => (None, None),
+			};
+			let (last_dose_interval_value, last_dose_interval_unit) =
+				match last_dose_map.remove(&reaction_id) {
+					Some(interval) => interval,
+					None => (None, None),
+				};
+			observations.push(DrugObservationImport {
+				drug_xml_id: drug_xml_id.clone(),
+				drug_sequence,
+				reaction_xml_id: Some(reaction_id),
+				administration_start_interval_value,
+				administration_start_interval_unit,
+				last_dose_interval_value,
+				last_dose_interval_unit,
+				reaction_recurred: None,
+				rechallenge_action: None,
 			});
 		}
 	}
@@ -386,11 +410,79 @@ mod tests {
 	use super::parse_relatedness_assessments;
 
 	#[test]
+	fn time_intervals_import_independently_and_merge_with_recurrence() {
+		let reaction_id = "11111111-1111-4111-8111-111111111111";
+		let other_id = "22222222-2222-4222-8222-222222222222";
+		for recurrence in [false, true] {
+			for attributes in ["value=\"2\"", "unit=\"d\"", "value=\"2\" unit=\"d\""]
+			{
+				let recurrence_xml = if recurrence {
+					format!(
+						r#"<outboundRelationship2 typeCode="PERT"><observation><code code="31"/><value code="1"/><outboundRelationship1 typeCode="REFR"><actReference><id root="{reaction_id}"/></actReference></outboundRelationship1></observation></outboundRelationship2>"#
+					)
+				} else {
+					String::new()
+				};
+				let xml = format!(
+					r#"<root xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><id root="33333333-3333-4333-8333-333333333333"/>{recurrence_xml}<outboundRelationship1 typeCode="SAS"><pauseQuantity {attributes}/><actReference><id root="{reaction_id}"/></actReference></outboundRelationship1><outboundRelationship1 typeCode="SAE"><pauseQuantity value="3" unit="h"/><actReference><id root="{reaction_id}"/></actReference></outboundRelationship1><outboundRelationship1 typeCode="SAE"><pauseQuantity value="4"/><actReference><id root="{other_id}"/></actReference></outboundRelationship1></substanceAdministration></component></organizer></subjectOf2></root>"#
+				);
+				let rows = super::parse_drug_observations(xml.as_bytes())
+					.expect("intervals");
+				assert_eq!(rows.len(), 2, "one assessment per reaction");
+				let row = rows
+					.iter()
+					.find(|row| row.reaction_xml_id.as_deref() == Some(reaction_id))
+					.expect("first reaction");
+				assert_eq!(
+					row.administration_start_interval_value,
+					attributes
+						.contains("value=")
+						.then(|| rust_decimal::Decimal::from(2))
+				);
+				assert_eq!(
+					row.administration_start_interval_unit.as_deref(),
+					attributes.contains("unit=").then_some("d")
+				);
+				assert_eq!(
+					row.last_dose_interval_value,
+					Some(rust_decimal::Decimal::from(3))
+				);
+				assert_eq!(row.last_dose_interval_unit.as_deref(), Some("h"));
+				assert_eq!(
+					row.rechallenge_action.as_deref(),
+					recurrence.then_some("1")
+				);
+				let other = rows
+					.iter()
+					.find(|row| row.reaction_xml_id.as_deref() == Some(other_id))
+					.expect("second reaction");
+				assert_eq!(other.administration_start_interval_value, None);
+				assert_eq!(
+					other.last_dose_interval_value,
+					Some(rust_decimal::Decimal::from(4))
+				);
+				assert_eq!(other.rechallenge_action, None);
+			}
+		}
+	}
+
+	#[test]
 	fn mfds_relatedness_code_uses_kr2_field() {
 		let xml = br#"<PORR_IN049016UV xmlns="urn:hl7-org:v3"><component><causalityAssessment><code code="39"/><value codeSystem="2.16.840.1.113883.3.989.5.1.10.1.6" code="1"/></causalityAssessment></component></PORR_IN049016UV>"#;
 		let rows = parse_relatedness_assessments(xml).expect("parse");
 		assert_eq!(rows.len(), 1);
 		assert_eq!(rows[0].result_of_assessment, None);
+		assert_eq!(rows[0].result_of_assessment_kr2.as_deref(), Some("1"));
+		let text = std::str::from_utf8(xml).expect("UTF-8 fixture").replace(
+			"code=\"1\"/>",
+			"code=\"1\"><originalText>Possibly &amp; related</originalText></value>",
+		);
+		let rows = parse_relatedness_assessments(text.as_bytes())
+			.expect("coded and text result");
+		assert_eq!(
+			rows[0].result_of_assessment.as_deref(),
+			Some("Possibly & related")
+		);
 		assert_eq!(rows[0].result_of_assessment_kr2.as_deref(), Some("1"));
 	}
 

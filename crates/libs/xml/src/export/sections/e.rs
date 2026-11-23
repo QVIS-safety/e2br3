@@ -898,7 +898,7 @@ mod meddra_requirement_tests {
 
 	#[test]
 	fn draft_duration_unit_without_value_is_preserved() {
-		assert_draft_duration_roundtrip(None, Some("804"));
+		assert_draft_duration_roundtrip(None, Some("d"));
 	}
 
 	#[test]

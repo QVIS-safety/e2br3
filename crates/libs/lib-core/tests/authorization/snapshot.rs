@@ -26,7 +26,7 @@ async fn normalized_assignment_builds_one_versioned_platform_snapshot() -> Resul
 	let evaluated_at = OffsetDateTime::now_utc();
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		evaluated_at,
@@ -85,7 +85,7 @@ async fn custom_role_name_cannot_spoof_a_built_in_identity() -> Result<()> {
 	.await?;
 	lib_core::model::authorization::AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 	sqlx::query(
@@ -98,7 +98,7 @@ async fn custom_role_name_cannot_spoof_a_built_in_identity() -> Result<()> {
 
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		OffsetDateTime::now_utc(),
@@ -138,14 +138,14 @@ async fn principal_scopes_are_request_local_even_for_the_same_role() -> Result<(
 	.await?;
 	lib_core::model::authorization::AuthorizationMigrationService::reconcile_database(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 	)
 	.await?;
 
 	let now = OffsetDateTime::now_utc();
 	let first = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		now,
@@ -154,7 +154,7 @@ async fn principal_scopes_are_request_local_even_for_the_same_role() -> Result<(
 	.await?;
 	let second = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		second_user,
 		ORGANIZATION_ID,
 		now,
@@ -183,7 +183,7 @@ async fn access_end_is_exclusive_and_missing_revision_rows_fail_closed() -> Resu
 
 	let before = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		boundary - Duration::nanoseconds(1),
@@ -193,7 +193,7 @@ async fn access_end_is_exclusive_and_missing_revision_rows_fail_closed() -> Resu
 	assert_eq!(before.authorization_valid_until(), Some(boundary));
 	let at_boundary = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		boundary,
@@ -212,7 +212,7 @@ async fn access_end_is_exclusive_and_missing_revision_rows_fail_closed() -> Resu
 	.await?;
 	let missing = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		boundary - Duration::minutes(1),
@@ -246,7 +246,7 @@ async fn access_start_is_inclusive_and_token_expiry_is_the_earliest_boundary(
 
 	let before = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		start - Duration::nanoseconds(1),
@@ -258,7 +258,7 @@ async fn access_start_is_inclusive_and_token_expiry_is_the_earliest_boundary(
 
 	let at_start = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		start,
@@ -269,7 +269,7 @@ async fn access_start_is_inclusive_and_token_expiry_is_the_earliest_boundary(
 
 	let at_token_expiry = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		token_expiry,
@@ -301,7 +301,7 @@ async fn missing_normalized_assignment_never_falls_back_to_legacy_role() -> Resu
 
 	let error = SnapshotRepository::load_repeatable_read(
 		database.pool(),
-		policy_registry(),
+		policy_registry()?,
 		USER_ID,
 		ORGANIZATION_ID,
 		OffsetDateTime::now_utc(),
