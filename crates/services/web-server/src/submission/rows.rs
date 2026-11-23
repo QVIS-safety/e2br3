@@ -146,6 +146,7 @@ pub(super) fn parse_timeout_secs(name: &'static str) -> Result<u64> {
 
 pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {
 	match status {
+		SubmissionStatus::DispatchFailed => "dispatch_failed",
 		SubmissionStatus::DispatchUnknown => "dispatch_unknown",
 		SubmissionStatus::SubmittedAck1Pending => "submitted_ack1_pending",
 		SubmissionStatus::Ack1Received => "ack1_received",
@@ -158,6 +159,7 @@ pub(super) fn status_to_db(status: &SubmissionStatus) -> &'static str {
 
 pub(super) fn status_from_db(status: &str) -> Result<SubmissionStatus> {
 	match status.trim().to_ascii_lowercase().as_str() {
+		"dispatch_failed" => Ok(SubmissionStatus::DispatchFailed),
 		"dispatch_unknown" => Ok(SubmissionStatus::DispatchUnknown),
 		"submitted_ack1_pending" => Ok(SubmissionStatus::SubmittedAck1Pending),
 		"ack1_received" => Ok(SubmissionStatus::Ack1Received),

@@ -221,8 +221,14 @@ async fn reconcile_one_submission_locked(
 			}
 			let outcome = request_as2_state(row.case_id, authority, None).await;
 			let observed = outcome.is_ok();
-			persist_submission_observation(&system_ctx, mm, submission_id, outcome)
-				.await?;
+			persist_submission_observation(
+				&system_ctx,
+				mm,
+				submission_id,
+				outcome,
+				None,
+			)
+			.await?;
 			Ok(if observed {
 				ReconcileOutcome::Succeeded
 			} else {

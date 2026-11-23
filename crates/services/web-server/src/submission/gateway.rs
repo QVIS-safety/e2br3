@@ -45,11 +45,10 @@ fn require_ack1(
 	})
 }
 
-pub(super) async fn submit_to_gateway(
+fn prepare_esg_request(
 	xml: &str,
 	authority: SubmissionAuthority,
-) -> Result<GatewaySubmissionOutcome> {
-	let now = OffsetDateTime::now_utc();
+) -> Result<PreparedGatewayRequest> {
 	if as2_submitter_url()?.is_some() {
 		return Err(Error::BadRequest { message: "AS2 requires durable reservation; automatic gateway resend is disabled".into() });
 	}
@@ -86,6 +85,7 @@ pub(super) async fn submit_to_gateway(
 	);
 	let timeout_secs = parse_timeout_secs("FDA_ESG_TIMEOUT_SECS")?;
 	let client = reqwest::Client::builder()
+		.redirect(reqwest::redirect::Policy::none())
 		.timeout(Duration::from_secs(timeout_secs))
 		.build()
 		.map_err(|err| Error::BadRequest {
@@ -112,41 +112,26 @@ pub(super) async fn submit_to_gateway(
 		headers.insert("x-api-key", hv);
 	}
 
-	let resp = client
+	let request = client
 		.post(&submit_url)
 		.headers(headers)
 		.json(&json!({ "xml": xml }))
-		.send()
-		.await
-		.map_err(|err| Error::BadRequest {
-			message: format!("FDA ESG submit request failed: {err}"),
+		.build()
+		.map_err(|error| Error::BadRequest {
+			message: format!("invalid FDA ESG request: {error}"),
 		})?;
-	let status = resp.status();
-	if !status.is_success() {
-		return Err(Error::BadRequest {
-			message: format!("FDA ESG submit failed ({status})"),
+	if !matches!(request.url().scheme(), "http" | "https")
+		|| request.url().host_str().is_none()
+	{
+		return Err(Error::Configuration {
+			key: "FDA_ESG_BASE_URL",
+			message: "gateway must be an absolute HTTP(S) URL".into(),
 		});
 	}
-	let body_text = resp.text().await.map_err(|err| Error::BadRequest {
-		message: format!("FDA ESG submit response read failed: {err}"),
-	})?;
-
-	let parsed: EsgSubmitResponse =
-		serde_json::from_str(&body_text).map_err(|err| Error::BadRequest {
-			message: format!("FDA ESG submit response is not valid JSON: {err}"),
-		})?;
-	let remote_submission_id = parsed
-		.remote_submission_id
-		.or(parsed.submission_id)
-		.or(parsed.id)
-		.ok_or(Error::BadRequest {
-			message: "FDA ESG submit response missing remote submission identifier"
-				.to_string(),
-		})?;
-	let ack1 = require_ack1(parsed.ack, "FDA ESG", now)?;
-	Ok(GatewaySubmissionOutcome {
-		remote_submission_id,
-		ack1,
+	Ok(PreparedGatewayRequest {
+		client,
+		request,
+		as2: false,
 	})
 }
 
@@ -257,56 +242,176 @@ mod tests {
 	}
 }
 
-// Dispatch exactly once; subsequent reconciliation uses the read-only status endpoint.
-pub(super) async fn request_as2_state(
+pub(super) struct PreparedGatewayRequest {
+	client: reqwest::Client,
+	request: reqwest::Request,
+	as2: bool,
+}
+
+pub(super) struct DispatchFailure {
+	pub error: Error,
+	pub not_sent: bool,
+}
+
+pub(super) fn prepare_submission_request(
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	xml: &str,
+	gateway: &str,
+) -> Result<PreparedGatewayRequest> {
+	match gateway {
+		"as2-submitter-http-fda" | "as2-submitter-http-mfds" => {
+			prepare_as2_request(case_id, authority, Some(xml))
+		}
+		"fda-esg-nextgen-api" => prepare_esg_request(xml, authority),
+		_ => Err(Error::BadRequest {
+			message: "unsupported submission transport".into(),
+		}),
+	}
+}
+
+fn prepare_as2_request(
 	case_id: Uuid,
 	authority: SubmissionAuthority,
 	xml: Option<&str>,
-) -> Result<As2GatewaySubmitResponse> {
+) -> Result<PreparedGatewayRequest> {
 	let base = as2_submitter_url()?.ok_or(Error::BadRequest {
 		message: "AS2_SUBMITTER_URL is required".into(),
 	})?;
 	let token = as2_submitter_token()?;
+	let callback = std::env::var("AS2_ACK_CALLBACK_URL").map_err(|error| {
+		Error::Configuration {
+			key: "AS2_ACK_CALLBACK_URL",
+			message: error.to_string(),
+		}
+	})?;
+	let callback_url =
+		reqwest::Url::parse(&callback).map_err(|_| Error::Configuration {
+			key: "AS2_ACK_CALLBACK_URL",
+			message: "callback must be an absolute HTTP(S) URL".into(),
+		})?;
+	if !matches!(callback_url.scheme(), "http" | "https")
+		|| callback_url.host_str().is_none()
+	{
+		return Err(Error::Configuration {
+			key: "AS2_ACK_CALLBACK_URL",
+			message: "callback must be an absolute HTTP(S) URL".into(),
+		});
+	}
 	let path = if xml.is_some() {
 		"submit"
 	} else {
 		"submissions/status"
 	};
 	let client = reqwest::Client::builder()
+		.redirect(reqwest::redirect::Policy::none())
 		.timeout(Duration::from_secs(parse_timeout_secs(
 			"AS2_SUBMITTER_TIMEOUT_SECS",
 		)?))
 		.build()
-		.map_err(|e| Error::BadRequest {
-			message: e.to_string(),
+		.map_err(|error| Error::BadRequest {
+			message: error.to_string(),
 		})?;
-	let response = client
-		.post(format!("{}/{path}", base.trim_end_matches('/')))
-		.header("x-api-token", token.trim())
-		.json(
-			&json!({"caseId": case_id.to_string(), "authority": authority.as_str(),
-            "idempotencyKey": case_id.to_string(), "xmlPayload": xml,
-            "callbackUrl": std::env::var("AS2_ACK_CALLBACK_URL").map_err(|error| Error::Configuration { key: "AS2_ACK_CALLBACK_URL", message: error.to_string() })?}),
-		)
-		.send()
-		.await
-		.map_err(|e| Error::BadRequest {
-			message: format!("AS2 outcome unavailable: {e}"),
-		})?;
-	let http_status = response.status();
-	let parsed = response
-		.json::<As2GatewaySubmitResponse>()
-		.await
-		.map_err(|e| Error::BadRequest {
-			message: format!("AS2 state unavailable ({http_status}): {e}"),
-		})?;
-	if !http_status.is_success() && !matches!(http_status.as_u16(), 409 | 502) {
-		return Err(Error::BadRequest {
-			message: format!("AS2 state unavailable ({http_status})"),
+	let request = client.post(format!("{}/{path}", base.trim_end_matches('/')))
+        .header("x-api-token", token.trim())
+        .json(&json!({"caseId":case_id.to_string(),"authority":authority.as_str(),"idempotencyKey":case_id.to_string(),"xmlPayload":xml,"callbackUrl":callback}))
+        .build().map_err(|error| Error::BadRequest { message: format!("invalid AS2 request: {error}") })?;
+	if !matches!(request.url().scheme(), "http" | "https")
+		|| request.url().host_str().is_none()
+	{
+		return Err(Error::Configuration {
+			key: "AS2_SUBMITTER_URL",
+			message: "submitter must be an absolute HTTP(S) URL".into(),
 		});
 	}
-	parsed.observed()?;
-	Ok(parsed)
+	Ok(PreparedGatewayRequest {
+		client,
+		request,
+		as2: true,
+	})
+}
+
+impl PreparedGatewayRequest {
+	pub(super) async fn execute(
+		self,
+	) -> std::result::Result<As2GatewaySubmitResponse, DispatchFailure> {
+		let response = self.client.execute(self.request).await.map_err(|error| {
+			DispatchFailure {
+				not_sent: error.is_connect() || error.is_builder(),
+				error: Error::BadRequest {
+					message: format!("Submission transport failed: {error}"),
+				},
+			}
+		})?;
+		parse_gateway_response(response, self.as2)
+			.await
+			.map_err(|error| DispatchFailure {
+				error,
+				not_sent: false,
+			})
+	}
+}
+
+async fn parse_gateway_response(
+	response: reqwest::Response,
+	as2: bool,
+) -> Result<As2GatewaySubmitResponse> {
+	let http_status = response.status();
+	if as2 {
+		let parsed =
+			response
+				.json::<As2GatewaySubmitResponse>()
+				.await
+				.map_err(|error| Error::BadRequest {
+					message: format!(
+						"AS2 state unavailable ({http_status}): {error}"
+					),
+				})?;
+		if !http_status.is_success() && !matches!(http_status.as_u16(), 409 | 502) {
+			return Err(Error::BadRequest {
+				message: format!("AS2 state unavailable ({http_status})"),
+			});
+		}
+		parsed.observed()?;
+		return Ok(parsed);
+	}
+	if !http_status.is_success() {
+		return Err(Error::BadRequest {
+			message: format!("FDA ESG submit failed ({http_status})"),
+		});
+	}
+	let parsed = response
+		.json::<EsgSubmitResponse>()
+		.await
+		.map_err(|error| Error::BadRequest {
+			message: format!("FDA ESG submit response is not valid JSON: {error}"),
+		})?;
+	let remote_submission_id = parsed
+		.remote_submission_id
+		.or(parsed.submission_id)
+		.or(parsed.id)
+		.ok_or(Error::BadRequest {
+			message: "FDA ESG submit response missing remote submission identifier"
+				.into(),
+		})?;
+	let ack1 = require_ack1(parsed.ack, "FDA ESG", OffsetDateTime::now_utc())?;
+	Ok(GatewaySubmissionOutcome {
+		remote_submission_id,
+		ack1,
+	}
+	.into())
+}
+
+// Reconciliation observes status only; a lookup connection failure says nothing about the original send.
+pub(super) async fn request_as2_state(
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	xml: Option<&str>,
+) -> Result<As2GatewaySubmitResponse> {
+	prepare_as2_request(case_id, authority, xml)?
+		.execute()
+		.await
+		.map_err(|failure| failure.error)
 }
 
 impl As2GatewaySubmitResponse {
@@ -383,5 +488,111 @@ impl From<GatewaySubmissionOutcome> for As2GatewaySubmitResponse {
 			latest_ack: None,
 			status: None,
 		}
+	}
+}
+
+#[cfg(test)]
+mod preflight_tests {
+	use super::*;
+
+	fn configure() {
+		std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:1");
+		std::env::set_var("AS2_SUBMITTER_TOKEN", "isolated-test-token");
+		std::env::set_var("AS2_ACK_CALLBACK_URL", "http://127.0.0.1:2/callback");
+		std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
+	}
+	fn clear() {
+		for key in [
+			"AS2_SUBMITTER_URL",
+			"AS2_SUBMITTER_TOKEN",
+			"AS2_ACK_CALLBACK_URL",
+			"AS2_SUBMITTER_TIMEOUT_SECS",
+		] {
+			std::env::remove_var(key);
+		}
+	}
+
+	#[test]
+	fn missing_or_invalid_transport_input_fails_before_a_request_can_be_dispatched()
+	{
+		for (key, value) in [
+			("AS2_SUBMITTER_TIMEOUT_SECS", None),
+			("AS2_SUBMITTER_TIMEOUT_SECS", Some("0")),
+			("AS2_SUBMITTER_URL", Some("not-a-url")),
+			("AS2_SUBMITTER_URL", Some("ftp://example.invalid")),
+			("AS2_SUBMITTER_TOKEN", Some("invalid\nheader")),
+			("AS2_ACK_CALLBACK_URL", Some("")),
+		] {
+			configure();
+			if let Some(value) = value {
+				std::env::set_var(key, value);
+			} else {
+				std::env::remove_var(key);
+			}
+			assert!(
+				prepare_as2_request(
+					Uuid::new_v4(),
+					SubmissionAuthority::Fda,
+					Some("<xml/>")
+				)
+				.is_err(),
+				"{key}"
+			);
+		}
+		clear();
+	}
+
+	#[tokio::test]
+	async fn refused_connection_is_known_not_sent() {
+		configure();
+		let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+			.await
+			.expect("test listener");
+		std::env::set_var(
+			"AS2_SUBMITTER_URL",
+			format!("http://{}", listener.local_addr().expect("address")),
+		);
+		let request = prepare_as2_request(
+			Uuid::new_v4(),
+			SubmissionAuthority::Fda,
+			Some("<xml/>"),
+		)
+		.expect("prepared request");
+		drop(listener);
+		let failure = request.execute().await.err().expect("connection must fail");
+		assert!(failure.not_sent);
+		clear();
+	}
+
+	#[tokio::test]
+	async fn lost_response_after_connection_is_uncertain() {
+		use tokio::io::AsyncReadExt;
+		configure();
+		let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+			.await
+			.expect("test listener");
+		std::env::set_var(
+			"AS2_SUBMITTER_URL",
+			format!("http://{}", listener.local_addr().expect("address")),
+		);
+		let request = prepare_as2_request(
+			Uuid::new_v4(),
+			SubmissionAuthority::Fda,
+			Some("<xml/>"),
+		)
+		.expect("prepared request");
+		let server = tokio::spawn(async move {
+			let (mut stream, _) = listener.accept().await.expect("connection");
+			let mut bytes = [0; 4096];
+			assert!(stream.read(&mut bytes).await.expect("request bytes") > 0);
+		});
+		let failure = request
+			.execute()
+			.await
+			.err()
+			.expect("missing response must fail");
+		assert!(!failure.not_sent);
+		server.await.expect("test server");
+		clear();
 	}
 }

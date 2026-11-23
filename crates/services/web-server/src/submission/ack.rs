@@ -21,7 +21,8 @@ pub(super) fn status_from_ack(level: u8, success: bool) -> Result<SubmissionStat
 
 pub(super) fn submission_status_rank(status: &SubmissionStatus) -> u8 {
 	match status {
-		SubmissionStatus::DispatchUnknown
+		SubmissionStatus::DispatchFailed
+		| SubmissionStatus::DispatchUnknown
 		| SubmissionStatus::SubmittedAck1Pending => 0,
 		SubmissionStatus::Ack1Received => 1,
 		SubmissionStatus::Ack2Received => 2,
@@ -34,7 +35,9 @@ pub(super) fn submission_status_rank(status: &SubmissionStatus) -> u8 {
 pub(super) fn is_submission_terminal(status: &SubmissionStatus) -> bool {
 	matches!(
 		status,
-		SubmissionStatus::Ack4Received | SubmissionStatus::Rejected
+		SubmissionStatus::Ack4Received
+			| SubmissionStatus::Rejected
+			| SubmissionStatus::DispatchFailed
 	)
 }
 

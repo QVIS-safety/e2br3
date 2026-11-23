@@ -25,8 +25,8 @@ use crate::submission::{
 	get_submission, get_submission_artifact, get_submission_dispatch_state,
 	list_by_case, list_submission_events, list_submission_history,
 	reconcile_due_submissions_with_runtime_status, GatewayAckCallbackInput,
-	SubmissionAuthority, SubmissionDispatchStateRecord, SubmissionEventRecord,
-	SubmissionHistoryRecord, SubmissionReconcileResult,
+	PreparedSubmission, SubmissionAuthority, SubmissionDispatchStateRecord,
+	SubmissionEventRecord, SubmissionHistoryRecord, SubmissionReconcileResult,
 	SubmissionReconcileRuntimeStatus, SubmissionRecord,
 };
 
@@ -91,7 +91,7 @@ pub async fn submit_case_to_fda(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	let (authorized_ctx, record, created) =
+	let (authorized_ctx, record, prepared) =
 		lib_rest_core::with_authorized_case_mutation(
 			&ctx,
 			&snapshot,
@@ -111,8 +111,8 @@ pub async fn submit_case_to_fda(
 			},
 		)
 		.await?;
-	let record = if created {
-		dispatch_reserved_submission(&authorized_ctx, &mm, record).await?
+	let record = if let Some(prepared) = prepared {
+		dispatch_reserved_submission(&authorized_ctx, &mm, record, prepared).await?
 	} else {
 		record
 	};
@@ -129,7 +129,7 @@ pub async fn submit_case_to_mfds(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	let (authorized_ctx, record, created) =
+	let (authorized_ctx, record, prepared) =
 		lib_rest_core::with_authorized_case_mutation(
 			&ctx,
 			&snapshot,
@@ -149,8 +149,8 @@ pub async fn submit_case_to_mfds(
 			},
 		)
 		.await?;
-	let record = if created {
-		dispatch_reserved_submission(&authorized_ctx, &mm, record).await?
+	let record = if let Some(prepared) = prepared {
+		dispatch_reserved_submission(&authorized_ctx, &mm, record, prepared).await?
 	} else {
 		record
 	};
@@ -164,7 +164,11 @@ async fn submit_case_authorized(
 	authority: SubmissionAuthority,
 	headers: HeaderMap,
 	payload: Option<Json<ComplianceActionInput>>,
-) -> Result<(lib_core::ctx::Ctx, SubmissionRecord, bool)> {
+) -> Result<(
+	lib_core::ctx::Ctx,
+	SubmissionRecord,
+	Option<PreparedSubmission>,
+)> {
 	let payload = payload.ok_or(Error::BadRequest {
 		message: "reason_for_change and e_signature are required for submission"
 			.to_string(),

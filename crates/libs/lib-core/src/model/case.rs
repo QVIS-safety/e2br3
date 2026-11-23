@@ -208,6 +208,8 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       '0' AS warn,
 		       COALESCE(NULLIF(c.workflow_status, ''), c.status) AS wf_status,
 		       c.status AS lifecycle_status,
+		       c.fda_report_type,
+		       c.mfds_report_type,
 		       COALESCE((
 		       	SELECT cs.status
 		       	  FROM case_submissions cs
@@ -491,6 +493,8 @@ pub struct CaseListViewRow {
 	pub warn: String,
 	pub wf_status: String,
 	pub lifecycle_status: String,
+	pub fda_report_type: Option<String>,
+	pub mfds_report_type: Option<String>,
 	pub submission: String,
 	pub sae: String,
 	pub meddra: String,

@@ -1,5 +1,10 @@
 use super::*;
 
+pub struct PreparedSubmission {
+	request: gateway::PreparedGatewayRequest,
+	previous_case: lib_core::model::case::Case,
+}
+
 // Called inside the authorized mutation; the caller must commit before dispatch.
 pub async fn create_submission_idempotent(
 	ctx: &Ctx,
@@ -7,7 +12,7 @@ pub async fn create_submission_idempotent(
 	case_id: Uuid,
 	authority: SubmissionAuthority,
 	idempotency_key: Option<String>,
-) -> Result<(SubmissionRecord, bool)> {
+) -> Result<(SubmissionRecord, Option<PreparedSubmission>)> {
 	let key = idempotency_key.map(|v| v.trim().to_string());
 	if key.as_ref().is_some_and(|v| v.is_empty()) {
 		return Err(Error::BadRequest {
@@ -24,7 +29,7 @@ pub async fn create_submission_idempotent(
 					.ok_or(Error::BadRequest {
 						message: "idempotent submission reference not found".into(),
 					})?;
-			return Ok((record, false));
+			return Ok((record, None));
 		}
 	}
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
@@ -39,9 +44,9 @@ pub async fn create_submission_idempotent(
 	};
 	let xml = prepare_submission_xml(ctx, mm, case_id, export_authority).await?;
 	let gateway = select_gateway_name(authority)?;
-	if gateway.starts_with("as2-") {
-		as2_submitter_token()?;
-	}
+	// Prepare every fallible local transport input before reserving the case.
+	let request =
+		gateway::prepare_submission_request(case_id, authority, &xml, &gateway)?;
 
 	let id = Uuid::new_v4();
 	let now = OffsetDateTime::now_utc();
@@ -91,7 +96,13 @@ pub async fn create_submission_idempotent(
 		.ok_or(Error::BadRequest {
 			message: "reserved submission missing".into(),
 		})?;
-	Ok((record, true))
+	Ok((
+		record,
+		Some(PreparedSubmission {
+			request,
+			previous_case: case,
+		}),
+	))
 }
 
 // Only the request that created the reservation calls this, after authorization commits.
@@ -99,25 +110,21 @@ pub async fn dispatch_reserved_submission(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	record: SubmissionRecord,
+	prepared: PreparedSubmission,
 ) -> Result<SubmissionRecord> {
-	let (authority, xml) = get_submission_artifact(ctx, mm, record.id).await?;
-	let xml = std::str::from_utf8(&xml).map_err(|_| Error::BadRequest {
-		message: "stored submission XML is not UTF-8".into(),
-	})?;
-	let outcome = match record.gateway.as_str() {
-		"as2-submitter-http-fda" | "as2-submitter-http-mfds" => {
-			request_as2_state(record.case_id, authority, Some(xml)).await
-		}
-		"fda-esg-nextgen-api" if authority == SubmissionAuthority::Fda => {
-			gateway::submit_to_gateway(xml, authority)
-				.await
-				.map(|outcome| As2GatewaySubmitResponse::from(outcome))
-		}
-		_ => Err(Error::BadRequest {
-			message: "unsupported stored submission transport".into(),
-		}),
+	let (outcome, not_sent_case) = match prepared.request.execute().await {
+		Ok(observed) => (Ok(observed), None),
+		Err(failure) => (
+			Err(failure.error),
+			if failure.not_sent {
+				Some(&prepared.previous_case)
+			} else {
+				None
+			},
+		),
 	};
-	persist_submission_observation(ctx, mm, record.id, outcome).await?;
+	persist_submission_observation(ctx, mm, record.id, outcome, not_sent_case)
+		.await?;
 	get_submission(ctx, mm, record.id)
 		.await?
 		.ok_or(Error::BadRequest {
@@ -237,6 +244,7 @@ pub(super) async fn persist_submission_observation(
 	mm: &ModelManager,
 	id: Uuid,
 	outcome: Result<As2GatewaySubmitResponse>,
+	not_sent_case: Option<&lib_core::model::case::Case>,
 ) -> Result<()> {
 	let now = OffsetDateTime::now_utc();
 	mm.dbx()
@@ -277,9 +285,28 @@ pub(super) async fn persist_submission_observation(
                 }
             }
             Err(error) => {
-                append_submission_event(mm,id,"submission_outcome_unavailable",Some(json!({"error":error.to_string(),"action":if row.gateway.starts_with("as2-") { "status_lookup_only" } else { "manual_reconciliation" }}))).await?;
-                if !is_submission_terminal(&current) && !(current == SubmissionStatus::Ack3Received && row.authority.as_deref() == Some("fda")) {
-                    upsert_dispatch_state_submit_failure(mm,id,now,1,&error.to_string(),if row.gateway.starts_with("as2-") { Some(now+time::Duration::minutes(1)) } else { None }).await?;
+                if let Some(previous) = not_sent_case {
+                    if current != SubmissionStatus::DispatchUnknown || row.remote_submission_id.is_some() || row.case_id != previous.id {
+                        return Err(Error::BadRequest { message: "cannot mark an observed submission as not sent".into() });
+                    }
+                    mm.dbx().execute(sqlx::query("UPDATE case_submissions SET status='dispatch_failed',updated_at=now() WHERE id=$1")
+                        .bind(id)).await.map_err(lib_core::model::Error::from)?;
+                    // Restore the exact pre-reservation fields, including imported XML and dirty flags.
+                    let restored = mm.dbx().execute(sqlx::query("UPDATE cases SET status=$2,submitted_by=$3,submitted_at=$4,raw_xml=$5,
+                        dirty_c=$6,dirty_d=$7,dirty_e=$8,dirty_f=$9,dirty_g=$10,dirty_h=$11,updated_at=now()
+                        WHERE id=$1 AND status='submitted'")
+                        .bind(previous.id).bind(&previous.status).bind(previous.submitted_by).bind(previous.submitted_at).bind(&previous.raw_xml)
+                        .bind(previous.dirty_c).bind(previous.dirty_d).bind(previous.dirty_e).bind(previous.dirty_f).bind(previous.dirty_g).bind(previous.dirty_h))
+                        .await.map_err(lib_core::model::Error::from)?;
+                    if restored != 1 { return Err(Error::BadRequest { message: "case changed while restoring a failed dispatch".into() }); }
+                    upsert_dispatch_state_submit_failure(mm,id,now,1,&error.to_string(),None).await?;
+                    mark_dispatch_terminal(mm,id,now).await?;
+                    append_submission_event(mm,id,"submission_not_sent",Some(json!({"error":error.to_string(),"status":"dispatch_failed","restored_case_status":previous.status}))).await?;
+                } else {
+                    append_submission_event(mm,id,"submission_outcome_unavailable",Some(json!({"error":error.to_string(),"action":if row.gateway.starts_with("as2-") { "status_lookup_only" } else { "manual_reconciliation" }}))).await?;
+                    if !is_submission_terminal(&current) && !(current == SubmissionStatus::Ack3Received && row.authority.as_deref() == Some("fda")) {
+                        upsert_dispatch_state_submit_failure(mm,id,now,1,&error.to_string(),if row.gateway.starts_with("as2-") { Some(now+time::Duration::minutes(1)) } else { None }).await?;
+                    }
                 }
             }
         }

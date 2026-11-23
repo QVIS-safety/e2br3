@@ -41,6 +41,7 @@ impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubmissionStatus {
+	DispatchFailed,
 	DispatchUnknown,
 	SubmittedAck1Pending,
 	Ack1Received,

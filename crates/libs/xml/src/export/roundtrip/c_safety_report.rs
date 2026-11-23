@@ -1,5 +1,5 @@
 use super::*;
-use crate::export_utils::{fmt_date_lexeme, set_xsi_type_first};
+use crate::export_utils::{fmt_date_lexeme, node_from_fragment, set_xsi_type_first};
 
 pub fn patch_c_safety_report(
 	raw_xml: &[u8],
@@ -166,6 +166,32 @@ fn ensure_c_3_nodes(
 			column: None,
 		})?;
 		if nodes.is_empty() {
+			// Person/organization names precede their roles in the XSD sequence.
+			if fragment == "<name/>" {
+				let before_path = format!("{parent}/*[not(self::hl7:realmCode or self::hl7:typeId or self::hl7:templateId)][1]");
+				let before = xpath
+					.findnodes(&before_path, None)
+					.map_err(|_| Error::InvalidXml {
+						message: format!("Failed to evaluate XPath: {before_path}"),
+						line: None,
+						column: None,
+					})?
+					.into_iter()
+					.next();
+				if let Some(mut before) = before {
+					let mut node = node_from_fragment(doc, parser, fragment)?;
+					before.add_prev_sibling(&mut node).map_err(|error| {
+						Error::InvalidXml {
+							message: format!(
+								"Failed to insert sender name: {error}"
+							),
+							line: None,
+							column: None,
+						}
+					})?;
+					return Ok(());
+				}
+			}
 			append_fragment_child(doc, parser, xpath, parent, fragment)?;
 		}
 		Ok::<_, Error>(())
@@ -926,6 +952,63 @@ fn normalized_c_3_4_telecom(prefix: &str, value: Option<&str>) -> Option<String>
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn sender_names_precede_roles_and_preserve_existing_values() {
+		let patch = CSafetyReportPatch {
+			sender_department: Some("Safety"),
+			sender_org_name: Some("Test organization"),
+			sender_person_given_name: Some("Test"),
+			sender_person_family_name: Some("Sender"),
+			..Default::default()
+		};
+		let base = "//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity";
+		let xml = patch_c_safety_report(
+			crate::export::base_export_skeleton().as_bytes(),
+			&patch,
+		)
+		.expect("patch sender");
+		// Reapplying must update existing names without duplicating them.
+		let xml =
+			patch_c_safety_report(xml.as_bytes(), &patch).expect("patch again");
+		let doc = Parser::default().parse_string(&xml).expect("parse export");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		for (parent, following) in [
+			("assignedPerson", "asLocatedEntity"),
+			("representedOrganization", "assignedEntity"),
+		] {
+			assert_eq!(
+				xpath
+					.findnodes(&format!("{base}/hl7:{parent}/hl7:name"), None)
+					.expect("name")
+					.len(),
+				1
+			);
+			assert_eq!(xpath.findnodes(&format!("{base}/hl7:{parent}/hl7:name/following-sibling::hl7:{following}"), None).expect("order").len(), 1);
+		}
+		assert_eq!(
+			xpath
+				.findvalue(
+					&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given"),
+					None
+				)
+				.expect("given name"),
+			"Test"
+		);
+		assert_eq!(
+			xpath
+				.findvalue(
+					&format!("{base}/hl7:representedOrganization/hl7:name"),
+					None
+				)
+				.expect("department"),
+			"Safety"
+		);
+		assert_eq!(xpath.findvalue(&format!("{base}/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name"), None).expect("organization"), "Test organization");
+	}
 
 	#[test]
 	fn fda_c_1_7_1_uses_one_namespaced_value_type() {

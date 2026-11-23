@@ -1,5 +1,7 @@
 use super::ack::{merge_submission_status, status_from_ack};
-use super::SubmissionStatus;
+use super::{
+	is_submission_terminal, status_from_db, status_to_db, SubmissionStatus,
+};
 
 #[test]
 fn submission_rejects_every_validation_issue() {
@@ -151,4 +153,24 @@ fn export_header_preserves_incomplete_stored_values() {
 	assert_eq!(exported.message_date, "draft-date");
 	header.batch_transmission_date = Some(OffsetDateTime::UNIX_EPOCH);
 	assert!(super::export_message_header(&header).is_err());
+}
+
+#[test]
+fn confirmed_dispatch_failure_is_terminal_and_roundtrips() {
+	assert_eq!(
+		status_to_db(&SubmissionStatus::DispatchFailed),
+		"dispatch_failed"
+	);
+	assert_eq!(
+		status_from_db("dispatch_failed").expect("known status"),
+		SubmissionStatus::DispatchFailed
+	);
+	assert!(is_submission_terminal(&SubmissionStatus::DispatchFailed));
+	assert_eq!(
+		merge_submission_status(
+			&SubmissionStatus::DispatchFailed,
+			&SubmissionStatus::DispatchUnknown
+		),
+		SubmissionStatus::DispatchFailed
+	);
 }

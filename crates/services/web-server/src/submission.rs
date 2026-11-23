@@ -53,7 +53,7 @@ pub use ack::{
 };
 pub use create::{
 	create_submission_idempotent, dispatch_reserved_submission, get_submission,
-	get_submission_artifact, list_by_case,
+	get_submission_artifact, list_by_case, PreparedSubmission,
 };
 pub use persistence::list_submission_history;
 pub use reconcile::reconcile_due_submissions_with_runtime_status;
@@ -506,7 +506,7 @@ use rows::*;
 use rows::{status_from_db, status_to_db};
 
 use create::persist_submission_observation;
-use gateway::{as2_submitter_token, request_as2_state, As2GatewaySubmitResponse};
+use gateway::{request_as2_state, As2GatewaySubmitResponse};
 
 use ack::{
 	is_submission_terminal, merge_submission_status, status_from_ack,
