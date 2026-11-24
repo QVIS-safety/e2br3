@@ -953,14 +953,14 @@ fn fda_device_identity_is_checked_per_repeated_device() {
 #[test]
 fn fda_g_k_1_a_is_required_for_aems_but_optional_for_vaers() {
 	let mut issues = Vec::new();
-	fda_g_k_1_a(0, None, true, true, "4", true, &mut issues);
+	fda_g_k_1_a(0, None, true, true, Some("4"), true, &mut issues);
 	assert_eq!(issues[0].code, "FDA.R0072");
 
 	issues.clear();
-	fda_g_k_1_a(0, None, true, true, "4", false, &mut issues);
+	fda_g_k_1_a(0, None, true, true, Some("4"), false, &mut issues);
 	assert!(issues.is_empty());
 
-	fda_g_k_1_a(0, Some("1"), false, true, "4", false, &mut issues);
+	fda_g_k_1_a(0, Some("1"), false, true, Some("4"), false, &mut issues);
 	assert_eq!(issues[0].code, "FDA.R0072");
 }
 

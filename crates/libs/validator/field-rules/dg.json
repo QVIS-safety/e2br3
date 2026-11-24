@@ -135,6 +135,12 @@
       ]
     },
     {
+      "fieldPath": "drugs[].drugAdditionalInformationCodes",
+      "ruleCodes": [
+        "ICH.G.k.10.r.ALLOWED.VALUE"
+      ]
+    },
+    {
       "fieldPath": "drugs[].drugReactionAssessments",
       "ruleCodes": [
         "FDA.G.k.9.REQUIRED"

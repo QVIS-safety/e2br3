@@ -1,4 +1,5 @@
 use super::*;
+use serde_json::json;
 
 fn check_unit_rule(
 	code: &str,
@@ -302,6 +303,22 @@ fn rule_ich_g_k_2_5_allowed_value() {
 	g_k_2_5(0, &drug, true, &mut repaired);
 	crate::rule_assertions::assert_rule_result(
 		"ICH.G.k.2.5.ALLOWED.VALUE",
+		&rejected,
+		&repaired,
+	);
+}
+
+#[test]
+fn rule_ich_g_k_10_r_allowed_value() {
+	let mut drug = fixture::drug();
+	drug.drug_additional_info_codes_json = Some(json!([{"value_code": "12"}]));
+	let mut rejected = Vec::new();
+	g_k_10_r(0, &drug, &mut rejected);
+	drug.drug_additional_info_codes_json = Some(json!([{"value_code": "11"}]));
+	let mut repaired = Vec::new();
+	g_k_10_r(0, &drug, &mut repaired);
+	crate::rule_assertions::assert_rule_result(
+		"ICH.G.k.10.r.ALLOWED.VALUE",
 		&rejected,
 		&repaired,
 	);

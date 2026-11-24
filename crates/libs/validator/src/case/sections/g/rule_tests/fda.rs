@@ -202,7 +202,7 @@ fn verify_fda(code: &str) {
 					Some("1"),
 					combination,
 					malfunction,
-					role,
+					Some(role),
 					true,
 					&mut rejected,
 				);
@@ -242,9 +242,9 @@ fn verify_fda(code: &str) {
 			assert!(!vaers.iter().any(|issue| issue.code == code));
 
 			let mut b = vec![];
-			fda_g_k_1_a(0, None, true, true, "4", true, &mut b);
+			fda_g_k_1_a(0, None, true, true, Some("4"), true, &mut b);
 			let mut g = vec![];
-			fda_g_k_1_a(0, Some("1"), true, true, "4", true, &mut g);
+			fda_g_k_1_a(0, Some("1"), true, true, Some("4"), true, &mut g);
 			("drugs.0.fdaOtherCharacterization", b, g)
 		}
 		"FDA.W0006" => {

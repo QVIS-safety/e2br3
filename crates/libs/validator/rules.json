@@ -2040,6 +2040,15 @@
       "testModule": "case::sections::g::rule_tests::ich"
     },
     {
+      "ruleCode": "ICH.G.k.10.r.ALLOWED.VALUE",
+      "testName": "rule_ich_g_k_10_r_allowed_value",
+      "expectedIssueCode": "ICH.G.k.10.r.ALLOWED.VALUE",
+      "expectedIssuePaths": [
+        "drugs[].drugAdditionalInformationCodes"
+      ],
+      "testModule": "case::sections::g::rule_tests::ich"
+    },
+    {
       "ruleCode": "ICH.G.k.2.1.MPID_PHPID.EXCLUSIVE",
       "testName": "rule_ich_g_k_2_1_mpid_phpid_exclusive",
       "expectedIssueCode": "ICH.G.k.2.1.MPID_PHPID.EXCLUSIVE",
