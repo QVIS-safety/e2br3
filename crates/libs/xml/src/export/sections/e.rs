@@ -171,12 +171,47 @@ pub(crate) fn write_e_i_reaction(
 			reaction.required_intervention_null_flavor.as_deref(),
 		)?);
 	}
-	append_extension_code(
-		&mut out,
-		"AE_EXPECTEDNESS",
-		reaction.expectedness.as_deref(),
-	);
-	append_extension_code(&mut out, "AE_SEVERITY", reaction.severity.as_deref());
+	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds) {
+		append_extension_code(
+			&mut out,
+			"KR_DVC_AECL",
+			reaction.mfds_device_ae_classification.as_deref(),
+		);
+		append_extension_code(
+			&mut out,
+			"KR_DVC_AEOUT",
+			reaction.mfds_device_ae_outcome.as_deref(),
+		);
+		for (code, value) in [
+			("KR_DVC_CC_MD", reaction.mfds_device_cause_medical_device),
+			("KR_DVC_CC_PI", reaction.mfds_device_cause_procedure_issue),
+			("KR_DVC_CC_PC", reaction.mfds_device_cause_patient_condition),
+			("KR_DVC_CC_UA", reaction.mfds_device_cause_unable_to_assess),
+			("KR_DVC_ACT_RC", reaction.mfds_device_action_recall),
+			("KR_DVC_ACT_RP", reaction.mfds_device_action_repair),
+			("KR_DVC_ACT_INSP", reaction.mfds_device_action_inspection),
+			("KR_DVC_ACT_REPL", reaction.mfds_device_action_replacement),
+			("KR_DVC_ACT_IMP", reaction.mfds_device_action_improvement),
+			("KR_DVC_ACT_MON", reaction.mfds_device_action_monitoring),
+			("KR_DVC_ACT_NTF", reaction.mfds_device_action_notification),
+			("KR_DVC_ACT_CAS", reaction.mfds_device_action_label_change),
+		] {
+			append_extension_bool(&mut out, code, value);
+		}
+		for (code, value) in [
+			("KR_DVC_CC_OTH", reaction.mfds_device_cause_other.as_deref()),
+			(
+				"KR_DVC_ACT_RSN",
+				reaction.mfds_device_action_reason.as_deref(),
+			),
+			(
+				"KR_DVC_ACT_OTH",
+				reaction.mfds_device_action_other.as_deref(),
+			),
+		] {
+			append_extension_text(&mut out, code, value);
+		}
+	}
 	out.push_str(&write_e_i_7(reaction.outcome.as_deref()));
 	out.push_str(&write_e_i_8(reaction));
 	out.push_str("</observation></subjectOf2>");
@@ -402,6 +437,28 @@ fn append_extension_code(out: &mut String, code: &str, value: Option<&str>) {
 	out.push_str("\"/></observation></outboundRelationship2>");
 }
 
+fn append_extension_bool(out: &mut String, code: &str, value: Option<bool>) {
+	let Some(value) = value else {
+		return;
+	};
+	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
+	out.push_str(&xml_escape(code));
+	out.push_str("\"/><value xsi:type=\"BL\" value=\"");
+	out.push_str(if value { "true" } else { "false" });
+	out.push_str("\"/></observation></outboundRelationship2>");
+}
+
+fn append_extension_text(out: &mut String, code: &str, value: Option<&str>) {
+	let Some(value) = value else {
+		return;
+	};
+	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
+	out.push_str(&xml_escape(code));
+	out.push_str("\"/><value xsi:type=\"ED\">");
+	out.push_str(&xml_escape(value));
+	out.push_str("</value></observation></outboundRelationship2>");
+}
+
 fn write_e_i_3_2(
 	code: &str,
 	value: Option<bool>,
@@ -564,8 +621,6 @@ mod meddra_requirement_tests {
 			criteria_other_medically_important_null_flavor: Some("NI".into()),
 			required_intervention: None,
 			required_intervention_null_flavor: None,
-			expectedness: None,
-			severity: None,
 			mfds_device_ae_classification: None,
 			mfds_device_ae_outcome: None,
 			mfds_device_cause_medical_device: None,

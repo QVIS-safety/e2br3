@@ -417,60 +417,6 @@
     "notes": "The FDA regional dictionary generates a true-marker constraint. Focused tests cover true/NI CRUD transitions, stale-column clearing, and structured 422 rejection."
   },
   {
-    "id": "E.local.expectedness",
-    "e2br3_code": "E.local.expectedness",
-    "label": "Expectedness",
-    "section": "E",
-    "authority": "ICH",
-    "status": "complete",
-    "editor_page": "AE",
-    "editor_status": "complete",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "Reaction",
-      "field": "expectedness",
-      "file": "crates/libs/lib-core/src/model/reaction.rs",
-      "evidence": "Reaction.expectedness stores E.local.expectedness values."
-    },
-    "frontend": {
-      "status": "mapped",
-      "section": "reactions",
-      "field": "expectedness",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
-      "evidence": "SectionE binds fieldNumber AE_EXPECTEDNESS to reactions[index].expectedness."
-    },
-    "action": "",
-    "notes": ""
-  },
-  {
-    "id": "E.local.severity",
-    "e2br3_code": "E.local.severity",
-    "label": "Severity",
-    "section": "E",
-    "authority": "ICH",
-    "status": "complete",
-    "editor_page": "AE",
-    "editor_status": "complete",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "Reaction",
-      "field": "severity",
-      "file": "crates/libs/lib-core/src/model/reaction.rs",
-      "evidence": "Reaction.severity stores E.local.severity values."
-    },
-    "frontend": {
-      "status": "mapped",
-      "section": "reactions",
-      "field": "severity",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
-      "evidence": "SectionE binds fieldNumber AE_SEVERITY to reactions[index].severity."
-    },
-    "action": "",
-    "notes": ""
-  },
-  {
     "id": "E.i.5",
     "e2br3_code": "E.i.5",
     "label": "Date of End of Reaction/Event",

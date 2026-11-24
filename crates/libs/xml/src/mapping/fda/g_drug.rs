@@ -50,7 +50,7 @@ impl GDrugPaths {
 	pub const ACTION_TAKEN: &'static str =
 		"hl7:inboundRelationship[@typeCode='CAUS']/hl7:act/hl7:code/@code";
 	pub const BATCH_LOT_NUMBER: &'static str =
-		"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText";
+		"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:part/hl7:partProduct/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText";
 	pub const CUMULATIVE_DOSE_VALUE: &'static str =
 		"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value/@value";
 	pub const CUMULATIVE_DOSE_UNIT: &'static str =
@@ -167,7 +167,7 @@ impl GDrugPaths {
 	pub const DEVICE_USAGE: &'static str =
 		"hl7:partProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic[hl7:code[@code='C54595']]/hl7:value/@code";
 	pub const DEVICE_CHAR_NODE: &'static str =
-		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:part/hl7:partProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic";
+		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:part/hl7:partProduct[not(@classCode='DEV')]/hl7:asManufacturedProduct/hl7:subjectOf/hl7:characteristic";
 	pub const DEVICE_CHAR_CODE: &'static str = "hl7:code/@code";
 	pub const DEVICE_CHAR_CODE_SYSTEM: &'static str = "hl7:code/@codeSystem";
 	pub const DEVICE_CHAR_DISPLAY: &'static str = "hl7:code/@displayName";

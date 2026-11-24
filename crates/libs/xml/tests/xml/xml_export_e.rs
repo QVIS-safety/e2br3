@@ -36,8 +36,6 @@ fn export_e_reaction_basic() {
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: None,
 		required_intervention_null_flavor: None,
-		expectedness: None,
-		severity: None,
 		mfds_device_ae_classification: None,
 		mfds_device_ae_outcome: None,
 		mfds_device_cause_medical_device: None,
@@ -142,7 +140,7 @@ fn export_e_reaction_basic() {
 }
 
 #[test]
-fn export_e_reaction_omits_unverified_mfds_device_extensions() {
+fn export_e_reaction_round_trips_mfds_device_extensions() {
 	let reaction = Reaction {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
@@ -155,22 +153,20 @@ fn export_e_reaction_omits_unverified_mfds_device_extensions() {
 		reaction_meddra_code: Some("10019211".to_string()),
 		term_highlighted: Some("1".to_string()),
 		serious: Some(false),
-		criteria_death: Some(false),
+		criteria_death: Some(true),
 		criteria_death_null_flavor: None,
-		criteria_life_threatening: Some(false),
+		criteria_life_threatening: Some(true),
 		criteria_life_threatening_null_flavor: None,
-		criteria_hospitalization: Some(false),
+		criteria_hospitalization: Some(true),
 		criteria_hospitalization_null_flavor: None,
-		criteria_disabling: Some(false),
+		criteria_disabling: Some(true),
 		criteria_disabling_null_flavor: None,
-		criteria_congenital_anomaly: Some(false),
+		criteria_congenital_anomaly: Some(true),
 		criteria_congenital_anomaly_null_flavor: None,
-		criteria_other_medically_important: Some(false),
+		criteria_other_medically_important: Some(true),
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: Some(true),
 		required_intervention_null_flavor: None,
-		expectedness: Some("2".to_string()),
-		severity: Some("severe".to_string()),
 		mfds_device_ae_classification: Some("0".to_string()),
 		mfds_device_ae_outcome: Some("10".to_string()),
 		mfds_device_cause_medical_device: Some(true),
@@ -212,21 +208,27 @@ fn export_e_reaction_omits_unverified_mfds_device_extensions() {
 	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
 
 	assert!(!xml.contains("AE_IME_LIST"));
-	let expectedness = xpath
-		.findvalue(
-			"//hl7:observation[hl7:code[@code='AE_EXPECTEDNESS']]/hl7:value/@code",
-			None,
-		)
-		.unwrap();
-	assert_eq!(expectedness, "2");
-	let severity = xpath
-		.findvalue(
-			"//hl7:observation[hl7:code[@code='AE_SEVERITY']]/hl7:value/@code",
-			None,
-		)
-		.unwrap();
-	assert_eq!(severity, "severe");
-	assert!(!xml.contains("KR_DVC_"));
+	let imported =
+		xml::import_sections::e_reaction::parse_e_reactions(xml.as_bytes())
+			.expect("import xml");
+	let imported = &imported[0];
+	assert_eq!(imported.mfds_device_ae_classification.as_deref(), Some("0"));
+	assert_eq!(imported.mfds_device_ae_outcome.as_deref(), Some("10"));
+	assert_eq!(imported.mfds_device_cause_medical_device, Some(true));
+	assert_eq!(
+		imported.mfds_device_cause_other.as_deref(),
+		Some("Other cause <device>")
+	);
+	assert_eq!(
+		imported.mfds_device_action_reason.as_deref(),
+		Some("Action reason & notes")
+	);
+	assert_eq!(imported.mfds_device_action_recall, Some(true));
+	assert_eq!(imported.mfds_device_action_label_change, Some(false));
+	assert_eq!(
+		imported.mfds_device_action_other.as_deref(),
+		Some("Other action")
+	);
 
 	let required_intervention = xpath
 		.findvalue(
@@ -265,8 +267,6 @@ fn export_e_reaction_without_outcome_does_not_block_export() {
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: Some(true),
 		required_intervention_null_flavor: None,
-		expectedness: None,
-		severity: None,
 		mfds_device_ae_classification: None,
 		mfds_device_ae_outcome: None,
 		mfds_device_cause_medical_device: None,

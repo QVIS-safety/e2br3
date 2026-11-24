@@ -125,7 +125,6 @@ async fn generate_case_xml_for_authority(
 	};
 	let options = ExportXmlOptions {
 		apply_comments: settings.resolve_notation(include_notation),
-		include_source_documents: true,
 		authority,
 		outbound_message_header,
 	};

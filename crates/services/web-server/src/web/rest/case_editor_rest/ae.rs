@@ -69,8 +69,6 @@ const REACTION_ROW_ALIASES: &[(&str, &[&str])] = &[
 		"required_intervention_null_flavor",
 		&["requiredInterventionNullFlavor"],
 	),
-	("expectedness", &["expectedness"]),
-	("severity", &["severity"]),
 	(
 		"mfds_device_ae_classification",
 		&["mfdsDeviceAe.aeClassification"],

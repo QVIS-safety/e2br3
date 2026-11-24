@@ -38,8 +38,6 @@ pub struct EReactionImport {
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<bool>,
 	pub required_intervention_null_flavor: Option<String>,
-	pub expectedness: Option<String>,
-	pub severity: Option<String>,
 	pub mfds_device_ae_classification: Option<String>,
 	pub mfds_device_ae_outcome: Option<String>,
 	pub mfds_device_cause_medical_device: Option<bool>,
@@ -136,8 +134,6 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 
 			let (required_intervention, required_intervention_null_flavor) =
 				read_fda_e_i_3_2h(&mut xpath, &node)?;
-			let expectedness = read_e_local_expectedness(&mut xpath, &node);
-			let severity = read_e_local_severity(&mut xpath, &node);
 			let mfds_device_ae_classification =
 				read_e_i_kr_device_ae_classification(&mut xpath, &node);
 			let mfds_device_ae_outcome =
@@ -204,8 +200,6 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 				criteria_other_medically_important_null_flavor,
 				required_intervention,
 				required_intervention_null_flavor,
-				expectedness,
-				severity,
 				mfds_device_ae_classification,
 				mfds_device_ae_outcome,
 				mfds_device_cause_medical_device,
@@ -574,16 +568,6 @@ fn read_e_i_9(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	.map(|value| value.to_ascii_uppercase()))
 }
 
-/// e2b:E.local.expectedness
-fn read_e_local_expectedness(xpath: &mut Context, node: &Node) -> Option<String> {
-	extension_code(xpath, node, "AE_EXPECTEDNESS")
-}
-
-/// e2b:E.local.severity
-fn read_e_local_severity(xpath: &mut Context, node: &Node) -> Option<String> {
-	extension_code(xpath, node, "AE_SEVERITY")
-}
-
 /// e2b:E.i.KR.device.aeClassification
 fn read_e_i_kr_device_ae_classification(
 	xpath: &mut Context,
@@ -790,8 +774,6 @@ pub(crate) async fn import_section_e(
 				required_intervention: reaction.required_intervention,
 				required_intervention_null_flavor: reaction
 					.required_intervention_null_flavor,
-				expectedness: reaction.expectedness,
-				severity: reaction.severity,
 				mfds_device_ae_classification: reaction
 					.mfds_device_ae_classification,
 				mfds_device_ae_outcome: reaction.mfds_device_ae_outcome,

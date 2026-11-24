@@ -45,10 +45,6 @@ CREATE TABLE reactions (
     required_intervention BOOLEAN,
     required_intervention_null_flavor VARCHAR(4) CHECK (required_intervention_null_flavor IN ('NI')),
 
-    -- Reference AE common metadata
-    expectedness VARCHAR(1) CHECK (expectedness IS NULL OR expectedness IN ('1', '2')),
-    severity VARCHAR(20),
-
     -- MFDS reaction-scoped medical device adverse event fields
     mfds_device_ae_classification VARCHAR(1) CHECK (mfds_device_ae_classification IS NULL OR mfds_device_ae_classification IN ('0', '1')),
     mfds_device_ae_outcome VARCHAR(2) CHECK (mfds_device_ae_outcome IS NULL OR mfds_device_ae_outcome IN ('3', '4', '5', '8', '9', '10', '11', '12')),

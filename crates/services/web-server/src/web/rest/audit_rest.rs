@@ -824,8 +824,6 @@ fn audit_business_field_label(
 		("reactions", "required_intervention") => {
 			"Required Intervention to Prevent Permanent Impairment (FDA.E.i.3.2h)"
 		}
-		("reactions", "expectedness") => "Expectedness",
-		("reactions", "severity") => "Severity",
 		("reactions", "mfds_device_ae_classification") => {
 			"MFDS Device Adverse Event Classification (KR_DVC_AECL)"
 		}

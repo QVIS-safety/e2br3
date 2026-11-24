@@ -22,8 +22,6 @@ pub struct OutboundMessageHeader {
 #[derive(Debug, Clone)]
 pub struct ExportXmlOptions {
 	pub apply_comments: bool,
-	/// Internal documents belong in app-to-app downloads, never regulatory submissions.
-	pub include_source_documents: bool,
 	pub authority: RegulatoryAuthority,
 	pub outbound_message_header: OutboundMessageHeader,
 }
@@ -48,7 +46,6 @@ pub async fn export_case_xml_with_options(
 		case_id,
 		options.authority,
 		&options.outbound_message_header,
-		options.include_source_documents,
 	)
 	.await
 	.map(|xml| apply_export_xml_options(xml, options.apply_comments))
@@ -61,8 +58,7 @@ pub async fn serialize_case_xml_for_authority(
 	authority: RegulatoryAuthority,
 	outbound_message_header: &OutboundMessageHeader,
 ) -> Result<String> {
-	serialize_case_xml(ctx, mm, case_id, authority, outbound_message_header, false)
-		.await
+	serialize_case_xml(ctx, mm, case_id, authority, outbound_message_header).await
 }
 
 async fn serialize_case_xml(
@@ -71,7 +67,6 @@ async fn serialize_case_xml(
 	case_id: sqlx::types::Uuid,
 	authority: RegulatoryAuthority,
 	outbound_message_header: &OutboundMessageHeader,
-	include_source_documents: bool,
 ) -> Result<String> {
 	let mm = mm.new_with_txn()?;
 	mm.dbx().begin_txn().await.map_err(model::Error::from)?;
@@ -94,11 +89,7 @@ async fn serialize_case_xml(
 		.await?;
 		let xml = xml_identity::preserve_imported_row_identities(&mm, case_id, xml)
 			.await?;
-		if include_source_documents {
-			crate::source_documents::export(&mm, case_id, xml).await
-		} else {
-			Ok(xml)
-		}
+		Ok(xml)
 	}
 	.await;
 	match result {

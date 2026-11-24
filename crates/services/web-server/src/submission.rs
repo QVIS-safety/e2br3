@@ -92,7 +92,6 @@ async fn prepare_submission_xml(
 		case_id,
 		ExportXmlOptions {
 			apply_comments: true,
-			include_source_documents: false,
 			authority,
 			outbound_message_header: export_message_header(&header)?,
 		},

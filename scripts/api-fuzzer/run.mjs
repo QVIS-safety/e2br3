@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { randomBytes, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { parseArgs } from 'node:util';
+import { parseArgs, isDeepStrictEqual } from 'node:util';
 
 export function random(seed) {
   assert.ok(Number.isInteger(seed) && seed > 0 && seed <= 0xffffffff);
@@ -23,44 +23,146 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const pages = ['CI', 'RP', 'SD', 'SI', 'DM', 'NR', 'AE', 'DG', 'LR', 'LB', 'DH'];
 const repeated = ['AE', 'DG', 'LR', 'LB', 'DH'];
 const contracts = Object.fromEntries(pages.map(p => [p, JSON.parse(readFileSync(`${root}/registry/editor-contracts/${p.toLowerCase()}.json`))]));
+const contractFieldCodes = pages.flatMap(page => contracts[page].fields.map(field => `${page}/${field.code}`)).sort();
 
-// Synthetic isolated-test grammar. Every array keeps its generated order, including duplicates.
-export function generate(pick, tag, authority) {
-  const text = () => `${tag.slice(-5)}-${pick(100000)} 한글 & <x> "`;
-  const rows = fn => Array.from({ length: 1 + pick(4) }, (_, i) => fn(i + 1));
-  const maybe = value => pick(3) === 0 ? null : value;
-  const seriousness = () => {
-    const criteria = ['criteriaResultsInDeath', 'criteriaLifeThreatening', 'criteriaHospitalization', 'criteriaDisabling', 'criteriaCongenitalAnomaly', 'criteriaOtherMedicallyImportant'];
-    const selected = pick(2) === 1 ? pick(criteria.length) : -1;
-    return {
-      termHighlighted: selected === -1 ? '1' : '3',
-      seriousness: Object.fromEntries(criteria.flatMap((name, index) => index === selected
-        ? [[name, true], [`${name}NullFlavor`, null]]
-        : [[name, null], [`${name}NullFlavor`, 'NI']]))
-    };
+function fieldSeed(seed, key) {
+  let value = seed >>> 0;
+  for (const character of key) value = Math.imul(value ^ character.charCodeAt(0), 16777619) >>> 0;
+  return value || 1;
+}
+
+function orderedFields(seed, page, authority) {
+  const fields = contracts[page].fields.filter(field => field.authority === authority);
+  const pick = random(fieldSeed(seed, `${page}/${authority}`));
+  for (let index = fields.length - 1; index > 0; index--) {
+    const swap = pick(index + 1);
+    [fields[index], fields[swap]] = [fields[swap], fields[index]];
+  }
+  return fields;
+}
+
+export function selectedFields(seed, caseIndex, authority) {
+  assert.ok(Number.isSafeInteger(caseIndex) && caseIndex >= 0);
+  assert.ok(['ich', 'fda', 'mfds'].includes(authority));
+  return Object.fromEntries(pages.map(page => {
+    const selected = [];
+    const ich = orderedFields(seed, page, 'ICH');
+    selected.push(ich[caseIndex % ich.length]);
+    if (authority !== 'ich') {
+      const regional = orderedFields(seed, page, authority.toUpperCase());
+      if (regional.length > 0) selected.push(regional[Math.floor(caseIndex / 3) % regional.length]);
+    }
+    return [page, selected];
+  }));
+}
+
+export function buildPath(path, value) {
+  const build = segments => {
+    if (segments.length === 0) return structuredClone(value);
+    const [segment, ...rest] = segments;
+    if (segment === '[]') {
+      const child = build(rest);
+      if (child !== null && typeof child === 'object' && !Array.isArray(child)) child.sequenceNumber = 1;
+      return [child];
+    }
+    if (segment.endsWith('[]')) {
+      const child = build(rest);
+      if (child !== null && typeof child === 'object' && !Array.isArray(child)) child.sequenceNumber = 1;
+      return { [segment.slice(0, -2)]: [child] };
+    }
+    return { [segment]: build(rest) };
   };
-  const plan = {
-    CI: { safetyReportIdentification: { safetyReportId: tag, worldwideUniqueId: `KR-${tag}`, reportType: '2', transmissionDate: '20240229123059.1234+0900', dateFirstReceivedFromSource: '20240228', dateOfMostRecentInformation: '20240229', fulfilExpeditedCriteria: pick(2) === 1 }, linkedReports: rows(sequenceNumber => ({ sequenceNumber, linkedReportNumber: text() })) },
-    RP: { primarySources: rows(sequenceNumber => ({ sequenceNumber, reporterGivenName: text(), reporterFamilyName: maybe(text()), reporterCountry: 'KR', qualification: String(1 + pick(5)), primarySourceForRegulatoryPurposes: sequenceNumber === 1 ? '1' : null })) },
-    SD: { senderInformation: { senderType: '1', organizationName: text(), city: text(), countryCode: 'KR' } },
-    SI: { studyInformation: { studyName: text(), sponsorStudyNumber: text(), studyTypeReaction: '1' }, studyRegistrationNumbers: rows(sequenceNumber => ({ sequenceNumber, registrationNumber: text(), countryCode: 'KR' })) },
-    DM: { patientInformation: { patientInitials: `P${pick(10000)}`, patientBirthDate: '19900203', patientSex: String(1 + pick(2)), patientWeight: { value: 30 + pick(900) / 10 }, patientHeight: { value: 120 + pick(80) } } },
-    NR: { narrative: { caseNarrative: text(), reporterComments: maybe(text()), senderComments: text() }, caseSummaryInformation: rows(sequenceNumber => ({ sequenceNumber, languageCode: 'eng', summaryText: text() })) },
-    AE: rows(sequenceNumber => ({ reaction: { sequenceNumber, primarySourceReaction: text(), primarySourceReactionTranslation: maybe(text()), reactionMeddraVersionLLT: '28.1', reactionMeddraCodeLLT: '99999999', reactionStartDate: '20240228', reactionOutcome: String(pick(6)), ...seriousness() } })),
-    DG: rows(sequenceNumber => ({ drug: { sequenceNumber, drugCharacterization: String(1 + pick(3)), medicinalProduct: text(), drugActionTaken: String(1 + pick(4)), drugAdditionalInformationCodes: pick(4) === 0 ? null : ['1', '2', '1'].slice(0, pick(4)), dosageInformation: rows(sequenceNumber => ({ sequenceNumber, doseValue: 1 + pick(100), doseUnit: 'mg', dosageText: text() })), activeSubstances: rows(sequenceNumber => ({ sequenceNumber, substanceName: text() })) } })),
-    LR: rows(sequenceNumber => ({ literatureReference: { sequenceNumber, referenceText: text(), documentBase64: Buffer.from(text()).toString('base64') } })),
-    LB: rows(sequenceNumber => ({ testResult: { sequenceNumber, testDate: '20240229', testName: text(), testResult: String(pick(1000) / 10), testUnit: 'mg/dL', comments: maybe(text()) } })),
-    DH: rows(sequenceNumber => ({ pastDrugHistory: { sequenceNumber, drugName: text(), startDate: '20230101', endDate: '20231231' } })),
+  return build(path.split('.'));
+}
+
+export function mergeJson(base, overlay) {
+  if (base !== null && overlay !== null && typeof base === 'object' && typeof overlay === 'object' && !Array.isArray(base) && !Array.isArray(overlay)) {
+    for (const [key, value] of Object.entries(overlay)) {
+      if (Object.hasOwn(base, key)) base[key] = mergeJson(base[key], value);
+      else base[key] = structuredClone(value);
+    }
+  } else if (Array.isArray(base) && Array.isArray(overlay)) {
+    for (let index = 0; index < overlay.length; index++) {
+      if (index < base.length) base[index] = mergeJson(base[index], overlay[index]);
+      else base.push(structuredClone(overlay[index]));
+    }
+  } else return overlay;
+  return base;
+}
+
+function repeatableFixture(page, sequenceNumber, field) {
+  if (page === 'AE') return { reaction: { sequenceNumber, primarySourceReaction: 'Fuzzer reaction' } };
+  if (page === 'DG') return { drug: { sequenceNumber, drugCharacterization: '1', medicinalProduct: 'Fuzzer product', drugActionTaken: '1' } };
+  if (page === 'LR') return { literatureReference: { sequenceNumber } };
+  if (page === 'LB') return {
+    testResult: {
+      sequenceNumber,
+      testName: 'Fuzzer test',
+      ...(field.code === 'F.r.3.4' ? {} : { testResult: '0', testUnit: 'mg/dL' }),
+    },
   };
-  if (pick(2)) { plan.DM.patientInformation.patientBirthDate = null; plan.DM.patientInformation.patientBirthDateNullFlavor = 'MSK'; }
-  if (authority === 'fda') plan.SI.studyInformation.fdaIndNumberOccurred = String(100000 + pick(900000));
-  if (authority === 'mfds') plan.SD.senderInformation.healthProfessionalTypeKr1 = '4';
-  return plan;
+  if (page === 'DH') return { pastDrugHistory: { sequenceNumber, ...(field.payloadPath === 'drugNameNullFlavor' ? {} : { drugName: 'Fuzzer prior drug' }) } };
+  throw new Error(`Missing repeated-page fixture: ${page}`);
+}
+
+const referenceValue = name => ({ '$apiFuzzerReference': name });
+
+function fieldRows(page, field, sequenceNumber, tag) {
+  const contract = contracts[page];
+  const owner = field.patch.owner;
+  const value = field.code === 'C.1.1' ? tag : field.roundTripReference === undefined ? field.roundTripValue : referenceValue(field.roundTripReference);
+  assert.notEqual(value, undefined, `${page}/${field.code}: missing roundtrip value`);
+  let row = structuredClone(field.fixture ?? {});
+  row = mergeJson(row, buildPath(field.payloadPath, value));
+  if (Array.isArray(row.drugReactionAssessments)) {
+    for (const assessment of row.drugReactionAssessments) {
+      if (!Object.hasOwn(assessment, 'reactionId')) assessment.reactionId = referenceValue('case-reaction');
+    }
+  }
+  let rows = structuredClone(contract.rowPrerequisites?.[owner] ?? {});
+  if (field.rowsFixture !== undefined) rows = mergeJson(rows, field.rowsFixture);
+  if (repeated.includes(page)) rows = mergeJson(rows, repeatableFixture(page, sequenceNumber, field));
+  rows = mergeJson(rows, { [owner]: row });
+  return rows;
+}
+
+// One common ICH field and one applicable regional field per page/case. Seeded
+// ordering keeps runs reproducible while cycling guarantees full contract coverage.
+export function generate(seed, caseIndex, tag, authority) {
+  assert.ok(typeof tag === 'string' && tag.length > 0);
+  return Object.fromEntries(Object.entries(selectedFields(seed, caseIndex, authority)).map(([page, fields]) => {
+    const rows = fields.map((field, index) => fieldRows(page, field, index + 1, tag));
+    if (repeated.includes(page)) return [page, rows];
+    const partners = fields.some((field, index) => fields.some((other, otherIndex) => index !== otherIndex && field.nullFlavorPartnerCode === other.code));
+    if (!partners) return [page, [rows.reduce((combined, row) => mergeJson(combined, row), {})]];
+    const combined = {};
+    for (const row of rows) {
+      for (const [owner, value] of Object.entries(row)) {
+        if (Array.isArray(value) && Array.isArray(combined[owner])) {
+          combined[owner].push(...value.map(item => ({ ...item, sequenceNumber: combined[owner].length + 1 })));
+        } else if (Object.hasOwn(combined, owner)) combined[owner] = mergeJson(combined[owner], value);
+        else combined[owner] = structuredClone(value);
+      }
+    }
+    return [page, [combined]];
+  }));
+}
+
+export function resolveReferences(value, references) {
+  if (Array.isArray(value)) return value.map(item => resolveReferences(item, references));
+  if (value !== null && typeof value === 'object') {
+    if (Object.keys(value).length === 1 && Object.hasOwn(value, '$apiFuzzerReference')) {
+      const name = value.$apiFuzzerReference;
+      assert.equal(typeof references[name], 'string', `Missing runtime reference: ${name}`);
+      return references[name];
+    }
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, resolveReferences(child, references)]));
+  }
+  return value;
 }
 
 export function advanceCaseRandomness(pick, tag, authority, hops) {
   pick(3);
-  generate(pick, tag, authority);
   for (let h = 0; h < hops; h++) {
     pick(4);
     pick(3);
@@ -90,7 +192,7 @@ async function main() {
   mkdirSync(dirname(output), { recursive: true, mode: 0o700 });
   mkdirSync(output, { recursive: false, mode: 0o700 });
   const save = (name, data) => writeFileSync(`${output}/${name}`, typeof data === 'string' ? data : JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
-  const report = { seed, count: lastCase - firstCase, caseIndex, hops, origin, database: db.pathname.slice(1), revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), fixture: 'synthetic MedDRA 28.1/99999999; isolated HTTP test only', status: 'running', organizations: [], cases: [], requests: 0, transfers: 0, checkedFields: [], failures: [] };
+  const report = { seed, count: lastCase - firstCase, caseIndex, hops, origin, database: db.pathname.slice(1), revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), fixture: 'contract roundTripValue fixtures plus isolated synthetic terminology; test only', status: 'running', organizations: [], cases: [], requests: 0, transfers: 0, contractFields: contractFieldCodes.length, checkedFields: [], uncheckedFields: contractFieldCodes, failures: [] };
   report.sources = Object.fromEntries([
     fileURLToPath(import.meta.url),
     ...pages.map(p => `${root}/registry/editor-contracts/${p.toLowerCase()}.json`),
@@ -98,7 +200,11 @@ async function main() {
   ].map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]));
   save('runner.mjs.txt', readFileSync(fileURLToPath(import.meta.url), 'utf8'));
   const coverage = new Set();
-  const checkpoint = () => { report.checkedFields = [...coverage].sort(); save('report.json', report); };
+  const checkpoint = () => {
+    report.checkedFields = [...coverage].sort();
+    report.uncheckedFields = contractFieldCodes.filter(field => !coverage.has(field));
+    save('report.json', report);
+  };
   let context = 'setup', phase = 'setup';
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
     report.status = 'interrupted'; report.failures.push({ context, phase, error: signal }); checkpoint(); process.exit(130);
@@ -141,10 +247,11 @@ async function main() {
     return result;
   }
   function checkSaved(plan, before) {
+    const checked = new Set();
     for (const p of pages) {
-      const inputs = repeated.includes(p) ? plan[p] : [plan[p]];
-      const outputs = repeated.includes(p) ? before.details[p].map(r => r.data) : [before.pages[p].rows];
-      assert.equal(outputs.length, inputs.length, `${p} row count`);
+      const inputs = plan[p];
+      const outputs = repeated.includes(p) ? before.details[p].map(r => r.data) : inputs.map(() => before.pages[p].rows);
+      if (repeated.includes(p)) assert.equal(outputs.length, inputs.length, `${p} row count`);
       for (let i = 0; i < inputs.length; i++) {
         for (const f of contracts[p].fields) {
           let expected;
@@ -159,10 +266,39 @@ async function main() {
           }
           const actual = project(outputs[i], f.projectionPath);
           assert.deepEqual(actual, expected, `Saved ${p}/${f.code}`);
-          coverage.add(`${p}/${f.code}`);
+          checked.add(`${p}/${f.code}`);
         }
       }
     }
+    return checked;
+  }
+  function checkTransferred(plan, before, after, targetProduct) {
+    const checked = new Set();
+    const reactions = new Map(before.details.AE.map((row, index) => [row.data.reaction.id, after.details.AE[index]?.data.reaction.id]));
+    for (const p of pages) {
+      const inputs = plan[p];
+      const source = repeated.includes(p) ? before.details[p].map(row => row.data) : inputs.map(() => before.pages[p].rows);
+      const target = repeated.includes(p) ? after.details[p].map(row => row.data) : inputs.map(() => after.pages[p].rows);
+      if (source.length !== target.length || source.length !== inputs.length) continue;
+      for (let index = 0; index < inputs.length; index++) {
+        for (const field of contracts[p].fields) {
+          try { project(inputs[index][field.patch.owner], field.payloadPath); } catch { continue; }
+          let expected;
+          let actual;
+          try {
+            expected = project(source[index], field.projectionPath);
+            actual = project(target[index], field.projectionPath);
+          } catch { continue; }
+          if (field.roundTripReference === 'product-presave') expected = targetProduct;
+          if (field.roundTripReference === 'case-reaction') {
+            const remap = value => Array.isArray(value) ? value.map(remap) : reactions.get(value);
+            expected = remap(expected);
+          }
+          if (expected !== undefined && isDeepStrictEqual(actual, expected)) checked.add(`${p}/${field.code}`);
+        }
+      }
+    }
+    return checked;
   }
   try {
     const bootstrap = readFileSync(`${root}/crates/services/web-server/src/bootstrap.rs`, 'utf8');
@@ -207,18 +343,35 @@ async function main() {
       try {
         let org = organizations[c % 5], actor = org.users[pick(3)];
         const authority = ['ich', 'fda', 'mfds'][c % 3], tag = `${runTag}-${c}`;
-        const plan = generate(pick, tag, authority); save(`${c}-plan.json`, { authority, plan });
+        const fields = selectedFields(seed, c, authority);
+        const targetFields = Object.entries(fields).flatMap(([page, selected]) => selected.map(field => `${page}/${field.code}`));
+        const plan = generate(seed, c, tag, authority);
+        item.targetFields = targetFields;
+        save(`${c}-plan.json`, { authority, targetFields, plan });
         const created = await api(actor, 'POST', '/api/cases', { data: { safetyReportIdentification: { safetyReportId: tag }, status: 'draft' } });
         let id = created.data.id; item.caseId = id; item.authority = authority;
         await api(actor, 'POST', `/api/cases/${id}/message-header`, { data: { case_id: id, message_number: tag, message_date: '20240229123059.1234+0900', message_sender_identifier: 'FUZZ-SOURCE', message_receiver_identifier: 'FUZZ-TARGET', batch_sender_identifier: 'FUZZ-SOURCE', batch_receiver_identifier: 'FUZZ-TARGET' } });
+        let reactionId = null;
         for (const p of pages) {
           const uri = `/api/cases/${id}/editor/pages/${p}`;
-          for (const rows of repeated.includes(p) ? plan[p] : [plan[p]]) await api(actor, repeated.includes(p) ? 'POST' : 'PATCH', repeated.includes(p) ? `${uri}/rows` : uri, { authorities: [authority], rows });
+          for (let index = 0; index < plan[p].length; index++) {
+            const rows = resolveReferences(plan[p][index], { 'case-reaction': reactionId, 'product-presave': org.product });
+            plan[p][index] = rows;
+            const saved = await api(actor, repeated.includes(p) ? 'POST' : 'PATCH', repeated.includes(p) ? `${uri}/rows` : uri, { authorities: [authority], rows });
+            if (p === 'AE' && reactionId === null) {
+              assert.equal(typeof saved.rowId, 'string', 'AE row creation did not return rowId');
+              reactionId = saved.rowId;
+            }
+          }
         }
+        save(`${c}-plan.json`, { authority, targetFields, plan });
         phase = 'persistence';
-        let before = await snapshot(actor, id); save(`${c}-source.json`, before); checkSaved(plan, before);
+        let before = await snapshot(actor, id); save(`${c}-source.json`, before);
+        checkSaved(plan, before);
         phase = 'mutation';
         const narrativeUri = `/api/cases/${id}/editor/pages/NR`;
+        const originalReporterComments = before.pages.NR.rows.narrative.reporter_comments;
+        assert.ok(originalReporterComments === null || typeof originalReporterComments === 'string');
         await api(actor, 'PATCH', narrativeUri, { authorities: [authority], rows: { narrative: { reporterComments: '' } } }, [422]);
         assert.deepEqual(await snapshot(actor, id), before, 'Rejected blank changed data');
         await api(actor, 'POST', `/api/cases/${id}/editor/pages/AE/rows`, { authorities: [authority], rows: { reaction: { primarySourceReaction: 'Invalid false marker', seriousness: { criteriaHospitalization: false } } } }, [422]);
@@ -227,8 +380,9 @@ async function main() {
         await api(actor, 'PATCH', narrativeUri, { authorities: [authority], rows: { narrative: { reporterComments: 'Delete this synthetic comment' } } });
         assert.equal((await api(actor, 'GET', narrativeUri)).rows.narrative.reporter_comments, 'Delete this synthetic comment');
         await api(actor, 'PATCH', narrativeUri, { authorities: [authority], rows: { narrative: { reporterComments: null } } });
-        plan.NR.narrative.reporterComments = null;
-        before = await snapshot(actor, id); checkSaved(plan, before);
+        if (originalReporterComments !== null) await api(actor, 'PATCH', narrativeUri, { authorities: [authority], rows: { narrative: { reporterComments: originalReporterComments } } });
+        before = await snapshot(actor, id);
+        checkSaved(plan, before);
         save(`${c}-mutated.json`, before);
         const versions = new Map([[org.id, before.pages.CI.rows.safetyReportIdentification.safetyReportVersion]]);
         for (let h = 0; h < hops; h++) {
@@ -254,7 +408,12 @@ async function main() {
           const result = imported.data.importedCases[0]; assert.equal(result.status, 'success', JSON.stringify(result));
           const after = await snapshot(targetActor, result.caseId); save(`${c}-${h}-target.json`, after);
           phase = 'preservation';
-          const comparison = compareCrossOrganizationXmlSnapshots(before, after, { sourceOrganizationId: org.id, targetOrganizationId: next.id, expectedLocalLinks: { 'SD.senderInformation.sourceSenderPresaveId': next.sender }, expectedTargetReportVersion: versions.has(next.id) ? versions.get(next.id) + 1 : 1 });
+          const expectedLocalLinks = { 'SD.senderInformation.sourceSenderPresaveId': next.sender };
+          before.details.DG.forEach((row, index) => {
+            if (row.data.drug.source_product_presave_id !== null) expectedLocalLinks[`DG[${index}].drug.source_product_presave_id`] = next.product;
+          });
+          if (h === 0) for (const field of checkTransferred(plan, before, after, next.product)) coverage.add(field);
+          const comparison = compareCrossOrganizationXmlSnapshots(before, after, { sourceOrganizationId: org.id, targetOrganizationId: next.id, expectedLocalLinks, expectedTargetReportVersion: versions.has(next.id) ? versions.get(next.id) + 1 : 1 });
           save(`${c}-${h}-comparison.json`, comparison);
           if (comparison.status !== 'equal-observed-transfer-values') {
             item.status = 'failed';
@@ -271,6 +430,10 @@ async function main() {
         if (item.status === 'running') item.status = 'passed';
       } catch (error) { item.status = 'failed'; item.error = String(error); report.failures.push({ context, phase, error: String(error) }); }
       checkpoint(); console.log(JSON.stringify({ case: c, status: item.status, transfers: report.transfers, failures: report.failures.length, error: item.error }));
+    }
+    if (caseIndex === null) {
+      const uncheckedFields = contractFieldCodes.filter(field => !coverage.has(field));
+      if (uncheckedFields.length > 0) report.failures.push({ context: 'campaign', phase: 'coverage', error: `${uncheckedFields.length} contract fields never completed a verified import/export`, fields: uncheckedFields });
     }
     report.status = report.failures.length ? 'failed' : 'passed';
   } catch (error) { report.status = 'setup-failed'; report.failures.push({ context, phase, error: String(error) }); }

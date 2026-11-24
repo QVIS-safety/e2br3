@@ -1,5 +1,4 @@
 use super::*;
-use base64::Engine as _;
 
 pub(crate) async fn export_patch(
 	ctx: &Ctx,
@@ -723,20 +722,6 @@ pub(crate) fn write_g_k_drug(
 		"<code code=\"4\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/>",
 	);
 	out.push_str("<component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
-	// Source references are mapping keys only, never foreign catalog UUIDs to insert.
-	out.push_str("<?e2br3-product-link-v1 ");
-	match drug.source_product_presave_id {
-		Some(id) => out.push_str(&id.to_string()),
-		None => out.push_str("none"),
-	}
-	out.push_str("?>");
-	if let Some(product_id) = &drug.source_product_id {
-		// Local snapshot metadata, not a cross-organization catalog reference or E2B code.
-		out.push_str(&format!(
-			"<?e2br3-source-product-id-v1 {}?>",
-			base64::engine::general_purpose::STANDARD.encode(product_id.as_bytes())
-		));
-	}
 	out.push_str("<id root=\"");
 	out.push_str(&xml_escape(&drug.id.to_string()));
 	out.push_str("\"/>");
@@ -1090,10 +1075,6 @@ pub(crate) fn write_g_k_drug(
 	}
 	for dose in dosages {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
-		if let Some(continuing) = dose.continuing {
-			// Local transfer metadata, not an E2B code; lossless recipients must preserve processing instructions.
-			out.push_str(&format!("<?e2br3-dosage-continuing-v1 {continuing}?>"));
-		}
 		if let Some(text) = write_g_k_4_r_8(dose) {
 			out.push_str("<text>");
 			out.push_str(&xml_escape(text));
@@ -2333,7 +2314,7 @@ mod tests {
 	}
 
 	#[test]
-	fn local_source_product_metadata_preserves_exact_strings_and_absence() {
+	fn export_omits_local_source_product_metadata() {
 		let source = std::fs::read(
 			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 				.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml"),
@@ -2406,37 +2387,38 @@ mod tests {
 						&mut doc, &mut xpath,
 					)
 					.expect("postprocess");
-					let markers = xpath
+					assert!(xpath
+						.findnodes(
+							"//processing-instruction('e2br3-product-link-v1')",
+							None
+						)
+						.expect("product link metadata")
+						.is_empty());
+					assert!(xpath
 						.findnodes(
 							"//processing-instruction('e2br3-source-product-id-v1')",
 							None,
 						)
-						.expect("metadata");
-					assert_eq!(markers.iter().map(|node| node.get_content()).collect::<Vec<_>>(), value.iter().map(|value| base64::engine::general_purpose::STANDARD.encode(value.as_bytes())).collect::<Vec<_>>(), "{authority:?}: preserve absent and explicit empty separately");
+						.expect("source product metadata")
+						.is_empty());
 					let imported = crate::import_sections::g_drug::parse_g_drugs(
 						doc.to_string().as_bytes(),
 					)
-					.expect("import exact local string");
+					.expect("import external XML");
 					assert_eq!(imported.len(), 1);
 					use crate::import_sections::g_drug::product_links::SourceProductLink;
 					assert_eq!(
 						imported[0].source_product_link,
-						match drug.source_product_presave_id {
-							Some(id) => SourceProductLink::Linked(id),
-							None => SourceProductLink::Unlinked,
-						}
+						SourceProductLink::Legacy
 					);
-					assert_eq!(
-						imported[0].source_product_id, value,
-						"{authority:?}: no trimming, inference or default"
-					);
+					assert_eq!(imported[0].source_product_id, None);
 				}
 			}
 		}
 	}
 
 	#[test]
-	fn local_continuing_metadata_preserves_false_true_and_absence() {
+	fn local_continuing_metadata_is_not_exported() {
 		let source = std::fs::read(
 			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 				.join("../../../docs/exporter/fda/FAERS2022Scenario6.xml"),
@@ -2516,20 +2498,21 @@ mod tests {
 						None,
 					)
 					.expect("local metadata");
-				assert_eq!(
-					markers
-						.iter()
-						.map(|node| node.get_content())
-						.collect::<Vec<_>>(),
-					["false", "true"],
-					"{authority:?} {mode}: no default for absent value"
-				);
+				assert!(markers.is_empty(), "{authority:?} {mode}");
 				let imported = crate::import_sections::g_drug::parse_g_drugs(
 					doc.to_string().as_bytes(),
 				)
 				.expect("import local metadata");
 				assert_eq!(imported.len(), 1);
-				assert_eq!(imported[0].dosages.iter().map(|dose| dose.continuing).collect::<Vec<_>>(), [Some(false), Some(true), None], "{authority:?} {mode}: preserve each dosage value without inferring missing flags");
+				assert_eq!(
+					imported[0]
+						.dosages
+						.iter()
+						.map(|dose| dose.continuing)
+						.collect::<Vec<_>>(),
+					[None, None, None],
+					"{authority:?} {mode}"
+				);
 			}
 		}
 	}

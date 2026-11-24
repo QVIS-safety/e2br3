@@ -765,54 +765,6 @@
       }
     },
     {
-      "code": "E.local.expectedness",
-      "authority": "ICH",
-      "frontendPath": "reactions[].expectedness",
-      "projectionPath": "reaction.expectedness",
-      "patch": {
-        "kind": "row",
-        "owner": "reaction"
-      },
-      "roundTripValue": "1",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "Local expectedness field has no Input Contract."
-      },
-      "payloadPath": "expectedness",
-      "domFieldNumber": "AE_EXPECTEDNESS",
-      "auditItem": "Expectedness",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
-        "omission": "preserve",
-        "audit": {"table": "reactions", "column": "expectedness", "record": {"source": "projection", "path": "reaction.id"}}
-      }
-    },
-    {
-      "code": "E.local.severity",
-      "authority": "ICH",
-      "frontendPath": "reactions[].severity",
-      "projectionPath": "reaction.severity",
-      "patch": {
-        "kind": "row",
-        "owner": "reaction"
-      },
-      "roundTripValue": "moderate",
-      "constraint": {
-        "status": "not_applicable",
-        "reason": "Local severity field has no Input Contract."
-      },
-      "payloadPath": "severity",
-      "domFieldNumber": "AE_SEVERITY",
-      "auditItem": "Severity",
-      "persistence": {
-        "clear": {"effect": "store", "input": null, "value": null},
-        "blank": {"effect": "reject", "input": "", "status": 422, "ruleCode": "INPUT.EMPTY.REJECTED"},
-        "omission": "preserve",
-        "audit": {"table": "reactions", "column": "severity", "record": {"source": "projection", "path": "reaction.id"}}
-      }
-    },
-    {
       "code": "E.i.5",
       "dictionaryInputs": [
         {

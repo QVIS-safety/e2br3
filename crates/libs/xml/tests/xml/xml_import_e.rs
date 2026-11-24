@@ -120,18 +120,6 @@ fn import_e_reaction_preserves_known_extension_fields() {
                       </outboundRelationship2>
                       <outboundRelationship2 typeCode="PERT">
                         <observation classCode="OBS" moodCode="EVN">
-                          <code code="AE_EXPECTEDNESS"/>
-                          <value xsi:type="CE" code="2"/>
-                        </observation>
-                      </outboundRelationship2>
-                      <outboundRelationship2 typeCode="PERT">
-                        <observation classCode="OBS" moodCode="EVN">
-                          <code code="AE_SEVERITY"/>
-                          <value xsi:type="CE" code="severe"/>
-                        </observation>
-                      </outboundRelationship2>
-                      <outboundRelationship2 typeCode="PERT">
-                        <observation classCode="OBS" moodCode="EVN">
                           <code code="KR_DVC_AECL"/>
                           <value xsi:type="CE" code="0"/>
                         </observation>
@@ -193,8 +181,6 @@ fn import_e_reaction_preserves_known_extension_fields() {
 	let reactions = parse_e_reactions(xml).expect("parse should succeed");
 	assert_eq!(reactions.len(), 1);
 	let reaction = &reactions[0];
-	assert_eq!(reaction.expectedness.as_deref(), Some("2"));
-	assert_eq!(reaction.severity.as_deref(), Some("severe"));
 	assert_eq!(reaction.mfds_device_ae_classification.as_deref(), Some("0"));
 	assert_eq!(reaction.mfds_device_ae_outcome.as_deref(), Some("10"));
 	assert_eq!(reaction.mfds_device_cause_medical_device, Some(true));

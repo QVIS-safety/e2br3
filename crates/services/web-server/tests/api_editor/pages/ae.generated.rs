@@ -48,8 +48,6 @@ mod fields {
     field_contract_test!(e_i_kr_device_causepatientcondition, "E.i.KR.device.causePatientCondition");
     field_contract_test!(e_i_kr_device_causeprocedureissue, "E.i.KR.device.causeProcedureIssue");
     field_contract_test!(e_i_kr_device_causeunabletoassess, "E.i.KR.device.causeUnableToAssess");
-    field_contract_test!(e_local_expectedness, "E.local.expectedness");
-    field_contract_test!(e_local_severity, "E.local.severity");
     field_contract_test!(fda_e_i_3_2h, "FDA.E.i.3.2h");
     field_contract_test!(fda_e_i_3_2h_local_requiredinterventionnullflavor, "FDA.E.i.3.2h.local.requiredInterventionNullFlavor");
     #[serial_test::serial]

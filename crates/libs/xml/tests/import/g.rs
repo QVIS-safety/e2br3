@@ -45,7 +45,10 @@ fn import_g_section_all_fields_from_scenario6() {
 		Some("Pharmacia and Upjohn Company")
 	);
 	assert_eq!(first.manufacturer_country.as_deref(), Some("US"));
-	assert_eq!(first.batch_lot_number, None);
+	assert_eq!(
+		first.batch_lot_number.as_deref(),
+		Some("4577BN2-product-2-device1")
+	);
 	assert_eq!(
 		first.cumulative_dose_first_reaction_value,
 		Some(decimal("150"))
@@ -161,7 +164,7 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first_indication.version.as_deref(), Some("12.0"));
 	assert_eq!(first_indication.code.as_deref(), Some("10028813"));
 
-	assert_eq!(first.characteristics.len(), 10);
+	assert_eq!(first.characteristics.len(), 1);
 	let first_characteristic = &first.characteristics[0];
 	assert_eq!(first_characteristic.code.as_deref(), Some("C94031"));
 	assert_eq!(
@@ -183,22 +186,6 @@ fn import_g_section_all_fields_from_scenario6() {
 		first_characteristic.value_display_name.as_deref(),
 		Some("Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.)")
 	);
-
-	let last_characteristic = &first.characteristics[9];
-	assert_eq!(last_characteristic.code.as_deref(), Some("1"));
-	assert_eq!(
-		last_characteristic.code_system.as_deref(),
-		Some("2.16.840.1.113883.3.989.5.1.2.1.1.6")
-	);
-	assert_eq!(
-		last_characteristic.code_display_name.as_deref(),
-		Some("Health Professional")
-	);
-	assert_eq!(last_characteristic.value_type, None);
-	assert_eq!(last_characteristic.value_value, None);
-	assert_eq!(last_characteristic.value_code, None);
-	assert_eq!(last_characteristic.value_code_system, None);
-	assert_eq!(last_characteristic.value_display_name, None);
 }
 
 #[test]
@@ -234,4 +221,17 @@ fn import_g_ignores_retired_mfds_device_characteristics() {
 		.iter()
 		.flat_map(|drug| &drug.characteristics)
 		.all(|value| value.code.as_deref() != Some("KR_DVC_SN")));
+}
+
+#[test]
+fn import_g_reads_exported_batch_lot_without_duplicating_fda_device_codes() {
+	let drugs = parse_g_drugs(&g_fixture("FAERS2022Scenario6.xml")).expect("parse");
+	assert_eq!(
+		drugs[0].batch_lot_number.as_deref(),
+		Some("4577BN2-product-2-device1")
+	);
+	assert!(drugs[0]
+		.characteristics
+		.iter()
+		.all(|value| value.code.as_deref() != Some("C54451")));
 }

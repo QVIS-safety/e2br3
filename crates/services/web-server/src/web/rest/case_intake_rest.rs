@@ -784,8 +784,6 @@ async fn create_case_from_intake_in_txn(
 				criteria_other_medically_important_null_flavor: None,
 				required_intervention: None,
 				required_intervention_null_flavor: None,
-				expectedness: None,
-				severity: None,
 				mfds_device_ae_classification: None,
 				mfds_device_ae_outcome: None,
 				mfds_device_cause_medical_device: None,
