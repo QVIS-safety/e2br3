@@ -192,10 +192,20 @@ fn normalized_direct_object(
 	Ok(normalized)
 }
 
+#[cfg(test)]
 pub(super) fn validate_direct_rows(
 	section: &str,
 	rows: &BTreeMap<String, Value>,
 	fda: bool,
+) -> Result<()> {
+	validate_direct_rows_for_profiles(section, rows, fda, fda)
+}
+
+pub(super) fn validate_direct_rows_for_profiles(
+	section: &str,
+	rows: &BTreeMap<String, Value>,
+	fda: bool,
+	fda_mpid_length: bool,
 ) -> Result<()> {
 	for (key, value) in rows {
 		validate_request_strings(value, key)?;
@@ -941,6 +951,7 @@ pub(super) fn validate_direct_rows(
 						None,
 						&[],
 						fda,
+						fda_mpid_length,
 					)?;
 				}
 			}
@@ -1384,7 +1395,7 @@ pub(super) fn validate_direct_rows(
 	};
 
 	if let Some(row) = normalized {
-		validate_section_fields(section, &row, None, &[], fda)?;
+		validate_section_fields(section, &row, None, &[], fda, fda_mpid_length)?;
 	}
 	Ok(())
 }
@@ -1563,7 +1574,7 @@ fn validate_row_payload_with_indexes(
 	if section == "DG" && row_key == "drug" {
 		validate_fda_device_code_identities(row)?;
 	}
-	validate_section_fields(section, row, changed_paths, outer_indexes, false)
+	validate_section_fields(section, row, changed_paths, outer_indexes, false, false)
 }
 
 fn validate_fda_device_code_identities(row: &Map<String, Value>) -> Result<()> {

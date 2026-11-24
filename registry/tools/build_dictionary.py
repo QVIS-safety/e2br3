@@ -481,6 +481,7 @@ FDA_CONFORMANCE_MAP = {
     "optional": "optional",
 }
 CONFORMANCE_STRICTNESS = ["mandatory", "conditional_mandatory", "optional"]
+FDA_PROFILE_MAX_LENGTH_CODES = {"D.8.r.2a", "G.k.2.1.1a"}
 
 
 def read_fda_table(text: str) -> tuple[list[list[str]], list[str], dict[str, int]]:
@@ -509,7 +510,7 @@ def fda_row_profiles(
 
 
 def merge_fda_profiles(ich_entries: list[dict[str, Any]], text: str) -> int:
-    """Annotate ICH entries with FDA's per-route conformance from the FDA combined table.
+    """Annotate ICH entries with FDA's conformance and max-length overrides.
 
     The FDA table restates every ICH element with Post-Market / Pre-Market /
     VAERS conformance columns; "-" means FDA states no deviation and adds no profile.
@@ -517,8 +518,10 @@ def merge_fda_profiles(ich_entries: list[dict[str, Any]], text: str) -> int:
     data_rows, header, profile_columns = read_fda_table(text)
     source_column = header.index("SOURCE")
     code_column = header.index("DATA ELEMENT NUMBER")
+    max_length_column = header.index("MAX LENGTH")
 
     rulings: dict[str, dict[str, str]] = {}
+    max_lengths: dict[str, str] = {}
     for row in data_rows:
         if len(row) <= code_column or clean(row[source_column]).upper() != "ICH":
             continue
@@ -526,12 +529,28 @@ def merge_fda_profiles(ich_entries: list[dict[str, Any]], text: str) -> int:
         profiles = fda_row_profiles(row, profile_columns)
         if code and profiles:
             rulings.setdefault(code, profiles)
+        max_length = clean(row[max_length_column]) if len(row) > max_length_column else ""
+        if code and max_length not in {"", "-"}:
+            max_lengths.setdefault(code, max_length)
 
     annotated = 0
     for entry in ich_entries:
         profiles = rulings.get(entry["code"])
-        if profiles and entry["kind"] == "element":
+        max_length = max_lengths.get(entry["code"])
+        if entry["kind"] != "element":
+            continue
+        changed = False
+        if profiles:
             entry.setdefault("profiles", {}).update(profiles)
+            changed = True
+        if (
+            entry["code"] in FDA_PROFILE_MAX_LENGTH_CODES
+            and max_length
+            and max_length != entry.get("max_length")
+        ):
+            entry.setdefault("profile_max_lengths", {})["fda"] = max_length
+            changed = True
+        if changed:
             annotated += 1
     return annotated
 

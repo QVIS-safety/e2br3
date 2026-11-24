@@ -766,27 +766,29 @@ fn read_mpid(
 				});
 			}
 		}
-		let editor_version = input_string(
-			first_attr(xpath, node, GDrugPaths::IDENTIFIED_MPID_VERSION),
+		let identified_version =
+			first_attr(xpath, node, GDrugPaths::IDENTIFIED_MPID_VERSION);
+		let version = input_string(
+			first_attr(xpath, node, GDrugPaths::FDA_MPID_VERSION),
 			"mpidVersion",
-			input_contracts::generated::g::g_k_2_1_1a,
+			input_contracts::generated::g::fda_g_k_2_1_1a,
 			xpath,
 		)?;
+		if identified_version.is_some() && identified_version != version {
+			return Err(Error::InvalidImportRequest {
+				message: "G.k.2.1.1a contains conflicting FDA and MPID versions"
+					.to_owned(),
+			});
+		}
 		xpath.inputs.string(
 			"mpid",
 			Some(&mpid),
 			None,
 			input_contracts::generated::g::g_k_2_1_1b,
 		);
-		let version = input_string(
-			first_attr(xpath, node, GDrugPaths::FDA_MPID_VERSION),
-			"mpidSourceCodeSystemVersion",
-			input_contracts::generated::g::mfds_g_k_2_1_kr_1a,
-			xpath,
-		)?;
 		return Ok((
 			Some(mpid),
-			editor_version,
+			version.clone(),
 			Some("2.16.840.1.113883.6.69".to_string()),
 			version,
 		));
@@ -2198,13 +2200,29 @@ mod tests {
 	}
 
 	#[test]
-	fn fda_mpid_rejects_conflicting_identifiers_and_invalid_editor_version() {
-		for (identifier, version, expected) in [
-			("OTHER", "1", "conflicting FDA and MPID identifiers"),
-			("59762-2858", "12345678901", "ICH.G.k.2.1.1a.LENGTH.MAX"),
+	fn fda_mpid_rejects_conflicts_and_versions_over_twenty_characters() {
+		for (canonical_version, identifier, identified_version, expected) in [
+			(
+				"201411011202",
+				"OTHER",
+				"201411011202",
+				"conflicting FDA and MPID identifiers",
+			),
+			(
+				"201411011202",
+				"59762-2858",
+				"1",
+				"conflicting FDA and MPID versions",
+			),
+			(
+				"123456789012345678901",
+				"59762-2858",
+				"123456789012345678901",
+				"FDA.G.k.2.1.1a.LENGTH.MAX",
+			),
 		] {
 			let xml = with_drug_role(&format!(
-				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>Drug A</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></MCCI_IN200100UV01>"#
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="{canonical_version}"/><name>Drug A</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{identified_version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></MCCI_IN200100UV01>"#
 			));
 			let error = parse_g_drugs(xml.as_bytes())
 				.expect_err("reject ambiguous or invalid MPID");
@@ -2213,13 +2231,13 @@ mod tests {
 	}
 
 	#[test]
-	fn preserves_fda_mpid_source_metadata_beyond_ich_version_limit() {
+	fn fda_canonical_mpid_version_populates_editor_and_source_metadata() {
 		let xml = with_drug_role(
 			r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><subjectOf2><organizer><code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>Drug A</name></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></MCCI_IN200100UV01>"#,
 		);
 		let drug = &parse_g_drugs(xml.as_bytes()).expect("parse FDA MPID")[0];
 		assert_eq!(drug.mpid.as_deref(), Some("59762-2858"));
-		assert_eq!(drug.mpid_version, None);
+		assert_eq!(drug.mpid_version.as_deref(), Some("201411011202"));
 		assert_eq!(
 			drug.mpid_source_code_system.as_deref(),
 			Some("2.16.840.1.113883.6.69")

@@ -76,6 +76,40 @@ macro_rules! dictionary_test {
 
 include!("editor_dictionary/generated.rs");
 
+fn verify_fda_max_length(
+	code: &str,
+	validate: fn(FieldInput<'_>) -> Vec<InputIssue>,
+) -> TestResult {
+	let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+		.join("../../../registry/dictionary/ich-e2br3.json");
+	let document: Value = serde_json::from_str(&fs::read_to_string(path)?)?;
+	let entry = document["entries"]
+		.as_array()
+		.ok_or("missing entries")?
+		.iter()
+		.find(|entry| entry["code"] == code)
+		.ok_or("missing dictionary entry")?;
+	assert_eq!(entry["profile_max_lengths"]["fda"], "20");
+	let valid = "x".repeat(20);
+	let invalid = "x".repeat(21);
+	assert!(validate(FieldInput::new(InputValue::String(&valid), None)).is_empty());
+	assert!(
+		validate(FieldInput::new(InputValue::String(&invalid), None))
+			.iter()
+			.any(|issue| issue.code == format!("FDA.{code}.LENGTH.MAX"))
+	);
+	Ok(())
+}
+
+#[test]
+fn fda_mpid_version_limits_match_dictionary() -> TestResult {
+	verify_fda_max_length(
+		"G.k.2.1.1a",
+		input_contracts::generated::g::fda_g_k_2_1_1a,
+	)?;
+	verify_fda_max_length("D.8.r.2a", input_contracts::generated::d::fda_d_8_r_2a)
+}
+
 #[test]
 fn official_seriousness_markers_reject_false_at_input() {
 	use input_contracts::generated::{c, e};
@@ -96,11 +130,9 @@ fn official_seriousness_markers_reject_false_at_input() {
 			validate(FieldInput::new(InputValue::Boolean(false), None)).is_empty()
 		);
 	}
-	assert!(
-		c::c_1_8_1(FieldInput::new(
-			InputValue::String("legacy/received-id"),
-			None
-		))
-		.is_empty()
-	);
+	assert!(c::c_1_8_1(FieldInput::new(
+		InputValue::String("legacy/received-id"),
+		None
+	))
+	.is_empty());
 }

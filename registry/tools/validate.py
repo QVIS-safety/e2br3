@@ -105,6 +105,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "interval_bound_null_flavors",
     "oid",
     "profiles",
+    "profile_max_lengths",
     "xpath",
     "hl7_data_type",
     "hl7_component",
@@ -519,6 +520,21 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
                     result.add(
                         f"{source}: entry {code}: invalid profile conformance {value!r} for {profile};"
                         f" expected one of {sorted(DICTIONARY_CONFORMANCES)}"
+                    )
+
+    profile_max_lengths = entry.get("profile_max_lengths")
+    if profile_max_lengths is not None:
+        if not isinstance(profile_max_lengths, dict):
+            result.add(f"{source}: entry {code}: profile_max_lengths must be an object")
+        else:
+            for profile, value in profile_max_lengths.items():
+                if profile != "fda":
+                    result.add(
+                        f"{source}: entry {code}: unsupported max-length profile {profile!r}"
+                    )
+                if not isinstance(value, str) or not value.isdecimal():
+                    result.add(
+                        f"{source}: entry {code}: invalid profile max length {value!r} for {profile}"
                     )
 
 

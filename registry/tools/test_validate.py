@@ -2386,6 +2386,20 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertIn("invalid profile conformance 'sometimes'", "\n".join(result.errors))
 
+    def test_dictionary_accepts_numeric_fda_profile_max_length(self):
+        entry = (
+            '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'
+            ' "conformance": "mandatory", "profile_max_lengths": {"fda": "20"}}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
     def test_strict_dictionary_reports_elements_without_registry_rows(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

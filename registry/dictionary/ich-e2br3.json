@@ -2163,6 +2163,9 @@
       "profiles": {
         "mfds": "conditional_mandatory"
       },
+      "profile_max_lengths": {
+        "fda": "20"
+      },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "codeSystemVersion= Character String (ST)",
@@ -4073,6 +4076,9 @@
       "allowed_values": "Free Text",
       "profiles": {
         "mfds": "optional"
+      },
+      "profile_max_lengths": {
+        "fda": "20"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",

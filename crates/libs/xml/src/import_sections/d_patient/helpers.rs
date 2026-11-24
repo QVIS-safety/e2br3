@@ -600,29 +600,31 @@ fn read_d_8_r_2(
 				});
 			}
 		}
-		let editor_version = input_string(
-			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion")),
+		let identified_version =
+			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion"));
+		let version = input_string(
+			first_attr(xpath, node, &fda_code, "codeSystemVersion"),
 			"mpidVersion",
-			input_contracts::generated::d::d_8_r_2a,
+			input_contracts::generated::d::fda_d_8_r_2a,
 			xpath,
 		)?;
+		if identified_version.is_some() && identified_version != version {
+			return Err(Error::InvalidImportRequest {
+				message: "D.8.r.2a contains conflicting FDA and MPID versions"
+					.to_owned(),
+			});
+		}
 		input_string(
 			Some(mpid.clone()),
 			"mpid",
 			input_contracts::generated::d::d_8_r_2b,
 			xpath,
 		)?;
-		let source_version = input_string(
-			first_attr(xpath, node, &fda_code, "codeSystemVersion"),
-			"mpidSourceCodeSystemVersion",
-			input_contracts::generated::d::mfds_d_8_r_1_kr_1a,
-			xpath,
-		)?;
 		return Ok((
-			editor_version,
+			version.clone(),
 			Some(mpid),
 			Some("2.16.840.1.113883.6.69".to_string()),
-			source_version,
+			version,
 		));
 	}
 	Ok((
@@ -1221,6 +1223,39 @@ fn read_d_10_8_r_2(
 	node: &libxml::tree::Node,
 ) -> Result<(Option<String>, Option<String>)> {
 	let base = format!("{PRODUCT}/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]");
+	let fda_code =
+		format!("{PRODUCT}/hl7:code[@codeSystem='2.16.840.1.113883.6.69']");
+	if let Some(mpid) = first_attr(xpath, node, &fda_code, "code") {
+		let identified_mpid =
+			first_value(xpath, node, &format!("{base}/hl7:id/@extension"));
+		if identified_mpid.is_some() && identified_mpid.as_deref() != Some(&mpid) {
+			return Err(Error::InvalidImportRequest {
+				message: "D.10.8.r.2b contains conflicting FDA and MPID identifiers"
+					.to_owned(),
+			});
+		}
+		let identified_version =
+			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion"));
+		let version = input_string(
+			first_attr(xpath, node, &fda_code, "codeSystemVersion"),
+			"parentInformation.pastDrugHistory[].mpidVersion",
+			input_contracts::generated::d::d_10_8_r_2a,
+			xpath,
+		)?;
+		if identified_version.is_some() && identified_version != version {
+			return Err(Error::InvalidImportRequest {
+				message: "D.10.8.r.2a contains conflicting FDA and MPID versions"
+					.to_owned(),
+			});
+		}
+		input_string(
+			Some(mpid.clone()),
+			"parentInformation.pastDrugHistory[].mpid",
+			input_contracts::generated::d::d_10_8_r_2b,
+			xpath,
+		)?;
+		return Ok((version, Some(mpid)));
+	}
 	Ok((
 		input_string(
 			first_value(xpath, node, &format!("{base}/hl7:code/@codeSystemVersion")),
@@ -1755,14 +1790,30 @@ mod tests {
 	}
 
 	#[test]
-	fn fda_history_preserves_editor_version_and_rejects_conflicts() {
-		for (identifier, version, expected_error) in [
-			("59762-2858", "1", None),
-			("OTHER", "1", Some("conflicting FDA and MPID identifiers")),
-			("59762-2858", "12345678901", Some("ICH.D.8.r.2a.LENGTH.MAX")),
+	fn fda_history_uses_canonical_version_and_rejects_conflicts() {
+		for (canonical_version, identifier, identified_version, expected_error) in [
+			("201411011202", "59762-2858", "201411011202", None),
+			(
+				"201411011202",
+				"OTHER",
+				"201411011202",
+				Some("conflicting FDA and MPID identifiers"),
+			),
+			(
+				"201411011202",
+				"59762-2858",
+				"1",
+				Some("conflicting FDA and MPID versions"),
+			),
+			(
+				"123456789012345678901",
+				"59762-2858",
+				"123456789012345678901",
+				Some("FDA.D.8.r.2a.LENGTH.MAX"),
+			),
 		] {
 			let xml = format!(
-				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="201411011202"/><name>CureAll</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></primaryRole></MCCI_IN200100UV01>"#
+				r#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><primaryRole><subjectOf2><organizer><code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/><component><substanceAdministration><consumable><instanceOfKind><kindOfProduct><code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="{canonical_version}"/><name>CureAll</name><asIdentifiedEntity><id extension="{identifier}"/><code code="MPID" codeSystemVersion="{identified_version}"/></asIdentifiedEntity></kindOfProduct></instanceOfKind></consumable></substanceAdministration></component></organizer></subjectOf2></primaryRole></MCCI_IN200100UV01>"#
 			);
 			let result = parse_past_drug_history(xml.as_bytes());
 			if let Some(expected) = expected_error {
@@ -1770,7 +1821,7 @@ mod tests {
 				assert!(error.to_string().contains(expected), "{error}");
 			} else {
 				let rows = result.expect("import both versions");
-				assert_eq!(rows[0].mpid_version.as_deref(), Some(version));
+				assert_eq!(rows[0].mpid_version.as_deref(), Some(canonical_version));
 				assert_eq!(
 					rows[0].mpid_source_code_system_version.as_deref(),
 					Some("201411011202")
@@ -1785,7 +1836,7 @@ mod tests {
 
 		let past_drugs = parse_past_drug_history(xml).expect("parse FDA D.8");
 		assert_eq!(past_drugs[0].mpid.as_deref(), Some("59762-2858"));
-		assert_eq!(past_drugs[0].mpid_version, None);
+		assert_eq!(past_drugs[0].mpid_version.as_deref(), Some("201411011202"));
 		assert_eq!(
 			past_drugs[0].mpid_source_code_system.as_deref(),
 			Some("2.16.840.1.113883.6.69")
@@ -1864,5 +1915,54 @@ mod tests {
 		assert_eq!(past_drug.mpid_version.as_deref(), Some("MPID-V1"));
 		assert_eq!(past_drug.phpid.as_deref(), Some("PHPID-EXACT"));
 		assert_eq!(past_drug.phpid_version.as_deref(), Some("PHPID-V1"));
+	}
+
+	#[test]
+	fn parse_parent_past_drug_accepts_fda_canonical_mpid_code() {
+		let xml = br#"
+<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3">
+  <primaryRole>
+    <player1>
+      <role>
+        <code code="PRN"/>
+        <subjectOf2>
+          <organizer>
+            <code code="2"/>
+            <component>
+              <substanceAdministration>
+                <consumable>
+                  <instanceOfKind>
+                    <kindOfProduct>
+                      <code code="59762-2858" codeSystem="2.16.840.1.113883.6.69" codeSystemVersion="2014110112"/>
+                      <name>Parent FDA Drug</name>
+                    </kindOfProduct>
+                  </instanceOfKind>
+                </consumable>
+              </substanceAdministration>
+            </component>
+          </organizer>
+        </subjectOf2>
+      </role>
+    </player1>
+  </primaryRole>
+</MCCI_IN200100UV01>
+"#;
+
+		let parent = parse_parent_information(xml)
+			.expect("parse FDA parent")
+			.expect("parent should exist");
+		let past_drug = parent.past_drugs.first().expect("parent past drug");
+		assert_eq!(past_drug.mpid.as_deref(), Some("59762-2858"));
+		assert_eq!(past_drug.mpid_version.as_deref(), Some("2014110112"));
+
+		let overlong = std::str::from_utf8(xml)
+			.expect("UTF-8 fixture")
+			.replace("2014110112", "20141101120");
+		let error = parse_parent_information(overlong.as_bytes())
+			.expect_err("D.10 FDA version remains limited to ten characters");
+		assert!(
+			error.to_string().contains("ICH.D.10.8.r.2a.LENGTH.MAX"),
+			"{error}"
+		);
 	}
 }

@@ -592,7 +592,7 @@ fn apply_section_d(
 			parser,
 			xpath,
 			parent_past_drugs,
-			matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds),
+			authority,
 		)?;
 		apply_d_10_7_parent_medical_history(
 			doc,
@@ -903,7 +903,7 @@ fn apply_d_10_8_parent_past_drugs(
 	parser: &Parser,
 	xpath: &mut Context,
 	past_drugs: &[ParentPastDrugHistory],
-	include_mfds: bool,
+	authority: lib_core::regulatory::RegulatoryAuthority,
 ) -> Result<()> {
 	if past_drugs.is_empty() {
 		return Ok(());
@@ -925,7 +925,7 @@ fn apply_d_10_8_parent_past_drugs(
 			parser,
 			xpath,
 			parent_role_xpath,
-			&write_d_10_8_r_parent_past_drug(&drug, include_mfds)?,
+			&write_d_10_8_r_parent_past_drug(&drug, authority)?,
 		)?;
 	}
 
@@ -1016,7 +1016,7 @@ fn write_history_product_identifier(
 
 fn write_d_10_8_r_parent_past_drug(
 	drug: &ParentPastDrugHistory,
-	include_mfds: bool,
+	authority: lib_core::regulatory::RegulatoryAuthority,
 ) -> Result<String> {
 	let name_fragment = if let Some(name) = write_d_10_8_r_1(drug) {
 		format!("<name>{}</name>", xml_escape(name))
@@ -1024,33 +1024,53 @@ fn write_d_10_8_r_parent_past_drug(
 		"<name/>".to_string()
 	};
 
-	let mfds_code = if include_mfds
-		&& (write_d_10_8_r_1_kr_1b(drug).is_some()
-			|| write_d_10_8_r_1_kr_1a(drug).is_some())
-	{
-		let mut attrs =
-			String::from(" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.2.1\"");
-		if let Some(id) = write_d_10_8_r_1_kr_1b(drug) {
-			attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
-		}
-		if let Some(version) = write_d_10_8_r_1_kr_1a(drug) {
-			attrs.push_str(&format!(
-				" codeSystemVersion=\"{}\"",
-				xml_escape(version)
-			));
-		}
-		format!("<code{attrs}/>")
-	} else {
-		String::new()
-	};
+	let product_code =
+		if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds)
+			&& (write_d_10_8_r_1_kr_1b(drug).is_some()
+				|| write_d_10_8_r_1_kr_1a(drug).is_some())
+		{
+			let mut attrs =
+				String::from(" codeSystem=\"2.16.840.1.113883.3.989.5.1.10.2.1\"");
+			if let Some(id) = write_d_10_8_r_1_kr_1b(drug) {
+				attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
+			}
+			if let Some(version) = write_d_10_8_r_1_kr_1a(drug) {
+				attrs.push_str(&format!(
+					" codeSystemVersion=\"{}\"",
+					xml_escape(version)
+				));
+			}
+			format!("<code{attrs}/>")
+		} else if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
+			&& (write_d_10_8_r_2b(drug).is_some()
+				|| write_d_10_8_r_2a(drug).is_some())
+		{
+			let mut attrs = format!(" codeSystem=\"{FDA_MPID_CODE_SYSTEM}\"");
+			if let Some(id) = write_d_10_8_r_2b(drug) {
+				attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
+			}
+			if let Some(version) = write_d_10_8_r_2a(drug) {
+				attrs.push_str(&format!(
+					" codeSystemVersion=\"{}\"",
+					xml_escape(version)
+				));
+			}
+			format!("<code{attrs}/>")
+		} else {
+			String::new()
+		};
 
 	let identifiers = format!(
 		"{}{}",
-		write_history_product_identifier(
-			"MPID",
-			write_d_10_8_r_2b(drug),
-			write_d_10_8_r_2a(drug)
-		)?,
+		if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
+			String::new()
+		} else {
+			write_history_product_identifier(
+				"MPID",
+				write_d_10_8_r_2b(drug),
+				write_d_10_8_r_2a(drug),
+			)?
+		},
 		write_history_product_identifier(
 			"PHPID",
 			write_d_10_8_r_3b(drug),
@@ -1103,7 +1123,7 @@ fn write_d_10_8_r_parent_past_drug(
 	};
 
 	Ok(format!(
-		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\" displayName=\"drugHistory\"/><component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">{effective_time}<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">{mfds_code}{name_fragment}{identifiers}</kindOfProduct></instanceOfKind></consumable>{indication}{reaction}</substanceAdministration></component></organizer></subjectOf2>"
+		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\" displayName=\"drugHistory\"/><component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">{effective_time}<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">{product_code}{name_fragment}{identifiers}</kindOfProduct></instanceOfKind></consumable>{indication}{reaction}</substanceAdministration></component></organizer></subjectOf2>"
 	))
 }
 
@@ -1246,20 +1266,6 @@ fn write_d_8_r_2b(value: &PastDrugHistory) -> Option<&str> {
 	value.mpid.as_deref()
 }
 
-fn write_d_8_fda_mpid_code_system(value: &PastDrugHistory) -> &str {
-	match value.mpid_source_code_system.as_deref() {
-		Some(code_system) => code_system,
-		None => FDA_MPID_CODE_SYSTEM,
-	}
-}
-
-fn write_d_8_fda_mpid_code_system_version(value: &PastDrugHistory) -> Option<&str> {
-	value
-		.mpid_source_code_system_version
-		.as_deref()
-		.or_else(|| write_d_8_r_2a(value))
-}
-
 /// e2b:D.8.r.3a
 fn write_d_8_r_3a(value: &PastDrugHistory) -> Option<&str> {
 	value.phpid_version.as_deref()
@@ -1353,15 +1359,11 @@ fn apply_d_8_past_drugs(
 			) && (write_d_8_r_2b(&drug).is_some()
 				|| write_d_8_r_2a(&drug).is_some())
 			{
-				let mut attrs = format!(
-					" codeSystem=\"{}\"",
-					xml_escape(write_d_8_fda_mpid_code_system(&drug)),
-				);
+				let mut attrs = format!(" codeSystem=\"{FDA_MPID_CODE_SYSTEM}\"");
 				if let Some(id) = write_d_8_r_2b(&drug) {
 					attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
 				}
-				if let Some(version) = write_d_8_fda_mpid_code_system_version(&drug)
-				{
+				if let Some(version) = write_d_8_r_2a(&drug) {
 					attrs.push_str(&format!(
 						" codeSystemVersion=\"{}\"",
 						xml_escape(version)
@@ -1371,9 +1373,7 @@ fn apply_d_8_past_drugs(
 			} else {
 				String::new()
 			};
-		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda)
-			|| drug.mpid_version.is_some()
-		{
+		if !matches!(authority, lib_core::regulatory::RegulatoryAuthority::Fda) {
 			identifiers.push_str(&write_history_product_identifier(
 				"MPID",
 				write_d_8_r_2b(&drug),
@@ -2040,7 +2040,7 @@ mod tests {
 		assert!(fda_fragment.contains(
 			"<code codeSystem=\"2.16.840.1.113883.6.69\" code=\"MP&amp;&lt;&gt;&quot;\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;\"/>"
 		));
-		assert!(fda_fragment.contains(mpid));
+		assert!(!fda_fragment.contains(mpid));
 		let imported =
 			crate::import_sections::d_patient::helpers::parse_past_drug_history(
 				fda_fragment.as_bytes(),
@@ -2104,7 +2104,7 @@ mod tests {
 	}
 
 	#[test]
-	fn d_8_fda_uses_source_mpid_metadata() {
+	fn d_8_fda_uses_editor_mpid_as_the_canonical_code() {
 		let drug = PastDrugHistory {
 			id: Uuid::nil(),
 			patient_id: Uuid::nil(),
@@ -2114,8 +2114,8 @@ mod tests {
 			mfds_medicinal_product_version: None,
 			mfds_medicinal_product_id: None,
 			mpid: Some("59762-2858".to_string()),
-			mpid_version: None,
-			mpid_source_code_system: Some("2.16.840.1.113883.6.69".to_string()),
+			mpid_version: Some("EDITOR-V1".to_string()),
+			mpid_source_code_system: Some("1.2.3".to_string()),
 			mpid_source_code_system_version: Some("201411011202".to_string()),
 			phpid: None,
 			phpid_version: None,
@@ -2149,13 +2149,15 @@ mod tests {
 			lib_core::regulatory::RegulatoryAuthority::Fda,
 		)
 		.expect("apply FDA");
-		assert!(doc
-			.to_string()
-			.contains("code=\"59762-2858\" codeSystemVersion=\"201411011202\""));
+		let xml = doc.to_string();
+		assert!(xml.contains(
+			"codeSystem=\"2.16.840.1.113883.6.69\" code=\"59762-2858\" codeSystemVersion=\"EDITOR-V1\""
+		));
+		assert!(!xml.contains("201411011202"));
 	}
 
 	#[test]
-	fn d_10_8_exports_mfds_code_separate_from_identifiers() {
+	fn d_10_8_exports_authority_specific_product_codes() {
 		let drug = ParentPastDrugHistory {
 			id: Uuid::nil(),
 			parent_id: Uuid::nil(),
@@ -2182,16 +2184,28 @@ mod tests {
 			updated_by: None,
 		};
 
-		let fragment =
-			write_d_10_8_r_parent_past_drug(&drug, true).expect("serialize");
-		let non_mfds_fragment =
-			write_d_10_8_r_parent_past_drug(&drug, false).expect("serialize");
+		let fragment = write_d_10_8_r_parent_past_drug(
+			&drug,
+			lib_core::regulatory::RegulatoryAuthority::Mfds,
+		)
+		.expect("serialize");
+		let ich_fragment = write_d_10_8_r_parent_past_drug(
+			&drug,
+			lib_core::regulatory::RegulatoryAuthority::Ich,
+		)
+		.expect("serialize");
+		let fda_fragment = write_d_10_8_r_parent_past_drug(
+			&drug,
+			lib_core::regulatory::RegulatoryAuthority::Fda,
+		)
+		.expect("serialize");
 
 		let mfds_code = "<code codeSystem=\"2.16.840.1.113883.3.989.5.1.10.2.1\" code=\"MF&amp;&lt;&gt;&quot;&apos;\" codeSystemVersion=\"MFV&amp;&lt;&gt;&quot;&apos;\"/>";
 		let name =
 			"<name>Parent &amp; &lt;drug&gt; &quot;A&quot; &apos;B&apos;</name>";
 		let mpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"MP&amp;&lt;&gt;&quot;&apos;\"/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;&apos;\"/></asIdentifiedEntity>";
 		let phpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"PH&amp;&lt;&gt;&quot;&apos;\"/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"PHV&amp;&lt;&gt;&quot;&apos;\"/></asIdentifiedEntity>";
+		let fda_code = "<code codeSystem=\"2.16.840.1.113883.6.69\" code=\"MP&amp;&lt;&gt;&quot;&apos;\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;&apos;\"/>";
 
 		let mfds_index = fragment.find(mfds_code).expect("MFDS product code");
 		let name_index = fragment.find(name).expect("drug name");
@@ -2199,9 +2213,12 @@ mod tests {
 		let phpid_index = fragment.find(phpid).expect("PhPID identifier");
 
 		assert!(mfds_index < name_index);
-		assert!(!non_mfds_fragment.contains("MF&amp;"));
+		assert!(!ich_fragment.contains("MF&amp;"));
 		assert!(name_index < mpid_index);
 		assert!(mpid_index < phpid_index);
+		assert!(fda_fragment.contains(fda_code));
+		assert!(!fda_fragment.contains(mpid));
+		assert!(fda_fragment.contains(phpid));
 	}
 
 	#[test]

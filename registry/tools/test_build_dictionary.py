@@ -541,6 +541,27 @@ class MergeFdaProfilesTests(unittest.TestCase):
         self.assertEqual(0, annotated)
         self.assertNotIn("profiles", entries[0])
 
+    def test_annotates_fda_max_length_overrides(self):
+        sample = FDA_SAMPLE.replace(
+            "ICH,N.1 ,N.1.1,Types of Message in batch,2,N",
+            "ICH,N.1 ,G.k.2.1.1a,MPID Version Date / Number,20,N",
+        )
+        entries = [
+            {
+                "code": "G.k.2.1.1a",
+                "name": "MPID Version Date / Number",
+                "section": "G",
+                "kind": "element",
+                "conformance": "mandatory",
+                "max_length": "2",
+            }
+        ]
+
+        annotated = build_dictionary.merge_fda_profiles(entries, sample)
+
+        self.assertEqual(1, annotated)
+        self.assertEqual({"fda": "20"}, entries[0]["profile_max_lengths"])
+
 
 FDA_SEVERITY_SAMPLE = """Title row to skip,,,,,
 ,,,,,

@@ -184,6 +184,13 @@
             "mfds": { "$ref": "#/$defs/conformance" }
           }
         },
+        "profile_max_lengths": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fda": { "type": "string", "pattern": "^[0-9]+$" }
+          }
+        },
         "xpath": { "type": "string" },
         "vocabulary": {
           "type": "string",

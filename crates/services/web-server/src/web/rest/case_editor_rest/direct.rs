@@ -1,6 +1,6 @@
 use super::common::{
 	bool_field, direct_page_projection_response,
-	mark_editor_validation_summary_stale, validate_direct_rows,
+	mark_editor_validation_summary_stale, validate_direct_rows_for_profiles,
 	validate_request_projection_context, BTreeMap, CaseEditorPagePatchRequest,
 	CaseEditorPageProjectionResponse, CtxW, Error, Json, ModelManager, Path,
 	PatientIdentifierBmc, PatientInformationBmc, Result, State, Uuid, Value,
@@ -182,6 +182,11 @@ pub(crate) async fn apply_editor_direct_page_patch(
 		.iter()
 		.flatten()
 		.any(|authority| authority.eq_ignore_ascii_case("fda"));
+	let mfds = request
+		.authorities
+		.iter()
+		.flatten()
+		.any(|authority| authority.eq_ignore_ascii_case("mfds"));
 	if page_id == "SI"
 		&& !request
 			.authorities
@@ -200,7 +205,7 @@ pub(crate) async fn apply_editor_direct_page_patch(
 	}
 	resolve_dm_identifier_types(ctx, mm, case_id, page_id, &mut request.rows)
 		.await?;
-	validate_direct_rows(page_id, &request.rows, fda)?;
+	validate_direct_rows_for_profiles(page_id, &request.rows, fda, fda && !mfds)?;
 	if !request.rows.is_empty() {
 		if page_id == "CI" {
 			apply_ci_rows_patch(ctx, mm, case_id, &request.rows).await?;

@@ -763,21 +763,14 @@ pub(crate) fn write_g_k_drug(
 		&& (write_g_k_2_1_1b(drug).is_some() || write_g_k_2_1_1a(drug).is_some())
 	{
 		out.push_str("<code codeSystem=\"");
-		out.push_str(match drug.mpid_source_code_system.as_deref() {
-			Some(code_system) => code_system,
-			None => FDA_MPID_CODE_SYSTEM,
-		});
+		out.push_str(FDA_MPID_CODE_SYSTEM);
 		out.push('"');
 		if let Some(code) = write_g_k_2_1_1b(drug) {
 			out.push_str(" code=\"");
 			out.push_str(&xml_escape(code));
 			out.push('"');
 		}
-		if let Some(version) = drug
-			.mpid_source_code_system_version
-			.as_deref()
-			.or_else(|| write_g_k_2_1_1a(drug))
-		{
+		if let Some(version) = write_g_k_2_1_1a(drug) {
 			out.push_str(" codeSystemVersion=\"");
 			out.push_str(&xml_escape(version));
 			out.push('"');
@@ -789,9 +782,7 @@ pub(crate) fn write_g_k_drug(
 		out.push_str(&xml_escape(product_name));
 		out.push_str("</name>");
 	}
-	// Keep the editor version distinct from the FDA source code-system version.
-	if (!matches!(authority, RegulatoryAuthority::Fda)
-		|| drug.mpid_version.is_some())
+	if !matches!(authority, RegulatoryAuthority::Fda)
 		&& (write_g_k_2_1_1b(drug).is_some() || write_g_k_2_1_1a(drug).is_some())
 	{
 		out.push_str("<asIdentifiedEntity classCode=\"IDENT\"><id");
@@ -2201,24 +2192,17 @@ mod tests {
 	}
 
 	#[test]
-	fn fda_mpid_version_roundtrip_preserves_editor_and_source_values() {
+	fn fda_mpid_version_roundtrip_uses_canonical_code_only() {
 		let root =
 			std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
 		let source =
 			std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))
 				.expect("official FDA example");
-		for (editor_version, source_version) in [
-			(Some("1"), None),
-			(Some("1234567890"), None),
-			(Some("V&<>\""), Some("201411011202")),
-			(None, Some("201411011202")),
-			(None, None),
-		] {
+		for version in [Some("1"), Some("12345678901234567890"), None] {
 			let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
-			drug.mpid_version = editor_version.map(str::to_owned);
-			drug.mpid_source_code_system =
-				source_version.map(|_| "2.16.840.1.113883.6.69".to_owned());
-			drug.mpid_source_code_system_version = source_version.map(str::to_owned);
+			drug.mpid_version = version.map(str::to_owned);
+			drug.mpid_source_code_system = None;
+			drug.mpid_source_code_system_version = None;
 			let fragment = write_g_k_drug(
 				&drug,
 				&[],
@@ -2239,11 +2223,12 @@ mod tests {
 					.expect("import exported FDA drug");
 			assert_eq!(imported.len(), 1);
 			assert_eq!(imported[0].mpid, drug.mpid);
-			assert_eq!(imported[0].mpid_version.as_deref(), editor_version);
+			assert_eq!(imported[0].mpid_version.as_deref(), version);
 			assert_eq!(
 				imported[0].mpid_source_code_system_version.as_deref(),
-				source_version.or(editor_version)
+				version
 			);
+			assert!(!fragment.contains("code=\"MPID\""));
 			let exported = crate::export::roundtrip::patch_g_drugs_for_authority(
 				&source,
 				std::slice::from_ref(&drug),
@@ -2264,29 +2249,11 @@ mod tests {
 			)
 			.expect("validate FDA XML");
 			assert!(errors.is_empty(), "{errors:#?}");
-			drug.mpid_version = imported[0].mpid_version.clone();
-			let ich = write_g_k_drug(
-				&drug,
-				&[],
-				&[],
-				&[],
-				&[],
-				&[],
-				&[],
-				&[],
-				RegulatoryAuthority::Ich,
-			)
-			.expect("export imported version to ICH");
-			let ich = format!("<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{ich}{}</MCCI_IN200100UV01>", write_g_k_1_causality(&drug));
-			let ich_imported =
-				crate::import_sections::g_drug::parse_g_drugs(ich.as_bytes())
-					.expect("read ICH version");
-			assert_eq!(ich_imported[0].mpid_version.as_deref(), editor_version);
 		}
 	}
 
 	#[test]
-	fn export_fda_g_k_2_1_preserves_ndc_code() {
+	fn export_fda_g_k_2_1_uses_only_canonical_ndc_code() {
 		let drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
 		let fragment = write_g_k_drug(
 			&drug,
@@ -2304,13 +2271,13 @@ mod tests {
 		assert!(fragment.contains(
 			"<code codeSystem=\"2.16.840.1.113883.6.69\" code=\"BASE-MPID\" codeSystemVersion=\"BASE-V1\"/>"
 		));
-		assert!(fragment.contains("code=\"MPID\""));
+		assert!(!fragment.contains("code=\"MPID\""));
 	}
 
 	#[test]
-	fn export_fda_g_k_2_1_uses_source_version_when_present() {
+	fn export_fda_g_k_2_1_uses_editor_version_as_canonical_version() {
 		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
-		drug.mpid_source_code_system = Some("2.16.840.1.113883.6.69".to_string());
+		drug.mpid_source_code_system = Some("1.2.3".to_string());
 		drug.mpid_source_code_system_version = Some("201411011202".to_string());
 		let fragment = write_g_k_drug(
 			&drug,
@@ -2324,7 +2291,10 @@ mod tests {
 			RegulatoryAuthority::Fda,
 		)
 		.expect("export FDA source MPID");
-		assert!(fragment.contains("codeSystemVersion=\"201411011202\""));
+		assert!(fragment.contains(
+			"codeSystem=\"2.16.840.1.113883.6.69\" code=\"BASE-MPID\" codeSystemVersion=\"BASE-V1\""
+		));
+		assert!(!fragment.contains("201411011202"));
 	}
 
 	#[test]

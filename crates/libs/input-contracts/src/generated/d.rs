@@ -909,6 +909,18 @@ pub fn d_8_r_2a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	issues
 }
 
+/// FDA.D.8.r.2a.LENGTH.MAX
+pub fn fda_d_8_r_2a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"FDA.D.8.r.2a.LENGTH.MAX",
+		input.value,
+		20,
+	);
+	issues
+}
+
 /// ICH.D.8.r.2b.LENGTH.MAX
 /// ICH.D.8.r.2b.ALLOWED.VALUE
 pub fn d_8_r_2b(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
