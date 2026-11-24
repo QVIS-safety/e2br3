@@ -162,7 +162,7 @@ CREATE TABLE past_drug_history (
 
     -- D.8.r.2 - MPID (Medicinal Product ID)
     mpid VARCHAR(1000),
-    mpid_version VARCHAR(10),
+    mpid_version VARCHAR(20),
     -- FDA direct MPID provenance (not an E2B business field)
     mpid_source_code_system TEXT,
     mpid_source_code_system_version TEXT,

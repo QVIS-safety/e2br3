@@ -4,7 +4,7 @@ use super::common::{
 	mark_editor_validation_summary_stale, parse_row_model, query_authorities_csv,
 	repeatable_page_projection_response, repeatable_rows_with_details,
 	required_row_object, row_model_value, string_field, uuid_eq,
-	validate_request_projection_context, validate_row_payload,
+	validate_request_projection_context, validate_row_payload_for_profiles,
 	CaseEditorDgListRowDto, CaseEditorPagePatchRequest,
 	CaseEditorPageProjectionQuery, CaseEditorPageProjectionResponse,
 	CaseEditorRowDetailResponse, CtxW, DosageInformationBmc,
@@ -1185,7 +1185,13 @@ pub(crate) async fn apply_editor_dg_page_row_create(
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
 	let row = required_row_object("DG", &request.rows, "drug")?;
-	validate_row_payload("DG", "drug", row, None)?;
+	validate_row_payload_for_profiles(
+		"DG",
+		"drug",
+		row,
+		None,
+		request.authorities.as_deref(),
+	)?;
 
 	let model = row_model_value(
 		"DG",
@@ -1268,7 +1274,13 @@ pub(crate) async fn apply_editor_dg_page_row_patch(
 		DrugInformationBmc::get_in_case_with_deleted(ctx, mm, case_id, row_id, true)
 			.await?;
 	let row = required_row_object("DG", &request.rows, "drug")?;
-	validate_row_payload("DG", "drug", row, None)?;
+	validate_row_payload_for_profiles(
+		"DG",
+		"drug",
+		row,
+		None,
+		request.authorities.as_deref(),
+	)?;
 	if current.deleted && row.get("deleted").and_then(Value::as_bool) != Some(false)
 	{
 		return Err(lib_core::model::Error::Conflict {

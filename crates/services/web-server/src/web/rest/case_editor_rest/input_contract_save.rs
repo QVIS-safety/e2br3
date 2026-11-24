@@ -584,6 +584,8 @@ pub(super) fn validate_direct_rows_for_profiles(
 					&normalized,
 					None,
 					&[row_index],
+					fda,
+					fda_mpid_length,
 				)?;
 			}
 			return Ok(());
@@ -1560,7 +1562,42 @@ pub(crate) fn validate_row_payload(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 ) -> Result<()> {
-	validate_row_payload_with_indexes(section, row_key, row, changed_paths, &[])
+	validate_row_payload_with_indexes(
+		section,
+		row_key,
+		row,
+		changed_paths,
+		&[],
+		false,
+		false,
+	)
+}
+
+pub(crate) fn validate_row_payload_for_profiles(
+	section: &str,
+	row_key: &str,
+	row: &Map<String, Value>,
+	changed_paths: Option<&BTreeSet<String>>,
+	authorities: Option<&[String]>,
+) -> Result<()> {
+	let has_authority = |profile: &str| {
+		authorities.is_some_and(|values| {
+			values
+				.iter()
+				.any(|authority| authority.eq_ignore_ascii_case(profile))
+		})
+	};
+	let fda = has_authority("fda");
+	let mfds = has_authority("mfds");
+	validate_row_payload_with_indexes(
+		section,
+		row_key,
+		row,
+		changed_paths,
+		&[],
+		fda,
+		fda && !mfds,
+	)
 }
 
 fn validate_row_payload_with_indexes(
@@ -1569,12 +1606,21 @@ fn validate_row_payload_with_indexes(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
+	fda: bool,
+	fda_mpid_length: bool,
 ) -> Result<()> {
 	validate_request_strings(&Value::Object(row.clone()), row_key)?;
 	if section == "DG" && row_key == "drug" {
 		validate_fda_device_code_identities(row)?;
 	}
-	validate_section_fields(section, row, changed_paths, outer_indexes, false, false)
+	validate_section_fields(
+		section,
+		row,
+		changed_paths,
+		outer_indexes,
+		fda,
+		fda_mpid_length,
+	)
 }
 
 fn validate_fda_device_code_identities(row: &Map<String, Value>) -> Result<()> {
@@ -1679,6 +1725,52 @@ fn validate_request_strings(value: &Value, path: &str) -> Result<()> {
 #[cfg(test)]
 mod input_contract_save_tests {
 	use super::*;
+
+	#[test]
+	fn repeatable_row_validation_uses_request_authority_for_fda_mpid_lengths() {
+		let fda = vec!["ich".to_string(), "fda".to_string()];
+		let ich = vec!["ich".to_string()];
+		let combined =
+			vec!["ich".to_string(), "fda".to_string(), "mfds".to_string()];
+		for (section, row_key) in [("DG", "drug"), ("DH", "pastDrugHistory")] {
+			let twenty = json!({"mpidVersion": "12345678901234567890"});
+			let row = twenty.as_object().expect("row");
+			validate_row_payload_for_profiles(
+				section,
+				row_key,
+				row,
+				None,
+				Some(&fda),
+			)
+			.unwrap();
+			assert!(validate_row_payload_for_profiles(
+				section,
+				row_key,
+				row,
+				None,
+				Some(&ich),
+			)
+			.is_err());
+			assert!(validate_row_payload_for_profiles(
+				section,
+				row_key,
+				row,
+				None,
+				Some(&combined),
+			)
+			.is_err());
+
+			let twenty_one = json!({"mpidVersion": "123456789012345678901"});
+			assert!(validate_row_payload_for_profiles(
+				section,
+				row_key,
+				twenty_one.as_object().expect("row"),
+				None,
+				Some(&fda),
+			)
+			.is_err());
+		}
+	}
 
 	#[test]
 	fn request_strings_reject_blank_values_at_any_depth_and_preserve_null() {

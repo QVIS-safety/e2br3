@@ -93,6 +93,33 @@ const EDITOR_DB_PAIRS: &[EditorDbPair] = &[
 
 #[serial]
 #[tokio::test]
+async fn database_mpid_version_lengths_match_fda_profiles() -> Result<()> {
+	let mm = init_test_mm().await?;
+	for (table, expected) in [
+		("drug_information", 20_i32),
+		("past_drug_history", 20_i32),
+		("parent_past_drug_history", 10_i32),
+	] {
+		let length: Option<i32> = sqlx::query_scalar(
+			"SELECT character_maximum_length::integer
+			   FROM information_schema.columns
+			  WHERE table_schema = 'public' AND table_name = $1
+			    AND column_name = 'mpid_version'",
+		)
+		.bind(table)
+		.fetch_one(mm.dbx().db())
+		.await?;
+		assert_eq!(
+			length,
+			Some(expected),
+			"wrong MPID version length for {table}"
+		);
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn database_has_every_editor_pair_and_mutual_exclusion_check() -> Result<()> {
 	let mm = init_test_mm().await?;
 	for pair in EDITOR_DB_PAIRS {
