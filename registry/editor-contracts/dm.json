@@ -3146,7 +3146,7 @@
       "roundTripValue": "MSK",
       "constraint": {
         "status": "verified",
-        "ruleCode": "ICH.D.1.NULLFLAVOR.ALLOWED",
+        "ruleCode": "FDA.D.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
       "payloadPath": "patientInitialsNullFlavor",

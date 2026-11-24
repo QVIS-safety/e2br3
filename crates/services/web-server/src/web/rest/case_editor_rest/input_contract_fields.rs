@@ -38,7 +38,7 @@ fn drug_additional_information_codes_validate_scalar_and_object_rows() {
 	for codes in [json!(["1"]), json!([{"valueCode": "1"}])] {
 		let row =
 			Map::from_iter([("drugAdditionalInformationCodes".to_string(), codes)]);
-		assert!(dg(&row, None, &[], false).is_ok());
+		assert!(dg(&row, None, &[]).is_ok());
 	}
 	for codes in [
 		json!(["0"]),
@@ -47,31 +47,23 @@ fn drug_additional_information_codes_validate_scalar_and_object_rows() {
 	] {
 		let row =
 			Map::from_iter([("drugAdditionalInformationCodes".to_string(), codes)]);
-		assert!(dg(&row, None, &[], false).is_err());
+		assert!(dg(&row, None, &[]).is_err());
 	}
 }
 
 #[cfg(test)]
 #[test]
-fn fda_mpid_versions_allow_twenty_characters_only_on_fda_routes() {
+fn union_mpid_versions_allow_twenty_characters_on_every_route() {
 	use serde_json::json;
 
 	for section in ["DG", "DH"] {
 		let twenty = json!({"mpidVersion": "12345678901234567890"});
 		let row = twenty.as_object().expect("row");
-		assert!(validate_section_fields(section, row, None, &[], true, true).is_ok());
-		assert!(
-			validate_section_fields(section, row, None, &[], false, false).is_err()
-		);
-		assert!(
-			validate_section_fields(section, row, None, &[], true, false).is_err()
-		);
+		assert!(validate_section_fields(section, row, None, &[]).is_ok());
 
 		let twenty_one = json!({"mpidVersion": "123456789012345678901"});
 		let row = twenty_one.as_object().expect("row");
-		assert!(
-			validate_section_fields(section, row, None, &[], true, true).is_err()
-		);
+		assert!(validate_section_fields(section, row, None, &[]).is_err());
 	}
 }
 
@@ -120,15 +112,13 @@ pub(super) fn validate_section_fields(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
-	fda: bool,
-	fda_mpid_length: bool,
 ) -> Result<()> {
 	match section {
 		"AE" => ae(row, changed_paths, outer_indexes),
 		"CI" => ci(row, changed_paths, outer_indexes),
-		"DG" => dg(row, changed_paths, outer_indexes, fda_mpid_length),
-		"DH" => dh(row, changed_paths, outer_indexes, fda_mpid_length),
-		"DM" => dm(row, changed_paths, outer_indexes, fda),
+		"DG" => dg(row, changed_paths, outer_indexes),
+		"DH" => dh(row, changed_paths, outer_indexes),
+		"DM" => dm(row, changed_paths, outer_indexes),
 		"LB" => lb(row, changed_paths, outer_indexes),
 		"LR" => lr(row, changed_paths, outer_indexes),
 		"N" => n(row, changed_paths, outer_indexes),
@@ -627,7 +617,6 @@ fn dg(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
-	fda: bool,
 ) -> Result<()> {
 	super::validate_local_text(
 		row,
@@ -1459,12 +1448,7 @@ fn dg(
 		None,
 		changed_paths,
 		outer_indexes,
-		if fda {
-			input_contracts::generated::g::fda_g_k_2_1_1a
-				as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>
-		} else {
-			input_contracts::generated::g::g_k_2_1_1a
-		},
+		input_contracts::generated::g::fda_g_k_2_1_1a,
 	)?;
 	validate_field(
 		row,
@@ -1503,7 +1487,6 @@ fn dh(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
-	fda: bool,
 ) -> Result<()> {
 	validate_field(
 		row,
@@ -1591,12 +1574,7 @@ fn dh(
 		None,
 		changed_paths,
 		outer_indexes,
-		if fda {
-			input_contracts::generated::d::fda_d_8_r_2a
-				as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>
-		} else {
-			input_contracts::generated::d::d_8_r_2a
-		},
+		input_contracts::generated::d::fda_d_8_r_2a,
 	)?;
 	validate_field(
 		row,
@@ -1659,17 +1637,15 @@ fn dm(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
-	fda: bool,
 ) -> Result<()> {
-	if fda
-		&& row
-			.get("raceCodes")
-			.and_then(Value::as_array)
-			.is_some_and(|values| {
-				values.iter().any(|value| {
-					value.as_str().is_some_and(|value| !value.trim().is_empty())
-				})
-			}) && row
+	if row
+		.get("raceCodes")
+		.and_then(Value::as_array)
+		.is_some_and(|values| {
+			values.iter().any(|value| {
+				value.as_str().is_some_and(|value| !value.trim().is_empty())
+			})
+		}) && row
 		.get("raceCodeNullFlavor")
 		.and_then(Value::as_str)
 		.is_some_and(|value| !value.trim().is_empty())
@@ -2334,20 +2310,6 @@ fn dm(
 		outer_indexes,
 		input_contracts::generated::d::d_4,
 	)?;
-	let (patient_initials_rule, patient_initials_check): (
-		&str,
-		fn(FieldInput<'_>) -> Vec<InputIssue>,
-	) = if fda {
-		(
-			"FDA.D.1.NULLFLAVOR.ALLOWED",
-			input_contracts::generated::d::fda_d_1,
-		)
-	} else {
-		(
-			"ICH.D.1.NULLFLAVOR.ALLOWED",
-			input_contracts::generated::d::d_1,
-		)
-	};
 	validate_field(
 		row,
 		"patientInitials",
@@ -2356,11 +2318,11 @@ fn dm(
 		Some((
 			"patientInitialsNullFlavor",
 			"patientInformation.patientInitialsNullFlavor",
-			patient_initials_rule,
+			"FDA.D.1.NULLFLAVOR.ALLOWED",
 		)),
 		changed_paths,
 		outer_indexes,
-		patient_initials_check,
+		input_contracts::generated::d::fda_d_1,
 	)?;
 	validate_field(
 		row,

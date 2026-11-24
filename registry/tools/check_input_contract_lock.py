@@ -14,7 +14,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def semantics(root: Path) -> dict:
     dictionary = {
         code: {"source": source, **{key: entry[key]
-                                  for key in editor_dictionary.INPUT_PROPERTIES if key in entry}}
+                                  for key in (*editor_dictionary.INPUT_PROPERTIES,
+                                              "profile_max_lengths") if key in entry}}
         for code, (source, entry) in editor_dictionary.dictionary_entries(root).items()
     }
     fields = {}

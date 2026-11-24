@@ -20,6 +20,8 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         self.assertEqual(len(checks), generated.count("dictionary_test!("))
         self.assertIn('"DM", "D.3", "D.3", "max_length", input_contracts::generated::d::d_3', generated)
         self.assertIn('"DM", "D.1", "FDA.D.1", "null_flavors", input_contracts::generated::d::fda_d_1', generated)
+        self.assertIn('"DG", "G.k.2.1.1a", "G.k.2.1.1a", "max_length", input_contracts::generated::g::fda_g_k_2_1_1a', generated)
+        self.assertIn('"DH", "D.8.r.2a", "D.8.r.2a", "max_length", input_contracts::generated::d::fda_d_8_r_2a', generated)
         self.assertEqual(generated, (generator.REPO_ROOT / "crates/libs/input-contracts/tests/editor_dictionary/generated.rs").read_text())
 
     def test_dictionary_gate_rejects_missing_stale_and_unexecutable_bindings(self):
@@ -64,6 +66,11 @@ class EditorContractWebTestGeneratorTests(unittest.TestCase):
         self.assertEqual(10, editor_dictionary.length_limit("4* E2B(R2)\n10* E2B(R3)"))
         with self.assertRaisesRegex(ValueError, "unsupported dictionary length"):
             editor_dictionary.length_limit("unknown")
+
+    def test_editor_requirement_uses_the_largest_profile_length(self):
+        entry = {"max_length": "10", "profile_max_lengths": {"fda": "20"}}
+        self.assertEqual("20", editor_dictionary.requirements(entry)["max_length"])
+        self.assertEqual("g::fda_g_k_2_1_1a", editor_dictionary.binding_function("G.k.2.1.1a", entry))
 
     def test_generates_one_named_macro_per_active_registry_field(self):
         repo = Path(__file__).resolve().parents[2]

@@ -196,16 +196,14 @@ fn normalized_direct_object(
 pub(super) fn validate_direct_rows(
 	section: &str,
 	rows: &BTreeMap<String, Value>,
-	fda: bool,
+	_authority_fda: bool,
 ) -> Result<()> {
-	validate_direct_rows_for_profiles(section, rows, fda, fda)
+	validate_union_direct_rows(section, rows)
 }
 
-pub(super) fn validate_direct_rows_for_profiles(
+pub(super) fn validate_union_direct_rows(
 	section: &str,
 	rows: &BTreeMap<String, Value>,
-	fda: bool,
-	fda_mpid_length: bool,
 ) -> Result<()> {
 	for (key, value) in rows {
 		validate_request_strings(value, key)?;
@@ -584,8 +582,6 @@ pub(super) fn validate_direct_rows_for_profiles(
 					&normalized,
 					None,
 					&[row_index],
-					fda,
-					fda_mpid_length,
 				)?;
 			}
 			return Ok(());
@@ -952,8 +948,6 @@ pub(super) fn validate_direct_rows_for_profiles(
 						&identifier_normalized,
 						None,
 						&[],
-						fda,
-						fda_mpid_length,
 					)?;
 				}
 			}
@@ -1397,7 +1391,7 @@ pub(super) fn validate_direct_rows_for_profiles(
 	};
 
 	if let Some(row) = normalized {
-		validate_section_fields(section, &row, None, &[], fda, fda_mpid_length)?;
+		validate_section_fields(section, &row, None, &[])?;
 	}
 	Ok(())
 }
@@ -1562,42 +1556,7 @@ pub(crate) fn validate_row_payload(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 ) -> Result<()> {
-	validate_row_payload_with_indexes(
-		section,
-		row_key,
-		row,
-		changed_paths,
-		&[],
-		false,
-		false,
-	)
-}
-
-pub(crate) fn validate_row_payload_for_profiles(
-	section: &str,
-	row_key: &str,
-	row: &Map<String, Value>,
-	changed_paths: Option<&BTreeSet<String>>,
-	authorities: Option<&[String]>,
-) -> Result<()> {
-	let has_authority = |profile: &str| {
-		authorities.is_some_and(|values| {
-			values
-				.iter()
-				.any(|authority| authority.eq_ignore_ascii_case(profile))
-		})
-	};
-	let fda = has_authority("fda");
-	let mfds = has_authority("mfds");
-	validate_row_payload_with_indexes(
-		section,
-		row_key,
-		row,
-		changed_paths,
-		&[],
-		fda,
-		fda && !mfds,
-	)
+	validate_row_payload_with_indexes(section, row_key, row, changed_paths, &[])
 }
 
 fn validate_row_payload_with_indexes(
@@ -1606,21 +1565,12 @@ fn validate_row_payload_with_indexes(
 	row: &Map<String, Value>,
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
-	fda: bool,
-	fda_mpid_length: bool,
 ) -> Result<()> {
 	validate_request_strings(&Value::Object(row.clone()), row_key)?;
 	if section == "DG" && row_key == "drug" {
 		validate_fda_device_code_identities(row)?;
 	}
-	validate_section_fields(
-		section,
-		row,
-		changed_paths,
-		outer_indexes,
-		fda,
-		fda_mpid_length,
-	)
+	validate_section_fields(section, row, changed_paths, outer_indexes)
 }
 
 fn validate_fda_device_code_identities(row: &Map<String, Value>) -> Result<()> {
@@ -1727,46 +1677,19 @@ mod input_contract_save_tests {
 	use super::*;
 
 	#[test]
-	fn repeatable_row_validation_uses_request_authority_for_fda_mpid_lengths() {
-		let fda = vec!["ich".to_string(), "fda".to_string()];
-		let ich = vec!["ich".to_string()];
-		let combined =
-			vec!["ich".to_string(), "fda".to_string(), "mfds".to_string()];
+	fn repeatable_row_validation_uses_the_same_union_contract() {
 		for (section, row_key) in [("DG", "drug"), ("DH", "pastDrugHistory")] {
 			let twenty = json!({"mpidVersion": "12345678901234567890"});
 			let row = twenty.as_object().expect("row");
-			validate_row_payload_for_profiles(
-				section,
-				row_key,
-				row,
-				None,
-				Some(&fda),
-			)
-			.unwrap();
-			assert!(validate_row_payload_for_profiles(
-				section,
-				row_key,
-				row,
-				None,
-				Some(&ich),
-			)
-			.is_err());
-			assert!(validate_row_payload_for_profiles(
-				section,
-				row_key,
-				row,
-				None,
-				Some(&combined),
-			)
-			.is_err());
+			validate_row_payload(section, row_key, row, None)
+				.expect("20-character union value");
 
 			let twenty_one = json!({"mpidVersion": "123456789012345678901"});
-			assert!(validate_row_payload_for_profiles(
+			assert!(validate_row_payload(
 				section,
 				row_key,
 				twenty_one.as_object().expect("row"),
 				None,
-				Some(&fda),
 			)
 			.is_err());
 		}
@@ -2256,7 +2179,7 @@ mod input_contract_save_tests {
 	}
 
 	#[test]
-	fn dm_patient_initials_na_requires_fda() {
+	fn dm_patient_initials_na_uses_the_same_union_contract() {
 		let rows = BTreeMap::from([(
 			"patientInformation".to_string(),
 			json!({
@@ -2265,12 +2188,10 @@ mod input_contract_save_tests {
 			}),
 		)]);
 
-		validate_direct_rows("DM", &rows, true).unwrap();
-		let detail = constraint_violation(
-			validate_direct_rows("DM", &rows, false).unwrap_err(),
-		);
-		assert_eq!(detail.rule_code, "ICH.D.1.NULLFLAVOR.ALLOWED");
-		assert_eq!(detail.path, "patientInformation.patientInitialsNullFlavor");
+		for former_fda_flag in [false, true] {
+			validate_direct_rows("DM", &rows, former_fda_flag)
+				.expect("NA belongs to the authority-independent input union");
+		}
 	}
 
 	#[test]

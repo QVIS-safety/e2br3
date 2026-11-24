@@ -52,7 +52,7 @@ macro_rules! repeatable_page_row_create_handler {
 			let requested_authorities =
 				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
 			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-			$crate::web::rest::case_editor_rest::common::validate_row_payload_for_profiles($section, $row_key, row, None, request.authorities.as_deref())?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
 			let extras = $extras_fn(ctx, mm, case_id, row).await?;
 			let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &extras);
 			let create = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
@@ -113,7 +113,7 @@ macro_rules! repeatable_page_row_create_handler {
 			let requested_authorities =
 				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
 			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-			$crate::web::rest::case_editor_rest::common::validate_row_payload_for_profiles($section, $row_key, row, None, request.authorities.as_deref())?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
 			let extras = {
 				let $case_id = case_id;
 				let $row = row;
@@ -221,7 +221,7 @@ macro_rules! repeatable_page_row_patch_handler {
 				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
 			$verify_fn(ctx, mm, case_id, row_id).await?;
 			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-			$crate::web::rest::case_editor_rest::common::validate_row_payload_for_profiles($section, $row_key, row, None, request.authorities.as_deref())?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
 			let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
 			let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
 			let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
@@ -288,7 +288,7 @@ macro_rules! repeatable_page_row_patch_handler {
 				$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
 			$verify_fn(ctx, mm, case_id, row_id).await?;
 			let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-			$crate::web::rest::case_editor_rest::common::validate_row_payload_for_profiles($section, $row_key, row, None, request.authorities.as_deref())?;
+			$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
 			let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
 			let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
 			let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
@@ -365,7 +365,7 @@ macro_rules! repeatable_page_row_patch_handler {
 						$crate::web::rest::case_editor_rest::common::validate_request_projection_context(request.authorities.as_deref())?;
 					$bmc::get_in_case(ctx, mm, case_id, row_id).await?;
 					let row = $crate::web::rest::case_editor_rest::common::required_row_object($section, &request.rows, $row_key)?;
-					$crate::web::rest::case_editor_rest::common::validate_row_payload_for_profiles($section, $row_key, row, None, request.authorities.as_deref())?;
+					$crate::web::rest::case_editor_rest::common::validate_row_payload($section, $row_key, row, None)?;
 					let clear_fields = $crate::web::rest::case_editor_rest::common::explicit_null_model_fields(row, $aliases);
 					let value = $crate::web::rest::case_editor_rest::common::row_model_value($section, "", row, $aliases, &[]);
 					let update = $crate::web::rest::case_editor_rest::common::parse_row_model::<$model>($section, $row_key, value)?;
