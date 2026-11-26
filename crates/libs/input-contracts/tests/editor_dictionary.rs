@@ -76,7 +76,7 @@ macro_rules! dictionary_test {
 
 include!("editor_dictionary/generated.rs");
 
-fn verify_fda_max_length(
+fn verify_union_max_length(
 	code: &str,
 	validate: fn(FieldInput<'_>) -> Vec<InputIssue>,
 ) -> TestResult {
@@ -96,18 +96,18 @@ fn verify_fda_max_length(
 	assert!(
 		validate(FieldInput::new(InputValue::String(&invalid), None))
 			.iter()
-			.any(|issue| issue.code == format!("FDA.{code}.LENGTH.MAX"))
+			.any(|issue| issue.code == format!("ICH.{code}.LENGTH.MAX"))
 	);
 	Ok(())
 }
 
 #[test]
-fn fda_mpid_version_limits_match_dictionary() -> TestResult {
-	verify_fda_max_length(
+fn union_mpid_version_limits_match_dictionary() -> TestResult {
+	verify_union_max_length(
 		"G.k.2.1.1a",
-		input_contracts::generated::g::fda_g_k_2_1_1a,
+		input_contracts::generated::g::g_k_2_1_1a,
 	)?;
-	verify_fda_max_length("D.8.r.2a", input_contracts::generated::d::fda_d_8_r_2a)
+	verify_union_max_length("D.8.r.2a", input_contracts::generated::d::d_8_r_2a)
 }
 
 #[test]

@@ -288,12 +288,12 @@
         {
           "code": "G.k.2.1.1a",
           "source": "dictionary/ich-e2br3.json",
-          "function": "g::fda_g_k_2_1_1a",
+          "function": "g::g_k_2_1_1a",
           "checks": {
             "max_length": {
               "dictionaryValue": "20",
               "owner": "input-contracts",
-              "ruleCode": "FDA.G.k.2.1.1a.LENGTH.MAX",
+              "ruleCode": "ICH.G.k.2.1.1a.LENGTH.MAX",
               "valid": [{"value": {"repeat": "X", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "X", "count": 20}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 19}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 20}, "nullFlavor": null}],
               "invalid": [{"value": {"repeat": "X", "count": 21}, "nullFlavor": null}, {"value": {"repeat": "한", "count": 21}, "nullFlavor": null}]
             }
@@ -310,7 +310,7 @@
       "roundTripValue": "1",
       "constraint": {
         "status": "verified",
-        "ruleCode": "FDA.G.k.2.1.1a.LENGTH.MAX",
+        "ruleCode": "ICH.G.k.2.1.1a.LENGTH.MAX",
         "invalidValue": "XXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "mpidVersion",

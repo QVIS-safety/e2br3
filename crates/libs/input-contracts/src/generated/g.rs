@@ -355,18 +355,6 @@ pub fn g_k_2_1_1a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 		&mut issues,
 		"ICH.G.k.2.1.1a.LENGTH.MAX",
 		input.value,
-		10,
-	);
-	issues
-}
-
-/// FDA.G.k.2.1.1a.LENGTH.MAX
-pub fn fda_g_k_2_1_1a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
-	let mut issues = Vec::new();
-	crate::helpers::max_length(
-		&mut issues,
-		"FDA.G.k.2.1.1a.LENGTH.MAX",
-		input.value,
 		20,
 	);
 	issues

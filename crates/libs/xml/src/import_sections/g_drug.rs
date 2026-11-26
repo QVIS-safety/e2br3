@@ -776,7 +776,7 @@ fn read_mpid(
 		let version = input_string(
 			first_attr(xpath, node, GDrugPaths::FDA_MPID_VERSION),
 			"mpidVersion",
-			input_contracts::generated::g::fda_g_k_2_1_1a,
+			input_contracts::generated::g::g_k_2_1_1a,
 			xpath,
 		)?;
 		if identified_version.is_some() && identified_version != version {
@@ -2218,7 +2218,7 @@ mod tests {
 				"123456789012345678901",
 				"59762-2858",
 				"123456789012345678901",
-				"FDA.G.k.2.1.1a.LENGTH.MAX",
+				"ICH.G.k.2.1.1a.LENGTH.MAX",
 			),
 		] {
 			let xml = with_drug_role(&format!(

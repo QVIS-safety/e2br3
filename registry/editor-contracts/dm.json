@@ -70,12 +70,12 @@
         {
           "code": "FDA.D.1",
           "source": "dictionary/fda-regional.json",
-          "function": "d::fda_d_1",
+          "function": "d::d_1",
           "checks": {
             "null_flavors": {
               "dictionaryValue": ["MSK", "UNK", "ASKU", "NASK", "NA"],
               "owner": "input-contracts",
-              "ruleCode": "FDA.D.1.NULLFLAVOR.ALLOWED",
+              "ruleCode": "ICH.D.1.NULLFLAVOR.ALLOWED",
               "valid": [{"value": null, "nullFlavor": "MSK"}, {"value": null, "nullFlavor": "UNK"}, {"value": null, "nullFlavor": "ASKU"}, {"value": null, "nullFlavor": "NASK"}, {"value": null, "nullFlavor": "NA"}],
               "invalid": [{"value": null, "nullFlavor": "ZZZ"}]
             }
@@ -3146,7 +3146,7 @@
       "roundTripValue": "MSK",
       "constraint": {
         "status": "verified",
-        "ruleCode": "FDA.D.1.NULLFLAVOR.ALLOWED",
+        "ruleCode": "ICH.D.1.NULLFLAVOR.ALLOWED",
         "invalidValue": "ZZZ"
       },
       "payloadPath": "patientInitialsNullFlavor",

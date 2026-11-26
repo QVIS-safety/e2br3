@@ -1534,7 +1534,7 @@ fn dg(
 		None,
 		changed_paths,
 		outer_indexes,
-		input_contracts::generated::g::fda_g_k_2_1_1a,
+		input_contracts::generated::g::g_k_2_1_1a,
 	)?;
 	validate_field(
 		row,
@@ -1660,7 +1660,7 @@ fn dh(
 		None,
 		changed_paths,
 		outer_indexes,
-		input_contracts::generated::d::fda_d_8_r_2a,
+		input_contracts::generated::d::d_8_r_2a,
 	)?;
 	validate_field(
 		row,
@@ -2404,11 +2404,11 @@ fn dm(
 		Some((
 			"patientInitialsNullFlavor",
 			"patientInformation.patientInitialsNullFlavor",
-			"FDA.D.1.NULLFLAVOR.ALLOWED",
+			"ICH.D.1.NULLFLAVOR.ALLOWED",
 		)),
 		changed_paths,
 		outer_indexes,
-		input_contracts::generated::d::fda_d_1,
+		input_contracts::generated::d::d_1,
 	)?;
 	validate_field(
 		row,

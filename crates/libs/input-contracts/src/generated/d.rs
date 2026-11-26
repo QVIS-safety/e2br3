@@ -54,19 +54,6 @@ pub fn d_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	issues
 }
 
-/// FDA.D.1.NULLFLAVOR.ALLOWED
-pub fn fda_d_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
-	let mut issues = Vec::new();
-	crate::helpers::max_length(&mut issues, "ICH.D.1.LENGTH.MAX", input.value, 60);
-	crate::helpers::null_flavor(
-		&mut issues,
-		"FDA.D.1.NULLFLAVOR.ALLOWED",
-		input.null_flavor,
-		&["MSK", "UNK", "ASKU", "NASK", "NA"],
-	);
-	issues
-}
-
 /// ICH.D.1.1.1.LENGTH.MAX
 /// ICH.D.1.1.1.NULLFLAVOR.ALLOWED
 pub fn d_1_1_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
@@ -903,18 +890,6 @@ pub fn d_8_r_2a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	crate::helpers::max_length(
 		&mut issues,
 		"ICH.D.8.r.2a.LENGTH.MAX",
-		input.value,
-		10,
-	);
-	issues
-}
-
-/// FDA.D.8.r.2a.LENGTH.MAX
-pub fn fda_d_8_r_2a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
-	let mut issues = Vec::new();
-	crate::helpers::max_length(
-		&mut issues,
-		"FDA.D.8.r.2a.LENGTH.MAX",
 		input.value,
 		20,
 	);

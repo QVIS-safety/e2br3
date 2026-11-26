@@ -46,17 +46,8 @@ def input_function(code: str) -> str:
 
 
 def binding_function(code: str, entry: dict) -> str:
-    base = entry.get("max_length")
-    if base is None:
-        return input_function(code)
-    profiles = entry.get("profile_max_lengths", {})
-    if profiles:
-        profile, limit = max(profiles.items(), key=lambda item: length_limit(item[1]))
-        if length_limit(limit) > length_limit(base):
-            if profile != "fda":
-                raise ValueError(f"unsupported editor max-length profile: {profile}")
-            return input_function(f"FDA.{code}")
-    return input_function(code)
+    # Regional overlays for a physical field are folded into its canonical contract.
+    return input_function("D.1" if code == "FDA.D.1" else code)
 
 
 def length_limit(value: str) -> int:

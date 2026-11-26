@@ -605,7 +605,7 @@ fn read_d_8_r_2(
 		let version = input_string(
 			first_attr(xpath, node, &fda_code, "codeSystemVersion"),
 			"mpidVersion",
-			input_contracts::generated::d::fda_d_8_r_2a,
+			input_contracts::generated::d::d_8_r_2a,
 			xpath,
 		)?;
 		if identified_version.is_some() && identified_version != version {
@@ -1809,7 +1809,7 @@ mod tests {
 				"123456789012345678901",
 				"59762-2858",
 				"123456789012345678901",
-				Some("FDA.D.8.r.2a.LENGTH.MAX"),
+				Some("ICH.D.8.r.2a.LENGTH.MAX"),
 			),
 		] {
 			let xml = format!(

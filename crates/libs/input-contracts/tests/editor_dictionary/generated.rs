@@ -61,7 +61,7 @@ dictionary_test!(dg_g_k_8_max_length, "DG", "G.k.8", "G.k.8", "max_length", inpu
 dictionary_test!(dg_g_k_8_allowed_value_constraint, "DG", "G.k.8", "G.k.8", "allowed_value_constraint", input_contracts::generated::g::g_k_8);
 dictionary_test!(dg_g_k_2_1_kr_1a_max_length, "DG", "G.k.2.1.KR.1a", "G.k.2.1.KR.1a", "max_length", input_contracts::generated::g::mfds_g_k_2_1_kr_1a);
 dictionary_test!(dg_g_k_2_1_kr_1b_max_length, "DG", "G.k.2.1.KR.1b", "G.k.2.1.KR.1b", "max_length", input_contracts::generated::g::mfds_g_k_2_1_kr_1b);
-dictionary_test!(dg_g_k_2_1_1a_max_length, "DG", "G.k.2.1.1a", "G.k.2.1.1a", "max_length", input_contracts::generated::g::fda_g_k_2_1_1a);
+dictionary_test!(dg_g_k_2_1_1a_max_length, "DG", "G.k.2.1.1a", "G.k.2.1.1a", "max_length", input_contracts::generated::g::g_k_2_1_1a);
 dictionary_test!(dg_g_k_2_1_1b_max_length, "DG", "G.k.2.1.1b", "G.k.2.1.1b", "max_length", input_contracts::generated::g::g_k_2_1_1b);
 dictionary_test!(dg_g_k_2_1_2a_max_length, "DG", "G.k.2.1.2a", "G.k.2.1.2a", "max_length", input_contracts::generated::g::g_k_2_1_2a);
 dictionary_test!(dg_g_k_2_1_2b_max_length, "DG", "G.k.2.1.2b", "G.k.2.1.2b", "max_length", input_contracts::generated::g::g_k_2_1_2b);
@@ -164,7 +164,7 @@ dictionary_test!(dh_d_8_r_1_max_length, "DH", "D.8.r.1", "D.8.r.1", "max_length"
 dictionary_test!(dh_d_8_r_1_null_flavors, "DH", "D.8.r.1", "D.8.r.1", "null_flavors", input_contracts::generated::d::d_8_r_1);
 dictionary_test!(dh_d_8_r_1_kr_1a_max_length, "DH", "D.8.r.1.KR.1a", "D.8.r.1.KR.1a", "max_length", input_contracts::generated::d::mfds_d_8_r_1_kr_1a);
 dictionary_test!(dh_d_8_r_1_kr_1b_max_length, "DH", "D.8.r.1.KR.1b", "D.8.r.1.KR.1b", "max_length", input_contracts::generated::d::mfds_d_8_r_1_kr_1b);
-dictionary_test!(dh_d_8_r_2a_max_length, "DH", "D.8.r.2a", "D.8.r.2a", "max_length", input_contracts::generated::d::fda_d_8_r_2a);
+dictionary_test!(dh_d_8_r_2a_max_length, "DH", "D.8.r.2a", "D.8.r.2a", "max_length", input_contracts::generated::d::d_8_r_2a);
 dictionary_test!(dh_d_8_r_2b_max_length, "DH", "D.8.r.2b", "D.8.r.2b", "max_length", input_contracts::generated::d::d_8_r_2b);
 dictionary_test!(dh_d_8_r_3a_max_length, "DH", "D.8.r.3a", "D.8.r.3a", "max_length", input_contracts::generated::d::d_8_r_3a);
 dictionary_test!(dh_d_8_r_3b_max_length, "DH", "D.8.r.3b", "D.8.r.3b", "max_length", input_contracts::generated::d::d_8_r_3b);
@@ -182,7 +182,7 @@ dictionary_test!(dh_d_8_r_7b_max_length, "DH", "D.8.r.7b", "D.8.r.7b", "max_leng
 dictionary_test!(dh_d_8_r_7b_allowed_value_constraint, "DH", "D.8.r.7b", "D.8.r.7b", "allowed_value_constraint", input_contracts::generated::d::d_8_r_7b);
 dictionary_test!(dm_d_1_max_length, "DM", "D.1", "D.1", "max_length", input_contracts::generated::d::d_1);
 dictionary_test!(dm_d_1_null_flavors, "DM", "D.1", "D.1", "null_flavors", input_contracts::generated::d::d_1);
-dictionary_test!(dm_fda_d_1_null_flavors, "DM", "D.1", "FDA.D.1", "null_flavors", input_contracts::generated::d::fda_d_1);
+dictionary_test!(dm_fda_d_1_null_flavors, "DM", "D.1", "FDA.D.1", "null_flavors", input_contracts::generated::d::d_1);
 dictionary_test!(dm_d_2_1_allowed_value_constraint, "DM", "D.2.1", "D.2.1", "allowed_value_constraint", input_contracts::generated::d::d_2_1);
 dictionary_test!(dm_d_2_1_null_flavors, "DM", "D.2.1", "D.2.1", "null_flavors", input_contracts::generated::d::d_2_1);
 dictionary_test!(dm_d_2_2a_max_length, "DM", "D.2.2a", "D.2.2a", "max_length", input_contracts::generated::d::d_2_2a);
