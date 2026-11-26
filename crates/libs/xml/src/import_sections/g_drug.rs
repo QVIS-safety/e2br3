@@ -199,7 +199,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			let manufacturer_country = read_g_k_3_3(&mut xpath, &node)?;
 			let obtain_drug_country = read_g_k_2_4(&mut xpath, &node)?;
 			let action_taken = read_g_k_8(&mut xpath, &node)?;
-			let batch_lot_number = read_g_k_local_batch_lot(&mut xpath, &node);
 			let cumulative_dose_first_reaction_value =
 				read_g_k_5a(&mut xpath, &node)?;
 			let cumulative_dose_first_reaction_unit =
@@ -429,6 +428,11 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				});
 			}
 
+			let fda_specialized_product_category =
+				helpers::take_fda_specialized_product_category(
+					fda_specialized_product_category,
+					&mut characteristics,
+				);
 			imports.push(GDrugImport {
 				xml_id: Some(xml_id),
 				source_product_link: read_local_product_link(&mut xpath, &node)?,
@@ -450,7 +454,8 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				drug_authorization_number,
 				manufacturer_name,
 				manufacturer_country,
-				batch_lot_number,
+				// Local convenience value has no XML mapping; lots belong to dosages/devices.
+				batch_lot_number: None,
 				cumulative_dose_first_reaction_value,
 				cumulative_dose_first_reaction_unit,
 				gestation_period_exposure_value,
@@ -929,11 +934,6 @@ fn read_g_k_8(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 		input_contracts::generated::g::g_k_8,
 	);
 	Ok(value)
-}
-
-/// e2b:G.k.local.batchLotNumber
-fn read_g_k_local_batch_lot(xpath: &mut Context, node: &Node) -> Option<String> {
-	first_text(xpath, node, GDrugPaths::BATCH_LOT_NUMBER)
 }
 
 /// e2b:G.k.5a

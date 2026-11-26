@@ -984,11 +984,6 @@ pub(crate) fn write_g_k_drug(
 			out.push_str("</characteristic></subjectOf></asManufacturedProduct></partProduct></part>");
 		}
 	}
-	if let Some(batch) = drug.batch_lot_number.as_deref() {
-		out.push_str("<part><partProduct><instanceOfKind><productInstanceInstance><lotNumberText>");
-		out.push_str(&xml_escape(batch));
-		out.push_str("</lotNumberText></productInstanceInstance></instanceOfKind></partProduct></part>");
-	}
 	if matches!(authority, RegulatoryAuthority::Fda) {
 		for device in devices {
 			let codes: Vec<_> = device_codes
@@ -3135,8 +3130,55 @@ mod tests {
 	}
 
 	#[test]
+	fn local_batch_lot_is_not_exported_or_imported() {
+		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+		drug.batch_lot_number = Some("LOCAL-ONLY-LOT".to_string());
+		let mut first = test_dosage(drug.id);
+		first.batch_lot_number = Some("DOSE-LOT-1".to_string());
+		let mut second = test_dosage(drug.id);
+		second.sequence_number = 2;
+		second.batch_lot_number = Some("DOSE-LOT-2".to_string());
+		for authority in [
+			RegulatoryAuthority::Ich,
+			RegulatoryAuthority::Fda,
+			RegulatoryAuthority::Mfds,
+		] {
+			for doses in [vec![], vec![&first, &second]] {
+				let fragment = write_g_k_drug(
+					&drug,
+					&[],
+					&doses,
+					&[],
+					&[],
+					&[],
+					&[],
+					&[],
+					authority,
+				)
+				.expect("export drug");
+				assert!(!fragment.contains("LOCAL-ONLY-LOT"));
+				let xml = base_g_drug_skeleton()
+					.replace("{DRUGS}", &fragment)
+					.replace("{CAUSALITY}", &write_g_k_1_causality(&drug));
+				let imported =
+					crate::import_sections::g_drug::parse_g_drugs(xml.as_bytes())
+						.expect("import drug");
+				assert_eq!(imported.len(), 1);
+				assert_eq!(imported[0].batch_lot_number, None);
+				assert_eq!(imported[0].dosages.len(), doses.len());
+				for (actual, expected) in imported[0].dosages.iter().zip(&doses) {
+					assert_eq!(actual.batch_lot, expected.batch_lot_number);
+				}
+			}
+		}
+	}
+
+	#[test]
 	fn export_fda_devices_preserves_both_repeat_levels() {
-		let drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+		let mut drug = test_drug(Uuid::new_v4(), Uuid::new_v4());
+		drug.batch_lot_number = Some("LOCAL-ONLY-LOT".to_string());
+		let mut dosage = test_dosage(drug.id);
+		dosage.batch_lot_number = Some("DOSE-LOT".to_string());
 		let make_device = |sequence_number, brand: &str| FdaDeviceInformation {
 			id: Uuid::new_v4(),
 			drug_id: drug.id,
@@ -3162,7 +3204,8 @@ mod tests {
 			updated_by: None,
 		};
 		let first = make_device(1, "Device A");
-		let second = make_device(2, "Device B");
+		let mut second = make_device(2, "Device B");
+		second.device_lot_number = Some("SECOND-DEVICE-LOT".to_string());
 		let mut unnamed = make_device(3, "unused");
 		unnamed.device_brand_name = None;
 		unnamed.common_device_name = None;
@@ -3232,7 +3275,7 @@ mod tests {
 		let xml = write_g_k_drug(
 			&drug,
 			&[],
-			&[],
+			&[&dosage],
 			&[],
 			&[],
 			&[&first, &second],
@@ -3258,6 +3301,29 @@ mod tests {
 		assert!(xml.contains("<state>MD</state>"));
 		assert!(xml.contains("<country>US</country>"));
 		assert!(xml.contains("<lotNumberText>LOT-DEVICE</lotNumberText>"));
+		assert!(!xml.contains("LOCAL-ONLY-LOT"));
+		let document = base_g_drug_skeleton()
+			.replace("{DRUGS}", &xml)
+			.replace("{CAUSALITY}", &write_g_k_1_causality(&drug));
+		let imported =
+			crate::import_sections::g_drug::parse_g_drugs(document.as_bytes())
+				.expect("import distinct lots");
+		assert_eq!(imported.len(), 1);
+		assert_eq!(imported[0].batch_lot_number, None);
+		assert_eq!(imported[0].dosages.len(), 1);
+		assert_eq!(
+			imported[0].dosages[0].batch_lot.as_deref(),
+			Some("DOSE-LOT")
+		);
+		assert_eq!(imported[0].devices.len(), 2);
+		assert_eq!(
+			imported[0].devices[0].device_lot_number.as_deref(),
+			Some("LOT-DEVICE")
+		);
+		assert_eq!(
+			imported[0].devices[1].device_lot_number.as_deref(),
+			Some("SECOND-DEVICE-LOT")
+		);
 
 		let ich = write_g_k_drug(
 			&drug,

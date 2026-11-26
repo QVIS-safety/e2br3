@@ -45,10 +45,7 @@ fn import_g_section_all_fields_from_scenario6() {
 		Some("Pharmacia and Upjohn Company")
 	);
 	assert_eq!(first.manufacturer_country.as_deref(), Some("US"));
-	assert_eq!(
-		first.batch_lot_number.as_deref(),
-		Some("4577BN2-product-2-device1")
-	);
+	assert_eq!(first.batch_lot_number, None);
 	assert_eq!(
 		first.cumulative_dose_first_reaction_value,
 		Some(decimal("150"))
@@ -164,27 +161,9 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first_indication.version.as_deref(), Some("12.0"));
 	assert_eq!(first_indication.code.as_deref(), Some("10028813"));
 
-	assert_eq!(first.characteristics.len(), 1);
-	let first_characteristic = &first.characteristics[0];
-	assert_eq!(first_characteristic.code.as_deref(), Some("C94031"));
-	assert_eq!(
-		first_characteristic.code_system.as_deref(),
-		Some("2.16.840.1.113883.3.26.1.1")
-	);
-	assert_eq!(
-		first_characteristic.code_display_name.as_deref(),
-		Some("FDA Specialized Product Category")
-	);
-	assert_eq!(first_characteristic.value_type.as_deref(), Some("CE"));
-	assert_eq!(first_characteristic.value_value, None);
-	assert_eq!(first_characteristic.value_code.as_deref(), Some("C102835"));
-	assert_eq!(
-		first_characteristic.value_code_system.as_deref(),
-		Some("2.16.840.1.113883.3.26.1.1")
-	);
-	assert_eq!(
-		first_characteristic.value_display_name.as_deref(),
-		Some("Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.)")
+	assert!(
+		first.characteristics.is_empty(),
+		"FDA category has a dedicated field"
 	);
 }
 
@@ -208,9 +187,12 @@ fn import_g_dosage_null_flavor_from_scenario1() {
 
 #[test]
 fn import_g_ignores_retired_mfds_device_characteristics() {
-	let source = String::from_utf8(g_fixture("FAERS2022Scenario6.xml")).unwrap();
+	let source = String::from_utf8(g_fixture("FAERS2022Scenario6.xml"))
+		.expect("UTF-8")
+		.replace("C94031", "OTHER_CHARACTERISTIC")
+		.replace("FDA Specialized Product Category", "Other characteristic");
 	let original = parse_g_drugs(source.as_bytes()).unwrap();
-	let replaced = source.replace("C94031", "KR_DVC_SN");
+	let replaced = source.replace("OTHER_CHARACTERISTIC", "KR_DVC_SN");
 	assert_ne!(source, replaced);
 	let drugs = parse_g_drugs(replaced.as_bytes()).unwrap();
 	assert_eq!(
@@ -224,14 +206,86 @@ fn import_g_ignores_retired_mfds_device_characteristics() {
 }
 
 #[test]
-fn import_g_reads_exported_batch_lot_without_duplicating_fda_device_codes() {
-	let drugs = parse_g_drugs(&g_fixture("FAERS2022Scenario6.xml")).expect("parse");
+fn import_g_category_aliases_do_not_create_duplicate_characteristic_rows() {
+	let source =
+		String::from_utf8(g_fixture("FAERS2022Scenario6.xml")).expect("UTF-8");
+	let code_start = source.find("<code code=\"C94031\"").expect("category code");
+	let start = source[..code_start]
+		.rfind("<subjectOf")
+		.expect("category owner");
+	let end = code_start
+		+ source[code_start..]
+			.find("</subjectOf>")
+			.expect("category end")
+		+ "</subjectOf>".len();
+	let category = &source[start..end];
+	let owner_end = end
+		+ source[end..]
+			.find("</asManufacturedProduct>")
+			.expect("product end")
+		+ "</asManufacturedProduct>".len();
+	let nested = format!("{}{}<part><partProduct><asManufacturedProduct>{category}</asManufacturedProduct></partProduct></part>{}", &source[..start], &source[end..owner_end], &source[owner_end..]);
+	for placement in [&source, &nested] {
+		for code in ["C94031", "FDAGK101", "FDA.G.k.10.1"] {
+			let xml = placement
+				.replace("C94031", code)
+				.replace("displayName=\"FDA Specialized Product Category\"", "");
+			let drugs = parse_g_drugs(xml.as_bytes()).expect("category import");
+			assert_eq!(
+				drugs[0].fda_specialized_product_category.as_deref(),
+				Some("C102835"),
+				"{code}"
+			);
+			assert!(drugs[0].characteristics.is_empty(), "{code} duplicated");
+		}
+	}
+	let unknown = source
+		.replace("C94031", "OTHER_CHARACTERISTIC")
+		.replace("FDA Specialized Product Category", "Other characteristic");
+	let drugs = parse_g_drugs(unknown.as_bytes()).expect("unknown characteristic");
+	assert_eq!(drugs[0].characteristics.len(), 1);
 	assert_eq!(
-		drugs[0].batch_lot_number.as_deref(),
+		drugs[0].characteristics[0].value_code.as_deref(),
+		Some("C102835")
+	);
+	assert_eq!(drugs[0].fda_specialized_product_category, None);
+}
+
+#[test]
+fn import_g_keeps_device_lot_out_of_local_drug_batch_lot() {
+	let drugs = parse_g_drugs(&g_fixture("FAERS2022Scenario6.xml")).expect("parse");
+	assert_eq!(drugs[0].batch_lot_number, None);
+	assert_eq!(
+		drugs[0].devices[0].device_lot_number.as_deref(),
 		Some("4577BN2-product-2-device1")
 	);
 	assert!(drugs[0]
 		.characteristics
 		.iter()
 		.all(|value| value.code.as_deref() != Some("C54451")));
+}
+
+#[test]
+fn import_g_ignores_legacy_local_lot_paths() {
+	let source = String::from_utf8(g_fixture("FAERS2022Scenario6.xml"))
+		.expect("UTF-8 fixture");
+	let baseline = parse_g_drugs(source.as_bytes()).expect("baseline");
+	let legacy = source.replace(
+		"</kindOfProduct>",
+		"<part><partProduct><instanceOfKind><productInstanceInstance><lotNumberText>LOCAL-PART</lotNumberText></productInstanceInstance></instanceOfKind></partProduct></part></kindOfProduct><productInstanceInstance><lotNumberText>LOCAL-DIRECT</lotNumberText></productInstanceInstance>",
+	);
+	assert_ne!(legacy, source);
+	let imported = parse_g_drugs(legacy.as_bytes()).expect("legacy XML");
+	assert_eq!(imported.len(), baseline.len());
+	for (actual, expected) in imported.iter().zip(&baseline) {
+		assert_eq!(actual.batch_lot_number, None);
+		assert_eq!(actual.dosages.len(), expected.dosages.len());
+		for (actual, expected) in actual.dosages.iter().zip(&expected.dosages) {
+			assert_eq!(actual.batch_lot, expected.batch_lot);
+		}
+		assert_eq!(actual.devices.len(), expected.devices.len());
+		for (actual, expected) in actual.devices.iter().zip(&expected.devices) {
+			assert_eq!(actual.device_lot_number, expected.device_lot_number);
+		}
+	}
 }

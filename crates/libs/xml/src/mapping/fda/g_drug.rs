@@ -49,8 +49,6 @@ impl GDrugPaths {
 		"hl7:consumable/hl7:instanceOfKind/hl7:subjectOf/hl7:productEvent/hl7:performer/hl7:assignedEntity/hl7:representedOrganization/hl7:addr/hl7:country";
 	pub const ACTION_TAKEN: &'static str =
 		"hl7:inboundRelationship[@typeCode='CAUS']/hl7:act/hl7:code/@code";
-	pub const BATCH_LOT_NUMBER: &'static str =
-		"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:part/hl7:partProduct/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText";
 	pub const CUMULATIVE_DOSE_VALUE: &'static str =
 		"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value/@value";
 	pub const CUMULATIVE_DOSE_UNIT: &'static str =

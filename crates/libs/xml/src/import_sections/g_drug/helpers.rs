@@ -67,14 +67,11 @@ fn normalize_characteristic_code(value: Option<&str>) -> String {
 	.replace(['.', '_', '-'], "")
 }
 
-pub(crate) fn import_fda_specialized_product_category(
-	drug: &super::GDrugImport,
-	characteristics: &[super::GDrugDeviceCharacteristicImport],
+pub(crate) fn take_fda_specialized_product_category(
+	mut specialized_product_category: Option<String>,
+	characteristics: &mut Vec<super::GDrugDeviceCharacteristicImport>,
 ) -> Option<String> {
-	let mut specialized_product_category =
-		drug.fda_specialized_product_category.clone();
-
-	for characteristic in characteristics {
+	characteristics.retain(|characteristic| {
 		let normalized =
 			normalize_characteristic_code(characteristic.code.as_deref());
 
@@ -85,9 +82,14 @@ pub(crate) fn import_fda_specialized_product_category(
 			.filter(|value| !value.is_empty())
 			.map(str::to_string);
 		if matches!(normalized.as_str(), "FDAGK101" | "C94031") {
-			specialized_product_category = code_value;
+			if let Some(value) = code_value {
+				// This value has a dedicated owner; do not also persist a generic row.
+				specialized_product_category = Some(value);
+				return false;
+			}
 		}
-	}
+		true
+	});
 	specialized_product_category
 }
 

@@ -73,11 +73,6 @@ async fn import_drugs(
 	let mut map = ImportIdMap::default();
 
 	for (drug, product_link) in imports.into_iter().zip(links) {
-		let fda_specialized_product_category =
-			g_helpers::import_fda_specialized_product_category(
-				&drug,
-				&drug.characteristics,
-			);
 		let drug_id = DrugInformationBmc::create(
 			ctx,
 			mm,
@@ -134,7 +129,8 @@ async fn import_drugs(
 				drug_additional_info_codes_json: drug
 					.drug_additional_info_codes_json,
 				drug_additional_information: drug.drug_additional_information,
-				fda_specialized_product_category,
+				fda_specialized_product_category: drug
+					.fda_specialized_product_category,
 				fda_other_characterization: drug.fda_other_characterization,
 			},
 		)
