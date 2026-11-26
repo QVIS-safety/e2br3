@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { random, project, generate, selectedFields, buildPath, mergeJson, resolveReferences, advanceCaseRandomness } from './run.mjs';
+import { random, project, generate, selectedFields, buildPath, mergeJson, resolveReferences, advanceCaseRandomness, fieldCoverage, assertSourceDocumentsNotExported, expectedImportLocalLinks, assertFdaReportTypeNotExported } from './run.mjs';
 
 test('seed reproduces full case plans and changes with a different seed', () => {
   const plans = seed => Array.from({ length: 12 }, (_, i) => generate(seed, i, `case-${i}`, ['ich', 'fda', 'mfds'][i % 3]));
@@ -56,6 +56,7 @@ test('generated fields exist in the contract and obey declared code sets and len
     for (const [page, rows] of Object.entries(plan)) {
       const fields = contracts[page].fields;
       const known = new Set(fields.map(f => f.patch.owner + (f.payloadPath.startsWith('[]') ? '' : '.') + f.payloadPath));
+      if (page === 'CI') for (const key of ['sourceDocumentBase64', 'sourceDocumentMediaType']) known.add(`sourceDocuments[].${key}`);
       for (const field of fields) {
         if (field.fixture !== undefined) for (const path of leafPaths({ [field.patch.owner]: field.fixture })) known.add(path);
         if (field.rowsFixture !== undefined) for (const path of leafPaths(field.rowsFixture)) known.add(path);
@@ -120,4 +121,92 @@ test('unstructured test results never include a numeric result', () => {
     }
   }
   assert.equal(sawUnstructured, true);
+});
+
+test('standard XML intake expects the selected product on the first drug only', () => {
+  const sender = { 'SD.senderInformation.sourceSenderPresaveId': 'target-sender' };
+  assert.deepEqual(expectedImportLocalLinks(0, 'target-sender', 'target-product'), sender);
+  for (const count of [1, 2, 5]) assert.deepEqual(expectedImportLocalLinks(count, 'target-sender', 'target-product'), {
+    ...sender, 'DG[0].drug.source_product_presave_id': 'target-product',
+  });
+  assert.throws(() => expectedImportLocalLinks(-1, 'sender', 'product'));
+  assert.throws(() => expectedImportLocalLinks(1, 'sender', undefined));
+});
+
+test('patient NullFlavor takes precedence over a synthetic parent prerequisite', () => {
+  const plan = generate(20261123, 38, 'case-38', 'mfds');
+  assert.equal(plan.DM[0].patientInformation.patientInitialsNullFlavor, 'MSK');
+  assert.equal(plan.DM[0].patientInformation.patientInitials, undefined);
+  assert.ok(plan.DM[0].parentPastDrugs.length > 0);
+  for (let i = 0; i < 100; i++) {
+    const selected = selectedFields(20261123, i, ['ich', 'fda', 'mfds'][i % 3]).DM;
+    const rows = generate(20261123, i, `case-${i}`, ['ich', 'fda', 'mfds'][i % 3]).DM[0];
+    if (selected.some(f => f.code === 'D.1.local.patientInitialsNullFlavor')) assert.equal(rows.patientInformation.patientInitials, undefined);
+    if (selected.some(f => f.code === 'D.1')) assert.equal(rows.patientInformation.patientInitials, contracts.DM.fields.find(f => f.code === 'D.1').roundTripValue);
+  }
+});
+
+test('local document canaries contain unique persisted file bytes, separate from XML coverage', () => {
+  const document = generate(20261123, 5, 'case-5', 'mfds').CI[0].sourceDocuments[0];
+  assert.equal(document.sourceDocumentName, 'case-5-local-source.txt');
+  assert.equal(document.sourceDocumentMediaType, 'text/plain');
+  assert.equal(Buffer.from(document.sourceDocumentBase64, 'base64').toString(), 'case-5: private source document, not an XML attachment');
+  assert.notEqual(generate(20261123, 5, 'another-run', 'mfds').CI[0].sourceDocuments[0].sourceDocumentBase64, document.sourceDocumentBase64);
+  const local = 'CI/C.local.sourceDocumentName';
+  const standard = 'CI/C.1.6.1.r.2';
+  const coverage = fieldCoverage(new Set([local, standard]), new Set());
+  assert.ok(!coverage.checkedFields.includes(local));
+  assert.ok(!coverage.uncheckedFields.includes(local));
+  assert.ok(coverage.checkedFields.includes(standard));
+  assert.deepEqual(coverage.uncheckedLocalOnlyFields, [local, 'CI/FDA.C.1.local.fdaReportType']);
+  const checked = fieldCoverage(new Set(), new Set([local]));
+  assert.deepEqual(checked.checkedLocalOnlyFields, [local]);
+  assert.ok(checked.uncheckedFields.includes(standard));
+  assert.ok(checked.uncheckedFields.includes('CI/C.1.local.otherCaseIdentifiersExistNullFlavor'));
+});
+
+test('local FDA report type remains generated and needs separate non-disclosure coverage', () => {
+  const local = 'CI/FDA.C.1.local.fdaReportType';
+  assert.equal(generate(20261123, 73, 'case-73', 'fda').CI[0].case.fdaReportType, '4');
+  const coverage = fieldCoverage(new Set([local]), new Set());
+  assert.ok(!coverage.xmlRoundTripFields.includes(local));
+  assert.ok(!coverage.checkedFields.includes(local));
+  assert.ok(coverage.uncheckedLocalOnlyFields.includes(local));
+  assert.ok(coverage.xmlRoundTripFields.includes('CI/FDA.C.1.7.1'));
+  assert.deepEqual(fieldCoverage(new Set(), new Set([local])).checkedLocalOnlyFields, [local]);
+  const xml = '<root><official>4</official></root>';
+  assertFdaReportTypeNotExported(xml, xml);
+  for (const leaked of [
+    '<root><official>4</official><local>4</local></root>',
+    '<root local="4"><official>4</official></root>',
+    '<root><?local-report 4?><official>4</official></root>',
+    '<root><official>1</official></root>',
+  ]) assert.throws(() => assertFdaReportTypeNotExported(leaked, xml), /changed export XML/);
+  assert.throws(() => assertFdaReportTypeNotExported(xml, undefined));
+});
+
+test('non-disclosure rejects local filenames, plain/base64 payloads and legacy processing instructions', () => {
+  const document = generate(20261123, 5, 'case-5', 'mfds').CI[0].sourceDocuments[0];
+  const content = Buffer.from(document.sourceDocumentBase64, 'base64').toString();
+  assert.equal(assertSourceDocumentsNotExported('<root><text>standard attachment</text></root>', [document]), 1);
+  assert.equal(assertSourceDocumentsNotExported('<root/>', []), 0);
+  assert.equal(assertSourceDocumentsNotExported('<root/>', [{ sourceDocumentName: 'name-only.txt', sourceDocumentBase64: null }]), 1);
+  const wrapped = document.sourceDocumentBase64.match(/.{1,12}/g).join('\n');
+  for (const xml of [
+    `<root><title>${document.sourceDocumentName}</title></root>`,
+    `<root file="${document.sourceDocumentName}"/>`,
+    `<root><text>${document.sourceDocumentBase64}</text></root>`,
+    `<root><text>${wrapped}</text></root>`,
+    `<root><text>${content}</text></root>`,
+    `<root><!-- ${content} --></root>`,
+    `<root><?unexpected ${content}?></root>`,
+    `<root><title>&#99;${document.sourceDocumentName.slice(1)}</title></root>`,
+    '<root><?e2br3-source-documents-v1 W10=?></root>',
+  ]) assert.throws(() => assertSourceDocumentsNotExported(xml, [document]), /leaked/);
+  assert.throws(() => assertSourceDocumentsNotExported('<root><?e2br3-source-documents-v1 W10=?></root>', []), /leaked/);
+  assert.throws(() => assertSourceDocumentsNotExported('<root/>', undefined), /collection/);
+  assert.throws(() => assertSourceDocumentsNotExported('<root/>', [{}]), /Invalid/);
+  const escaped = { sourceDocumentName: `private'"<&.txt`, sourceDocumentBase64: null };
+  assert.equal(assertSourceDocumentsNotExported('<root/>', [escaped]), 1);
+  assert.throws(() => assertSourceDocumentsNotExported('<root>private\'&quot;&lt;&amp;.txt</root>', [escaped]), /leaked/);
 });

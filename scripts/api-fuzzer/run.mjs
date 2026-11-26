@@ -24,6 +24,62 @@ const pages = ['CI', 'RP', 'SD', 'SI', 'DM', 'NR', 'AE', 'DG', 'LR', 'LB', 'DH']
 const repeated = ['AE', 'DG', 'LR', 'LB', 'DH'];
 const contracts = Object.fromEntries(pages.map(p => [p, JSON.parse(readFileSync(`${root}/registry/editor-contracts/${p.toLowerCase()}.json`))]));
 const contractFieldCodes = pages.flatMap(page => contracts[page].fields.map(field => `${page}/${field.code}`)).sort();
+// Explicit scope: a '.local.' name alone does not prove a field lacks an XML mapping.
+const localOnlyFieldCodes = ['CI/C.local.sourceDocumentName', 'CI/FDA.C.1.local.fdaReportType'];
+const xmlFieldCodes = contractFieldCodes.filter(field => !localOnlyFieldCodes.includes(field));
+
+export function fieldCoverage(checked, checkedLocalOnly) {
+  return {
+    xmlRoundTripFields: xmlFieldCodes,
+    checkedFields: xmlFieldCodes.filter(field => checked.has(field)),
+    uncheckedFields: xmlFieldCodes.filter(field => !checked.has(field)),
+    localOnlyFields: localOnlyFieldCodes,
+    checkedLocalOnlyFields: localOnlyFieldCodes.filter(field => checkedLocalOnly.has(field)),
+    uncheckedLocalOnlyFields: localOnlyFieldCodes.filter(field => !checkedLocalOnly.has(field)),
+  };
+}
+
+export function expectedImportLocalLinks(drugCount, sender, product) {
+  assert.ok(Number.isSafeInteger(drugCount) && drugCount >= 0);
+  for (const id of [sender, product]) assert.ok(typeof id === 'string' && id.length > 0);
+  // Standard XML has no local product links: intake attaches only the first drug.
+  return {
+    'SD.senderInformation.sourceSenderPresaveId': sender,
+    ...(drugCount > 0 ? { 'DG[0].drug.source_product_presave_id': product } : {}),
+  };
+}
+
+export function assertFdaReportTypeNotExported(withValue, withoutValue) {
+  assert.equal(typeof withValue, 'string');
+  assert.equal(typeof withoutValue, 'string');
+  assert.equal(withoutValue, withValue, 'App-local fdaReportType changed export XML');
+}
+
+export function assertSourceDocumentsNotExported(xml, documents) {
+  assert.equal(typeof xml, 'string');
+  assert.ok(Array.isArray(documents), 'Missing sourceDocuments collection');
+  const literal = value => `concat('',${value.split("'").map(part => `'${part}'`).join(',"\'",')})`;
+  const needles = [];
+  for (const document of documents) {
+    for (const key of ['sourceDocumentName', 'sourceDocumentBase64']) {
+      const value = document[key];
+      assert.ok(value === null || (typeof value === 'string' && value.length > 0), `Invalid ${key}`);
+      if (value !== null) needles.push(`contains(., ${literal(value)})`);
+    }
+    if (document.sourceDocumentBase64 !== null) {
+      const payload = document.sourceDocumentBase64;
+      needles.push(`contains(translate(., ' \t\r\n', ''), ${literal(payload)})`);
+      const bytes = Buffer.from(payload, 'base64');
+      const text = bytes.toString('utf8');
+      // Generated canaries are text; arbitrary binary files are checked as base64 only.
+      if (Buffer.from(text).equals(bytes) && /^[\x20-\x7e]+$/.test(text)) needles.push(`contains(., ${literal(text)})`);
+    }
+  }
+  const payloads = needles.length ? ` | //text()[${needles.join(' or ')}] | //@*[${needles.join(' or ')}] | //comment()[${needles.join(' or ')}] | //processing-instruction()[${needles.join(' or ')}]` : '';
+  const count = execFileSync('xmllint', ['--nonet', '--xpath', `count(//processing-instruction('e2br3-source-documents-v1')${payloads})`, '-'], { input: xml, encoding: 'utf8' });
+  assert.equal(count.trim(), '0', 'App-local source document leaked into export XML');
+  return documents.length;
+}
 
 function fieldSeed(seed, key) {
   let value = seed >>> 0;
@@ -114,6 +170,11 @@ function fieldRows(page, field, sequenceNumber, tag) {
   assert.notEqual(value, undefined, `${page}/${field.code}: missing roundtrip value`);
   let row = structuredClone(field.fixture ?? {});
   row = mergeJson(row, buildPath(field.payloadPath, value));
+  if (page === 'CI' && owner === 'sourceDocuments') {
+    row[0].sourceDocumentName = `${tag}-local-source.txt`;
+    row[0].sourceDocumentBase64 = Buffer.from(`${tag}: private source document, not an XML attachment`).toString('base64');
+    row[0].sourceDocumentMediaType = 'text/plain';
+  }
   if (Array.isArray(row.drugReactionAssessments)) {
     for (const assessment of row.drugReactionAssessments) {
       if (!Object.hasOwn(assessment, 'reactionId')) assessment.reactionId = referenceValue('case-reaction');
@@ -134,7 +195,12 @@ export function generate(seed, caseIndex, tag, authority) {
     const rows = fields.map((field, index) => fieldRows(page, field, index + 1, tag));
     if (repeated.includes(page)) return [page, rows];
     const partners = fields.some((field, index) => fields.some((other, otherIndex) => index !== otherIndex && field.nullFlavorPartnerCode === other.code));
-    if (!partners) return [page, [rows.reduce((combined, row) => mergeJson(combined, row), {})]];
+    if (!partners) {
+      const combined = rows.reduce((combined, row) => mergeJson(combined, row), {});
+      // The parent-row prerequisite must not override the selected patient NullFlavor.
+      if (page === 'DM' && fields.some(field => field.code === 'D.1.local.patientInitialsNullFlavor') && combined.patientInformation.patientInitials === 'PT-FIXTURE') delete combined.patientInformation.patientInitials;
+      return [page, [combined]];
+    }
     const combined = {};
     for (const row of rows) {
       for (const [owner, value] of Object.entries(row)) {
@@ -182,6 +248,7 @@ async function main() {
   assert.match(env.SERVICE_BIND_ADDR, /^127\.0\.0\.1:[0-9]+$/);
   const origin = `http://${env.SERVICE_BIND_ADDR}`;
   const { compareCrossOrganizationXmlSnapshots } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-cross-organization.mjs')));
+  const { compareXmlSnapshots } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-preservation.mjs')));
   const seed = Number(args.seed), count = Number(args.cases), hops = Number(args.hops), pick = random(seed);
   const caseIndex = args['case-index'] === undefined ? null : Number(args['case-index']);
   for (const n of [count, hops]) assert.ok(Number.isSafeInteger(n) && n > 0);
@@ -200,9 +267,9 @@ async function main() {
   ].map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]));
   save('runner.mjs.txt', readFileSync(fileURLToPath(import.meta.url), 'utf8'));
   const coverage = new Set();
+  const localOnlyCoverage = new Set();
   const checkpoint = () => {
-    report.checkedFields = [...coverage].sort();
-    report.uncheckedFields = contractFieldCodes.filter(field => !coverage.has(field));
+    Object.assign(report, fieldCoverage(coverage, localOnlyCoverage));
     save('report.json', report);
   };
   let context = 'setup', phase = 'setup';
@@ -270,6 +337,11 @@ async function main() {
         }
       }
     }
+    if (plan.CI[0].sourceDocuments !== undefined) {
+      for (const key of ['sourceDocumentBase64', 'sourceDocumentMediaType']) {
+        assert.deepEqual(project(before.pages.CI.rows, `sourceDocuments[].${key}`), project(plan.CI[0], `sourceDocuments[].${key}`), `Saved CI/${key}`);
+      }
+    }
     return checked;
   }
   function checkTransferred(plan, before, after, targetProduct) {
@@ -282,6 +354,7 @@ async function main() {
       if (source.length !== target.length || source.length !== inputs.length) continue;
       for (let index = 0; index < inputs.length; index++) {
         for (const field of contracts[p].fields) {
+          if (localOnlyFieldCodes.includes(`${p}/${field.code}`)) continue;
           try { project(inputs[index][field.patch.owner], field.payloadPath); } catch { continue; }
           let expected;
           let actual;
@@ -401,6 +474,35 @@ async function main() {
           const xml = await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`);
           assert.equal(typeof xml, 'string'); save(`${c}-${h}.xml`, xml);
           assert.equal(await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`), xml, 'Repeated export changed');
+          assert.doesNotMatch(xml, /<\?e2br3-product-link-v1\b/, 'Export must not contain local product links');
+          phase = 'local-document-non-disclosure';
+          const checkedDocuments = assertSourceDocumentsNotExported(xml, before.pages.CI.rows.sourceDocuments);
+          if (h === 0 && checkedDocuments > 0) localOnlyCoverage.add('CI/C.local.sourceDocumentName');
+          item.localDocumentChecks ??= [];
+          item.localDocumentChecks.push({ hop: h, documents: checkedDocuments, xml: `${c}-${h}.xml` });
+          phase = 'local-fda-report-type-non-disclosure';
+          const fdaReportType = project(before.pages.CI.rows, 'case.fdaReportType');
+          assert.ok(fdaReportType === null || (typeof fdaReportType === 'string' && fdaReportType.length > 0));
+          if (fdaReportType !== null) {
+            const uri = `/api/cases/${id}/editor/pages/CI`;
+            try {
+              await api(actor, 'PATCH', uri, { authorities: [authority], rows: { case: { fdaReportType: null } } });
+              assert.equal(project((await api(actor, 'GET', uri)).rows, 'case.fdaReportType'), null, 'Local report type probe did not clear the field');
+              const withoutLocal = await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`);
+              save(`${c}-${h}-without-local-fda-report-type.xml`, withoutLocal);
+              assertFdaReportTypeNotExported(xml, withoutLocal);
+            } finally {
+              await api(actor, 'PATCH', uri, { authorities: [authority], rows: { case: { fdaReportType } } });
+            }
+            const restored = await snapshot(actor, id);
+            assert.deepEqual(compareXmlSnapshots(before, restored).businessChanges, [], 'Local report type probe changed source values');
+            assert.deepEqual(restored.messageHeader, before.messageHeader, 'Local report type probe changed headers');
+            before = restored;
+            save(`${c}-${h}-source.json`, before);
+            localOnlyCoverage.add('CI/FDA.C.1.local.fdaReportType');
+            item.localFdaReportTypeChecks ??= [];
+            item.localFdaReportTypeChecks.push({ hop: h, value: fdaReportType, restored: true, xmlEqual: true });
+          }
           const form = new FormData(); form.set('format', authority); form.set('productPresaveId', next.product); form.set('file', new Blob([xml], { type: 'application/xml' }), 'case.xml');
           phase = 'import';
           const imported = await api(targetActor, 'POST', '/api/import/xml', form);
@@ -408,10 +510,7 @@ async function main() {
           const result = imported.data.importedCases[0]; assert.equal(result.status, 'success', JSON.stringify(result));
           const after = await snapshot(targetActor, result.caseId); save(`${c}-${h}-target.json`, after);
           phase = 'preservation';
-          const expectedLocalLinks = { 'SD.senderInformation.sourceSenderPresaveId': next.sender };
-          before.details.DG.forEach((row, index) => {
-            if (row.data.drug.source_product_presave_id !== null) expectedLocalLinks[`DG[${index}].drug.source_product_presave_id`] = next.product;
-          });
+          const expectedLocalLinks = expectedImportLocalLinks(before.details.DG.length, next.sender, next.product);
           if (h === 0) for (const field of checkTransferred(plan, before, after, next.product)) coverage.add(field);
           const comparison = compareCrossOrganizationXmlSnapshots(before, after, { sourceOrganizationId: org.id, targetOrganizationId: next.id, expectedLocalLinks, expectedTargetReportVersion: versions.has(next.id) ? versions.get(next.id) + 1 : 1 });
           save(`${c}-${h}-comparison.json`, comparison);
@@ -432,8 +531,9 @@ async function main() {
       checkpoint(); console.log(JSON.stringify({ case: c, status: item.status, transfers: report.transfers, failures: report.failures.length, error: item.error }));
     }
     if (caseIndex === null) {
-      const uncheckedFields = contractFieldCodes.filter(field => !coverage.has(field));
+      const { uncheckedFields, uncheckedLocalOnlyFields } = fieldCoverage(coverage, localOnlyCoverage);
       if (uncheckedFields.length > 0) report.failures.push({ context: 'campaign', phase: 'coverage', error: `${uncheckedFields.length} contract fields never completed a verified import/export`, fields: uncheckedFields });
+      if (uncheckedLocalOnlyFields.length > 0) report.failures.push({ context: 'campaign', phase: 'local-only-coverage', error: 'Local-only fields never completed persistence and XML non-disclosure checks', fields: uncheckedLocalOnlyFields });
     }
     report.status = report.failures.length ? 'failed' : 'passed';
   } catch (error) { report.status = 'setup-failed'; report.failures.push({ context, phase, error: String(error) }); }
