@@ -19,13 +19,26 @@ export function project(value, path) {
   if (array) { assert.ok(Array.isArray(child), `Not an array: ${path}`); return child.map(v => rest.length ? project(v, rest.join('.')) : v); }
   return rest.length ? project(child, rest.join('.')) : child;
 }
+
+export function plannedValues(value, path, indexes = []) {
+  const [head, ...rest] = path.split('.');
+  const array = head.endsWith('[]'), key = array ? head.slice(0, -2) : head;
+  if (value === undefined || (key !== '' && !Object.hasOwn(value, key))) return [];
+  const child = key === '' ? value : value[key];
+  const leaf = (v, positions) => rest.length ? plannedValues(v, rest.join('.'), positions) : [{ indexes: positions, value: v }];
+  if (!array) return leaf(child, indexes);
+  assert.ok(Array.isArray(child), `Invalid planned array: ${path}`);
+  return child.flatMap((v, index) => leaf(v, [...indexes, index]));
+}
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const pages = ['CI', 'RP', 'SD', 'SI', 'DM', 'NR', 'AE', 'DG', 'LR', 'LB', 'DH'];
 const repeated = ['AE', 'DG', 'LR', 'LB', 'DH'];
 const contracts = Object.fromEntries(pages.map(p => [p, JSON.parse(readFileSync(`${root}/registry/editor-contracts/${p.toLowerCase()}.json`))]));
 const contractFieldCodes = pages.flatMap(page => contracts[page].fields.map(field => `${page}/${field.code}`)).sort();
-// Explicit scope: a '.local.' name alone does not prove a field lacks an XML mapping.
-const localOnlyFieldCodes = ['CI/C.local.sourceDocumentName', 'CI/FDA.C.1.local.fdaReportType'];
+// Explicit audited scope: '.local.' and registry.local_only also label standard XML companions.
+const localAudit = JSON.parse(readFileSync(new URL('./local-field-audit.json', import.meta.url)));
+const localValueCodes = new Set([...localAudit.caseGroups['local-value'], ...localAudit.caseGroups['local-document']].map(([id]) => id));
+export const localOnlyFieldCodes = contractFieldCodes.filter(code => localValueCodes.has(code.split('/')[1]));
 const xmlFieldCodes = contractFieldCodes.filter(field => !localOnlyFieldCodes.includes(field));
 
 export function fieldCoverage(checked, checkedLocalOnly) {
@@ -49,10 +62,32 @@ export function expectedImportLocalLinks(drugCount, sender, product) {
   };
 }
 
-export function assertFdaReportTypeNotExported(withValue, withoutValue) {
+export function assertLocalFieldNotExported(withValue, withoutValue) {
   assert.equal(typeof withValue, 'string');
   assert.equal(typeof withoutValue, 'string');
-  assert.equal(withoutValue, withValue, 'App-local fdaReportType changed export XML');
+  assert.equal(withoutValue, withValue, 'App-local field changed export XML');
+}
+
+export function assertNoLocalXmlMetadata(xml) {
+  assert.equal(typeof xml, 'string');
+  const markers = ['product-link', 'source-product-id', 'dosage-continuing', 'source-documents']
+    .map(name => `starts-with(name(), 'e2br3-${name}')`).join(' or ');
+  const count = execFileSync('xmllint', ['--nonet', '--xpath', `count(//*[local-name()='code' and starts-with(@code, 'KR_DVC_')] | //processing-instruction()[${markers}])`, '-'], { input: xml, encoding: 'utf8' });
+  assert.equal(count.trim(), '0', 'App-local metadata leaked into XML');
+}
+
+export function localFieldProbePatch(field, rows, clear) {
+  const value = project(rows, field.projectionPath);
+  if (!field.payloadPath.includes('[]')) return { [field.patch.owner]: buildPath(field.payloadPath, clear ? null : value) };
+  const [collection, leaf] = field.payloadPath.split('[].');
+  assert.ok(leaf && !leaf.includes('.'), 'Unsupported local probe collection');
+  const children = project(rows, `${field.patch.owner}.${collection}`);
+  assert.ok(Array.isArray(value) && children.length === value.length);
+  const identity = collection === 'drugReactionAssessments' ? 'drugReactionAssessmentId' : 'id';
+  return { [field.patch.owner]: { [collection]: children.map((child, index) => {
+    assert.equal(typeof child[identity], 'string', 'Local probe requires an existing child identity');
+    return { [identity]: child[identity], [leaf]: clear ? null : value[index] };
+  }) } };
 }
 
 export function assertSourceDocumentsNotExported(xml, documents) {
@@ -247,7 +282,15 @@ async function main() {
   assert.equal(env.UI_TEST_TERMINOLOGY_FIXTURE, '1', 'Requires explicit synthetic terminology test environment');
   assert.match(env.SERVICE_BIND_ADDR, /^127\.0\.0\.1:[0-9]+$/);
   const origin = `http://${env.SERVICE_BIND_ADDR}`;
-  const { compareCrossOrganizationXmlSnapshots } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-cross-organization.mjs')));
+  const { compareCrossOrganizationXmlSnapshots, localOnlyTransferFields } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-cross-organization.mjs')));
+  const localFields = localOnlyFieldCodes.filter(code => code !== 'CI/C.local.sourceDocumentName').map(code => {
+    const [page, id] = code.split('/');
+    const field = contracts[page].fields.find(f => f.code === id);
+    assert.ok(field, `Missing local contract: ${code}`);
+    const path = `${page}${repeated.includes(page) ? '[]' : ''}.${field.projectionPath}`;
+    assert.ok(localOnlyTransferFields.has(path), `Comparator disagrees with local policy: ${code}`);
+    return { page, code, field };
+  });
   const { compareXmlSnapshots } = await import(pathToFileURL(resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil/xml-preservation.mjs')));
   const seed = Number(args.seed), count = Number(args.cases), hops = Number(args.hops), pick = random(seed);
   const caseIndex = args['case-index'] === undefined ? null : Number(args['case-index']);
@@ -262,6 +305,7 @@ async function main() {
   const report = { seed, count: lastCase - firstCase, caseIndex, hops, origin, database: db.pathname.slice(1), revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), fixture: 'contract roundTripValue fixtures plus isolated synthetic terminology; test only', status: 'running', organizations: [], cases: [], requests: 0, transfers: 0, contractFields: contractFieldCodes.length, checkedFields: [], uncheckedFields: contractFieldCodes, failures: [] };
   report.sources = Object.fromEntries([
     fileURLToPath(import.meta.url),
+    fileURLToPath(new URL('./local-field-audit.json', import.meta.url)),
     ...pages.map(p => `${root}/registry/editor-contracts/${p.toLowerCase()}.json`),
     ...['xml-preservation.mjs', 'xml-cross-organization.mjs'].map(p => resolve(env.E2BR3_FRONTEND_ROOT, 'scripts/bombadil', p)),
   ].map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]));
@@ -321,18 +365,22 @@ async function main() {
       if (repeated.includes(p)) assert.equal(outputs.length, inputs.length, `${p} row count`);
       for (let i = 0; i < inputs.length; i++) {
         for (const f of contracts[p].fields) {
-          let expected;
-          // A field absent from the generated payload is not counted as populated coverage.
-          try { expected = project(inputs[i][f.patch.owner], f.payloadPath); } catch { continue; }
-          // Decimal DB projections have explicit fixed scales in the existing editor contract.
-          if (typeof f.roundTripValue === 'number' && typeof f.projectionValue === 'string') {
-            assert.match(f.projectionValue, /^-?\d+\.\d+$/);
-            const scale = f.projectionValue.split('.')[1].length;
-            const decimal = v => Array.isArray(v) ? v.map(decimal) : v === null ? null : v.toFixed(scale);
-            expected = decimal(expected);
+          const planned = plannedValues(inputs[i][f.patch.owner], f.payloadPath);
+          if (!planned.length) continue;
+          const projected = project(outputs[i], f.projectionPath);
+          for (const { indexes, value } of planned) {
+            let expected = value;
+            // Decimal DB projections have explicit fixed scales in the existing contract.
+            if (expected !== null && typeof f.roundTripValue === 'number' && typeof f.projectionValue === 'string') {
+              assert.match(f.projectionValue, /^-?\d+\.\d+$/);
+              expected = expected.toFixed(f.projectionValue.split('.')[1].length);
+            }
+            const actual = indexes.reduce((values, index) => {
+              assert.ok(Array.isArray(values) && index < values.length, `Missing saved array row: ${p}/${f.code}`);
+              return values[index];
+            }, projected);
+            assert.deepEqual(actual, expected, `Saved ${p}/${f.code}`);
           }
-          const actual = project(outputs[i], f.projectionPath);
-          assert.deepEqual(actual, expected, `Saved ${p}/${f.code}`);
           checked.add(`${p}/${f.code}`);
         }
       }
@@ -355,7 +403,7 @@ async function main() {
       for (let index = 0; index < inputs.length; index++) {
         for (const field of contracts[p].fields) {
           if (localOnlyFieldCodes.includes(`${p}/${field.code}`)) continue;
-          try { project(inputs[index][field.patch.owner], field.payloadPath); } catch { continue; }
+          if (!plannedValues(inputs[index][field.patch.owner], field.payloadPath).length) continue;
           let expected;
           let actual;
           try {
@@ -474,34 +522,42 @@ async function main() {
           const xml = await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`);
           assert.equal(typeof xml, 'string'); save(`${c}-${h}.xml`, xml);
           assert.equal(await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`), xml, 'Repeated export changed');
-          assert.doesNotMatch(xml, /<\?e2br3-product-link-v1\b/, 'Export must not contain local product links');
+          assertNoLocalXmlMetadata(xml);
           phase = 'local-document-non-disclosure';
           const checkedDocuments = assertSourceDocumentsNotExported(xml, before.pages.CI.rows.sourceDocuments);
           if (h === 0 && checkedDocuments > 0) localOnlyCoverage.add('CI/C.local.sourceDocumentName');
           item.localDocumentChecks ??= [];
           item.localDocumentChecks.push({ hop: h, documents: checkedDocuments, xml: `${c}-${h}.xml` });
-          phase = 'local-fda-report-type-non-disclosure';
-          const fdaReportType = project(before.pages.CI.rows, 'case.fdaReportType');
-          assert.ok(fdaReportType === null || (typeof fdaReportType === 'string' && fdaReportType.length > 0));
-          if (fdaReportType !== null) {
-            const uri = `/api/cases/${id}/editor/pages/CI`;
-            try {
-              await api(actor, 'PATCH', uri, { authorities: [authority], rows: { case: { fdaReportType: null } } });
-              assert.equal(project((await api(actor, 'GET', uri)).rows, 'case.fdaReportType'), null, 'Local report type probe did not clear the field');
-              const withoutLocal = await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`);
-              save(`${c}-${h}-without-local-fda-report-type.xml`, withoutLocal);
-              assertFdaReportTypeNotExported(xml, withoutLocal);
-            } finally {
-              await api(actor, 'PATCH', uri, { authorities: [authority], rows: { case: { fdaReportType } } });
+          phase = 'local-field-non-disclosure';
+          for (const { page, code, field } of localFields) {
+            const rows = repeated.includes(page) ? before.details[page].map(detail => detail.data) : [before.pages[page].rows];
+            for (const [index, row] of rows.entries()) {
+              const value = project(row, field.projectionPath);
+              const values = Array.isArray(value) ? value : [value];
+              assert.ok(values.every(v => v === null || typeof v === 'string' || typeof v === 'boolean'), 'Invalid local probe value');
+              if (!values.some(v => v !== null)) continue;
+              const rowId = repeated.includes(page) ? before.details[page][index].rowId : null;
+              const uri = `/api/cases/${id}/editor/pages/${page}${rowId === null ? '' : '/rows/' + rowId}`;
+              try {
+                await api(actor, 'PATCH', uri, { authorities: [authority], rows: localFieldProbePatch(field, row, true) });
+                const cleared = await api(actor, 'GET', uri);
+                const actual = project(rowId === null ? cleared.rows : cleared.data, field.projectionPath);
+                assert.deepEqual(actual, Array.isArray(value) ? value.map(() => null) : null, 'Local probe did not clear the field');
+                const withoutLocal = await api(actor, 'GET', `/api/cases/${id}/export/xml?authority=${authority}&include_notation=false`);
+                save(`${c}-${h}-without-local-${page}-${index}-${field.code}.xml`, withoutLocal);
+                assertLocalFieldNotExported(xml, withoutLocal);
+              } finally {
+                await api(actor, 'PATCH', uri, { authorities: [authority], rows: localFieldProbePatch(field, row, false) });
+              }
+              const restored = await snapshot(actor, id);
+              assert.deepEqual(compareXmlSnapshots(before, restored).businessChanges, [], 'Local probe changed source values');
+              assert.deepEqual(restored.messageHeader, before.messageHeader, 'Local probe changed headers');
+              before = restored;
+              save(`${c}-${h}-source.json`, before);
+              localOnlyCoverage.add(code);
+              item.localFieldChecks ??= [];
+              item.localFieldChecks.push({ hop: h, code, rowId, value, restored: true, xmlEqual: true });
             }
-            const restored = await snapshot(actor, id);
-            assert.deepEqual(compareXmlSnapshots(before, restored).businessChanges, [], 'Local report type probe changed source values');
-            assert.deepEqual(restored.messageHeader, before.messageHeader, 'Local report type probe changed headers');
-            before = restored;
-            save(`${c}-${h}-source.json`, before);
-            localOnlyCoverage.add('CI/FDA.C.1.local.fdaReportType');
-            item.localFdaReportTypeChecks ??= [];
-            item.localFdaReportTypeChecks.push({ hop: h, value: fdaReportType, restored: true, xmlEqual: true });
           }
           const form = new FormData(); form.set('format', authority); form.set('productPresaveId', next.product); form.set('file', new Blob([xml], { type: 'application/xml' }), 'case.xml');
           phase = 'import';

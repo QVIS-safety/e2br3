@@ -171,47 +171,6 @@ pub(crate) fn write_e_i_reaction(
 			reaction.required_intervention_null_flavor.as_deref(),
 		)?);
 	}
-	if matches!(authority, lib_core::regulatory::RegulatoryAuthority::Mfds) {
-		append_extension_code(
-			&mut out,
-			"KR_DVC_AECL",
-			reaction.mfds_device_ae_classification.as_deref(),
-		);
-		append_extension_code(
-			&mut out,
-			"KR_DVC_AEOUT",
-			reaction.mfds_device_ae_outcome.as_deref(),
-		);
-		for (code, value) in [
-			("KR_DVC_CC_MD", reaction.mfds_device_cause_medical_device),
-			("KR_DVC_CC_PI", reaction.mfds_device_cause_procedure_issue),
-			("KR_DVC_CC_PC", reaction.mfds_device_cause_patient_condition),
-			("KR_DVC_CC_UA", reaction.mfds_device_cause_unable_to_assess),
-			("KR_DVC_ACT_RC", reaction.mfds_device_action_recall),
-			("KR_DVC_ACT_RP", reaction.mfds_device_action_repair),
-			("KR_DVC_ACT_INSP", reaction.mfds_device_action_inspection),
-			("KR_DVC_ACT_REPL", reaction.mfds_device_action_replacement),
-			("KR_DVC_ACT_IMP", reaction.mfds_device_action_improvement),
-			("KR_DVC_ACT_MON", reaction.mfds_device_action_monitoring),
-			("KR_DVC_ACT_NTF", reaction.mfds_device_action_notification),
-			("KR_DVC_ACT_CAS", reaction.mfds_device_action_label_change),
-		] {
-			append_extension_bool(&mut out, code, value);
-		}
-		for (code, value) in [
-			("KR_DVC_CC_OTH", reaction.mfds_device_cause_other.as_deref()),
-			(
-				"KR_DVC_ACT_RSN",
-				reaction.mfds_device_action_reason.as_deref(),
-			),
-			(
-				"KR_DVC_ACT_OTH",
-				reaction.mfds_device_action_other.as_deref(),
-			),
-		] {
-			append_extension_text(&mut out, code, value);
-		}
-	}
 	out.push_str(&write_e_i_7(reaction.outcome.as_deref()));
 	out.push_str(&write_e_i_8(reaction));
 	out.push_str("</observation></subjectOf2>");
@@ -426,39 +385,6 @@ fn write_e_i_9(value: &Reaction) -> Option<&str> {
 	value.country_code.as_deref()
 }
 
-fn append_extension_code(out: &mut String, code: &str, value: Option<&str>) {
-	let Some(value) = value else {
-		return;
-	};
-	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
-	out.push_str(&xml_escape(code));
-	out.push_str("\"/><value xsi:type=\"CE\" code=\"");
-	out.push_str(&xml_escape(value));
-	out.push_str("\"/></observation></outboundRelationship2>");
-}
-
-fn append_extension_bool(out: &mut String, code: &str, value: Option<bool>) {
-	let Some(value) = value else {
-		return;
-	};
-	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
-	out.push_str(&xml_escape(code));
-	out.push_str("\"/><value xsi:type=\"BL\" value=\"");
-	out.push_str(if value { "true" } else { "false" });
-	out.push_str("\"/></observation></outboundRelationship2>");
-}
-
-fn append_extension_text(out: &mut String, code: &str, value: Option<&str>) {
-	let Some(value) = value else {
-		return;
-	};
-	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
-	out.push_str(&xml_escape(code));
-	out.push_str("\"/><value xsi:type=\"ED\">");
-	out.push_str(&xml_escape(value));
-	out.push_str("</value></observation></outboundRelationship2>");
-}
-
 fn write_e_i_3_2(
 	code: &str,
 	value: Option<bool>,
@@ -652,6 +578,74 @@ mod meddra_requirement_tests {
 			updated_at: OffsetDateTime::now_utc(),
 			created_by: Uuid::new_v4(),
 			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn local_mfds_device_fields_never_change_standard_xml() {
+		use lib_core::regulatory::RegulatoryAuthority::{Fda, Ich, Mfds};
+		let mut baseline = reaction();
+		baseline.id = Uuid::from_u128(1);
+		baseline.case_id = Uuid::from_u128(2);
+		baseline.created_by = Uuid::from_u128(3);
+		baseline.created_at = OffsetDateTime::UNIX_EPOCH;
+		baseline.updated_at = OffsetDateTime::UNIX_EPOCH;
+		for authority in [Ich, Fda, Mfds] {
+			let expected = export_e_reactions_xml_for_authority(
+				std::slice::from_ref(&baseline),
+				authority,
+			)
+			.expect("baseline");
+			for boolean in [true, false] {
+				let mut changed = baseline.clone();
+				changed.mfds_device_ae_classification =
+					Some("local-only-canary".into());
+				changed.mfds_device_ae_outcome = Some("local-only-canary".into());
+				changed.mfds_device_cause_medical_device = Some(boolean);
+				changed.mfds_device_cause_procedure_issue = Some(boolean);
+				changed.mfds_device_cause_patient_condition = Some(boolean);
+				changed.mfds_device_cause_unable_to_assess = Some(boolean);
+				changed.mfds_device_cause_other = Some("local-only-canary".into());
+				changed.mfds_device_action_reason = Some("local-only-canary".into());
+				changed.mfds_device_action_recall = Some(boolean);
+				changed.mfds_device_action_repair = Some(boolean);
+				changed.mfds_device_action_inspection = Some(boolean);
+				changed.mfds_device_action_replacement = Some(boolean);
+				changed.mfds_device_action_improvement = Some(boolean);
+				changed.mfds_device_action_monitoring = Some(boolean);
+				changed.mfds_device_action_notification = Some(boolean);
+				changed.mfds_device_action_label_change = Some(boolean);
+				changed.mfds_device_action_other = Some("local-only-canary".into());
+				let actual = export_e_reactions_xml_for_authority(
+					std::slice::from_ref(&changed),
+					authority,
+				)
+				.expect("export local values");
+				assert_eq!(actual, expected);
+				assert!(!actual.contains("KR_DVC_"));
+				let patched =
+					crate::export::roundtrip::patch_e_reactions_for_authority(
+						expected.as_bytes(),
+						&[changed],
+						authority,
+					)
+					.expect("patch local values");
+				assert!(!patched.contains("KR_DVC_"));
+				assert!(!patched.contains("local-only-canary"));
+				let imported =
+					crate::import_sections::e_reaction::parse_e_reactions(
+						actual.as_bytes(),
+					)
+					.expect("import standard values");
+				assert_eq!(
+					imported[0].reaction_meddra_code,
+					baseline.reaction_meddra_code
+				);
+				assert_eq!(
+					imported[0].criteria_death_null_flavor.as_deref(),
+					Some("NI")
+				);
+			}
 		}
 	}
 

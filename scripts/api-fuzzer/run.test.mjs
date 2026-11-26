@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { random, project, generate, selectedFields, buildPath, mergeJson, resolveReferences, advanceCaseRandomness, fieldCoverage, assertSourceDocumentsNotExported, expectedImportLocalLinks, assertFdaReportTypeNotExported } from './run.mjs';
+import { random, project, plannedValues, generate, selectedFields, buildPath, mergeJson, resolveReferences, advanceCaseRandomness, fieldCoverage, assertSourceDocumentsNotExported, expectedImportLocalLinks, assertLocalFieldNotExported, localOnlyFieldCodes, localFieldProbePatch, assertNoLocalXmlMetadata } from './run.mjs';
 
 test('seed reproduces full case plans and changes with a different seed', () => {
   const plans = seed => Array.from({ length: 12 }, (_, i) => generate(seed, i, `case-${i}`, ['ich', 'fda', 'mfds'][i % 3]));
@@ -43,8 +43,25 @@ test('path construction, merging and runtime references preserve nested rows', (
   assert.throws(() => resolveReferences({ '$apiFuzzerReference': 'missing' }, {}));
 });
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 const contracts = Object.fromEntries(['CI', 'RP', 'SD', 'SI', 'DM', 'NR', 'AE', 'DG', 'LR', 'LB', 'DH'].map(p => [p, JSON.parse(readFileSync(new URL(`../../registry/editor-contracts/${p.toLowerCase()}.json`, import.meta.url)))]));
+
+test('every registry local field is explicitly audited; new/changed fields require review', () => {
+  const audit = JSON.parse(readFileSync(new URL('./local-field-audit.json', import.meta.url)));
+  const readRows = folder => readdirSync(new URL(folder, import.meta.url)).filter(f => f.endsWith('.json')).flatMap(f => JSON.parse(readFileSync(new URL(`${folder}/${f}`, import.meta.url))));
+  const signature = rows => rows.filter(r => r.local_only).map(r => [r.id, r.backend?.model ?? null, r.backend?.field ?? null]).sort();
+  const registry = readRows('../../registry/sections');
+  assert.deepEqual(Object.values(audit.caseGroups).flat().sort(), signature(registry));
+  const dictionaries = new URL('../../registry/dictionary/', import.meta.url);
+  const official = readdirSync(dictionaries).filter(f => f.endsWith('.json')).flatMap(f => JSON.parse(readFileSync(new URL(f, dictionaries))).entries.filter(e => e.kind === 'element').map(e => e.code));
+  assert.deepEqual(registry.filter(r => !r.local_only).map(r => r.e2br3_code).sort(), official.sort(), 'Non-dictionary fields must not bypass the local audit by dropping the local flag');
+  assert.deepEqual([...audit.presaveLocalInventory].sort(), signature(readRows('../../registry/presaves/sections')));
+  const standard = new Set([...audit.caseGroups['xml-component'], ...audit.caseGroups['xml-null-flavor']].map(([id]) => id));
+  for (const code of localOnlyFieldCodes) assert.ok(!standard.has(code.split('/')[1]), code);
+  const locals = new Set([...audit.caseGroups['local-value'], ...audit.caseGroups['local-document']].map(([id]) => id));
+  const expected = Object.entries(contracts).flatMap(([page, c]) => c.fields.filter(f => locals.has(f.code)).map(f => `${page}/${f.code}`)).sort();
+  assert.deepEqual(localOnlyFieldCodes, expected);
+});
 function leafPaths(value, path = '') {
   if (Array.isArray(value) && value.some(v => v !== null && typeof v === 'object')) return value.flatMap(v => leafPaths(v, `${path}[]`));
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) return Object.entries(value).flatMap(([key, v]) => leafPaths(v, path ? `${path}.${key}` : key));
@@ -158,31 +175,64 @@ test('local document canaries contain unique persisted file bytes, separate from
   assert.ok(!coverage.checkedFields.includes(local));
   assert.ok(!coverage.uncheckedFields.includes(local));
   assert.ok(coverage.checkedFields.includes(standard));
-  assert.deepEqual(coverage.uncheckedLocalOnlyFields, [local, 'CI/FDA.C.1.local.fdaReportType']);
+  assert.deepEqual(coverage.uncheckedLocalOnlyFields, localOnlyFieldCodes);
   const checked = fieldCoverage(new Set(), new Set([local]));
   assert.deepEqual(checked.checkedLocalOnlyFields, [local]);
   assert.ok(checked.uncheckedFields.includes(standard));
   assert.ok(checked.uncheckedFields.includes('CI/C.1.local.otherCaseIdentifiersExistNullFlavor'));
 });
 
-test('local FDA report type remains generated and needs separate non-disclosure coverage', () => {
-  const local = 'CI/FDA.C.1.local.fdaReportType';
+test('every reviewed local field needs separate persistence/non-disclosure coverage', () => {
   assert.equal(generate(20261123, 73, 'case-73', 'fda').CI[0].case.fdaReportType, '4');
+  assert.equal(generate(20261123, 14, 'case-14', 'mfds').CI[0].case.mfdsReportType, '6');
+  for (const local of localOnlyFieldCodes) {
   const coverage = fieldCoverage(new Set([local]), new Set());
   assert.ok(!coverage.xmlRoundTripFields.includes(local));
   assert.ok(!coverage.checkedFields.includes(local));
   assert.ok(coverage.uncheckedLocalOnlyFields.includes(local));
   assert.ok(coverage.xmlRoundTripFields.includes('CI/FDA.C.1.7.1'));
   assert.deepEqual(fieldCoverage(new Set(), new Set([local])).checkedLocalOnlyFields, [local]);
+  }
   const xml = '<root><official>4</official></root>';
-  assertFdaReportTypeNotExported(xml, xml);
+  assertLocalFieldNotExported(xml, xml);
   for (const leaked of [
     '<root><official>4</official><local>4</local></root>',
     '<root local="4"><official>4</official></root>',
     '<root><?local-report 4?><official>4</official></root>',
     '<root><official>1</official></root>',
-  ]) assert.throws(() => assertFdaReportTypeNotExported(leaked, xml), /changed export XML/);
-  assert.throws(() => assertFdaReportTypeNotExported(xml, undefined));
+  ]) assert.throws(() => assertLocalFieldNotExported(leaked, xml), /changed export XML/);
+  assert.throws(() => assertLocalFieldNotExported(xml, undefined));
+});
+
+test('local probes update existing child IDs and restore false, values and null without replacing rows', () => {
+  for (const code of ['G.k.local.dosage.continuing', 'G.k.local.expectedness', 'G.k.local.dechallengeResult']) {
+    const field = contracts.DG.fields.find(f => f.code === code);
+    const [collection, leaf] = field.payloadPath.split('[].');
+    const identity = collection === 'drugReactionAssessments' ? 'drugReactionAssessmentId' : 'id';
+    const value = code.endsWith('continuing') ? false : '1';
+    const rows = { drug: { [collection]: [{ [identity]: 'child-a', [leaf]: value }, { [identity]: 'child-b', [leaf]: null }] } };
+    assert.deepEqual(localFieldProbePatch(field, rows, false), rows);
+    assert.deepEqual(localFieldProbePatch(field, rows, true).drug[collection], [{ [identity]: 'child-a', [leaf]: null }, { [identity]: 'child-b', [leaf]: null }]);
+    delete rows.drug[collection][0][identity];
+    assert.throws(() => localFieldProbePatch(field, rows, true), /existing child identity/);
+  }
+});
+
+test('local XML markers are rejected structurally, not by matching narrative text', () => {
+  assertNoLocalXmlMetadata('<root><text>KR_DVC_AECL e2br3-product-link-v1</text><code code="34"/></root>');
+  assert.throws(() => assertNoLocalXmlMetadata('<root><code code="KR_DVC_AECL"/></root>'), /metadata leaked/);
+  for (const name of ['product-link', 'source-product-id', 'dosage-continuing', 'source-documents']) {
+    for (const version of ['v1', 'v2']) assert.throws(() => assertNoLocalXmlMetadata(`<root><?e2br3-${name}-${version} private?></root>`), /metadata leaked/);
+  }
+});
+
+test('sparse repeated fixtures retain planned values rather than skipping a whole field', () => {
+  const rows = generate(20261123, 10, 'case-10', 'fda').RP[0].primarySources;
+  assert.deepEqual(plannedValues(rows, '[].reporterEmailNullFlavor'), [{ indexes: [0], value: 'NASK' }]);
+  assert.deepEqual(plannedValues(rows, '[].reporterEmail'), [{ indexes: [1], value: 'reporter@example.test' }]);
+  assert.deepEqual(plannedValues([{ children: [{ value: false }, {}, { value: null }] }], '[].children[].value'), [{ indexes: [0, 0], value: false }, { indexes: [0, 2], value: null }]);
+  assert.deepEqual(plannedValues({}, 'missing'), []);
+  assert.throws(() => plannedValues({ children: null }, 'children[].value'), /Invalid planned array/);
 });
 
 test('non-disclosure rejects local filenames, plain/base64 payloads and legacy processing instructions', () => {

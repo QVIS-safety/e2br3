@@ -140,7 +140,7 @@ fn export_e_reaction_basic() {
 }
 
 #[test]
-fn export_e_reaction_round_trips_mfds_device_extensions() {
+fn export_e_reaction_omits_local_mfds_device_extensions() {
 	let reaction = Reaction {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
@@ -208,27 +208,24 @@ fn export_e_reaction_round_trips_mfds_device_extensions() {
 	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
 
 	assert!(!xml.contains("AE_IME_LIST"));
+	assert!(!xml.contains("KR_DVC_"));
+	assert!(!xml.contains("Other cause"));
+	assert!(!xml.contains("Action reason"));
+	assert!(!xml.contains("Other action"));
 	let imported =
 		xml::import_sections::e_reaction::parse_e_reactions(xml.as_bytes())
 			.expect("import xml");
 	let imported = &imported[0];
-	assert_eq!(imported.mfds_device_ae_classification.as_deref(), Some("0"));
-	assert_eq!(imported.mfds_device_ae_outcome.as_deref(), Some("10"));
-	assert_eq!(imported.mfds_device_cause_medical_device, Some(true));
-	assert_eq!(
-		imported.mfds_device_cause_other.as_deref(),
-		Some("Other cause <device>")
-	);
-	assert_eq!(
-		imported.mfds_device_action_reason.as_deref(),
-		Some("Action reason & notes")
-	);
-	assert_eq!(imported.mfds_device_action_recall, Some(true));
-	assert_eq!(imported.mfds_device_action_label_change, Some(false));
-	assert_eq!(
-		imported.mfds_device_action_other.as_deref(),
-		Some("Other action")
-	);
+	assert_eq!(imported.mfds_device_ae_classification, None);
+	assert_eq!(imported.mfds_device_ae_outcome, None);
+	assert_eq!(imported.mfds_device_cause_medical_device, None);
+	assert_eq!(imported.mfds_device_cause_other, None);
+	assert_eq!(imported.mfds_device_action_reason, None);
+	assert_eq!(imported.mfds_device_action_recall, None);
+	assert_eq!(imported.mfds_device_action_label_change, None);
+	assert_eq!(imported.mfds_device_action_other, None);
+	assert_eq!(imported.criteria_death, Some(true));
+	assert_eq!(imported.outcome.as_deref(), Some("1"));
 
 	let required_intervention = xpath
 		.findvalue(
