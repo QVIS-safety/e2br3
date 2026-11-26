@@ -6,7 +6,7 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 ) -> Result<()> {
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -15,7 +15,6 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let idem_key = "idem-fda-001";
 	let (status1, body1) = post_json_with_headers(
@@ -65,7 +64,7 @@ async fn test_submission_idempotency_key_parallel_requests_single_submission(
 ) -> Result<()> {
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -74,7 +73,6 @@ async fn test_submission_idempotency_key_parallel_requests_single_submission(
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let idem_key = "idem-fda-parallel-001";
 	let uri = format!("/api/cases/{case_id}/submissions/fda");

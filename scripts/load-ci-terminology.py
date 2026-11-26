@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load the pinned private Oracle subset into the isolated XML test database."""
+"""Load explicit synthetic fixtures into the isolated XML test database."""
 
 import hashlib
 import json
@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'scripts/db/ci-terminology-manifest.json'
+FIXTURE = ROOT / 'scripts/db/ci-terminology-fixture.json'
 COLUMNS = {
     'meddra_terms': 'code term level version language active'.split(),
     'controlled_terminology_terms': 'dictionary version language scope code display_name active'.split(),
@@ -23,31 +24,33 @@ COLUMNS = {
 }
 
 
-def read_snapshot(path, manifest):
+def read_fixture(path, manifest):
     data = path.read_bytes()
     if hashlib.sha256(data).hexdigest() != manifest['sha256']:
-        raise ValueError('Oracle terminology snapshot SHA-256 does not match the pinned manifest')
+        raise ValueError('Synthetic terminology fixture SHA-256 does not match the pinned manifest')
     snapshot = json.loads(data)
+    if snapshot['source'] != 'test-fixture:xml-integration':
+        raise ValueError('Terminology fixture must declare its synthetic test provenance')
     tables = snapshot['tables']
     if set(tables) != set(COLUMNS):
-        raise ValueError('Oracle terminology snapshot table set differs from the manifest')
+        raise ValueError('Synthetic terminology fixture table set differs from the manifest')
     for table, columns in COLUMNS.items():
         rows = tables[table]
         if len(rows) != manifest['rows'][table]:
-            raise ValueError(f'Oracle terminology snapshot row count differs: {table}')
+            raise ValueError(f'Synthetic terminology fixture row count differs: {table}')
         if any(set(row) != set(columns) or row['active'] is not True for row in rows):
-            raise ValueError(f'Oracle terminology snapshot columns or active status differ: {table}')
+            raise ValueError(f'Synthetic terminology fixture columns or active status differ: {table}')
     releases = snapshot['source_releases']
     actual = {(r['dictionary'], r['version'], r['language']) for r in releases if r['status'] == 'active'}
     expected = {(r['dictionary'], r['version'], r['language']) for r in manifest['releases']}
     if len(releases) != len(expected) or actual != expected:
-        raise ValueError('Oracle terminology snapshot active releases differ from the manifest')
+        raise ValueError('Synthetic terminology fixture active releases differ from the manifest')
     return snapshot
 
 
 def isolated_database(url, expected):
     if not re.fullmatch(r'e2br3_test_[a-z0-9_]+', expected) or urlsplit(url).path != '/' + expected:
-        raise ValueError('Oracle terminology may only load into the isolated E2BR3_TEST_DATABASE_NAME')
+        raise ValueError('Synthetic terminology fixtures may only load into the isolated E2BR3_TEST_DATABASE_NAME')
 
 
 def insert_sql(table, columns, rows):
@@ -73,8 +76,8 @@ def load(snapshot, manifest, url, database):
         releases.append({
             'dictionary': source['dictionary'], 'version': source['version'], 'language': source['language'],
             'status': source['status'], 'loaded_rows': release['subset_rows'],
-            'source_path': 'oracle-ci-subset:' + snapshot['source'], 'source_checksum': manifest['sha256'],
-            'note': f"CI subset; original source rows={source['loaded_rows']}; original checksum={source['source_checksum']}",
+            'source_path': snapshot['source'], 'source_checksum': manifest['sha256'],
+            'note': 'Synthetic test fixture; not licensed MedDRA or an authoritative product dictionary',
         })
     statements.append(insert_sql('terminology_releases', list(releases[0]), releases))
     for table, columns in COLUMNS.items():
@@ -85,18 +88,15 @@ def load(snapshot, manifest, url, database):
         input='\n'.join(statements), text=True, capture_output=True,
     )
     if result.returncode:
-        # PostgreSQL details may contain licensed row values; expose SQLSTATE only.
+        # Report SQLSTATE without exposing connection credentials or database contents.
         states = re.findall(r'ERROR:\s+([0-9A-Z]{5})\b', result.stderr)
-        raise ValueError(f'Oracle terminology import failed (psql exit {result.returncode}, SQLSTATE {states})')
-    print('Loaded verified Oracle terminology subset into isolated XML test database')
+        raise ValueError(f'Synthetic terminology import failed (psql exit {result.returncode}, SQLSTATE {states})')
+    print('Loaded synthetic terminology fixtures into isolated XML test database (not regulatory reference data)')
 
 
 def main():
     manifest = json.loads(MANIFEST.read_text())
-    snapshot_path = os.environ.get('E2BR3_CI_TERMINOLOGY_SNAPSHOT')
-    if not snapshot_path:
-        raise ValueError('web-server XML tests require E2BR3_CI_TERMINOLOGY_SNAPSHOT (private Oracle snapshot; see scripts/db/ci-terminology-manifest.json)')
-    snapshot = read_snapshot(Path(snapshot_path), manifest)
+    snapshot = read_fixture(FIXTURE, manifest)
     load(snapshot, manifest, os.environ['SERVICE_DB_URL'], os.environ['E2BR3_TEST_DATABASE_NAME'])
 
 

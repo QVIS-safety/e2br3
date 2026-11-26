@@ -195,7 +195,7 @@
       "proofRecorded": true
     },
     {
-      "identity": "AE|ICH|E.i.serious|reactions[].seriousness.serious",
+      "identity": "AE|ICH|E.i.local.serious|reactions[].seriousness.serious",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
@@ -213,103 +213,103 @@
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionOther|reactions[].mfdsDeviceAe.actionOther",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionOther|reactions[].mfdsDeviceAe.actionOther",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionReason|reactions[].mfdsDeviceAe.actionReason",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionReason|reactions[].mfdsDeviceAe.actionReason",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification",
+      "identity": "AE|MFDS|E.i.KR.local.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome",
+      "identity": "AE|MFDS|E.i.KR.local.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeOther|reactions[].mfdsDeviceAe.causeOther",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeOther|reactions[].mfdsDeviceAe.causeOther",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition",
+      "identity": "AE|MFDS|E.i.KR.local.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
@@ -459,7 +459,7 @@
       "proofRecorded": true
     },
     {
-      "identity": "CI|MFDS|C.1.KR.mfdsReportType|case.mfdsReportType",
+      "identity": "CI|MFDS|C.1.KR.local.mfdsReportType|case.mfdsReportType",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
@@ -1791,7 +1791,7 @@
       "proofRecorded": true
     },
     {
-      "identity": "NR|ICH|H.additionalInformation|narrative.additionalInformation",
+      "identity": "NR|ICH|H.local.additionalInformation|narrative.additionalInformation",
       "state": "VERIFIED",
       "staticBlocker": false,
       "proofRecorded": true
@@ -3006,7 +3006,7 @@
       }
     },
     {
-      "identity": "AE|ICH|E.i.serious|reactions[].seriousness.serious",
+      "identity": "AE|ICH|E.i.local.serious|reactions[].seriousness.serious",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3018,7 +3018,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-ich-lifecycle-20261027-main9/result.json",
         "sha256": "4074da1d5bd606861cb122f010fbd24265b3eca334df0133c067aa6ad68a8842",
-        "selectedIdentity": "AE|ICH|E.i.serious|reactions[].seriousness.serious"
+        "selectedIdentity": "AE|ICH|E.i.local.serious|reactions[].seriousness.serious"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-ich-lifecycle-20261027-main9/canonical-inventory.json",
@@ -3099,7 +3099,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3111,7 +3111,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionImprovement|reactions[].mfdsDeviceAe.actionImprovement"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3130,7 +3130,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3142,7 +3142,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionInspection|reactions[].mfdsDeviceAe.actionInspection"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3161,7 +3161,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3173,7 +3173,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionLabelChange|reactions[].mfdsDeviceAe.actionLabelChange"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3192,7 +3192,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3204,7 +3204,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionMonitoring|reactions[].mfdsDeviceAe.actionMonitoring"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3223,7 +3223,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3235,7 +3235,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionNotification|reactions[].mfdsDeviceAe.actionNotification"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3254,7 +3254,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionOther|reactions[].mfdsDeviceAe.actionOther",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionOther|reactions[].mfdsDeviceAe.actionOther",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3266,7 +3266,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionOther|reactions[].mfdsDeviceAe.actionOther"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionOther|reactions[].mfdsDeviceAe.actionOther"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3285,7 +3285,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionReason|reactions[].mfdsDeviceAe.actionReason",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionReason|reactions[].mfdsDeviceAe.actionReason",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3297,7 +3297,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionReason|reactions[].mfdsDeviceAe.actionReason"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionReason|reactions[].mfdsDeviceAe.actionReason"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3316,7 +3316,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3328,7 +3328,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionRecall|reactions[].mfdsDeviceAe.actionRecall"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3347,7 +3347,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3359,7 +3359,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionRepair|reactions[].mfdsDeviceAe.actionRepair"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3378,7 +3378,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement",
+      "identity": "AE|MFDS|E.i.KR.local.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3390,7 +3390,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.actionReplacement|reactions[].mfdsDeviceAe.actionReplacement"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3409,7 +3409,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification",
+      "identity": "AE|MFDS|E.i.KR.local.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3421,7 +3421,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main5/result.json",
         "sha256": "ab91cae1a6f0d4ae99175d54ecdeff62c2554bb395ae5850fc48b7d4599855c1",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.aeClassification|reactions[].mfdsDeviceAe.aeClassification"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main5/canonical-inventory.json",
@@ -3440,7 +3440,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome",
+      "identity": "AE|MFDS|E.i.KR.local.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3452,7 +3452,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main5/result.json",
         "sha256": "ab91cae1a6f0d4ae99175d54ecdeff62c2554bb395ae5850fc48b7d4599855c1",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.aeOutcome|reactions[].mfdsDeviceAe.aeOutcome"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main5/canonical-inventory.json",
@@ -3471,7 +3471,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3483,7 +3483,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.causeMedicalDevice|reactions[].mfdsDeviceAe.causeMedicalDevice"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3502,7 +3502,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeOther|reactions[].mfdsDeviceAe.causeOther",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeOther|reactions[].mfdsDeviceAe.causeOther",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3514,7 +3514,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.causeOther|reactions[].mfdsDeviceAe.causeOther"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.causeOther|reactions[].mfdsDeviceAe.causeOther"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3533,7 +3533,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition",
+      "identity": "AE|MFDS|E.i.KR.local.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3545,7 +3545,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.causePatientCondition|reactions[].mfdsDeviceAe.causePatientCondition"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3564,7 +3564,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3576,7 +3576,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.causeProcedureIssue|reactions[].mfdsDeviceAe.causeProcedureIssue"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -3595,7 +3595,7 @@
       }
     },
     {
-      "identity": "AE|MFDS|E.i.KR.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess",
+      "identity": "AE|MFDS|E.i.KR.local.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess",
       "kind": "mutation",
       "dataClassification": "TEST_FIXTURE",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -3607,7 +3607,7 @@
       "result": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/result.json",
         "sha256": "d0ce6baa8c4613f5d4e5a7699e533f524ce373262375d457b7ccf5f046b8d9d0",
-        "selectedIdentity": "AE|MFDS|E.i.KR.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess"
+        "selectedIdentity": "AE|MFDS|E.i.KR.local.device.causeUnableToAssess|reactions[].mfdsDeviceAe.causeUnableToAssess"
       },
       "canonicalInventory": {
         "path": "standards-fix-20261026/jev-ae-mfds-lifecycle-20261027-main2/canonical-inventory.json",
@@ -4211,7 +4211,7 @@
       }
     },
     {
-      "identity": "CI|MFDS|C.1.KR.mfdsReportType|case.mfdsReportType",
+      "identity": "CI|MFDS|C.1.KR.local.mfdsReportType|case.mfdsReportType",
       "kind": "mutation",
       "dataClassification": "PRODUCTION",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -10458,7 +10458,7 @@
       }
     },
     {
-      "identity": "NR|ICH|H.additionalInformation|narrative.additionalInformation",
+      "identity": "NR|ICH|H.local.additionalInformation|narrative.additionalInformation",
       "kind": "mutation",
       "dataClassification": "PRODUCTION",
       "outcome": "VERIFIED_ROUNDTRIP",
@@ -10470,7 +10470,7 @@
       "result": {
         "path": "jev-batch-nr-narrative-20261027-main2/result.json",
         "sha256": "9538c8f2c9969166af9d9ab293416ecda85b446d6dfbccef20a141ea6c3da16c",
-        "selectedIdentity": "NR|ICH|H.additionalInformation|narrative.additionalInformation"
+        "selectedIdentity": "NR|ICH|H.local.additionalInformation|narrative.additionalInformation"
       },
       "canonicalInventory": {
         "path": "jev-batch-nr-narrative-20261027-main2/canonical-inventory.json",

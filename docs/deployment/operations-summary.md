@@ -91,14 +91,15 @@ main EC2에 SSM 권한이 없으면 OIDC가 정상이어도 CD의 `aws ssm send-
 기존 값에 의존하지 말고 실제 배포 설정을 명시해야 한다.
 
 - 공통: `SERVICE_DB_MAX_CONNECTIONS`(양수), `SERVICE_BIND_ADDR`,
-  `SERVICE_WEB_FOLDER`, `E2BR3_ENV`, `E2BR3_COOKIE_SECURE`(HTTPS 운영은 true),
+  `SERVICE_WEB_FOLDER`,
   `E2BR3_PUBLIC_ORIGIN`(정확한 브라우저 origin), `E2BR3_APP_NAME`, `E2BR3_APP_SHORT_NAME`.
 - AS2 사용 시: `AS2_SUBMITTER_URL`, `AS2_SUBMITTER_TOKEN`,
   `AS2_ACK_CALLBACK_URL`, `AS2_CALLBACK_TOKEN`, `AS2_SUBMITTER_TIMEOUT_SECS`(양수).
-- ESG 사용 시: `FDA_ESG_ENABLED`, `FDA_ESG_BASE_URL`,
+- ESG 사용 시: `FDA_ESG_BASE_URL`,
   `FDA_ESG_SUBMIT_PATH`, `FDA_ESG_TIMEOUT_SECS`(양수) 및 실제 서비스 인증 설정.
-- 기능 flag도 `FDA_ESG_ENABLED`, `E2BR3_STRICT_SUBMISSION_CONFIG`,
-  `SUBMISSION_RECONCILE_ENABLED`를 true/false로 명시한다.
+- 설정된 전송은 항상 검사한다. 미설정이면 제출을 거절하고, 불완전하거나 두 전송이 함께 설정되면 시작을 거절한다.
+- 쿠키 Secure는 `E2BR3_PUBLIC_ORIGIN`의 HTTPS 여부로 결정한다.
+- 작업 실행 여부인 `SUBMISSION_RECONCILE_ENABLED`는 true/false로 명시한다.
 - reconcile 활성화 시: `SUBMISSION_RECONCILE_INTERVAL_SECS`,
   `SUBMISSION_RECONCILE_LIMIT`(둘 다 양수), `SUBMISSION_RECONCILE_TOKEN`.
 

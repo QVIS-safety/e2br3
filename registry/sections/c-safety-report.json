@@ -2107,8 +2107,8 @@
     "notes": "App-local FDA report-type classification stored on Case.fda_report_type. Re-pointed from the wrong SafetyReportIdentification model. Not an official element (official FDA report type is FDA.C.1.7.1 Local Criteria Report Type, mapped separately); possible concept overlap to revisit."
   },
   {
-    "id": "C.1.KR.mfdsReportType",
-    "e2br3_code": "C.1.KR.mfdsReportType",
+    "id": "C.1.KR.local.mfdsReportType",
+    "e2br3_code": "C.1.KR.local.mfdsReportType",
     "label": "MFDS Report Type",
     "section": "C",
     "authority": "MFDS",

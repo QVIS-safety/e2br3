@@ -7,10 +7,9 @@ use crate::web::rest::{
 	audit_rest, case_editor_rest, case_export_rest, case_field_notation_rest,
 	case_identifiers_rest, case_intake_rest, case_rest, case_validation_rest,
 	case_workflow_rest, cioms_export_rest, drug_reaction_assessment_rest, drug_rest,
-	drug_sub_rest, message_header_rest, narrative_rest, narrative_sub_rest,
-	parent_history_rest, patient_rest, patient_sub_rest, reaction_rest,
-	relatedness_assessment_rest, safety_report_rest, safety_report_sub_rest,
-	submission_rest, test_result_rest,
+	drug_sub_rest, narrative_rest, narrative_sub_rest, parent_history_rest,
+	patient_rest, patient_sub_rest, reaction_rest, relatedness_assessment_rest,
+	safety_report_rest, safety_report_sub_rest, submission_rest, test_result_rest,
 };
 
 /// Routes for /api/cases and nested subresources
@@ -229,10 +228,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 				.put(case_rest::update_case_guarded)
 				.delete(case_rest::delete_case),
 		))
-	.route(
-		"/cases/{id}/validator/mark-validated",
-		axum::routing::post(case_rest::mark_case_validated_by_validator),
-	)
 	.route(
 		"/cases/{id}/review/toggle",
 		axum::routing::post(case_rest::toggle_case_review),
@@ -579,14 +574,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/{case_id}/narrative/summaries/{id}/restore",
 		post(narrative_sub_rest::restore_case_summary_information),
 	)
-	// Message Header (singleton per case)
-	.route(
-		"/cases/{case_id}/message-header",
-		get(message_header_rest::get_message_header)
-			.post(message_header_rest::create_message_header)
-			.put(message_header_rest::update_message_header)
-			.delete(message_header_rest::delete_message_header),
-	)
 	// Safety Report (singleton per case)
 	.route(
 		"/cases/{case_id}/safety-report",
@@ -824,10 +811,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	.route(
 		"/cases/{id}/submissions/mfds",
 		axum::routing::post(submission_rest::submit_case_to_mfds),
-	)
-	.route(
-		"/cases/{id}/submission-receiver",
-		put(submission_rest::apply_submission_receiver_selection),
 	)
 	.route(
 		"/cases/{id}/submissions",

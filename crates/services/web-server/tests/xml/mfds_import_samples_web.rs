@@ -2,7 +2,7 @@ use crate::common::{
 	cookie_header, create_test_import_product, init_test_mm, seed_org_with_users,
 	Result,
 };
-use crate::xml_support::{resolve_from_workspace, resolved_xsd_path};
+use crate::xml_support::resolve_from_workspace;
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
@@ -154,7 +154,6 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 		)
 		.into());
 	}
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 	// Always exercise real schema validation in this integration suite.
 
 	let xml_files = list_xml_files(&dir)?;

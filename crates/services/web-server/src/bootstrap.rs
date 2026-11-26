@@ -437,7 +437,6 @@ fn dbx_into_web<E: core::fmt::Display>(err: E) -> crate::Error {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use lib_core::_dev_utils;
 	use serial_test::serial;
 
 	async fn init_bootstrap_test_mm() -> ModelManager {
@@ -452,9 +451,7 @@ mod tests {
 		std::env::set_var("SERVICE_PWD_KEY", "ZmFrZV9rZXk");
 		std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 		std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
-		_dev_utils::init_dev()
-			.await
-			.expect("database initialization must be explicit");
+
 		let mm = ModelManager::new().await.expect("test model manager");
 		web_server::initialize_authorization_storage()
 			.await

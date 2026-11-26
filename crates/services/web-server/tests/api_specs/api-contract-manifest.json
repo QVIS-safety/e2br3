@@ -2,7 +2,7 @@
   "schema_version": 1,
   "baseline_commit": "2727d980eca51c00bfc1c0220ba71d69c642a071",
   "baseline_route_count": 436,
-  "operation_count": 442,
+  "operation_count": 431,
   "runtime": "NOT_RUN",
   "scope": {
     "claim": "Static source inventory of explicit routes, declared handler wire types, reachable Rust DTO declarations, and links to human behavioral specifications/test evidence.",
@@ -17,23 +17,23 @@
     "crates/libs/lib-core/src/authorization/ids.rs": "50cac5a9d5289bee59f60a3c662f0c043b36605d5a849f18176ff7fc3d5c0ac3",
     "crates/libs/lib-core/src/authorization/menu_privileges.rs": "69eec0862a2e64dd3918cc207911523cfdbe3ac382e0641cec9f1527f3952af9",
     "crates/libs/lib-core/src/model/audit.rs": "4dde791ba9c34d85de35edfb277d40ad4c3ec5a20313f48d99aa7220ead8e3a5",
-    "crates/libs/lib-core/src/model/case.rs": "0de90a336b766d56eb2c5a0612192719f7ab37b68fd8e17b95a09f859b38aff9",
-    "crates/libs/lib-core/src/model/case_duplicate.rs": "25cf09bef159117c11541f0c972bdc830592f12e20c19e4f49e26cf3ec37357f",
-    "crates/libs/lib-core/src/model/case_identifiers.rs": "af70016054fa35a83c1ff09c3187fb9343245c908796991219591c0798288121",
+    "crates/libs/lib-core/src/model/case.rs": "bf8d53ee5f40a3d98275afe82695c3632777e62a57239943cee82b52b3ccd6cc",
+    "crates/libs/lib-core/src/model/case_duplicate.rs": "9b7068b430c1fcd7567280fe7c476705747cd228e43a40f05dea321f9308b0f6",
+    "crates/libs/lib-core/src/model/case_identifiers.rs": "0558515d6f6f0a845988f9d894c68c8a6e29538c11183c79173afad0a9b645d5",
     "crates/libs/lib-core/src/model/case_query.rs": "bd65ea30390bc4dc451d8897055320d75f797f1d36faea7002c8cd1317d72fb4",
     "crates/libs/lib-core/src/model/case_query_catalog.rs": "6f59c93e4701a7e15ea9829f58615a7a4a52b2d5d3ac89120d0c75ecad686510",
-    "crates/libs/lib-core/src/model/drug.rs": "d6b7d194d92c78bff139d289a3cb73e96a2aa2059af507670ef57c4c85c419ea",
-    "crates/libs/lib-core/src/model/drug_reaction_assessment.rs": "a2f4b08963b4df2b3b0464c9aefa502a64d78935f5fe1548f4caff800e60d77b",
+    "crates/libs/lib-core/src/model/drug.rs": "2af21a8464bd8481b5bc409cdfbe5d5062d89282cd299b8b358cbbc35ff9898d",
+    "crates/libs/lib-core/src/model/drug_reaction_assessment.rs": "4f6b65eca76756132839106385133e672f3788df16ff03e5c471bcdf13cd6bb0",
     "crates/libs/lib-core/src/model/message_header.rs": "467a2cb9d5a0e0c7938438ef4c607e8461d1127349db9ddd71dba44991361a7f",
     "crates/libs/lib-core/src/model/narrative.rs": "69ed0c249e28eeb4beebefa799bb4f8f45da80a9016ad7d23f1468806c3505a7",
     "crates/libs/lib-core/src/model/organization.rs": "b91a73e79a016f5041d52c8a076dc312eac1e90503e515c75de2709695e4e31e",
     "crates/libs/lib-core/src/model/parent_history.rs": "e5246c392d54afcbe6669acb58146c2262d4d6fd17dbe7449102b9e5e39b8986",
     "crates/libs/lib-core/src/model/patch.rs": "431dda3beb5797477f4010f8596eedcb6da90d29368db76624cd4b467eabd33a",
     "crates/libs/lib-core/src/model/patient.rs": "fa814b0205b147d0a4cc9c779fcf759a5c2aa9e72ef810a68cbd1eb0d9d96870",
-    "crates/libs/lib-core/src/model/presave.rs": "31e0567d250b5e46ad5281a0e4b8dcd0aa3078aee37f578ac55ab56c80845098",
-    "crates/libs/lib-core/src/model/reaction.rs": "60230f17d910cd57f5ec5b038d5d0cc4c8a14c891fcf484db7b63656aeb9e05b",
+    "crates/libs/lib-core/src/model/presave.rs": "2b4d50fab9a960bcc101414d9b94fcb82942b0e03e77db29510fd5c26a827ffb",
+    "crates/libs/lib-core/src/model/reaction.rs": "ec04a2979d4eac5e5971ad796af45a397850ec0a887404c0b38972b83cf464ec",
     "crates/libs/lib-core/src/model/receiver.rs": "c7aaa1dddeed9a01f2570a4ce9726e7ad2f06ecaac49d01131e02833a0153928",
-    "crates/libs/lib-core/src/model/safety_report.rs": "5e1881cd7b2e07ff84eaf554eafe344488c7fe367e9ffc5d2cae32718b9bc430",
+    "crates/libs/lib-core/src/model/safety_report.rs": "df9564f42267acc30cdd13095b8e63828c60a72de7bc6975db58a5dd5086003c",
     "crates/libs/lib-core/src/model/submission_receiver_option.rs": "91e03af4bfc124305d8de0500f432667189f6ab0f245f1724fbb6550dec338a5",
     "crates/libs/lib-core/src/model/terminology.rs": "d1179d7a965a57b6870b2388b9761844aa7e4aa737525406b4a65a6c73d31c03",
     "crates/libs/lib-core/src/model/terminology_import.rs": "f5ed7b17869913360ec8fbd70e714056e1230e9788dd6ff1d3641ecd2e1c0990",
@@ -42,7 +42,7 @@
     "crates/libs/lib-core/src/model/xml_import_history.rs": "bbd2265b41fc94645c45fd20f8de4e5bbf3f47e988290ebaf79193f18a395eca",
     "crates/libs/lib-core/src/regulatory.rs": "6a79d13ede1e614721f43397fe98081f371444cc955dbc5ecc89a10ee5efb0dd",
     "crates/libs/lib-core/src/validation_report.rs": "739f12bc738307db600be04e70cd40aeac6d13df3ecf732ffd3193ff3eb8a3b8",
-    "crates/libs/lib-rest-core/src/lib.rs": "1f94c59b8a2f15007bc3810eebfba0d7704e970e5f9fe0e8b2d259054298c427",
+    "crates/libs/lib-rest-core/src/lib.rs": "d9143dd0be762ad7cb1d94de3e51cb7c87b42fbb52b7577ebafaa402a4bc9a75",
     "crates/libs/lib-rest-core/src/rest_params.rs": "13580d5b7d4b259bb8c02481596b957642b6131d82701b94dab1fc4126411ec3",
     "crates/libs/lib-rest-core/src/rest_result.rs": "aae7ac102c9a89ebcd0e3064f7bc40f704cfc84b4ed91b90afab255f3a32f476",
     "crates/libs/lib-rest-core/src/utils/macro_utils.rs": "4795db91f42db0aeecf36b5f9f359cfea2ab1aea577a45769b40c0b3ee31732c",
@@ -51,45 +51,45 @@
     "crates/libs/lib-web/src/middleware/mw_res_map.rs": "dddf75d1b1852ff5d7c28be01b959e24495ffe26ec3ee5bb31b2c0c096f71ced",
     "crates/libs/xml/src/types.rs": "2cba32adecc06ec8408518a5399a97409e62328a6bf082e7a65ab7f5c48f79f5",
     "crates/services/web-server/src/lib.rs": "5160f4e4d6fa74877e2627f556f5baca61309a088ee219b2a116ff2270fcc2f6",
-    "crates/services/web-server/src/submission/types.rs": "465234223378d9ccdb49f58c50e4c30e41a1e64c8cbe44a99fb3d3311d713dd1",
+    "crates/services/web-server/src/submission/types.rs": "15c314cbd19dd37a37ad71e0bbae75d448d7b452fb39bc6eb50143dcb53a6fea",
     "crates/services/web-server/src/web/rest/admin_settings_rest.rs": "bfcb33bc269dca453c385d373aa91263a7788143fde79285c724ea37d22d3f0d",
     "crates/services/web-server/src/web/rest/app_branding_rest.rs": "bf871e471e0a2486b1b5edf5fd8e95f8c1b5d98bf03711bb5e4c46c3f34cc36e",
-    "crates/services/web-server/src/web/rest/audit_rest.rs": "51c326d2dbcd20d44cca9efa9b540731b1e7601ed143ace1220766ff432bc8c0",
-    "crates/services/web-server/src/web/rest/case_editor_dto.rs": "e71a028e118377972c128b2570849d6a66289103ec9cb3c3944a219297a9e88c",
-    "crates/services/web-server/src/web/rest/case_editor_rest.rs": "863e4f73ac3fa6dc7345b0b6b2536dd1334a461f7af95413f7f265a1c1c6e239",
-    "crates/services/web-server/src/web/rest/case_editor_rest/ae.rs": "2984f74e53903204ed1651843b8447166497cff6c075afe56814b1cab77f724e",
-    "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "88fa1ecd0c77a251ba6313f18eb2e9a9147563f492da61b3995fbfd93a10cb60",
-    "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "c8f00c85714f0938ad278dbf37a387d763bbdab99937b8f04a659ffe831242e3",
+    "crates/services/web-server/src/web/rest/audit_rest.rs": "27994b11977bb9ba1e197b75f8118b26e16fba852ea2ebf60c906a33134f5ae7",
+    "crates/services/web-server/src/web/rest/case_editor_dto.rs": "18778f32ef61b7fbd4d4c86be7ec3feaee62e91cb96aa068818e6b2228918d46",
+    "crates/services/web-server/src/web/rest/case_editor_rest.rs": "74c323fd8578a1d627b53846d7131da6d73b581dc6f01cfd0aed6f87d58a058c",
+    "crates/services/web-server/src/web/rest/case_editor_rest/ae.rs": "5a20a5d9297bd8f63ff3f31e280fd3f0085169ed344edd3b7c6c5890b79f2d23",
+    "crates/services/web-server/src/web/rest/case_editor_rest/common.rs": "67f1fd71756b2ab9bcbaed700ad1b62b4f4807ff01d0314b02df8e5aec053fd6",
+    "crates/services/web-server/src/web/rest/case_editor_rest/dg.rs": "f831ecfbda8689651a55021f5979105e83ca736106207bb2012c2ed20090f9d4",
     "crates/services/web-server/src/web/rest/case_editor_rest/dh.rs": "6a319b87b6616893703e3df2062568c9d692a4c1f94f6e51b8cfffaa1e9e3c50",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs": "e3c0e90279bfaa93a41cdbcc4b24c037b370be8ec1364dc448119bf919cc721a",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct/ci.rs": "8fcf4f89dd41436f58dbfa4b1963d4703a8a138b4eb9c9c7703d1417e8b64720",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct.rs": "c958b1f49e61dab05a88d202c5631863c66705bd07cea5e5960fc55e7a254859",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct/ci.rs": "68843b49f593e02d11c32fbbb8365da1ac2607856009b6a122f2af8ffda7b3af",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/dm.rs": "26546c28626d71cea6511ac45391651c2ef1b793f5f2a9ebeb6999b0f4341e96",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct/nr.rs": "1ea7a8ca662656067e7f9aadd57f29e9192f1823e91e3ff128ebd2a78c74dcbd",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct/nr.rs": "bb27d09a32e55ba6478942eb0e127e2dca4565aa0c533ecf18031acfd47a52ac",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/rp.rs": "838c5894dccbf8bde096e1a63fd7d058a74361b20929ad94518e49705d6fc854",
-    "crates/services/web-server/src/web/rest/case_editor_rest/direct/sd.rs": "738ddc75c0e065a6396f511919654f91c4fac6e0848af4777ee321b8d34c5686",
+    "crates/services/web-server/src/web/rest/case_editor_rest/direct/sd.rs": "996c2aee5705e8c99d02ecc047d7c122dab99ae43530129191767ad46456994a",
     "crates/services/web-server/src/web/rest/case_editor_rest/direct/si.rs": "21c642daca88e75c1da44bcd1edc72d608084e60463fde2d5ff76e4741ff6854",
     "crates/services/web-server/src/web/rest/case_editor_rest/handler_macros.rs": "2f0a2a8303698eaef67740d36a78807fa26374907e07ebf2a55f6d7ab038925e",
     "crates/services/web-server/src/web/rest/case_editor_rest/lb.rs": "e7099953ef4112dd2e0796e9cbabe0b6fcd7972324d1f442a49c403911a57ce4",
     "crates/services/web-server/src/web/rest/case_editor_rest/lr.rs": "7291c1ac6d59ab216d43b5dbb70b9c95272c1d35499bdf0286d0bf3527c73b21",
     "crates/services/web-server/src/web/rest/case_editor_rest/save.rs": "47f53acdaffa8a8f6a2beaca6228c5624a5987f687457049afd97b5d97cdb92c",
-    "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "c1cd233831c1c09c1ecbc3786aaffc7dda3dca5ecde297ed866a98aa6403cb2c",
-    "crates/services/web-server/src/web/rest/case_export_rest.rs": "fb3c3aab43d50259442cac77457c697b76cb8d1dbd52ed2ee72bfb9679cc21d0",
+    "crates/services/web-server/src/web/rest/case_editor_rest/shell.rs": "3c15fc8eac11b4f7c726e1d134b8ebb0698fbfd6282bfc05525ee3c329d09024",
+    "crates/services/web-server/src/web/rest/case_export_rest.rs": "b9aa959ef6ed9b52f40242fdc50c9c0ad4c1898e54a114c1b606331b0c827c7f",
     "crates/services/web-server/src/web/rest/case_field_notation_rest.rs": "902128f62adf8803b3ab99503de9336652feec18d6d201af7707e3949ac0ff5c",
     "crates/services/web-server/src/web/rest/case_identifiers_rest.rs": "8d24c719154b4e95e5bb2c6d657780a45b9fcdfdfe7929ffeeba9629f3772946",
-    "crates/services/web-server/src/web/rest/case_intake_rest.rs": "daf7c24ccdd79ae3b56bc47d2e8d36a26a0bc70844a9a7cb7494cddfc567824f",
+    "crates/services/web-server/src/web/rest/case_intake_rest.rs": "f0327ff3201945ec42d11fbbc2a16301d5eece4bf82b81bd88993422e4a293ce",
     "crates/services/web-server/src/web/rest/case_query_catalog_rest.rs": "3258557ca3d3e43a0a69969ca194f43fe19175f7db04597a2810de7eb0e1b0dc",
-    "crates/services/web-server/src/web/rest/case_rest.rs": "049f0ea6d01e3c6ef53eab22601463187d74b9456366ea5f6068928c4760264d",
-    "crates/services/web-server/src/web/rest/case_validation_rest.rs": "55cf7585cd8c61598a3d34207e837b0b45d908cd815b52ad7b11feb53de1cda5",
+    "crates/services/web-server/src/web/rest/case_rest.rs": "cfd9d850e1e2339d80581d20e6c4365206945507950db10104dd185474eb6f4d",
+    "crates/services/web-server/src/web/rest/case_validation_rest.rs": "51d8661b5141ca09abcc1f533c6c6cb6b396e6397f6b83edf89bf9f825dca6cf",
     "crates/services/web-server/src/web/rest/case_workflow_rest.rs": "2c095849db6ffe35c0eab94445c3827c4961c881b7991b72f9af56b24b0a2a5c",
     "crates/services/web-server/src/web/rest/cioms_export_rest/build.rs": "987f357d44895f11363b88576e11dd2097f327b18cd2bdcaa9fe19f667d7ccba",
-    "crates/services/web-server/src/web/rest/cioms_export_rest/types.rs": "44571df2e75ec4c6256624b430caec2c4c2966c2b68fbad4503de6f4e209dac6",
+    "crates/services/web-server/src/web/rest/cioms_export_rest/types.rs": "6ce5b8c4a66286b6b09069c401d832ae63afa9c10a6e7131fa607f8ff622968c",
     "crates/services/web-server/src/web/rest/compliance.rs": "a24d86c085e6c6566e7e4298febbe9b078c960902e79fdd24c38942f65aa8338",
     "crates/services/web-server/src/web/rest/drug_reaction_assessment_rest.rs": "5fac400679cb053c427f82b5d8dc844641cf383e01940a2d7cc68c0cb98be91d",
     "crates/services/web-server/src/web/rest/drug_rest.rs": "2308d4030fd54e0cb321d9ae5f7a20111b453e6771978a5fbb64fe2e563eb7d7",
-    "crates/services/web-server/src/web/rest/drug_sub_rest.rs": "d2573662619feb1cf9a0ebb5278cd5170022f4f5b5dacbf5b7ba84a237d2c45c",
-    "crates/services/web-server/src/web/rest/import_rest.rs": "497c441c478a91fdff8118f927376d8c14d1474049b4e778939b0f869063c21e",
+    "crates/services/web-server/src/web/rest/drug_sub_rest.rs": "61aa29944e80642a8fb16f2da11768e27609942db7834b74556910c2fbaa924d",
+    "crates/services/web-server/src/web/rest/import_rest.rs": "b231949abaf2e26ffb1a55b57a2398a99f0f28c387852eb07d6d083e06b1d527",
     "crates/services/web-server/src/web/rest/message_header_rest.rs": "e5224c8599d8b8ef9b0915acdc36bc384e5946fba06a61a9845c11b8249e6cb5",
-    "crates/services/web-server/src/web/rest/mod.rs": "78f5d9c7fa81d48f1e637571c8346cea1ef2278959480705a092122976039462",
+    "crates/services/web-server/src/web/rest/mod.rs": "30f7ac02ed7b148cd8aa2599b7a351d41b0f1087b1c25fe7dafdb57ff20afccd",
     "crates/services/web-server/src/web/rest/narrative_rest.rs": "a429fa29680908e7c91913435a00777126ce131487507b3d8c46dd425850f346",
     "crates/services/web-server/src/web/rest/narrative_sub_rest.rs": "0bc9725597b2518ebf7bd8141c00c14aa2b4ac9562f66dc24ed292b89e07eab6",
     "crates/services/web-server/src/web/rest/organization_rest.rs": "0f120c414aa768861c56fd873119bd34e8b90d1f099f61a63e4a3d9dbc2f3197",
@@ -100,13 +100,13 @@
     "crates/services/web-server/src/web/rest/reaction_rest.rs": "c3c77bc1e84a2207bec6d6066f77b444155751e3c5a6bf31b7174c133ae2343b",
     "crates/services/web-server/src/web/rest/receiver_rest.rs": "88dc035b7ea0543ce5359b6338578f5e086482e269ff6eeaa14d01a2f5b4a75b",
     "crates/services/web-server/src/web/rest/relatedness_assessment_rest.rs": "a490e30cf3f810ff36809cf3a9dfadb121069f9f3d01b0965c2ef4e9b4c24d5b",
-    "crates/services/web-server/src/web/rest/routes/cases.rs": "611dea56d7a1252f27abeb01f9ae132754921d44d28aa625193be9dfc7158e44",
-    "crates/services/web-server/src/web/rest/routes/misc.rs": "d8771210c3b1672e531df6fd353a8481449ece6848280c80b4f389721100b0d7",
+    "crates/services/web-server/src/web/rest/routes/cases.rs": "6d36f3595d4995833de56938984431dbbcb35d69b66e597ac69738e6c99eef38",
+    "crates/services/web-server/src/web/rest/routes/misc.rs": "dae8730ad1ebcfba9a0bdf6065d9f2b04f7d4ae4b9f10c857a9f34ed2838fa94",
     "crates/services/web-server/src/web/rest/routes/mod.rs": "96581daa7e7ca11f2d3161232f4da305a41fadc3f65f80a4410da1ec7f40b2fd",
     "crates/services/web-server/src/web/rest/routes/presaves.rs": "05d760c93f7a0d9618a0e2415f823f5c3e97e8904a3a4467b209bf34b5fdd0ba",
-    "crates/services/web-server/src/web/rest/routes/submissions.rs": "f48d37a2731537115b015f1cb16e854b3313a985a263a33d607ff09b186a5aaa",
+    "crates/services/web-server/src/web/rest/routes/submissions.rs": "62f29558e1da4a50682ac75cf88a93813abb4b4939af67140d42249fd9fda348",
     "crates/services/web-server/src/web/rest/routes/users.rs": "b6d1c5c661b5eff3f1ab9531ac14eb1e8697e3fdea2e2528ff881b48a69c814a",
-    "crates/services/web-server/src/web/rest/safety_report_rest.rs": "af65b1f221b9282455bf823c3b1f8e9ed693e8758561c95b3a40cc7a33d2db34",
+    "crates/services/web-server/src/web/rest/safety_report_rest.rs": "62178664897d457812a19f6aa718d4121e356ff19e9edb647c07c25dad7c7603",
     "crates/services/web-server/src/web/rest/safety_report_sub_rest.rs": "c3690eb00f1ee59af9303df579ac728093a66ac00e486a226b32f48ad38b8d5e",
     "crates/services/web-server/src/web/rest/section_presave_rest/narrative.rs": "53bf3d03b049da2c460cb9ce7beae424e26f2d3302d8902cbb76523d3c6ecf28",
     "crates/services/web-server/src/web/rest/section_presave_rest/product.rs": "95ff5d840c9604a6c93861911b03cf8865ecb8c75b3c83ec108c817aa4bb4e14",
@@ -115,7 +115,7 @@
     "crates/services/web-server/src/web/rest/section_presave_rest/sender.rs": "9ed5f5be4d9bb746b01538d39861c2be428cd0c001a06f8f0a5ecdd43cd935d5",
     "crates/services/web-server/src/web/rest/section_presave_rest/shared.rs": "2a547bb8583a4dd38fa64c56a4beb61e4bd274ee0fc3601909a642f2cd05c540",
     "crates/services/web-server/src/web/rest/section_presave_rest/study.rs": "633656ecc9f7f4b539de8da14e5b9ca7f53883c1ba0c54f1c94e053785c613b6",
-    "crates/services/web-server/src/web/rest/submission_rest.rs": "d461f2980f8a98241f89b10b42e32e3e2e735bc54535bfd4ce8b02d7f9b4ad99",
+    "crates/services/web-server/src/web/rest/submission_rest.rs": "3dbb775773893ad1a0226a63b7c49493b93fcddb36e12b620850535ffe24b338",
     "crates/services/web-server/src/web/rest/terminology_rest.rs": "00df138eee5b94a03d580369782ed2160b0884bedd5ddf28742986f785722c5c",
     "crates/services/web-server/src/web/rest/test_result_rest.rs": "0638cd2cc1d0595723eddfd7b555ecdb28aa700afb945f06f7e2fa6536285d38",
     "crates/services/web-server/src/web/rest/user_rest/dto.rs": "fc849b55927c12f384bdd24cac7eec9d53b1d5bd8b5338a2e8ccd95d5720e794",
@@ -127,7 +127,7 @@
     "crates/services/web-server/tests/api_administration/admin_settings/audit_web.rs": "8a56581d78fac0a1500e4d23d50454bc7337c7a83f2f8defd1ac58c4c1ad7b45",
     "crates/services/web-server/tests/api_administration/admin_settings/notices_web.rs": "5575350075077ede9c5a6df91a073d257dc520719f0d73081ad325c59b9da965",
     "crates/services/web-server/tests/api_administration/admin_settings/settings_web.rs": "3fea826850f0c0da6134d5e887ad773bee877bee482592449be970974d842f9c",
-    "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "0e4c4d74fb4baaecd25080a3f5c0a876f467f95a91a6b25de144ecde80d5e003",
+    "crates/services/web-server/tests/api_administration/admin_settings/workflow_web.rs": "ea1a6a14516babaa88f48b59fef88e7c16ce9d4aac37d4e58e8d78c7e4d7ae59",
     "crates/services/web-server/tests/api_administration/app_branding_web.rs": "0b32bb70bc30d3483cfb7b35514cfff2e200ff292a4df863e51307c1ac378c30",
     "crates/services/web-server/tests/api_administration/audit_web.rs": "005f6b7ce8372d9120c853f335533c2456185664a6a830036f7c23af67e30158",
     "crates/services/web-server/tests/api_administration/error_mapping_web.rs": "0ccda51df05431dbc53e9970b6267dd89c42b1ded7a0511b6a38eadcf17dba27",
@@ -155,7 +155,7 @@
     "crates/services/web-server/tests/api_cases/contract/query.rs": "93f9c759bf99e18a9dbff36ec5ab321ecc1daff89c9e446f40f7f4b4a3070924",
     "crates/services/web-server/tests/api_cases/contract/review_receivers.rs": "742f33b80bc44e067b0413007c0b08e2f071ddb3f46e86dc311e3bf2fd56b424",
     "crates/services/web-server/tests/api_cases/field_notation.rs": "ee6ac80614c4c6493e705e717c78797b9422dcf8e427121c2e343cc25859059f",
-    "crates/services/web-server/tests/api_cases/intake/duplicates.rs": "3c1e7139598fa6fd944f345e42c83254b7dfdd984b9e885a3b7f670d6cf71dfa",
+    "crates/services/web-server/tests/api_cases/intake/duplicates.rs": "77b29497a712b7ac57f83b578d73a2227f53fce8d867d3648c7609d3d6aeee9d",
     "crates/services/web-server/tests/api_cases/intake/input.rs": "49f14ce18689c606dd8d4ab0abba0977bc5f6f780dd18fb043a25a19e00ba176",
     "crates/services/web-server/tests/api_cases/lifecycle.rs": "f458af03c5a199db050bd1098d197a4851f88d808ed61e5e80513883256c6e5d",
     "crates/services/web-server/tests/api_cases/locking.rs": "811f2cf7272a39911e84bf2c866198260a96675efe519e8952c14d879603d4bf",
@@ -169,7 +169,7 @@
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_drug.rs": "f9669d6575d9b3cfc0e607e05baba6baedbc3b927dedfbb3046381cef7435f2e",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs": "d742951aae498ef742e07f188447630775b79e1ba3d70a9a5377b429d4211f1b",
     "crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs": "90cdfb0c896bc85b291e6cefa328771ef194f8984ff5ca5054695cea4fbc3934",
-    "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "f404ef5bb74402520a3ad21f5cefe114d6b68b02931d2b53444d6bce142e06f2",
+    "crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs": "f8806d6159ebfbd871951b20315c5b790bd912bd4c50b5a4f806daaecc4c47d8",
     "crates/services/web-server/tests/api_cases/subresources/narrative.rs": "7388e3297e0eba02a7b6373c1b79055fe8ba6cba7dd5e5201e992ffb6757acaf",
     "crates/services/web-server/tests/api_cases/subresources/patient.rs": "b1d13d1d1662a689827c15c4b8af3b12fe1061bbf589b24457bf0f1729c71b56",
     "crates/services/web-server/tests/api_cases/subresources/primary_source.rs": "6f0f76120eaaf787e0b2488ef54e7c604dbde1ae79e89a30478811cc7784fc10",
@@ -179,7 +179,7 @@
     "crates/services/web-server/tests/api_cases/subresources/singleton.rs": "d98672bd21af50c5687d07b26980e6b4e931be7fc4e0b10639db05c6d10a0fb7",
     "crates/services/web-server/tests/api_cases/subresources/study.rs": "8f423f0608eb401f601780939d986bccc98ce13d3774486fb0bf976fcd6f4ce1",
     "crates/services/web-server/tests/api_cases/subresources/test_result.rs": "fcb5f731a326e674bf1271d4a1218d4ca2cba1826d2db15172ff5a0fa4a624bc",
-    "crates/services/web-server/tests/api_cases/validation.rs": "6e6c69affdd3cd459a6151f62ccd006dd608d1793192d73c4e5f5b05aa1d479d",
+    "crates/services/web-server/tests/api_cases/validation.rs": "d27b9bce2cb427a566242b2acfad9eabc39fbbbce7bf5674dce2d798815fa1fc",
     "crates/services/web-server/tests/api_cases/versions.rs": "49baf2125760f4915052b76750b7a27c293c169b2fb426a2ccc06e79fb849f77",
     "crates/services/web-server/tests/api_cases/workflow.rs": "08dd3ba522708aafe80ee69cffbb5439930aa42875250faf93f999594f890a6d",
     "crates/services/web-server/tests/api_editor/legacy_reads/ae.rs": "b48c657e1df97f6556bff98fa4a692f1b9e7c9915eb6c51c89a255f470e60bea",
@@ -190,26 +190,26 @@
     "crates/services/web-server/tests/api_editor/legacy_reads/lb.rs": "6bb0f69c7756424e3bd48a631de65bceabd639875a5521300baeac84efc8765d",
     "crates/services/web-server/tests/api_editor/legacy_reads/nr.rs": "58549ec686024ebe0b88cde56361f593dcdd7dbaa9f4191b33c62580080bedb0",
     "crates/services/web-server/tests/api_editor/legacy_reads/rp.rs": "b884d8bfbd9e8f6b051d3d8a99e16cb994ba05027232ed2edd9db8c88327a7e4",
-    "crates/services/web-server/tests/api_editor/legacy_reads/sd.rs": "dc7bddb934f8b62d9815aec0d4323d924581875809359e9ed2446b4a856bc70d",
+    "crates/services/web-server/tests/api_editor/legacy_reads/sd.rs": "d0a80b054a8e0bc9a15492607b7a62cdb6e15da787ab46956f9eb353d9c85e74",
     "crates/services/web-server/tests/api_editor/legacy_reads/si.rs": "88d7ba446251806d000d320d4e8fef9ef6bad5858dd2cc275affc429beac708f",
-    "crates/services/web-server/tests/api_editor/pages/ae.generated.rs": "82bc952927334562bc4a45a7750f1dc861ebf81389cdfd61f1368760f1f07bb0",
-    "crates/services/web-server/tests/api_editor/pages/ci.generated.rs": "01c7af92637c37e8d131124ac38a87ee57b18abab270cd6c071a41e1a68f18cd",
-    "crates/services/web-server/tests/api_editor/pages/dg.generated.rs": "51fd680049b6c70c8ecb005f90ac5433d1d73d665bf90e4897b86c0d67ebaa7e",
+    "crates/services/web-server/tests/api_editor/pages/ae.generated.rs": "e7141884a93a93e95fa73b79c99a365748ed96466bdd9dfbb289f4e69c6bd7f4",
+    "crates/services/web-server/tests/api_editor/pages/ci.generated.rs": "a859b1596813deb52ade5d546ed9ccc4fac6984681969b9bc6e9b2e5639c10db",
+    "crates/services/web-server/tests/api_editor/pages/dg.generated.rs": "866e41ce9f45c1268983537ccd522fff1ad57ac7c526151bcd54fc6986f6ac9a",
     "crates/services/web-server/tests/api_editor/pages/dh.generated.rs": "455cf1de0a35b9721cd42ec9bbaec6d764db49f2e26793d3a07611a6830031ec",
     "crates/services/web-server/tests/api_editor/pages/dm.generated.rs": "3a991db5283d488c2aa829d786b30a204384a5e39fdbe8702c0437d382263262",
-    "crates/services/web-server/tests/api_editor/pages/lb.generated.rs": "6d1b8c68a0ef8721df7c6dc4d8a9b03766e81e02e79f15affa174c60083eb6b2",
+    "crates/services/web-server/tests/api_editor/pages/lb.generated.rs": "dd79f759ac6bffac45c1c4cdff01ed9b1f82b0ab6a000e019855a1b33413c3af",
     "crates/services/web-server/tests/api_editor/pages/lr.generated.rs": "0b73de9f0140c0b488bd3e3ff63ea301a298f788172bb9d10894a5beb9ce4335",
     "crates/services/web-server/tests/api_editor/pages/n.generated.rs": "fb9af924a64527b3e2dbec3f0a0ef90aff682d97540c57571cfe25c3ed123f1d",
-    "crates/services/web-server/tests/api_editor/pages/nr.generated.rs": "9a1ca76fb2ac907a4d08d127c3ae39366703b049f76144b6893768cd3a45623f",
+    "crates/services/web-server/tests/api_editor/pages/nr.generated.rs": "f9a24a0ba57fc9dd2071dd91be53b19d388cc653a668277cb4d7cb86d4d3cf33",
     "crates/services/web-server/tests/api_editor/pages/rp.generated.rs": "9e79d04064ba4e31a72f80048af28e949072bf5beb9e6c9b9f24cc9e86842c99",
-    "crates/services/web-server/tests/api_editor/pages/sd.generated.rs": "cf4e2f9656dbe5d37f2632025c1e6c22a10d6f4866324930306a3c35005b7c68",
-    "crates/services/web-server/tests/api_editor/pages/si.generated.rs": "2b141fbc63f9cd0e35f304aa3fc9b5f24f83e9db53e92daa7327aeeea4670b51",
+    "crates/services/web-server/tests/api_editor/pages/sd.generated.rs": "692c2589a341572a48cf6cc882f0bad00a464e141fe291ce88d7bccd1c8a9d63",
+    "crates/services/web-server/tests/api_editor/pages/si.generated.rs": "5df41416b785dc719b991d36e5bd6379a7aee4b9186d4b3381d8432d108009cc",
     "crates/services/web-server/tests/api_editor/rows/batch.rs": "3c61c7237841d05616d3e81d3647d35bad589779e8c8a6c0cd8ebe363c565365",
-    "crates/services/web-server/tests/api_editor/rows/pages_save.rs": "092090a99ae02a0b4f7c44e389763372603a585a0c93b3be40872885633fe63d",
+    "crates/services/web-server/tests/api_editor/rows/pages_save.rs": "ddf0e6623e7d4c3901ea49f2596e1e7bcd5e4281383a626399acc35d03445fe1",
     "crates/services/web-server/tests/api_import/import_contract_web.rs": "7121ab176c77d96b4e5ae610fdd10559fe7e80f4e5c8f5aac96a69580dc9e361",
     "crates/services/web-server/tests/api_import/import_history_web.rs": "bc15bb8d84d17c7a23d158943382a9266f65e2f2f31f47e3731b365736999209",
     "crates/services/web-server/tests/api_import/import_settings_web.rs": "7b1a4711736233e49eefd36a4345b95e14fa983c92dfa07f85457a6bf1473898",
-    "crates/services/web-server/tests/api_import/validation_web.rs": "eaf9a529ad685fa474730c33663b6ee4f867401181d227565399e56bc9683a7a",
+    "crates/services/web-server/tests/api_import/validation_web.rs": "a094133ffd42af092b87a8ce6b7d251dd393a888b2c9fee38bd8da5c9852e78e",
     "crates/services/web-server/tests/api_presave/audit_web.rs": "99933eb7aeec32c4a7e0352abdc39db1349f8aa9d47dd73b4eda57f4e17dd92b",
     "crates/services/web-server/tests/api_presave/authorization_web.rs": "6508fdc08ad35f44aeb63096d72df80f08ba791ea30620d8316708b518583ebe",
     "crates/services/web-server/tests/api_presave/crud_matrix_web.rs": "c1934328884c8f7e126a416be73bdc272862c42e5573c52df0f9eda6046514f9",
@@ -223,29 +223,29 @@
     "crates/services/web-server/tests/api_presave/study_children_create_web.rs": "4573a73f03582f2bdb5e85b0c75925be7b9a2a575afbb7812ca6f467ef9a0e58",
     "crates/services/web-server/tests/api_presave/study_web.rs": "48b58696508b4053f017d6394e037df0b6bbbaac98aeab220dab80a689b7d059",
     "crates/services/web-server/tests/api_specs/administration.md": "8c0b465873339173ff79959dffb493c64c23fc69010b5d00a87ced58427f38e0",
-    "crates/services/web-server/tests/api_specs/cases.md": "72e019d121a10b694dc695f531318a45ec364e162580712586f5d0691fa912c8",
+    "crates/services/web-server/tests/api_specs/cases.md": "115faa1ba86e0a7226d75b9f9fa95f046a222943df7d92a23e2415cb30ac4ebb",
     "crates/services/web-server/tests/api_specs/check_api_contract_manifest.py": "9ac5640cee8f041690cd3542ddc7786f7d850acec1d535897b632dd40a82695a",
-    "crates/services/web-server/tests/api_specs/coverage.tsv": "4c6eae5e48447a882e6ce56c12ccf2053f532c0c687fffe6def38d62fb7263a3",
-    "crates/services/web-server/tests/api_specs/editor.md": "721c2a575bbdf8518c745f7cf8ef7b69b4c0ef84ddda4b6a11d3f5b4b7fa1b05",
-    "crates/services/web-server/tests/api_specs/export.md": "799578661724b0f554b3435a10b693d12c8a1921bec3a9bda1620277e05f33f1",
-    "crates/services/web-server/tests/api_specs/import.md": "f8e50553c68c6379ba83168882b9145dee5142ee4ce26ea70e848a4ff580facb",
+    "crates/services/web-server/tests/api_specs/coverage.tsv": "ba6da6d159494847a22ee88b1f560e8804338574cf2426a2e69665187a9c6fe0",
+    "crates/services/web-server/tests/api_specs/editor.md": "94cd7b2ed999e764f0957168ce3234f8af9ca2451f15eafc982344265677bf85",
+    "crates/services/web-server/tests/api_specs/export.md": "2cff582f934b14a22b633f22fb3ee78c8d51f884775ac0ca243565c29ea9df90",
+    "crates/services/web-server/tests/api_specs/import.md": "87dce84f03ae248763a5f4ea08354757e5c60f253bbfcdce951d49d1a0481c19",
     "crates/services/web-server/tests/api_specs/presave.md": "f448bda7a9c546d4b16e8391ed9beb86aec18074119eab0a59f2b9b38f9bf2e6",
-    "crates/services/web-server/tests/api_specs/submission.md": "53ed6e4390f3542d74a174dbb6d2cd39646832e87a5f04bfda082f811db32c4e",
+    "crates/services/web-server/tests/api_specs/submission.md": "997ce7f25eb445933139d487634971be7fb45c91427accd7d8924301a5b530d7",
     "crates/services/web-server/tests/api_specs/terminology.md": "7d65d3843563a6366a244608ea4d30dd292fecc1f0cbc4edb686b3827d55cd44",
-    "crates/services/web-server/tests/api_submission/callbacks.rs": "4e3e7035b0fac4c407532353f1b7bdcb64a122f2cf4471cc3e6616890f718bfa",
-    "crates/services/web-server/tests/api_submission/dispatch.rs": "28cb6b110b6dab264f3180e1491921263b0246eb78bf96276e678d22d06c9d71",
-    "crates/services/web-server/tests/api_submission/headers.rs": "63a9c33949028725247efd65f61eb651496410137d714a17f14b929c5d78e771",
-    "crates/services/web-server/tests/api_submission/history.rs": "f3959aa8d501fa31988ce511198013564e64715de64076b8bfcb3fb1b45957bf",
-    "crates/services/web-server/tests/api_submission/idempotency.rs": "b3eb8acadcab89405cc0f3e28bccb1edfc7b767ba2cd1f4a7df1ee306449eab4",
-    "crates/services/web-server/tests/api_submission/reconcile/web.rs": "50631001432ec3dfa9a9938a01e4691e0c7ddcd2888b6f453fdc3705d422ce7f",
-    "crates/services/web-server/tests/api_submission/validation.rs": "4f917e7c6965a349f613442e9a6da9a18381450aa1366493729e4ef682140da4",
+    "crates/services/web-server/tests/api_submission/callbacks.rs": "26a517957a1308f6b8fe3dbe11059a1b8b88c1542f959059ccbac6d509d3f37a",
+    "crates/services/web-server/tests/api_submission/dispatch.rs": "400b9155d7691e3f8916c77230912909a28da8e0c02827da96dd4906cd56cc4c",
+    "crates/services/web-server/tests/api_submission/headers.rs": "95440bf3f558d72c2c3f7bc11fac6dd524c6fad63fe8e9b3ad09b5a441e5111c",
+    "crates/services/web-server/tests/api_submission/history.rs": "bebdedeed04dac5cdb40a0c800320c2bc008d24d755ec1ea8059273515766ff3",
+    "crates/services/web-server/tests/api_submission/idempotency.rs": "6633bb9c9eac95f752b33933b608e3441c20a27e22147db4d8af6c73e7b26d2a",
+    "crates/services/web-server/tests/api_submission/reconcile/web.rs": "43ebe09b265c8d16a82a3bc97cbe27c794a234f9c3f1ae41819e9406bf8acc72",
+    "crates/services/web-server/tests/api_submission/validation.rs": "2b3ad191b0724a946ab9b25e339badfff245d8406366be81ab5982b62f9b897d",
     "crates/services/web-server/tests/api_terminology/imports.rs": "7d62914f882ceb2c095cf2ff010d8d266b4d5e130d1f4b4b1bd777e5d9a1d61e",
     "crates/services/web-server/tests/api_terminology/permissions.rs": "61a1125769afb0fc6c6eec642cdcc220f65067e27e9e470c2569c571b6653e7f",
     "crates/services/web-server/tests/api_terminology/releases.rs": "faab552ad385a4e33551057ca5e44557d3d5b719ced1c353fdd94be48e780885",
     "crates/services/web-server/tests/api_terminology/search.rs": "dcf605c8a536f455ba6b5194f14f278b1d627fc57b08b2a62be2d05211f48055",
     "crates/services/web-server/tests/authz/authentication_web.rs": "e20af952d91d07b3c01b2a90d718ce0b49430d2aead21ad01fe4e3bf04987e2d",
     "crates/services/web-server/tests/authz/protected_route_inventory.rs": "54285c501faccb8305d322df6139638dc42ad1feccd3e2e4bea352299a62a4e6",
-    "crates/services/web-server/tests/authz/protected_route_inventory.snapshot": "82b831830618bc108b87b56cae132ae7a381e7885a590405293e23dca677db23",
+    "crates/services/web-server/tests/authz/protected_route_inventory.snapshot": "e8179a65c3cec3ae4302c5822243343d7954b48dc35f5ecbcbcbd1c0d8e6081f",
     "crates/services/web-server/tests/authz/rbac_audit.rs": "f777441279a8b037d4856486304910f05f4385a5310f90f8e909b28f6da585a8",
     "crates/services/web-server/tests/authz/rbac_cases.rs": "8b406f5077afdc556f64320823bd99c603897315b4299537f1336739a8810072",
     "crates/services/web-server/tests/authz/rbac_organizations.rs": "786081d0689245ff26b2ac9379c7a48fe085a0cb523ab60d06f582b8641adf8c",
@@ -254,7 +254,7 @@
     "crates/services/web-server/tests/authz/rbac_users/rls_scope_web.rs": "41d8cdbea5010ee1a54dcbe8159ce8cf7456e9edefe1f313021a64554e9b1abf",
     "crates/services/web-server/tests/authz/rbac_users/role_update_web.rs": "f32c8008301c54998035f3c927f7d5e2b2678d2b53057c6c7a4930bfbb048e2e",
     "crates/services/web-server/tests/authz/rls_web.rs": "e6db63fb3b0fb8a82925ef0287af1d1210bb79b98b2e5d1aacad280e1712001d",
-    "crates/services/web-server/tests/xml/import_export/rejections.rs": "40d42cc557d329703399fae487aea18c15f4af1dda4757743992595df72a701e"
+    "crates/services/web-server/tests/xml/import_export/rejections.rs": "a0cccf3c7b4ea982d80f4b0e42ac63d6095375a438d523d14969903f74f5b3ce"
   },
   "shared_contracts": {
     "root-request-context": {
@@ -18155,557 +18155,6 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/cases/{case_id}/message-header",
-      "handler": "message_header_rest::delete_message_header",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 583
-      },
-      "coverage": {
-        "method": "DELETE",
-        "path": "/api/cases/{case_id}/message-header",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 150
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-          "line": 172
-        },
-        "signature": "pub async fn delete_message_header( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<StatusCode>",
-        "name": "delete_message_header"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "declared_response": "Result<StatusCode>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 14
-              }
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 2
-          }
-        }
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/api/cases/{case_id}/message-header",
-      "handler": "message_header_rest::get_message_header",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 583
-      },
-      "coverage": {
-        "method": "GET",
-        "path": "/api/cases/{case_id}/message-header",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent;tests/api_editor/pages/n.generated.rs::n_1_3;tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 151
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-          "line": 122
-        },
-        "signature": "pub async fn get_message_header( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-        "name": "get_message_header"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 14
-              }
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "MessageHeader",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:16:MessageHeader"
-        }
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/cases/{case_id}/message-header",
-      "handler": "message_header_rest::create_message_header",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 583
-      },
-      "coverage": {
-        "method": "POST",
-        "path": "/api/cases/{case_id}/message-header",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent;tests/api_editor/pages/n.generated.rs::n_1_3;tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 152
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-          "line": 90
-        },
-        "signature": "pub async fn create_message_header( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(params): Json<ParamsForCreate<MessageHeaderForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-        "name": "create_message_header"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForCreate<MessageHeaderForCreate>>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForCreate<MessageHeaderForCreate>>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 14
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "Json(params)",
-            "type": "Json<ParamsForCreate<MessageHeaderForCreate>>"
-          },
-          "refs": [
-            {
-              "rust_type": "Json",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::Json",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 3
-              }
-            },
-            {
-              "rust_type": "ParamsForCreate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-rest-core/src/rest_params.rs:24:ParamsForCreate"
-            },
-            {
-              "rust_type": "MessageHeaderForCreate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:51:MessageHeaderForCreate"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "MessageHeader",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:16:MessageHeader"
-        }
-      ]
-    },
-    {
-      "method": "PUT",
-      "path": "/api/cases/{case_id}/message-header",
-      "handler": "message_header_rest::update_message_header",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 583
-      },
-      "coverage": {
-        "method": "PUT",
-        "path": "/api/cases/{case_id}/message-header",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/xml/import_export/rejections.rs::test_manual_export_rejects_missing_headers_and_records_errors;tests/api_editor/pages/n.generated.rs::n_1_3;tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 153
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-          "line": 145
-        },
-        "signature": "pub async fn update_message_header( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(params): Json<ParamsForUpdate<MessageHeaderForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-        "name": "update_message_header"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<MessageHeaderForUpdate>>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<MessageHeaderForUpdate>>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 14
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "Json(params)",
-            "type": "Json<ParamsForUpdate<MessageHeaderForUpdate>>"
-          },
-          "refs": [
-            {
-              "rust_type": "Json",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::Json",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-                "line": 3
-              }
-            },
-            {
-              "rust_type": "ParamsForUpdate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-rest-core/src/rest_params.rs:33:ParamsForUpdate"
-            },
-            {
-              "rust_type": "MessageHeaderForUpdate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:64:MessageHeaderForUpdate"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/message_header_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "MessageHeader",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:16:MessageHeader"
-        }
-      ]
-    },
-    {
-      "method": "DELETE",
       "path": "/api/cases/{case_id}/narrative",
       "handler": "narrative_rest::delete_narrative_information",
       "route": {
@@ -29682,561 +29131,6 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/cases/{case_id}/receiver",
-      "handler": "receiver_rest::delete_receiver",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 713
-      },
-      "coverage": {
-        "method": "DELETE",
-        "path": "/api/cases/{case_id}/receiver",
-        "status": "asserted",
-        "spec": "cases.md#case-core",
-        "evidence": "tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 240
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-          "line": 101
-        },
-        "signature": "pub async fn delete_receiver( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<StatusCode>",
-        "name": "delete_receiver"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "declared_response": "Result<StatusCode>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 13
-              }
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 2
-          }
-        }
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "/api/cases/{case_id}/receiver",
-      "handler": "receiver_rest::get_receiver",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 713
-      },
-      "coverage": {
-        "method": "GET",
-        "path": "/api/cases/{case_id}/receiver",
-        "status": "asserted",
-        "spec": "cases.md#case-core",
-        "evidence": "tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent;tests/api_cases/contract/list_view.rs::test_case_list_view_projects_reference_grid_fields;tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 241
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-          "line": 45
-        },
-        "signature": "pub async fn get_receiver( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, ) -> Result<( StatusCode, Json<DataRestResult<Option<ReceiverInformation>>>, )>",
-        "name": "get_receiver"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        }
-      ],
-      "declared_response": "Result<( StatusCode, Json<DataRestResult<Option<ReceiverInformation>>>, )>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 13
-              }
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "ReceiverInformation",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/receiver.rs:20:ReceiverInformation"
-        }
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/cases/{case_id}/receiver",
-      "handler": "receiver_rest::create_receiver",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 713
-      },
-      "coverage": {
-        "method": "POST",
-        "path": "/api/cases/{case_id}/receiver",
-        "status": "asserted",
-        "spec": "cases.md#case-core",
-        "evidence": "tests/api_cases/subresources/singleton.rs::test_singleton_post_endpoints_are_idempotent;tests/api_cases/contract/list_view.rs::test_case_list_view_projects_reference_grid_fields;tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 242
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-          "line": 15
-        },
-        "signature": "pub async fn create_receiver( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(params): Json<ParamsForCreate<ReceiverInformationForCreate>>, ) -> Result<(StatusCode, Json<DataRestResult<ReceiverInformation>>)>",
-        "name": "create_receiver"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForCreate<ReceiverInformationForCreate>>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForCreate<ReceiverInformationForCreate>>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<ReceiverInformation>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 13
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "Json(params)",
-            "type": "Json<ParamsForCreate<ReceiverInformationForCreate>>"
-          },
-          "refs": [
-            {
-              "rust_type": "Json",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::Json",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 3
-              }
-            },
-            {
-              "rust_type": "ParamsForCreate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-rest-core/src/rest_params.rs:24:ParamsForCreate"
-            },
-            {
-              "rust_type": "ReceiverInformationForCreate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/receiver.rs:66:ReceiverInformationForCreate"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "ReceiverInformation",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/receiver.rs:20:ReceiverInformation"
-        }
-      ]
-    },
-    {
-      "method": "PUT",
-      "path": "/api/cases/{case_id}/receiver",
-      "handler": "receiver_rest::update_receiver",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 713
-      },
-      "coverage": {
-        "method": "PUT",
-        "path": "/api/cases/{case_id}/receiver",
-        "status": "asserted",
-        "spec": "cases.md#case-core",
-        "evidence": "tests/api_cases/subresources/lifecycle_report.rs::report_rows_enforce_scope_permission_lock_lifecycle_and_audit",
-        "gaps": "runtime NOT_RUN; 선택된 필드의 lifecycle·ID·권한/소속·잠금·감사 assertion. 전체 필드 경계·전체 권한 조합·동시성·응답 유실 재시도 미검증; 세부 범위는 row-lifecycle.tsv",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 243
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-          "line": 73
-        },
-        "signature": "pub async fn update_receiver( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(params): Json<ParamsForUpdate<ReceiverInformationForUpdate>>, ) -> Result<(StatusCode, Json<DataRestResult<ReceiverInformation>>)>",
-        "name": "update_receiver"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<ReceiverInformationForUpdate>>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<ReceiverInformationForUpdate>>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<ReceiverInformation>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 1
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 13
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "Json(params)",
-            "type": "Json<ParamsForUpdate<ReceiverInformationForUpdate>>"
-          },
-          "refs": [
-            {
-              "rust_type": "Json",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::Json",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-                "line": 3
-              }
-            },
-            {
-              "rust_type": "ParamsForUpdate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-rest-core/src/rest_params.rs:33:ParamsForUpdate"
-            },
-            {
-              "rust_type": "ReceiverInformationForUpdate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-core/src/model/receiver.rs:83:ReceiverInformationForUpdate"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 2
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/receiver_rest.rs",
-            "line": 3
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "ReceiverInformation",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/receiver.rs:20:ReceiverInformation"
-        }
-      ]
-    },
-    {
-      "method": "DELETE",
       "path": "/api/cases/{case_id}/safety-report",
       "handler": "safety_report_rest::delete_safety_report_identification",
       "route": {
@@ -37243,7 +36137,7 @@
         "path": "/api/cases/{case_id}/validation",
         "status": "asserted",
         "spec": "cases.md#workflow-validation",
-        "evidence": "tests/api_cases/validation.rs::test_validation_defaults_to_ich_profile;tests/api_cases/validation.rs::test_validation_rejects_unknown_profile;tests/api_submission/validation.rs::test_submission_rejects_case_validation_before_routing_or_dispatch",
+        "evidence": "tests/api_cases/validation.rs::test_validation_requires_explicit_authority;tests/api_cases/validation.rs::test_validation_rejects_unknown_profile;tests/api_submission/validation.rs::test_submission_rejects_case_validation_before_routing_or_dispatch",
         "gaps": "ICH 기본·MFDS·오류 authority와 FDA validation cache 생성은 검증; FDA 전체 규칙과 권한 경계는 미검증",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
@@ -38892,166 +37786,6 @@
       ]
     },
     {
-      "method": "PUT",
-      "path": "/api/cases/{id}/submission-receiver",
-      "handler": "submission_rest::apply_submission_receiver_selection",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 836
-      },
-      "coverage": {
-        "method": "PUT",
-        "path": "/api/cases/{id}/submission-receiver",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/api_submission/headers.rs::test_submission_receiver_selection_updates_message_header_n_identifiers;tests/api_submission/headers.rs::concurrent_authority_header_preparation_returns_request_scoped_values;tests/api_administration/role_admin/effective_access/transfer_web.rs::test_export_submission_matrix_privileges_grant_effective_xml_export_permission",
-        "gaps": "모든 기관/수신처 오류 및 전체 감사 delta 미검사",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 310
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-          "line": 279
-        },
-        "signature": "pub async fn apply_submission_receiver_selection( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(case_id): Path<Uuid>, Json(params): Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>, ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-        "name": "apply_submission_receiver_selection"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(case_id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "Json(params)",
-          "type": "Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>"
-        }
-      ],
-      "declared_response": "Result<(StatusCode, Json<DataRestResult<MessageHeader>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(case_id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-                "line": 2
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-                "line": 19
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "Json(params)",
-            "type": "Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>"
-          },
-          "refs": [
-            {
-              "rust_type": "Json",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::Json",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-                "line": 7
-              }
-            },
-            {
-              "rust_type": "ParamsForUpdate",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/libs/lib-rest-core/src/rest_params.rs:33:ParamsForUpdate"
-            },
-            {
-              "rust_type": "SubmissionReceiverSelectionInput",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/submission_rest.rs:54:SubmissionReceiverSelectionInput"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-            "line": 4
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-            "line": 7
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "MessageHeader",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/message_header.rs:16:MessageHeader"
-        }
-      ]
-    },
-    {
       "method": "GET",
       "path": "/api/cases/{id}/submissions",
       "handler": "submission_rest::list_case_submissions",
@@ -39189,7 +37923,7 @@
         "path": "/api/cases/{id}/submissions/fda",
         "status": "asserted",
         "spec": "submission.md#submit",
-        "evidence": "tests/api_submission/idempotency.rs::test_submission_idempotency_key_reuses_submission_when_enabled;tests/api_submission/idempotency.rs::test_submission_idempotency_key_parallel_requests_single_submission;tests/api_submission/dispatch.rs::test_submission_retains_unknown_when_as2_submitter_unreachable",
+        "evidence": "tests/api_submission/idempotency.rs::test_submission_idempotency_key_reuses_submission_when_enabled;tests/api_submission/idempotency.rs::test_submission_idempotency_key_parallel_requests_single_submission;tests/api_submission/dispatch.rs::test_submission_records_failure_when_as2_submitter_unreachable",
         "gaps": "실제 규제기관 전송·ACK 수용 미검증; 로컬 대역/미접속 검사",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
@@ -39541,146 +38275,6 @@
           "rust_type": "SubmissionRecord",
           "origin": "in_repo_declaration",
           "declaration_id": "crates/services/web-server/src/submission/types.rs:75:SubmissionRecord"
-        }
-      ]
-    },
-    {
-      "method": "POST",
-      "path": "/api/cases/{id}/validator/mark-validated",
-      "handler": "case_rest::mark_case_validated_by_validator",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/cases.rs",
-        "line": 232
-      },
-      "coverage": {
-        "method": "POST",
-        "path": "/api/cases/{id}/validator/mark-validated",
-        "status": "asserted",
-        "spec": "cases.md#workflow-validation",
-        "evidence": "tests/api_cases/validation.rs::test_validator_endpoint_requires_token;tests/api_cases/validation.rs::test_validator_endpoint_marks_validated_when_clean",
-        "gaps": "token 누락·invalid case·성공 및 audit reason은 검증; 잘못된 사용자 scope와 재호출은 미검증",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 314
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-          "line": 1772
-        },
-        "signature": "pub async fn mark_case_validated_by_validator( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Path(id): Path<Uuid>, headers: axum::http::HeaderMap, ) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)>",
-        "name": "mark_case_validated_by_validator"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Path(id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "headers",
-          "type": "axum::http::HeaderMap"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Path(id)",
-          "type": "Path<Uuid>"
-        },
-        {
-          "pattern": "headers",
-          "type": "axum::http::HeaderMap"
-        }
-      ],
-      "declared_response": "Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/case_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Path(id)",
-            "type": "Path<Uuid>"
-          },
-          "refs": [
-            {
-              "rust_type": "Path",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Path",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-                "line": 8
-              }
-            },
-            {
-              "rust_type": "Uuid",
-              "origin": "external_import_alias",
-              "canonical_type": "uuid::Uuid",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-                "line": 47
-              }
-            }
-          ]
-        },
-        {
-          "parameter": {
-            "pattern": "headers",
-            "type": "axum::http::HeaderMap"
-          },
-          "refs": [
-            {
-              "rust_type": "axum::http::HeaderMap",
-              "origin": "framework_or_result_wrapper"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "axum::http::StatusCode",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/case_rest.rs",
-            "line": 9
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "CaseReadResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/case_rest.rs:923:CaseReadResult"
         }
       ]
     },
@@ -50756,127 +49350,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/submissions/receiver-options",
-      "handler": "submission_rest::list_receiver_options",
-      "route": {
-        "source": "crates/services/web-server/src/web/rest/routes/submissions.rs",
-        "line": 14
-      },
-      "coverage": {
-        "method": "GET",
-        "path": "/api/submissions/receiver-options",
-        "status": "asserted",
-        "spec": "submission.md#receiver",
-        "evidence": "tests/api_submission/headers.rs::test_submission_receiver_options_list_defaults_by_authority",
-        "gaps": "잘못된 authority 모든 입력 조합 미검사",
-        "source": {
-          "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
-          "line": 405
-        }
-      },
-      "handler_contract": {
-        "kind": "direct",
-        "declaration": {
-          "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-          "line": 236
-        },
-        "signature": "pub async fn list_receiver_options( State(mm): State<ModelManager>, ctx_w: CtxW, snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW, Query(query): Query<ReceiverOptionsQuery>, ) -> Result<( StatusCode, Json<DataRestResult<SubmissionReceiverOptionList>>, )>",
-        "name": "list_receiver_options"
-      },
-      "parameters": [
-        {
-          "pattern": "State(mm)",
-          "type": "State<ModelManager>"
-        },
-        {
-          "pattern": "ctx_w",
-          "type": "CtxW"
-        },
-        {
-          "pattern": "snapshot",
-          "type": "lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW"
-        },
-        {
-          "pattern": "Query(query)",
-          "type": "Query<ReceiverOptionsQuery>"
-        }
-      ],
-      "wire_request_parameters": [
-        {
-          "pattern": "Query(query)",
-          "type": "Query<ReceiverOptionsQuery>"
-        }
-      ],
-      "declared_response": "Result<( StatusCode, Json<DataRestResult<SubmissionReceiverOptionList>>, )>",
-      "shared_contract_refs": [
-        "root-request-context",
-        "result-error-map",
-        "api-auth-db-context",
-        "api-csrf-origin"
-      ],
-      "type_resolution_source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-      "dynamic_value_note": null,
-      "wire_request_type_refs": [
-        {
-          "parameter": {
-            "pattern": "Query(query)",
-            "type": "Query<ReceiverOptionsQuery>"
-          },
-          "refs": [
-            {
-              "rust_type": "Query",
-              "origin": "external_import_alias",
-              "canonical_type": "axum::extract::Query",
-              "import": {
-                "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-                "line": 2
-              }
-            },
-            {
-              "rust_type": "ReceiverOptionsQuery",
-              "origin": "in_repo_declaration",
-              "declaration_id": "crates/services/web-server/src/web/rest/submission_rest.rs:80:ReceiverOptionsQuery"
-            }
-          ]
-        }
-      ],
-      "response_type_refs": [
-        {
-          "rust_type": "lib_rest_core::Result",
-          "origin": "framework_or_result_wrapper"
-        },
-        {
-          "rust_type": "StatusCode",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::http::StatusCode",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-            "line": 4
-          }
-        },
-        {
-          "rust_type": "Json",
-          "origin": "external_import_alias",
-          "canonical_type": "axum::Json",
-          "import": {
-            "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-            "line": 7
-          }
-        },
-        {
-          "rust_type": "DataRestResult",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-rest-core/src/rest_result.rs:5:DataRestResult"
-        },
-        {
-          "rust_type": "SubmissionReceiverOptionList",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/services/web-server/src/web/rest/submission_rest.rs:49:SubmissionReceiverOptionList"
-        }
-      ]
-    },
-    {
-      "method": "GET",
       "path": "/api/submissions/{id}",
       "handler": "submission_rest::get_case_submission",
       "route": {
@@ -51373,7 +49846,7 @@
         "path": "/api/submissions/{id}/xml",
         "status": "asserted",
         "spec": "submission.md#history",
-        "evidence": "tests/api_submission/dispatch.rs::test_submission_retains_unknown_when_as2_submitter_unreachable",
+        "evidence": "tests/api_submission/dispatch.rs::test_submission_records_failure_when_as2_submitter_unreachable",
         "gaps": "원본 byte/타 조직 보호 검사; 모든 헤더/감사 delta 미검사",
         "source": {
           "source": "crates/services/web-server/tests/api_specs/coverage.tsv",
@@ -63485,405 +61958,6 @@
             "source": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
             "line": 15
           }
-        }
-      ]
-    },
-    {
-      "name": "MessageHeader",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/libs/lib-core/src/model/message_header.rs",
-        "line": 16
-      },
-      "attributes": [
-        "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
-      ],
-      "serde_attributes": [],
-      "raw": "struct MessageHeader {\n\tpub id: Uuid,\n\tpub case_id: Uuid,\n\n\t// N.1.2 - Message Number (batch identifier)\n\tpub batch_number: Option<String>,\n\n\t// N.1.3 - Batch Sender Identifier\n\tpub batch_sender_identifier: Option<String>,\n\n\t// N.1.4 - Batch Receiver Identifier (Phase 1 addition)\n\tpub batch_receiver_identifier: Option<String>,\n\n\t// N.1.5 - Date of Batch Transmission (Phase 1 addition)\n\tpub batch_transmission_date: Option<OffsetDateTime>,\n\tpub batch_transmission_date_raw: Option<String>,\n\n\t// Message identification\n\tpub message_type: String,           // ichicsr\n\tpub message_format_version: String, // 2.1\n\tpub message_format_release: String, // 2.0\n\tpub message_number: String,\n\tpub message_sender_identifier: String,\n\tpub message_receiver_identifier: String,\n\tpub message_date_format: String, // 204 (CCYYMMDDHHMMSS)\n\tpub message_date: String,\n\n\t// Timestamps\n\tpub created_at: OffsetDateTime,\n\tpub updated_at: OffsetDateTime,\n\tpub created_by: Uuid,\n\tpub updated_by: Option<Uuid>,\n}",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "case_id",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_transmission_date_raw",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_sender_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_receiver_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_date_format",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "updated_at",
-          "type": "OffsetDateTime",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "created_by",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "updated_by",
-          "type": "Option<Uuid>",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/libs/lib-core/src/model/message_header.rs:16:MessageHeader",
-      "nested_type_refs": [
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 10
-          }
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 10
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "OffsetDateTime",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::time::OffsetDateTime",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 9
-          }
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 10
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 10
-          }
-        }
-      ]
-    },
-    {
-      "name": "MessageHeaderForCreate",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/libs/lib-core/src/model/message_header.rs",
-        "line": 51
-      },
-      "attributes": [
-        "#[derive(Fields, Deserialize)]"
-      ],
-      "serde_attributes": [],
-      "raw": "struct MessageHeaderForCreate {\n\tpub case_id: Uuid,\n\tpub batch_sender_identifier: Option<String>,\n\tpub batch_receiver_identifier: Option<String>,\n\tpub batch_transmission_date: Option<OffsetDateTime>,\n\tpub message_number: String,\n\tpub message_sender_identifier: String,\n\tpub message_receiver_identifier: String,\n\tpub message_date: String,\n}",
-      "fields": [
-        {
-          "name": "case_id",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_sender_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_receiver_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_transmission_date",
-          "type": "Option<OffsetDateTime>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_number",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_sender_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_receiver_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_date",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/libs/lib-core/src/model/message_header.rs:51:MessageHeaderForCreate",
-      "nested_type_refs": [
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 10
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "OffsetDateTime",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::time::OffsetDateTime",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 9
-          }
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        }
-      ]
-    },
-    {
-      "name": "MessageHeaderForUpdate",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/libs/lib-core/src/model/message_header.rs",
-        "line": 64
-      },
-      "attributes": [
-        "#[derive(Fields, Deserialize)]",
-        "#[serde(deny_unknown_fields)]"
-      ],
-      "serde_attributes": [
-        "#[serde(deny_unknown_fields)]"
-      ],
-      "raw": "struct MessageHeaderForUpdate {\n\tpub batch_number: Option<String>,\n\tpub batch_sender_identifier: Option<String>,\n\tpub batch_receiver_identifier: Option<String>,\n\tpub batch_transmission_date: Option<OffsetDateTime>,\n\t// Only the XML importer can provide the original timestamp lexeme.\n\t#[serde(skip_deserializing)]\n\tpub batch_transmission_date_raw: Option<String>,\n\tpub message_number: Option<String>,\n\tpub message_sender_identifier: Option<String>,\n\tpub message_receiver_identifier: Option<String>,\n\tpub message_date: Option<String>,\n}\n\n// -- BMC",
-      "fields": [
-        {
-          "name": "batch_number",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_sender_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_receiver_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_transmission_date",
-          "type": "Option<OffsetDateTime>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_number",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_sender_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_receiver_identifier",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_date",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/libs/lib-core/src/model/message_header.rs:64:MessageHeaderForUpdate",
-      "nested_type_refs": [
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "OffsetDateTime",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::time::OffsetDateTime",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/message_header.rs",
-            "line": 9
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
         }
       ]
     },
@@ -85987,236 +84061,6 @@
       ]
     },
     {
-      "name": "SubmissionReceiverOption",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-        "line": 12
-      },
-      "attributes": [
-        "#[derive(Debug, Clone, Fields, FromRow, Serialize)]"
-      ],
-      "serde_attributes": [],
-      "raw": "struct SubmissionReceiverOption {\n\tpub id: Uuid,\n\tpub organization_id: Uuid,\n\tpub authority: String,\n\tpub sequence_number: i32,\n\tpub receiver_label: String,\n\tpub condition_page: String,\n\tpub condition_field_code: String,\n\tpub condition_operator: String,\n\tpub condition_value_code: String,\n\tpub condition_value_label: Option<String>,\n\tpub batch_receiver_identifier: String,\n\tpub message_receiver_identifier: String,\n\tpub deleted: bool,\n\tpub created_at: OffsetDateTime,\n\tpub updated_at: OffsetDateTime,\n\tpub created_by: Option<Uuid>,\n\tpub updated_by: Option<Uuid>,\n}",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "organization_id",
-          "type": "Uuid",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "authority",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "sequence_number",
-          "type": "i32",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "receiver_label",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "condition_page",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "condition_field_code",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "condition_operator",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "condition_value_code",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "condition_value_label",
-          "type": "Option<String>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "batch_receiver_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "message_receiver_identifier",
-          "type": "String",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "deleted",
-          "type": "bool",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "created_at",
-          "type": "OffsetDateTime",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "updated_at",
-          "type": "OffsetDateTime",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "created_by",
-          "type": "Option<Uuid>",
-          "attributes": [],
-          "serde_attributes": []
-        },
-        {
-          "name": "updated_by",
-          "type": "Option<Uuid>",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/libs/lib-core/src/model/submission_receiver_option.rs:12:SubmissionReceiverOption",
-      "nested_type_refs": [
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 8
-          }
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 8
-          }
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "i32",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "String",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "bool",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "OffsetDateTime",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::time::OffsetDateTime",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 7
-          }
-        },
-        {
-          "rust_type": "OffsetDateTime",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::time::OffsetDateTime",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 7
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 8
-          }
-        },
-        {
-          "rust_type": "Option",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "Uuid",
-          "origin": "external_import_alias",
-          "canonical_type": "sqlx::types::Uuid",
-          "import": {
-            "source": "crates/libs/lib-core/src/model/submission_receiver_option.rs",
-            "line": 8
-          }
-        }
-      ]
-    },
-    {
       "name": "UcumUnit",
       "kind": "struct",
       "declaration": {
@@ -102473,39 +100317,6 @@
           "rust_type": "SubmissionHistoryRecord",
           "origin": "in_repo_declaration",
           "declaration_id": "crates/services/web-server/src/submission/types.rs:93:SubmissionHistoryRecord"
-        }
-      ]
-    },
-    {
-      "name": "SubmissionReceiverOptionList",
-      "kind": "struct",
-      "declaration": {
-        "source": "crates/services/web-server/src/web/rest/submission_rest.rs",
-        "line": 49
-      },
-      "attributes": [
-        "#[derive(Debug, Serialize)]"
-      ],
-      "serde_attributes": [],
-      "raw": "struct SubmissionReceiverOptionList {\n\tpub items: Vec<SubmissionReceiverOption>,\n}",
-      "fields": [
-        {
-          "name": "items",
-          "type": "Vec<SubmissionReceiverOption>",
-          "attributes": [],
-          "serde_attributes": []
-        }
-      ],
-      "id": "crates/services/web-server/src/web/rest/submission_rest.rs:49:SubmissionReceiverOptionList",
-      "nested_type_refs": [
-        {
-          "rust_type": "Vec",
-          "origin": "primitive"
-        },
-        {
-          "rust_type": "SubmissionReceiverOption",
-          "origin": "in_repo_declaration",
-          "declaration_id": "crates/libs/lib-core/src/model/submission_receiver_option.rs:12:SubmissionReceiverOption"
         }
       ]
     },

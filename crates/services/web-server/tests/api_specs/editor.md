@@ -82,7 +82,6 @@ PATCH/POST의 JSON 본문은 다음 형태다. `owner`와 각 필드의 실제 �
 | DG | `drug` | 94 | 15 | [JSON](../../../../../registry/editor-contracts/dg.json) / [등록](../api_editor/pages/dg.generated.rs) |
 | DH | `pastDrugHistory` | 16 | 4 | [JSON](../../../../../registry/editor-contracts/dh.json) / [등록](../api_editor/pages/dh.generated.rs) |
 
-N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 표와 별도로 scalar 8개가 등록된다. 전체 registry 등록은 scalar 375 + behavior 62 = 437개다. legacy GET 수기 18개를 더한 실행 계약은 455개이며 helper 자체 검사 7개는 별도다.
 
 위 숫자는 등록된 API 검사 단위다. canonical UI 필드 360개, 일반 editor field 등록 367개와 N header 등록 8개, 관계 필드의 별도 API 검사 수는 서로 다른 집계다. 등록은 실행 통과를 뜻하지 않는다.
 
@@ -151,7 +150,6 @@ N은 전용 message-header API를 사용하는 singleton으로 위 editor/pages 
 
 ## 테스트 연결 및 실행 증거
 
-N header의 8개 항목도 [N registry](../../../../../registry/editor-contracts/n.json)에서 [실행 등록](../api_editor/pages/n.generated.rs)을 생성한다. [N 검사](../api_editor/fields/message_header.rs)는 `/editor/pages/N`을 만들지 않고 실제 `POST/PUT/GET /api/cases/{id}/message-header`를 사용한다. 정상 저장·GET·감사 변경과 잘못된 값 거절 후 header·감사 불변을 확인한다. N.1.2는 POST에서 파생되어 PUT 거절만 검사하고, N.1.5는 REST 날짜 DTO의 배열 표현으로 저장하며 잘못된 문자열은 역직렬화 단계의422로 검사한다. N에는 일반 editor clear/blank/omission 검사를 적용했다고 주장하지 않는다.
 
 `pages/<page>.generated.rs`는 페이지 계약에서 만든 테스트 등록 파일이다. 필드 기대값과 HTTP 동작을 복제하지 않는다. Cargo target은 `api_editor` 하나이며 이름은 `case_editor_contract_web::<page>::fields|rows|relations|audit::<검사 ID>`다. 필드별 실행 단위 안에서 저장·clear·누락·거절·감사를 함께 확인한다.
 
@@ -176,7 +174,7 @@ AE/LB/DG의 POST restore 3개는 각 페이지의 기존 복원 fixture에서 �
 | CI/RP/SD/SI/DM/NR direct | 경로 Case UUID, body 없음. 성공 `200 {caseId,data}`. `data`는 해당 section reader의 저장 모델 투영 | 저장 행 ID와 페이지별 업무 projection을 fresh GET으로 단언 |
 | AE/LB/DG/DH `/list` | 경로 Case UUID, body 없음. 성공 `200 {caseId,rows:[...]}`; 페이지별 list DTO 사용 | 저장 행 ID·표시값, AE/LB/DG의 `deleted:false`를 fresh GET으로 단언. 삭제 행 필터는 이 검사 범위 밖이며 DH list에는 `deleted` 필드가 없음 |
 | AE/LB/DG/DH `/{rowId}` | Case와 row UUID, body 없음. 성공 `200 {caseId,rowId,data}`; 부모 소속 검증, 삭제 행 포함 여부는 해당 reader 인자 | Case/row ID와 저장 업무 detail projection을 fresh GET으로 단언 |
-| `/editor/shell` | `200`의 `{id,status,organizationId,safetyReportIdentification:{safetyReportId},messageHeader:{messageReceiverIdentifier},dgPrdKey,createdAt,updatedAt,workflowStatus,workflowAssignedRole,workflowAssignedUserId,workflowDueAt,workflowDescription,workflowUpdatedAt,qcState,isLocked,canActOnWorkflow,workflowBlockReason,caseWriteBlockReason,reviewReceivers}` | safety report ID 부재는 400, message header 부재는 모델 404. `workflowDueAt`은 RFC3339 옵션이지만 다른 time 필드를 동일 문자열 형식으로 추정하지 않음. 날짜 직렬화 원문은 DTO manifest 참조 |
+| `/editor/shell` | `200`의 `{id,status,organizationId,safetyReportIdentification:{safetyReportId},dgPrdKey,createdAt,updatedAt,workflowStatus,workflowAssignedRole,workflowAssignedUserId,workflowDueAt,workflowDescription,workflowUpdatedAt,qcState,isLocked,canActOnWorkflow,workflowBlockReason,caseWriteBlockReason,reviewReceivers}` | safety report ID 부재는 400. `workflowDueAt`은 RFC3339 옵션이지만 다른 time 필드를 동일 문자열 형식으로 추정하지 않음. 날짜 직렬화 원문은 DTO manifest 참조 |
 
 이전 경로도 인증·Case/조직/scope read 정책을 적용한다. 단순 GET은 상태 변경이나 감사 mutation을 약속하지 않는다. 기존 잘못 저장된 `review_receivers_json`의 역직렬화 오류를 shell이 정상 빈 배열로 숨기지 않는다는 구현과, SQL NULL이면 빈 배열이라는 현재 계약도 구분한다.
 

@@ -485,23 +485,12 @@ fn mfds_e_i_4_5(idx: usize, reaction: &Reaction, issues: &mut Vec<ValidationIssu
 }
 
 fn is_fda_vaers(validation_ctx: &ValidationContext) -> bool {
-	validation_ctx
-		.message_header
-		.as_ref()
-		.is_some_and(|header| {
-			[
-				Some(header.message_receiver_identifier.as_str()),
-				header.batch_receiver_identifier.as_deref(),
-			]
-			.into_iter()
-			.flatten()
-			.any(|value| {
-				matches!(
-					value.trim().to_ascii_uppercase().as_str(),
-					"CBER_VAERS" | "CBER VAERS"
-				)
-			})
-		})
+	validation_ctx.fda_message_receiver().is_some_and(|value| {
+		matches!(
+			value.trim().to_ascii_uppercase().as_str(),
+			"CBER_VAERS" | "CBER VAERS"
+		)
+	})
 }
 
 /// FDA.E.i.4-6: VAERS requires a start date, end date, or duration.
@@ -670,11 +659,7 @@ pub(crate) fn collect_fda_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let premarket = validation_ctx
-		.message_header
-		.as_ref()
-		.and_then(|header| header.batch_receiver_identifier.as_deref())
-		.map(str::trim)
+	let premarket = validation_ctx.fda_batch_receiver().map(str::trim)
 		== Some(crate::FDA_BATCH_RECEIVER_PREMARKET);
 	for (idx, reaction) in validation_ctx.reactions.iter().enumerate() {
 		fda_e_i_3_2h(idx, reaction, premarket, issues);
@@ -700,10 +685,7 @@ pub(crate) fn collect_mfds_issues(
 			);
 		}
 	}
-	let receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let receiver = validation_ctx.mfds_receiver();
 	if is_mfds_clinical_trial_receiver(receiver)
 		|| is_mfds_compassionate_use_receiver(receiver)
 	{

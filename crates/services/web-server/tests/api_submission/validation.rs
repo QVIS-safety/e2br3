@@ -122,10 +122,8 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/reactions/{reaction_id}"),
-		// Isolate the unavailable dictionary from the fixture's invalid FDA intervention value.
 		json!({ "data": {
 			"reaction_meddra_version": "12.0",
-			"required_intervention_null_flavor": "NI"
 		} }),
 	)
 	.await?;
@@ -257,7 +255,13 @@ async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
 	let response = app.clone().oneshot(request).await?;
 	let status = response.status();
 	let body = to_bytes(response.into_body(), usize::MAX).await?;
-	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	assert_eq!(
+		status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	assert!(String::from_utf8_lossy(&body).contains("ICH.F.r.1.NULLFLAVOR.ALLOWED"));
 
 	mm.dbx().begin_txn().await?;
 	set_full_context_dbx(
@@ -277,7 +281,7 @@ async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
 		)
 		.await?;
 	mm.dbx().commit_txn().await?;
-	assert_eq!(stored, (None, Some("NASK".to_string())));
+	assert_eq!(stored, (None, Some("UNK".to_string())));
 
 	let response = app
 		.clone()
@@ -292,7 +296,7 @@ async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
 	let xml = to_bytes(response.into_body(), usize::MAX).await?;
 	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&xml));
 	assert!(String::from_utf8_lossy(&xml)
-		.contains("<effectiveTime nullFlavor=\"NASK\"/>"));
+		.contains("<effectiveTime nullFlavor=\"UNK\"/>"));
 	Ok(())
 }
 
@@ -300,7 +304,6 @@ async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
 #[tokio::test]
 async fn test_manual_export_is_not_blocked_by_workflow_status() -> Result<()> {
 	clear_esg_env();
-	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -344,5 +347,110 @@ async fn test_manual_export_is_not_blocked_by_workflow_status() -> Result<()> {
 		);
 	}
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_submission_missing_authority_sender_id_rejects_without_side_effects(
+) -> Result<()> {
+	use lib_core::{
+		ctx::Ctx,
+		model::{
+			presave::{SenderPresaveGatewayBmc, SenderPresaveGatewayForUpdate},
+			safety_report::SenderInformationBmc,
+		},
+	};
+	clear_esg_env();
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone()).expect("web server configuration");
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
+	let (status, senders) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report/senders"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{senders}");
+	let sender_id = Uuid::parse_str(
+		senders["data"][0]["id"]
+			.as_str()
+			.ok_or("missing sender id")?,
+	)?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let sender = SenderInformationBmc::get(&ctx, &mm, sender_id).await?;
+	let template_id = sender
+		.source_sender_presave_id
+		.ok_or("missing sender template")?;
+	let gateways =
+		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, template_id).await?;
+	let gateway = gateways
+		.iter()
+		.find(|g| g.gateway_authority == "fda")
+		.ok_or("missing FDA gateway")?;
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		gateway.id,
+		SenderPresaveGatewayForUpdate {
+			sender_identifier: Some(String::new()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let (status, before) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{before}");
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submissions/fda"),
+		valid_compliance_payload(),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(
+		body.to_string().contains("default fda gateway Sender ID"),
+		"{body}"
+	);
+	let (status, case) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(status, StatusCode::OK, "{case}");
+	assert_eq!(case["data"]["status"], "draft", "{case}");
+	let (status, history) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/submissions"))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{history}");
+	assert_eq!(history["data"]["items"], json!([]), "{history}");
+	let (status, after) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{after}");
+	assert_eq!(before["data"], after["data"]);
+	// The saved template can prepare a different authority without case data re-entry.
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submission-receiver"),
+		json!({"data": {"authority": "ich"}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["message_sender_identifier"], "TEST-ICH");
 	Ok(())
 }

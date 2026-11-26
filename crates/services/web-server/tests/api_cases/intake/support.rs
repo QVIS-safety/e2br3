@@ -304,6 +304,16 @@ pub(super) fn intake_data(
 	let base_map = base
 		.as_object_mut()
 		.expect("intake basis should be a JSON object");
+	let date = base_map["date_of_most_recent_information"]
+		.as_str()
+		.expect("fixture date")
+		.to_string();
+	base_map.insert("status".into(), json!("draft"));
+	base_map.insert(
+		"transmission_date".into(),
+		json!(format!("{}-{}-{}", &date[..4], &date[4..6], &date[6..8])),
+	);
+	base_map.insert("date_first_received_from_source".into(), json!(date));
 	let extra_map = extra
 		.as_object()
 		.expect("intake extra should be a JSON object");

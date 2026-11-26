@@ -1500,15 +1500,14 @@ fn fda_c_1_12(
 /// FDA.R0101
 fn fda_initial_report_rules(
 	report: &SafetyReportIdentification,
-	header: Option<&lib_core::model::message_header::MessageHeader>,
+	batch: Option<&str>,
 	has_prior_submission: bool,
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	if has_prior_submission {
 		return;
 	}
-	let batch = header
-		.and_then(|header| trimmed(header.batch_receiver_identifier.as_deref()));
+	let batch = trimmed(batch);
 	let postmarket = batch == Some(crate::FDA_BATCH_RECEIVER_POSTMARKET);
 	let premarket = batch == Some(crate::FDA_BATCH_RECEIVER_PREMARKET);
 	push_business_violation(
@@ -1567,7 +1566,7 @@ fn fda_repeating_flag_rules(
 /// FDA.R0016
 fn fda_local_criteria_report_type(
 	report: &SafetyReportIdentification,
-	header: Option<&lib_core::model::message_header::MessageHeader>,
+	batch: Option<&str>,
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	let local = trimmed(report.local_criteria_report_type.as_deref());
@@ -1579,8 +1578,7 @@ fn fda_local_criteria_report_type(
 		"FDA.C.1.7.1 is required for FDA reports.",
 	);
 	let Some(local) = local else { return };
-	let batch = header
-		.and_then(|header| trimmed(header.batch_receiver_identifier.as_deref()));
+	let batch = trimmed(batch);
 	let combination_true = matches!(
 		trimmed(report.combination_product_report_indicator.as_deref()),
 		Some("true" | "1")
@@ -1784,14 +1782,11 @@ fn fda_study_route_rules(
 	fda_ctx: &FdaValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let (Some(header), Some(report)) = (
-		validation_ctx.message_header.as_ref(),
-		validation_ctx.safety_report.as_ref(),
-	) else {
+	let Some(report) = validation_ctx.safety_report.as_ref() else {
 		return;
 	};
-	let batch = trimmed(header.batch_receiver_identifier.as_deref());
-	let receiver = header.message_receiver_identifier.trim();
+	let batch = trimmed(validation_ctx.fda_batch_receiver());
+	let receiver = validation_ctx.fda_message_receiver().unwrap_or_default();
 	let report_type = trimmed(report.report_type.as_deref());
 	let premarket = batch == Some(crate::FDA_BATCH_RECEIVER_PREMARKET);
 	let postmarket = batch == Some(crate::FDA_BATCH_RECEIVER_POSTMARKET)
@@ -2023,26 +2018,21 @@ pub(crate) async fn collect_fda_issues(
 		);
 		fda_initial_report_rules(
 			report,
-			validation_ctx.message_header.as_ref(),
+			validation_ctx.fda_batch_receiver(),
 			fda_ctx.has_prior_submission,
 			issues,
 		);
 		fda_local_criteria_report_type(
 			report,
-			validation_ctx.message_header.as_ref(),
+			validation_ctx.fda_batch_receiver(),
 			issues,
 		);
 	}
 	let vaers = validation_ctx
-		.message_header
-		.as_ref()
-		.is_some_and(|header| {
+		.fda_message_receiver()
+		.is_some_and(|receiver| {
 			matches!(
-				header
-					.message_receiver_identifier
-					.trim()
-					.to_ascii_uppercase()
-					.as_str(),
+				receiver.trim().to_ascii_uppercase().as_str(),
 				"CBER_VAERS" | "CBER VAERS"
 			)
 		});
@@ -2071,10 +2061,7 @@ fn mfds_receiver_rules(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let receiver = validation_ctx.mfds_receiver();
 	let clinical = is_mfds_clinical_trial_receiver(receiver);
 	let compassionate = is_mfds_compassionate_use_receiver(receiver);
 	let ct_or_cu = clinical || compassionate;
@@ -2252,12 +2239,7 @@ pub(crate) fn collect_mfds_issues(
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	mfds_receiver_rules(validation_ctx, issues);
-	let domestic = is_mfds_domestic_receiver(
-		validation_ctx
-			.message_header
-			.as_ref()
-			.map(|header| header.message_receiver_identifier.as_str()),
-	);
+	let domestic = is_mfds_domestic_receiver(validation_ctx.mfds_receiver());
 	if !domestic {
 		return;
 	}

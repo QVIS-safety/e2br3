@@ -1,0 +1,152 @@
+{
+  "source": "test-fixture:xml-integration",
+  "source_releases": [
+    {
+      "dictionary": "meddra",
+      "version": "28.1",
+      "language": "en",
+      "status": "active"
+    },
+    {
+      "dictionary": "mfds_product",
+      "version": "2026-10-01",
+      "language": "ko",
+      "status": "active"
+    },
+    {
+      "dictionary": "ich_constrained_ucum",
+      "version": "2.2",
+      "language": "en",
+      "status": "active"
+    }
+  ],
+  "tables": {
+    "meddra_terms": [
+      {
+        "code": "10006824",
+        "term": "Synthetic XML test term 10006824",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      },
+      {
+        "code": "10020603",
+        "term": "Synthetic XML test term 10020603",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      },
+      {
+        "code": "10020772",
+        "term": "Synthetic XML test term 10020772",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      },
+      {
+        "code": "10022617",
+        "term": "Synthetic XML test term 10022617",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      },
+      {
+        "code": "10040047",
+        "term": "Synthetic XML test term 10040047",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      },
+      {
+        "code": "10062060",
+        "term": "Synthetic XML test term 10062060",
+        "level": "LLT",
+        "version": "28.1",
+        "language": "en",
+        "active": true
+      }
+    ],
+    "controlled_terminology_terms": [
+      {
+        "dictionary": "ich_constrained_ucum",
+        "version": "2.2",
+        "language": "en",
+        "scope": "frequency",
+        "code": "d",
+        "display_name": "Synthetic test day unit",
+        "active": true
+      }
+    ],
+    "mfds_products": [
+      {
+        "item_seq": "201904647",
+        "product_name_kr": "합성 테스트 품목 201904647",
+        "product_name_en": "Synthetic XML test product 201904647",
+        "manufacturer_name_kr": null,
+        "manufacturer_name_en": null,
+        "permit_date": null,
+        "cancellation_date": null,
+        "cancellation_status": null,
+        "version": "2026-10-01",
+        "active": true
+      },
+      {
+        "item_seq": "200200143",
+        "product_name_kr": "합성 테스트 품목 200200143",
+        "product_name_en": "Synthetic XML test product 200200143",
+        "manufacturer_name_kr": null,
+        "manufacturer_name_en": null,
+        "permit_date": null,
+        "cancellation_date": null,
+        "cancellation_status": null,
+        "version": "2026-10-01",
+        "active": true
+      },
+      {
+        "item_seq": "200410087",
+        "product_name_kr": "합성 테스트 품목 200410087",
+        "product_name_en": "Synthetic XML test product 200410087",
+        "manufacturer_name_kr": null,
+        "manufacturer_name_en": null,
+        "permit_date": null,
+        "cancellation_date": null,
+        "cancellation_status": null,
+        "version": "2026-10-01",
+        "active": true
+      }
+    ],
+    "mfds_product_substances": [
+      {
+        "item_seq": "201904647",
+        "substance_code": "M084105",
+        "substance_name_kr": "합성 테스트 성분 M084105",
+        "substance_name_en": null,
+        "quantity": null,
+        "unit": null,
+        "component_content": null,
+        "material_sequence": null,
+        "total_amount_sequence": null,
+        "version": "2026-10-01",
+        "active": true
+      },
+      {
+        "item_seq": "200410087",
+        "substance_code": "M222875",
+        "substance_name_kr": "합성 테스트 성분 M222875",
+        "substance_name_en": null,
+        "quantity": null,
+        "unit": null,
+        "component_content": null,
+        "material_sequence": null,
+        "total_amount_sequence": null,
+        "version": "2026-10-01",
+        "active": true
+      }
+    ]
+  }
+}

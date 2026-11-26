@@ -1,9 +1,9 @@
 use lib_core::ctx::Ctx;
 use lib_core::model::case::CaseBmc;
-use lib_core::model::message_header::{
-	MessageHeader, MessageHeaderBmc, MessageHeaderForCreate,
+use lib_core::model::presave::{
+	ProductPresaveBmc, ReceiverPresaveBmc, ReceiverPresaveRouteBmc,
+	SenderPresaveGatewayBmc,
 };
-use lib_core::model::presave::SenderPresaveGatewayBmc;
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SenderInformationBmc, SenderInformationFilter,
 };
@@ -11,7 +11,6 @@ use lib_core::model::store::{
 	set_compliance_context_dbx, set_full_context_dbx,
 	set_full_context_dbx_or_rollback,
 };
-use lib_core::model::submission_receiver_option::SubmissionReceiverOptionBmc;
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::{Error, Result};
@@ -85,7 +84,7 @@ async fn prepare_submission_xml(
 		validator::validate_case_for_authority(ctx, mm, case_id, authority).await?;
 	check_submission_validation(&report)?;
 	let header =
-		prepare_outbound_message_header(ctx, mm, case_id, authority, None).await?;
+		prepare_outbound_message_header(ctx, mm, case_id, authority).await?;
 	let xml = export_case_xml_with_options(
 		ctx,
 		mm,
@@ -93,7 +92,7 @@ async fn prepare_submission_xml(
 		ExportXmlOptions {
 			apply_comments: true,
 			authority,
-			outbound_message_header: export_message_header(&header)?,
+			outbound_message_header: header,
 		},
 	)
 	.await
@@ -147,8 +146,7 @@ pub async fn prepare_outbound_message_header(
 	mm: &ModelManager,
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
-	receiver_label: Option<&str>,
-) -> Result<MessageHeader> {
+) -> Result<OutboundMessageHeader> {
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
 	let report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await?;
@@ -220,11 +218,87 @@ pub async fn prepare_outbound_message_header(
 
 	let (batch_receiver_identifier, message_receiver_identifier) = match authority {
 		RegulatoryAuthority::Ich => {
-			let receiver =
-				required_env_identifier("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH")?;
-			(receiver.clone(), receiver)
+			let product_id = required_header_value(
+				"Case Product ID",
+				case.dg_prd_key.as_deref(),
+			)?;
+			let products = ProductPresaveBmc::list_by_product_and_sender(
+				ctx,
+				mm,
+				&product_id,
+				sender_presave_id,
+			)
+			.await?;
+			if products.len() != 1 {
+				return Err(Error::BadRequest { message: "case Product ID and Sender must identify exactly one active Product template".into() });
+			}
+			let receiver_id = products[0].receiver_presave_id.ok_or_else(|| Error::BadRequest {
+                message: "case Product must reference a Receiver template for ICH export".into(),
+            })?;
+			let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id).await?;
+			if receiver.deleted {
+				return Err(Error::BadRequest {
+					message: "case Product Receiver template is deleted".into(),
+				});
+			}
+			let report_type = required_header_value(
+				"C.1.3 Report Type",
+				report.report_type.as_deref(),
+			)?;
+			let routes =
+				ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, receiver_id)
+					.await?
+					.into_iter()
+					.filter(|route| {
+						route.authority == "ich"
+							&& route.condition_page == "CI"
+							&& route.condition_field_code == "C.1.3"
+							&& route.condition_operator == "Equal"
+							&& route.condition_value_code == report_type
+					})
+					.collect::<Vec<_>>();
+			if routes.len() != 1 {
+				return Err(Error::BadRequest { message: format!("expected exactly one ICH Receiver template route for C.1.3 report type {report_type}; found {}", routes.len()) });
+			}
+			(
+				required_header_value(
+					"Receiver template batch receiver identifier",
+					routes[0].batch_receiver_identifier.as_deref(),
+				)?,
+				required_header_value(
+					"Receiver template message receiver identifier",
+					Some(&routes[0].message_receiver_identifier),
+				)?,
+			)
 		}
 		RegulatoryAuthority::Fda | RegulatoryAuthority::Mfds => {
+			let product_id = required_header_value(
+				"Case Product ID",
+				case.dg_prd_key.as_deref(),
+			)?;
+			let products = ProductPresaveBmc::list_by_product_and_sender(
+				ctx,
+				mm,
+				&product_id,
+				sender_presave_id,
+			)
+			.await?;
+			if products.len() != 1 {
+				return Err(Error::BadRequest {
+					message: "case Product ID and Sender must identify exactly one active Product template".into(),
+				});
+			}
+			let receiver_id = products[0]
+				.receiver_presave_id
+				.ok_or_else(|| Error::BadRequest {
+					message: "case Product must reference a Receiver template before export or submission".into(),
+				})?;
+			let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id).await?;
+			if receiver.deleted {
+				return Err(Error::BadRequest {
+					message: "case Product Receiver template is deleted".into(),
+				});
+			}
 			let report_type = match authority {
 				RegulatoryAuthority::Fda => case.fda_report_type.as_deref(),
 				RegulatoryAuthority::Mfds => case.mfds_report_type.as_deref(),
@@ -234,21 +308,23 @@ pub async fn prepare_outbound_message_header(
 				&format!("{authority_name} report type"),
 				report_type,
 			)?;
-			let options = SubmissionReceiverOptionBmc::list_by_authority(
-				ctx,
-				mm,
-				authority_name,
-			)
-			.await?;
-			let matches = options
-				.into_iter()
-				.filter(|option| {
-					option.condition_value_code == report_type
-						&& receiver_label.is_none_or(|label| {
-							option.receiver_label == label.trim()
-						})
-				})
-				.collect::<Vec<_>>();
+			let condition_field_code = match authority {
+				RegulatoryAuthority::Fda => "FDA_REPORT_TYPE",
+				RegulatoryAuthority::Mfds => "MFDS_REPORT_TYPE",
+				RegulatoryAuthority::Ich => unreachable!(),
+			};
+			let matches =
+				ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, receiver_id)
+					.await?
+					.into_iter()
+					.filter(|route| {
+						route.authority.eq_ignore_ascii_case(authority_name)
+							&& route.condition_page.eq_ignore_ascii_case("CI")
+							&& route.condition_field_code == condition_field_code
+							&& route.condition_operator.eq_ignore_ascii_case("Equal")
+							&& route.condition_value_code == report_type
+					})
+					.collect::<Vec<_>>();
 			if matches.len() != 1 {
 				return Err(Error::BadRequest {
 					message: format!(
@@ -257,65 +333,35 @@ pub async fn prepare_outbound_message_header(
 					),
 				});
 			}
-			let receiver = &matches[0];
+			let route = &matches[0];
 			(
 				required_header_value(
-					"configured batch receiver identifier",
-					Some(&receiver.batch_receiver_identifier),
+					"Receiver template batch receiver identifier",
+					route.batch_receiver_identifier.as_deref(),
 				)?,
 				required_header_value(
-					"configured message receiver identifier",
-					Some(&receiver.message_receiver_identifier),
+					"Receiver template message receiver identifier",
+					Some(&route.message_receiver_identifier),
 				)?,
 			)
 		}
 	};
 
 	let now = OffsetDateTime::now_utc();
-	MessageHeaderBmc::upsert_outbound(
-		ctx,
-		mm,
-		MessageHeaderForCreate {
-			case_id,
-			batch_sender_identifier: Some(sender_identifier.clone()),
-			batch_receiver_identifier: Some(batch_receiver_identifier),
-			batch_transmission_date: Some(now),
-			message_number,
-			message_sender_identifier: sender_identifier,
-			message_receiver_identifier,
-			message_date,
-		},
-	)
-	.await
-	.map_err(Error::from)
-}
-
-pub fn export_message_header(
-	header: &MessageHeader,
-) -> Result<OutboundMessageHeader> {
 	Ok(OutboundMessageHeader {
-		batch_number: header.batch_number.clone(),
-		batch_sender_identifier: header.batch_sender_identifier.clone(),
-		batch_receiver_identifier: header.batch_receiver_identifier.clone(),
-		batch_transmission_date: match (&header.batch_transmission_date_raw, header.batch_transmission_date) {
-			(Some(raw), None) => Some(raw.clone()),
-			(None, Some(date)) => {
-				let date = date.to_offset(time::UtcOffset::UTC);
-				let mut timestamp = lib_utils::time::format_e2b_timestamp(date);
-				if date.nanosecond() != 0 {
-					timestamp.push('.');
-					timestamp.push_str(format!("{:09}", date.nanosecond()).trim_end_matches('0'));
-				}
-				timestamp.push_str("+0000");
-				Some(timestamp)
-			},
-			(None, None) => None,
-			(Some(_), Some(_)) => return Err(Error::BadRequest { message: "N.1.5 Batch Transmission Date has conflicting stored representations".to_string() }),
-		},
-		message_number: header.message_number.clone(),
-		message_date: header.message_date.clone(),
-		message_sender_identifier: header.message_sender_identifier.clone(),
-		message_receiver_identifier: header.message_receiver_identifier.clone(),
+		batch_number: Some(format!("BATCH-{case_id}")),
+		batch_sender_identifier: Some(sender_identifier.clone()),
+		batch_receiver_identifier: Some(batch_receiver_identifier),
+		batch_transmission_date: Some(format!(
+			"{}+0000",
+			lib_utils::time::format_e2b_timestamp(
+				now.to_offset(time::UtcOffset::UTC)
+			)
+		)),
+		message_number,
+		message_date,
+		message_sender_identifier: sender_identifier,
+		message_receiver_identifier,
 	})
 }
 
@@ -326,171 +372,6 @@ fn required_header_value(field: &str, value: Option<&str>) -> Result<String> {
 		.ok_or_else(|| Error::BadRequest {
 			message: format!("{field} is required before submission"),
 		})
-}
-
-fn required_env_identifier(name: &'static str) -> Result<String> {
-	let value = std::env::var(name).map_err(|_| Error::Configuration {
-		key: name,
-		message: format!("{name} must be configured before XML export"),
-	})?;
-	let value = value.trim();
-	if value.is_empty() {
-		return Err(Error::Configuration {
-			key: name,
-			message: format!("{name} must not be empty"),
-		});
-	}
-	Ok(value.to_string())
-}
-
-#[cfg(test)]
-mod header_tests {
-	#[test]
-	fn imported_timestamp_is_not_a_silently_ignored_public_write() {
-		use lib_core::model::message_header::MessageHeaderForUpdate;
-		assert!(serde_json::from_value::<MessageHeaderForUpdate>(
-			serde_json::json!({"batch_transmission_date_raw": "2024"})
-		)
-		.is_err());
-		assert!(serde_json::from_value::<MessageHeaderForUpdate>(
-			serde_json::json!({"batch_number": "BATCH"})
-		)
-		.is_ok());
-	}
-	use super::*;
-
-	fn valid_header() -> MessageHeader {
-		let now = OffsetDateTime::now_utc();
-		MessageHeader {
-			id: Uuid::new_v4(),
-			case_id: Uuid::new_v4(),
-			batch_number: Some("BATCH".to_string()),
-			batch_sender_identifier: Some("SENDER".to_string()),
-			batch_receiver_identifier: Some("RECEIVER".to_string()),
-			batch_transmission_date: Some(now),
-			message_type: "ichicsr".to_string(),
-			batch_transmission_date_raw: None,
-			message_format_version: "2.1".to_string(),
-			message_format_release: "2.0".to_string(),
-			message_number: "CASE".to_string(),
-			message_sender_identifier: "SENDER".to_string(),
-			message_receiver_identifier: "RECEIVER".to_string(),
-			message_date_format: "204".to_string(),
-			message_date: "20260814000000".to_string(),
-			created_at: now,
-			updated_at: now,
-			created_by: Uuid::new_v4(),
-			updated_by: None,
-		}
-	}
-
-	#[test]
-	fn export_preserves_imported_batch_timestamp_precision_and_offset() {
-		for raw in [
-			"2024",
-			"202402",
-			"20240229123059.1234+0900",
-			"20241121010203-0400",
-		] {
-			let mut header = valid_header();
-			header.batch_transmission_date = None;
-			header.batch_transmission_date_raw = Some(raw.to_string());
-			assert_eq!(
-				export_message_header(&header)
-					.expect("stored raw timestamp")
-					.batch_transmission_date
-					.as_deref(),
-				Some(raw)
-			);
-		}
-		let mut header = valid_header();
-		header.batch_transmission_date_raw = Some("2024".to_string());
-		assert!(
-			export_message_header(&header).is_err(),
-			"ambiguous representations must fail"
-		);
-		header.batch_transmission_date_raw = None;
-		header.batch_transmission_date = None;
-		assert_eq!(
-			export_message_header(&header)
-				.expect("incomplete download")
-				.batch_transmission_date,
-			None
-		);
-	}
-
-	#[test]
-	fn export_preserves_typed_batch_timestamp_fraction() {
-		for (input, expected) in [
-			(
-				"2024-02-29T12:30:59.123456789+09:00",
-				"20240229033059.123456789+0000",
-			),
-			("2024-02-29T12:30:59.000001Z", "20240229123059.000001+0000"),
-			("2024-02-29T12:30:59Z", "20240229123059+0000"),
-		] {
-			let mut header = valid_header();
-			header.batch_transmission_date = Some(
-				OffsetDateTime::parse(
-					input,
-					&time::format_description::well_known::Rfc3339,
-				)
-				.unwrap(),
-			);
-			assert_eq!(
-				export_message_header(&header)
-					.unwrap()
-					.batch_transmission_date
-					.as_deref(),
-				Some(expected)
-			);
-		}
-	}
-
-	#[test]
-	fn export_reads_message_identity_and_date_without_report_substitution() {
-		let mut header = valid_header();
-		header.message_number = " MESSAGE-ID ".to_string();
-		header.message_date = "20240229123059.1234+0900".to_string();
-		let exported = export_message_header(&header).unwrap();
-		assert_eq!(exported.message_number, header.message_number);
-		assert_eq!(exported.message_date, header.message_date);
-	}
-
-	#[test]
-	fn incomplete_generated_header_never_reaches_xml_export() {
-		for field in [
-			"batch_number",
-			"batch_sender_identifier",
-			"batch_receiver_identifier",
-			"message_sender_identifier",
-			"message_receiver_identifier",
-			"message_number",
-			"message_date",
-		] {
-			let mut header = valid_header();
-			match field {
-				"batch_number" => header.batch_number = None,
-				"batch_sender_identifier" => header.batch_sender_identifier = None,
-				"batch_receiver_identifier" => {
-					header.batch_receiver_identifier = None
-				}
-				"message_sender_identifier" => {
-					header.message_sender_identifier.clear()
-				}
-				"message_receiver_identifier" => {
-					header.message_receiver_identifier.clear()
-				}
-				"message_number" => header.message_number.clear(),
-				"message_date" => header.message_date.clear(),
-				_ => unreachable!(),
-			}
-			assert!(
-				export_message_header(&header).is_err(),
-				"{field} unexpectedly reached XML export"
-			);
-		}
-	}
 }
 
 use gateway::select_gateway_name;

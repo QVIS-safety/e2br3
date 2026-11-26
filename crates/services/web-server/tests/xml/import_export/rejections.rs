@@ -220,14 +220,11 @@ async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
 #[tokio::test]
 async fn test_manual_export_preserves_missing_headers_and_records_serialization_errors(
 ) -> Result<()> {
-	let original = std::env::var("E2BR3_EXPORT_VALIDATE").ok();
-
 	let mm = init_test_mm().await?;
-	std::env::remove_var("E2BR3_EXPORT_VALIDATE");
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm).expect("web server configuration");
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	// Incomplete data exports; unrepresentable XML data leaves downloadable error history.
 	let create_body = serde_json::json!({
@@ -324,7 +321,25 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		Some(serde_json::json!({"data":{"batch_sender_identifier":"bad\u{1}"}})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	assert_eq!(
+		status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	assert!(String::from_utf8_lossy(&body).contains("INPUT.CONTROL_CHAR.REJECTED"));
+	// Seed legacy corrupt data directly in this isolated DB to exercise export error history.
+	mm.dbx().begin_txn().await?;
+	lib_core::model::store::set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx().execute(sqlx::query("UPDATE message_headers SET batch_sender_identifier=$2 WHERE case_id=$1")
+        .bind(Uuid::parse_str(case_id)?).bind("bad\u{1}")).await?;
+	mm.dbx().commit_txn().await?;
 	// XML 1.0 cannot encode U+0001; silently deleting it would lose stored data.
 	for (method, uri, input) in [
 		(
@@ -474,9 +489,5 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		.iter()
 		.all(|item| item.get("validationAuthority").is_none()));
 
-	match original {
-		Some(v) => std::env::set_var("E2BR3_EXPORT_VALIDATE", v),
-		None => std::env::remove_var("E2BR3_EXPORT_VALIDATE"),
-	}
 	Ok(())
 }

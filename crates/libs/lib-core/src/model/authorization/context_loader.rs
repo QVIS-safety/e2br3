@@ -51,9 +51,7 @@ pub enum CaseMutationKind {
 	LockToggle,
 	Delete,
 	Restore,
-	Validate,
 	Submission,
-	SubmissionReceiver,
 	ChildEdit,
 	WorkflowTransition,
 }
@@ -1131,17 +1129,8 @@ fn case_lifecycle_allows(facts: &CaseFacts, kind: CaseMutationKind) -> bool {
 			!matches!(status.as_str(), "deleted" | "archived")
 		}
 		CaseMutationKind::Restore => status == "deleted",
-		CaseMutationKind::Validate => {
-			!matches!(status.as_str(), "locked" | "deleted" | "archived")
-		}
 		CaseMutationKind::Submission => {
 			!matches!(status.as_str(), "locked" | "deleted" | "archived")
-		}
-		CaseMutationKind::SubmissionReceiver => {
-			matches!(
-				status.as_str(),
-				"draft" | "reviewed" | "validated" | "locked"
-			)
 		}
 		CaseMutationKind::WorkflowTransition => status != "locked",
 	}
@@ -1214,19 +1203,11 @@ mod tests {
 			study_identifiers: Vec::new(),
 		};
 
-		assert!(case_lifecycle_allows(
-			&facts,
-			CaseMutationKind::SubmissionReceiver
-		));
 		assert!(case_lifecycle_allows(&facts, CaseMutationKind::Submission));
 		let locked = CaseFacts {
 			status: "locked".into(),
 			..facts
 		};
-		assert!(case_lifecycle_allows(
-			&locked,
-			CaseMutationKind::SubmissionReceiver
-		));
 		assert!(!case_lifecycle_allows(
 			&locked,
 			CaseMutationKind::Submission

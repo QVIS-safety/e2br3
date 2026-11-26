@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, terminology_snapshot_for_cargo_args, xml_assets_for_cargo_args
+from ci_test_plan import commands_for, load_workspace, run_commands, select_tests, target_for, terminology_fixture_for_cargo_args, xml_assets_for_cargo_args
 import ci_test_plan
 from generate_editor_contract_web_tests import expected_editor_execution_tests
 
@@ -46,9 +46,9 @@ class TestPlanTests(unittest.TestCase):
             target = job['selections']['web-server'][0]
             self.assertEqual(job['backend_contracts'], target in ('api_cases', 'api_editor', 'api_import'))
             self.assertEqual(job['xml_assets'], target in ('api_import', 'api_submission', 'xml'))
-            self.assertEqual(job['terminology_snapshot'], target == 'xml')
+            self.assertEqual(job['terminology_fixture'], target == 'xml')
             self.assertEqual(job['commands'], commands_for(job['selections'], self.workspace))
-        self.assertFalse(unit[0]['terminology_snapshot'])
+        self.assertFalse(unit[0]['terminology_fixture'])
 
     def test_matrix_preserves_partial_selection_and_editor_filters(self):
         plan = self.plan('crates/services/web-server/tests/api_editor/relations/restore.rs',
@@ -114,12 +114,12 @@ class TestPlanTests(unittest.TestCase):
         for path in (
             'scripts/load-ci-terminology.py',
             'scripts/db/ci-terminology-manifest.json',
-            'scripts/db/export-ci-terminology.sql',
+            'scripts/db/ci-terminology-fixture.json',
             'scripts/tests/test_ci_terminology.py',
         ):
             plan = self.plan(path)
             self.assertEqual(plan['selections'], {'web-server': ['xml']}, path)
-            self.assertTrue(plan['test_matrix']['include'][0]['terminology_snapshot'])
+            self.assertTrue(plan['test_matrix']['include'][0]['terminology_fixture'])
 
     def test_every_cargo_target_and_nested_family_resolves(self):
         for package, data in self.workspace.items():
@@ -221,14 +221,14 @@ class TestPlanTests(unittest.TestCase):
         for paths in (inputs, inputs[::-1]):
             self.assertEqual(self.plan(*paths)['selections'], {'web-server': []})
 
-    def test_terminology_snapshot_is_limited_to_executed_web_server_xml_tests(self):
+    def test_terminology_fixture_is_limited_to_executed_web_server_xml_tests(self):
         for target in ('api_import', 'api_submission', 'api_terminology', 'xml'):
             required = target == 'xml'
             plan = self.plan(f'crates/services/web-server/tests/{target}.rs')
             job = plan['test_matrix']['include'][0]
-            self.assertEqual(job['terminology_snapshot'], required, target)
+            self.assertEqual(job['terminology_fixture'], required, target)
             self.assertEqual(
-                terminology_snapshot_for_cargo_args(
+                terminology_fixture_for_cargo_args(
                     ['-p', 'web-server', '--test', target]),
                 required,
             )
@@ -242,7 +242,7 @@ class TestPlanTests(unittest.TestCase):
             ['-p', 'web-server', '--test', 'x*'],
             ['-p', 'web-*', '--test', 'xml'],
         ):
-            self.assertTrue(terminology_snapshot_for_cargo_args(args), args)
+            self.assertTrue(terminology_fixture_for_cargo_args(args), args)
         for args in (
             ['-p', 'xml'],
             ['-p', 'xml', '--test', 'xml'],
@@ -254,7 +254,7 @@ class TestPlanTests(unittest.TestCase):
             ['-p', 'web-server', '--test', 'api_submission'],
             ['-p', 'web-server', '--test', 'xml', '--no-run'],
         ):
-            self.assertFalse(terminology_snapshot_for_cargo_args(args), args)
+            self.assertFalse(terminology_fixture_for_cargo_args(args), args)
 
     def test_every_api_and_xml_file_has_an_execution_owner(self):
         tests = ROOT / 'crates/services/web-server/tests'
@@ -266,9 +266,9 @@ class TestPlanTests(unittest.TestCase):
                                             self.workspace), family.name, str(source))
 
     def test_editor_scope_tracks_page_and_responsibility_without_duplicate_runs(self):
-        header = self.plan('registry/editor-contracts/n.json')
+        header = self.plan('registry/editor-contracts/nr.json')
         self.assertEqual(header['selections'], {'web-server': ['api_editor']})
-        self.assertEqual(header['editor_filters'], ['case_editor_contract_web::n::'])
+        self.assertEqual(header['editor_filters'], ['case_editor_contract_web::nr::'])
         page = 'crates/services/web-server/tests/api_editor/pages/dg.generated.rs'
         plan = self.plan(page, 'registry/editor-contracts/dg.json')
         self.assertEqual(plan['editor_filters'], ['case_editor_contract_web::dg::'])
@@ -288,8 +288,11 @@ class TestPlanTests(unittest.TestCase):
 
     def test_editor_leaf_changes_select_consumers_and_unmapped_leaves_widen(self):
         root = 'crates/services/web-server/tests/api_editor/'
-        self.assertEqual(self.plan(root + 'fields/message_header.rs')['editor_filters'],
-                         ['case_editor_contract_web::n::'])
+        self.assertEqual(self.plan(root + 'fields/required_values.rs')['editor_filters'], [
+            'case_editor_contract_web::ci::fields::',
+            'case_editor_contract_web::dg::fields::',
+            'case_editor_contract_web::nr::fields::',
+        ])
         # A full-target selection cannot cover a file missing from Rust module registration.
         for category in ('fields', 'rows', 'relations', 'audit'):
             parent = ROOT / root / (category + '.rs')

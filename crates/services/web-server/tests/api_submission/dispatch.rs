@@ -2,10 +2,9 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_submission_rejects_enabled_esg_without_base_url() -> Result<()> {
+async fn test_submission_rejects_unconfigured_transport() -> Result<()> {
 	clear_esg_env();
-	std::env::set_var("FDA_ESG_ENABLED", "1");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -14,7 +13,6 @@ async fn test_submission_rejects_enabled_esg_without_base_url() -> Result<()> {
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, body) = post_json(
 		&app,
@@ -42,11 +40,9 @@ async fn test_submission_esg_transport_sends_expected_headers_and_payload(
 		}),
 	)
 	.await?;
-	std::env::set_var("FDA_ESG_ENABLED", "1");
-	std::env::set_var("FDA_ESG_BASE_URL", esg_url);
+	configure_esg_test_endpoint(esg_url);
 	std::env::set_var("FDA_ESG_BEARER_TOKEN", "test-esg-token");
 	std::env::set_var("FDA_ESG_API_KEY", "test-esg-api-key");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -57,7 +53,6 @@ async fn test_submission_esg_transport_sends_expected_headers_and_payload(
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "fda").await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, body) = post_json(
 		&app,
@@ -92,9 +87,7 @@ async fn test_submission_esg_non_success_preserves_unknown_without_resend(
 		json!({ "error": "gateway unavailable" }),
 	)
 	.await?;
-	std::env::set_var("FDA_ESG_ENABLED", "1");
-	std::env::set_var("FDA_ESG_BASE_URL", esg_url);
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	configure_esg_test_endpoint(esg_url);
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -105,7 +98,6 @@ async fn test_submission_esg_non_success_preserves_unknown_without_resend(
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "fda").await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, body) = post_json(
 		&app,
@@ -141,7 +133,7 @@ async fn test_submission_esg_non_success_preserves_unknown_without_resend(
 async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
 	clear_esg_env();
 	configure_mock_as2_transport().await?;
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -151,7 +143,6 @@ async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "mfds").await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,
@@ -175,7 +166,7 @@ async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
 async fn test_submission_uses_request_authority_not_case_appendices() -> Result<()> {
 	clear_esg_env();
 	configure_mock_as2_transport().await?;
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -184,21 +175,6 @@ async fn test_submission_uses_request_authority_not_case_appendices() -> Result<
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	mm.dbx()
-		.execute(
-			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
-				.bind(case_id),
-		)
-		.await?;
-	mm.dbx().commit_txn().await?;
 
 	let (status, body) = post_json(
 		&app,
@@ -219,13 +195,12 @@ async fn test_submission_uses_request_authority_not_case_appendices() -> Result<
 
 #[serial]
 #[tokio::test]
-async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
+async fn test_submission_records_failure_when_as2_submitter_unreachable(
 ) -> Result<()> {
 	clear_esg_env();
-	std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:9");
-	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
+	configure_as2_test_endpoint("http://127.0.0.1:9");
 	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -234,18 +209,27 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+
+	let (status, reviewed) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/review/toggle"),
+		json!({"data": {"expected_status": "draft"}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{reviewed}");
+	assert_eq!(reviewed["data"]["status"], "reviewed", "{reviewed}");
 
 	let (status, body) = post_json_with_headers(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
 		valid_compliance_payload(),
-		&[("x-idempotency-key", "unknown-key")],
+		&[("x-idempotency-key", "unreachable-key")],
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert_eq!(body["data"]["status"], "dispatch_unknown");
+	assert_eq!(body["data"]["status"], "dispatch_failed");
 	assert!(body["data"]["remote_submission_id"].is_null());
 	for level in 1..=4 {
 		assert!(body["data"][format!("ack{level}")].is_null());
@@ -259,7 +243,7 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 		.as_array()
 		.ok_or("missing submissions items")?;
 	assert_eq!(items.len(), 1);
-	assert_eq!(items[0]["status"], "dispatch_unknown");
+	assert_eq!(items[0]["status"], "dispatch_failed");
 	assert!(items[0]["remote_submission_id"].is_null());
 
 	let id = Uuid::parse_str(body["data"]["id"].as_str().ok_or("missing id")?)?;
@@ -268,6 +252,25 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 		seed.org_id,
 		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)?;
+	let (case_status, restored) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(case_status, StatusCode::OK, "{restored}");
+	assert_eq!(restored["data"]["status"], "reviewed", "{restored}");
+	let (dispatch_status, dispatch) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/submissions/{id}/dispatch-state"),
+	)
+	.await?;
+	assert_eq!(dispatch_status, StatusCode::OK, "{dispatch}");
+	assert!(
+		dispatch["data"]["state"]["next_retry_at"].is_null(),
+		"{dispatch}"
+	);
+	assert!(!dispatch["data"]["state"]["last_error"]
+		.as_str()
+		.ok_or("missing dispatch error")?
+		.is_empty());
 	let (_, original) =
 		web_server::submission::get_submission_artifact(&ctx, &mm, id).await?;
 	assert!(!original.is_empty());
@@ -276,7 +279,7 @@ async fn test_submission_retains_unknown_when_as2_submitter_unreachable(
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
 		valid_compliance_payload(),
-		&[("x-idempotency-key", "unknown-key")],
+		&[("x-idempotency-key", "unreachable-key")],
 	)
 	.await?;
 	assert_eq!(repeated_status, StatusCode::CREATED, "{repeated}");

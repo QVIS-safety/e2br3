@@ -807,24 +807,3 @@ pub(super) async fn get_workflow_events(
 	let value = serde_json::from_slice::<Value>(&body)?;
 	Ok((status, value))
 }
-
-pub(super) async fn validator_mark_validated(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-	token: Option<&str>,
-) -> Result<(StatusCode, Value)> {
-	let mut builder = Request::builder()
-		.method("POST")
-		.uri(format!("/api/cases/{case_id}/validator/mark-validated"))
-		.header("cookie", cookie);
-	if let Some(token) = token {
-		builder = builder.header("x-validator-token", token);
-	}
-	let req = builder.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
-	Ok((status, value))
-}

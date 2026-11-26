@@ -47,28 +47,10 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 		&format!("/api/cases/{case_id}/message-header"),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{header_body:?}");
 	assert_eq!(
-		header_body["data"]["case_id"].as_str(),
-		Some(case_id.as_str())
-	);
-	let expected_sender = std::env::var("E2BR3_DEFAULT_MESSAGE_SENDER")?;
-	let expected_receiver = std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH")?;
-	assert_eq!(
-		header_body["data"]["batch_sender_identifier"].as_str(),
-		Some(expected_sender.as_str())
-	);
-	assert_eq!(
-		header_body["data"]["message_sender_identifier"].as_str(),
-		Some(expected_sender.as_str())
-	);
-	assert_eq!(
-		header_body["data"]["batch_receiver_identifier"].as_str(),
-		Some(expected_receiver.as_str())
-	);
-	assert_eq!(
-		header_body["data"]["message_receiver_identifier"].as_str(),
-		Some(expected_receiver.as_str())
+		status,
+		StatusCode::NOT_FOUND,
+		"draft must not fabricate transport identifiers: {header_body:?}"
 	);
 
 	Ok(())

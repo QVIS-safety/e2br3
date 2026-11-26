@@ -9,7 +9,7 @@
 
 | Method / path | 요청 | 구현 응답·입력 경계 |
 |---|---|---|
-| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 실제 저장값·message header를 직렬화하여 200 `application/xml` attachment. 전체 Case validation·기관별 N routing 규칙은 다운로드를 차단하지 않음. 업무 필수값 누락도 그대로 직렬화. authority 누락/오류는 BadRequest, XML로 표현할 수 없는 저장 상태는 오류 |
+| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 연결된 Sender presave와 보고유형별 Receiver route로 N을 생성하며, 설정 누락·모호성은 400. 생성한 N과 실제 Case 저장값을 직렬화하여 200 `application/xml` attachment. authority 누락/오류 또는 XML로 표현할 수 없는 상태는 오류 |
 | `POST /api/cases/export/xml` | `{"case_ids":["UUID"],"authority":"fda"}` (최상위 필드, `data` 없음; 두 필드 모두 의미상 필수) | 모든 Case가 직렬화되고 성공 이력이 저장되면 200 `application/zip` attachment. Case validation 통과는 요구하지 않음. 중복 ID를 합치고 최대 100 Case·전체 비압축 XML 100 MiB, 빈 목록을 거절. 권한은 중복 제거한 Case 집합 전체에 적용 |
 
 단건 XML과 ZIP 엔트리의 파일명은 `{case_id}-{authority}.xml`이다. 선택적인 보고서 ID는 export 이력에 그대로 보존한다.
@@ -49,9 +49,9 @@
 ## 실행 조건과 증거의 한계
 
 - `xml/import_export/`는 `downloads.rs`(단건·ZIP·notation·권한·이력), `nullflavor.rs`(import 후 E/F 재조회), `drug_updates.rs`(약물 수정의 XML 반영), `rejections.rs`(필수값 오류·실패 이력·오류 다운로드)로 나뉜다. 실행 단위는 모두 기존 `xml`이며 Cargo target을 늘리지 않는다.
-- 공통 HTTP 준비·경로·반응 언어·message header는 [xml/support.rs](../xml/support.rs)에서 공유한다. field roundtrip의 실제 device 준비는 그 모듈에 남긴다. validator가 읽지 않는 legacy device-characteristics를 쓰던 별도 준비는 수동 export와 무관해 제거했다.
-- fixture 누락, setup/import/export 실패, malformed 필수 응답은 성공으로 끝내지 않는다. 감사 실패/deadlock의 테스트 내부 재시도를 제거했다. 수동 export에 불필요한 `mark-validated` 준비도 제거했다. submit은 전체 Case·XML 검증을 수행하고 export는 저장값을 직렬화한다. 값/nullFlavor 충돌·XML로 표현 불가능한 저장 상태·DB/직렬화 실패는 오류로 전파한다. 업무 필수값을 보충하거나 nullFlavor를 합성하지 않는다.
-- [CI/SI roundtrip](../xml/roundtrip/report.rs)은 study type의 XML 반영을 확인한다. N.2.r.1/N.2.r.4는 저장된 message-header number/date를 그대로 사용한다. 제출 헤더 준비는 별도 submission 경로에서 수행한다.
+- 공통 HTTP 준비·경로·반응 언어는 [xml/support.rs](../xml/support.rs)에서 공유한다. field roundtrip의 실제 device 준비는 그 모듈에 남긴다.
+- fixture 누락, setup/import/export 실패, malformed 필수 응답은 성공으로 끝내지 않는다. 감사 실패/deadlock의 테스트 내부 재시도를 제거했다. 수동 export에는 사전 상태 변경이 필요하지 않다. submit은 전체 Case·XML 검증을 수행하고 export는 저장값을 직렬화한다. 값/nullFlavor 충돌·XML로 표현 불가능한 저장 상태·DB/직렬화 실패는 오류로 전파한다. 업무 필수값을 보충하거나 nullFlavor를 합성하지 않는다.
+- [CI/SI roundtrip](../xml/roundtrip/report.rs)은 study type의 XML 반영을 확인한다. N은 Case에 저장하지 않으며 export 시 Sender/Receiver presave와 Case 보고유형으로 생성한 뒤 XML 경계에서 검증한다.
 - [MFDS samples](../xml/mfds_import_samples_web.rs)는 운영 사전과 현행 규칙을 명시한 파생 fixture를 사용하며 디렉터리 부재/빈 목록도 실패다. 공식 원본은 수정 없이 별도 보존하고, [Import 명세](import.md)에 원본 URL·SHA-256과 파생 범위 및 실제 사전 subset 조건을 기록했다.
 - `xml`의 `fda_export_reads_persisted_sections_through_rls`, `fresh_full_build_validates_for_all_authorities` 등 직접 모델/XML 호출 검사는 저장·XML 계층 근거다. API method/path별 HTTP 검증으로 중복 집계하지 않는다.
 

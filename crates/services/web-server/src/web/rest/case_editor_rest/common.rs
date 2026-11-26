@@ -31,7 +31,6 @@ pub(super) use lib_core::model::drug::{
 	DrugInformationBmc, DrugInformationForCreate, DrugInformationForUpdate,
 };
 pub(super) use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentBmc;
-pub(super) use lib_core::model::message_header::MessageHeaderBmc;
 pub(super) use lib_core::model::narrative::{
 	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
 	CaseSummaryInformationForCreate, CaseSummaryInformationForUpdate,

@@ -16,7 +16,6 @@ pub mod patient_rest;
 pub mod user_rest;
 
 pub mod drug_rest;
-pub mod message_header_rest;
 pub mod narrative_rest;
 pub mod reaction_rest;
 pub mod safety_report_rest;

@@ -30,20 +30,59 @@ pub fn set_token_cookie(
 }
 
 fn secure_auth_cookie() -> Result<bool> {
-	let config_error = |message| {
-		Error::CtxExt(crate::middleware::mw_auth::CtxExtError::Configuration(
-			message,
-		))
-	};
-	let value = std::env::var("E2BR3_COOKIE_SECURE").map_err(|error| {
-		config_error(format!("E2BR3_COOKIE_SECURE is required: {error}"))
+	let origin = std::env::var("E2BR3_PUBLIC_ORIGIN").map_err(|error| {
+		cookie_config_error(format!("E2BR3_PUBLIC_ORIGIN is required: {error}"))
 	})?;
-	match value.trim().to_ascii_lowercase().as_str() {
-		"1" | "true" | "yes" | "on" => Ok(true),
-		"0" | "false" | "no" | "off" => Ok(false),
-		_ => Err(config_error(
-			"E2BR3_COOKIE_SECURE must be a boolean value".into(),
-		)),
+	secure_cookie_for_origin(&origin)
+}
+
+fn cookie_config_error(message: String) -> Error {
+	Error::CtxExt(crate::middleware::mw_auth::CtxExtError::Configuration(
+		message,
+	))
+}
+
+fn secure_cookie_for_origin(origin: &str) -> Result<bool> {
+	let invalid = || {
+		cookie_config_error("E2BR3_PUBLIC_ORIGIN must be an HTTP(S) origin without credentials, path, query or fragment".into())
+	};
+	let uri: axum::http::Uri = origin.parse().map_err(|_| invalid())?;
+	if uri.host().is_none()
+		|| origin.contains('@')
+		|| origin.contains('#')
+		|| !matches!(uri.path(), "" | "/")
+		|| uri.query().is_some()
+	{
+		return Err(invalid());
+	}
+	match uri.scheme_str() {
+		Some("https") => Ok(true),
+		Some("http") => Ok(false),
+		_ => Err(invalid()),
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn cookie_security_follows_only_the_validated_public_origin() {
+		assert!(secure_cookie_for_origin("https://safety.example").expect("HTTPS"));
+		assert!(
+			!secure_cookie_for_origin("http://127.0.0.1:19212").expect("local HTTP")
+		);
+		for invalid in [
+			"",
+			"safety.example",
+			"ftp://safety.example",
+			"https://user:pass@host",
+			"https://host/path",
+			"https://host?query",
+			"https://host/#fragment",
+		] {
+			assert!(secure_cookie_for_origin(invalid).is_err(), "{invalid}");
+		}
 	}
 }
 

@@ -3,9 +3,6 @@ use super::*;
 #[serial]
 #[tokio::test]
 async fn section_presave_field_audit_records_changed_column() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -70,9 +67,6 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -183,9 +177,6 @@ async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let parent_org_id = Uuid::new_v4();
 	let sender_id = Uuid::new_v4();

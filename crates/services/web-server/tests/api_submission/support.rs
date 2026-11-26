@@ -28,9 +28,9 @@ pub(super) fn parse_json_or_raw(body: &[u8]) -> Value {
 }
 
 pub(super) fn clear_esg_env() {
-	std::env::remove_var("FDA_ESG_ENABLED");
 	std::env::remove_var("FDA_ESG_BASE_URL");
 	std::env::remove_var("FDA_ESG_SUBMIT_PATH");
+	std::env::remove_var("FDA_ESG_TIMEOUT_SECS");
 	std::env::remove_var("FDA_ESG_BEARER_TOKEN");
 	std::env::remove_var("FDA_ESG_API_KEY");
 	std::env::remove_var("AS2_SUBMITTER_URL");
@@ -39,6 +39,23 @@ pub(super) fn clear_esg_env() {
 	std::env::remove_var("AS2_ACK_CALLBACK_URL");
 	std::env::remove_var("AS2_CALLBACK_TOKEN");
 	std::env::remove_var("SUBMISSION_RECONCILE_TOKEN");
+}
+
+pub(super) fn configure_esg_test_endpoint(url: impl AsRef<str>) {
+	std::env::set_var("FDA_ESG_BASE_URL", url.as_ref());
+	std::env::set_var("FDA_ESG_SUBMIT_PATH", "/submissions");
+	std::env::set_var("FDA_ESG_TIMEOUT_SECS", "5");
+}
+
+pub(super) fn configure_as2_test_endpoint(url: impl AsRef<str>) {
+	std::env::set_var("AS2_SUBMITTER_URL", url.as_ref());
+	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
+	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "5");
+	std::env::set_var(
+		"AS2_ACK_CALLBACK_URL",
+		"http://127.0.0.1:9/internal/submissions/callbacks/ack",
+	);
+	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 }
 
 pub(super) fn valid_compliance_payload() -> Value {
@@ -225,15 +242,13 @@ pub(super) async fn configure_mock_esg_transport() -> Result<()> {
 		}),
 	)
 	.await?;
-	std::env::set_var("FDA_ESG_ENABLED", "1");
-	std::env::set_var("FDA_ESG_BASE_URL", esg_url);
+	configure_esg_test_endpoint(esg_url);
 	Ok(())
 }
 
 pub(super) async fn configure_mock_as2_transport() -> Result<()> {
 	let (submitter_url, _received) = start_mock_submitter().await?;
-	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
-	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
+	configure_as2_test_endpoint(submitter_url);
 	Ok(())
 }
 
@@ -593,7 +608,7 @@ pub(super) async fn create_reaction(
 				"criteria_disabling_null_flavor": "NI",
 				"criteria_congenital_anomaly_null_flavor": "NI",
 				"criteria_other_medically_important_null_flavor": "NI",
-				"required_intervention": false
+				"required_intervention_null_flavor": "NI"
 			}})
 			.to_string(),
 		))?;
@@ -676,32 +691,5 @@ pub(super) async fn seed_rule_clean_case(
 	create_reaction(app, cookie, case_id).await?;
 	create_drug(app, cookie, case_id).await?;
 	create_narrative(app, cookie, case_id).await?;
-	Ok(())
-}
-
-pub(super) async fn mark_case_validated(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-	validator_token: &str,
-) -> Result<()> {
-	let req = Request::builder()
-		.method("POST")
-		.uri(format!("/api/cases/{case_id}/validator/mark-validated"))
-		.header("cookie", cookie)
-		.header("x-validator-token", validator_token)
-		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	if status != StatusCode::OK {
-		let (_, validation) =
-			get_json(app, cookie, &format!("/api/cases/{case_id}/validation"))
-				.await?;
-		return Err(
-			format!("mark validated failed: status={status} body={value} validation={validation}").into(),
-		);
-	}
 	Ok(())
 }

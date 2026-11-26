@@ -296,12 +296,12 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 				"reaction_meddra_version": "28.1",
 				"reaction_meddra_code": "10019211",
 				"serious": false,
-				"criteria_death": false,
-				"criteria_life_threatening": false,
-				"criteria_hospitalization": false,
-				"criteria_disabling": false,
-				"criteria_congenital_anomaly": false,
-				"criteria_other_medically_important": false,
+				"criteria_death_null_flavor": "NI",
+				"criteria_life_threatening_null_flavor": "NI",
+				"criteria_hospitalization_null_flavor": "NI",
+				"criteria_disabling_null_flavor": "NI",
+				"criteria_congenital_anomaly_null_flavor": "NI",
+				"criteria_other_medically_important_null_flavor": "NI",
 				"required_intervention": false,
 				"outcome": "1"
 			}),
@@ -344,6 +344,32 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 			),
 		)
 	})?;
+	let report = xml::validation::validate_e2b_xml(
+		exported.as_bytes(),
+		Some(xml::validation::XmlValidatorConfig {
+			xsd_path: Some(resolved_xsd_path()),
+			..Default::default()
+		}),
+	)?;
+	assert!(report.ok, "FDA schema errors: {:?}", report.errors);
+	for (expression, expected) in [
+        ("string(//*[local-name()='researchStudy']/@classCode)", "CLNTRL"),
+        ("string(//*[local-name()='researchStudy']/@moodCode)", "EVN"),
+        ("string(//*[local-name()='researchStudy']/*[local-name()='id']/@extension)", "QVIS-CT-2026-004"),
+        ("string(//*[local-name()='researchStudy']/*[local-name()='id']/@root)", "2.16.840.1.113883.3.989.2.1.3.5"),
+        ("string(//*[local-name()='researchStudy']/*[local-name()='code']/@code)", "1"),
+        ("string(//*[local-name()='researchStudy']/*[local-name()='code']/@codeSystem)", "2.16.840.1.113883.3.989.2.1.1.8"),
+        ("string(//*[local-name()='researchStudy']/*[local-name()='authorization'][@typeCode='AUTH']/*[local-name()='studyRegistration'][@classCode='ACT' and @moodCode='EVN']/*[local-name()='id'][@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']/@extension)", "789012"),
+    ] {
+        assert_eq!(crate::xml_support::xpath_value(exported.as_bytes(), expression)?, expected, "{expression}");
+    }
+
+	// Validate the original XML first; namespace declaration placement is not field data.
+	let exported = exported.replace(" xmlns=\"urn:hl7-org:v3\"", "").replace(
+		" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"",
+		"",
+	);
+
 	assert!(
 		exported
 			.contains(&format!("<creationTime value=\"{}\"", header.message_date)),
@@ -396,10 +422,8 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 		"<name>Drug Safety</name>",
 		"<name>QVIS Safety CRO</name>",
 		"<code codeSystem=\"1.0.3166.1.2.2\" code=\"KR\"/>",
-		"<researchStudy classCode=\"CLNTRL\" moodCode=\"EVN\"><id extension=\"QVIS-CT-2026-004\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\"/>",
 		"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\"><id extension=\"123456\" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.1\"/></studyRegistration></authorization>",
 		"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\"><id extension=\"654321\" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.2\"/></studyRegistration></authorization>",
-		"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\"><id extension=\"789012\" root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.3\"/></studyRegistration></authorization>",
 		"<id root=\"2.16.840.1.113883.3.989.2.1.3.3\" assigningAuthorityName=\"QVIS Safety CRO\" extension=\"KR-QVIS-PRIOR-2026-004\"/>",
 	] {
 		assert!(exported.contains(expected), "missing FDA C node: {expected}");
@@ -417,14 +441,7 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 		study < patient_data,
 		"C.5 subjectOf1 must precede D/G subjectOf2"
 	);
-	let report = xml::validation::validate_e2b_xml(
-		exported.as_bytes(),
-		Some(xml::validation::XmlValidatorConfig {
-			xsd_path: Some(resolved_xsd_path()),
-			..Default::default()
-		}),
-	)?;
-	assert!(report.ok, "FDA schema errors: {:?}", report.errors);
+
 	Ok(())
 }
 

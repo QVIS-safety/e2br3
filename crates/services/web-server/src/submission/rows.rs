@@ -102,10 +102,10 @@ pub(super) struct EsgAckResponse {
 	pub(super) message: Option<String>,
 }
 
-pub(super) fn is_esg_enabled() -> Result<bool> {
-	crate::config::env_truthy("FDA_ESG_ENABLED").map_err(|message| {
+pub(super) fn is_esg_configured() -> Result<bool> {
+	crate::config::env_non_empty("FDA_ESG_BASE_URL").map_err(|message| {
 		Error::Configuration {
-			key: "FDA_ESG_ENABLED",
+			key: "FDA_ESG_BASE_URL",
 			message,
 		}
 	})

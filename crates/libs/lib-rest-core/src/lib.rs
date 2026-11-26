@@ -125,8 +125,8 @@ where
 fn unique_violation_preserves_typed_and_text_fallbacks() {
 	use lib_core::model::Error as ModelError;
 	assert!(is_unique_violation(&ModelError::UniqueViolation {
-		table: "message_headers".into(),
-		constraint: "message_headers_case_id_key".into(),
+		table: "safety_reports".into(),
+		constraint: "safety_reports_case_id_key".into(),
 	}));
 	for message in ["DUPLICATE key", "UNIQUE constraint"] {
 		assert!(is_unique_violation(&ModelError::Store(message.into())));

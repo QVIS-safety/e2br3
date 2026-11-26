@@ -64,7 +64,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_cases/subresources/lifecycle_parents.rs](../api_cases/subresources/lifecycle_parents.rs) | Case·하위 부모 soft 삭제·복원과 자식 ID·값·감사 보존 | 공통 검증 helper | 356 | 0 | 0 |
 | [api_cases/subresources/lifecycle_patient.rs](../api_cases/subresources/lifecycle_patient.rs) | Patient와 자식 10종의 재저장·삭제/복원·소속·권한·잠금·감사 | HTTP 계약 | 417 | 1 | 0 |
 | [api_cases/subresources/lifecycle_policy.rs](../api_cases/subresources/lifecycle_policy.rs) | viewer·다른 조직/부모·Case 잠금 거절과 상태·감사 불변 | 공통 검증 helper | 215 | 0 | 0 |
-| [api_cases/subresources/lifecycle_report.rs](../api_cases/subresources/lifecycle_report.rs) | Report·sender·study·source document·header·receiver 12종 lifecycle | HTTP 계약 | 457 | 1 | 0 |
+| [api_cases/subresources/lifecycle_report.rs](../api_cases/subresources/lifecycle_report.rs) | Report·sender·study·source document lifecycle | HTTP 계약 | 457 | 1 | 0 |
 | [api_cases/subresources/lifecycle_singleton.rs](../api_cases/subresources/lifecycle_singleton.rs) | Singleton 갱신·동일 저장·hard delete/재생성 계약 | 공통 검증 helper | 282 | 0 | 0 |
 | [api_cases/subresources/lifecycle_support.rs](../api_cases/subresources/lifecycle_support.rs) | 기존 행 계약·새 GET/list·soft/hard 삭제/복원 재호출 공통 assertion | 공통 검증 helper | 601 | 0 | 0 |
 | [api_cases/subresources/mod.rs](../api_cases/subresources/mod.rs) | api_cases/subresources 하위 책임 모듈 등록 | 모듈 등록 | 22 | 0 | 0 |
@@ -78,7 +78,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_cases/subresources/study.rs](../api_cases/subresources/study.rs) | Study type reaction 입력 저장 | HTTP 계약 | 42 | 1 | 0 |
 | [api_cases/subresources/support.rs](../api_cases/subresources/support.rs) | 하위 리소스 HTTP/raw 응답·Case/부모 행 준비 helper | helper | 371 | 0 | 0 |
 | [api_cases/subresources/test_result.rs](../api_cases/subresources/test_result.rs) | 검사결과 normal range 길이·MedDRA 검사명 대체 입력 | HTTP 계약 | 96 | 2 | 0 |
-| [api_cases/validation.rs](../api_cases/validation.rs) | Case validation 기관 선택·오류 projection·validator token과 상태 갱신 | HTTP 계약 | 386 | 10 | 0 |
+| [api_cases/validation.rs](../api_cases/validation.rs) | Case validation 명시 기관·오류 projection·캐시 갱신과 상태 보존 | HTTP 계약 | 308 | 8 | 0 |
 | [api_cases/validation_common.rs](../api_cases/validation_common.rs) | Validation fixture·JSON HTTP·필수 Case 하위 행 준비 helper | helper | 366 | 0 | 0 |
 | [api_cases/versions.rs](../api_cases/versions.rs) | Case version snapshot의 저장값·version 순서·reason·actor | HTTP 계약 | 75 | 1 | 0 |
 | [api_cases/workflow.rs](../api_cases/workflow.rs) | Workflow 전이·담당자 지정·역할/담당자/lock 제한과 관리자 override 감사 | HTTP 계약 | 515 | 6 | 0 |
@@ -93,7 +93,6 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_editor/audit/projection.rs](../api_editor/audit/projection.rs) | FDA device scalar 저장의 감사 API projection | HTTP 계약 | 105 | 0 | 0 |
 | [api_editor/fields.rs](../api_editor/fields.rs) | Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사 | HTTP 계약 | 652 | 2 | 0 |
 | [api_editor/fields/coupled_clear.rs](../api_editor/fields/coupled_clear.rs) | 연결 필드 clear·생략 구분·sibling 유지·행 재조회 | HTTP 계약 | 628 | 0 | 0 |
-| [api_editor/fields/message_header.rs](../api_editor/fields/message_header.rs) | N registry 항목의 전용 message-header POST/PUT/GET 저장·거절·감사 불변 검사 | HTTP 계약 | 181 | 0 | 0 |
 | [api_editor/fields/null_flavor.rs](../api_editor/fields/null_flavor.rs) | 값↔NullFlavor 전이·동시 값 거절·부모/등록번호 관계 | HTTP 계약 | 566 | 0 | 0 |
 | [api_editor/fields/required_values.rs](../api_editor/fields/required_values.rs) | 필수 값 blank/잘못된 report year 거절과 저장 값·자식 보존 | HTTP 계약 | 209 | 0 | 0 |
 | [api_editor/legacy_reads/ae.rs](../api_editor/legacy_reads/ae.rs) | AE legacy list/detail GET의 행 ID·업무 projection | HTTP 계약 | 55 | 2 | 0 |
@@ -182,7 +181,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [api_submission/callbacks.rs](../api_submission/callbacks.rs) | 내부 ACK callback 인증·상태 갱신·중복 idempotency·malformed 거부와 Rust-to-submitter payload 흐름을 검증한다. | HTTP 계약 | 412 | 5 | 0 |
 | [api_submission/dispatch.rs](../api_submission/dispatch.rs) | FDA ESG/MFDS 제출 routing, transport 설정 오류, 헤더·payload, 비성공/연결 실패 상태 보존을 검증한다. | HTTP 계약 | 346 | 6 | 0 |
 | [api_submission/external.rs](../api_submission/external.rs) | 실제 Java submitter와 MFDS 제출·event 연계를 확인하는 명시적 ignored 외부 통합 테스트를 담는다. | HTTP 계약 | 83 | 1 | 0 |
-| [api_submission/headers.rs](../api_submission/headers.rs) | authority별 receiver option과 message-header 식별자 갱신, 동시 FDA/MFDS 요청의 request-scoped 값을 검증한다. | HTTP 계약 | 369 | 3 | 0 |
+| [api_submission/headers.rs](../api_submission/headers.rs) | presave route로 일시 N을 생성하고 저장 테이블 없이 최종 XML을 검증한다. | HTTP 계약 | 369 | 1 | 0 |
 | [api_submission/history.rs](../api_submission/history.rs) | 제출 history의 최신 ACK 시각·event, 제출 XML과 ACK text 다운로드 계약을 검증한다. | HTTP 계약 | 205 | 2 | 0 |
 | [api_submission/idempotency.rs](../api_submission/idempotency.rs) | 제출 idempotency key의 순차 재사용과 병렬 요청 단일 submission 생성을 검증한다. | HTTP 계약 | 127 | 2 | 0 |
 | [api_submission/mod.rs](../api_submission/mod.rs) | callback·dispatch·external·header·history·idempotency·reconcile·validation 제출 테스트와 support를 등록한다. | 모듈 등록 | 10 | 0 | 0 |
@@ -294,7 +293,7 @@ Editor registry는 scalar 373 + behavior 62 = 435개를 등록한다. legacy rea
 | [xml/roundtrip/narrative.rs](../xml/roundtrip/narrative.rs) | N/R narrative와 summary 필드를 HTTP 편집 후 XML export round-trip으로 검증한다. | HTTP/XML 통합 | 121 | 1 | 0 |
 | [xml/roundtrip/patient.rs](../xml/roundtrip/patient.rs) | D/M patient·parent·past-drug 필드와 parent nullFlavor를 HTTP/API 및 serializer round-trip으로 검증한다. | HTTP/XML 통합 | 242 | 2 | 0 |
 | [xml/roundtrip/reaction.rs](../xml/roundtrip/reaction.rs) | E adverse-event와 sender diagnosis 전체 필드를 HTTP persistence와 XML export round-trip으로 검증한다. | HTTP/XML 통합 | 635 | 2 | 0 |
-| [xml/roundtrip/report.rs](../xml/roundtrip/report.rs) | C/I report identification·message header 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다. | HTTP/XML 통합 | 310 | 2 | 0 |
+| [xml/roundtrip/report.rs](../xml/roundtrip/report.rs) | C/I report identification 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다. | HTTP/XML 통합 | 310 | 2 | 0 |
 | [xml/roundtrip/schema.rs](../xml/roundtrip/schema.rs) | persisted section의 RLS export, authority별 full-build schema/rule 검증과 빈 autopsy parent 출력 구조를 검증한다. | HTTP/XML 통합 | 538 | 3 | 0 |
 | [xml/roundtrip/support.rs](../xml/roundtrip/support.rs) | roundtrip fixture import, FDA device 보정, authority header와 HTTP XML export helper를 제공한다. | helper | 239 | 0 | 0 |
 | [xml/roundtrip_profiles_web.rs](../xml/roundtrip_profiles_web.rs) | ICH/FDA/MFDS fixture를 HTTP import·validate·export하고 원본/재export XML을 schema 재검증한다. | HTTP/XML 통합 | 276 | 1 | 0 |
@@ -361,5 +360,3 @@ Editor 결과 gate의 expected execution set은 registry의 435개와 legacy sou
 테스트만 수정하면 frontend/registry 전체 job은 생략하지만, backend 필수 계약은 현재 editor contract와 registry의 명시적 test 연결에서 읽어 실제 실행 로그와 대조한다. Production·계약 입력 변경 시에는 frontend 추출/테스트와 전체 registry 검증을 유지하고 두 계약 목록의 전체·target별 일치도 확인한다. XML 자산은 xml crate, web-server 전체 또는 api_import/api_submission/xml target에만 준비하며 CI와 로컬 격리 실행기가 같은 선택 규칙을 사용한다.
 
 Module 연결·파일 누락·명세 근거·이동 전후 선언 및 assertion을 정적으로 대조했다. 컴파일, SQL 실행, 전체 runtime PASS는 미확인이다. 모든 동작의 공백은 각 API 명세의 미단언 항목과 coverage.tsv의 gaps에 남긴다.
-
-Frontend의 [`validator-proxy.integration.test.ts`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/__tests__/integration/validator-proxy.integration.test.ts)는 Node 환경에서 실행 중인 실제 Next frontend·backend, 인증 cookie, validator token과 validation issue가 남은 전용 draft Case를 요구한다. mock fetch/server 없이 4개 검사가 missing case ID, cookie/token과 두 body spelling 전달, query `caseId` 우선순위와 backend 404, 무cookie 403 및 backend error 보존을 확인한다. [`jest.integration.config.js`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/jest.integration.config.js)는 기존 live 2개와 신규 4개를 합친 6개 suite assertion을 별도 명령에 등록한다. 기본 [`jest.config.js`](/home/opc/e2br3/worktrees/frontend-validator-integration-20261031/jest.config.js)는 두 integration 파일을 unit 실행에서 제외한다. 현재 backend CI workflow와 test-plan에는 이 frontend live suite를 자동 실행하는 job이 없으므로 backend 계약의 통과 증거로 계산하지 않는다. 이 문서 갱신에서는 frontend test를 실행하지 않았다.

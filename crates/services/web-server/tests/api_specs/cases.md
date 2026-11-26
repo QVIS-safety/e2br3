@@ -1,6 +1,6 @@
 # Case API 명세와 테스트 근거
 
-이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, message-header, `PUT /submission-receiver`, administration 소유의 case audit-trail은 제외했다.
+이 문서는 `tests/authz/protected_route_inventory.snapshot`의 `/api/cases*`, `/api/case-query*` 중 Case CRUD/list/intake/validation/workflow/locking/settings/review/assignment, clinical/drug/patient/narrative/safety-report, field notation, identifier/source-document API를 현재 소스에서 역추적한 명세다. editor 전체, export/import, submissions/history/dispatch, administration 소유의 case audit-trail은 제외했다.
 
 기준 backend는 `2727d980`이고 검증 상태는 **runtime NOT_RUN**이다. 테스트, 빌드, API, DB는 실행하지 않았고 라우트 등록, handler/DTO, 활성 테스트 assertion만 읽었다. 총 231개 operation 모두에 하나 이상의 직접 HTTP assertion이 있다. 이는 전체 계약 검증을 뜻하지 않으며 operation별 남은 필드·권한·오류 gap은 [전체 커버리지](coverage.tsv)의 `spec=cases.md#...` 행에 기록했다. 기준 이후 기존 테스트의 assertion과 공통 helper를 보강했지만 새 테스트 파일이나 테스트 선언·verifier 함수는 추가하지 않았다.
 
@@ -20,7 +20,6 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 | `GET` | `/api/case-query/catalog` |
 | `POST` | `/api/case-query/search` |
 | `GET`, `POST` | `/api/cases` |
-| `GET`, `POST`, `PUT`, `DELETE` | `/api/cases/{case_id}/receiver` |
 | `GET`, `PUT`, `DELETE` | `/api/cases/{id}` |
 | `GET` | `/api/cases/link-options` |
 | `GET` | `/api/cases/list-view` |
@@ -84,15 +83,13 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 | `POST` | `/api/cases/{id}/lock/toggle` |
 | `POST` | `/api/cases/{id}/restore` |
 | `POST` | `/api/cases/{id}/review/toggle` |
-| `POST` | `/api/cases/{id}/validator/mark-validated` |
 | `POST` | `/api/cases/{id}/workflow/assign` |
 | `GET` | `/api/cases/{id}/workflow/events` |
 | `POST` | `/api/cases/{id}/workflow/transition` |
 | `GET` | `/api/cases/workflow/config` |
 
-- `GET /validation?authority=ich|fda|mfds`; 생략 시 receiver 설정에서 추론하고 없으면 ICH다. `CaseValidationReport`를 `200 Data`로 반환하며 중복/알 수 없는 authority는 400.
+- `GET /validation?authority=ich|fda|mfds`; authority는 필수다. 생략하면 400이며 receiver나 관리자 appendices로 추론하거나 제한하지 않는다. `CaseValidationReport`를 `200 Data`로 반환하며 중복/알 수 없는 authority는 400.
 - 목록 `warn`은 선택 기관들의 `(code,path)` 중복을 제거한 캐시 집계다. Case 변경, validator 구현 변경, 활성 사전 변경·롤백 후의 구버전 캐시 및 판정 버전이 없는 기존 캐시는 `Not checked`로 표시한다. 재검증이 새 버전의 집계를 저장한다. 검증 도중 사전 기준이 바뀌면 결과를 캐시하지 않고 재시도를 요구하는 400 응답을 반환한다.
-- `POST /validator/mark-validated`는 `x-validator-token`과 validation issue 0개를 요구하고 Case를 validated로 갱신한다. 성공/실패와 system audit reason이 assertion 되어 있다.
 - `POST /lock/toggle`, `POST /review/toggle`: `{"data":{"expected_status":"..."}}`; stale 화면 상태는 409. Case read shape를 `200`으로 반환한다.
 - `POST /restore`: `reason_for_change`가 필수이고 deleted Case를 draft로 복원한다. `GET /lifecycle`은 동일 safety-report 계열의 `{safety_report_id,current_case_id,items[]}`.
 - `POST /workflow/transition`: `data {to_status,target_role?,target_user_id?,comment?,due_at?,override_reason?}`. `POST /workflow/assign`: `data {target_role,target_user_id?,comment?,due_at?,override_reason?}`. due_at은 RFC3339. 역할/assignee, lock, 관리자 override를 검증하고 `CaseReadResult`를 반환한다.
@@ -106,10 +103,9 @@ handler/DTO 소스에서 읽은 일반 JSON body는 `{"data": {...}}`다. 공통
 - [tests/api_cases/locking.rs::test_case_read_returns_separate_qc_and_lock_axes](../api_cases/locking.rs)
 - [tests/api_cases/locking.rs::test_lifecycle_toggle_rejects_stale_screen_status](../api_cases/locking.rs)
 - [tests/api_cases/settings.rs::test_workflow_config_runtime_endpoint_returns_default_statuses](../api_cases/settings.rs)
-- [tests/api_cases/validation.rs::test_validation_defaults_to_ich_profile](../api_cases/validation.rs)
+- [tests/api_cases/validation.rs::test_validation_requires_explicit_authority](../api_cases/validation.rs)
 - [tests/api_cases/validation.rs::test_validation_rejects_unknown_profile](../api_cases/validation.rs)
-- [tests/api_cases/validation.rs::test_validator_endpoint_marks_validated_when_clean](../api_cases/validation.rs)
-- [tests/api_cases/validation.rs::test_validator_endpoint_requires_token](../api_cases/validation.rs)
+- [tests/api_cases/validation.rs::test_validation_clean_report_updates_list_without_changing_status](../api_cases/validation.rs)
 - [tests/api_cases/workflow.rs::test_locked_case_blocks_workflow_transition_even_for_admin_override](../api_cases/workflow.rs)
 - [tests/api_cases/workflow.rs::test_workflow_assignment_updates_owner_without_changing_status](../api_cases/workflow.rs)
 - [tests/api_cases/workflow.rs::test_workflow_transition_updates_case_and_persists_event](../api_cases/workflow.rs)
@@ -354,7 +350,7 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 - literature: `case_id, reference_text(+null_flavor), sequence_number, document_base64, file_name, media_type, representation, compression`. documents: `case_id, title, document_base64, file_name, media_type, representation, compression, sequence_number`.
 - study: `case_id, source_study_presave_id, study_name(+null_flavor), sponsor_study_number(+null_flavor), study_type_reaction, study_type_reaction_kr1, fda_ind_number_occurred, fda_pre_anda_number_occurred`.
 - registration: `study_information_id, registration_number(+null_flavor), country_code(+null_flavor), sequence_number`. FDA cross-reported IND: `study_information_id, ind_number(+null_flavor), sequence_number`.
-- 하위 collection/item handler는 소스상 create 201/list-get-update 200/delete 204/restore 200이다. 신규 [report lifecycle matrix](../api_cases/subresources/lifecycle_report.rs)는 report 12개 family의 정상 update/fresh GET·list, viewer 403, 다른 조직·wrong Case/parent 404, 잠금 403, 삭제·반복 삭제, audit reason과 거절 무감사를 직접 단언한다. `sender_information`, `study_information`, `source_documents`는 `deleted` 열이 없고 실제 `base_uuid::delete` hard delete라 반복 404·재생성 새 ID를 검사한다. registration/IND와 document/literature/primary-source/other-identifier는 soft delete/list 제외/동일 ID restore를 검사한다. message-header/receiver/safety-report singleton도 hard delete 뒤 새 ID 재생성을 확인한다. runtime은 NOT_RUN이다.
+- 하위 collection/item handler는 소스상 create 201/list-get-update 200/delete 204/restore 200이다. 신규 [report lifecycle matrix](../api_cases/subresources/lifecycle_report.rs)는 report 12개 family의 정상 update/fresh GET·list, viewer 403, 다른 조직·wrong Case/parent 404, 잠금 403, 삭제·반복 삭제, audit reason과 거절 무감사를 직접 단언한다. `sender_information`, `study_information`, `source_documents`는 `deleted` 열이 없고 실제 `base_uuid::delete` hard delete라 반복 404·재생성 새 ID를 검사한다. registration/IND와 document/literature/primary-source/other-identifier는 soft delete/list 제외/동일 ID restore를 검사한다. safety-report singleton도 hard delete 뒤 새 ID 재생성을 확인한다. runtime은 NOT_RUN이다.
 
 근거:
 
@@ -395,3 +391,9 @@ FDA device code 검사는 정상 create/get/delete/restore와 list ID/count, wro
 2. `GET /case-query/catalog`, `POST /case-query/search`, `GET /cases/link-options`에 직접 응답 assertion을 추가했다. catalog 전체 필드·연산자 조합, 검색 pagination/오류와 link-options의 모든 필터 조합은 남아 있다(runtime NOT_RUN).
 3. `GET /cases/{case_id}/versions`는 기존 조직 가시성 검사에 더해 저장 snapshot·version 내림차순·reason·actor를 단언한다. 전체 snapshot schema, 빈 결과와 동시 version 생성은 미검증이다(runtime NOT_RUN).
 4. setup helper가 201/200을 내부 확인하는 경우도 대상 API의 반환 계약이나 상태 변화를 테스트 목적에서 assertion하지 않으면 coverage로 올리지 않았다.
+
+### 기관 설정 의존성 회귀 (2026-11-26)
+
+- 검증 GET은 명시한 authority만 사용한다. receiver에서 추론하거나 관리자 appendices에 포함됐는지 검사하지 않는다. 기관 누락·잘못된 값은 400이며 case 상태는 바꾸지 않는다.
+- `test_intake_without_transport_identifiers_can_create_draft`는 작성 단계에 전송 설정이 없어도 생성돼야 한다는 기대 동작을 고정한다. ICH/FDA/MFDS 초안은 전송 헤더 없이 생성한다. 발신·수신 ID는 헤더 생성 시 presave와 기관 수신 경로에서 확인하며, 작성 단계에 서버 공통 기본 ID를 요구하지 않는다.
+- 제출 Sender ID가 없는 경우의 명시적 거절, case 상태·헤더·제출 이력 불변, 다른 기관의 저장된 Sender 재사용은 `tests/api_submission/validation.rs::test_submission_missing_authority_sender_id_rejects_without_side_effects`로 확인한다.

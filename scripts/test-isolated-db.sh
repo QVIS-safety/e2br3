@@ -162,15 +162,14 @@ run_interruptible env DATABASE_URL="$test_url" APP_DB_USER="$app_db_user" \
 
 export SERVICE_DB_URL="$test_url"
 export SERVICE_MIGRATION_DB_URL="$test_url"
-export SKIP_DEV_INIT=1
 export E2BR3_TEST_DATABASE_NAME="$database_name"
 export AUDIT_MAPPING_DATABASE_URL="$test_url"
 
-needs_terminology="$(python3 "$repo_root/scripts/ci_test_plan.py" terminology-snapshot -- "$@")"
+needs_terminology="$(python3 "$repo_root/scripts/ci_test_plan.py" terminology-fixture -- "$@")"
 case "$needs_terminology" in
 	true) run_interruptible python3 "$repo_root/scripts/load-ci-terminology.py" ;;
 	false) ;;
-	*) printf 'invalid terminology snapshot selection: %s\n' "$needs_terminology" >&2; exit 2 ;;
+	*) printf 'invalid terminology fixture selection: %s\n' "$needs_terminology" >&2; exit 2 ;;
 esac
 
 run_interruptible cargo test "$@"

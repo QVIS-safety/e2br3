@@ -7,9 +7,9 @@
 //! block), cross-field date rules (`*.FUTURE_DATE`, `*.AFTER_*`), and the
 //! C.1.7 nullFlavor parity with the dictionary.
 use super::*;
+use crate::context::TestMessageHeader as MessageHeader;
 use lib_core::model::case::Case;
 use lib_core::model::case_identifiers::OtherCaseIdentifier;
-use lib_core::model::message_header::MessageHeader;
 use lib_core::model::patient::PatientInformation;
 use lib_core::model::safety_report::{
 	DocumentsHeldBySender, LiteratureReference, PrimarySource,
@@ -188,6 +188,30 @@ pub(super) fn ctx_with(report: SafetyReportIdentification) -> ValidationContext 
 		relatedness_assessments: Vec::new(),
 		patient_identifiers: Vec::new(),
 	}
+}
+
+#[test]
+fn regional_report_type_controls_validation_routing_without_case_header() {
+	let mut ctx = ctx_with(base_report());
+	ctx.case.fda_report_type = Some("2".into());
+	ctx.case.mfds_report_type = Some("4".into());
+	ctx.message_header = Some(message_header(
+		crate::FDA_BATCH_RECEIVER_POSTMARKET,
+		crate::MFDS_BATCH_RECEIVER_CLINICAL_TRIAL,
+	));
+
+	assert_eq!(
+		ctx.fda_batch_receiver(),
+		Some(crate::FDA_BATCH_RECEIVER_PREMARKET)
+	);
+	assert_eq!(
+		ctx.fda_message_receiver(),
+		Some(crate::FDA_MSG_RECEIVER_CDER_IND_EXEMPT_BA_BE)
+	);
+	assert_eq!(
+		ctx.mfds_receiver(),
+		Some(crate::MFDS_BATCH_RECEIVER_POSTMARKET_FOREIGN)
+	);
 }
 
 /// Runs `collect_ich_issues` and returns only the in-scope C.1 value rules
@@ -554,8 +578,17 @@ fn fda_initial_and_local_criteria_rules_reject_invalid_values() {
 	let header = message_header(crate::FDA_BATCH_RECEIVER_POSTMARKET, "CDER");
 	let mut issues = Vec::new();
 
-	fda_initial_report_rules(&report, Some(&header), false, &mut issues);
-	fda_local_criteria_report_type(&report, Some(&header), &mut issues);
+	fda_initial_report_rules(
+		&report,
+		header.batch_receiver_identifier.as_deref(),
+		false,
+		&mut issues,
+	);
+	fda_local_criteria_report_type(
+		&report,
+		header.batch_receiver_identifier.as_deref(),
+		&mut issues,
+	);
 
 	for code in ["FDA.R0011", "FDA.R0101", "FDA.R0014"] {
 		assert!(issues.iter().any(|issue| issue.code == code), "{code}");
@@ -573,12 +606,22 @@ fn fda_initial_rules_use_persisted_history_and_exact_route_scope() {
 	);
 	let mut issues = Vec::new();
 
-	fda_initial_report_rules(&report, Some(&premarket), false, &mut issues);
+	fda_initial_report_rules(
+		&report,
+		premarket.batch_receiver_identifier.as_deref(),
+		false,
+		&mut issues,
+	);
 	assert!(issues.iter().any(|issue| issue.code == "FDA.R0011"));
 	assert!(!issues.iter().any(|issue| issue.code == "FDA.R0101"));
 
 	issues.clear();
-	fda_initial_report_rules(&report, Some(&premarket), true, &mut issues);
+	fda_initial_report_rules(
+		&report,
+		premarket.batch_receiver_identifier.as_deref(),
+		true,
+		&mut issues,
+	);
 	assert!(issues.is_empty());
 }
 

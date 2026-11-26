@@ -28,9 +28,6 @@ fn product_update_distinguishes_missing_null_and_present_optional_values() {
 #[serial]
 #[tokio::test]
 async fn authorityless_union_fields_are_allowed() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -150,9 +147,6 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn reporter_presave_accepts_field_specific_null_flavors() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -210,9 +204,6 @@ async fn reporter_presave_accepts_field_specific_null_flavors() -> Result<()> {
 #[tokio::test]
 async fn reporter_presave_rejects_invalid_field_specific_null_flavors() -> Result<()>
 {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -263,9 +254,6 @@ async fn reporter_presave_rejects_invalid_field_specific_null_flavors() -> Resul
 #[tokio::test]
 async fn study_presave_registration_numbers_enforce_registration_number_max_length(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -360,9 +348,6 @@ async fn study_presave_registration_numbers_enforce_registration_number_max_leng
 #[tokio::test]
 async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -549,9 +534,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 #[tokio::test]
 async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -837,9 +819,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 #[serial]
 #[tokio::test]
 async fn section_presave_receiver_allows_legacy_type_update() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();

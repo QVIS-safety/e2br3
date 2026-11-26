@@ -2,12 +2,15 @@ use crate::ctx::Ctx;
 use crate::e2b::null_flavor::NullFlavor;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
+use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::presave_lifecycle::{PresaveKind, PresaveLifecycleService};
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::{Fields, HasSeaFields};
-use modql::filter::{FilterNodes, ListOptions, OpValsBool};
+use modql::filter::{
+	FilterNodes, ListOptions, OpValValue, OpValsBool, OpValsString, OpValsValue,
+};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
@@ -870,6 +873,96 @@ impl ReceiverPresaveBmc {
 		"Original Manufacturer";
 	const RECEIVER_TYPE_REGULATORY_AUTHORITY: &'static str = "Regulatory Authority";
 
+	pub(crate) async fn create_regulatory_defaults_for_org_in_transaction(
+		dbx: &crate::model::store::dbx::Dbx,
+		organization_id: Uuid,
+		created_by: Uuid,
+	) -> Result<()> {
+		dbx.execute(
+			sqlx::query(
+				r#"
+				INSERT INTO receiver_presaves (
+					organization_id,
+					receiver_type,
+					organization_name,
+					description,
+					created_by
+				)
+				VALUES
+					($1, 'Regulatory Authority', 'FDA', 'Default FDA receiver routes', $2),
+					($1, 'Regulatory Authority', 'MFDS', 'Default MFDS receiver routes', $2)
+				"#,
+			)
+			.bind(organization_id)
+			.bind(created_by),
+		)
+		.await?;
+		dbx.execute(
+			sqlx::query(
+				r#"
+				WITH route_seed (
+					organization_name,
+					sequence_number,
+					authority,
+					receiver_label,
+					batch_receiver_identifier,
+					message_receiver_identifier,
+					condition_field_code,
+					condition_value_code,
+					condition_value_label
+				) AS (
+					VALUES
+						('FDA', 1, 'fda', 'FDA(CDER IND)', 'ZZFDA_PREMKT', 'CDER_IND', 'FDA_REPORT_TYPE', '1', 'CDER IND'),
+						('FDA', 2, 'fda', 'FDA(CDER IND-exempt BA/BE)', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE'),
+						('FDA', 3, 'fda', 'FDA(CBER IND)', 'ZZFDA_PREMKT', 'CBER_IND', 'FDA_REPORT_TYPE', '3', 'CBER IND'),
+						('FDA', 4, 'fda', 'FDA(Postmarket)', 'ZZFDA', 'CDER', 'FDA_REPORT_TYPE', '4', 'Postmarket'),
+						('MFDS', 1, 'mfds', 'MFDS(CT)', 'MFDS-O-CT', 'MFDS-O-CT', 'MFDS_REPORT_TYPE', '1', '임상시험계획의 승인을 받은 자'),
+						('MFDS', 2, 'mfds', 'MFDS(CU)', 'MFDS-O-CU', 'MFDS-O-CU', 'MFDS_REPORT_TYPE', '2', '임상시험용의약품의 치료목적 사용승인을 받은 자'),
+						('MFDS', 3, 'mfds', 'MFDS(KR)', 'MFDS-O-KR', 'MFDS-O-KR', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고'),
+						('MFDS', 4, 'mfds', 'MFDS(FR)', 'MFDS-O-FR', 'MFDS-O-FR', 'MFDS_REPORT_TYPE', '4', '시판 후 이상사례 국외보고'),
+						('MFDS', 5, 'mfds', 'MFDS(CF)', 'MFDS-O-CF', 'MFDS-O-CF', 'MFDS_REPORT_TYPE', '5', '임상시험계획의 승인을 받은 자 (국외)')
+				)
+				INSERT INTO receiver_presave_routes (
+					receiver_presave_id,
+					sequence_number,
+					authority,
+					receiver_label,
+					batch_receiver_identifier,
+					message_receiver_identifier,
+					condition_page,
+					condition_field_code,
+					condition_operator,
+					condition_value_code,
+					condition_value_label,
+					created_by
+				)
+				SELECT
+					receivers.id,
+					route_seed.sequence_number,
+					route_seed.authority,
+					route_seed.receiver_label,
+					route_seed.batch_receiver_identifier,
+					route_seed.message_receiver_identifier,
+					'CI',
+					route_seed.condition_field_code,
+					'Equal',
+					route_seed.condition_value_code,
+					route_seed.condition_value_label,
+					$2
+				FROM route_seed
+				JOIN receiver_presaves AS receivers
+					ON receivers.organization_id = $1
+					AND receivers.organization_name = route_seed.organization_name
+					AND receivers.deleted = false
+				"#,
+			)
+			.bind(organization_id)
+			.bind(created_by),
+		)
+		.await?;
+		Ok(())
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -1598,6 +1691,39 @@ impl ProductPresaveBmc {
 			mm,
 			None,
 			list_options,
+		)
+		.await
+	}
+
+	pub async fn list_by_product_and_sender(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		product_id: &str,
+		sender_presave_id: Uuid,
+	) -> Result<Vec<ProductPresave>> {
+		#[derive(FilterNodes)]
+		struct ProductFilter {
+			product_id: Option<OpValsString>,
+			#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+			organization_id: Option<OpValsValue>,
+			#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+			sender_presave_id: Option<OpValsValue>,
+			deleted: Option<OpValsBool>,
+		}
+		base_uuid::list::<Self, _, _>(
+			ctx,
+			mm,
+			Some(vec![ProductFilter {
+				product_id: Some(product_id.into()),
+				sender_presave_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+					serde_json::json!(sender_presave_id),
+				)])),
+				organization_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+					serde_json::json!(ctx.organization_id()),
+				)])),
+				deleted: Some(false.into()),
+			}]),
+			None,
 		)
 		.await
 	}

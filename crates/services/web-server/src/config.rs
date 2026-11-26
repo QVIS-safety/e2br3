@@ -23,88 +23,140 @@ impl WebConfig {
 	}
 }
 
-pub(crate) fn env_truthy(name: &str) -> core::result::Result<bool, String> {
+pub(crate) fn env_non_empty(name: &str) -> core::result::Result<bool, String> {
 	match std::env::var(name) {
-		Ok(value) => match value.trim().to_ascii_lowercase().as_str() {
-			"1" | "true" | "yes" | "on" => Ok(true),
-			"0" | "false" | "no" | "off" => Ok(false),
-			_ => Err(format!("{name} must be a boolean value")),
-		},
-		Err(error) => Err(format!("failed to read {name}: {error}")),
-	}
-}
-
-fn env_non_empty(name: &str) -> core::result::Result<bool, String> {
-	match std::env::var(name) {
-		Ok(value) => Ok(!value.trim().is_empty()),
+		Ok(value) if !value.trim().is_empty() => Ok(true),
+		Ok(_) => Err(format!("{name} must not be empty")),
 		Err(std::env::VarError::NotPresent) => Ok(false),
 		Err(error) => Err(format!("failed to read {name}: {error}")),
 	}
 }
 
 pub fn validate_submission_runtime_config() -> core::result::Result<(), String> {
-	let env_name = lib_utils::envs::get_env("E2BR3_ENV")
-		.map_err(|error| format!("{error:?}"))?
-		.to_ascii_lowercase();
-	let is_prod = matches!(env_name.as_str(), "prod" | "production");
-	let strict = is_prod || env_truthy("E2BR3_STRICT_SUBMISSION_CONFIG")?;
+	validate_submission_config(|key| match std::env::var(key) {
+		Ok(value) => Ok(Some(value)),
+		Err(std::env::VarError::NotPresent) => Ok(None),
+		Err(error) => Err(format!("failed to read {key}: {error}")),
+	})
+}
 
-	let as2_enabled = env_non_empty("AS2_SUBMITTER_URL")?;
-	let esg_enabled = env_truthy("FDA_ESG_ENABLED")?;
-
-	if strict {
-		if !as2_enabled && !esg_enabled {
-			return Err(
-				"missing submission transport: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
-			);
+fn validate_submission_config(
+	read: impl Fn(&str) -> core::result::Result<Option<String>, String>,
+) -> core::result::Result<(), String> {
+	let as2 = [
+		"AS2_SUBMITTER_URL",
+		"AS2_ACK_CALLBACK_URL",
+		"AS2_CALLBACK_TOKEN",
+		"AS2_SUBMITTER_TOKEN",
+		"AS2_SUBMITTER_TIMEOUT_SECS",
+	];
+	let esg = [
+		"FDA_ESG_BASE_URL",
+		"FDA_ESG_SUBMIT_PATH",
+		"FDA_ESG_TIMEOUT_SECS",
+	];
+	let required = |key: &str| -> core::result::Result<String, String> {
+		match read(key)? {
+			Some(value) if !value.trim().is_empty() => Ok(value),
+			_ => Err(format!("configured submission transport requires {key}")),
 		}
-		if !env_non_empty("SUBMISSION_RECONCILE_TOKEN")? {
-			return Err(
-				"production requires SUBMISSION_RECONCILE_TOKEN for reconcile endpoints"
-					.to_string(),
-			);
+	};
+	let mut configured = 0;
+	for keys in [&as2[..], &esg[..]] {
+		let mut present = false;
+		for key in keys {
+			present |= read(key)?.is_some();
+		}
+		if keys == &esg[..] {
+			present |= read("FDA_ESG_BEARER_TOKEN")?.is_some();
+			present |= read("FDA_ESG_API_KEY")?.is_some();
+		}
+		if !present {
+			continue;
+		}
+		configured += 1;
+		for key in keys {
+			let value = required(key)?;
+			if key.ends_with("_URL") {
+				let url = reqwest::Url::parse(&value)
+					.map_err(|_| format!("{key} must be an absolute HTTP(S) URL"))?;
+				if !matches!(url.scheme(), "http" | "https")
+					|| url.host_str().is_none()
+					|| !url.username().is_empty()
+					|| url.password().is_some()
+					|| url.fragment().is_some()
+				{
+					return Err(format!("{key} must be an absolute HTTP(S) URL without credentials or fragment"));
+				}
+			}
+			if key.ends_with("_TIMEOUT_SECS")
+				&& !matches!(value.parse::<u64>(), Ok(1..))
+			{
+				return Err(format!("{key} must be a positive integer"));
+			}
 		}
 	}
-
-	if as2_enabled && esg_enabled {
-		return Err(
-			"ambiguous transport config: set only one of AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
-		);
+	if configured > 1 {
+		return Err("ambiguous transport config: set only one of AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".into());
 	}
-
-	if as2_enabled {
-		if !env_non_empty("AS2_ACK_CALLBACK_URL")? {
-			return Err(
-				"AS2_SUBMITTER_URL requires AS2_ACK_CALLBACK_URL".to_string()
-			);
-		}
-		if !env_non_empty("AS2_CALLBACK_TOKEN")? {
-			return Err("AS2_SUBMITTER_URL requires AS2_CALLBACK_TOKEN".to_string());
-		}
-	}
-
-	if esg_enabled && !env_non_empty("FDA_ESG_BASE_URL")? {
-		return Err("FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string());
-	}
-
 	Ok(())
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use std::collections::HashMap;
+
+	fn check(values: &HashMap<&str, &str>) -> core::result::Result<(), String> {
+		validate_submission_config(|key| {
+			Ok(values.get(key).map(|value| value.to_string()))
+		})
+	}
 
 	#[test]
-	fn feature_flag_requires_an_explicit_boolean() {
-		const KEY: &str = "E2BR3_TEST_STRICT_BOOLEAN";
-		std::env::remove_var(KEY);
-		assert!(env_truthy(KEY).is_err());
-		std::env::set_var(KEY, "treu");
-		assert!(env_truthy(KEY).is_err());
-		std::env::set_var(KEY, "false");
-		assert!(!env_truthy(KEY).unwrap());
-		std::env::set_var(KEY, "true");
-		assert!(env_truthy(KEY).unwrap());
-		std::env::remove_var(KEY);
+	fn configured_transports_always_require_complete_valid_configuration() {
+		assert!(check(&HashMap::new()).is_ok());
+		let as2 = HashMap::from([
+			("AS2_SUBMITTER_URL", "http://127.0.0.1:9090"),
+			(
+				"AS2_ACK_CALLBACK_URL",
+				"http://127.0.0.1:8080/internal/submissions/callbacks/ack",
+			),
+			("AS2_CALLBACK_TOKEN", "test-callback"),
+			("AS2_SUBMITTER_TOKEN", "test-submit"),
+			("AS2_SUBMITTER_TIMEOUT_SECS", "20"),
+		]);
+		let esg = HashMap::from([
+			("FDA_ESG_BASE_URL", "https://gateway.example"),
+			("FDA_ESG_SUBMIT_PATH", "submit"),
+			("FDA_ESG_TIMEOUT_SECS", "20"),
+		]);
+		for values in [&as2, &esg] {
+			assert!(check(values).is_ok());
+			for key in values.keys() {
+				let mut missing = values.clone();
+				missing.remove(key);
+				assert!(check(&missing).is_err(), "missing {key}");
+				let mut blank = values.clone();
+				blank.insert(key, " ");
+				assert!(check(&blank).is_err(), "blank {key}");
+			}
+		}
+		let mut both = as2.clone();
+		both.extend(esg);
+		assert!(check(&both).expect_err("ambiguous").contains("ambiguous"));
+		for value in ["0", "-1", "bad"] {
+			let mut invalid = as2.clone();
+			invalid.insert("AS2_SUBMITTER_TIMEOUT_SECS", value);
+			assert!(check(&invalid).is_err());
+		}
+		for value in ["relative/path", "ftp://host", "http://user:pass@host"] {
+			let mut invalid = as2.clone();
+			invalid.insert("AS2_SUBMITTER_URL", value);
+			assert!(check(&invalid).is_err());
+		}
+		assert!(
+			check(&HashMap::from([("FDA_ESG_API_KEY", "orphan-token")])).is_err()
+		);
 	}
 }

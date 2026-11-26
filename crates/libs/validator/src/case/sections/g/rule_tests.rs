@@ -1,8 +1,8 @@
 use super::golden_g_required_tests as fixture;
 use super::*;
+use crate::context::TestMessageHeader as MessageHeader;
 use crate::VocabularyScope;
 use lib_core::model::drug::{FdaDeviceCode, FdaDeviceInformation};
-use lib_core::model::message_header::MessageHeader;
 use lib_core::model::safety_report::SafetyReportIdentification;
 use lib_core::model::{patient::PatientInformation, reaction::Reaction};
 use sqlx::types::{time::OffsetDateTime, Decimal, Uuid};

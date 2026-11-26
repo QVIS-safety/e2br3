@@ -1,6 +1,6 @@
 # Submission API 명세와 검사 범위
 
-현재 등록 범위는 `/api` 제출·message-header 15개와 `/internal` machine-token 경로 3개, 모두 18개다. 대상 실행 단위는 `api_submission`이며 Case의 message-header·권한 검사는 `api_cases`, `api_administration`에도 있다. 아래는 현재 코드에 존재하는 assertion 명세다. 실행 결과는 **NOT_RUN**이다. 제출 테스트의 `start_mock_esg`/`configure_mock_as2_transport`는 기존 로컬 응답 대역이다. 이 테스트로 외부 FDA/MFDS 접수나 실제 AS2/Java 연동을 증명하지 않는다.
+현재 등록 범위는 `/api` 제출 9개와 `/internal` machine-token 경로 3개, 모두 12개다. 대상 실행 단위는 `api_submission`이다. 아래는 현재 코드에 존재하는 assertion 명세다. 실행 결과는 **NOT_RUN**이다. 제출 테스트의 `start_mock_esg`/`configure_mock_as2_transport`는 기존 로컬 응답 대역이다. 이 테스트로 외부 FDA/MFDS 접수나 실제 AS2/Java 연동을 증명하지 않는다.
 
 라우트 원본: [Case routes](../../src/web/rest/routes/cases.rs), [submission routes](../../src/web/rest/routes/submissions.rs). 요청·응답 원본: [submission_rest](../../src/web/rest/submission_rest.rs), [전자서명 입력](../../src/web/rest/compliance.rs).
 
@@ -18,7 +18,7 @@
 검사 근거:
 
 - [idempotency](../api_submission/idempotency.rs): `test_submission_idempotency_key_reuses_submission_when_enabled`, `test_submission_idempotency_key_parallel_requests_single_submission` — 응답 ID 동등성·GET 목록 1개.
-- [dispatch](../api_submission/dispatch.rs): `test_submission_esg_transport_sends_expected_headers_and_payload` — 대역으로 보내는 bearer/API-key와 비어 있지 않은 XML; `test_submission_esg_non_success_preserves_unknown_without_resend` — 502에도 재전송 없이 unknown·한 번의 전송·retry 없음·오류 보존; `test_submission_retains_unknown_when_as2_submitter_unreachable` — 미접속 상태·ACK1~4 null·동일 키 재사용.
+- [dispatch](../api_submission/dispatch.rs): `test_submission_esg_transport_sends_expected_headers_and_payload` — 대역으로 보내는 bearer/API-key와 비어 있지 않은 XML; `test_submission_esg_non_success_preserves_unknown_without_resend` — 502에도 재전송 없이 unknown·한 번의 전송·retry 없음·오류 보존; `test_submission_records_failure_when_as2_submitter_unreachable` — 연결 실패 시 dispatch_failed·Case 상태 복원·재시도 없음·ACK1~4 null·동일 키 재사용.
 - 같은 파일의 `test_submission_rejects_enabled_esg_without_base_url` — 400 및 누락 설정명. `test_submission_accepts_mfds_route_for_mfds_profile`, `test_submission_uses_request_authority_not_case_appendices` — MFDS 요청 기관 처리.
 - [validation](../api_submission/validation.rs): `test_submission_rejects_case_validation_before_routing_or_dispatch` — 변경으로 캐시가 무효화되고 FDA/MFDS 둘 다 400 + validation issue; `test_unavailable_meddra_allows_save_and_export_but_blocks_submission` — 사전 버전 문제는 저장·수동 export를 허용하지만 제출은 400. `test_submission_does_not_require_case_validated_status` — Case status 문자열만으로 사전 차단하지 않음.
 
@@ -36,25 +36,16 @@
 | `GET /api/submissions/{id}/acks/{level}/download` | 200 `text/plain` | ACK2 텍스트의 submission/level/code/message. 모든 level과 없는 ACK의 오류는 별도 공백 |
 | `GET /api/submissions/{id}/xml` | 200 저장된 원본 XML bytes | 저장 원본과 byte 동등, 무인증 비성공·타 조직 404; DB 원본 변경 시도 거절. 현재 Case를 다시 export한 결과와 혼동하지 않음 |
 
-[history](../api_submission/history.rs)의 `test_submission_history_includes_latest_ack_time_and_event`, `test_submission_ack_can_be_downloaded_as_text`; [callbacks](../api_submission/callbacks.rs)의 `test_internal_ack_callback_updates_submission_by_remote_id`, `test_internal_ack_callback_duplicate_payload_is_idempotent`; [dispatch](../api_submission/dispatch.rs)의 `test_submission_retains_unknown_when_as2_submitter_unreachable`가 해당 근거다. 이력 scope는 [histories](../api_cases/scope/histories.rs)의 실제 endpoint loop도 참조한다.
+[history](../api_submission/history.rs)의 `test_submission_history_includes_latest_ack_time_and_event`, `test_submission_ack_can_be_downloaded_as_text`; [callbacks](../api_submission/callbacks.rs)의 `test_internal_ack_callback_updates_submission_by_remote_id`, `test_internal_ack_callback_duplicate_payload_is_idempotent`; [dispatch](../api_submission/dispatch.rs)의 `test_submission_records_failure_when_as2_submitter_unreachable`가 해당 근거다. 이력 scope는 [histories](../api_cases/scope/histories.rs)의 실제 endpoint loop도 참조한다.
 
 원본 XML 보존 검사는 HTTP 다운로드와 DB 변경 거절을 함께 확인하지만, 모든 이력 API에 동일한 권한·감사·파일 헤더 assertion이 있다는 뜻은 아니다. 다운로드 audit 기록의 모든 old/new·사용자·사유를 이 API군에서 직접 비교하지 않는다.
 
 <a id="receiver"></a>
 ## 수신처와 메시지 헤더
 
-| Method / path | 요청 / 응답 | 검사 범위 |
-|---|---|---|
-| `GET /api/submissions/receiver-options` | 필수 query `authority=fda|mfds`; 200 `data.items` | FDA Postmarket 식별자와 MFDS 5개 조건/수신처 식별자. 잘못된 authority의 구현 400은 소스 조건이며 전 값 테스트가 아님 |
-| `PUT /api/cases/{id}/submission-receiver` | `{"data":{"authority":"mfds","receiver_label":"MFDS(KR)"}}`; 200 `data` MessageHeader | draft/reviewed/validated/locked에서 기관·수신처 적용, 메시지/배치 번호·sender·date 재조회; execute 권한 |
-| `POST /api/cases/{case_id}/message-header` | `data`에 필수 `case_id,message_number,message_sender_identifier,message_receiver_identifier,message_date`, 선택 `batch_sender_identifier,batch_receiver_identifier,batch_transmission_date`; 역직렬화 뒤 path가 body `case_id`를 덮어씀. 신규 201, 기존 200 | 중복 POST가 기존 ID·기존 값 보존 |
-| `GET /api/cases/{case_id}/message-header` | 200 `data`; 미생성 404 | POST 및 수신처 적용 후 재조회 |
-| `PUT /api/cases/{case_id}/message-header` | `data`의 `batch_number`와 create의 선택/필수 header 필드를 모두 선택적으로 patch; 200 `data`. DTO가 `Option<T>`라 생략과 JSON `null`은 모두 update 값 없음으로 해석되어 필드를 지우지 않음 | XML 전제조건을 수정하는 경로 및 intake 회귀의 일부 assertion; 모든 헤더 필드 변경/감사 계약은 아님 |
-| `DELETE /api/cases/{case_id}/message-header` | 204 hard delete; 반복 DELETE와 삭제 뒤 GET은 404, 같은 path POST는 새 ID로 재생성 | lifecycle 검사가 viewer 403·타 조직/잘못된 Case 404·lock 403, 거절 뒤 상태/감사 불변, DELETE 감사와 재생성을 함께 단언 |
+Case 초안은 Section N을 저장하지 않는다. export와 submission은 Case의 보고유형, Case Sender가 참조한 Sender presave의 기관별 기본 Sender ID, Product presave가 연결한 Receiver presave의 정확히 한 개 route를 사용해 N을 요청 단위로 생성한다. route가 없거나 둘 이상이면 dispatch 전에 실패한다. 생성한 N은 dictionary 계약과 최종 XML 검증을 통과해야 하며 제출 XML은 `case_submissions.submitted_xml`에 보존한다. 가져온 XML의 N은 원본 `cases.raw_xml`에만 남고 Case 편집 필드로 투영하지 않는다.
 
-근거: [headers](../api_submission/headers.rs)의 `test_submission_receiver_options_list_defaults_by_authority`, `test_submission_receiver_selection_updates_message_header_n_identifiers`; [singleton](../api_cases/subresources/singleton.rs)의 `test_singleton_post_endpoints_are_idempotent`; [`report_rows_enforce_scope_permission_lock_lifecycle_and_audit`](../api_cases/subresources/lifecycle_report.rs)의 message-header 계약; [XML gate](../xml/import_export/rejections.rs)의 `test_manual_export_preserves_missing_headers_and_records_serialization_errors`; [transfer permissions](../api_administration/role_admin/effective_access/transfer_web.rs)의 제출 수신처 변경 검사.
-
-`concurrent_authority_header_preparation_returns_request_scoped_values`는 같은 Case에 FDA/MFDS HTTP PUT을 `tokio::join!`으로 보내고, 두 응답의 200과 기관별 sender/receiver를 각각 확인한다. 응답이 다른 요청의 기관 값으로 섞이지 않는 검사이며, 모든 동시 변경 조합이나 최종 저장 순서까지 보장하지 않는다.
+근거: [headers](../api_submission/headers.rs)의 `outbound_header_is_transient_and_uses_receiver_presave_route`는 실제 격리 DB에서 presave route로 N을 생성하고 XML 검증을 통과하며 `message_headers` 테이블이 없는 것을 확인한다.
 
 <a id="internal"></a>
 ## 내부 ACK·reconcile API
@@ -70,3 +61,9 @@
 근거: [callbacks](../api_submission/callbacks.rs)의 `test_internal_submission_endpoints_require_valid_callback_token`, `test_internal_ack_callback_rejects_malformed_payload`, 앞의 update/duplicate 검사; [reconcile HTTP](../api_submission/reconcile/web.rs)의 `test_internal_reconcile_endpoint_auth_and_empty_result`, `test_internal_reconcile_status_accumulates_runtime_counters`, `test_internal_reconcile_does_not_resend_esg_attempt`, `test_internal_reconcile_transport_change_does_not_resend_esg_attempt`. [worker 계약](../api_submission/reconcile/service.rs)의 `test_reconcile_blocks_legacy_attempts_without_reexport_or_resend`, `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`는 service 직접 호출 검사이며 HTTP 근거로 계산하지 않는다.
 
 공백: 토큰 미설정·비UTF8·빈 문자열 모든 조합, 모든 ACK 전이/역순/기관별 signature/MIC 검증은 이 HTTP 명세의 통과 증거가 없다. `test_reconcile_blocks_legacy_attempts_without_reexport_or_resend`는 직접 service 함수 검사다. `test_as2_pending_reconciles_without_resending_and_ignores_late_ack`도 reconcile과 late ACK는 직접 service 함수를 호출하고 GET 결과만 HTTP로 관찰한다. 이를 reconcile/callback POST의 해당 분기 검증으로 계산하지 않는다. callback의 dispatch-state 비200 성공 처리 분기를 제거했다. 실행 결과는 NOT_RUN이다.
+
+### 조직별 발신·수신 ID
+
+발신 ID는 Case Sender에 연결된 Sender presave의 해당 기관 기본 gateway에서 읽는다. ICH 수신 ID는 Case Product ID와 같은 조직의 활성 Product presave에 연결된 Receiver presave에서 읽는다. `CI / C.1.3 / Equal` 조건과 보고 유형이 일치하는 ICH route가 정확히 하나여야 하며, batch/message ID를 각각 보존한다. FDA/MFDS의 기관별 수신 옵션은 기존 보고 유형 매핑을 사용한다. 초안 생성에는 전송 ID를 요구하지 않는다.
+
+근거: `tests/api_submission/headers.rs::ich_header_uses_product_receiver_presave_and_isolates_organizations` — presave API 저장, 동일 Product ID의 조직 격리, batch/message 구분, 불일치·중복 route 거절과 기존 헤더 보존.

@@ -32,7 +32,4 @@ SERVICE_TOKEN_DURATION_SEC="1800" # 30 minutes
 # In deployed images, probably use absolute path.
 SERVICE_WEB_FOLDER="web-folder/"
 
-# Skip dev database init (use Docker PostgreSQL instead)
-# Set to "0" if you want init_dev() to run
-SKIP_DEV_INIT="1"
 SERVICE_BOOTSTRAP_ENABLED="true"

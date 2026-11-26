@@ -27,10 +27,7 @@ pub(crate) fn default_xsd_path() -> std::path::PathBuf {
 }
 
 pub(crate) fn resolved_xsd_path() -> std::path::PathBuf {
-	match std::env::var("E2BR3_XSD_PATH") {
-		Ok(value) => resolve_from_workspace(std::path::PathBuf::from(value)),
-		Err(_) => default_xsd_path(),
-	}
+	xml::validation::default_xsd_path().expect("repository XSD must exist")
 }
 
 pub(crate) async fn request_json(
@@ -256,4 +253,27 @@ pub(crate) async fn set_export_receivers(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 	Ok(())
+}
+
+pub(crate) fn xpath_value(xml: &[u8], expression: &str) -> Result<String> {
+	use std::io::Write;
+	use std::process::{Command, Stdio};
+	let mut child = Command::new("xmllint")
+		.args(["--nonet", "--xpath", expression, "-"])
+		.stdin(Stdio::piped())
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()?;
+	child
+		.stdin
+		.take()
+		.ok_or("missing XML input pipe")?
+		.write_all(xml)?;
+	let output = child.wait_with_output()?;
+	if !output.status.success() {
+		return Err(String::from_utf8_lossy(&output.stderr).into_owned().into());
+	}
+	Ok(String::from_utf8(output.stdout)?
+		.trim_end_matches('\n')
+		.to_string())
 }

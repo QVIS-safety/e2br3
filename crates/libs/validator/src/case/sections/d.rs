@@ -1684,23 +1684,12 @@ fn fda_d_12(
 }
 
 fn is_fda_vaers(validation_ctx: &ValidationContext) -> bool {
-	validation_ctx
-		.message_header
-		.as_ref()
-		.is_some_and(|header| {
-			[
-				Some(header.message_receiver_identifier.as_str()),
-				header.batch_receiver_identifier.as_deref(),
-			]
-			.into_iter()
-			.flatten()
-			.any(|value| {
-				matches!(
-					value.trim().to_ascii_uppercase().as_str(),
-					"CBER_VAERS" | "CBER VAERS"
-				)
-			})
-		})
+	validation_ctx.fda_message_receiver().is_some_and(|value| {
+		matches!(
+			value.trim().to_ascii_uppercase().as_str(),
+			"CBER_VAERS" | "CBER VAERS"
+		)
+	})
 }
 
 /// FDA.D.1: linked IND study reports use the aggregate patient marker.
@@ -1709,10 +1698,7 @@ fn fda_d_1(
 	fda_ctx: Option<&FdaValidationContext>,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let receiver = validation_ctx.fda_message_receiver();
 	let aggregate = validation_ctx.safety_report.as_ref().is_some_and(|report| {
 		report.report_type.as_deref().map(str::trim) == Some("2")
 	}) && is_fda_ind_message_receiver(receiver)
@@ -1776,10 +1762,7 @@ fn fda_d_9_1(validation_ctx: &ValidationContext, issues: &mut Vec<ValidationIssu
 		.safety_report
 		.as_ref()
 		.and_then(|report| report.report_type.as_deref());
-	let receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let receiver = validation_ctx.fda_message_receiver();
 	let death_reported = validation_ctx
 		.reactions
 		.iter()
@@ -2259,10 +2242,7 @@ pub(crate) fn collect_mfds_issues(
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	mfds_d_2_3(validation_ctx.patient.as_ref(), issues);
-	let msg_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let msg_receiver = validation_ctx.mfds_receiver();
 	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
 	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
 	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)

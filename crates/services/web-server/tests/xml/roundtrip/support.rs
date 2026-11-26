@@ -70,7 +70,6 @@ pub(super) async fn setup_imported_case_from(
 		std::env::var("E2BR3_EXAMPLES_DIR")
 			.map_err(|err| format!("E2BR3_EXAMPLES_DIR is required: {err}"))?,
 	));
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;

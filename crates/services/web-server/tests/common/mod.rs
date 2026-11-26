@@ -5,7 +5,6 @@ mod permission_profiles;
 pub use permission_profiles::create_empty_permission_profile;
 
 use lib_auth::pwd::{self, ContentToHash};
-use lib_core::_dev_utils;
 use lib_core::authorization::{
 	grant_ids_for_menu_privileges, policy_registry, AdminMenuPrivilege,
 	BuiltInIdentityKind,
@@ -102,23 +101,7 @@ pub async fn init_test_env() -> Result<()> {
 	std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
 	std::env::set_var("SERVICE_DB_MAX_CONNECTIONS", "5");
-	std::env::set_var("E2BR3_DEBUG_ERRORS", "1");
-	std::env::set_var("E2BR3_COOKIE_SECURE", "false");
-	if std::env::var("E2BR3_DEFAULT_MESSAGE_SENDER").is_err() {
-		std::env::set_var("E2BR3_DEFAULT_MESSAGE_SENDER", "TEST-SENDER");
-	}
-	if std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA").is_err() {
-		std::env::set_var("E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA", "TEST-FDA");
-	}
-	if std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH").is_err() {
-		std::env::set_var("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH", "TEST-ICH");
-	}
-	if std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS").is_err() {
-		std::env::set_var("E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS", "TEST-MFDS");
-	}
-	if std::env::var("E2BR3_EXPORT_VALIDATE").is_err() {
-		std::env::set_var("E2BR3_EXPORT_VALIDATE", "0");
-	}
+	std::env::set_var("E2BR3_PUBLIC_ORIGIN", "http://localhost");
 
 	// Keep integration tests deterministic even when direnv isn't loaded.
 	if std::env::var("E2BR3_EXAMPLES_DIR").is_err() {
@@ -127,20 +110,12 @@ pub async fn init_test_env() -> Result<()> {
 			.join("docs/exporter/fda");
 		std::env::set_var("E2BR3_EXAMPLES_DIR", examples_dir);
 	}
-	if std::env::var("E2BR3_XSD_PATH").is_err() {
-		let xsd_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-			.join("../../..")
-			.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd");
-		std::env::set_var("E2BR3_XSD_PATH", xsd_path);
-	}
 	Ok(())
 }
 
 pub async fn init_test_mm() -> Result<ModelManager> {
 	init_test_env().await?;
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
+
 	reconcile_test_authorization_storage().await?;
 	let mm = ModelManager::new().await?;
 	mm.dbx()

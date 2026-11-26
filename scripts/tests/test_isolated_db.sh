@@ -45,7 +45,6 @@ printf '%s\n' "$*" >"$FAKE_LOG_DIR/cargo.args"
 {
 	printf 'SERVICE_DB_URL=%s\n' "$SERVICE_DB_URL"
 	printf 'SERVICE_MIGRATION_DB_URL=%s\n' "$SERVICE_MIGRATION_DB_URL"
-	printf 'SKIP_DEV_INIT=%s\n' "$SKIP_DEV_INIT"
 	printf 'E2BR3_TEST_DATABASE_NAME=%s\n' "$E2BR3_TEST_DATABASE_NAME"
 	printf 'AUDIT_MAPPING_DATABASE_URL=%s\n' "$AUDIT_MAPPING_DATABASE_URL"
 } >"$FAKE_LOG_DIR/cargo.env"
@@ -95,7 +94,6 @@ assert_success_contract() {
 	[[ "$test_url" == "postgres://user:secret@db:5432/$database_name?sslmode=disable" ]]
 	[[ "$migration_url" == "$test_url" ]]
 	grep -Fx -- 'test -p lib-core --test rbac_grant_profiles' "$case_dir/cargo.args" >/dev/null
-	grep -Fx -- 'SKIP_DEV_INIT=1' "$case_dir/cargo.env" >/dev/null
 	grep -F -- "$database_name" "$case_dir/createdb.args" >/dev/null
 	grep -F -- "$database_name" "$case_dir/dropdb.args" >/dev/null
 

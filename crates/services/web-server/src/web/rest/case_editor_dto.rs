@@ -13,7 +13,6 @@ pub struct CaseEditorShellDto {
 	pub status: String,
 	pub organization_id: Uuid,
 	pub safety_report_identification: CaseEditorShellSafetyReportDto,
-	pub message_header: CaseEditorShellMessageHeaderDto,
 	pub dg_prd_key: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -38,17 +37,10 @@ pub struct CaseEditorShellSafetyReportDto {
 	pub safety_report_id: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CaseEditorShellMessageHeaderDto {
-	pub message_receiver_identifier: Option<String>,
-}
-
 impl CaseEditorShellDto {
 	pub fn from_case_read_result(
 		value: CaseReadResult,
 		safety_report_id: Option<String>,
-		message_receiver_identifier: Option<String>,
 	) -> serde_json::Result<Self> {
 		let review_receivers = value
 			.case
@@ -79,9 +71,6 @@ impl CaseEditorShellDto {
 			organization_id: value.case.organization_id,
 			safety_report_identification: CaseEditorShellSafetyReportDto {
 				safety_report_id,
-			},
-			message_header: CaseEditorShellMessageHeaderDto {
-				message_receiver_identifier,
 			},
 			dg_prd_key: value.case.dg_prd_key,
 			created_at: value.case.created_at,

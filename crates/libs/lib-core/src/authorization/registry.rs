@@ -839,14 +839,6 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 			Mutation,
 		),
 		action(
-			"case.validate",
-			DecisionStage::ContextRequired(Existing(ResourceKind::Case)),
-			&["case.review"],
-			&[],
-			&[SameOrganization, CompatibleLifecycle],
-			Mutation,
-		),
-		action(
 			"case.audit.list",
 			DecisionStage::ContextRequired(Parent {
 				parent: ResourceKind::Case,
@@ -995,14 +987,6 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 			"submission.history.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::Submission)),
 			&["submission.history.read"],
-			&[],
-			&[SameOrganization],
-			Read,
-		),
-		action(
-			"submission.receiver.list",
-			DecisionStage::ContextRequired(Collection(ResourceKind::Submission)),
-			&["submission.execute"],
 			&[],
 			&[SameOrganization],
 			Read,

@@ -322,7 +322,7 @@ mod tests {
 			.as_array()
 			.expect("registry array")
 			.iter()
-			.filter(|entry| entry["e2br3_code"] != "H.additionalInformation")
+			.filter(|entry| entry["e2br3_code"] != "H.local.additionalInformation")
 			.filter_map(|entry| entry["e2br3_code"].as_str())
 			.collect::<BTreeSet<_>>();
 		let source = format!(

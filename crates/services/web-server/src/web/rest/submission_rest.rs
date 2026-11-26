@@ -1,24 +1,18 @@
 use crate::web::rest::compliance::{capture_e_signature, ComplianceActionInput};
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::header;
 use axum::http::StatusCode;
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::authorization::CaseMutationKind;
-use lib_core::model::message_header::MessageHeader;
-use lib_core::model::submission_receiver_option::{
-	SubmissionReceiverOption, SubmissionReceiverOptionBmc,
-};
 use lib_core::model::ModelManager;
-use lib_rest_core::rest_params::ParamsForUpdate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
 
-use crate::submission::prepare_outbound_message_header;
 use crate::submission::{
 	apply_gateway_ack_by_remote, create_submission_idempotent,
 	dispatch_reserved_submission, get_ack_download, get_reconcile_runtime_status,
@@ -46,17 +40,6 @@ pub struct SubmissionHistoryList {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SubmissionReceiverOptionList {
-	pub items: Vec<SubmissionReceiverOption>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SubmissionReceiverSelectionInput {
-	pub authority: String,
-	pub receiver_label: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
 pub struct SubmissionDispatchStateData {
 	pub state: SubmissionDispatchStateRecord,
 }
@@ -74,11 +57,6 @@ pub struct SubmissionReconcileStatusData {
 #[derive(Debug, serde::Deserialize)]
 pub struct ReconcileRequestInput {
 	pub limit: Option<i64>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ReceiverOptionsQuery {
-	pub authority: String,
 }
 
 /// POST /api/cases/{id}/submissions/fda
@@ -230,92 +208,6 @@ pub async fn list_case_submissions(
 						data: CaseSubmissionList { items: rows },
 					}),
 				))
-			})
-		},
-	)
-	.await
-}
-
-/// GET /api/submissions/receiver-options
-pub async fn list_receiver_options(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Query(query): Query<ReceiverOptionsQuery>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<SubmissionReceiverOptionList>>,
-)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_submission_collection_action(
-		&ctx,
-		&snapshot,
-		&mm,
-		"submission.receiver.list",
-		move |ctx, mm| {
-			Box::pin(async move {
-				let authority = query.authority.trim().to_ascii_lowercase();
-				if !matches!(authority.as_str(), "fda" | "mfds") {
-					return Err(Error::BadRequest {
-						message: format!(
-							"unsupported receiver option authority: {}",
-							query.authority
-						),
-					});
-				}
-				let rows = SubmissionReceiverOptionBmc::list_by_authority(
-					ctx, mm, &authority,
-				)
-				.await?;
-				Ok((
-					StatusCode::OK,
-					Json(DataRestResult {
-						data: SubmissionReceiverOptionList { items: rows },
-					}),
-				))
-			})
-		},
-	)
-	.await
-}
-
-/// PUT /api/cases/{id}/submission-receiver
-pub async fn apply_submission_receiver_selection(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>,
-) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)> {
-	let ctx = ctx_w.0;
-	lib_rest_core::with_authorized_case_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		case_id,
-		"submission.execute",
-		CaseMutationKind::SubmissionReceiver,
-		move |ctx, mm| {
-			Box::pin(async move {
-				let ParamsForUpdate { data } = params;
-				let authority = lib_core::regulatory::RegulatoryAuthority::parse(
-					data.authority.trim(),
-				)
-				.ok_or_else(|| Error::BadRequest {
-					message: format!(
-						"unsupported receiver authority: {}",
-						data.authority
-					),
-				})?;
-				let entity = prepare_outbound_message_header(
-					ctx,
-					mm,
-					case_id,
-					authority,
-					data.receiver_label.as_deref(),
-				)
-				.await?;
-				Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 			})
 		},
 	)

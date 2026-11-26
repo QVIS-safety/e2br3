@@ -7,7 +7,6 @@ async fn test_import_then_export_xml() -> Result<()> {
 	let examples_dir = resolve_from_workspace(std::path::PathBuf::from(
 		std::env::var("E2BR3_EXAMPLES_DIR")?,
 	));
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -215,9 +214,7 @@ async fn test_import_then_export_xml() -> Result<()> {
 			for (index, expected_id) in [case_id, second_id].into_iter().enumerate()
 			{
 				let mut entry = zip.by_index(index)?;
-				assert!(entry
-					.name()
-					.ends_with(&format!("-{expected_id}-{authority}.xml")));
+				assert_eq!(entry.name(), format!("{expected_id}-{authority}.xml"));
 				let mut zipped_xml = String::new();
 				entry.read_to_string(&mut zipped_xml)?;
 				assert!(zipped_xml.contains("<MCCI_IN200100UV01"));

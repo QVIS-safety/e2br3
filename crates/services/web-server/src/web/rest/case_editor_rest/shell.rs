@@ -1,6 +1,6 @@
 use super::common::{
-	case_to_read_result, CaseBmc, CaseEditorShellDto, CtxW, Json, MessageHeaderBmc,
-	ModelManager, Path, Result, SafetyReportIdentificationBmc, State, Uuid,
+	case_to_read_result, CaseBmc, CaseEditorShellDto, CtxW, Json, ModelManager,
+	Path, Result, SafetyReportIdentificationBmc, State, Uuid,
 };
 
 pub async fn get_editor_shell(
@@ -24,20 +24,11 @@ pub async fn get_editor_shell(
 					SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
 						.await?
 						.safety_report_id;
-				let message_receiver_identifier =
-					match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
-						Ok(header) => Some(header.message_receiver_identifier),
-						Err(lib_core::model::Error::EntityUuidNotFound {
-							..
-						}) => None,
-						Err(error) => return Err(error.into()),
-					};
 				Ok((
 					axum::http::StatusCode::OK,
 					Json(CaseEditorShellDto::from_case_read_result(
 						case,
 						safety_report_id,
-						message_receiver_identifier,
 					)?),
 				))
 			})

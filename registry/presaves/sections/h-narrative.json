@@ -24,8 +24,8 @@
     "notes": ""
   },
   {
-    "id": "presave.narrative.H.additionalInformation",
-    "e2br3_code": "H.additionalInformation",
+    "id": "presave.narrative.H.local.additionalInformation",
+    "e2br3_code": "H.local.additionalInformation",
     "label": "Additional Information",
     "section": "H",
     "authority": "ICH",

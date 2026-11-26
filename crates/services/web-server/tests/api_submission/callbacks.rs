@@ -6,7 +6,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -15,7 +15,6 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,
@@ -236,14 +235,12 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	clear_esg_env();
 	let (submitter_url, received_payloads) = start_mock_submitter().await?;
-	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
-	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
+	configure_as2_test_endpoint(submitter_url);
 	std::env::set_var(
 		"AS2_ACK_CALLBACK_URL",
 		"http://127.0.0.1:8080/internal/submissions/callbacks/ack",
 	);
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -254,7 +251,6 @@ async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "mfds").await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,
@@ -328,7 +324,7 @@ async fn test_internal_ack_callback_duplicate_payload_is_idempotent() -> Result<
 	clear_esg_env();
 	configure_mock_esg_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -337,7 +333,6 @@ async fn test_internal_ack_callback_duplicate_payload_is_idempotent() -> Result<
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,

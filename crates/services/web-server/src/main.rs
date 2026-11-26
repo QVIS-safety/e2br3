@@ -4,7 +4,6 @@ mod bootstrap;
 mod error;
 
 pub use self::error::{Error, Result};
-use lib_core::_dev_utils;
 use lib_core::ctx::Ctx;
 use lib_core::model::user::UserBmc;
 use lib_core::model::ModelManager;
@@ -34,9 +33,6 @@ async fn run() -> Result<()> {
 	lib_auth::init().map_err(|error| Error::Config(error.to_string()))?;
 
 	// Database migrations run explicitly before the application starts.
-	_dev_utils::init_dev()
-		.await
-		.map_err(|error| Error::Config(error.to_string()))?;
 	web_server::config::validate_submission_runtime_config()
 		.map_err(Error::Config)?;
 

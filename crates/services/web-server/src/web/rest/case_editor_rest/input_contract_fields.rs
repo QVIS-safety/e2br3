@@ -121,7 +121,6 @@ pub(super) fn validate_section_fields(
 		"DM" => dm(row, changed_paths, outer_indexes),
 		"LB" => lb(row, changed_paths, outer_indexes),
 		"LR" => lr(row, changed_paths, outer_indexes),
-		"N" => n(row, changed_paths, outer_indexes),
 		"NR" => nr(row, changed_paths, outer_indexes),
 		"RP" => rp(row, changed_paths, outer_indexes),
 		"SD" => sd(row, changed_paths, outer_indexes),
@@ -2646,104 +2645,6 @@ fn lr(
 		changed_paths,
 		outer_indexes,
 		input_contracts::generated::c::c_4_r_1,
-	)?;
-	Ok(())
-}
-
-fn n(
-	row: &Map<String, Value>,
-	changed_paths: Option<&BTreeSet<String>>,
-	outer_indexes: &[usize],
-) -> Result<()> {
-	validate_field(
-		row,
-		"batchNumber",
-		"messageHeader.batchNumber",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_1_2,
-	)?;
-	validate_field(
-		row,
-		"batchReceiverIdentifier",
-		"messageHeader.batchReceiverIdentifier",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_1_4,
-	)?;
-	validate_field(
-		row,
-		"batchSenderIdentifier",
-		"messageHeader.batchSenderIdentifier",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_1_3,
-	)?;
-	validate_field(
-		row,
-		"batchTransmissionDate",
-		"messageHeader.batchTransmissionDate",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_1_5,
-	)?;
-	validate_field(
-		row,
-		"messageDate",
-		"messageHeader.messageDate",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_2_r_4,
-	)?;
-	validate_field(
-		row,
-		"messageNumber",
-		"messageHeader.messageNumber",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_2_r_1,
-	)?;
-	validate_field(
-		row,
-		"messageReceiverIdentifier",
-		"messageHeader.messageReceiverIdentifier",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_2_r_3,
-	)?;
-	validate_field(
-		row,
-		"messageSenderIdentifier",
-		"messageHeader.messageSenderIdentifier",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_2_r_2,
-	)?;
-	validate_field(
-		row,
-		"messageType",
-		"messageHeader.messageType",
-		InputType::String,
-		None,
-		changed_paths,
-		outer_indexes,
-		input_contracts::generated::n::n_1_1,
 	)?;
 	Ok(())
 }

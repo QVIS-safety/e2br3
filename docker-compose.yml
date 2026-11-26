@@ -39,10 +39,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Skip dev database init (DB is initialized via PostgreSQL init scripts)
-      SKIP_DEV_INIT: "1"
       # Bind to all interfaces (required for Docker)
       SERVICE_BIND_ADDR: "0.0.0.0:8080"
+      E2BR3_PUBLIC_ORIGIN: "${E2BR3_PUBLIC_ORIGIN:?E2BR3_PUBLIC_ORIGIN must be configured}"
       # Database connection (use 'postgres' as host - the service name)
       SERVICE_DB_URL: postgres://app_user:dev_only_pwd@postgres/app_db
       SERVICE_MIGRATION_DB_URL: postgres://app_user:dev_only_pwd@postgres/app_db
@@ -54,17 +53,8 @@ services:
       RUST_LOG: "web_server=debug,lib_core=debug,lib_web=debug"
       E2BR3_APP_NAME: "${E2BR3_APP_NAME:-QVIS Safety}"
       E2BR3_APP_SHORT_NAME: "${E2BR3_APP_SHORT_NAME:-QVIS Safety}"
-      E2BR3_VALIDATOR_TOKEN: "validator-secret"
       # XML validation/export config
-      E2BR3_EXPORT_VALIDATE: "${E2BR3_EXPORT_VALIDATE:?E2BR3_EXPORT_VALIDATE must be configured}"
-      E2BR3_DEFAULT_MESSAGE_SENDER: "${E2BR3_DEFAULT_MESSAGE_SENDER:?E2BR3_DEFAULT_MESSAGE_SENDER must be configured}"
-      E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA: "${E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA:?E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA must be configured}"
-      E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH: "${E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH:?E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH must be configured}"
-      E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS: "${E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS:?E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS must be configured}"
       E2BR3_EXAMPLES_DIR: "/app/docs/exporter/fda"
-      E2BR3_XSD_PATH: "/app/schemas/multicacheschemas/MCCI_IN200100UV01.xsd"
-      # Prefer patching raw imported XML for single-section edits (keeps export valid while XML v2 generator matures).
-      XML_V2_PATCH_C: "1"
     volumes:
       - ./docs/exporter/schema:/app/schemas:ro
     depends_on:

@@ -21,16 +21,30 @@ class TerminologyBoundaryTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 loader.isolated_database(url, name)
 
-    def test_changed_or_incomplete_snapshot_is_rejected(self):
+    def test_changed_or_incomplete_fixture_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'snapshot.json'
             path.write_bytes(b'{}')
             with self.assertRaisesRegex(ValueError, 'SHA-256'):
-                loader.read_snapshot(path, {'sha256': '0' * 64})
-            data = json.dumps({'tables': {}}).encode()
+                loader.read_fixture(path, {'sha256': '0' * 64})
+            data = json.dumps({'source': 'test-fixture:xml-integration', 'tables': {}}).encode()
             path.write_bytes(data)
             with self.assertRaisesRegex(ValueError, 'table set'):
-                loader.read_snapshot(path, {'sha256': hashlib.sha256(data).hexdigest()})
+                loader.read_fixture(path, {'sha256': hashlib.sha256(data).hexdigest()})
+
+    def test_checked_in_fixture_has_explicit_synthetic_provenance(self):
+        manifest = json.loads(loader.MANIFEST.read_text())
+        fixture = loader.read_fixture(loader.FIXTURE, manifest)
+        self.assertEqual(fixture['source'], 'test-fixture:xml-integration')
+        self.assertTrue(all(row['term'].startswith('Synthetic XML test term ')
+                            for row in fixture['tables']['meddra_terms']))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'fixture.json'
+            fixture['source'] = 'production'
+            data = json.dumps(fixture).encode()
+            path.write_bytes(data)
+            with self.assertRaisesRegex(ValueError, 'provenance'):
+                loader.read_fixture(path, dict(manifest, sha256=hashlib.sha256(data).hexdigest()))
 
     def test_json_values_cannot_end_the_sql_literal(self):
         sql = loader.insert_sql('meddra_terms', ['term'], [{'term': "a'); DELETE FROM users; --\\"}])

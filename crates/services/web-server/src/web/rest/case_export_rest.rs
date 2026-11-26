@@ -1,10 +1,9 @@
 use crate::runtime_settings;
-use crate::submission::export_message_header;
+use crate::submission::prepare_outbound_message_header;
 use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
 use axum::Json;
-use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::safety_report::SafetyReportIdentificationBmc;
 use lib_core::model::xml_export_history::{
 	XmlExportHistoryBmc, XmlExportHistoryCreate, XmlExportHistoryRecord,
@@ -49,35 +48,6 @@ pub struct XmlExportHistoryList {
 
 // -- Helpers
 
-fn required_env_identifier(name: &'static str) -> Result<String> {
-	let value = std::env::var(name).map_err(|_| Error::Configuration {
-		key: name,
-		message: format!("{name} must be configured"),
-	})?;
-	if value.trim().is_empty() {
-		return Err(Error::Configuration {
-			key: name,
-			message: format!("{name} must not be empty"),
-		});
-	}
-	Ok(value)
-}
-
-pub fn message_sender_identifier() -> Result<String> {
-	required_env_identifier("E2BR3_DEFAULT_MESSAGE_SENDER")
-}
-
-pub fn message_receiver_identifier(
-	authority: RegulatoryAuthority,
-) -> Result<String> {
-	let env_name = match authority {
-		RegulatoryAuthority::Fda => "E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA",
-		RegulatoryAuthority::Ich => "E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH",
-		RegulatoryAuthority::Mfds => "E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS",
-	};
-	required_env_identifier(env_name)
-}
-
 fn resolve_requested_export_authority(
 	requested_authority: Option<&str>,
 ) -> Result<RegulatoryAuthority> {
@@ -115,10 +85,8 @@ async fn generate_case_xml_for_authority(
 	include_notation: Option<bool>,
 	settings: &mut Option<runtime_settings::RuntimeSettings>,
 ) -> Result<String> {
-	let header = MessageHeaderBmc::get_by_case(ctx, mm, id)
-		.await
-		.map_err(Error::Model)?;
-	let outbound_message_header = export_message_header(&header)?;
+	let outbound_message_header =
+		prepare_outbound_message_header(ctx, mm, id, authority).await?;
 	let settings = match settings {
 		Some(settings) => settings,
 		None => settings.insert(runtime_settings::load(ctx, mm).await?),
@@ -128,10 +96,26 @@ async fn generate_case_xml_for_authority(
 		authority,
 		outbound_message_header,
 	};
-	// Downloads serialize stored data; regulatory validation gates submission only.
-	export_case_xml_with_options(ctx, mm, id, options)
+	let xml = export_case_xml_with_options(ctx, mm, id, options)
 		.await
-		.map_err(Error::Export)
+		.map_err(Error::Export)?;
+	let header_issues =
+		xml::validation::validate_export_message_header(xml.as_bytes(), authority)
+			.map_err(Error::Export)?;
+	if !header_issues.is_empty() {
+		return Err(Error::BadRequest {
+			message: format!(
+				"generated XML message header is invalid: {}",
+				header_issues
+					.iter()
+					.take(3)
+					.map(|issue| issue.message.as_str())
+					.collect::<Vec<_>>()
+					.join("; ")
+			),
+		});
+	}
+	Ok(xml)
 }
 
 // -- Handlers

@@ -6,7 +6,6 @@ DECLARE
     v_user_id UUID := '11111111-1111-1111-1111-111111111111';
     v_case_id UUID := 'd2000000-0000-0000-0000-000000000001';
     v_case_version_id UUID := 'd2000000-0000-0000-0000-000000000002';
-    v_message_header_id UUID := 'd2000000-0000-0000-0000-000000000003';
     v_safety_ident_id UUID := 'd2000000-0000-0000-0000-000000000005';
     v_sender_info_id UUID := 'd2000000-0000-0000-0000-000000000006';
     v_study_info_id UUID := 'd2000000-0000-0000-0000-000000000007';
@@ -84,20 +83,7 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO message_headers (
-        id, case_id, batch_number, batch_sender_identifier, batch_receiver_identifier,
-        batch_transmission_date, message_type, message_format_version,
-        message_format_release, message_number, message_sender_identifier,
-        message_receiver_identifier, message_date_format, message_date,
-        created_by, updated_by, created_at, updated_at
-    )
-    VALUES (
-        v_message_header_id, v_case_id, 'BATCH-20260410-01', 'QVIS-KR', 'CDER',
-        TIMESTAMP '2026-04-10 10:30:00', 'ichicsr', '2.1', '2.0', 'MSG-DEMO-RICH-2026-0001',
-        'QVISPV', 'CDER', '204', '20260410103000',
-        v_user_id, v_user_id, NOW(), NOW()
-    )
-    ON CONFLICT (id) DO NOTHING;
+
 
     INSERT INTO safety_report_identification (
         id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source,

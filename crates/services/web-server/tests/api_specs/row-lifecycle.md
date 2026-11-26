@@ -10,7 +10,7 @@
 | RE utility | `Case PUT → Editor shell GET`의 수신자 배열 1개 | 부분 제거·같은 배열 재저장·전체 clear·다시 clear |
 | Case·Presave | Case 자원 38개 + DELETE가 등록된 Presave 자원 13개 + graph 전용 자원 2개 | 삭제 status, 반복 삭제, 삭제/재저장/복원, 부모·자식, ID/count, graph replay, 소속, viewer, lock, 감사 사유, rollback |
 
-Case·Presave 범위의 등록 DELETE 51개와 관련 mutation 184개를 색인과 대조했다. Editor의 N은 message-header singleton, SD는 sender/receiver singleton이므로 반복행 owner가 없지만 호출·소속 계약을 별도로 확인했다. 위 owner와 자원은 같은 DB 행을 서로 다른 API로 다룰 수 있어 합계 85개를 고유 DB 자원 수로 해석하면 안 된다.
+Case·Presave 범위의 등록 DELETE 51개와 관련 mutation 184개를 색인과 대조했다. SD는 sender/receiver singleton이므로 반복행 owner가 없지만 호출·소속 계약을 별도로 확인했다. 위 owner와 자원은 같은 DB 행을 서로 다른 API로 다룰 수 있어 합계 85개를 고유 DB 자원 수로 해석하면 안 된다.
 
 행렬은 **1,063개 검사 축**이다. 이전 807셀에서 Editor 31자원과 RE utility 1자원의 모호한 결합 축 32행을 제거하고, 각 자원마다 책임 9개를 명시해 256셀이 늘었다. 분리한 책임은 Case archive/restore 중 Editor projection, 실제 Editor 부모행 delete/restore와 자식 보존, 같은 조직의 외부 Case·부모 ID 거절, viewer 거절, 외부 조직 거절, Case lock 거절, 성공·no-op 감사, 거절 요청의 상태·감사 원자성, 동시 쓰기 충돌이다. `covered`는 해당 축에 기존 직접 assertion이 있음, `added_not_run`은 기준 변경군의 직접 assertion, `partial`/`partial_added_not_run`은 일부만 검사, `gap`/`missing`은 직접 근거 없음, `source_only`는 구현만 확인, `not_applicable`은 해당 API 형태에 적용되지 않음을 뜻한다. 모든 행의 실행 상태는 `NOT_RUN`이다.
 
@@ -78,7 +78,7 @@ Legacy Case 38자원은 soft 27개·hard 10개·query-keyed notation 물리 clea
 
 frontend `b9c8f45718704b561b034db8f21d990c56f88133`의 저장 hook·mapper·endpoint와 기존 격리 검사를 정적으로 대조했다. 저장된 바깥 행 삭제는 DELETE, 그 외 기존 행은 PATCH, 신규 행은 POST다. 생성 응답의 ID를 받은 뒤 재조회가 실패하면 다음 저장은 기존 ID PATCH로 전환한다. 삭제 성공 뒤 form marker를 정리하고 복원은 `deleted:false` PATCH로 보낸다. 전용 POST restore client 함수는 없다.
 
-이 호출 선택·hook 검사는 HTTP/DB의 실제 저장 결과 증거로 계산하지 않는다. 프런트 저장 hook/mapper는 변경하지 않았다. 별도 Next validator proxy의 live HTTP 검사 4개와 integration 설정을 추가했으며 실행 조건은 [surfaces.md](surfaces.md)에 기록했다.
+이 호출 선택·hook 검사는 HTTP/DB의 실제 저장 결과 증거로 계산하지 않는다. 프런트 저장 hook/mapper는 변경하지 않았다.
 
 기준부터 유지하는 범위는 CI soft 자식 3종, Case legacy 자원 38종의 실제 등록 method별 lifecycle, Presave 부모6·자식9의 권한/감사 및 직접 soft 자식의 반복 삭제/복원이다. hard delete 분류도 확인했다: Case sender와 study는 `deleted` 열이 없는 물리 삭제이며 assessment/source-document와 함께 새 생성 시 새 ID를 받는다. SourceDocument에는 item GET이 등록되어 있지 않아 collection 조회를 근거로 삼는다. Singleton·scalar notation은 case_id만 target으로 받으므로 같은 조직의 다른 Case를 일괄 404로 기대하지 않는다.
 

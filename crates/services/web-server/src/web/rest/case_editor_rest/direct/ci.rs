@@ -379,17 +379,11 @@ pub(super) async fn apply_ci_rows_patch(
 	case_id: Uuid,
 	rows: &BTreeMap<String, Value>,
 ) -> Result<()> {
-	if rows.contains_key("messageHeader") {
-		return Err(Error::BadRequest {
-			message: "CI.messageHeader row patches are not supported".to_string(),
-		});
-	}
 	reject_unknown_row_keys(
 		"CI",
 		rows,
 		&[
 			"case",
-			"messageHeader",
 			"safetyReportIdentification",
 			"documentsHeldBySender",
 			"otherCaseIdentifiers",

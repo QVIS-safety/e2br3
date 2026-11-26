@@ -293,7 +293,23 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       	 WHERE u.id = c.workflow_assigned_user_id
 		       	 LIMIT 1
 		       ), 'ALL') AS wf_user,
-		       COALESCE(NULLIF(mh.message_receiver_identifier, ''), 'N/A') AS receiver,
+		       COALESCE(
+		        CASE c.fda_report_type
+		         WHEN '1' THEN 'CDER IND'
+		         WHEN '2' THEN 'CDER IND-exempt BA/BE'
+		         WHEN '3' THEN 'CBER IND'
+		         WHEN '4' THEN 'FDA Postmarket'
+		        END,
+		        CASE c.mfds_report_type
+		         WHEN '1' THEN 'MFDS CT'
+		         WHEN '2' THEN 'MFDS CU'
+		         WHEN '3' THEN 'MFDS KR'
+		         WHEN '4' THEN 'MFDS FR'
+		         WHEN '5' THEN 'MFDS CF'
+		         WHEN '6' THEN 'MFDS Device'
+		        END,
+		        'N/A'
+		       ) AS receiver,
 		       CASE WHEN c.raw_xml IS NULL THEN 'Manual' ELSE 'Import' END AS creation_type,
 		       (lower(c.status) IN ('reviewed', 'validated') OR
 		        (lower(c.status) = 'locked' AND
@@ -303,7 +319,6 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       c.status <> 'deleted' AS export_eligible
 		  FROM cases c
 		  LEFT JOIN safety_report_identification s ON s.case_id = c.id
-		  LEFT JOIN message_headers mh ON mh.case_id = c.id
 		 {where_clause}
 		 ORDER BY {order_clause}
 		"#

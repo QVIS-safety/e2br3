@@ -1,6 +1,6 @@
 # API 계약 명세와 테스트 커버리지
 
-현재 프로그램에 등록한 **백엔드 436개 + 프런트 자체 1개 = 437개 HTTP operation**의 명세다. 요청·응답 필드, 저장·삭제·복원, 권한·잠금·감사, 오류, 직접 검사 코드와 남은 공백을 연결한다. API 경로의 중복·누락과 테스트가 있다는 사실을 실제 실행 성공과 구분한다.
+백엔드 HTTP operation의 명세다. 프런트는 백엔드 API로 요청을 전달하며 별도 API Route Handler는 없다. 요청·응답 필드, 저장·삭제·복원, 권한·잠금·감사, 오류, 직접 검사 코드와 남은 공백을 연결한다. API 경로의 중복·누락과 테스트가 있다는 사실을 실제 실행 성공과 구분한다.
 
 **기준:** 2026-10-31, backend `develop`의 `2727d980` 이후 이 변경. frontend `b9c8f45718704b561b034db8f21d990c56f88133`. **실행: NOT_RUN.** 사용자 지시에 따라 테스트·빌드·DB·API·UI를 실행하지 않았다. status와 상태 변화는 구현 및 assertion에서 읽은 계약이며 PASS 결과가 아니다.
 
@@ -8,7 +8,7 @@
 
 | 자료 | 확인하는 내용 |
 |---|---|
-| [surfaces.md](surfaces.md) | 두 저장소의 API 경계, 프런트 validator proxy 1개, 프록시 중복 제외와 외부 AS2 경계 |
+| [surfaces.md](surfaces.md) | 두 저장소의 API 경계, 프런트 rewrite와 외부 AS2 경계 |
 | [api-contract-manifest.json](api-contract-manifest.json) | 백엔드 모든 method/path → route·handler 또는 macro → 요청 extractor·반환형 → 중첩 Rust 타입·필드·serde 속성·소스 위치/해시 |
 | 아래 API군별 문서 | 사람이 읽는 입력·응답·오류·저장·삭제·권한·감사 의미; 동적 JSON의 의미는 타입 목록만으로 추론하지 않음 |
 | [coverage.tsv](coverage.tsv) | 백엔드 operation별 실제 HTTP assertion 근거와 검사 공백 |
@@ -19,20 +19,18 @@ JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, gener
 
 ## 전체 색인
 
-| API군 | 명세 | 등록 operation | 동작 assertion | 권한만 | 등록만 | 근거 없음 |
-|---|---|---:|---:|---:|---:|---:|
-| Case CRUD·조회·workflow·하위 자원 | [cases.md](cases.md) | 231 | 231 | 0 | 0 | 0 |
-| Editor 페이지·행·필드·삭제/복원 | [editor.md](editor.md) | 55 | 55 | 0 | 0 | 0 |
-| Presave 부모·자식·graph | [presave.md](presave.md) | 73 | 73 | 0 | 0 | 0 |
-| XML import·validation·history | [import.md](import.md) | 4 | 4 | 0 | 0 | 0 |
-| XML/CIOMS export·history | [export.md](export.md) | 6 | 6 | 0 | 0 | 0 |
-| 제출·receiver·header·ACK·reconcile | [submission.md](submission.md) | 18 | 18 | 0 | 0 | 0 |
-| 사전 검색·import·release | [terminology.md](terminology.md) | 15 | 15 | 0 | 0 | 0 |
-| 사용자·조직·역할·설정·감사·인증·health | [administration.md](administration.md) | 34 | 34 | 0 | 0 | 0 |
-| **백엔드 합계** | [coverage.tsv](coverage.tsv) | **436** | **436** | **0** | **0** | **0** |
-| 프런트 자체 validator proxy | [surfaces.md](surfaces.md) | 1 | 1 | 0 | 0 | 0 |
+| API군 | 명세 |
+|---|---|
+| Case CRUD·조회·workflow·하위 자원 | [cases.md](cases.md) |
+| Editor 페이지·행·필드·삭제/복원 | [editor.md](editor.md) |
+| Presave 부모·자식·graph | [presave.md](presave.md) |
+| XML import·validation·history | [import.md](import.md) |
+| XML/CIOMS export·history | [export.md](export.md) |
+| 제출·receiver·header·ACK·reconcile | [submission.md](submission.md) |
+| 사전 검색·import·release | [terminology.md](terminology.md) |
+| 사용자·조직·역할·설정·감사·인증·health | [administration.md](administration.md) |
 
-[authorization.md](authorization.md)는 인증 cookie, permit/RLS, CSRF와 공통 오류의 횡단 계약이다. 별도 operation으로 중복 계산하지 않는다. 백엔드 분모는 보호 `/api` 429개, `/auth/v1` 3개, `/internal` 3개, `/health` 1개다. 보호 경로는 [snapshot](../authz/protected_route_inventory.snapshot)과 일치한다. 자동 HEAD/OPTIONS·정적 파일·fallback·미등록 legacy URL은 명시 API 분모에서 제외한다.
+[authorization.md](authorization.md)는 인증 cookie, permit/RLS, CSRF와 공통 오류의 횡단 계약이다. 별도 operation으로 중복 계산하지 않는다. 현재 등록 목록은 [coverage.tsv](coverage.tsv)와 [snapshot](../authz/protected_route_inventory.snapshot)을 대조한다. 목록의 일치 여부는 manifest 검사 결과로 확인해야 한다. 자동 HEAD/OPTIONS·정적 파일·fallback·미등록 legacy URL은 명시 API 분모에서 제외한다.
 
 ## 증거 판정
 
@@ -43,7 +41,7 @@ JSON manifest는 OpenAPI나 추정 schema가 아니다. `Option`, wrapper, gener
 | `registration_only` | 활성 route inventory가 method/path 등록 확인 | HTTP 동작·저장·권한 검사 |
 | `uncovered` | 구현은 있으나 위 근거 없음 | 구현 결함이라는 판정 |
 
-**436은 전체 계약 검증을 끝낸 API 수가 아니다.** 하나의 동작을 검사하는 경로도 포함한다. 각 operation의 `gaps`, 명세, 1,063개 lifecycle 행렬을 함께 확인한다. 같은 BMC나 공통 guard를 쓴다는 이유로 호출하지 않은 HTTP method에 검사 근거를 옮기지 않았다. Presave study 자식 POST 3개도 201 응답·새 GET/list·소속·권한 거절·저장 및 감사 불변을 직접 검사한다.
+**등록 개수는 전체 계약 검증을 끝낸 API 수가 아니다.** 하나의 동작을 검사하는 경로도 포함한다. 각 operation의 `gaps`, 명세, 1,063개 lifecycle 행렬을 함께 확인한다. 같은 BMC나 공통 guard를 쓴다는 이유로 호출하지 않은 HTTP method에 검사 근거를 옮기지 않았다. Presave study 자식 POST 3개도 201 응답·새 GET/list·소속·권한 거절·저장 및 감사 불변을 직접 검사한다.
 
 `coverage.tsv`의 `method/path`는 router 원형, `spec`은 문서와 anchor, `evidence`는 `web-server` 기준 `tests/파일.rs::함수`(복수는 `;`), `gaps`는 직접 검사하지 않는 범위다. `evidence`는 근거 색인이며 모든 테스트의 역색인은 아니다. ignored/컴파일 제외·성공 조기 반환을 직접 행동 근거로 올리지 않는다.
 

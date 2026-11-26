@@ -6,6 +6,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SYSTEM_ADMIN;
+use lib_core::model::store::set_full_context_dbx;
 use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
@@ -119,7 +120,7 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 	)
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
-	let app = web_server::app(mm).expect("web server configuration");
+	let app = web_server::app(mm.clone()).expect("web server configuration");
 
 	let suffix = Uuid::new_v4();
 	let create_body = json!({
@@ -136,14 +137,67 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 		.header("content-type", "application/json")
 		.body(Body::from(create_body.to_string()))?;
 	let create_res = app.clone().oneshot(create_req).await?;
-	assert_eq!(create_res.status(), StatusCode::CREATED);
-
+	let create_status = create_res.status();
 	let body = to_bytes(create_res.into_body(), usize::MAX).await?;
 	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	assert_eq!(create_status, StatusCode::CREATED, "{payload:?}");
 	let created_id = payload["data"]["id"]
 		.as_str()
 		.ok_or("expected created organization id")?;
 	assert_eq!(payload["data"]["type"].as_str(), Some("cro"));
+	let created_id = Uuid::parse_str(created_id)?;
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, system_admin.id, seed.org_id, ROLE_SYSTEM_ADMIN)
+		.await?;
+	let receivers = dbx
+		.fetch_all(
+			sqlx::query_as::<_, (String, String)>(
+				"SELECT organization_name, receiver_type
+				 FROM receiver_presaves
+				 WHERE organization_id = $1 AND deleted = false
+				 ORDER BY organization_name",
+			)
+			.bind(created_id),
+		)
+		.await?;
+	assert_eq!(
+		receivers,
+		vec![
+			("FDA".to_string(), "Regulatory Authority".to_string()),
+			("MFDS".to_string(), "Regulatory Authority".to_string()),
+		]
+	);
+	let route_counts = dbx
+		.fetch_one(
+			sqlx::query_as::<_, (i64, i64, i64, i64)>(
+				"SELECT
+					COUNT(*),
+					COUNT(*) FILTER (WHERE authority = 'fda'),
+					COUNT(*) FILTER (WHERE authority = 'mfds'),
+					COUNT(*) FILTER (WHERE
+						(authority, condition_value_code, receiver_label, batch_receiver_identifier, message_receiver_identifier) IN (
+							('fda', '1', 'FDA(CDER IND)', 'ZZFDA_PREMKT', 'CDER_IND'),
+							('fda', '2', 'FDA(CDER IND-exempt BA/BE)', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE'),
+							('fda', '3', 'FDA(CBER IND)', 'ZZFDA_PREMKT', 'CBER_IND'),
+							('fda', '4', 'FDA(Postmarket)', 'ZZFDA', 'CDER'),
+							('mfds', '1', 'MFDS(CT)', 'MFDS-O-CT', 'MFDS-O-CT'),
+							('mfds', '2', 'MFDS(CU)', 'MFDS-O-CU', 'MFDS-O-CU'),
+							('mfds', '3', 'MFDS(KR)', 'MFDS-O-KR', 'MFDS-O-KR'),
+							('mfds', '4', 'MFDS(FR)', 'MFDS-O-FR', 'MFDS-O-FR'),
+							('mfds', '5', 'MFDS(CF)', 'MFDS-O-CF', 'MFDS-O-CF')
+						)
+					)
+				 FROM receiver_presave_routes routes
+				 JOIN receiver_presaves receivers ON receivers.id = routes.receiver_presave_id
+				 WHERE receivers.organization_id = $1",
+			)
+			.bind(created_id),
+		)
+		.await?;
+	assert_eq!(route_counts, (9, 4, 5, 9));
+	dbx.commit_txn().await?;
 
 	let get_req = Request::builder()
 		.method("GET")
@@ -154,7 +208,7 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 	assert_eq!(get_res.status(), StatusCode::OK);
 	let body = to_bytes(get_res.into_body(), usize::MAX).await?;
 	let payload: serde_json::Value = serde_json::from_slice(&body)?;
-	assert_eq!(payload["data"]["id"].as_str(), Some(created_id));
+	assert_eq!(payload["data"]["id"], created_id.to_string());
 
 	Ok(())
 }

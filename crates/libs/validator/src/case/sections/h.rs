@@ -260,10 +260,7 @@ pub(crate) fn collect(
 ) {
 	collect_ich_issues(validation_ctx, issues);
 	if authority == RegulatoryAuthority::Mfds {
-		let receiver = validation_ctx
-			.message_header
-			.as_ref()
-			.map(|header| header.message_receiver_identifier.as_str());
+		let receiver = validation_ctx.mfds_receiver();
 		if is_mfds_domestic_receiver(receiver)
 			|| is_mfds_clinical_trial_receiver(receiver)
 		{

@@ -55,9 +55,9 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 			.bind(json!({ "level": 1, "success": true, "code": "ACK1" }))
 			.bind(2_i16)
 			.bind(true)
-			.bind("ACK2")
+			.bind("ACCEPTED")
 			.bind(Option::<String>::None)
-			.bind(json!({ "level": 2, "success": true, "code": "ACK2" })),
+			.bind(json!({ "level": 2, "success": true, "code": "ACCEPTED" })),
 		)
 		.await?;
 	mm.dbx()
@@ -73,7 +73,7 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 			.bind("submission_created")
 			.bind(json!({ "status": "ack1_received" }))
 			.bind("ack_recorded")
-			.bind(json!({ "ack_level": 2, "ack_code": "ACK2" })),
+			.bind(json!({ "ack_level": 2, "ack_code": "ACCEPTED" })),
 		)
 		.await?;
 	mm.dbx().commit_txn().await?;
@@ -93,7 +93,7 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 		.ok_or("missing submission history row for created submission")?;
 	assert_eq!(item["status"].as_str(), Some("ack2_received"));
 	assert_eq!(item["batchResult"].as_str(), Some("ack2_received"));
-	assert_eq!(item["messageResult"].as_str(), Some("ACK2"));
+	assert_eq!(item["messageResult"].as_str(), Some("ACK2 (ACCEPTED)"));
 	assert_eq!(item["latestEventType"].as_str(), Some("ack_recorded"));
 	assert!(
 		item["latestAckReceivedAt"]

@@ -9,7 +9,7 @@ from pathlib import Path
 import editor_dictionary
 
 
-ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH", "N")
+ACTIVE_PAGES = ("CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH")
 LEGACY_READ_PAGES = ("CI", "RP", "SD", "SI", "DM", "NR", "AE", "LB", "DG", "DH")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = (

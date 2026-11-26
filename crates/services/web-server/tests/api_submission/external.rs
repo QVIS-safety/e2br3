@@ -16,8 +16,8 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	}
 	std::env::set_var("AS2_SUBMITTER_URL", submitter_url);
 	std::env::set_var("AS2_SUBMITTER_TOKEN", inbound_token);
+	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "30");
 	std::env::set_var("AS2_CALLBACK_TOKEN", callback_token);
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -37,7 +37,6 @@ async fn test_real_java_submitter_integration_mfds() -> Result<()> {
 	let case_id =
 		create_case_with_profile(&app, &cookie, seed.org_id, "mfds").await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,

@@ -7,7 +7,6 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 	let examples_dir = resolve_from_workspace(std::path::PathBuf::from(
 		std::env::var("E2BR3_EXAMPLES_DIR")?,
 	));
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -96,7 +95,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 	// DG sentinels for assertions.
 	let sentinel_indication = format!("RTDG15-{}", Uuid::new_v4().simple());
 	let sentinel_substance = format!("RTDG21-{}", Uuid::new_v4().simple());
-	let sentinel_batch = format!("RTDG32-{}", Uuid::new_v4().simple());
+	let sentinel_batch = format!("RT-{}", Uuid::new_v4().simple());
 
 	// Upsert active substance row #1.
 	let (status, body) = request_json(
@@ -282,26 +281,22 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 			"expected DG export XML to contain `{expected}`"
 		);
 	}
-	assert!(
-		xml.contains(drug_id.as_str()),
-		"expected DG export XML to contain current drug id root"
+	let imported_drugs =
+		xml::import_sections::g_drug::parse_g_drugs(xml.as_bytes())?;
+	let source_drugs =
+		xml::import_sections::g_drug::parse_g_drugs(original_xml.as_bytes())?;
+	assert!(source_drugs.iter().all(|drug| drug.xml_id.is_some()));
+	assert_eq!(
+		imported_drugs
+			.iter()
+			.map(|drug| &drug.xml_id)
+			.collect::<Vec<_>>(),
+		source_drugs
+			.iter()
+			.map(|drug| &drug.xml_id)
+			.collect::<Vec<_>>(),
+		"editing drug fields must preserve imported XML row identities"
 	);
-	assert!(
-		!xml.contains("68d6f5ce-3b3b-45c7-92dd-69e06730c3a9"),
-		"expected DG export XML to exclude stale template product root ids"
-	);
-	for stale in [
-		"68d6f5ce-3b3b-45c7-92dd-69e06730c3a9",
-		"59d6f5ce-3b3b-45c7-92dd-69e06730c2b7",
-		"40d6f5ce-3b3b-45c7-92dd-69e06730c2b6",
-		"154eb889-958b-45f2-a02f-42d4d6f4657f",
-		"154eb889-958b-45f2-a02f-42d4d6f4555f",
-	] {
-		assert!(
-			!xml.contains(stale),
-			"expected DG export XML to exclude stale template root id `{stale}`"
-		);
-	}
 
 	Ok(())
 }

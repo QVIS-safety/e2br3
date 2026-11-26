@@ -41,9 +41,6 @@ fn schema_alignment_covers_auditor_access_and_reaction_language() {
 #[serial]
 #[tokio::test]
 async fn section_presave_tables_exist() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	for table in SECTION_PRESAVE_TABLES {
@@ -65,9 +62,6 @@ async fn section_presave_tables_exist() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let columns: Vec<String> = sqlx::query_scalar(
@@ -94,11 +88,8 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 
 #[serial]
 #[tokio::test]
-async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
+async fn receiver_presave_routes_are_the_only_submission_routing_source(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let submission_options_exists: bool = sqlx::query_scalar(
@@ -107,8 +98,8 @@ async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 	.fetch_one(mm.dbx().db())
 	.await?;
 	assert!(
-		submission_options_exists,
-		"submission_receiver_options must own submission routing options"
+		!submission_options_exists,
+		"submission_receiver_options must not duplicate receiver presave routing"
 	);
 
 	let receiver_presave_routes_exists: bool = sqlx::query_scalar(
@@ -120,18 +111,11 @@ async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 		receiver_presave_routes_exists,
 		"receiver_presave_routes must retain receiver-specific routing configuration"
 	);
-	for (table, column, parent) in [
-		(
-			"submission_receiver_options",
-			"organization_id",
-			"organizations",
-		),
-		(
-			"receiver_presave_routes",
-			"receiver_presave_id",
-			"receiver_presaves",
-		),
-	] {
+	for (table, column, parent) in [(
+		"receiver_presave_routes",
+		"receiver_presave_id",
+		"receiver_presaves",
+	)] {
 		let owns_route: bool = sqlx::query_scalar(
 			"SELECT EXISTS (
 				SELECT 1 FROM pg_constraint c
@@ -155,9 +139,6 @@ async fn submission_receiver_options_and_presave_routes_have_distinct_owners(
 #[serial]
 #[tokio::test]
 async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	let rls_rows: Vec<(String, bool, bool)> = sqlx::query_as(
@@ -391,9 +372,6 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 #[tokio::test]
 async fn section_presave_composite_fks_preserve_organization_on_parent_delete(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 
 	// SET NULL must clear only the link, never the tenant component of the FK.

@@ -100,7 +100,7 @@ async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 	configure_mock_esg_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -109,7 +109,6 @@ async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (submit_status, submit_body) = post_json(
 		&app,
@@ -225,7 +224,7 @@ async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 	configure_mock_esg_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -234,7 +233,6 @@ async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (submit_status, submit_body) = post_json(
 		&app,
@@ -288,8 +286,7 @@ async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 		.await?;
 	mm.dbx().commit_txn().await?;
 
-	std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:9");
-	std::env::set_var("AS2_SUBMITTER_TOKEN", "test-token");
+	configure_as2_test_endpoint("http://127.0.0.1:9");
 	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
 	sleep(Duration::from_millis(100)).await;
 	let req = Request::builder()

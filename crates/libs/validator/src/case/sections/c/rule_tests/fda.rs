@@ -139,10 +139,7 @@ fn verify_fda(code: &str) {
 			let mut non_expedited_issues = Vec::new();
 			fda_local_criteria_report_type(
 				&non_expedited,
-				Some(&fixture::message_header(
-					crate::FDA_BATCH_RECEIVER_POSTMARKET,
-					crate::FDA_MSG_RECEIVER_CDER,
-				)),
+				Some(crate::FDA_BATCH_RECEIVER_POSTMARKET),
 				&mut non_expedited_issues,
 			);
 			assert!(non_expedited_issues.iter().any(|issue| issue.code == code));
@@ -308,13 +305,28 @@ fn verify_fda(code: &str) {
 				crate::FDA_MSG_RECEIVER_CDER,
 			);
 			let mut bi = Vec::new();
-			fda_initial_report_rules(&b, Some(&h), false, &mut bi);
+			fda_initial_report_rules(
+				&b,
+				h.batch_receiver_identifier.as_deref(),
+				false,
+				&mut bi,
+			);
 			let mut follow_up = Vec::new();
-			fda_initial_report_rules(&b, Some(&h), true, &mut follow_up);
+			fda_initial_report_rules(
+				&b,
+				h.batch_receiver_identifier.as_deref(),
+				true,
+				&mut follow_up,
+			);
 			assert!(!follow_up.iter().any(|issue| issue.code == code),
                 "{code} applied initial-only constraint to a follow-up: {follow_up:?}");
 			let mut gi = Vec::new();
-			fda_initial_report_rules(&g, Some(&h), false, &mut gi);
+			fda_initial_report_rules(
+				&g,
+				h.batch_receiver_identifier.as_deref(),
+				false,
+				&mut gi,
+			);
 			(
 				if code == "FDA.R0011" {
 					"safetyReportIdentification.fulfilExpeditedCriteria"
@@ -371,7 +383,7 @@ fn verify_fda(code: &str) {
 			let mut alternate_issues = Vec::new();
 			fda_local_criteria_report_type(
 				&alternate,
-				Some(&h),
+				h.batch_receiver_identifier.as_deref(),
 				&mut alternate_issues,
 			);
 			assert!(!alternate_issues.iter().any(|issue| issue.code == code));
@@ -380,7 +392,7 @@ fn verify_fda(code: &str) {
 			let mut unrelated_issues = Vec::new();
 			fda_local_criteria_report_type(
 				&b,
-				Some(&unrelated),
+				unrelated.batch_receiver_identifier.as_deref(),
 				&mut unrelated_issues,
 			);
 			assert!(!unrelated_issues.iter().any(|issue| issue.code == code));
@@ -400,7 +412,7 @@ fn verify_fda(code: &str) {
 			let mut released_issues = Vec::new();
 			fda_local_criteria_report_type(
 				&released,
-				Some(&h),
+				h.batch_receiver_identifier.as_deref(),
 				&mut released_issues,
 			);
 			assert!(!released_issues.iter().any(|issue| issue.code == code));
@@ -414,14 +426,22 @@ fn verify_fda(code: &str) {
 			let mut second_release_issues = Vec::new();
 			fda_local_criteria_report_type(
 				&second_release,
-				Some(&h),
+				h.batch_receiver_identifier.as_deref(),
 				&mut second_release_issues,
 			);
 			assert!(!second_release_issues.iter().any(|issue| issue.code == code));
 			let mut bi = Vec::new();
-			fda_local_criteria_report_type(&b, Some(&h), &mut bi);
+			fda_local_criteria_report_type(
+				&b,
+				h.batch_receiver_identifier.as_deref(),
+				&mut bi,
+			);
 			let mut gi = Vec::new();
-			fda_local_criteria_report_type(&g, Some(&h), &mut gi);
+			fda_local_criteria_report_type(
+				&g,
+				h.batch_receiver_identifier.as_deref(),
+				&mut gi,
+			);
 			("safetyReportIdentification.localCriteriaReportType", bi, gi)
 		}
 		_ => verify_fda_route(code),

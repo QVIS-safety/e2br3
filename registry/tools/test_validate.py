@@ -2015,6 +2015,18 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertIn("local_only must be a boolean", "\n".join(result.errors))
 
+    def test_local_only_rows_require_a_local_code_segment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.local_only_row("C.3.receiverName"))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn(
+            "local_only rows must use a local code segment",
+            "\n".join(result.errors),
+        )
+
     def test_strict_dictionary_flags_synthetic_codes(self):
         row = self.sender_row(code="C.3@localOnlyControl")
         with tempfile.TemporaryDirectory() as tmp:

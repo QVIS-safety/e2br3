@@ -103,29 +103,29 @@
     "local-value": [
       ["C.local.reportYear","Case","report_year"],
       ["FDA.C.1.local.fdaReportType","Case","fda_report_type"],
-      ["C.1.KR.mfdsReportType","Case","mfds_report_type"],
-      ["E.i.KR.device.aeClassification","Reaction","mfds_device_ae_classification"],
-      ["E.i.KR.device.aeOutcome","Reaction","mfds_device_ae_outcome"],
-      ["E.i.KR.device.causeMedicalDevice","Reaction","mfds_device_cause_medical_device"],
-      ["E.i.KR.device.causeProcedureIssue","Reaction","mfds_device_cause_procedure_issue"],
-      ["E.i.KR.device.causePatientCondition","Reaction","mfds_device_cause_patient_condition"],
-      ["E.i.KR.device.causeUnableToAssess","Reaction","mfds_device_cause_unable_to_assess"],
-      ["E.i.KR.device.causeOther","Reaction","mfds_device_cause_other"],
-      ["E.i.KR.device.actionReason","Reaction","mfds_device_action_reason"],
-      ["E.i.KR.device.actionRecall","Reaction","mfds_device_action_recall"],
-      ["E.i.KR.device.actionRepair","Reaction","mfds_device_action_repair"],
-      ["E.i.KR.device.actionInspection","Reaction","mfds_device_action_inspection"],
-      ["E.i.KR.device.actionReplacement","Reaction","mfds_device_action_replacement"],
-      ["E.i.KR.device.actionImprovement","Reaction","mfds_device_action_improvement"],
-      ["E.i.KR.device.actionMonitoring","Reaction","mfds_device_action_monitoring"],
-      ["E.i.KR.device.actionNotification","Reaction","mfds_device_action_notification"],
-      ["E.i.KR.device.actionLabelChange","Reaction","mfds_device_action_label_change"],
-      ["E.i.KR.device.actionOther","Reaction","mfds_device_action_other"],
+      ["C.1.KR.local.mfdsReportType","Case","mfds_report_type"],
+      ["E.i.KR.local.device.aeClassification","Reaction","mfds_device_ae_classification"],
+      ["E.i.KR.local.device.aeOutcome","Reaction","mfds_device_ae_outcome"],
+      ["E.i.KR.local.device.causeMedicalDevice","Reaction","mfds_device_cause_medical_device"],
+      ["E.i.KR.local.device.causeProcedureIssue","Reaction","mfds_device_cause_procedure_issue"],
+      ["E.i.KR.local.device.causePatientCondition","Reaction","mfds_device_cause_patient_condition"],
+      ["E.i.KR.local.device.causeUnableToAssess","Reaction","mfds_device_cause_unable_to_assess"],
+      ["E.i.KR.local.device.causeOther","Reaction","mfds_device_cause_other"],
+      ["E.i.KR.local.device.actionReason","Reaction","mfds_device_action_reason"],
+      ["E.i.KR.local.device.actionRecall","Reaction","mfds_device_action_recall"],
+      ["E.i.KR.local.device.actionRepair","Reaction","mfds_device_action_repair"],
+      ["E.i.KR.local.device.actionInspection","Reaction","mfds_device_action_inspection"],
+      ["E.i.KR.local.device.actionReplacement","Reaction","mfds_device_action_replacement"],
+      ["E.i.KR.local.device.actionImprovement","Reaction","mfds_device_action_improvement"],
+      ["E.i.KR.local.device.actionMonitoring","Reaction","mfds_device_action_monitoring"],
+      ["E.i.KR.local.device.actionNotification","Reaction","mfds_device_action_notification"],
+      ["E.i.KR.local.device.actionLabelChange","Reaction","mfds_device_action_label_change"],
+      ["E.i.KR.local.device.actionOther","Reaction","mfds_device_action_other"],
       ["G.k.local.batchLotNumber","DrugInformation","batch_lot_number"],
       ["G.k.local.dosage.continuing","DosageInformation","continuing"],
       ["G.k.local.expectedness","DrugReactionAssessment","expectedness"],
       ["G.k.local.dechallengeResult","DrugReactionAssessment","dechallenge_result"],
-      ["H.additionalInformation","NarrativeInformation","additional_information"]
+      ["H.local.additionalInformation","NarrativeInformation","additional_information"]
     ],
     "local-document": [
       ["C.local.sourceDocumentName","SourceDocument","source_document_name"],
@@ -138,7 +138,7 @@
       ["C.local.reviewReportedDate",null,null]
     ],
     "derived": [
-      ["E.i.serious","Reaction","serious"]
+      ["E.i.local.serious","Reaction","serious"]
     ],
     "local-legacy": [
       ["G.k.local.reactionRecurredLegacy","DrugReactionAssessment","reaction_recurred"]

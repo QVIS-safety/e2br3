@@ -30,7 +30,7 @@ REGISTRY_ROOT = Path(__file__).resolve().parents[1] / 'registry'
 CI_TERMINOLOGY_INPUTS = {
     'scripts/load-ci-terminology.py',
     'scripts/db/ci-terminology-manifest.json',
-    'scripts/db/export-ci-terminology.sql',
+    'scripts/db/ci-terminology-fixture.json',
     'scripts/tests/test_ci_terminology.py',
 }
 
@@ -40,7 +40,7 @@ def xml_assets_required(selections: dict) -> bool:
         not selections['web-server'] or bool({'api_import', 'api_submission', 'xml'} & set(selections['web-server']))))
 
 
-def terminology_snapshot_required(selections: dict) -> bool:
+def terminology_fixture_required(selections: dict) -> bool:
     return 'web-server' in selections and (
         not selections['web-server'] or 'xml' in selections['web-server'])
 
@@ -80,7 +80,7 @@ def xml_assets_for_cargo_args(args: list[str]) -> bool:
     return True if selections is None else xml_assets_required(selections)
 
 
-def terminology_snapshot_for_cargo_args(args: list[str]) -> bool:
+def terminology_fixture_for_cargo_args(args: list[str]) -> bool:
     parsed = _cargo_arguments(args)
     if parsed.no_run:
         return False
@@ -319,13 +319,13 @@ def run_commands(commands: list[list[str]]) -> int:
 def test_matrix(selections: dict, workspace: dict, editor_filters: list[str]) -> dict:
     jobs = []
 
-    def add(name, selected, filters, commands=None, terminology_snapshot=None):
+    def add(name, selected, filters, commands=None, terminology_fixture=None):
         jobs.append({
             'name': name, 'selections': selected, 'editor_filters': filters,
             'commands': commands if commands is not None else commands_for(selected, workspace, editor_filters=filters),
             'xml_assets': xml_assets_required(selected),
-            'terminology_snapshot': (terminology_snapshot_required(selected)
-                                     if terminology_snapshot is None else terminology_snapshot),
+            'terminology_fixture': (terminology_fixture_required(selected)
+                                     if terminology_fixture is None else terminology_fixture),
             'backend_contracts': 'web-server' in selected and bool(CONTRACT_TARGETS.intersection(selected['web-server'])),
         })
 
@@ -343,7 +343,7 @@ def test_matrix(selections: dict, workspace: dict, editor_filters: list[str]) ->
             libtest = ['--', '--test-threads=1', '--color', 'never']
             add('web-server-unit-doc', {'web-server': []}, [],
                 [args + ['--lib', '--bins', '--examples'] + libtest, args + ['--doc'] + libtest],
-                terminology_snapshot=False)
+                terminology_fixture=False)
             targets = sorted(workspace['web-server']['targets'])
         for target in targets:
             filters = editor_filters if target == 'api_editor' else []
@@ -366,15 +366,15 @@ def main():
     assets_parser = subparsers.add_parser('xml-assets', help='preview asset requirements for isolated-runner Cargo arguments')
     assets_parser.add_argument('cargo_args', nargs=argparse.REMAINDER)
     terminology_parser = subparsers.add_parser(
-        'terminology-snapshot',
-        help='preview terminology snapshot requirements for isolated-runner Cargo arguments')
+        'terminology-fixture',
+        help='preview terminology fixture requirements for isolated-runner Cargo arguments')
     terminology_parser.add_argument('cargo_args', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.command == 'xml-assets':
         print(json.dumps(xml_assets_for_cargo_args(args.cargo_args)))
         return
-    if args.command == 'terminology-snapshot':
-        print(json.dumps(terminology_snapshot_for_cargo_args(args.cargo_args)))
+    if args.command == 'terminology-fixture':
+        print(json.dumps(terminology_fixture_for_cargo_args(args.cargo_args)))
         return
     root = Path.cwd()
     if args.command == 'run' and args.kind == 'clippy':

@@ -185,7 +185,7 @@ OFFICIAL = {
     },
     "narrative": {
         ("NarrativePresave", "case_narrative"): "H.1",
-        ("NarrativePresave", "additional_information"): "H.additionalInformation",
+        ("NarrativePresave", "additional_information"): "H.local.additionalInformation",
     },
 }
 

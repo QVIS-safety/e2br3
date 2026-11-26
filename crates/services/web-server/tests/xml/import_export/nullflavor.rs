@@ -5,7 +5,6 @@ use super::support::*;
 async fn study_numbers_and_null_flavors_survive_cross_organization_export_import(
 ) -> Result<()> {
 	init_test_env().await?;
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
 	let product =
@@ -136,7 +135,6 @@ async fn study_numbers_and_null_flavors_survive_cross_organization_export_import
 #[tokio::test]
 async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
 	init_test_env().await?;
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -185,7 +183,6 @@ async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
 #[tokio::test]
 async fn test_import_e_nullflavor_then_readback_reactions() -> Result<()> {
 	init_test_env().await?;
-	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;

@@ -18,7 +18,6 @@ use lib_core::model::case::{
 };
 use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
-use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::patch::{deserialize_patch_value, PatchValue};
 use lib_core::model::presave::{ReceiverPresave, ReceiverPresaveBmc};
 use lib_core::model::reaction::{Reaction, ReactionBmc};
@@ -46,9 +45,8 @@ use serde_json::{json, Map, Value};
 use sqlx::{types::time::OffsetDateTime, FromRow};
 use uuid::Uuid;
 
-const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
-	"system validation: validator mark-validated endpoint";
 const FDA_REPORT_TYPE_VALUES: &[&str] = &["1", "2", "3", "4"];
+const MFDS_REPORT_TYPE_VALUES: &[&str] = &["1", "2", "3", "4", "5", "6"];
 const REVIEW_RECEIVER_MAX_LEN: usize = 128;
 const REVIEW_RECEIVER_ROW_FIELDS: &[&str] = &[
 	"receiver",
@@ -78,6 +76,7 @@ pub fn parse_authority_or_bad_request(value: &str) -> Result<RegulatoryAuthority
 
 pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> {
 	validate_fda_report_type(data.fda_report_type.as_deref())?;
+	validate_mfds_report_type(data.mfds_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
 		if !is_valid_case_status(status) {
@@ -99,6 +98,7 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 
 fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
 	validate_fda_report_type(data.fda_report_type.as_deref())?;
+	validate_mfds_report_type(data.mfds_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
 		if !is_valid_case_status(status) {
@@ -120,6 +120,18 @@ fn validate_fda_report_type(value: Option<&str>) -> Result<()> {
 	}
 	Err(Error::BadRequest {
 		message: "fda_report_type must be one of: 1, 2, 3, 4".to_string(),
+	})
+}
+
+fn validate_mfds_report_type(value: Option<&str>) -> Result<()> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(());
+	};
+	if MFDS_REPORT_TYPE_VALUES.contains(&value) {
+		return Ok(());
+	}
+	Err(Error::BadRequest {
+		message: "mfds_report_type must be one of: 1, 2, 3, 4, 5, 6".to_string(),
 	})
 }
 
@@ -1072,8 +1084,6 @@ async fn create_follow_up_case_in_txn(
 	Json<DataRestResult<CaseFollowUpCreateResult>>,
 )> {
 	let source_case = CaseBmc::get(ctx, mm, source_case_id).await?;
-	let source_header =
-		MessageHeaderBmc::get_by_case(ctx, mm, source_case_id).await?;
 	let source_report =
 		SafetyReportIdentificationBmc::get_by_case(ctx, mm, source_case_id)
 			.await
@@ -1113,21 +1123,7 @@ async fn create_follow_up_case_in_txn(
 	let case_id = CaseBmc::create(ctx, mm, case_create).await?;
 	let transmission_date =
 		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
-	MessageHeaderBmc::create(
-		ctx,
-		mm,
-		MessageHeaderForCreate {
-			case_id,
-			batch_sender_identifier: source_header.batch_sender_identifier,
-			batch_receiver_identifier: source_header.batch_receiver_identifier,
-			batch_transmission_date: Some(OffsetDateTime::now_utc()),
-			message_number: format!("MSG-{case_id}"),
-			message_sender_identifier: source_header.message_sender_identifier,
-			message_receiver_identifier: source_header.message_receiver_identifier,
-			message_date: transmission_date.clone(),
-		},
-	)
-	.await?;
+
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,
@@ -1754,90 +1750,6 @@ pub async fn restore_case(
 				)
 				.await?;
 				CaseValidationSummaryBmc::mark_stale_for_case(ctx, mm, id).await?;
-				let entity = CaseBmc::get(ctx, mm, id).await?;
-				let entity = case_to_read_result(ctx, mm, entity).await?;
-				Ok((
-					axum::http::StatusCode::OK,
-					Json(DataRestResult { data: entity }),
-				))
-			})
-		},
-	)
-	.await
-}
-
-/// POST /api/cases/{id}/validator/mark-validated
-pub async fn mark_case_validated_by_validator(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	snapshot: lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW,
-	Path(id): Path<Uuid>,
-	headers: axum::http::HeaderMap,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
-	let ctx = ctx_w.0;
-	let required_token = std::env::var("E2BR3_VALIDATOR_TOKEN").map_err(|_| {
-		Error::Configuration {
-			key: "E2BR3_VALIDATOR_TOKEN",
-			message: "validator token is not configured".to_string(),
-		}
-	})?;
-	if required_token.trim().is_empty() {
-		return Err(Error::Configuration {
-			key: "E2BR3_VALIDATOR_TOKEN",
-			message: "validator token must not be empty".to_string(),
-		});
-	}
-	let provided_token = headers
-		.get("x-validator-token")
-		.ok_or(Error::Authentication)?
-		.to_str()
-		.map_err(|_| Error::Authentication)?;
-	if provided_token != required_token {
-		return Err(Error::Authentication);
-	}
-	lib_rest_core::with_authorized_case_mutation(
-		&ctx,
-		&snapshot,
-		&mm,
-		id,
-		"case.validate",
-		CaseMutationKind::Validate,
-		move |ctx, mm| {
-			Box::pin(async move {
-				let authority =
-					crate::web::rest::case_validation_rest::resolve_authority(
-						ctx, mm, id, None,
-					)
-					.await?;
-				let report =
-					super::case_validation_rest::refresh_case_validation_cache(
-						ctx,
-						mm,
-						id,
-						&[authority],
-					)
-					.await?
-					.remove(0);
-				if report.issue_count > 0 {
-					return Err(Error::BadRequest {
-						message: format!(
-							"validator cannot mark case validated: {} validation issue(s) remain",
-							report.issue_count
-						),
-					});
-				}
-
-				let validator_ctx = ctx.with_compliance(
-					Some(SYSTEM_VALIDATION_REASON_VALIDATOR.to_string()),
-					None,
-				);
-				CaseBmc::update(
-					&validator_ctx,
-					mm,
-					id,
-					case_status_update("validated".to_string()),
-				)
-				.await?;
 				let entity = CaseBmc::get(ctx, mm, id).await?;
 				let entity = case_to_read_result(ctx, mm, entity).await?;
 				Ok((

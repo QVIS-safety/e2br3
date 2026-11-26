@@ -37,7 +37,7 @@ crates/services/web-server/tests/api_cases/subresources/lifecycle_general.rs	web
 crates/services/web-server/tests/api_cases/subresources/lifecycle_parents.rs	web-server::api_cases	공통 검증 helper	Case·하위 부모 soft 삭제·복원과 자식 ID·값·감사 보존	356	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_patient.rs	web-server::api_cases	HTTP 계약	Patient와 자식 10종의 재저장·삭제/복원·소속·권한·잠금·감사	417	1	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_policy.rs	web-server::api_cases	공통 검증 helper	viewer·다른 조직/부모·Case 잠금 거절과 상태·감사 불변	215	0	0	0
-crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs	web-server::api_cases	HTTP 계약	Report·sender·study·source document·header·receiver 12종 lifecycle	457	1	0	0
+crates/services/web-server/tests/api_cases/subresources/lifecycle_report.rs	web-server::api_cases	HTTP 계약	Report·sender·study·source document lifecycle	457	1	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_singleton.rs	web-server::api_cases	공통 검증 helper	Singleton 갱신·동일 저장·hard delete/재생성 계약	282	0	0	0
 crates/services/web-server/tests/api_cases/subresources/lifecycle_support.rs	web-server::api_cases	공통 검증 helper	기존 행 계약·새 GET/list·soft/hard 삭제/복원 재호출 공통 assertion	601	0	0	0
 crates/services/web-server/tests/api_cases/subresources/mod.rs	web-server::api_cases	모듈 등록	api_cases/subresources 하위 책임 모듈 등록	22	0	0	0
@@ -51,7 +51,7 @@ crates/services/web-server/tests/api_cases/subresources/singleton.rs	web-server:
 crates/services/web-server/tests/api_cases/subresources/study.rs	web-server::api_cases	HTTP 계약	Study type reaction 입력 저장	42	1	0	0
 crates/services/web-server/tests/api_cases/subresources/support.rs	web-server::api_cases	helper	하위 리소스 HTTP/raw 응답·Case/부모 행 준비 helper	371	0	0	0
 crates/services/web-server/tests/api_cases/subresources/test_result.rs	web-server::api_cases	HTTP 계약	검사결과 normal range 길이·MedDRA 검사명 대체 입력	96	2	0	0
-crates/services/web-server/tests/api_cases/validation.rs	web-server::api_cases	HTTP 계약	Case validation 기관 선택·오류 projection·validator token과 상태 갱신	386	10	0	0
+crates/services/web-server/tests/api_cases/validation.rs	web-server::api_cases	HTTP 계약	Case validation 명시 기관·오류 projection·캐시 갱신과 상태 보존	308	8	0	0
 crates/services/web-server/tests/api_cases/validation_common.rs	web-server::api_cases	helper	Validation fixture·JSON HTTP·필수 Case 하위 행 준비 helper	366	0	0	0
 crates/services/web-server/tests/api_cases/versions.rs	web-server::api_cases	HTTP 계약	Case version snapshot의 저장값·version 순서·reason·actor	75	1	0	0
 crates/services/web-server/tests/api_cases/workflow.rs	web-server::api_cases	HTTP 계약	Workflow 전이·담당자 지정·역할/담당자/lock 제한과 관리자 override 감사	515	6	0	0
@@ -61,7 +61,6 @@ crates/services/web-server/tests/api_editor/audit/assessment.rs	web-server::api_
 crates/services/web-server/tests/api_editor/audit/projection.rs	web-server::api_editor	HTTP 계약	FDA device scalar 저장의 감사 API projection	105	0	0	0
 crates/services/web-server/tests/api_editor/fields.rs	web-server::api_editor	HTTP 계약	Registry 기반 scalar 저장/clear/ID/감사 검사 공통 실행기와 patch 생성 자체 검사	652	2	0	0
 crates/services/web-server/tests/api_editor/fields/coupled_clear.rs	web-server::api_editor	HTTP 계약	연결 필드 clear·생략 구분·sibling 유지·행 재조회	628	0	0	0
-crates/services/web-server/tests/api_editor/fields/message_header.rs	web-server::api_editor	HTTP 계약	N registry 항목의 전용 message-header POST/PUT/GET 저장·거절·감사 불변 검사	181	0	0	0
 crates/services/web-server/tests/api_editor/fields/null_flavor.rs	web-server::api_editor	HTTP 계약	값↔NullFlavor 전이·동시 값 거절·부모/등록번호 관계	566	0	0	0
 crates/services/web-server/tests/api_editor/fields/required_values.rs	web-server::api_editor	HTTP 계약	필수 값 blank/잘못된 report year 거절과 저장 값·자식 보존	209	0	0	0
 crates/services/web-server/tests/api_editor/legacy_reads/ae.rs	web-server::api_editor	HTTP 계약	AE legacy list/detail GET의 행 ID·업무 projection	55	2	0	0
@@ -135,7 +134,7 @@ crates/services/web-server/tests/api_submission.rs	web-server::api_submission	ta
 crates/services/web-server/tests/api_submission/callbacks.rs	web-server::api_submission	HTTP 계약	내부 ACK callback 인증·상태 갱신·중복 idempotency·malformed 거부와 Rust-to-submitter payload 흐름을 검증한다.	412	5	0	0
 crates/services/web-server/tests/api_submission/dispatch.rs	web-server::api_submission	HTTP 계약	FDA ESG/MFDS 제출 routing, transport 설정 오류, 헤더·payload, 비성공/연결 실패 상태 보존을 검증한다.	346	6	0	0
 crates/services/web-server/tests/api_submission/external.rs	web-server::api_submission	HTTP 계약	실제 Java submitter와 MFDS 제출·event 연계를 확인하는 명시적 ignored 외부 통합 테스트를 담는다.	83	1	0	1
-crates/services/web-server/tests/api_submission/headers.rs	web-server::api_submission	HTTP 계약	authority별 receiver option과 message-header 식별자 갱신, 동시 FDA/MFDS 요청의 request-scoped 값을 검증한다.	369	3	0	0
+crates/services/web-server/tests/api_submission/headers.rs	web-server::api_submission	HTTP 계약	presave route로 일시 N을 생성하고 저장 테이블 없이 최종 XML을 검증한다.	369	1	0	0
 crates/services/web-server/tests/api_submission/history.rs	web-server::api_submission	HTTP 계약	제출 history의 최신 ACK 시각·event, 제출 XML과 ACK text 다운로드 계약을 검증한다.	205	2	0	0
 crates/services/web-server/tests/api_submission/idempotency.rs	web-server::api_submission	HTTP 계약	제출 idempotency key의 순차 재사용과 병렬 요청 단일 submission 생성을 검증한다.	127	2	0	0
 crates/services/web-server/tests/api_submission/mod.rs	web-server::api_submission	모듈 등록	callback·dispatch·external·header·history·idempotency·reconcile·validation 제출 테스트와 support를 등록한다.	10	0	0	0
@@ -227,7 +226,7 @@ crates/services/web-server/tests/xml/roundtrip/mod.rs	web-server::xml	모듈 등
 crates/services/web-server/tests/xml/roundtrip/narrative.rs	web-server::xml	HTTP/XML 통합	N/R narrative와 summary 필드를 HTTP 편집 후 XML export round-trip으로 검증한다.	121	1	0	0
 crates/services/web-server/tests/xml/roundtrip/patient.rs	web-server::xml	HTTP/XML 통합	D/M patient·parent·past-drug 필드와 parent nullFlavor를 HTTP/API 및 serializer round-trip으로 검증한다.	242	2	0	0
 crates/services/web-server/tests/xml/roundtrip/reaction.rs	web-server::xml	HTTP/XML 통합	E adverse-event와 sender diagnosis 전체 필드를 HTTP persistence와 XML export round-trip으로 검증한다.	635	2	0	0
-crates/services/web-server/tests/xml/roundtrip/report.rs	web-server::xml	HTTP/XML 통합	C/I report identification·message header 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다.	310	2	0	0
+crates/services/web-server/tests/xml/roundtrip/report.rs	web-server::xml	HTTP/XML 통합	C/I report identification 및 R/P source·sender·study 필드를 HTTP 편집 후 XML round-trip으로 검증한다.	310	2	0	0
 crates/services/web-server/tests/xml/roundtrip/schema.rs	web-server::xml	HTTP/XML 통합	persisted section의 RLS export, authority별 full-build schema/rule 검증과 빈 autopsy parent 출력 구조를 검증한다.	538	3	0	0
 crates/services/web-server/tests/xml/roundtrip/support.rs	web-server::xml	helper	roundtrip fixture import, FDA device 보정, authority header와 HTTP XML export helper를 제공한다.	239	0	0	0
 crates/services/web-server/tests/xml/roundtrip_profiles_web.rs	web-server::xml	HTTP/XML 통합	ICH/FDA/MFDS fixture를 HTTP import·validate·export하고 원본/재export XML을 schema 재검증한다.	276	1	0	0

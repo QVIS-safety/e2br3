@@ -460,36 +460,6 @@ impl FlowClient {
 		self.get_json(&path).await
 	}
 
-	pub async fn mark_case_validated(&self, case_id: &str) -> Result<()> {
-		self.mark_case_validated_via_validator(case_id).await?;
-		Ok(())
-	}
-
-	pub async fn mark_case_validated_via_validator(
-		&self,
-		case_id: &str,
-	) -> Result<()> {
-		let token = env::var("E2BR3_VALIDATOR_TOKEN").map_err(|_| {
-			"E2BR3_VALIDATOR_TOKEN is required to call validator mark-validated endpoint"
-		})?;
-		let path = format!("/api/cases/{case_id}/validator/mark-validated");
-		let cookie = self.auth_cookie_header()?;
-		let res = self
-			.client
-			.post(format!("{}{}", self.base_url, path))
-			.header(COOKIE, cookie)
-			.header("x-validator-token", token)
-			.send()
-			.await?;
-
-		let status = res.status();
-		let text = res.text().await?;
-		if status.is_success() {
-			return Ok(());
-		}
-		Err(format!("POST {path} failed: {status} {text}").into())
-	}
-
 	pub async fn export_xml(&self, case_id: &str) -> Result<String> {
 		let cookie = self.auth_cookie_header()?;
 		let res = self

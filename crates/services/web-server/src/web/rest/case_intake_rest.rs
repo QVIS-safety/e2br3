@@ -6,7 +6,6 @@ use lib_core::model::case_duplicate::{
 	CaseIntakeDuplicateMatch, DuplicateBasisAssessment,
 };
 use lib_core::model::case_numbering::generate_case_number;
-use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::patient::{
 	PatientIdentifierBmc, PatientIdentifierForCreate, PatientInformationBmc,
 	PatientInformationForCreate,
@@ -28,9 +27,6 @@ use serde::{Deserialize, Serialize};
 use time::Date;
 use uuid::Uuid;
 
-use crate::web::rest::case_export_rest::{
-	message_receiver_identifier, message_sender_identifier,
-};
 use crate::web::rest::case_rest::validate_case_create_payload;
 
 // -- Types
@@ -512,8 +508,6 @@ async fn create_case_from_intake_in_txn(
 	axum::http::StatusCode,
 	Json<DataRestResult<CaseFromIntakeResult>>,
 )> {
-	use sqlx::types::time::OffsetDateTime;
-
 	let mut safety_report_id =
 		data.safety_report_id
 			.clone()
@@ -555,12 +549,6 @@ async fn create_case_from_intake_in_txn(
 		return Err(Error::BadRequest { message });
 	}
 
-	let profile_enum = data.authority;
-	let message_sender_identifier = message_sender_identifier()?;
-	let message_receiver_identifier = message_receiver_identifier(profile_enum)?;
-	let batch_sender_identifier = message_sender_identifier.clone();
-	let batch_receiver_identifier = message_receiver_identifier.clone();
-
 	let generated_case_number = if safety_report_id.trim().is_empty() {
 		let generated = generate_case_number(ctx, mm).await.map_err(Error::Model)?;
 		safety_report_id = generated.safety_report_id.clone();
@@ -601,23 +589,6 @@ async fn create_case_from_intake_in_txn(
 		.ok_or_else(|| Error::BadRequest {
 			message: "date_first_received_from_source is required".into(),
 		})?;
-
-	let now = OffsetDateTime::now_utc();
-	MessageHeaderBmc::create(
-		ctx,
-		mm,
-		MessageHeaderForCreate {
-			case_id,
-			batch_sender_identifier: Some(batch_sender_identifier),
-			batch_receiver_identifier: Some(batch_receiver_identifier),
-			batch_transmission_date: Some(now),
-			message_number: format!("MSG-{case_id}"),
-			message_sender_identifier,
-			message_receiver_identifier,
-			message_date: lib_utils::time::format_e2b_timestamp(now),
-		},
-	)
-	.await?;
 
 	SafetyReportIdentificationBmc::create(
 		ctx,

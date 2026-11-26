@@ -13,9 +13,6 @@ use crate::{parse_e2b_xml, Result};
 use lib_core::ctx::Ctx;
 use lib_core::model::audit::{CaseVersionBmc, CaseVersionForCreate};
 use lib_core::model::case::{CaseBmc, CaseForCreate, CaseForUpdate};
-use lib_core::model::message_header::{
-	MessageHeaderBmc, MessageHeaderForCreate, MessageHeaderForUpdate,
-};
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::{self, ModelManager};
 use serde_json::json;
@@ -46,9 +43,7 @@ pub fn extract_safety_report_id_from_xml(xml: &[u8]) -> Result<Option<String>> {
 	shared::extract_safety_report_id(xml)
 }
 
-fn read_import_message_header(
-	header: &shared::MessageHeaderExtract,
-) -> Result<(String, String, String, String)> {
+fn read_import_message_header(header: &shared::MessageHeaderExtract) -> Result<()> {
 	let mut inputs = input_contracts::InputRecord::default();
 	let required = |value: &Option<String>, field: &str| {
 		value.as_deref().map(str::to_owned).ok_or_else(|| {
@@ -61,6 +56,30 @@ fn read_import_message_header(
 	let message_sender = required(&header.message_sender, "sender")?;
 	let message_receiver = required(&header.message_receiver, "receiver")?;
 	let message_date = required(&header.message_date, "date")?;
+	inputs.string(
+		"N.1.2",
+		header.batch_number.as_deref(),
+		None,
+		input_contracts::generated::n::n_1_2,
+	);
+	inputs.string(
+		"N.1.3",
+		header.batch_sender.as_deref(),
+		None,
+		input_contracts::generated::n::n_1_3,
+	);
+	inputs.string(
+		"N.1.4",
+		header.batch_receiver.as_deref(),
+		None,
+		input_contracts::generated::n::n_1_4,
+	);
+	inputs.string(
+		"N.1.5",
+		header.batch_transmission_date.as_deref(),
+		None,
+		input_contracts::generated::n::n_1_5,
+	);
 	inputs.string(
 		"N.2.r.1",
 		Some(&message_number),
@@ -87,12 +106,7 @@ fn read_import_message_header(
 	);
 
 	crate::import_constraint::validate(&inputs)?;
-	Ok((
-		message_number,
-		message_sender,
-		message_receiver,
-		message_date,
-	))
+	Ok(())
 }
 
 pub async fn import_e2b_xml(
@@ -153,8 +167,7 @@ pub async fn import_e2b_xml_in_txn(
 	let transmission_date =
 		parse_c_safety_report(&req.xml)?.and_then(|report| report.transmission_date);
 	let header_extract = shared::extract_message_header(&req.xml)?;
-	let (message_number, message_sender, message_receiver, message_date) =
-		read_import_message_header(&header_extract)?;
+	read_import_message_header(&header_extract)?;
 	// Serialize imports for the same organization/report ID. The lock is held
 	// by the outer import transaction, so the recheck below closes the race
 	// between the REST decision query and case creation.
@@ -261,41 +274,6 @@ pub async fn import_e2b_xml_in_txn(
 	)
 	.await?;
 
-	MessageHeaderBmc::create(
-		ctx,
-		mm,
-		MessageHeaderForCreate {
-			case_id,
-			batch_sender_identifier: None,
-			batch_receiver_identifier: None,
-			batch_transmission_date: None,
-			message_number,
-			message_sender_identifier: message_sender,
-			message_receiver_identifier: message_receiver,
-			message_date,
-		},
-	)
-	.await?;
-	MessageHeaderBmc::update_by_case(
-		ctx,
-		mm,
-		case_id,
-		MessageHeaderForUpdate {
-			batch_number: header_extract.batch_number.clone(),
-			batch_sender_identifier: header_extract.batch_sender.clone(),
-			batch_receiver_identifier: header_extract.batch_receiver.clone(),
-			batch_transmission_date: None,
-			batch_transmission_date_raw: header_extract
-				.batch_transmission_date
-				.clone(),
-			message_number: None,
-			message_sender_identifier: None,
-			message_receiver_identifier: None,
-			message_date: None,
-		},
-	)
-	.await?;
-
 	import_section_c(
 		ctx,
 		mm,
@@ -389,10 +367,10 @@ mod tests {
 			message_sender: Some("sender".to_string()),
 			message_receiver: Some("receiver".to_string()),
 			message_date: Some(date.to_string()),
-			batch_number: None,
-			batch_sender: None,
-			batch_receiver: None,
-			batch_transmission_date: None,
+			batch_number: Some("batch".to_string()),
+			batch_sender: Some("sender".to_string()),
+			batch_receiver: Some("receiver".to_string()),
+			batch_transmission_date: Some(date.to_string()),
 		}
 	}
 
@@ -409,7 +387,7 @@ mod tests {
 	}
 
 	#[test]
-	fn preserves_message_identity_and_timestamp_lexeme() {
+	fn accepts_valid_message_identity_and_timestamp_lexeme() {
 		let number = "식".repeat(100);
 		for date in [
 			"2024",
@@ -417,11 +395,7 @@ mod tests {
 			"20241121010203-0400",
 			"20261121085336.179855+0000",
 		] {
-			let (actual_number, _, _, actual_date) =
-				read_import_message_header(&header(&number, date))
-					.expect("read header");
-			assert_eq!(actual_number, number);
-			assert_eq!(actual_date, date);
+			read_import_message_header(&header(&number, date)).expect("read header");
 		}
 	}
 
@@ -433,11 +407,7 @@ mod tests {
 		assert!(
 			read_import_message_header(&header(&"식".repeat(101), "2024")).is_err()
 		);
-		assert_eq!(
-			read_import_message_header(&header(" MESSAGE ", "2024"))
-				.unwrap()
-				.0,
-			" MESSAGE "
-		);
+		read_import_message_header(&header(" MESSAGE ", "2024"))
+			.expect("header validation must not normalize the source XML");
 	}
 }

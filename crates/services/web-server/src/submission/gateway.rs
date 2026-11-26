@@ -53,10 +53,10 @@ fn prepare_esg_request(
 		return Err(Error::BadRequest { message: "AS2 requires durable reservation; automatic gateway resend is disabled".into() });
 	}
 
-	if !is_esg_enabled()? {
+	if !is_esg_configured()? {
 		return Err(Error::Configuration {
 			key: "submission_transport",
-			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
+			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".to_string(),
 		});
 	}
 	if authority != SubmissionAuthority::Fda {
@@ -68,9 +68,9 @@ fn prepare_esg_request(
 	}
 
 	let base_url =
-		std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::Configuration {
+		std::env::var("FDA_ESG_BASE_URL").map_err(|error| Error::Configuration {
 			key: "FDA_ESG_BASE_URL",
-			message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
+			message: error.to_string(),
 		})?;
 	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH").map_err(|error| {
 		Error::Configuration {
@@ -139,10 +139,10 @@ pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<Stri
 	if as2_submitter_url()?.is_some() {
 		return Ok(format!("as2-submitter-http-{}", authority.as_str()));
 	}
-	if !is_esg_enabled()? {
+	if !is_esg_configured()? {
 		return Err(Error::Configuration {
 			key: "submission_transport",
-			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
+			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".to_string(),
 		});
 	}
 	if authority != SubmissionAuthority::Fda {
@@ -152,10 +152,6 @@ pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<Stri
 					.to_string(),
 		});
 	}
-	let _ = std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::Configuration {
-		key: "FDA_ESG_BASE_URL",
-		message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
-	})?;
 	Ok("fda-esg-nextgen-api".to_string())
 }
 
@@ -221,24 +217,15 @@ mod tests {
 	#[test]
 	fn unconfigured_transport_does_not_select_a_gateway() {
 		std::env::remove_var("AS2_SUBMITTER_URL");
-		std::env::remove_var("FDA_ESG_ENABLED");
 		std::env::remove_var("FDA_ESG_BASE_URL");
-		let result = select_gateway_name(SubmissionAuthority::Fda);
-		let error = result.expect_err("unconfigured transport must fail");
-		assert!(matches!(
-			error,
-			Error::Configuration {
-				key: "FDA_ESG_ENABLED",
-				..
-			}
-		));
-		std::env::set_var("FDA_ESG_ENABLED", "false");
 		let error = select_gateway_name(SubmissionAuthority::Fda)
-			.expect_err("disabled transports must fail");
+			.expect_err("unconfigured transport must fail");
 		assert!(error
 			.to_string()
 			.contains("no submission transport configured"));
-		std::env::remove_var("FDA_ESG_ENABLED");
+		std::env::set_var("FDA_ESG_BASE_URL", "");
+		assert!(select_gateway_name(SubmissionAuthority::Fda).is_err());
+		std::env::remove_var("FDA_ESG_BASE_URL");
 	}
 }
 

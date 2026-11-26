@@ -55,9 +55,6 @@ pub mod drug; // Drug info, active substances, dosage, indications
 // E2B(R3) Section H - Narrative
 pub mod narrative; // Case narrative, sender diagnoses, case summaries
 
-// E2B(R3) Section N - Message Headers
-pub mod message_header; // Batch/message transmission headers
-
 // E2B(R3) Section A - Receiver Information
 
 // E2B(R3) G.k.9.i - Drug-Reaction Assessment
@@ -80,7 +77,6 @@ pub mod e_signature; // Electronic signatures for Part 11 critical actions
 // Presave Templates
 pub mod presave; // Section-specific INFO presave master data
 pub mod presave_lifecycle;
-pub mod submission_receiver_option; // Submission workflow receiver routing options
 
 // Admin
 pub mod admin_settings;

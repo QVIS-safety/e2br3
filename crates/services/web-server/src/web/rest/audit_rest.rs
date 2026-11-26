@@ -112,7 +112,6 @@ fn audit_table_page(table_name: &str) -> Option<&'static str> {
 		"narrative_information"
 		| "sender_diagnoses"
 		| "case_summary_information" => Some("NR (H)"),
-		"message_headers" => Some("SD (N)"),
 		"case_versions" => Some("WF"),
 		"case_workflow_events" => Some("WF"),
 		"case_submissions"
@@ -149,9 +148,6 @@ fn audit_business_field_label(
 		("drug_information" | "reactions", "source_xml_id") => {
 			"Source XML Identifier"
 		}
-		("message_headers", "batch_transmission_date_raw") => {
-			"Original XML Batch Transmission Date (N.1.5)"
-		}
 		("cases", "mfds_report_type") => "MFDS Report Type (MFDS_REPORT_TYPE)",
 		("cases", "fda_report_type") => "FDA Report Type (FDA_REPORT_TYPE)",
 		("cases", "dg_prd_key") => "DG Product Key",
@@ -167,28 +163,6 @@ fn audit_business_field_label(
 		("cases", "workflow_updated_at") => "Workflow Updated At",
 		("cases", "submitted_by") => "Submitted By",
 		("cases", "submitted_at") => "Submitted At",
-		("message_headers", "message_type") => "Message Type (N.1.1)",
-		("message_headers", "batch_number") => "Batch Number (N.1.2)",
-		("message_headers", "batch_sender_identifier") => {
-			"Batch Sender Identifier (N.1.3)"
-		}
-		("message_headers", "batch_receiver_identifier") => {
-			"Batch Receiver Identifier (N.1.4)"
-		}
-		("message_headers", "batch_transmission_date") => {
-			"Date of Batch Transmission (N.1.5)"
-		}
-		("message_headers", "message_number") => "Message Number (N.2.r.1)",
-		("message_headers", "message_sender_identifier") => {
-			"Message Sender Identifier (N.2.r.2)"
-		}
-		("message_headers", "message_receiver_identifier") => {
-			"Message Receiver Identifier (N.2.r.3)"
-		}
-		("message_headers", "message_date") => "Message Date (N.2.r.4)",
-		("message_headers", "message_format_version") => "Message Format Version",
-		("message_headers", "message_format_release") => "Message Format Release",
-		("message_headers", "message_date_format") => "Message Date Format",
 		("safety_report_identification", "safety_report_id") => {
 			"Sender's Safety Report Unique Identifier (C.1.1)"
 		}
@@ -1578,12 +1552,6 @@ mod tests {
 				"AE (E.i)",
 				"Source XML Identifier",
 			),
-			(
-				"message_headers",
-				"batch_transmission_date_raw",
-				"SD (N)",
-				"Original XML Batch Transmission Date (N.1.5)",
-			),
 		] {
 			assert_eq!(
 				audit_field_label(table, field)
@@ -1656,11 +1624,6 @@ mod tests {
 		assert_eq!(
 			audit_field_label("drug_active_substances", "substance_termid").unwrap(),
 			("DG (G.k)", "Substance Term ID (G.k.2.3.r.2b)".to_string())
-		);
-		assert_eq!(
-			audit_field_label("message_headers", "message_sender_identifier")
-				.unwrap(),
-			("SD (N)", "Message Sender Identifier (N.2.r.2)".to_string())
 		);
 		assert_eq!(
 			audit_field_label("reactions", "mfds_device_action_recall").unwrap(),

@@ -12,10 +12,6 @@ pub fn routes_submissions(mm: ModelManager) -> Router {
 			get(submission_rest::list_all_submission_history),
 		)
 		.route(
-			"/submissions/receiver-options",
-			get(submission_rest::list_receiver_options),
-		)
-		.route(
 			"/submissions/{id}",
 			get(submission_rest::get_case_submission),
 		)

@@ -1828,14 +1828,8 @@ fn fda_g_k_1_route(
 		return;
 	};
 	let role = first.drug_characterization.as_deref().map(str::trim);
-	let batch_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.and_then(|header| header.batch_receiver_identifier.as_deref());
-	let message_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
+	let batch_receiver = validation_ctx.fda_batch_receiver();
+	let message_receiver = validation_ctx.fda_message_receiver();
 	if message_receiver == Some(crate::FDA_MSG_RECEIVER_CDER) {
 		if !validation_ctx.drugs.iter().any(|drug| {
 			matches!(
@@ -2180,14 +2174,8 @@ fn collect_fda_rules(
 		.and_then(|r| r.combination_product_report_indicator.as_deref())
 		.map(str::trim)
 		.is_some_and(|value| value == "1" || value.eq_ignore_ascii_case("true"));
-	let message_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|header| header.message_receiver_identifier.as_str());
-	let batch_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.and_then(|header| header.batch_receiver_identifier.as_deref());
+	let message_receiver = validation_ctx.fda_message_receiver();
+	let batch_receiver = validation_ctx.fda_batch_receiver();
 	let postmarket = is_fda_postmarket_batch_receiver(batch_receiver);
 	let vaers = message_receiver.is_some_and(|value| {
 		matches!(
@@ -2572,10 +2560,7 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let msg_receiver = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|h| h.message_receiver_identifier.as_str());
+	let msg_receiver = validation_ctx.mfds_receiver();
 	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
 	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
 	let vocabulary_receiver = if receiver_is_kr {

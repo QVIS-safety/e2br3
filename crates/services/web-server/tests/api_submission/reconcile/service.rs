@@ -13,8 +13,7 @@ async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
 		}),
 	)
 	.await?;
-	std::env::set_var("FDA_ESG_ENABLED", "true");
-	std::env::set_var("FDA_ESG_BASE_URL", base_url);
+	configure_esg_test_endpoint(base_url);
 	std::env::set_var("FDA_ESG_SUBMIT_PATH", "/submissions");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -149,16 +148,15 @@ async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 	let listener = TcpListener::bind("127.0.0.1:0").await?;
 	let addr = listener.local_addr()?;
 	let server = tokio::spawn(async move { axum::serve(listener, transport).await });
-	std::env::set_var("AS2_SUBMITTER_URL", format!("http://{addr}"));
+	configure_as2_test_endpoint(format!("http://{addr}"));
 	std::env::set_var("AS2_SUBMITTER_TOKEN", "fixture-token");
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm.clone()).expect("web server configuration");
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+
 	let (status, body) = post_json_with_headers(
 		&app,
 		&cookie,

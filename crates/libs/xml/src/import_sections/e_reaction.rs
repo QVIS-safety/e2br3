@@ -297,7 +297,7 @@ fn read_e_i_3_1(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	Ok(code)
 }
 
-/// e2b:E.i.serious
+/// e2b:E.i.local.serious
 fn read_e_i_serious(
 	term_highlighted: Option<&str>,
 	criteria: [Option<bool>; 6],
@@ -568,7 +568,7 @@ fn read_e_i_9(xpath: &mut Context, node: &Node) -> Result<Option<String>> {
 	.map(|value| value.to_ascii_uppercase()))
 }
 
-/// e2b:E.i.KR.device.aeClassification
+/// e2b:E.i.KR.local.device.aeClassification
 fn read_e_i_kr_device_ae_classification(
 	xpath: &mut Context,
 	node: &Node,
@@ -576,7 +576,7 @@ fn read_e_i_kr_device_ae_classification(
 	extension_code(xpath, node, "KR_DVC_AECL")
 }
 
-/// e2b:E.i.KR.device.aeOutcome
+/// e2b:E.i.KR.local.device.aeOutcome
 fn read_e_i_kr_device_ae_outcome(
 	xpath: &mut Context,
 	node: &Node,
@@ -584,7 +584,7 @@ fn read_e_i_kr_device_ae_outcome(
 	extension_code(xpath, node, "KR_DVC_AEOUT")
 }
 
-/// e2b:E.i.KR.device.causeMedicalDevice
+/// e2b:E.i.KR.local.device.causeMedicalDevice
 fn read_e_i_kr_device_cause_medical_device(
 	xpath: &mut Context,
 	node: &Node,
@@ -592,7 +592,7 @@ fn read_e_i_kr_device_cause_medical_device(
 	extension_bool(xpath, node, "KR_DVC_CC_MD")
 }
 
-/// e2b:E.i.KR.device.causeProcedureIssue
+/// e2b:E.i.KR.local.device.causeProcedureIssue
 fn read_e_i_kr_device_cause_procedure_issue(
 	xpath: &mut Context,
 	node: &Node,
@@ -600,7 +600,7 @@ fn read_e_i_kr_device_cause_procedure_issue(
 	extension_bool(xpath, node, "KR_DVC_CC_PI")
 }
 
-/// e2b:E.i.KR.device.causePatientCondition
+/// e2b:E.i.KR.local.device.causePatientCondition
 fn read_e_i_kr_device_cause_patient_condition(
 	xpath: &mut Context,
 	node: &Node,
@@ -608,7 +608,7 @@ fn read_e_i_kr_device_cause_patient_condition(
 	extension_bool(xpath, node, "KR_DVC_CC_PC")
 }
 
-/// e2b:E.i.KR.device.causeUnableToAssess
+/// e2b:E.i.KR.local.device.causeUnableToAssess
 fn read_e_i_kr_device_cause_unable_to_assess(
 	xpath: &mut Context,
 	node: &Node,
@@ -616,7 +616,7 @@ fn read_e_i_kr_device_cause_unable_to_assess(
 	extension_bool(xpath, node, "KR_DVC_CC_UA")
 }
 
-/// e2b:E.i.KR.device.causeOther
+/// e2b:E.i.KR.local.device.causeOther
 fn read_e_i_kr_device_cause_other(
 	xpath: &mut Context,
 	node: &Node,
@@ -624,7 +624,7 @@ fn read_e_i_kr_device_cause_other(
 	extension_text(xpath, node, "KR_DVC_CC_OTH")
 }
 
-/// e2b:E.i.KR.device.actionReason
+/// e2b:E.i.KR.local.device.actionReason
 fn read_e_i_kr_device_action_reason(
 	xpath: &mut Context,
 	node: &Node,
@@ -632,7 +632,7 @@ fn read_e_i_kr_device_action_reason(
 	extension_text(xpath, node, "KR_DVC_ACT_RSN")
 }
 
-/// e2b:E.i.KR.device.actionRecall
+/// e2b:E.i.KR.local.device.actionRecall
 fn read_e_i_kr_device_action_recall(
 	xpath: &mut Context,
 	node: &Node,
@@ -640,7 +640,7 @@ fn read_e_i_kr_device_action_recall(
 	extension_bool(xpath, node, "KR_DVC_ACT_RC")
 }
 
-/// e2b:E.i.KR.device.actionRepair
+/// e2b:E.i.KR.local.device.actionRepair
 fn read_e_i_kr_device_action_repair(
 	xpath: &mut Context,
 	node: &Node,
@@ -648,7 +648,7 @@ fn read_e_i_kr_device_action_repair(
 	extension_bool(xpath, node, "KR_DVC_ACT_RP")
 }
 
-/// e2b:E.i.KR.device.actionInspection
+/// e2b:E.i.KR.local.device.actionInspection
 fn read_e_i_kr_device_action_inspection(
 	xpath: &mut Context,
 	node: &Node,
@@ -656,7 +656,7 @@ fn read_e_i_kr_device_action_inspection(
 	extension_bool(xpath, node, "KR_DVC_ACT_INSP")
 }
 
-/// e2b:E.i.KR.device.actionReplacement
+/// e2b:E.i.KR.local.device.actionReplacement
 fn read_e_i_kr_device_action_replacement(
 	xpath: &mut Context,
 	node: &Node,
@@ -664,7 +664,7 @@ fn read_e_i_kr_device_action_replacement(
 	extension_bool(xpath, node, "KR_DVC_ACT_REPL")
 }
 
-/// e2b:E.i.KR.device.actionImprovement
+/// e2b:E.i.KR.local.device.actionImprovement
 fn read_e_i_kr_device_action_improvement(
 	xpath: &mut Context,
 	node: &Node,
@@ -672,7 +672,7 @@ fn read_e_i_kr_device_action_improvement(
 	extension_bool(xpath, node, "KR_DVC_ACT_IMP")
 }
 
-/// e2b:E.i.KR.device.actionMonitoring
+/// e2b:E.i.KR.local.device.actionMonitoring
 fn read_e_i_kr_device_action_monitoring(
 	xpath: &mut Context,
 	node: &Node,
@@ -680,7 +680,7 @@ fn read_e_i_kr_device_action_monitoring(
 	extension_bool(xpath, node, "KR_DVC_ACT_MON")
 }
 
-/// e2b:E.i.KR.device.actionNotification
+/// e2b:E.i.KR.local.device.actionNotification
 fn read_e_i_kr_device_action_notification(
 	xpath: &mut Context,
 	node: &Node,
@@ -688,7 +688,7 @@ fn read_e_i_kr_device_action_notification(
 	extension_bool(xpath, node, "KR_DVC_ACT_NTF")
 }
 
-/// e2b:E.i.KR.device.actionLabelChange
+/// e2b:E.i.KR.local.device.actionLabelChange
 fn read_e_i_kr_device_action_label_change(
 	xpath: &mut Context,
 	node: &Node,
@@ -696,7 +696,7 @@ fn read_e_i_kr_device_action_label_change(
 	extension_bool(xpath, node, "KR_DVC_ACT_CAS")
 }
 
-/// e2b:E.i.KR.device.actionOther
+/// e2b:E.i.KR.local.device.actionOther
 fn read_e_i_kr_device_action_other(
 	xpath: &mut Context,
 	node: &Node,

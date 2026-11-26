@@ -3,7 +3,6 @@ use lib_core::model::drug::{
 	DrugInformationForUpdate,
 };
 use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentForUpdate;
-use lib_core::model::message_header::MessageHeaderForUpdate;
 use lib_core::model::parent_history::{
 	ParentMedicalHistoryForUpdate, ParentPastDrugHistoryForUpdate,
 };
@@ -16,7 +15,15 @@ use lib_core::model::reaction::ReactionForUpdate;
 use lib_core::model::safety_report::SafetyReportIdentificationForUpdate;
 use lib_core::model::test_result::TestResultForUpdate;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::types::time::OffsetDateTime;
+
+#[derive(Deserialize)]
+struct MessageHeaderForUpdate {
+	#[serde(rename = "batch_transmission_date")]
+	_batch_transmission_date: Option<OffsetDateTime>,
+}
 
 struct BoundaryCase {
 	code: &'static str,

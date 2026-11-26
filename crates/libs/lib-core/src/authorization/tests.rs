@@ -338,25 +338,6 @@ fn import_execute_can_list_product_options_without_info_read() {
 }
 
 #[test]
-fn submission_execute_can_list_receiver_options_without_history_read() {
-	let effective = policy_registry()
-		.expect("valid policy registry")
-		.effective_grants(["submission.execute"])
-		.unwrap();
-	assert!(!effective
-		.iter()
-		.any(|id| id.as_str() == "submission.history.read"));
-	let action = policy_registry()
-		.expect("valid policy registry")
-		.action("submission.receiver.list")
-		.expect("submission receiver options action");
-	assert_eq!(
-		action.required_grants,
-		[GrantId::parse("submission.execute").unwrap()]
-	);
-}
-
-#[test]
 fn home_workflow_action_is_backed_by_the_home_workflow_grant() {
 	let action = policy_registry()
 		.expect("valid policy registry")

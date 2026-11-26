@@ -15,7 +15,6 @@ DELETE /api/cases/{case_id}/editor/pages/LB/rows/{row_id}
 DELETE /api/cases/{case_id}/editor/pages/LR/rows/{row_id}
 DELETE /api/cases/{case_id}/field-notation
 DELETE /api/cases/{case_id}/linked-reports/{id}
-DELETE /api/cases/{case_id}/message-header
 DELETE /api/cases/{case_id}/narrative
 DELETE /api/cases/{case_id}/narrative/sender-diagnoses/{id}
 DELETE /api/cases/{case_id}/narrative/summaries/{id}
@@ -31,7 +30,6 @@ DELETE /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}
 DELETE /api/cases/{case_id}/patient/parents/{id}
 DELETE /api/cases/{case_id}/patient/past-drugs/{id}
 DELETE /api/cases/{case_id}/reactions/{id}
-DELETE /api/cases/{case_id}/receiver
 DELETE /api/cases/{case_id}/safety-report
 DELETE /api/cases/{case_id}/safety-report/documents/{id}
 DELETE /api/cases/{case_id}/safety-report/literature/{id}
@@ -122,7 +120,6 @@ GET /api/cases/{case_id}/editor/shell
 GET /api/cases/{case_id}/field-notation
 GET /api/cases/{case_id}/linked-reports
 GET /api/cases/{case_id}/linked-reports/{id}
-GET /api/cases/{case_id}/message-header
 GET /api/cases/{case_id}/narrative
 GET /api/cases/{case_id}/narrative/sender-diagnoses
 GET /api/cases/{case_id}/narrative/sender-diagnoses/{id}
@@ -151,7 +148,6 @@ GET /api/cases/{case_id}/patient/past-drugs
 GET /api/cases/{case_id}/patient/past-drugs/{id}
 GET /api/cases/{case_id}/reactions
 GET /api/cases/{case_id}/reactions/{id}
-GET /api/cases/{case_id}/receiver
 GET /api/cases/{case_id}/safety-report
 GET /api/cases/{case_id}/safety-report/documents
 GET /api/cases/{case_id}/safety-report/documents/{id}
@@ -217,7 +213,6 @@ GET /api/presaves/studies/{study_id}/reporters
 GET /api/presaves/studies/{study_id}/reporters/{id}
 GET /api/settings/runtime
 GET /api/submissions/history
-GET /api/submissions/receiver-options
 GET /api/submissions/{id}
 GET /api/submissions/{id}/acks/{level}/download
 GET /api/submissions/{id}/dispatch-state
@@ -303,7 +298,6 @@ POST /api/cases/{case_id}/editor/pages/LB/rows/{row_id}/restore
 POST /api/cases/{case_id}/editor/pages/LR/rows
 POST /api/cases/{case_id}/linked-reports
 POST /api/cases/{case_id}/linked-reports/{id}/restore
-POST /api/cases/{case_id}/message-header
 POST /api/cases/{case_id}/narrative
 POST /api/cases/{case_id}/narrative/preview
 POST /api/cases/{case_id}/narrative/sender-diagnoses
@@ -332,7 +326,6 @@ POST /api/cases/{case_id}/patient/past-drugs
 POST /api/cases/{case_id}/patient/past-drugs/{id}/restore
 POST /api/cases/{case_id}/reactions
 POST /api/cases/{case_id}/reactions/{id}/restore
-POST /api/cases/{case_id}/receiver
 POST /api/cases/{case_id}/safety-report
 POST /api/cases/{case_id}/safety-report/documents
 POST /api/cases/{case_id}/safety-report/documents/{id}/restore
@@ -354,11 +347,11 @@ POST /api/cases/{id}/restore
 POST /api/cases/{id}/review/toggle
 POST /api/cases/{id}/submissions/fda
 POST /api/cases/{id}/submissions/mfds
-POST /api/cases/{id}/validator/mark-validated
 POST /api/cases/{id}/workflow/assign
 POST /api/cases/{id}/workflow/transition
 POST /api/cases/{source_case_id}/follow-up
 POST /api/import/xml
+POST /api/import/xml/product-links
 POST /api/import/xml/validate
 POST /api/organizations
 POST /api/presaves/narratives
@@ -396,7 +389,6 @@ PUT /api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{id}
 PUT /api/cases/{case_id}/drugs/{id}
 PUT /api/cases/{case_id}/field-notation
 PUT /api/cases/{case_id}/linked-reports/{id}
-PUT /api/cases/{case_id}/message-header
 PUT /api/cases/{case_id}/narrative
 PUT /api/cases/{case_id}/narrative/sender-diagnoses/{id}
 PUT /api/cases/{case_id}/narrative/summaries/{id}
@@ -412,7 +404,6 @@ PUT /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}
 PUT /api/cases/{case_id}/patient/parents/{id}
 PUT /api/cases/{case_id}/patient/past-drugs/{id}
 PUT /api/cases/{case_id}/reactions/{id}
-PUT /api/cases/{case_id}/receiver
 PUT /api/cases/{case_id}/safety-report
 PUT /api/cases/{case_id}/safety-report/documents/{id}
 PUT /api/cases/{case_id}/safety-report/literature/{id}
@@ -424,7 +415,6 @@ PUT /api/cases/{case_id}/safety-report/studies/{study_id}/registrations/{id}
 PUT /api/cases/{case_id}/source-documents/{id}
 PUT /api/cases/{case_id}/test-results/{id}
 PUT /api/cases/{id}
-PUT /api/cases/{id}/submission-receiver
 PUT /api/organizations/{id}
 PUT /api/presaves/products/{id}/details
 PUT /api/presaves/receivers/{id}/details

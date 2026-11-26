@@ -366,7 +366,7 @@
       }
     },
     {
-      "code": "C.1.KR.mfdsReportType",
+      "code": "C.1.KR.local.mfdsReportType",
       "authority": "MFDS",
       "frontendPath": "case.mfdsReportType",
       "businessValidation": {

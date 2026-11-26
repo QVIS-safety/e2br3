@@ -30,6 +30,7 @@ async fn test_reporter_validation_switches_from_collection_to_existing_fields(
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/RP"),
 		json!({"authorities": ["ich"], "rows": {"primarySources": [{
+			"sequenceNumber": 1,
 			"reporterGivenName": "Reporter with missing qualification",
 			"primarySourceForRegulatoryPurposes": "1"
 		}]}}),
@@ -118,7 +119,7 @@ async fn test_study_sequence_gaps_keep_validation_bound_to_editor_rows() -> Resu
 
 #[serial]
 #[tokio::test]
-async fn test_validation_defaults_to_ich_profile() -> Result<()> {
+async fn test_validation_requires_explicit_authority() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -130,8 +131,8 @@ async fn test_validation_defaults_to_ich_profile() -> Result<()> {
 		get_validation(&app, &cookie, &format!("/api/cases/{case_id}/validation"))
 			.await?;
 
-	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["authority"], "ich");
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(body.to_string().contains("authority is required"), "{body}");
 	Ok(())
 }
 
@@ -213,48 +214,8 @@ async fn test_validation_rejects_unknown_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_validator_endpoint_requires_token() -> Result<()> {
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm).expect("web server configuration");
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		validator_mark_validated(&app, &cookie, case_id, None).await?;
-	assert_eq!(status, StatusCode::UNAUTHORIZED, "{body:?}");
-	assert_eq!(body["error"]["message"], "NO_AUTH", "{body:?}");
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_validator_endpoint_rejects_invalid_cases() -> Result<()> {
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm).expect("web server configuration");
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
-			.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body["error"]["data"]["detail"]
-		.as_str()
-		.unwrap_or_default()
-		.contains("validation issue(s) remain"));
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+async fn test_validation_clean_report_updates_list_without_changing_status(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -298,49 +259,21 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 	assert_eq!(row["warn"].as_str(), Some("0"), "{row:?}");
 	assert_ne!(row["warn"].as_str(), Some("Not checked"), "{row:?}");
 
-	let (status, body) =
-		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
-			.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("validated"));
-
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
-		.await?;
-	let reason = dbx
-		.fetch_optional(
-			sqlx::query_as::<_, (Option<String>,)>(
-				r#"
-				SELECT reason_for_change
-				FROM audit_logs
-				WHERE table_name = 'cases'
-				  AND record_id = $1
-				  AND action = 'UPDATE'
-				  AND changed_fields ? 'status'
-				  AND changed_fields->'status'->>'new' = 'validated'
-				ORDER BY id DESC
-				LIMIT 1
-				"#,
-			)
-			.bind(case_id),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
-	let reason = reason
-		.and_then(|(v,)| v)
-		.unwrap_or_default()
-		.to_ascii_lowercase();
-	assert!(
-		reason.contains("system validation"),
-		"expected system validation audit reason, got: {reason}"
-	);
+	let (status, case) = crate::validation_common::get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{case}");
+	assert_eq!(case["data"]["status"], "draft", "{case}");
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()> {
+async fn test_validation_uses_explicit_authority_independent_of_settings_and_header(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -348,13 +281,6 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 	let app = web_server::app(mm).expect("web server configuration");
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) = update_admin_settings(
-		&app,
-		&cookie,
-		json!({"data": {"appendices": ["ICH", "MFDS"]}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
 	create_safety_report(&app, &cookie, case_id).await?;
 	create_message_header(&app, &cookie, case_id).await?;
 	update_message_header_receiver(&app, &cookie, case_id, "MFDS-O-KR").await?;
@@ -362,22 +288,21 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 		.await?;
 	create_sender(&app, &cookie, case_id, "3").await?;
 
+	// This organization only enables ICH; the old implicit branch rejected MFDS.
+	for authority in ["ich", "fda", "mfds"] {
+		let (status, body) = get_validation(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/validation?authority={authority}"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_eq!(body["data"]["authority"], authority, "{body}");
+	}
 	let (status, body) =
 		get_validation(&app, &cookie, &format!("/api/cases/{case_id}/validation"))
 			.await?;
-
-	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["authority"], "mfds");
-	assert!(
-		body["data"]["issues"]
-			.as_array()
-			.map(|items| {
-				items
-					.iter()
-					.any(|issue| issue["code"] == "MFDS.C.3.1.KR.1.REQUIRED")
-			})
-			.unwrap_or(false),
-		"expected MFDS issue from inferred authority, body={body}"
-	);
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(body.to_string().contains("authority is required"), "{body}");
 	Ok(())
 }

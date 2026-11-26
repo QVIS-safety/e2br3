@@ -8,7 +8,6 @@ DECLARE
     v_company_admin_user_id UUID := '11111111-1111-1111-1111-111111111112';
     v_case_id UUID := '22222222-2222-2222-2222-222222222222';
     v_case_version_id UUID := '22222222-2222-2222-2222-222222222223';
-    v_message_header_id UUID := '33333333-3333-3333-3333-333333333333';
     v_safety_ident_id UUID := '44444444-4444-4444-4444-444444444444';
     v_sender_info_id UUID := '55555555-5555-5555-5555-555555555555';
     v_study_info_id UUID := '66666666-6666-6666-6666-666666666666';
@@ -340,9 +339,7 @@ BEGIN
     VALUES (v_case_version_id, v_case_id, 1, '{}'::JSONB, v_user_id, 'Initial import', NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO message_headers (id, case_id, batch_number, batch_sender_identifier, message_type, message_format_version, message_format_release, message_number, message_sender_identifier, message_receiver_identifier, message_date_format, message_date, created_by, created_at, updated_at)
-    VALUES (v_message_header_id, v_case_id, 'B-001', 'SENDER-1', 'ichicsr', '2.1', '2.0', 'MSG-001', 'ORG-SENDER', 'ORG-RECEIVER', '204', '20240101120000', v_user_id, NOW(), NOW())
-    ON CONFLICT (id) DO NOTHING;
+
 
     INSERT INTO safety_report_identification (id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, created_by, created_at, updated_at)
     VALUES (v_safety_ident_id, v_case_id, 'SR-001', 1, TO_CHAR(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS'), '1', CURRENT_DATE, CURRENT_DATE, TRUE, v_user_id, NOW(), NOW())

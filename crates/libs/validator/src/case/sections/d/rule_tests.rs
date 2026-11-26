@@ -3,8 +3,8 @@ use super::golden_companion_tests::{
 	parent_past_drug, past_drug, patient, patient_identifier, reported_cause,
 };
 use super::*;
+use crate::context::TestMessageHeader as MessageHeader;
 use lib_core::model::case_identifiers::LinkedReportNumber;
-use lib_core::model::message_header::MessageHeader;
 use lib_core::model::reaction::Reaction;
 use lib_core::model::safety_report::{SafetyReportIdentification, StudyInformation};
 use sqlx::types::time::Date;

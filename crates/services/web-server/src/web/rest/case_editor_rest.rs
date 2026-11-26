@@ -20,7 +20,6 @@ pub use ae::*;
 pub use dg::*;
 pub use dh::*;
 pub use direct::*;
-pub(crate) use input_contract_save::validate_row_payload;
 pub use lb::*;
 pub use lr::*;
 pub use save::*;

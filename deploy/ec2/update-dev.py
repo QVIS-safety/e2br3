@@ -63,8 +63,7 @@ def deploy(compose_file, state_dir, check_only):
     if config["name"] != "safetydb-staging":
         raise ValueError("Only the safetydb-staging Compose project may be updated")
     environment = config["services"]["backend"]["environment"]
-    for key, value in {"SKIP_DEV_INIT": "1", "E2BR3_DEV_DB_INIT_ENABLED": "false",
-                       "SERVICE_BOOTSTRAP_ENABLED": "false"}.items():
+    for key, value in {"SERVICE_BOOTSTRAP_ENABLED": "false"}.items():
         if environment[key] != value:
             raise ValueError(f"Unsafe database initialization setting: {key}")
     database = urlparse(environment["SERVICE_MIGRATION_DB_URL"])

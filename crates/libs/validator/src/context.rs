@@ -7,7 +7,6 @@ use lib_core::model::drug::{
 use lib_core::model::drug_reaction_assessment::{
 	DrugReactionAssessment, RelatednessAssessment,
 };
-use lib_core::model::message_header::{MessageHeader, MessageHeaderBmc};
 use lib_core::model::narrative::{
 	CaseSummaryInformation, NarrativeInformation, NarrativeInformationBmc,
 	SenderDiagnosis,
@@ -38,6 +37,30 @@ use serde_json::json;
 use sqlx::types::Uuid;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, OnceLock};
+
+#[cfg(test)]
+#[derive(Debug, Clone)]
+pub struct TestMessageHeader {
+	pub id: Uuid,
+	pub case_id: Uuid,
+	pub batch_number: Option<String>,
+	pub batch_sender_identifier: Option<String>,
+	pub batch_receiver_identifier: Option<String>,
+	pub batch_transmission_date: Option<sqlx::types::time::OffsetDateTime>,
+	pub batch_transmission_date_raw: Option<String>,
+	pub message_type: String,
+	pub message_format_version: String,
+	pub message_format_release: String,
+	pub message_number: String,
+	pub message_sender_identifier: String,
+	pub message_receiver_identifier: String,
+	pub message_date_format: String,
+	pub message_date: String,
+	pub created_at: sqlx::types::time::OffsetDateTime,
+	pub updated_at: sqlx::types::time::OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -225,7 +248,8 @@ pub struct ValidationContext {
 	pub vocabulary: VocabularyContext,
 	pub case: Case,
 	pub safety_report: Option<SafetyReportIdentification>,
-	pub message_header: Option<MessageHeader>,
+	#[cfg(test)]
+	pub message_header: Option<TestMessageHeader>,
 	pub sender: Option<SenderInformation>,
 	pub patient: Option<PatientInformation>,
 	pub narrative: Option<NarrativeInformation>,
@@ -257,16 +281,81 @@ pub struct ValidationContext {
 	pub patient_identifiers: Vec<PatientIdentifier>,
 }
 
+impl ValidationContext {
+	pub(crate) fn fda_batch_receiver(&self) -> Option<&str> {
+		match self.case.fda_report_type.as_deref().map(str::trim) {
+			Some("1" | "2" | "3") => Some(crate::FDA_BATCH_RECEIVER_PREMARKET),
+			Some("4") => Some(crate::FDA_BATCH_RECEIVER_POSTMARKET),
+			_ => {
+				#[cfg(test)]
+				{
+					return self.message_header.as_ref().and_then(|header| {
+						header.batch_receiver_identifier.as_deref()
+					});
+				}
+				#[cfg(not(test))]
+				{
+					None
+				}
+			}
+		}
+	}
+
+	pub(crate) fn fda_message_receiver(&self) -> Option<&str> {
+		match self.case.fda_report_type.as_deref().map(str::trim) {
+			Some("1") => Some(crate::FDA_MSG_RECEIVER_CDER_IND),
+			Some("2") => Some(crate::FDA_MSG_RECEIVER_CDER_IND_EXEMPT_BA_BE),
+			Some("3") => Some(crate::FDA_MSG_RECEIVER_CBER_IND),
+			Some("4") => None,
+			_ => {
+				#[cfg(test)]
+				{
+					return self
+						.message_header
+						.as_ref()
+						.map(|header| header.message_receiver_identifier.as_str());
+				}
+				#[cfg(not(test))]
+				{
+					None
+				}
+			}
+		}
+	}
+
+	pub(crate) fn mfds_receiver(&self) -> Option<&str> {
+		match self.case.mfds_report_type.as_deref().map(str::trim) {
+			Some("1") => Some(crate::MFDS_BATCH_RECEIVER_CLINICAL_TRIAL),
+			Some("2") => Some(crate::MFDS_BATCH_RECEIVER_COMPASSIONATE_USE),
+			Some("3") => Some(crate::MFDS_BATCH_RECEIVER_POSTMARKET_DOMESTIC),
+			Some("4") => Some(crate::MFDS_BATCH_RECEIVER_POSTMARKET_FOREIGN),
+			Some("5") => Some(crate::MFDS_BATCH_RECEIVER_FOREIGN_CLINICAL_TRIAL),
+			_ => {
+				#[cfg(test)]
+				{
+					return self
+						.message_header
+						.as_ref()
+						.map(|header| header.message_receiver_identifier.as_str());
+				}
+				#[cfg(not(test))]
+				{
+					None
+				}
+			}
+		}
+	}
+}
+
 pub async fn load_base_validation_context(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<ValidationContext> {
 	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
-	let (case, safety_report, message_header, sender, patient, narrative) = tokio::try_join!(
+	let (case, safety_report, sender, patient, narrative) = tokio::try_join!(
 		CaseBmc::get(ctx, mm, case_id),
 		get_safety_report_optional(ctx, mm, case_id),
-		get_message_header_optional(ctx, mm, case_id),
 		get_sender_optional(ctx, mm, case_id),
 		get_patient_optional(ctx, mm, case_id),
 		get_narrative_optional(ctx, mm, case_id),
@@ -325,6 +414,8 @@ pub async fn load_base_validation_context(
 	let relatedness_assessments =
 		list_relatedness_assessments(mm, &drug_reaction_assessments).await?;
 	let patient_identifiers = list_patient_identifiers(mm, patient.as_ref()).await?;
+	#[cfg(test)]
+	let message_header = None;
 
 	let mut validation_ctx = ValidationContext {
 		vocabulary: VocabularyContext {
@@ -337,6 +428,7 @@ pub async fn load_base_validation_context(
 		},
 		case,
 		safety_report,
+		#[cfg(test)]
 		message_header,
 		sender,
 		patient,
@@ -750,18 +842,6 @@ async fn get_safety_report_optional(
 	case_id: Uuid,
 ) -> Result<Option<SafetyReportIdentification>> {
 	match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
-		Ok(value) => Ok(Some(value)),
-		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => Ok(None),
-		Err(err) => Err(err),
-	}
-}
-
-async fn get_message_header_optional(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	case_id: Uuid,
-) -> Result<Option<MessageHeader>> {
-	match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
 		Ok(value) => Ok(Some(value)),
 		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => Ok(None),
 		Err(err) => Err(err),

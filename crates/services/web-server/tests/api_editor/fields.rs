@@ -1,5 +1,4 @@
 pub(super) mod coupled_clear;
-pub(super) mod message_header;
 pub(super) mod null_flavor;
 pub(super) mod required_values;
 use super::support::{
@@ -141,9 +140,6 @@ pub(super) fn merge_json(base: &mut Value, overlay: Value) {
 pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 	let contract = contract_document(spec.page_id)?;
 	let field = contract_field(&contract, spec.page_id, spec.code)?;
-	if spec.page_id == "N" {
-		return message_header::verify_field(&field).await;
-	}
 	let owner = field["patch"]["owner"]
 		.as_str()
 		.ok_or("missing patch owner")?;

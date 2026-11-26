@@ -115,47 +115,6 @@ fn ack_status_merge_respects_terminal() {
 }
 
 #[test]
-fn export_header_preserves_incomplete_stored_values() {
-	use lib_core::model::message_header::MessageHeader;
-	use time::OffsetDateTime;
-	use uuid::Uuid;
-	let mut header = MessageHeader {
-		id: Uuid::nil(),
-		case_id: Uuid::nil(),
-		batch_number: None,
-		batch_sender_identifier: Some(String::new()),
-		batch_receiver_identifier: Some(" raw & receiver ".into()),
-		batch_transmission_date: None,
-		batch_transmission_date_raw: Some("2024".into()),
-		message_type: "ichicsr".into(),
-		message_format_version: "2.1".into(),
-		message_format_release: "2.0".into(),
-		message_number: String::new(),
-		message_sender_identifier: String::new(),
-		message_receiver_identifier: String::new(),
-		message_date_format: "204".into(),
-		message_date: "draft-date".into(),
-		created_at: OffsetDateTime::UNIX_EPOCH,
-		updated_at: OffsetDateTime::UNIX_EPOCH,
-		created_by: Uuid::nil(),
-		updated_by: None,
-	};
-	let exported =
-		super::export_message_header(&header).expect("serialize incomplete header");
-	assert_eq!(exported.batch_number, None);
-	assert_eq!(exported.batch_sender_identifier.as_deref(), Some(""));
-	assert_eq!(
-		exported.batch_receiver_identifier.as_deref(),
-		Some(" raw & receiver ")
-	);
-	assert_eq!(exported.batch_transmission_date.as_deref(), Some("2024"));
-	assert_eq!(exported.message_number, "");
-	assert_eq!(exported.message_date, "draft-date");
-	header.batch_transmission_date = Some(OffsetDateTime::UNIX_EPOCH);
-	assert!(super::export_message_header(&header).is_err());
-}
-
-#[test]
 fn confirmed_dispatch_failure_is_terminal_and_roundtrips() {
 	assert_eq!(
 		status_to_db(&SubmissionStatus::DispatchFailed),

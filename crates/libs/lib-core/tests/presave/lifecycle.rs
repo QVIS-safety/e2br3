@@ -3,9 +3,6 @@ use super::*;
 #[serial]
 #[tokio::test]
 async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let sender_id = SenderPresaveBmc::create(
@@ -66,9 +63,6 @@ async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<
 #[tokio::test]
 async fn presave_lifecycle_archives_unreferenced_and_blocks_used_receiver(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let sender_id = SenderPresaveBmc::create(
@@ -134,9 +128,6 @@ async fn presave_lifecycle_reference_race_preserves_active_reference_invariant(
 ) -> Result<()> {
 	use tokio::time::{sleep, Duration};
 
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let setup_mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let sender_id = SenderPresaveBmc::create(
@@ -264,9 +255,6 @@ async fn presave_lifecycle_reference_race_preserves_active_reference_invariant(
 #[serial]
 #[tokio::test]
 async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
@@ -340,9 +328,6 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 #[tokio::test]
 async fn section_presave_receiver_delete_uses_receiver_name_not_template_name(
 ) -> Result<()> {
-	_dev_utils::init_dev()
-		.await
-		.expect("database initialization must be explicit");
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();

@@ -232,7 +232,7 @@ class CanonicalUiInventoryTests(unittest.TestCase):
         self.assertEqual('FDA_REPORT_TYPE',
                          report_type['contractMetadata']['domFieldNumber'])
         mfds_report_type = fields[
-            'CI|MFDS|C.1.KR.mfdsReportType|case.mfdsReportType'
+            'CI|MFDS|C.1.KR.local.mfdsReportType|case.mfdsReportType'
         ]
         self.assertEqual('MFDS_REPORT_TYPE',
                          mfds_report_type['contractMetadata']['domFieldNumber'])

@@ -58,10 +58,10 @@ pub async fn create_submission_idempotent(
         set_full_context_dbx(mm.dbx(), ctx.user_id(), ctx.organization_id(), ctx.role()).await?;
         set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.change_category(), ctx.e_signature_id()).await?;
         let changed = mm.dbx().execute(sqlx::query(
-            "UPDATE cases SET status='submitted',submitted_by=$2,submitted_at=$3,raw_xml=$4,
+            "UPDATE cases SET status='submitted',submitted_by=$2,submitted_at=$3,
              dirty_c=false,dirty_d=false,dirty_e=false,dirty_f=false,dirty_g=false,dirty_h=false,updated_at=now()
              WHERE id=$1 AND status <> 'submitted'")
-            .bind(case_id).bind(ctx.user_id()).bind(now).bind(xml.as_bytes())).await.map_err(lib_core::model::Error::from)?;
+            .bind(case_id).bind(ctx.user_id()).bind(now)).await.map_err(lib_core::model::Error::from)?;
         if changed != 1 { return Err(Error::BadRequest { message: "case has already been submitted".into() }); }
         mm.dbx().execute(sqlx::query("INSERT INTO case_submissions
             (id,case_id,gateway,authority,submitted_xml,remote_submission_id,status,xml_bytes,submitted_by,submitted_at)

@@ -2,7 +2,6 @@
 fn every_bootstrap_null_flavor_column_has_an_allowed_value_check() {
 	let sql = [
 		include_str!("../../../../db/bootstrap/01-safetydb-schema.sql"),
-		include_str!("../../../../db/bootstrap/02-message-headers.sql"),
 		include_str!("../../../../db/bootstrap/03-safety-report-identification.sql"),
 		include_str!("../../../../db/bootstrap/04-patient-information.sql"),
 		include_str!("../../../../db/bootstrap/05-reactions.sql"),

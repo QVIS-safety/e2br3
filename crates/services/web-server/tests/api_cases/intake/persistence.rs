@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_ich_export_without_required_narrative_is_rejected() -> Result<()> {
+async fn test_new_draft_export_requires_linked_sender_presave() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -30,7 +30,8 @@ async fn test_ich_export_without_required_narrative_is_rejected() -> Result<()> 
 		"{}",
 		String::from_utf8_lossy(&body)
 	);
-	assert!(String::from_utf8(body)?.contains("Correct the highlighted case fields"));
+	assert!(String::from_utf8(body)?
+		.contains("case Sender must reference a Sender template"));
 
 	Ok(())
 }
@@ -38,7 +39,6 @@ async fn test_ich_export_without_required_narrative_is_rejected() -> Result<()> 
 #[serial]
 #[tokio::test]
 async fn test_case_from_intake_creates_batch_number_for_export() -> Result<()> {
-	std::env::set_var("E2BR3_EXPORT_VALIDATE", "0");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -59,6 +59,14 @@ async fn test_case_from_intake_creates_batch_number_for_export() -> Result<()> {
 	set_reaction_outcome(&app, &cookie, &case_id).await?;
 	create_suspect_drug(&app, &cookie, &case_id).await?;
 
+	create_narrative(&app, &cookie, &case_id).await?;
+	let (status, xml) = get_bytes(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?authority=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&xml));
 	let (status, header_body) = get_json(
 		&app,
 		&cookie,
@@ -66,29 +74,20 @@ async fn test_case_from_intake_creates_batch_number_for_export() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{header_body:?}");
+	assert_eq!(
+		header_body["data"]["message_sender_identifier"],
+		"TEST-SENDER"
+	);
+	assert_eq!(
+		header_body["data"]["message_receiver_identifier"],
+		"CDER_IND"
+	);
 	let expected_batch_number = format!("BATCH-{case_id}");
 	assert_eq!(
 		header_body["data"]["batch_number"].as_str(),
 		Some(expected_batch_number.as_str())
 	);
-	create_narrative(&app, &cookie, &case_id).await?;
 
-	let update_body = json!({
-		"data": {
-			"batch_receiver_identifier": "ZZFDA",
-			"message_receiver_identifier": "CDER",
-			"batch_sender_identifier": "TEST-SENDER",
-			"message_sender_identifier": "TEST-SENDER"
-		}
-	});
-	let (status, update_response) = put_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/message-header"),
-		update_body,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{update_response:?}");
 	let (status, workflow_response) = post_json(
 		&app,
 		&cookie,
@@ -147,5 +146,61 @@ async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 	assert_eq!(value["data"]["date_first_received_from_source"], "20240501");
 	assert_eq!(value["data"]["date_of_most_recent_information"], "20240502");
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_intake_without_transport_identifiers_can_create_draft() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm).expect("web server configuration");
+	for authority in ["ich", "fda", "mfds"] {
+		let response = post_json(
+			&app,
+			&cookie,
+			"/api/cases/from-intake",
+			json!({
+				"data": intake_data(&format!("INTAKE-{}", Uuid::new_v4()), 126, "1", json!({
+					"authority": authority, "fda_report_type": "1", "mfds_report_type": "1"
+				}))
+			}),
+		)
+		.await;
+		let (status, body) = response?;
+		assert_eq!(status, StatusCode::CREATED, "{authority}: {body}");
+		let case_id = extract_case_id(&body)?;
+		let (status, body) =
+			get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+		assert_eq!(status, StatusCode::OK, "{body}");
+		assert_eq!(body["data"]["status"], "draft", "{body}");
+		let (status, header) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/message-header"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{header}");
+		let (status, follow_up) = post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/follow-up"),
+			follow_up_pages(authority),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{follow_up}");
+		let follow_up_id = follow_up["data"]["caseId"]
+			.as_str()
+			.ok_or("follow-up case id")?;
+		let (status, header) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{follow_up_id}/message-header"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NOT_FOUND, "{header}");
+	}
 	Ok(())
 }

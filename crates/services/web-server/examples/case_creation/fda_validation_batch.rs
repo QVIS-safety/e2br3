@@ -153,7 +153,6 @@ async fn main() -> Result<()> {
 			issue_count
 		);
 
-		client.mark_case_validated(&case_id).await?;
 		let xml = client.export_xml(&case_id).await?;
 		let output = client.write_export_to_dir(scenario.label, &xml)?;
 		println!("  exported XML: {output}");

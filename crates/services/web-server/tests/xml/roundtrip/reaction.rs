@@ -180,10 +180,10 @@ async fn test_api_persistence_ae_sd_all_fields() -> Result<()> {
 				"term_highlighted": "3",
 				"serious": true,
 				"criteria_death": true,
-				"criteria_life_threatening": false,
+				"criteria_life_threatening_null_flavor": "NI",
 				"criteria_hospitalization": true,
 				"criteria_disabling": true,
-				"criteria_congenital_anomaly": false,
+				"criteria_congenital_anomaly_null_flavor": "NI",
 				"criteria_other_medically_important": true,
 				"required_intervention": false,
 				"start_date": "2024-04-06",
@@ -329,12 +329,8 @@ async fn test_api_persistence_ae_sd_all_fields() -> Result<()> {
 		true,
 		&mut ae_mismatches,
 	);
-	check_bool(
-		"criteria_life_threatening",
-		reaction_bool("criteria_life_threatening"),
-		false,
-		&mut ae_mismatches,
-	);
+	assert!(reaction["criteria_life_threatening"].is_null());
+	assert_eq!(reaction["criteria_life_threatening_null_flavor"], "NI");
 	check_bool(
 		"criteria_hospitalization",
 		reaction_bool("criteria_hospitalization"),
@@ -347,12 +343,8 @@ async fn test_api_persistence_ae_sd_all_fields() -> Result<()> {
 		true,
 		&mut ae_mismatches,
 	);
-	check_bool(
-		"criteria_congenital_anomaly",
-		reaction_bool("criteria_congenital_anomaly"),
-		false,
-		&mut ae_mismatches,
-	);
+	assert!(reaction["criteria_congenital_anomaly"].is_null());
+	assert_eq!(reaction["criteria_congenital_anomaly_null_flavor"], "NI");
 	check_bool(
 		"criteria_other_medically_important",
 		reaction_bool("criteria_other_medically_important"),

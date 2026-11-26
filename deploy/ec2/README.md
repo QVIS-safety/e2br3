@@ -84,17 +84,8 @@ would select the original release's image tags. Stop automatic updates with
    SERVICE_PWD_KEY=<stable-password-hash-key>
    SERVICE_TOKEN_KEY=<stable-token-signing-key>
    SERVICE_TOKEN_DURATION_SEC=86400
-   E2BR3_VALIDATOR_TOKEN=<validator-token>
    E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas
-   E2BR3_XSD_PATH=/opt/e2br3/schemas/ich-icsr-v3.0.xsd
-   E2BR3_EXPORT_VALIDATE=true
-   E2BR3_DEFAULT_MESSAGE_SENDER=<sender-id>
-   E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA=<fda-receiver-id>
-   E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH=<ich-receiver-id>
-   E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS=<mfds-receiver-id>
    RUST_LOG=info
-   E2BR3_ENV=prod
-   E2BR3_STRICT_SUBMISSION_CONFIG=true
    E2BR3_PUBLIC_ORIGIN=https://safety.example.com
    SUBMISSION_RECONCILE_TOKEN=<separate-internal-secret>
    ```
@@ -187,7 +178,7 @@ Missing or empty history on an existing database is an error. `BASELINE` and
 separately using its actual release artifacts, schema/data evidence and backups; do not
 infer historical data changes from current schema alone. Existing UI databases and cloned
 terminology templates follow the same requirement. No automatic reset or seed occurs on
-upgrade. Application startup requires `SKIP_DEV_INIT=1`; it never recreates a database.
+upgrade. Application startup never recreates a database.
 
 Before adopting an existing database without history:
 
@@ -470,13 +461,14 @@ boundary plus `AS2_INBOUND_TOKEN`.
    AS2_RECEIVER_PORT=4080
    ```
 
-   `AS2_SUBMITTER_URL`, `AS2_ACK_CALLBACK_URL`, the app-side
+   `AS2_SUBMITTER_URL`, `AS2_SUBMITTER_TOKEN`, `AS2_SUBMITTER_TIMEOUT_SECS`,
+   `AS2_ACK_CALLBACK_URL`, the app-side
    `AS2_CALLBACK_TOKEN`, and `SUBMISSION_RECONCILE_TOKEN` are consumed by the
    app overlay. Keep the reconcile secret separate from the gateway callback
    secret.
 
-   Note `E2BR3_STRICT_SUBMISSION_CONFIG=true` makes the web server refuse to
-   start without a configured transport, so these must land before the rollout.
+   Configured transports are always validated at startup. An incomplete or
+   ambiguous configuration prevents startup; an unconfigured transport rejects submissions.
 
 4. Open inbound TCP 4080 in the security group. Restrict the source: your own IP
    for a test run, and FDA's outbound range `150.148.0.0/16` for production.
@@ -516,3 +508,5 @@ parsing rejected the garbage body.
 Run the OpenAS2 FDA mock on a workstation and point the submitter at it, which
 exercises the path FDA will actually use. See
 `/opt/as2-submitter/docs/interop-ec2.md`.
+
+발신·수신 식별자는 서버 공통 환경변수로 설정하지 않는다. 앱의 Sender presave gateway와 Product에 연결된 Receiver presave에서 관리한다. ICH Receiver route는 `CI / C.1.3 / Equal`로 보고 유형을 지정한다. 초안은 설정 없이 작성할 수 있으며 헤더 생성 시 필요한 식별자를 확인한다.
