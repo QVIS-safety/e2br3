@@ -228,4 +228,46 @@ mod tests {
 			.is_empty());
 		}
 	}
+
+	#[test]
+	fn local_editor_contracts_enforce_existing_ui_rules() {
+		for (check, valid, invalid) in [
+			(
+				generated::c::local_fda_report_type
+					as for<'a> fn(FieldInput<'a>) -> Vec<super::InputIssue>,
+				"4",
+				"5",
+			),
+			(generated::c::local_mfds_report_type, "6", "7"),
+			(generated::e::local_mfds_device_ae_classification, "1", "2"),
+			(generated::e::local_mfds_device_ae_outcome, "12", "13"),
+		] {
+			assert!(
+				check(FieldInput::new(InputValue::String(valid), None)).is_empty()
+			);
+			assert!(!check(FieldInput::new(InputValue::String(invalid), None))
+				.is_empty());
+		}
+
+		assert!(generated::c::local_report_year(FieldInput::new(
+			InputValue::String("2026"),
+			None,
+		))
+		.is_empty());
+		assert!(!generated::c::local_report_year(FieldInput::new(
+			InputValue::String("26"),
+			None,
+		))
+		.is_empty());
+		assert!(generated::h::local_additional_information(FieldInput::new(
+			InputValue::String(&"한".repeat(20000)),
+			None,
+		))
+		.is_empty());
+		assert!(!generated::h::local_additional_information(FieldInput::new(
+			InputValue::String(&"한".repeat(20001)),
+			None,
+		))
+		.is_empty());
+	}
 }

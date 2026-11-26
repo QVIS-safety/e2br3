@@ -1035,7 +1035,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.aeClassification",
+      "code": "E.i.KR.local.device.aeClassification",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.aeClassification",
       "projectionPath": "reaction.mfds_device_ae_classification",
@@ -1045,8 +1045,9 @@
       },
       "roundTripValue": "0",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.E.i.KR.device.aeClassification.ALLOWED.VALUE",
+        "invalidValue": "2"
       },
       "payloadPath": "mfdsDeviceAe.aeClassification",
       "domFieldNumber": "KR_DVC_AECL",
@@ -1058,7 +1059,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.aeOutcome",
+      "code": "E.i.KR.local.device.aeOutcome",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.aeOutcome",
       "projectionPath": "reaction.mfds_device_ae_outcome",
@@ -1068,8 +1069,9 @@
       },
       "roundTripValue": "10",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.E.i.KR.device.aeOutcome.ALLOWED.VALUE",
+        "invalidValue": "13"
       },
       "payloadPath": "mfdsDeviceAe.aeOutcome",
       "domFieldNumber": "KR_DVC_AEOUT",
@@ -1081,7 +1083,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.causeMedicalDevice",
+      "code": "E.i.KR.local.device.causeMedicalDevice",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.causeMedicalDevice",
       "projectionPath": "reaction.mfds_device_cause_medical_device",
@@ -1091,8 +1093,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeMedicalDevice",
       "domFieldNumber": "KR_DVC_CC_MD",
@@ -1104,7 +1107,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.causeProcedureIssue",
+      "code": "E.i.KR.local.device.causeProcedureIssue",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.causeProcedureIssue",
       "projectionPath": "reaction.mfds_device_cause_procedure_issue",
@@ -1114,8 +1117,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeProcedureIssue",
       "domFieldNumber": "KR_DVC_CC_PI",
@@ -1127,7 +1131,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.causePatientCondition",
+      "code": "E.i.KR.local.device.causePatientCondition",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.causePatientCondition",
       "projectionPath": "reaction.mfds_device_cause_patient_condition",
@@ -1137,8 +1141,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causePatientCondition",
       "domFieldNumber": "KR_DVC_CC_PC",
@@ -1150,7 +1155,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.causeUnableToAssess",
+      "code": "E.i.KR.local.device.causeUnableToAssess",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.causeUnableToAssess",
       "projectionPath": "reaction.mfds_device_cause_unable_to_assess",
@@ -1160,8 +1165,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeUnableToAssess",
       "domFieldNumber": "KR_DVC_CC_UA",
@@ -1173,7 +1179,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.causeOther",
+      "code": "E.i.KR.local.device.causeOther",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.causeOther",
       "projectionPath": "reaction.mfds_device_cause_other",
@@ -1183,8 +1189,9 @@
       },
       "roundTripValue": "Other cause",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.E.i.KR.device.causeOther.LENGTH.MAX",
+        "invalidValue": {"repeat": "X", "count": 20001}
       },
       "payloadPath": "mfdsDeviceAe.causeOther",
       "domFieldNumber": "KR_DVC_CC_OTH",
@@ -1196,7 +1203,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionReason",
+      "code": "E.i.KR.local.device.actionReason",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionReason",
       "projectionPath": "reaction.mfds_device_action_reason",
@@ -1206,8 +1213,9 @@
       },
       "roundTripValue": "Action reason",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.E.i.KR.device.actionReason.LENGTH.MAX",
+        "invalidValue": {"repeat": "X", "count": 20001}
       },
       "payloadPath": "mfdsDeviceAe.actionReason",
       "domFieldNumber": "KR_DVC_ACT_RSN",
@@ -1219,7 +1227,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionRecall",
+      "code": "E.i.KR.local.device.actionRecall",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionRecall",
       "projectionPath": "reaction.mfds_device_action_recall",
@@ -1229,8 +1237,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionRecall",
       "domFieldNumber": "KR_DVC_ACT_RC",
@@ -1242,7 +1251,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionRepair",
+      "code": "E.i.KR.local.device.actionRepair",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionRepair",
       "projectionPath": "reaction.mfds_device_action_repair",
@@ -1252,8 +1261,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionRepair",
       "domFieldNumber": "KR_DVC_ACT_RP",
@@ -1265,7 +1275,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionInspection",
+      "code": "E.i.KR.local.device.actionInspection",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionInspection",
       "projectionPath": "reaction.mfds_device_action_inspection",
@@ -1275,8 +1285,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionInspection",
       "domFieldNumber": "KR_DVC_ACT_INSP",
@@ -1288,7 +1299,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionReplacement",
+      "code": "E.i.KR.local.device.actionReplacement",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionReplacement",
       "projectionPath": "reaction.mfds_device_action_replacement",
@@ -1298,8 +1309,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionReplacement",
       "domFieldNumber": "KR_DVC_ACT_REPL",
@@ -1311,7 +1323,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionImprovement",
+      "code": "E.i.KR.local.device.actionImprovement",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionImprovement",
       "projectionPath": "reaction.mfds_device_action_improvement",
@@ -1321,8 +1333,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionImprovement",
       "domFieldNumber": "KR_DVC_ACT_IMP",
@@ -1334,7 +1347,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionMonitoring",
+      "code": "E.i.KR.local.device.actionMonitoring",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionMonitoring",
       "projectionPath": "reaction.mfds_device_action_monitoring",
@@ -1344,8 +1357,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionMonitoring",
       "domFieldNumber": "KR_DVC_ACT_MON",
@@ -1357,7 +1371,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionNotification",
+      "code": "E.i.KR.local.device.actionNotification",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionNotification",
       "projectionPath": "reaction.mfds_device_action_notification",
@@ -1367,8 +1381,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionNotification",
       "domFieldNumber": "KR_DVC_ACT_NTF",
@@ -1380,7 +1395,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionLabelChange",
+      "code": "E.i.KR.local.device.actionLabelChange",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionLabelChange",
       "projectionPath": "reaction.mfds_device_action_label_change",
@@ -1390,8 +1405,9 @@
       },
       "roundTripValue": true,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionLabelChange",
       "domFieldNumber": "KR_DVC_ACT_CAS",
@@ -1403,7 +1419,7 @@
       }
     },
     {
-      "code": "E.i.KR.device.actionOther",
+      "code": "E.i.KR.local.device.actionOther",
       "authority": "MFDS",
       "frontendPath": "reactions[].mfdsDeviceAe.actionOther",
       "projectionPath": "reaction.mfds_device_action_other",
@@ -1413,8 +1429,9 @@
       },
       "roundTripValue": "Other action",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "This app-local MFDS device field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.E.i.KR.device.actionOther.LENGTH.MAX",
+        "invalidValue": {"repeat": "X", "count": 20001}
       },
       "payloadPath": "mfdsDeviceAe.actionOther",
       "domFieldNumber": "KR_DVC_ACT_OTH",

@@ -835,8 +835,9 @@
       },
       "roundTripValue": "2026",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "Report year is app-local and has no catalog portable constraint."
+        "status": "verified",
+        "ruleCode": "LOCAL.REPORT_YEAR.FORMAT",
+        "invalidValue": "26"
       },
       "payloadPath": "reportYear",
       "persistence": {
@@ -904,8 +905,9 @@
       },
       "roundTripValue": "4",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "FDA report type is app-local and has no catalog portable constraint."
+        "status": "verified",
+        "ruleCode": "LOCAL.FDA.C.1.REPORT_TYPE.ALLOWED.VALUE",
+        "invalidValue": "5"
       },
       "payloadPath": "fdaReportType",
       "domFieldNumber": "FDA_REPORT_TYPE",
@@ -917,7 +919,7 @@
       }
     },
     {
-      "code": "C.1.KR.mfdsReportType",
+      "code": "C.1.KR.local.mfdsReportType",
       "authority": "MFDS",
       "frontendPath": "case.mfdsReportType",
       "projectionPath": "case.mfdsReportType",
@@ -927,8 +929,9 @@
       },
       "roundTripValue": "6",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "MFDS report type is app-local and has no catalog portable constraint."
+        "status": "verified",
+        "ruleCode": "LOCAL.MFDS.C.1.REPORT_TYPE.ALLOWED.VALUE",
+        "invalidValue": "7"
       },
       "payloadPath": "mfdsReportType",
       "domFieldNumber": "MFDS_REPORT_TYPE",

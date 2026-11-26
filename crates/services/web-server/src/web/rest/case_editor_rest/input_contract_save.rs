@@ -240,41 +240,48 @@ pub(super) fn validate_union_direct_rows(
 			}
 		}
 		if let Some(row) = optional_row_object(section, rows, "case")? {
-			validate_field(
-				row,
-				"reportYear",
-				"case.reportYear",
-				InputType::String,
-				None,
-				None,
-				&[],
-				|input| match input.value {
-					InputValue::Missing | InputValue::Null => Vec::new(),
-					InputValue::String(value)
-						if value.trim().is_empty()
-							|| (value.trim().len() == 4
-								&& value
-									.trim()
-									.bytes()
-									.all(|b| b.is_ascii_digit())) =>
-					{
-						Vec::new()
-					}
-					_ => vec![InputIssue {
-						code: "LOCAL.REPORT_YEAR.FORMAT",
-						message: "must be a four-digit year".into(),
-					}],
-				},
-			)?;
+			for (request_path, frontend_path, contract) in [
+				(
+					"reportYear",
+					"case.reportYear",
+					input_contracts::generated::c::local_report_year
+						as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>,
+				),
+				(
+					"fdaReportType",
+					"case.fdaReportType",
+					input_contracts::generated::c::local_fda_report_type,
+				),
+				(
+					"mfdsReportType",
+					"case.mfdsReportType",
+					input_contracts::generated::c::local_mfds_report_type,
+				),
+			] {
+				validate_field(
+					row,
+					request_path,
+					frontend_path,
+					InputType::String,
+					None,
+					None,
+					&[],
+					contract,
+				)?;
+			}
 		}
 	}
 	if section == "NR" {
 		if let Some(row) = optional_row_object(section, rows, "narrative")? {
-			validate_local_text(
+			validate_field(
 				row,
 				"additionalInformation",
 				"narrative.additionalInformation",
-				20000,
+				InputType::String,
+				None,
+				None,
+				&[],
+				input_contracts::generated::h::local_additional_information,
 			)?;
 		}
 	}
@@ -1394,33 +1401,6 @@ pub(super) fn validate_union_direct_rows(
 		validate_section_fields(section, &row, None, &[])?;
 	}
 	Ok(())
-}
-
-pub(super) fn validate_local_text(
-	row: &Map<String, Value>,
-	request: &str,
-	path: &str,
-	limit: usize,
-) -> Result<()> {
-	validate_field(
-		row,
-		request,
-		path,
-		InputType::String,
-		None,
-		None,
-		&[],
-		|input| match input.value {
-			InputValue::Missing | InputValue::Null => vec![],
-			InputValue::String(value) if value.trim().chars().count() <= limit => {
-				vec![]
-			}
-			_ => vec![InputIssue {
-				code: "LOCAL.LENGTH.MAX",
-				message: format!("must contain at most {limit} characters"),
-			}],
-		},
-	)
 }
 
 fn normalized_changed_path(path: &str) -> String {

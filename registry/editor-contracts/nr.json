@@ -126,7 +126,7 @@
       }
     },
     {
-      "code": "H.additionalInformation",
+      "code": "H.local.additionalInformation",
       "authority": "ICH",
       "frontendPath": "narrative.additionalInformation",
       "projectionPath": "narrative.additional_information",
@@ -136,8 +136,9 @@
       },
       "roundTripValue": "Additional information",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "Local additional narrative field has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.H.additionalInformation.LENGTH.MAX",
+        "invalidValue": {"repeat": "X", "count": 20001}
       },
       "payloadPath": "additionalInformation",
       "fixture": {

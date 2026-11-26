@@ -660,7 +660,7 @@ macro_rules! narrative {
 			"additionalInformation",
 			text($data.additional_information.as_deref()),
 			None,
-			unconstrained,
+			input_contracts::generated::h::local_additional_information,
 		)?;
 		Ok(())
 	}};
@@ -697,6 +697,20 @@ mod tests {
 		};
 		assert!(matches!(
 			reporter_create(&data),
+			Err(Error::ConstraintViolation(_))
+		));
+	}
+
+	#[test]
+	fn narrative_reuses_local_additional_information_contract() {
+		let data = NarrativePresaveForCreate {
+			template_title: None,
+			case_narrative: None,
+			case_narrative_notation: None,
+			additional_information: Some("x".repeat(20001)),
+		};
+		assert!(matches!(
+			narrative_create(&data),
 			Err(Error::ConstraintViolation(_))
 		));
 	}

@@ -137,6 +137,17 @@ fn ae(
 ) -> Result<()> {
 	for (request_path, frontend_path, check) in [
 		(
+			"mfdsDeviceAe.aeClassification",
+			"reactions[].mfdsDeviceAe.aeClassification",
+			input_contracts::generated::e::local_mfds_device_ae_classification
+				as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>,
+		),
+		(
+			"mfdsDeviceAe.aeOutcome",
+			"reactions[].mfdsDeviceAe.aeOutcome",
+			input_contracts::generated::e::local_mfds_device_ae_outcome,
+		),
+		(
 			"mfdsDeviceAe.causeOther",
 			"reactions[].mfdsDeviceAe.causeOther",
 			input_contracts::generated::e::local_mfds_device_cause_other
@@ -158,6 +169,68 @@ fn ae(
 			request_path,
 			frontend_path,
 			InputType::String,
+			None,
+			changed_paths,
+			outer_indexes,
+			check,
+		)?;
+	}
+	for (field, check) in [
+		(
+			"causeMedicalDevice",
+			input_contracts::generated::e::local_mfds_device_cause_medical_device
+				as for<'a> fn(FieldInput<'a>) -> Vec<InputIssue>,
+		),
+		(
+			"causeProcedureIssue",
+			input_contracts::generated::e::local_mfds_device_cause_procedure_issue,
+		),
+		(
+			"causePatientCondition",
+			input_contracts::generated::e::local_mfds_device_cause_patient_condition,
+		),
+		(
+			"causeUnableToAssess",
+			input_contracts::generated::e::local_mfds_device_cause_unable_to_assess,
+		),
+		(
+			"actionRecall",
+			input_contracts::generated::e::local_mfds_device_action_recall,
+		),
+		(
+			"actionRepair",
+			input_contracts::generated::e::local_mfds_device_action_repair,
+		),
+		(
+			"actionInspection",
+			input_contracts::generated::e::local_mfds_device_action_inspection,
+		),
+		(
+			"actionReplacement",
+			input_contracts::generated::e::local_mfds_device_action_replacement,
+		),
+		(
+			"actionImprovement",
+			input_contracts::generated::e::local_mfds_device_action_improvement,
+		),
+		(
+			"actionMonitoring",
+			input_contracts::generated::e::local_mfds_device_action_monitoring,
+		),
+		(
+			"actionNotification",
+			input_contracts::generated::e::local_mfds_device_action_notification,
+		),
+		(
+			"actionLabelChange",
+			input_contracts::generated::e::local_mfds_device_action_label_change,
+		),
+	] {
+		validate_field(
+			row,
+			&format!("mfdsDeviceAe.{field}"),
+			&format!("reactions[].mfdsDeviceAe.{field}"),
+			InputType::Boolean,
 			None,
 			changed_paths,
 			outer_indexes,
@@ -618,11 +691,25 @@ fn dg(
 	changed_paths: Option<&BTreeSet<String>>,
 	outer_indexes: &[usize],
 ) -> Result<()> {
-	super::validate_local_text(
+	validate_field(
 		row,
 		"drugBatchNumber",
 		"drugs[].drugBatchNumber",
-		35,
+		InputType::String,
+		None,
+		changed_paths,
+		outer_indexes,
+		input_contracts::generated::g::local_batch_lot_number,
+	)?;
+	validate_field(
+		row,
+		"dosageInformation[].continuing",
+		"drugs[].dosageInformation[].continuing",
+		InputType::Boolean,
+		None,
+		changed_paths,
+		outer_indexes,
+		input_contracts::generated::g::local_dosage_continuing,
 	)?;
 	validate_field(
 		row,

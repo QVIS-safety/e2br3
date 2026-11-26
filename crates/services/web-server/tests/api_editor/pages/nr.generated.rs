@@ -11,7 +11,7 @@ mod fields {
     field_contract_test!(h_4, "H.4");
     field_contract_test!(h_5_r_1a, "H.5.r.1a");
     field_contract_test!(h_5_r_1b, "H.5.r.1b");
-    field_contract_test!(h_additionalinformation, "H.additionalInformation");
+    field_contract_test!(h_local_additionalinformation, "H.local.additionalInformation");
     #[serial_test::serial]
     #[tokio::test]
     async fn summary_language_and_text_clear_together() -> crate::common::Result<()> {

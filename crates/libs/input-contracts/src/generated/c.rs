@@ -1,5 +1,52 @@
 // Generated once from registry/dictionary/*.json; explicit field functions are maintained here.
 
+pub fn local_report_year(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
+	let valid = match input.value {
+		crate::InputValue::Missing | crate::InputValue::Null => true,
+		crate::InputValue::String(value) => {
+			let value = value.trim();
+			value.is_empty()
+				|| (value.len() == 4
+					&& value.bytes().all(|character| character.is_ascii_digit()))
+		}
+		_ => false,
+	};
+	if valid {
+		Vec::new()
+	} else {
+		vec![crate::InputIssue {
+			code: "LOCAL.REPORT_YEAR.FORMAT",
+			message: "must be a four-digit year".to_owned(),
+		}]
+	}
+}
+
+pub fn local_fda_report_type(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::allowed_values(
+		&mut issues,
+		"LOCAL.FDA.C.1.REPORT_TYPE.ALLOWED.VALUE",
+		input.value,
+		&["1", "2", "3", "4"],
+	);
+	issues
+}
+
+pub fn local_mfds_report_type(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::allowed_values(
+		&mut issues,
+		"LOCAL.MFDS.C.1.REPORT_TYPE.ALLOWED.VALUE",
+		input.value,
+		&["1", "2", "3", "4", "5", "6"],
+	);
+	issues
+}
+
 /// FDA.C.1.12.NULLFLAVOR.ALLOWED
 pub fn fda_c_1_12(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();

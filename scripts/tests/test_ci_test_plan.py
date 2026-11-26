@@ -184,6 +184,14 @@ class TestPlanTests(unittest.TestCase):
         self.assertTrue(helpers['backend_contracts'])
         self.assertFalse(helpers['registry'])
 
+    def test_input_contract_implementations_keep_cross_repo_registry_gate(self):
+        for path in ('crates/libs/input-contracts/src/generated/c.rs',
+                     'crates/services/web-server/src/web/rest/case_editor_rest/input_contract_save.rs',
+                     'crates/services/web-server/src/web/rest/section_presave_rest/input_contract.rs'):
+            plan = self.plan(path)
+            self.assertTrue(plan['registry'], path)
+            self.assertTrue(plan['backend_contracts'], path)
+
     def test_xml_assets_follow_consuming_targets_in_ci_and_local_runner(self):
         for target in ('api_cases', 'api_editor', 'api_presave', 'api_administration',
                        'api_terminology', 'authz', 'isolation_guard', 'api_import', 'api_submission', 'xml'):

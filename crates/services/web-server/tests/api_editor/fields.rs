@@ -91,6 +91,20 @@ pub(super) fn build_path(path: &str, value: Value) -> Value {
 	build(&path.split('.').collect::<Vec<_>>(), value)
 }
 
+fn expand_fixture_value(value: &Value) -> Result<Value> {
+	match (value.get("repeat"), value.get("count")) {
+		(None, None) => Ok(value.clone()),
+		(Some(repeat), Some(count)) => {
+			let repeat = repeat.as_str().ok_or("fixture repeat must be a string")?;
+			let count = count.as_u64().ok_or("fixture count must be an integer")?;
+			let count =
+				usize::try_from(count).map_err(|_| "fixture count is too large")?;
+			Ok(Value::String(repeat.repeat(count)))
+		}
+		_ => Err("fixture repeat and count must be declared together".into()),
+	}
+}
+
 pub(super) fn read_path<'a>(mut value: &'a Value, path: &str) -> Option<&'a Value> {
 	for segment in path.split('.') {
 		if segment == "[]" {
@@ -312,7 +326,8 @@ pub async fn verify_field(spec: FieldSpec) -> Result<()> {
 			}
 			_ => request_path.clone(),
 		};
-		let mut invalid = build_path(&invalid_path, invalid_value.clone());
+		let mut invalid =
+			build_path(&invalid_path, expand_fixture_value(invalid_value)?);
 		pin_row_ids(
 			&mut invalid,
 			&request_path,

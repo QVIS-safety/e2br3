@@ -696,6 +696,12 @@ def validate_row(row: Any, source: Path, result: ValidationResult) -> None:
         result.add(f"{row_id}: local_only must be a boolean")
 
     e2br3_code = row.get("e2br3_code")
+    if (
+        row.get("local_only") is True
+        and isinstance(e2br3_code, str)
+        and "local" not in (part.lower() for part in e2br3_code.split("."))
+    ):
+        result.add(f"{row_id}: local_only rows must use a local code segment")
     if authority == "MFDS" and isinstance(e2br3_code, str) and ".KR." not in e2br3_code:
         result.add(f"{row_id}: MFDS rows must use a KR regional E2BR3 code")
     if authority == "FDA" and isinstance(e2br3_code, str) and e2br3_code.startswith("FDA.") is False:

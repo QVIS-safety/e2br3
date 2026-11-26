@@ -119,8 +119,9 @@
       },
       "roundTripValue": "LOT-001",
       "constraint": {
-        "status": "not_applicable",
-        "reason": "Local batch/lot mirror has no Input Contract."
+        "status": "verified",
+        "ruleCode": "LOCAL.G.k.batchLotNumber.LENGTH.MAX",
+        "invalidValue": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "payloadPath": "drugBatchNumber",
       "persistence": {
@@ -1966,8 +1967,9 @@
       },
       "roundTripValue": false,
       "constraint": {
-        "status": "not_applicable",
-        "reason": "Local continuing helper has no Input Contract."
+        "status": "verified",
+        "ruleCode": "INPUT.TYPE",
+        "invalidValue": "not-a-boolean"
       },
       "payloadPath": "dosageInformation[].continuing",
       "domFieldNumber": "DG_CONT",

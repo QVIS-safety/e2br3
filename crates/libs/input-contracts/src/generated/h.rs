@@ -1,5 +1,18 @@
 // Generated once from registry/dictionary/*.json; explicit field functions are maintained here.
 
+pub fn local_additional_information(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"LOCAL.H.additionalInformation.LENGTH.MAX",
+		input.value,
+		20000,
+	);
+	issues
+}
+
 /// ICH.H.1.LENGTH.MAX
 pub fn h_1(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
 	let mut issues = Vec::new();

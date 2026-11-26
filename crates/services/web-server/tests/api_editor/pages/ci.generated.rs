@@ -21,7 +21,7 @@ mod fields {
     field_contract_test!(c_1_9_1, "C.1.9.1");
     field_contract_test!(c_1_9_1_r_1, "C.1.9.1.r.1");
     field_contract_test!(c_1_9_1_r_2, "C.1.9.1.r.2");
-    field_contract_test!(c_1_kr_mfdsreporttype, "C.1.KR.mfdsReportType");
+    field_contract_test!(c_1_kr_local_mfdsreporttype, "C.1.KR.local.mfdsReportType");
     field_contract_test!(c_1_local_fulfilexpeditedcriterianullflavor, "C.1.local.fulfilExpeditedCriteriaNullFlavor");
     field_contract_test!(c_1_local_othercaseidentifiersexistnullflavor, "C.1.local.otherCaseIdentifiersExistNullFlavor");
     field_contract_test!(c_local_reportyear, "C.local.reportYear");

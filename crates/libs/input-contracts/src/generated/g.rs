@@ -1,5 +1,26 @@
 // Generated once from registry/dictionary/*.json; explicit field functions are maintained here.
 
+pub fn local_batch_lot_number(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::max_length(
+		&mut issues,
+		"LOCAL.G.k.batchLotNumber.LENGTH.MAX",
+		input.value,
+		35,
+	);
+	issues
+}
+
+pub fn local_dosage_continuing(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::boolean(&mut issues, "INPUT.TYPE", input.value);
+	issues
+}
+
 /// FDA.G.k.1.a.LENGTH.MAX
 /// FDA.G.k.1.a.ALLOWED.VALUE
 pub fn fda_g_k_1_a(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {

@@ -1,5 +1,61 @@
 // Generated once from registry/dictionary/*.json; explicit field functions are maintained here.
 
+pub fn local_mfds_device_ae_classification(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::allowed_values(
+		&mut issues,
+		"LOCAL.E.i.KR.device.aeClassification.ALLOWED.VALUE",
+		input.value,
+		&["0", "1"],
+	);
+	issues
+}
+
+pub fn local_mfds_device_ae_outcome(
+	input: crate::FieldInput<'_>,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::allowed_values(
+		&mut issues,
+		"LOCAL.E.i.KR.device.aeOutcome.ALLOWED.VALUE",
+		input.value,
+		&["3", "4", "5", "8", "9", "10", "11", "12"],
+	);
+	issues
+}
+
+fn local_mfds_device_boolean(
+	input: crate::FieldInput<'_>,
+	code: &'static str,
+) -> Vec<crate::InputIssue> {
+	let mut issues = Vec::new();
+	crate::helpers::boolean(&mut issues, code, input.value);
+	issues
+}
+
+macro_rules! local_device_boolean {
+	($name:ident, $code:literal) => {
+		pub fn $name(input: crate::FieldInput<'_>) -> Vec<crate::InputIssue> {
+			local_mfds_device_boolean(input, $code)
+		}
+	};
+}
+
+local_device_boolean!(local_mfds_device_cause_medical_device, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_cause_procedure_issue, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_cause_patient_condition, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_cause_unable_to_assess, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_recall, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_repair, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_inspection, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_replacement, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_improvement, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_monitoring, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_notification, "INPUT.TYPE");
+local_device_boolean!(local_mfds_device_action_label_change, "INPUT.TYPE");
+
 pub fn local_mfds_device_cause_other(
 	input: crate::FieldInput<'_>,
 ) -> Vec<crate::InputIssue> {
