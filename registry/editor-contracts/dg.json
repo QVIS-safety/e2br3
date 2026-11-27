@@ -1969,6 +1969,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "drugs[].dosageInformation[].continuing",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "dosageInformation[].continuing",

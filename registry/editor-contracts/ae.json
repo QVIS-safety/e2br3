@@ -1095,6 +1095,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.causeMedicalDevice",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeMedicalDevice",
@@ -1119,6 +1120,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.causeProcedureIssue",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeProcedureIssue",
@@ -1143,6 +1145,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.causePatientCondition",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causePatientCondition",
@@ -1167,6 +1170,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.causeUnableToAssess",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.causeUnableToAssess",
@@ -1239,6 +1243,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionRecall",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionRecall",
@@ -1263,6 +1268,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionRepair",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionRepair",
@@ -1287,6 +1293,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionInspection",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionInspection",
@@ -1311,6 +1318,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionReplacement",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionReplacement",
@@ -1335,6 +1343,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionImprovement",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionImprovement",
@@ -1359,6 +1368,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionMonitoring",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionMonitoring",
@@ -1383,6 +1393,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionNotification",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionNotification",
@@ -1407,6 +1418,7 @@
       "constraint": {
         "status": "verified",
         "ruleCode": "INPUT.TYPE",
+        "issuePath": "reactions[].mfdsDeviceAe.actionLabelChange",
         "invalidValue": "not-a-boolean"
       },
       "payloadPath": "mfdsDeviceAe.actionLabelChange",
