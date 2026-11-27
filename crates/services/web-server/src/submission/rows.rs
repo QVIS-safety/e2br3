@@ -102,15 +102,6 @@ pub(super) struct EsgAckResponse {
 	pub(super) message: Option<String>,
 }
 
-pub(super) fn is_esg_configured() -> Result<bool> {
-	crate::config::env_non_empty("FDA_ESG_BASE_URL").map_err(|message| {
-		Error::Configuration {
-			key: "FDA_ESG_BASE_URL",
-			message,
-		}
-	})
-}
-
 pub(super) fn as2_submitter_url() -> Result<Option<String>> {
 	match std::env::var("AS2_SUBMITTER_URL") {
 		Ok(value) if !value.trim().is_empty() => Ok(Some(value.trim().to_string())),

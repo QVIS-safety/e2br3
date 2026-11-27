@@ -38,10 +38,10 @@ pub(super) fn outbound_header(
 		batch_sender_identifier: Some("TEST-SENDER".to_string()),
 		batch_receiver_identifier: Some(batch_receiver_identifier.to_string()),
 		batch_transmission_date: Some("20241121010203+0000".to_string()),
-		message_number: "TEST-MESSAGE".to_string(),
-		message_date: "20241121010203+0000".to_string(),
-		message_sender_identifier: "TEST-SENDER".to_string(),
-		message_receiver_identifier: message_receiver_identifier.to_string(),
+		message_number: Some("TEST-MESSAGE".to_string()),
+		message_date: Some("20241121010203+0000".to_string()),
+		message_sender_identifier: Some("TEST-SENDER".to_string()),
+		message_receiver_identifier: Some(message_receiver_identifier.to_string()),
 	}
 }
 

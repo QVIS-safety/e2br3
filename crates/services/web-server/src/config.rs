@@ -23,15 +23,6 @@ impl WebConfig {
 	}
 }
 
-pub(crate) fn env_non_empty(name: &str) -> core::result::Result<bool, String> {
-	match std::env::var(name) {
-		Ok(value) if !value.trim().is_empty() => Ok(true),
-		Ok(_) => Err(format!("{name} must not be empty")),
-		Err(std::env::VarError::NotPresent) => Ok(false),
-		Err(error) => Err(format!("failed to read {name}: {error}")),
-	}
-}
-
 pub fn validate_submission_runtime_config() -> core::result::Result<(), String> {
 	validate_submission_config(|key| match std::env::var(key) {
 		Ok(value) => Ok(Some(value)),
@@ -49,11 +40,7 @@ fn validate_submission_config(
 		"AS2_CALLBACK_TOKEN",
 		"AS2_SUBMITTER_TOKEN",
 		"AS2_SUBMITTER_TIMEOUT_SECS",
-	];
-	let esg = [
-		"FDA_ESG_BASE_URL",
-		"FDA_ESG_SUBMIT_PATH",
-		"FDA_ESG_TIMEOUT_SECS",
+		"AS2_PROFILE_ENCRYPTION_KEY",
 	];
 	let required = |key: &str| -> core::result::Result<String, String> {
 		match read(key)? {
@@ -61,22 +48,22 @@ fn validate_submission_config(
 			_ => Err(format!("configured submission transport requires {key}")),
 		}
 	};
-	let mut configured = 0;
-	for keys in [&as2[..], &esg[..]] {
+	for keys in [&as2[..]] {
 		let mut present = false;
 		for key in keys {
 			present |= read(key)?.is_some();
 		}
-		if keys == &esg[..] {
-			present |= read("FDA_ESG_BEARER_TOKEN")?.is_some();
-			present |= read("FDA_ESG_API_KEY")?.is_some();
-		}
 		if !present {
 			continue;
 		}
-		configured += 1;
 		for key in keys {
 			let value = required(key)?;
+			if *key == "AS2_PROFILE_ENCRYPTION_KEY" && value.len() < 32 {
+				return Err(
+					"AS2_PROFILE_ENCRYPTION_KEY must contain at least 32 characters"
+						.into(),
+				);
+			}
 			if key.ends_with("_URL") {
 				let url = reqwest::Url::parse(&value)
 					.map_err(|_| format!("{key} must be an absolute HTTP(S) URL"))?;
@@ -95,9 +82,6 @@ fn validate_submission_config(
 				return Err(format!("{key} must be a positive integer"));
 			}
 		}
-	}
-	if configured > 1 {
-		return Err("ambiguous transport config: set only one of AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".into());
 	}
 	Ok(())
 }
@@ -125,13 +109,12 @@ mod tests {
 			("AS2_CALLBACK_TOKEN", "test-callback"),
 			("AS2_SUBMITTER_TOKEN", "test-submit"),
 			("AS2_SUBMITTER_TIMEOUT_SECS", "20"),
+			(
+				"AS2_PROFILE_ENCRYPTION_KEY",
+				"test-only-profile-key-32-characters",
+			),
 		]);
-		let esg = HashMap::from([
-			("FDA_ESG_BASE_URL", "https://gateway.example"),
-			("FDA_ESG_SUBMIT_PATH", "submit"),
-			("FDA_ESG_TIMEOUT_SECS", "20"),
-		]);
-		for values in [&as2, &esg] {
+		for values in [&as2] {
 			assert!(check(values).is_ok());
 			for key in values.keys() {
 				let mut missing = values.clone();
@@ -142,9 +125,6 @@ mod tests {
 				assert!(check(&blank).is_err(), "blank {key}");
 			}
 		}
-		let mut both = as2.clone();
-		both.extend(esg);
-		assert!(check(&both).expect_err("ambiguous").contains("ambiguous"));
 		for value in ["0", "-1", "bad"] {
 			let mut invalid = as2.clone();
 			invalid.insert("AS2_SUBMITTER_TIMEOUT_SECS", value);
@@ -155,8 +135,5 @@ mod tests {
 			invalid.insert("AS2_SUBMITTER_URL", value);
 			assert!(check(&invalid).is_err());
 		}
-		assert!(
-			check(&HashMap::from([("FDA_ESG_API_KEY", "orphan-token")])).is_err()
-		);
 	}
 }

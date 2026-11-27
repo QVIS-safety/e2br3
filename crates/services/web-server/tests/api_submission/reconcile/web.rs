@@ -3,7 +3,7 @@ use super::super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_internal_reconcile_endpoint_auth_and_empty_result() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
 	let app = web_server::app(mm).expect("web server configuration");
@@ -39,7 +39,7 @@ async fn test_internal_reconcile_endpoint_auth_and_empty_result() -> Result<()> 
 			>= 1
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -47,7 +47,7 @@ async fn test_internal_reconcile_endpoint_auth_and_empty_result() -> Result<()> 
 #[tokio::test]
 async fn test_internal_reconcile_status_accumulates_runtime_counters() -> Result<()>
 {
-	clear_esg_env();
+	clear_submission_env();
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
 	let app = web_server::app(mm).expect("web server configuration");
@@ -89,15 +89,15 @@ async fn test_internal_reconcile_status_accumulates_runtime_counters() -> Result
 		.as_u64()
 		.ok_or("missing total_attempted")?;
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 
@@ -212,7 +212,7 @@ async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 			>= 1
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -220,8 +220,8 @@ async fn test_internal_reconcile_does_not_resend_esg_attempt() -> Result<()> {
 #[tokio::test]
 async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 ) -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 
@@ -334,6 +334,6 @@ async fn test_internal_reconcile_transport_change_does_not_resend_esg_attempt(
 			>= 1
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }

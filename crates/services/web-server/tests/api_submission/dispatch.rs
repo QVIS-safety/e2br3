@@ -2,8 +2,132 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
+async fn sender_presave_route_is_required_and_read_live_for_the_linked_sender(
+) -> Result<()> {
+	use lib_core::ctx::Ctx;
+	use lib_core::model::organization_as2_profile::OrganizationAs2ProfileBmc;
+	use lib_core::model::presave::{
+		SenderPresaveGatewayBmc, SenderPresaveGatewayForUpdate,
+	};
+	use lib_core::model::safety_report::SenderInformationBmc;
+	clear_submission_env();
+	let (url, received) = start_mock_submitter().await?;
+	configure_as2_test_endpoint(url);
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let cookie = cookie_header(
+		&generate_web_token(&seed.admin.email, seed.admin.token_salt)?.to_string(),
+	);
+	let app = web_server::app(mm.clone()).expect("configuration");
+	// Another valid Sender exists; missing linkage must not select it implicitly.
+	crate::common::create_test_import_product(&mm, seed.org_id, seed.admin.id)
+		.await?;
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
+	let (_, rows) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report/senders"),
+	)
+	.await?;
+	let sender_id =
+		Uuid::parse_str(rows["data"][0]["id"].as_str().ok_or("missing sender")?)?;
+	let ctx = Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let sender = SenderInformationBmc::get(&ctx, &mm, sender_id).await?;
+	let parent = sender
+		.source_sender_presave_id
+		.ok_or("missing Sender link")?;
+	let gateway = SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, parent)
+		.await?
+		.into_iter()
+		.find(|g| g.gateway_authority == "fda")
+		.ok_or("missing FDA gateway")?;
+	let submit_uri = format!("/api/cases/{case_id}/submissions/fda");
+	for (linked, route, expected_error) in [
+		(
+			false,
+			"VALID-ROUTE",
+			"case Sender must reference a Sender template",
+		),
+		(true, "", "Sender presave AS2 Routing ID"),
+		(true, "invalid\r\nroute", "without quotes or line breaks"),
+	] {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx(
+			mm.dbx(),
+			seed.admin.id,
+			seed.org_id,
+			ROLE_SPONSOR_ADMIN_CRO,
+		)
+		.await?;
+		mm.dbx().execute(sqlx::query("UPDATE sender_information SET source_sender_presave_id=$2 WHERE id=$1")
+			.bind(sender_id).bind(if linked {Some(parent)} else {None::<Uuid>})).await?;
+		mm.dbx().commit_txn().await?;
+		SenderPresaveGatewayBmc::update(
+			&ctx,
+			&mm,
+			gateway.id,
+			SenderPresaveGatewayForUpdate {
+				routing_identifier: Some(route.into()),
+				..Default::default()
+			},
+		)
+		.await?;
+		let (status, body) =
+			post_json(&app, &cookie, &submit_uri, valid_compliance_payload())
+				.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+		assert!(body.to_string().contains(expected_error), "{body}");
+		assert!(received.lock().await.is_empty());
+		let (_, case) =
+			get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+		assert_eq!(case["data"]["status"], "draft");
+		let (_, history) =
+			get_json(&app, &cookie, &format!("/api/cases/{case_id}/submissions"))
+				.await?;
+		assert_eq!(history["data"]["items"], json!([]));
+	}
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		gateway.id,
+		SenderPresaveGatewayForUpdate {
+			routing_identifier: Some("UPDATED-LINKED-SENDER".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let runtime =
+		OrganizationAs2ProfileBmc::runtime_profiles(&Ctx::root_ctx(), &mm).await?;
+	let fda: Vec<_> = runtime
+		.iter()
+		.filter(|p| p.organization_id == seed.org_id && p.authority == "fda")
+		.collect();
+	assert_eq!(fda.len(), 2);
+	assert_eq!(fda[0].id, fda[1].id);
+	assert!(fda.iter().any(|p| p.routing_id == "UPDATED-LINKED-SENDER"));
+	assert!(!fda
+		.iter()
+		.any(|p| p.routing_id == format!("ROUTE-{case_id}-fda")));
+	let (status, body) =
+		post_json(&app, &cookie, &submit_uri, valid_compliance_payload()).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	assert_eq!(
+		received.lock().await[0]["routingId"],
+		"UPDATED-LINKED-SENDER"
+	);
+	clear_submission_env();
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_submission_rejects_unconfigured_transport() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -23,26 +147,16 @@ async fn test_submission_rejects_unconfigured_transport() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body:?}");
 	assert_eq!(body["error"]["message"], "CONFIGURATION_ERROR", "{body:?}");
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_submission_esg_transport_sends_expected_headers_and_payload(
-) -> Result<()> {
-	clear_esg_env();
-	let (esg_url, received) = start_mock_esg(
-		StatusCode::OK,
-		json!({
-			"submission_id": format!("ESG-{}", Uuid::new_v4().simple()),
-			"ack": { "level": 1, "success": true, "code": "ACK1" }
-		}),
-	)
-	.await?;
-	configure_esg_test_endpoint(esg_url);
-	std::env::set_var("FDA_ESG_BEARER_TOKEN", "test-esg-token");
-	std::env::set_var("FDA_ESG_API_KEY", "test-esg-api-key");
+async fn test_submission_sends_xml_to_as2_submitter() -> Result<()> {
+	clear_submission_env();
+	let (submitter_url, received) = start_mock_submitter().await?;
+	configure_as2_test_endpoint(submitter_url);
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -62,76 +176,31 @@ async fn test_submission_esg_transport_sends_expected_headers_and_payload(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert_eq!(body["data"]["gateway"], "fda-esg-nextgen-api");
+	assert_eq!(body["data"]["gateway"], "as2-submitter-http-fda");
 
 	let msgs = received.lock().await;
 	assert_eq!(msgs.len(), 1, "{msgs:?}");
-	assert_eq!(msgs[0]["authorization"], "Bearer test-esg-token");
-	assert_eq!(msgs[0]["x_api_key"], "test-esg-api-key");
-	let xml = msgs[0]["body"]["xml"]
+	let xml = msgs[0]["xmlPayload"]
 		.as_str()
 		.ok_or("missing xml payload")?;
 	assert!(!xml.trim().is_empty());
-
-	clear_esg_env();
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_submission_esg_non_success_preserves_unknown_without_resend(
-) -> Result<()> {
-	clear_esg_env();
-	let (esg_url, received) = start_mock_esg(
-		StatusCode::BAD_GATEWAY,
-		json!({ "error": "gateway unavailable" }),
+	assert!(msgs[0].get("transportProfile").is_none());
+	assert!(Uuid::parse_str(
+		msgs[0]["profileId"].as_str().ok_or("missing profileId")?
 	)
-	.await?;
-	configure_esg_test_endpoint(esg_url);
+	.is_ok());
+	assert_eq!(msgs[0]["profileVersion"], 1);
+	assert_eq!(msgs[0]["routingId"], format!("ROUTE-{case_id}-fda"));
+	assert!(msgs[0].get("signingPkcs12Base64").is_none());
 
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm.clone()).expect("web server configuration");
-
-	let case_id =
-		create_case_with_profile(&app, &cookie, seed.org_id, "fda").await?;
-	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
-
-	let (status, body) = post_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/submissions/fda"),
-		valid_compliance_payload(),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert_eq!(body["data"]["status"], "dispatch_unknown");
-	assert!(body["data"]["remote_submission_id"].is_null());
-	assert!(body["data"]["ack1"].is_null());
-	assert_eq!(received.lock().await.len(), 1);
-	let id = body["data"]["id"].as_str().ok_or("missing id")?;
-	let (_, dispatch) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/submissions/{id}/dispatch-state"),
-	)
-	.await?;
-	assert!(dispatch["data"]["state"]["next_retry_at"].is_null());
-	assert!(dispatch["data"]["state"]["last_error"]
-		.as_str()
-		.ok_or("missing dispatch error")?
-		.contains("FDA ESG submit failed"));
-
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	configure_mock_as2_transport().await?;
 
 	let mm = init_test_mm().await?;
@@ -157,14 +226,14 @@ async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
 		.ok_or("missing remote_submission_id")?;
 	assert!(remote_submission_id.starts_with("AS2-MOCK-"));
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_submission_uses_request_authority_not_case_appendices() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	configure_mock_as2_transport().await?;
 
 	let mm = init_test_mm().await?;
@@ -189,7 +258,7 @@ async fn test_submission_uses_request_authority_not_case_appendices() -> Result<
 		.unwrap_or_default()
 		.starts_with("AS2-MOCK-"));
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -197,7 +266,7 @@ async fn test_submission_uses_request_authority_not_case_appendices() -> Result<
 #[tokio::test]
 async fn test_submission_records_failure_when_as2_submitter_unreachable(
 ) -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	configure_as2_test_endpoint("http://127.0.0.1:9");
 	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
 
@@ -344,6 +413,6 @@ async fn test_submission_records_failure_when_as2_submitter_unreachable(
 		StatusCode::NOT_FOUND
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }

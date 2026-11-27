@@ -45,114 +45,8 @@ fn require_ack1(
 	})
 }
 
-fn prepare_esg_request(
-	xml: &str,
-	authority: SubmissionAuthority,
-) -> Result<PreparedGatewayRequest> {
-	if as2_submitter_url()?.is_some() {
-		return Err(Error::BadRequest { message: "AS2 requires durable reservation; automatic gateway resend is disabled".into() });
-	}
-
-	if !is_esg_configured()? {
-		return Err(Error::Configuration {
-			key: "submission_transport",
-			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".to_string(),
-		});
-	}
-	if authority != SubmissionAuthority::Fda {
-		return Err(Error::BadRequest {
-			message:
-				"FDA ESG transport only supports authority=fda; configure AS2 for MFDS submissions"
-					.to_string(),
-		});
-	}
-
-	let base_url =
-		std::env::var("FDA_ESG_BASE_URL").map_err(|error| Error::Configuration {
-			key: "FDA_ESG_BASE_URL",
-			message: error.to_string(),
-		})?;
-	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH").map_err(|error| {
-		Error::Configuration {
-			key: "FDA_ESG_SUBMIT_PATH",
-			message: error.to_string(),
-		}
-	})?;
-	let submit_url = format!(
-		"{}/{}",
-		base_url.trim_end_matches('/'),
-		submit_path.trim_start_matches('/')
-	);
-	let timeout_secs = parse_timeout_secs("FDA_ESG_TIMEOUT_SECS")?;
-	let client = reqwest::Client::builder()
-		.redirect(reqwest::redirect::Policy::none())
-		.timeout(Duration::from_secs(timeout_secs))
-		.build()
-		.map_err(|err| Error::BadRequest {
-			message: format!("failed to initialize FDA ESG client: {err}"),
-		})?;
-
-	let mut headers = HeaderMap::new();
-	if let Ok(token) = std::env::var("FDA_ESG_BEARER_TOKEN") {
-		let value = format!("Bearer {}", token.trim());
-		let hv =
-			HeaderValue::from_str(&value).map_err(|_| Error::Configuration {
-				key: "FDA_ESG_BEARER_TOKEN",
-				message: "invalid FDA_ESG_BEARER_TOKEN".to_string(),
-			})?;
-		headers.insert(AUTHORIZATION, hv);
-	}
-	if let Ok(api_key) = std::env::var("FDA_ESG_API_KEY") {
-		let hv = HeaderValue::from_str(api_key.trim()).map_err(|_| {
-			Error::Configuration {
-				key: "FDA_ESG_API_KEY",
-				message: "invalid FDA_ESG_API_KEY".to_string(),
-			}
-		})?;
-		headers.insert("x-api-key", hv);
-	}
-
-	let request = client
-		.post(&submit_url)
-		.headers(headers)
-		.json(&json!({ "xml": xml }))
-		.build()
-		.map_err(|error| Error::BadRequest {
-			message: format!("invalid FDA ESG request: {error}"),
-		})?;
-	if !matches!(request.url().scheme(), "http" | "https")
-		|| request.url().host_str().is_none()
-	{
-		return Err(Error::Configuration {
-			key: "FDA_ESG_BASE_URL",
-			message: "gateway must be an absolute HTTP(S) URL".into(),
-		});
-	}
-	Ok(PreparedGatewayRequest {
-		client,
-		request,
-		as2: false,
-	})
-}
-
 pub(super) fn select_gateway_name(authority: SubmissionAuthority) -> Result<String> {
-	if as2_submitter_url()?.is_some() {
-		return Ok(format!("as2-submitter-http-{}", authority.as_str()));
-	}
-	if !is_esg_configured()? {
-		return Err(Error::Configuration {
-			key: "submission_transport",
-			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_BASE_URL".to_string(),
-		});
-	}
-	if authority != SubmissionAuthority::Fda {
-		return Err(Error::BadRequest {
-			message:
-				"FDA ESG transport only supports authority=fda; configure AS2 for MFDS submissions"
-					.to_string(),
-		});
-	}
-	Ok("fda-esg-nextgen-api".to_string())
+	Ok(format!("as2-submitter-http-{}", authority.as_str()))
 }
 
 #[cfg(test)]
@@ -213,20 +107,6 @@ mod tests {
 		assert!(message.contains("unsuccessful ACK1"));
 		assert!(!message.contains("accepted by gateway"));
 	}
-
-	#[test]
-	fn unconfigured_transport_does_not_select_a_gateway() {
-		std::env::remove_var("AS2_SUBMITTER_URL");
-		std::env::remove_var("FDA_ESG_BASE_URL");
-		let error = select_gateway_name(SubmissionAuthority::Fda)
-			.expect_err("unconfigured transport must fail");
-		assert!(error
-			.to_string()
-			.contains("no submission transport configured"));
-		std::env::set_var("FDA_ESG_BASE_URL", "");
-		assert!(select_gateway_name(SubmissionAuthority::Fda).is_err());
-		std::env::remove_var("FDA_ESG_BASE_URL");
-	}
 }
 
 pub(super) struct PreparedGatewayRequest {
@@ -245,12 +125,19 @@ pub(super) fn prepare_submission_request(
 	authority: SubmissionAuthority,
 	xml: &str,
 	gateway: &str,
+	profile_id: Uuid,
+	profile_version: i64,
+	routing_id: &str,
 ) -> Result<PreparedGatewayRequest> {
 	match gateway {
-		"as2-submitter-http-fda" | "as2-submitter-http-mfds" => {
-			prepare_as2_request(case_id, authority, Some(xml))
-		}
-		"fda-esg-nextgen-api" => prepare_esg_request(xml, authority),
+		"as2-submitter-http-fda" | "as2-submitter-http-mfds" => prepare_as2_request(
+			case_id,
+			authority,
+			Some(xml),
+			Some(profile_id),
+			Some(profile_version),
+			Some(routing_id),
+		),
 		_ => Err(Error::BadRequest {
 			message: "unsupported submission transport".into(),
 		}),
@@ -261,9 +148,13 @@ fn prepare_as2_request(
 	case_id: Uuid,
 	authority: SubmissionAuthority,
 	xml: Option<&str>,
+	profile_id: Option<Uuid>,
+	profile_version: Option<i64>,
+	routing_id: Option<&str>,
 ) -> Result<PreparedGatewayRequest> {
-	let base = as2_submitter_url()?.ok_or(Error::BadRequest {
-		message: "AS2_SUBMITTER_URL is required".into(),
+	let base = as2_submitter_url()?.ok_or(Error::Configuration {
+		key: "AS2_SUBMITTER_URL",
+		message: "submission transport is not configured".into(),
 	})?;
 	let token = as2_submitter_token()?;
 	let callback = std::env::var("AS2_ACK_CALLBACK_URL").map_err(|error| {
@@ -301,7 +192,7 @@ fn prepare_as2_request(
 		})?;
 	let request = client.post(format!("{}/{path}", base.trim_end_matches('/')))
         .header("x-api-token", token.trim())
-        .json(&json!({"caseId":case_id.to_string(),"authority":authority.as_str(),"idempotencyKey":case_id.to_string(),"xmlPayload":xml,"callbackUrl":callback}))
+		.json(&json!({"caseId":case_id.to_string(),"authority":authority.as_str(),"idempotencyKey":case_id.to_string(),"xmlPayload":xml,"callbackUrl":callback,"profileId":profile_id,"profileVersion":profile_version,"routingId":routing_id}))
         .build().map_err(|error| Error::BadRequest { message: format!("invalid AS2 request: {error}") })?;
 	if !matches!(request.url().scheme(), "http" | "https")
 		|| request.url().host_str().is_none()
@@ -395,7 +286,7 @@ pub(super) async fn request_as2_state(
 	authority: SubmissionAuthority,
 	xml: Option<&str>,
 ) -> Result<As2GatewaySubmitResponse> {
-	prepare_as2_request(case_id, authority, xml)?
+	prepare_as2_request(case_id, authority, xml, None, None, None)?
 		.execute()
 		.await
 		.map_err(|failure| failure.error)
@@ -520,7 +411,10 @@ mod preflight_tests {
 				prepare_as2_request(
 					Uuid::new_v4(),
 					SubmissionAuthority::Fda,
-					Some("<xml/>")
+					Some("<xml/>"),
+					Some(Uuid::new_v4()),
+					Some(1),
+					Some("TEST-ROUTE"),
 				)
 				.is_err(),
 				"{key}"
@@ -543,6 +437,9 @@ mod preflight_tests {
 			Uuid::new_v4(),
 			SubmissionAuthority::Fda,
 			Some("<xml/>"),
+			Some(Uuid::new_v4()),
+			Some(1),
+			Some("TEST-ROUTE"),
 		)
 		.expect("prepared request");
 		drop(listener);
@@ -566,6 +463,9 @@ mod preflight_tests {
 			Uuid::new_v4(),
 			SubmissionAuthority::Fda,
 			Some("<xml/>"),
+			Some(Uuid::new_v4()),
+			Some(1),
+			Some("TEST-ROUTE"),
 		)
 		.expect("prepared request");
 		let server = tokio::spawn(async move {

@@ -11,6 +11,9 @@ use lib_core::model::organization::{
 	Organization, OrganizationBmc, OrganizationFilter, OrganizationForCreate,
 	OrganizationForUpdate,
 };
+use lib_core::model::organization_as2_profile::{
+	OrganizationAs2Profile, OrganizationAs2ProfileBmc, OrganizationAs2ProfileInput,
+};
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
@@ -161,5 +164,75 @@ pub async fn delete_organization(
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
 	OrganizationBmc::deactivate(&db_ctx, &mm, id).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn list_organization_as2_profiles(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
+	Path(id): Path<Uuid>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Vec<OrganizationAs2Profile>>>,
+)> {
+	let ctx = ctx_w.0;
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.read",
+	)?;
+	let permit = authorize_contextual_read(
+		action,
+		&snapshot,
+		existing_organization_read_context(id),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
+	let profiles = OrganizationAs2ProfileBmc::list(&db_ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: profiles })))
+}
+
+pub async fn put_organization_as2_profile(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
+	Path((id, authority)): Path<(Uuid, String)>,
+	Json(input): Json<OrganizationAs2ProfileInput>,
+) -> Result<(StatusCode, Json<DataRestResult<OrganizationAs2Profile>>)> {
+	let ctx = ctx_w.0;
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.update",
+	)?;
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_organization_mutation_context(id),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
+	OrganizationBmc::get(&db_ctx, &mm, id).await?;
+	let profile =
+		OrganizationAs2ProfileBmc::upsert(&db_ctx, &mm, id, &authority, input)
+			.await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: profile })))
+}
+
+pub async fn delete_organization_as2_profile(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
+	Path((id, authority)): Path<(Uuid, String)>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	let action = super::registered_context_action::<Existing<OrganizationResource>>(
+		"organization.update",
+	)?;
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_organization_mutation_context(id),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
+	OrganizationAs2ProfileBmc::deactivate(&db_ctx, &mm, id, &authority).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

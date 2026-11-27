@@ -10,8 +10,8 @@
 # repository publishes no image.
 #
 # Required in .env.prod (see deploy/ec2/README.md, "AS2 submitter"):
-#   AS2_SUBMITTER_SRC, AS2_FROM_ID, AS2_CALLBACK_TOKEN, AS2_SUBMITTER_TOKEN,
-#   SUBMISSION_RECONCILE_TOKEN, AS2_CERTS_DIR, AS2_SUBMITTER_TIMEOUT_SECS
+#   AS2_SUBMITTER_SRC, AS2_CALLBACK_TOKEN, AS2_SUBMITTER_TOKEN,
+#   SUBMISSION_RECONCILE_TOKEN, AS2_PROFILE_ENCRYPTION_KEY, AS2_SUBMITTER_TIMEOUT_SECS
 services:
   as2-submitter:
     build:
@@ -20,6 +20,9 @@ services:
     image: local/as2-submitter:prod
     container_name: e2br3-as2-submitter
     restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
     ports:
       # The public AS2 receiver. FDA accepts only 443 or 4080 for an industry
       # gateway URL, and pushes ACK3 and asynchronous MDNs here.
@@ -35,22 +38,12 @@ services:
       AS2_RECEIVER_PORT: "4080"
       AS2_RECEIVER_PATH: "${AS2_RECEIVER_PATH:-/as2/receive}"
 
-      AS2_FROM_ID: "${AS2_FROM_ID}"
-      AS2_FDA_ROUTING_MODE: "${AS2_FDA_ROUTING_MODE:-routing_id}"
-      AS2_FDA_ENV: "${AS2_FDA_ENV:-test}"
-      AS2_FDA_ENDPOINT_URL: "${AS2_FDA_ENDPOINT_URL:-}"
-      AS2_FDA_ENCRYPT_CERT_PEM_PATH: "${AS2_FDA_ENCRYPT_CERT_PEM_PATH:-/certs/partner.crt}"
-
-      AS2_SIGNING_PKCS12_PATH: "${AS2_SIGNING_PKCS12_PATH:-/certs/submitter.p12}"
-      AS2_SIGNING_PKCS12_PASSWORD: "${AS2_SIGNING_PKCS12_PASSWORD}"
-      AS2_RECEIVER_PARTNER_CERTS: "${AS2_RECEIVER_PARTNER_CERTS:-FDA_AERS=/certs/partner.crt}"
-      AS2_ASYNC_MDN_URL: "${AS2_ASYNC_MDN_URL:-}"
+      AS2_PROFILE_URL: "http://app:8080/internal/submissions/as2-profiles"
 
       AS2_INBOUND_TOKEN: "${AS2_SUBMITTER_TOKEN:?AS2_SUBMITTER_TOKEN must be configured}"
       AS2_CALLBACK_TOKEN: "${AS2_CALLBACK_TOKEN}"
       AS2_STATE_FILE: "/var/lib/as2-submitter/as2-state.json"
     volumes:
-      - ${AS2_CERTS_DIR:-/opt/e2br3/as2-certs}:/certs:ro
       - as2-submitter-state:/var/lib/as2-submitter
 
   # Merged into the base app service; the base file is not modified.
@@ -61,9 +54,8 @@ services:
       AS2_SUBMITTER_TIMEOUT_SECS: "${AS2_SUBMITTER_TIMEOUT_SECS:?AS2_SUBMITTER_TIMEOUT_SECS must be configured}"
       AS2_ACK_CALLBACK_URL: "http://app:8080/internal/submissions/callbacks/ack"
       AS2_CALLBACK_TOKEN: "${AS2_CALLBACK_TOKEN}"
+      AS2_PROFILE_ENCRYPTION_KEY: "${AS2_PROFILE_ENCRYPTION_KEY:?AS2_PROFILE_ENCRYPTION_KEY must be configured}"
       SUBMISSION_RECONCILE_TOKEN: "${SUBMISSION_RECONCILE_TOKEN}"
-    depends_on:
-      - as2-submitter
 
 volumes:
   as2-submitter-state:

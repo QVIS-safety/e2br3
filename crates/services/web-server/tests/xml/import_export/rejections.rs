@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
+async fn test_manual_export_allows_invalid_drafts_without_routing_settings(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
@@ -38,16 +38,6 @@ async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
 			serde_json::json!({"authorities":["ich"],"rows":{"caseSummaryInformation":[{"sequenceNumber":1,"languageCode":"JA","summaryText":"Isolated draft summary"}]}}),
 			StatusCode::OK,
 		),
-		(
-			"POST",
-			format!("/api/cases/{id}/message-header"),
-			serde_json::json!({"data":{
-				"case_id":id,"message_number":format!("MSG-{id}"),"message_date":"20240101000000",
-				"batch_sender_identifier":"SENDER","message_sender_identifier":"SENDER",
-				"batch_receiver_identifier":"ZZFDA","message_receiver_identifier":"CDER"
-			}}),
-			StatusCode::CREATED,
-		),
 	] {
 		let (status, bytes) =
 			request_json(&app, &cookie, method, path, Some(data)).await?;
@@ -76,107 +66,70 @@ async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
 		"must exercise a draft with Case business errors"
 	);
 
-	for (authority, batch, message) in [
-		("ich", "ICHTEST", "ICHTEST"),
-		("fda", "ZZFDA", "CDER"),
-		("mfds", "MFDS-O-KR", "MFDS-O-KR"),
-	] {
-		for valid in [false, true] {
-			if authority == "ich" && !valid {
-				continue;
-			}
-			let batch = if valid { batch } else { "INVALID-ROUTE" };
-			let message = if valid { message } else { "INVALID-ROUTE" };
-			let (status, bytes) = request_json(
-				&app,
-				&cookie,
-				"PUT",
-				format!("/api/cases/{id}/message-header"),
-				Some(serde_json::json!({"data":{
-					"batch_receiver_identifier":batch,"message_receiver_identifier":message
-				}})),
-			)
-			.await?;
+	for authority in ["ich", "fda", "mfds"] {
+		for (method, path, body) in [
+			(
+				"GET",
+				format!("/api/cases/{id}/export/xml?authority={authority}"),
+				None,
+			),
+			(
+				"POST",
+				"/api/cases/export/xml".to_string(),
+				Some(serde_json::json!({"case_ids":[id],"authority":authority})),
+			),
+		] {
+			let (status, bytes) =
+				request_json(&app, &cookie, method, path, body).await?;
 			assert_eq!(
 				status,
 				StatusCode::OK,
-				"{}",
+				"{authority} {method}: {}",
 				String::from_utf8_lossy(&bytes)
 			);
-			for (method, path, body) in [
-				(
-					"GET",
-					format!("/api/cases/{id}/export/xml?authority={authority}"),
-					None,
-				),
-				(
-					"POST",
-					"/api/cases/export/xml".to_string(),
-					Some(serde_json::json!({"case_ids":[id],"authority":authority})),
-				),
-			] {
-				let (status, bytes) =
-					request_json(&app, &cookie, method, path, body).await?;
-				assert_eq!(
-					status,
-					StatusCode::OK,
-					"{authority} {method}: {}",
-					String::from_utf8_lossy(&bytes)
-				);
-				let xml = if method == "GET" {
-					String::from_utf8(bytes.to_vec())?
-				} else {
-					let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
-					assert_eq!(archive.len(), 1);
-					let mut xml = String::new();
-					archive.by_index(0)?.read_to_string(&mut xml)?;
-					xml
-				};
-				let parsed =
-					xml::validation::validate_e2b_xml_basic(xml.as_bytes(), None)?;
-				assert!(parsed.ok, "{:?}", parsed.errors);
-				assert_eq!(
-					xml.matches("compression=\"GZ\"").count(),
-					1,
-					"compressed attachment metadata lost"
-				);
-				assert_eq!(
-					xml.matches(attachment).count(),
-					1,
-					"compressed payload changed"
-				);
-				let summaries =
-					xml::import_sections::h_narrative::parse_h_case_summaries(
-						xml.as_bytes(),
-					)?;
-				assert_eq!(summaries.len(), 1);
-				assert_eq!(summaries[0].language_code.as_deref(), Some("JA"));
-				assert_eq!(
-					summaries[0].summary_text.as_deref(),
-					Some("Isolated draft summary")
-				);
-				assert!(
-					xml::import_sections::d_patient::parse_d_patient(
-						xml.as_bytes()
-					)?
+			let xml = if method == "GET" {
+				String::from_utf8(bytes.to_vec())?
+			} else {
+				let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+				assert_eq!(archive.len(), 1);
+				let mut xml = String::new();
+				archive.by_index(0)?.read_to_string(&mut xml)?;
+				xml
+			};
+			let parsed =
+				xml::validation::validate_e2b_xml_basic(xml.as_bytes(), None)?;
+			assert!(parsed.ok, "{:?}", parsed.errors);
+			assert_eq!(
+				xml.matches("compression=\"GZ\"").count(),
+				1,
+				"compressed attachment metadata lost"
+			);
+			assert_eq!(
+				xml.matches(attachment).count(),
+				1,
+				"compressed payload changed"
+			);
+			let summaries =
+				xml::import_sections::h_narrative::parse_h_case_summaries(
+					xml.as_bytes(),
+				)?;
+			assert_eq!(summaries.len(), 1);
+			assert_eq!(summaries[0].language_code.as_deref(), Some("JA"));
+			assert_eq!(
+				summaries[0].summary_text.as_deref(),
+				Some("Isolated draft summary")
+			);
+			assert!(
+				xml::import_sections::d_patient::parse_d_patient(xml.as_bytes())?
 					.is_none(),
-					"an absent patient must not be fabricated for draft export"
-				);
-				assert_eq!(
-					parsed.root_element.as_deref(),
-					Some("MCCI_IN200100UV01")
-				);
-				assert!(
-					xml.contains(batch),
-					"stored batch receiver must survive export"
-				);
-				assert!(
-					xml.contains(message),
-					"stored message receiver must survive export"
-				);
-			}
+				"an absent patient must not be fabricated for draft export"
+			);
+			assert_eq!(parsed.root_element.as_deref(), Some("MCCI_IN200100UV01"));
+			assert_eq!(xpath_value(xml.as_bytes(), "count(//*[local-name()='sender']/*[local-name()='device']/*[local-name()='id']/@extension)")?, "0");
+			assert_eq!(xpath_value(xml.as_bytes(), "count(//*[local-name()='receiver']/*[local-name()='device']/*[local-name()='id']/@extension)")?, "0");
 		}
 	}
+
 	let (status, bytes) = request_json(
 		&app,
 		&cookie,
@@ -195,7 +148,7 @@ async fn test_manual_export_allows_invalid_drafts_and_unvalidated_routes(
 			.iter()
 			.filter(|item| item["status"] == "success")
 			.count(),
-		10
+		6
 	);
 	assert_eq!(
 		items
@@ -259,29 +212,6 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		.and_then(|v| v.as_str())
 		.ok_or("missing data.id in case create response")?;
 
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"POST",
-		format!("/api/cases/{case_id}/message-header"),
-		Some(serde_json::json!({ "data": {
-			"case_id": case_id,
-			"message_number": format!("MSG-{case_id}"),
-			"batch_sender_identifier": "SENDER01",
-			"batch_receiver_identifier": null,
-			"message_sender_identifier": "SENDER01",
-			"message_receiver_identifier": "RECEIVER01",
-			"message_date": "20240201010101"
-		} })),
-	)
-	.await?;
-	assert_eq!(
-		status,
-		StatusCode::CREATED,
-		"{}",
-		String::from_utf8_lossy(&body)
-	);
-
 	// The missing batch receiver is emitted as absent, never filled from message receiver.
 	for (method, uri, input) in [
 		(
@@ -313,21 +243,6 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		};
 		assert_eq!(xpath_value(xml.as_bytes(), "count(/*[local-name()='MCCI_IN200100UV01']/*[local-name()='receiver']/*[local-name()='device']/*[local-name()='id']/@extension)")?, "0");
 	}
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"PUT",
-		format!("/api/cases/{case_id}/message-header"),
-		Some(serde_json::json!({"data":{"batch_sender_identifier":"bad\u{1}"}})),
-	)
-	.await?;
-	assert_eq!(
-		status,
-		StatusCode::UNPROCESSABLE_ENTITY,
-		"{}",
-		String::from_utf8_lossy(&body)
-	);
-	assert!(String::from_utf8_lossy(&body).contains("INPUT.CONTROL_CHAR.REJECTED"));
 	// Seed legacy corrupt data directly in this isolated DB to exercise export error history.
 	mm.dbx().begin_txn().await?;
 	lib_core::model::store::set_full_context_dbx(
@@ -337,7 +252,7 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO,
 	)
 	.await?;
-	mm.dbx().execute(sqlx::query("UPDATE message_headers SET batch_sender_identifier=$2 WHERE case_id=$1")
+	mm.dbx().execute(sqlx::query("UPDATE safety_report_identification SET safety_report_id=$2 WHERE case_id=$1")
         .bind(Uuid::parse_str(case_id)?).bind("bad\u{1}")).await?;
 	mm.dbx().commit_txn().await?;
 	// XML 1.0 cannot encode U+0001; silently deleting it would lose stored data.
@@ -365,9 +280,9 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		&app,
 		&cookie,
 		"PUT",
-		format!("/api/cases/{case_id}/message-header"),
+		format!("/api/cases/{case_id}/safety-report"),
 		Some(
-			serde_json::json!({ "data": { "batch_sender_identifier": "SENDER01" } }),
+			serde_json::json!({ "data": { "safety_report_id": format!("SR-{case_id}") } }),
 		),
 	)
 	.await?;
@@ -399,7 +314,7 @@ async fn test_manual_export_preserves_missing_headers_and_records_serialization_
 		assert!(
 			xml::import_sections::d_patient::parse_d_patient(xml.as_bytes())?
 				.is_none(),
-			"fixing the header must allow export without inventing a patient"
+			"fixing the report ID must allow export without inventing a patient"
 		);
 	}
 	let (status, body) = request_json(

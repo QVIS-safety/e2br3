@@ -9,7 +9,7 @@
 
 | Method / path | 요청 | 구현 응답·입력 경계 |
 |---|---|---|
-| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 연결된 Sender presave와 보고유형별 Receiver route로 N을 생성하며, 설정 누락·모호성은 400. 생성한 N과 실제 Case 저장값을 직렬화하여 200 `application/xml` attachment. authority 누락/오류 또는 XML로 표현할 수 없는 상태는 오류 |
+| `GET /api/cases/{id}/export/xml` | UUID; 필수 query `authority=ich|fda|mfds`, 선택적 `include_notation` bool | 연결된 Sender presave와 보고유형별 Receiver route에서 확인되는 N 값만 생성. 필수값·연결·보고유형 누락은 다운로드를 막지 않으며, 모호한 설정은 임의 선택 없이 해당 식별자를 생략하고 서버 warning을 남김. 생성한 N과 실제 Case 저장값을 직렬화하여 200 `application/xml` attachment. authority 누락/오류 또는 XML로 표현할 수 없는 상태는 오류 |
 | `POST /api/cases/export/xml` | `{"case_ids":["UUID"],"authority":"fda"}` (최상위 필드, `data` 없음; 두 필드 모두 의미상 필수) | 모든 Case가 직렬화되고 성공 이력이 저장되면 200 `application/zip` attachment. Case validation 통과는 요구하지 않음. 중복 ID를 합치고 최대 100 Case·전체 비압축 XML 100 MiB, 빈 목록을 거절. 권한은 중복 제거한 Case 집합 전체에 적용 |
 
 단건 XML과 ZIP 엔트리의 파일명은 `{case_id}-{authority}.xml`이다. 선택적인 보고서 ID는 export 이력에 그대로 보존한다.
@@ -18,8 +18,9 @@
 
 - 새 import의 AE/DG `id/@root`는 조직별 DB UUID와 별도 저장한다. 공통 serializer가 저장된 원본 ID와 `actReference`, `adverseEffectReference`, `productUseReference`를 함께 보존하며, 누락된 definition·ID 충돌은 실패한다. `xml::export::xml_identity::tests`는 이 변환과 native-only XML 비변경을 격리 검사한다. 과거 import의 미저장 ID를 추정·복구하지 않는다. 조직 간 실제 실행 결과는 프론트 feature-map의 `2026-11-21-xml-row-identity-fix.json`에 별도로 기록한다.
 
-- [draft 다운로드 검사](../xml/import_export/rejections.rs)의 `test_manual_export_allows_invalid_drafts_and_unvalidated_routes`: patient 행이 없고 업무 validation 오류·기관 규칙에 맞지 않는 FDA/MFDS 수신처가 있어도 단건·ZIP 200. XML parse·환자 노드 미생성·저장된 수신처 보존·성공 이력 10건·실패 이력 0건을 단언한다. 기관 규칙은 submit에서 검사한다.
-- [serializer 오류](../xml/import_export/rejections.rs)의 `test_manual_export_preserves_missing_headers_and_records_serialization_errors`: batch receiver 누락 상태의 단건·ZIP은 성공하고 해당 XML 속성이 없는지 검사한다. XML 1.0에서 표현할 수 없는 U+0001이 저장되면 두 다운로드가 실패하며 오류 이력을 남긴다. 수정 후 성공과 오류 파일 보존도 검사한다. 이 DB 통합 테스트는 실행하지 않았으며 컴파일 검증 대상으로 유지한다.
+- [draft 다운로드 검사](../xml/import_export/rejections.rs)의 `test_manual_export_allows_invalid_drafts_without_routing_settings`: patient 행과 Sender/Receiver 연결이 없고 업무 validation 오류가 있어도 ICH/FDA/MFDS 단건·ZIP 200. XML parse·환자/수신처 값 미생성·첨부/서술값 보존·성공 이력 6건·실패 이력 0건을 단언한다. 기관 규칙은 submit에서 검사한다.
+- [serializer 오류](../xml/import_export/rejections.rs)의 `test_manual_export_preserves_missing_headers_and_records_serialization_errors`: batch receiver 누락 상태의 단건·ZIP은 성공하고 해당 XML 속성이 없는지 검사한다. 보고서 ID에 XML 1.0에서 표현할 수 없는 U+0001이 저장되면 두 다운로드가 실패하며 오류 이력을 남긴다. 수정 후 성공과 오류 파일 보존도 검사한다. 실행 여부는 검증 기록에서 구분한다.
+- [헤더 누락 회귀](../api_submission/headers.rs)의 `incomplete_headers_download_as_xml_and_zip_without_invented_values`: 보고서 ID·작성일·Sender·Product·보고유형이 없는 케이스의 세 기관 단건/ZIP 다운로드, 속성/nullFlavor 미합성, draft 상태 유지와 성공 이력 6건을 검사한다. `outbound_header_is_transient_and_uses_receiver_presave_route`는 연결 Product·보고유형·Sender ID 누락과 기관 규칙상 잘못된 Receiver도 다운로드하며, 이미 확인되는 값은 보존하는지 검사한다.
 - [submission validation](../api_submission/validation.rs)의 `test_manual_export_is_not_blocked_by_workflow_status`: validation-clean Case는 draft/reviewed/locked에서 단건 수동 export 200. `test_unavailable_meddra_allows_save_and_export_but_blocks_submission`: 미적재 MedDRA version이어도 저장과 ICH/FDA/MFDS export는 허용하고, 저장된 버전이 XML에 보존되는지 확인한다. FDA/MFDS submit은 계속 거절된다.
 - [roundtrip profiles](../xml/roundtrip_profiles_web.rs)의 `test_roundtrip_fixtures_import_validate_export_revalidate`: FDA 원본 fixture 3개를 ICH/FDA/MFDS profile로 import하고 모든 profile의 export 200·XML parse를 확인한다. 업무 validation을 통과한 profile만 추가로 XSD·export-rule 재검증한다. 다운로드 성공을 제출 가능 또는 기관 수용으로 간주하지 않는다.
 - [다운로드](../xml/import_export/downloads.rs)의 `test_import_then_export_xml`: 단건 XML, FDA/MFDS notation, 중복 Case ID를 제거한 ZIP 2개 엔트리의 파일명·본문, 거절 응답과 성공/실패 이력. [약물 수정 반영](../xml/import_export/drug_updates.rs)의 `test_import_update_dg_fields_then_export_contains_updates`: 저장/수정값의 XML 반영.
@@ -51,8 +52,14 @@
 - `xml/import_export/`는 `downloads.rs`(단건·ZIP·notation·권한·이력), `nullflavor.rs`(import 후 E/F 재조회), `drug_updates.rs`(약물 수정의 XML 반영), `rejections.rs`(필수값 오류·실패 이력·오류 다운로드)로 나뉜다. 실행 단위는 모두 기존 `xml`이며 Cargo target을 늘리지 않는다.
 - 공통 HTTP 준비·경로·반응 언어는 [xml/support.rs](../xml/support.rs)에서 공유한다. field roundtrip의 실제 device 준비는 그 모듈에 남긴다.
 - fixture 누락, setup/import/export 실패, malformed 필수 응답은 성공으로 끝내지 않는다. 감사 실패/deadlock의 테스트 내부 재시도를 제거했다. 수동 export에는 사전 상태 변경이 필요하지 않다. submit은 전체 Case·XML 검증을 수행하고 export는 저장값을 직렬화한다. 값/nullFlavor 충돌·XML로 표현 불가능한 저장 상태·DB/직렬화 실패는 오류로 전파한다. 업무 필수값을 보충하거나 nullFlavor를 합성하지 않는다.
-- [CI/SI roundtrip](../xml/roundtrip/report.rs)은 study type의 XML 반영을 확인한다. N은 Case에 저장하지 않으며 export 시 Sender/Receiver presave와 Case 보고유형으로 생성한 뒤 XML 경계에서 검증한다.
+- [CI/SI roundtrip](../xml/roundtrip/report.rs)은 study type의 XML 반영을 확인한다. N은 Case에 저장하지 않으며 export 시 Sender/Receiver presave와 Case 보고유형에서 확인되는 값만 생성한다. N 필수값·기관 규칙 검증은 제출 경로에서만 차단한다.
 - [MFDS samples](../xml/mfds_import_samples_web.rs)는 운영 사전과 현행 규칙을 명시한 파생 fixture를 사용하며 디렉터리 부재/빈 목록도 실패다. 공식 원본은 수정 없이 별도 보존하고, [Import 명세](import.md)에 원본 URL·SHA-256과 파생 범위 및 실제 사전 subset 조건을 기록했다.
 - `xml`의 `fda_export_reads_persisted_sections_through_rls`, `fresh_full_build_validates_for_all_authorities` 등 직접 모델/XML 호출 검사는 저장·XML 계층 근거다. API method/path별 HTTP 검증으로 중복 집계하지 않는다.
+
+### 2026-11-27 검증 및 잔여 위험
+
+- 백엔드 빌드 성공. `api_submission`: 32 passed, 1 ignored(외부 Java/기관 연동 환경 필요). N 직렬화 단위 테스트: 4 passed. `manual_export` 필터의 intake 1개·XML 다운로드/오류 이력 2개 모두 passed. 총 39 passed, 1 ignored이며 나머지 전체 테스트는 실행하지 않았다.
+- 서버에서 실행 중인 백엔드의 실제 DB를 복제하여 기존 Sender 미연결 draft 3건으로 ICH/FDA/MFDS 단건 XML 9회·ZIP 9회 HTTP 200 및 XML 파싱, Sender ID 미합성, 저장된 보고서 ID·작성일 보존을 확인했다. 원본 DB·운영 프로세스는 변경하지 않았고 검증용 DB는 삭제했다. 운영 배포·기관 실전송은 하지 않았다.
+- 별도 기존 결함: 격리 테스트에서 `narrative_information.case_narrative`의 U+0001이 export 결과에서 조용히 제거되고 HTTP 200이 반환되는 것을 확인했다. 이번 변경은 N 필수값/연결 조건의 다운로드 차단 제거에 한정하며 서술문 writer는 수정하지 않았다. 위 보고서 ID 오류 검사는 모든 필드의 제어문자 보존을 보장하지 않는다.
 
 위 변경의 실행 결과는 **NOT_RUN**이다. 조기 성공 제거는 검사 코드의 신뢰성을 개선하지만, 실제 XML·DB·기관 검증 통과를 증명하지 않는다.

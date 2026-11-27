@@ -5,13 +5,13 @@ pub(crate) fn apply_section_n(
 	xpath: &mut Context,
 	header: &crate::export::OutboundMessageHeader,
 ) -> Result<()> {
-	let message_number = &header.message_number;
-	let message_date = &header.message_date;
+	let message_number = header.message_number.as_deref();
+	let message_date = header.message_date.as_deref();
 	let batch_number = header.batch_number.as_deref();
 	let batch_sender = header.batch_sender_identifier.as_deref();
 	let batch_receiver = header.batch_receiver_identifier.as_deref();
-	let message_sender = &header.message_sender_identifier;
-	let message_receiver = &header.message_receiver_identifier;
+	let message_sender = header.message_sender_identifier.as_deref();
+	let message_receiver = header.message_receiver_identifier.as_deref();
 
 	write_n_1_1(xpath, "ichicsr")?;
 	write_n_1_2(xpath, batch_number)?;
@@ -99,48 +99,48 @@ fn write_n_1_5(
 }
 
 /// e2b:N.2.r.1
-fn write_n_2_r_1(xpath: &mut Context, message_number: &str) -> Result<()> {
+fn write_n_2_r_1(xpath: &mut Context, message_number: Option<&str>) -> Result<()> {
 	field::set(
 		"N.2.r.1",
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:id",
-		Some(message_number),
+		message_number,
 		None,
 		Some("extension"),
 	)
 }
 
 /// e2b:N.2.r.2
-fn write_n_2_r_2(xpath: &mut Context, message_sender: &str) -> Result<()> {
+fn write_n_2_r_2(xpath: &mut Context, message_sender: Option<&str>) -> Result<()> {
 	field::set(
 		"N.2.r.2",
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id",
-		Some(message_sender),
+		message_sender,
 		None,
 		Some("extension"),
 	)
 }
 
 /// e2b:N.2.r.3
-fn write_n_2_r_3(xpath: &mut Context, message_receiver: &str) -> Result<()> {
+fn write_n_2_r_3(xpath: &mut Context, message_receiver: Option<&str>) -> Result<()> {
 	field::set(
 		"N.2.r.3",
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id",
-		Some(message_receiver),
+		message_receiver,
 		None,
 		Some("extension"),
 	)
 }
 
 /// e2b:N.2.r.4
-fn write_n_2_r_4(xpath: &mut Context, message_date: &str) -> Result<()> {
+fn write_n_2_r_4(xpath: &mut Context, message_date: Option<&str>) -> Result<()> {
 	field::set(
 		"N.2.r.4",
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:creationTime",
-		Some(message_date),
+		message_date,
 		None,
 		Some("value"),
 	)
@@ -164,6 +164,46 @@ mod date_tests {
 	use super::*;
 
 	#[test]
+	fn incomplete_message_header_does_not_invent_values() {
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(crate::export::base_export_skeleton())
+			.expect("parse");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath
+			.register_namespace("hl7", "urn:hl7-org:v3")
+			.expect("namespace");
+		let header = crate::export::OutboundMessageHeader {
+			batch_number: None,
+			batch_sender_identifier: None,
+			batch_receiver_identifier: None,
+			batch_transmission_date: None,
+			message_number: None,
+			message_date: None,
+			message_sender_identifier: None,
+			message_receiver_identifier: None,
+		};
+		apply_section_n(&mut doc, &parser, &mut xpath, &header)
+			.expect("incomplete header");
+		for path in [
+			"/hl7:MCCI_IN200100UV01/hl7:id/@extension",
+			"/hl7:MCCI_IN200100UV01/hl7:creationTime/@value",
+			"/hl7:MCCI_IN200100UV01/hl7:sender/hl7:device/hl7:id/@extension",
+			"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:id/@extension",
+			"//hl7:PORR_IN049016UV/hl7:id/@extension",
+			"//hl7:PORR_IN049016UV/hl7:creationTime/@value",
+			"//hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id/@extension",
+			"//hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
+			"//@nullFlavor",
+		] {
+			assert!(
+				xpath.findnodes(path, None).expect("field").is_empty(),
+				"{path}"
+			);
+		}
+	}
+
+	#[test]
 	fn n_1_5_includes_utc_offset_and_n_2_r_4_preserves_c_1_2() {
 		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><creationTime value="stale"/><PORR_IN049016UV><creationTime value="old-message"/><controlActProcess><effectiveTime value="old-effective"/></controlActProcess></PORR_IN049016UV></MCCI_IN200100UV01>"#;
 		let parser = Parser::default();
@@ -173,7 +213,8 @@ mod date_tests {
 
 		write_n_1_5(&mut xpath, Some("20240102030405+0000"))
 			.expect("serialize header");
-		write_n_2_r_4(&mut xpath, "20260805043201-0400").expect("serialize header");
+		write_n_2_r_4(&mut xpath, Some("20260805043201-0400"))
+			.expect("serialize header");
 
 		assert_eq!(
 			xpath
@@ -201,7 +242,7 @@ mod date_tests {
 		let doc = Parser::default().parse_string(xml).expect("parse");
 		let mut xpath = Context::new(&doc).expect("xpath");
 		xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
-		write_n_2_r_1(&mut xpath, "MESSAGE-ID").expect("serialize header");
+		write_n_2_r_1(&mut xpath, Some("MESSAGE-ID")).expect("serialize header");
 		assert_eq!(
 			xpath
 				.findvalue("//hl7:PORR_IN049016UV/hl7:id/@extension", None)

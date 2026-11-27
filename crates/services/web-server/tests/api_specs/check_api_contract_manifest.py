@@ -729,6 +729,11 @@ def resolve_type(name: str, context_source: str, declarations: dict, imports: di
 		return None, {"rust_type": name, "origin": "framework_or_result_wrapper"}
 	if len(candidates) == 1: return candidates[0], None
 	if len(candidates) > 1:
+		if "::" not in name and simple in EXTERNAL_SIMPLE:
+			return None, {
+				"rust_type": name, "origin": "external_prelude_type",
+				"canonical_type": EXTERNAL_SIMPLE[simple],
+			}
 		raise ValueError(f"ambiguous in-repo type {name} from {context_source}: {[c['declaration'] for c in candidates]}")
 	if root in EXTERNAL_ROOTS:
 		return None, {"rust_type": name, "origin": "external"}

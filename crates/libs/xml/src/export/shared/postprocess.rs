@@ -299,11 +299,12 @@ pub(crate) async fn apply_c_d_h_sections(
 		&mut xpath,
 		&snapshot.case_summaries,
 	)?;
-	apply_mfds_foreign_code_systems(
-		&mut xpath,
-		authority,
-		&_outbound_message_header.message_receiver_identifier,
-	)?;
+	if let Some(receiver) = _outbound_message_header
+		.message_receiver_identifier
+		.as_deref()
+	{
+		apply_mfds_foreign_code_systems(&mut xpath, authority, receiver)?;
+	}
 	postprocess_export_doc(&mut doc, &mut xpath)?;
 	reorder_investigation_event_children(&mut xpath);
 

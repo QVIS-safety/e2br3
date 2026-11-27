@@ -437,27 +437,27 @@ boundary plus `AS2_INBOUND_TOKEN`.
    sudo git clone https://github.com/donihyun/as2-submitter /opt/as2-submitter
    ```
 
-2. Place key material in `/opt/e2br3/as2-certs`:
+2. Apply `20261127_organization_as2_profiles.sql`. Register each submitting
+   organization's endpoint and certificates through
+   `PUT /api/organizations/{id}/as2-profiles/{fda|mfds}` (organization update
+   permission required). Profiles live in the application DB. Do not configure
+   organization credentials as container environment variables.
 
-   - `submitter.p12` — our signing key, one certificate per FDA routing ID
-   - `partner.crt` — FDA's public certificate (ZZFDA), from the Gateway
-     Configuration Information form
-
-   For a pre-onboarding test run, generate throwaway material instead:
-
-   ```sh
-   cd /opt/as2-submitter && ./scripts/gen_test_certs.sh /opt/e2br3/as2-certs
-   ```
+   Set the AS2 Routing ID only in Sender presave's default gateway for the
+   authority. A submitted case must reference that Sender presave. The backend
+   reads the current routing ID from that gateway; the organization profile does
+   not accept a second routing ID. Directly typed Sender details without a
+   presave reference do not select an AS2 identity and cannot be submitted.
 
 3. Add to `/opt/e2br3/.env.prod`:
 
    ```sh
    AS2_SUBMITTER_SRC=/opt/as2-submitter
-   AS2_CERTS_DIR=/opt/e2br3/as2-certs
-   AS2_FROM_ID=<our-industry-routing-id>       # assigned by FDA
    AS2_CALLBACK_TOKEN=<shared-secret>
-   AS2_SIGNING_PKCS12_PASSWORD=<keystore-password>
-   AS2_FDA_ENV=test                            # test until FDA approves production
+   AS2_SUBMITTER_TOKEN=<separate-submit-secret>
+   AS2_PROFILE_ENCRYPTION_KEY=<random-secret-at-least-32-characters>
+   AS2_SUBMITTER_TIMEOUT_SECS=30
+   SUBMISSION_RECONCILE_TOKEN=<separate-reconcile-secret>
    AS2_RECEIVER_PORT=4080
    ```
 
@@ -467,6 +467,13 @@ boundary plus `AS2_INBOUND_TOKEN`.
    app overlay. Keep the reconcile secret separate from the gateway callback
    secret.
 
+   The overlay supplies `AS2_PROFILE_URL=http://app:8080/internal/submissions/as2-profiles`
+   to the submitter. The app starts first; submitter startup retries through the
+   container restart policy if the app is not ready. Back up the profile encryption
+   key separately: losing/changing it makes existing credentials unreadable.
+   Keep this profile API private, and use TLS when it crosses hosts/networks.
+   The existing `AS2_STATE_FILE` volume remains required for durable transport state.
+
    Configured transports are always validated at startup. An incomplete or
    ambiguous configuration prevents startup; an unconfigured transport rejects submissions.
 
@@ -474,6 +481,22 @@ boundary plus `AS2_INBOUND_TOKEN`.
    for a test run, and FDA's outbound range `150.148.0.0/16` for production.
 
 ### Rollout
+
+Organization profile environment migration (2026-11-27):
+
+| Change | Variables |
+| --- | --- |
+| Add to app | `AS2_PROFILE_ENCRYPTION_KEY` (random secret, at least 32 characters) |
+| Add to submitter | `AS2_PROFILE_URL` (supplied automatically by this overlay) |
+| Move routing to DB profiles | `AS2_FROM_ID`, `AS2_FDA_ROUTING_MODE`, `AS2_FDA_ENV`, `AS2_FDA_ENDPOINT_URL`, `AS2_MFDS_TO_ID`, `AS2_MFDS_ENDPOINT_URL`, `AS2_ASYNC_MDN_URL` |
+| Move credentials to DB profiles | `AS2_SIGNING_PKCS12_PATH`, `AS2_SIGNING_PKCS12_PASSWORD`, `AS2_SIGNING_KEY_ALIAS`, `AS2_FDA_ENCRYPT_CERT_PEM_PATH`, `AS2_MFDS_ENCRYPT_CERT_PEM_PATH`, `AS2_RECEIVER_ID`, `AS2_RECEIVER_PKCS12_PATH`, `AS2_RECEIVER_PKCS12_PASSWORD`, `AS2_RECEIVER_KEY_ALIAS`, `AS2_RECEIVER_PARTNER_CERTS` |
+| Remove configurable crypto switches | `AS2_ENABLE_CRYPTO`, `AS2_ENCRYPTION_ALGORITHM`, `AS2_MIC_ALGORITHM` (always sign/encrypt with AES-256-CBC and SHA-256) |
+| Remove organization certificate mount | `AS2_CERTS_DIR` |
+
+Keep the existing submitter/callback URLs and tokens, transport timeouts, listener
+settings, ACK retry settings, and `AS2_STATE_FILE`. Optional `AS2_RECEIVER_TLS_*`
+settings are for HTTPS server TLS, separate from the AS2 message identity.
+There is no new submitter DB, DB connection variable, or message broker.
 
 ```sh
 cd /opt/e2br3
@@ -500,8 +523,8 @@ curl -s --max-time 3 http://127.0.0.1:9090/health || echo "correctly not publish
 curl -s -o /dev/null -w '%{http_code}\n' -X POST http://<ec2-host>:4080/as2/receive --data x
 ```
 
-A 500 from that last call is expected — it means the port is open and OpenAS2-style
-parsing rejected the garbage body.
+A 400 from that last call is expected: the port is open, but the request has no
+registered AS2 routing headers. A 503 indicates profile loading is unavailable.
 
 ### Interop against the mock gateway
 

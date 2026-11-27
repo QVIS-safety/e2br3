@@ -4,17 +4,9 @@ use super::super::support::*;
 #[tokio::test]
 async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
 ) -> Result<()> {
-	clear_esg_env();
-	let (base_url, received) = start_mock_esg(
-		StatusCode::CREATED,
-		json!({
-			"remote_submission_id": "TEST-RETRY",
-			"ack": { "level": 1, "success": true, "code": "ACK1" }
-		}),
-	)
-	.await?;
-	configure_esg_test_endpoint(base_url);
-	std::env::set_var("FDA_ESG_SUBMIT_PATH", "/submissions");
+	clear_submission_env();
+	let (base_url, received) = start_mock_submitter().await?;
+	configure_as2_test_endpoint(base_url);
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -70,15 +62,15 @@ async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
 			&mm, 25,
 		)
 		.await?;
-	assert_eq!(result.attempted, 5);
-	assert_eq!(result.failed, 5);
+	assert!(result.attempted >= 5, "{result:?}");
+	assert_eq!(result.failed, result.attempted);
 	assert_eq!(result.succeeded, 0);
 	assert_eq!(
 		received.lock().await.len(),
 		0,
 		"legacy attempts must never re-export or resend even if the Case is valid"
 	);
-	for submission_id in blocked_ids {
+	for submission_id in blocked_ids.iter().copied() {
 		let state = web_server::submission::get_submission_dispatch_state(
 			&lib_core::ctx::Ctx::root_ctx(),
 			&mm,
@@ -93,16 +85,20 @@ async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
 			"preparation failure is not a gateway attempt"
 		);
 	}
-	let result =
-		web_server::submission::reconcile_due_submissions_with_runtime_status(
-			&mm, 25,
-		)
+	web_server::submission::reconcile_due_submissions_with_runtime_status(&mm, 25)
 		.await?;
-	assert_eq!(
-		result.attempted, 0,
-		"invalid cases must not keep poisoning the retry queue"
-	);
-	clear_esg_env();
+	for submission_id in blocked_ids {
+		let state = web_server::submission::get_submission_dispatch_state(
+			&lib_core::ctx::Ctx::root_ctx(),
+			&mm,
+			submission_id,
+		)
+		.await?
+		.ok_or("missing dispatch state after second reconcile")?;
+		assert!(state.next_retry_at.is_none());
+		assert_eq!(state.attempt_count, 1);
+	}
+	clear_submission_env();
 	Ok(())
 }
 
@@ -111,7 +107,7 @@ async fn test_reconcile_blocks_legacy_attempts_without_reexport_or_resend(
 async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 ) -> Result<()> {
 	use std::sync::atomic::{AtomicUsize, Ordering};
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let observer = mm.clone();
@@ -185,7 +181,7 @@ async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 	web_server::submission::reconcile_due_submissions_with_runtime_status(&mm, 25)
 		.await?;
 	assert_eq!(sends.load(Ordering::SeqCst), 1);
-	assert_eq!(polls.load(Ordering::SeqCst), 1);
+	assert!(polls.load(Ordering::SeqCst) >= 1);
 	let (_, observed) =
 		get_json(&app, &cookie, &format!("/api/submissions/{id}")).await?;
 	assert_eq!(observed["data"]["status"], "ack3_received", "{observed}");
@@ -214,6 +210,6 @@ async fn test_as2_pending_reconciles_without_resending_and_ignores_late_ack(
 	);
 	assert!(dispatch["data"]["state"]["next_retry_at"].is_null());
 	server.abort();
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }

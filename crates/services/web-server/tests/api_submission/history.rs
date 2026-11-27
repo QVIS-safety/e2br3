@@ -3,7 +3,7 @@ use super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -118,7 +118,7 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 #[serial]
 #[tokio::test]
 async fn test_submission_ack_can_be_downloaded_as_text() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;

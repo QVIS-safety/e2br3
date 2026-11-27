@@ -1712,12 +1712,15 @@ dependencies = [
 name = "lib-core"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "csv",
  "derive_more",
  "input-contracts",
  "lib-auth",
  "lib-utils",
  "modql",
+ "openssl",
+ "reqwest",
  "rust_decimal",
  "sea-query",
  "sea-query-binder",

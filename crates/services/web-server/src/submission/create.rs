@@ -43,10 +43,43 @@ pub async fn create_submission_idempotent(
 		SubmissionAuthority::Mfds => RegulatoryAuthority::Mfds,
 	};
 	let xml = prepare_submission_xml(ctx, mm, case_id, export_authority).await?;
+	let sender_gateway =
+		submission_sender_gateway(ctx, mm, case_id, export_authority).await?;
+	let sender =
+		SenderPresaveBmc::get(ctx, mm, sender_gateway.sender_presave_id).await?;
+	if sender.deleted || sender.organization_id != ctx.organization_id() {
+		return Err(Error::BadRequest {
+			message: "case Sender template must be active and belong to the submitting organization".into(),
+		});
+	}
+	let routing_id = required_header_value(
+		"Sender presave AS2 Routing ID",
+		sender_gateway.routing_identifier.as_deref(),
+	)?;
+	if routing_id.len() > 255 || routing_id.contains(['\r', '\n', '"']) {
+		return Err(Error::BadRequest {
+			message: "Sender presave AS2 Routing ID must be at most 255 bytes without quotes or line breaks".into(),
+		});
+	}
+	let as2_profile =
+		lib_core::model::organization_as2_profile::OrganizationAs2ProfileBmc::active_for_submission(
+			ctx,
+			mm,
+			ctx.organization_id(),
+			authority.as_str(),
+		)
+		.await?;
 	let gateway = select_gateway_name(authority)?;
 	// Prepare every fallible local transport input before reserving the case.
-	let request =
-		gateway::prepare_submission_request(case_id, authority, &xml, &gateway)?;
+	let request = gateway::prepare_submission_request(
+		case_id,
+		authority,
+		&xml,
+		&gateway,
+		as2_profile.id,
+		as2_profile.version,
+		&routing_id,
+	)?;
 
 	let id = Uuid::new_v4();
 	let now = OffsetDateTime::now_utc();
@@ -63,12 +96,13 @@ pub async fn create_submission_idempotent(
              WHERE id=$1 AND status <> 'submitted'")
             .bind(case_id).bind(ctx.user_id()).bind(now)).await.map_err(lib_core::model::Error::from)?;
         if changed != 1 { return Err(Error::BadRequest { message: "case has already been submitted".into() }); }
-        mm.dbx().execute(sqlx::query("INSERT INTO case_submissions
-            (id,case_id,gateway,authority,submitted_xml,remote_submission_id,status,xml_bytes,submitted_by,submitted_at)
-            VALUES ($1,$2,$3,$4,$5,NULL,'dispatch_unknown',$6,$7,$8)")
-            .bind(id).bind(case_id).bind(&gateway).bind(authority.as_str()).bind(xml.as_bytes())
-            .bind(i32::try_from(xml.len()).map_err(|_| Error::BadRequest { message: "submission XML is too large".into() })?)
-            .bind(ctx.user_id()).bind(now)).await.map_err(lib_core::model::Error::from)?;
+		mm.dbx().execute(sqlx::query("INSERT INTO case_submissions
+			(id,case_id,gateway,authority,submitted_xml,remote_submission_id,status,xml_bytes,submitted_by,
+			 submitting_organization_id,as2_profile_id,submitted_at)
+			VALUES ($1,$2,$3,$4,$5,NULL,'dispatch_unknown',$6,$7,$8,$9,$10)")
+			.bind(id).bind(case_id).bind(&gateway).bind(authority.as_str()).bind(xml.as_bytes())
+			.bind(i32::try_from(xml.len()).map_err(|_| Error::BadRequest { message: "submission XML is too large".into() })?)
+			.bind(ctx.user_id()).bind(ctx.organization_id()).bind(as2_profile.id).bind(now)).await.map_err(lib_core::model::Error::from)?;
         if let Some(key) = key.as_deref() {
             insert_submission_idempotency(ctx, mm, case_id, authority, key, id, ctx.user_id()).await?;
         }

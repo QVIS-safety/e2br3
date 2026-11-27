@@ -64,6 +64,35 @@ Case 초안은 Section N을 저장하지 않는다. export와 submission은 Case
 
 ### 조직별 발신·수신 ID
 
+### AS2 profiles
+
+`GET /api/organizations/{id}/as2-profiles`는 `organization.read` 권한으로
+공개 메타데이터만 반환한다. `PUT /api/organizations/{id}/as2-profiles/{authority}`와
+`DELETE`는 `organization.update` 권한을 요구한다. PUT은 endpointUrl,
+as2To, expectedAckAs2From, signingPkcs12Base64, signingPkcs12Password,
+partnerCertificatePem을 받고 extraHeaders, signingKeyAlias, asyncMdnUrl은 선택이다.
+기관은 fda/mfds이며 조직·기관당 활성 프로파일은 하나다. 비밀키와 비밀번호는
+암호화하여 저장하고, 일반 목록·저장 응답에는 반환하지 않는다. DELETE는 비활성화다.
+
+`GET /internal/submissions/as2-profiles`는 `AS2_CALLBACK_TOKEN`과 같은
+`x-callback-token`을 요구한다. 인증 실패는 401, 성공은 활성 프로파일 배열 200과
+`Cache-Control: no-store`다. 내부 전송 전용으로 복호화된 키를 포함하므로 공개하거나
+응답 본문을 기록하면 안 된다. 제출 요청은 profileId/profileVersion과 케이스에
+연결된 Sender presave의 기관별 기본 gateway routing_identifier를 routingId로 전달한다.
+조직 프로파일에는 Routing ID 입력·저장 필드가 없다. 내부 프로파일 목록의 routingId는
+활성 Sender presave의 기본 gateway에서 읽으며, 한 프로파일에 여러 route가 연결될 수 있다.
+Sender presave 연결 또는 Routing ID가 없으면 제출 예약·전송 전에 거절한다.
+
+`dispatch::sender_presave_route_is_required_and_read_live_for_the_linked_sender`는
+미연결·빈 ID·잘못된 ID에서 전송/이력 생성 없이 초안을 유지하고, 연결된 presave의
+ID 변경을 다음 제출과 내부 프로파일 조회에 반영함을 검사한다. 다른 Sender의
+기본 gateway가 있어도 자동 대체하지 않는다.
+
+근거: `tests/api_submission/profiles.rs`의 조직 분리·암호화·변경·비활성화 모델 검사와
+내부 HTTP 인증/캐시 검사. 공개 관리 API의 모든 역할 조합은 아직 별도 검증하지 않았다.
+
+### XML 헤더 ID
+
 발신 ID는 Case Sender에 연결된 Sender presave의 해당 기관 기본 gateway에서 읽는다. ICH 수신 ID는 Case Product ID와 같은 조직의 활성 Product presave에 연결된 Receiver presave에서 읽는다. `CI / C.1.3 / Equal` 조건과 보고 유형이 일치하는 ICH route가 정확히 하나여야 하며, batch/message ID를 각각 보존한다. FDA/MFDS의 기관별 수신 옵션은 기존 보고 유형 매핑을 사용한다. 초안 생성에는 전송 ID를 요구하지 않는다.
 
 근거: `tests/api_submission/headers.rs::ich_header_uses_product_receiver_presave_and_isolates_organizations` — presave API 저장, 동일 Product ID의 조직 격리, batch/message 구분, 불일치·중복 route 거절과 기존 헤더 보존.

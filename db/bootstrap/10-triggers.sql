@@ -178,6 +178,9 @@ CREATE TRIGGER update_case_submissions_updated_at BEFORE UPDATE ON case_submissi
 CREATE TRIGGER update_submission_dispatch_state_updated_at BEFORE UPDATE ON submission_dispatch_state
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_organization_as2_profiles_updated_at BEFORE UPDATE ON organization_as2_profiles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_submission_receiver_options_updated_at BEFORE UPDATE ON submission_receiver_options
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -937,6 +940,9 @@ CREATE TRIGGER audit_e_signatures AFTER INSERT OR UPDATE OR DELETE ON e_signatur
 
 -- Audit triggers for core tables
 CREATE TRIGGER audit_organizations AFTER INSERT OR UPDATE OR DELETE ON organizations
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_organization_as2_profiles AFTER INSERT OR UPDATE OR DELETE ON organization_as2_profiles
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_users AFTER INSERT OR UPDATE OR DELETE ON users

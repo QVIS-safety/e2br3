@@ -4,8 +4,8 @@ use super::support::*;
 #[tokio::test]
 async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 ) -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -54,7 +54,7 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 	assert_eq!(id1, id2);
 	assert_eq!(items.len(), 1, "{list_body:?}");
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -62,8 +62,8 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 #[tokio::test]
 async fn test_submission_idempotency_key_parallel_requests_single_submission(
 ) -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -120,6 +120,6 @@ async fn test_submission_idempotency_key_parallel_requests_single_submission(
 		.ok_or("missing submissions list")?;
 	assert_eq!(items.len(), 1, "{list_body:?}");
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }

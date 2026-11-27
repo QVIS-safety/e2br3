@@ -34,6 +34,7 @@ pub mod case_query_catalog;
 pub mod case_validation_summary;
 pub mod e2b_field_notation;
 pub mod organization;
+pub mod organization_as2_profile;
 pub mod patch;
 pub mod user; // E2B users table (UUID-based) // Organizations table // Core cases table
 

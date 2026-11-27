@@ -18,6 +18,15 @@ pub fn routes_organizations(mm: ModelManager) -> Router {
 			.put(organization_rest::update_organization)
 			.delete(organization_rest::delete_organization),
 	)
+	.route(
+		"/organizations/{id}/as2-profiles",
+		get(organization_rest::list_organization_as2_profiles),
+	)
+	.route(
+		"/organizations/{id}/as2-profiles/{authority}",
+		axum::routing::put(organization_rest::put_organization_as2_profile)
+			.delete(organization_rest::delete_organization_as2_profile),
+	)
 	.with_state(mm)
 }
 

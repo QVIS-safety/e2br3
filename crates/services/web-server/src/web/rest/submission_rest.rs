@@ -6,6 +6,9 @@ use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::authorization::CaseMutationKind;
+use lib_core::model::organization_as2_profile::{
+	As2RuntimeProfile, OrganizationAs2ProfileBmc,
+};
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{Error, Result};
@@ -431,6 +434,35 @@ pub async fn post_gateway_ack_callback(
 	}
 	let record = apply_gateway_ack_by_remote(&mm, input).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
+}
+
+/// GET /internal/submissions/as2-profiles
+pub async fn get_as2_runtime_profiles(
+	State(mm): State<ModelManager>,
+	headers: HeaderMap,
+) -> Result<(StatusCode, HeaderMap, Json<Vec<As2RuntimeProfile>>)> {
+	let expected =
+		std::env::var("AS2_CALLBACK_TOKEN").map_err(|_| Error::Configuration {
+			key: "AS2_CALLBACK_TOKEN",
+			message: "AS2_CALLBACK_TOKEN is required for AS2 profile sync"
+				.to_string(),
+		})?;
+	let incoming = headers
+		.get("x-callback-token")
+		.map(header_to_str)
+		.transpose()?
+		.ok_or(Error::Authentication)?;
+	if expected.trim().is_empty() || !tokens_equal(&expected, &incoming) {
+		return Err(Error::Authentication);
+	}
+	let ctx = lib_core::ctx::Ctx::root_ctx();
+	let profiles = OrganizationAs2ProfileBmc::runtime_profiles(&ctx, &mm).await?;
+	let mut response_headers = HeaderMap::new();
+	response_headers.insert(
+		axum::http::header::CACHE_CONTROL,
+		axum::http::HeaderValue::from_static("no-store"),
+	);
+	Ok((StatusCode::OK, response_headers, Json(profiles)))
 }
 
 /// POST /internal/submissions/reconcile

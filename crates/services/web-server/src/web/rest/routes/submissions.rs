@@ -43,6 +43,10 @@ pub fn routes_submissions_internal(mm: ModelManager) -> Router {
 			axum::routing::post(submission_rest::post_gateway_ack_callback),
 		)
 		.route(
+			"/submissions/as2-profiles",
+			get(submission_rest::get_as2_runtime_profiles),
+		)
+		.route(
 			"/submissions/reconcile",
 			axum::routing::post(submission_rest::post_reconcile_due_submissions),
 		)

@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_new_draft_export_requires_linked_sender_presave() -> Result<()> {
+async fn test_manual_export_allows_unlinked_sender_presave() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -24,14 +24,18 @@ async fn test_new_draft_export_requires_linked_sender_presave() -> Result<()> {
 		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
 	)
 	.await?;
-	assert_eq!(
-		status,
-		StatusCode::BAD_REQUEST,
-		"{}",
-		String::from_utf8_lossy(&body)
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let parsed = xml::validation::validate_e2b_xml_basic(&body, None)?;
+	assert!(parsed.ok, "{:?}", parsed.errors);
+	assert!(
+		String::from_utf8_lossy(&body).contains("Test Sender"),
+		"manually entered C.3 Sender information must survive export"
 	);
-	assert!(String::from_utf8(body)?
-		.contains("case Sender must reference a Sender template"));
+	assert!(!xml::validation::validate_export_message_header(
+		&body,
+		lib_core::regulatory::RegulatoryAuthority::Ich,
+	)?
+	.is_empty());
 
 	Ok(())
 }

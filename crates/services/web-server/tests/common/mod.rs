@@ -102,7 +102,6 @@ pub async fn init_test_env() -> Result<()> {
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
 	std::env::set_var("SERVICE_DB_MAX_CONNECTIONS", "5");
 	std::env::set_var("E2BR3_PUBLIC_ORIGIN", "http://localhost");
-
 	// Keep integration tests deterministic even when direnv isn't loaded.
 	if std::env::var("E2BR3_EXAMPLES_DIR").is_err() {
 		let examples_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -198,6 +197,22 @@ pub async fn seed_active_test_meddra_term(mm: &ModelManager) -> Result<()> {
 	)
 	.execute(&mut *tx)
 	.await?;
+	sqlx::query(
+		"INSERT INTO whodrug_products (code, drug_name, version, language, active)
+		 VALUES ('KR-MPID', 'Test MFDS product', 'KR-V1', 'en', true)
+		 ON CONFLICT (code, version, language)
+		 DO UPDATE SET drug_name = EXCLUDED.drug_name, active = true",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO terminology_releases (dictionary, version, language, status, loaded_rows)
+		 VALUES ('whodrug', 'KR-V1', 'en', 'active', 1)
+		 ON CONFLICT (dictionary, version, language)
+		 DO UPDATE SET status = 'active', loaded_rows = 1",
+	)
+	.execute(&mut *tx)
+	.await?;
 
 	tx.commit().await?;
 	Ok(())
@@ -285,7 +300,7 @@ pub async fn create_test_import_product(
 				sequence_number: sequence_number as i32 + 1,
 				gateway_authority: gateway_authority.into(),
 				sender_identifier: Some("TEST-SENDER".into()),
-				routing_identifier: None,
+				routing_identifier: Some(format!("{org_id}-{gateway_authority}")),
 				cde_sender_identifier: None,
 				cdr_sender_identifier: None,
 				is_default_for_authority: Some(true),

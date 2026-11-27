@@ -13,10 +13,10 @@ pub struct OutboundMessageHeader {
 	pub batch_sender_identifier: Option<String>,
 	pub batch_receiver_identifier: Option<String>,
 	pub batch_transmission_date: Option<String>,
-	pub message_number: String,
-	pub message_date: String,
-	pub message_sender_identifier: String,
-	pub message_receiver_identifier: String,
+	pub message_number: Option<String>,
+	pub message_date: Option<String>,
+	pub message_sender_identifier: Option<String>,
+	pub message_receiver_identifier: Option<String>,
 }
 
 #[derive(Debug, Clone)]

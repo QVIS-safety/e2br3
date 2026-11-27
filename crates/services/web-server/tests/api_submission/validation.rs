@@ -3,8 +3,8 @@ use super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_submission_does_not_require_case_validated_status() -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -22,7 +22,7 @@ async fn test_submission_does_not_require_case_validated_status() -> Result<()> 
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -33,7 +33,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 	use lib_core::ctx::Ctx;
 	use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 	use lib_core::regulatory::RegulatoryAuthority;
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -104,7 +104,7 @@ async fn test_submission_rejects_case_validation_before_routing_or_dispatch(
 #[tokio::test]
 async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 ) -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -129,13 +129,6 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{saved:?}");
 	for authority in ["ich", "fda", "mfds"] {
-		if authority == "mfds" {
-			// The fixture is a US report, so use the foreign-report receiver.
-			let (status, body) = put_json(&app, &cookie, &format!("/api/cases/{case_id}/message-header"), json!({"data": {
-				"batch_receiver_identifier":"MFDS-O-FR", "message_receiver_identifier":"MFDS-O-FR"
-			}})).await?;
-			assert_eq!(status, StatusCode::OK, "{body:?}");
-		}
 		let (status, report) = get_json(
 			&app,
 			&cookie,
@@ -158,15 +151,7 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 			.map(|issue| issue["code"].as_str().ok_or("missing issue code"))
 			.collect::<std::result::Result<Vec<_>, _>>()?;
 		codes.sort_unstable();
-		let expected = if authority == "mfds" {
-			// A valid FR receiver also requires the fixture's absent product/substance code.
-			vec![
-				"ICH.MEDDRA.VERSION.UNAVAILABLE",
-				"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-			]
-		} else {
-			vec!["ICH.MEDDRA.VERSION.UNAVAILABLE"]
-		};
+		let expected = vec!["ICH.MEDDRA.VERSION.UNAVAILABLE"];
 		assert_eq!(codes, expected, "{report:?}");
 		assert_eq!(report["data"]["issue_count"], expected.len(), "{report:?}");
 		let response = app
@@ -215,7 +200,7 @@ async fn test_unavailable_meddra_allows_save_and_export_but_blocks_submission(
 #[serial]
 #[tokio::test]
 async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -303,7 +288,7 @@ async fn test_editor_null_flavor_persists_and_exports() -> Result<()> {
 #[serial]
 #[tokio::test]
 async fn test_manual_export_is_not_blocked_by_workflow_status() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -361,7 +346,7 @@ async fn test_submission_missing_authority_sender_id_rejects_without_side_effect
 			safety_report::SenderInformationBmc,
 		},
 	};
-	clear_esg_env();
+	clear_submission_env();
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -406,13 +391,28 @@ async fn test_submission_missing_authority_sender_id_rejects_without_side_effect
 		},
 	)
 	.await?;
-	let (status, before) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/message-header"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{before}");
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.uri(format!("/api/cases/{case_id}/export/xml?authority=fda"))
+				.header("cookie", &cookie)
+				.body(Body::empty())?,
+		)
+		.await?;
+	let export_status = response.status();
+	let exported = to_bytes(response.into_body(), usize::MAX).await?;
+	assert_eq!(
+		export_status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&exported)
+	);
+	assert!(!xml::validation::validate_export_message_header(
+		&exported,
+		lib_core::regulatory::RegulatoryAuthority::Fda,
+	)?
+	.is_empty());
 	let (status, body) = post_json(
 		&app,
 		&cookie,
@@ -434,23 +434,5 @@ async fn test_submission_missing_authority_sender_id_rejects_without_side_effect
 			.await?;
 	assert_eq!(status, StatusCode::OK, "{history}");
 	assert_eq!(history["data"]["items"], json!([]), "{history}");
-	let (status, after) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/message-header"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{after}");
-	assert_eq!(before["data"], after["data"]);
-	// The saved template can prepare a different authority without case data re-entry.
-	let (status, body) = put_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/submission-receiver"),
-		json!({"data": {"authority": "ich"}}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["data"]["message_sender_identifier"], "TEST-ICH");
 	Ok(())
 }

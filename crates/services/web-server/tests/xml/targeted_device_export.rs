@@ -181,10 +181,10 @@ async fn targeted_device_export_ignores_same_and_cross_org_volume() -> Result<()
 			batch_sender_identifier: Some("TEST-SENDER".to_string()),
 			batch_receiver_identifier: Some("ZZFDA".to_string()),
 			batch_transmission_date: Some("20241121010203+0000".to_string()),
-			message_number: "TEST-MESSAGE".to_string(),
-			message_date: "20241121010203+0000".to_string(),
-			message_sender_identifier: "TEST-SENDER".to_string(),
-			message_receiver_identifier: "CDER".to_string(),
+			message_number: Some("TEST-MESSAGE".to_string()),
+			message_date: Some("20241121010203+0000".to_string()),
+			message_sender_identifier: Some("TEST-SENDER".to_string()),
+			message_receiver_identifier: Some("CDER".to_string()),
 		};
 		tokio::runtime::Handle::current().block_on(
 			xml::export::serialize_case_xml_for_authority(

@@ -371,8 +371,13 @@ async fn fda_export_reads_persisted_sections_through_rls() -> Result<()> {
 	);
 
 	assert!(
-		exported
-			.contains(&format!("<creationTime value=\"{}\"", header.message_date)),
+		exported.contains(&format!(
+			"<creationTime value=\"{}\"",
+			header
+				.message_date
+				.as_deref()
+				.ok_or("missing fixture date")?
+		)),
 		"N.2.r.4 did not use the supplied message date"
 	);
 	assert!(
@@ -473,8 +478,8 @@ async fn fresh_full_build_validates_for_all_authorities() -> Result<()> {
 		lib_core::regulatory::RegulatoryAuthority::Mfds,
 	] {
 		let mut header = outbound_header(authority);
-		header.message_number = report_id.clone();
-		header.message_date = report_date.clone();
+		header.message_number = Some(report_id.clone());
+		header.message_date = Some(report_date.clone());
 		let exported = tokio::task::block_in_place(|| {
 			tokio::runtime::Handle::current().block_on(
 				xml::export::serialize_case_xml_for_authority(

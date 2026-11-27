@@ -1,5 +1,5 @@
 use crate::runtime_settings;
-use crate::submission::prepare_outbound_message_header;
+use crate::submission::prepare_export_message_header;
 use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
@@ -86,7 +86,7 @@ async fn generate_case_xml_for_authority(
 	settings: &mut Option<runtime_settings::RuntimeSettings>,
 ) -> Result<String> {
 	let outbound_message_header =
-		prepare_outbound_message_header(ctx, mm, id, authority).await?;
+		prepare_export_message_header(ctx, mm, id, authority).await?;
 	let settings = match settings {
 		Some(settings) => settings,
 		None => settings.insert(runtime_settings::load(ctx, mm).await?),
@@ -99,22 +99,6 @@ async fn generate_case_xml_for_authority(
 	let xml = export_case_xml_with_options(ctx, mm, id, options)
 		.await
 		.map_err(Error::Export)?;
-	let header_issues =
-		xml::validation::validate_export_message_header(xml.as_bytes(), authority)
-			.map_err(Error::Export)?;
-	if !header_issues.is_empty() {
-		return Err(Error::BadRequest {
-			message: format!(
-				"generated XML message header is invalid: {}",
-				header_issues
-					.iter()
-					.take(3)
-					.map(|issue| issue.message.as_str())
-					.collect::<Vec<_>>()
-					.join("; ")
-			),
-		});
-	}
 	Ok(xml)
 }
 

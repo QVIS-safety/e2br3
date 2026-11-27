@@ -104,6 +104,39 @@ CREATE TABLE IF NOT EXISTS user_organization_memberships (
     PRIMARY KEY (user_id, organization_id)
 );
 
+-- One organization may own independent AS2 identities for each authority.
+-- Private key material and its password are encrypted by the application before
+-- they are stored; the AS2 submitter receives them only over the internal API.
+CREATE TABLE IF NOT EXISTS organization_as2_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    authority VARCHAR(16) NOT NULL,
+    endpoint_url TEXT NOT NULL,
+    as2_to VARCHAR(255) NOT NULL,
+    expected_ack_as2_from VARCHAR(255) NOT NULL,
+    extra_headers JSONB NOT NULL DEFAULT '{}'::jsonb,
+    signing_pkcs12_ciphertext BYTEA NOT NULL,
+    signing_password_ciphertext BYTEA NOT NULL,
+    signing_key_alias VARCHAR(255),
+    partner_certificate_pem TEXT NOT NULL,
+    async_mdn_url TEXT,
+    active BOOLEAN NOT NULL DEFAULT true,
+    version BIGINT NOT NULL DEFAULT 1 CHECK (version > 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT organization_as2_profiles_authority_valid
+        CHECK (authority IN ('fda', 'mfds')),
+    CONSTRAINT organization_as2_profiles_unique
+        UNIQUE (organization_id, authority)
+);
+
+CREATE UNIQUE INDEX organization_as2_profiles_one_active
+    ON organization_as2_profiles(organization_id, authority)
+    WHERE active;
+
 CREATE TABLE IF NOT EXISTS app_settings (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     key text NOT NULL,
@@ -706,6 +739,8 @@ CREATE TABLE if NOT EXISTS case_submissions (
     status VARCHAR(50) NOT NULL,
     xml_bytes INTEGER NOT NULL,
     submitted_by UUID NOT NULL REFERENCES users(id),
+    submitting_organization_id UUID REFERENCES organizations(id) ON DELETE RESTRICT,
+    as2_profile_id UUID REFERENCES organization_as2_profiles(id) ON DELETE RESTRICT,
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -2153,6 +2188,18 @@ CREATE POLICY permission_profiles_org_isolation ON permission_profiles
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings FORCE ROW LEVEL SECURITY;
 CREATE POLICY app_settings_org_isolation ON app_settings
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE organization_as2_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_as2_profiles FORCE ROW LEVEL SECURITY;
+CREATE POLICY organization_as2_profiles_org_isolation ON organization_as2_profiles
     FOR ALL
     TO e2br3_app_role
     USING (

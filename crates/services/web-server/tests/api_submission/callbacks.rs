@@ -3,8 +3,8 @@ use super::support::*;
 #[serial]
 #[tokio::test]
 async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 
 	let mm = init_test_mm().await?;
@@ -101,7 +101,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 	assert!(event_types.contains(&"ack_recorded"), "{event_types:?}");
 	assert!(event_types.contains(&"status_changed"), "{event_types:?}");
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
@@ -109,7 +109,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 #[tokio::test]
 async fn test_internal_submission_endpoints_require_valid_callback_token(
 ) -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	std::env::set_var("SUBMISSION_RECONCILE_TOKEN", "reconcile-secret");
 	let mm = init_test_mm().await?;
@@ -226,14 +226,14 @@ async fn test_internal_submission_endpoints_require_valid_callback_token(
 		"{value:?}"
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	let (submitter_url, received_payloads) = start_mock_submitter().await?;
 	configure_as2_test_endpoint(submitter_url);
 	std::env::set_var(
@@ -314,15 +314,15 @@ async fn test_rust_to_submitter_bridge_payload_and_ack_flow() -> Result<()> {
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["status"], "ack3_received", "{value:?}");
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_internal_ack_callback_duplicate_payload_is_idempotent() -> Result<()> {
-	clear_esg_env();
-	configure_mock_esg_transport().await?;
+	clear_submission_env();
+	configure_mock_as2_transport().await?;
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 
 	let mm = init_test_mm().await?;
@@ -394,14 +394,14 @@ async fn test_internal_ack_callback_duplicate_payload_is_idempotent() -> Result<
 		"{event_types:?}"
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
 async fn test_internal_ack_callback_rejects_malformed_payload() -> Result<()> {
-	clear_esg_env();
+	clear_submission_env();
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
 	let mm = init_test_mm().await?;
 	let app = web_server::app(mm).expect("web server configuration");
@@ -438,6 +438,6 @@ async fn test_internal_ack_callback_rejects_malformed_payload() -> Result<()> {
 		"text={text}"
 	);
 
-	clear_esg_env();
+	clear_submission_env();
 	Ok(())
 }

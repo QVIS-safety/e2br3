@@ -2,7 +2,7 @@ use lib_core::ctx::Ctx;
 use lib_core::model::case::CaseBmc;
 use lib_core::model::presave::{
 	ProductPresaveBmc, ReceiverPresaveBmc, ReceiverPresaveRouteBmc,
-	SenderPresaveGatewayBmc,
+	SenderPresaveBmc, SenderPresaveGateway, SenderPresaveGatewayBmc,
 };
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SenderInformationBmc, SenderInformationFilter,
@@ -15,7 +15,6 @@ use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::{Error, Result};
 use modql::filter::{OpValValue, OpValsValue};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::FromRow;
@@ -141,24 +140,12 @@ fn check_submission_validation(
 	})
 }
 
-pub async fn prepare_outbound_message_header(
+async fn submission_sender_gateway(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
-) -> Result<OutboundMessageHeader> {
-	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	let report =
-		SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await?;
-	let message_number = required_header_value(
-		"C.1.1 Safety Report ID",
-		report.safety_report_id.as_deref(),
-	)?;
-	let message_date = required_header_value(
-		"C.1.2 Date of Creation",
-		report.transmission_date.as_deref(),
-	)?;
-
+) -> Result<SenderPresaveGateway> {
 	let senders = SenderInformationBmc::list(
 		ctx,
 		mm,
@@ -207,162 +194,172 @@ pub async fn prepare_outbound_message_header(
 			),
 		});
 	}
-	let sender_identifier = gateways[0]
-		.sender_identifier
-		.as_deref()
-		.map(str::trim)
+	gateways
+		.into_iter()
+		.next()
 		.ok_or_else(|| Error::BadRequest {
-			message: "gateway sender identifier is missing".into(),
-		})?
-		.to_string();
+			message: "case Sender gateway is missing".into(),
+		})
+}
 
-	let (batch_receiver_identifier, message_receiver_identifier) = match authority {
-		RegulatoryAuthority::Ich => {
-			let product_id = required_header_value(
-				"Case Product ID",
-				case.dg_prd_key.as_deref(),
-			)?;
-			let products = ProductPresaveBmc::list_by_product_and_sender(
-				ctx,
-				mm,
-				&product_id,
-				sender_presave_id,
-			)
-			.await?;
-			if products.len() != 1 {
-				return Err(Error::BadRequest { message: "case Product ID and Sender must identify exactly one active Product template".into() });
-			}
-			let receiver_id = products[0].receiver_presave_id.ok_or_else(|| Error::BadRequest {
-                message: "case Product must reference a Receiver template for ICH export".into(),
-            })?;
-			let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id).await?;
-			if receiver.deleted {
-				return Err(Error::BadRequest {
-					message: "case Product Receiver template is deleted".into(),
-				});
-			}
-			let report_type = required_header_value(
-				"C.1.3 Report Type",
-				report.report_type.as_deref(),
-			)?;
-			let routes =
-				ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, receiver_id)
-					.await?
-					.into_iter()
-					.filter(|route| {
-						route.authority == "ich"
-							&& route.condition_page == "CI"
-							&& route.condition_field_code == "C.1.3"
-							&& route.condition_operator == "Equal"
-							&& route.condition_value_code == report_type
-					})
-					.collect::<Vec<_>>();
-			if routes.len() != 1 {
-				return Err(Error::BadRequest { message: format!("expected exactly one ICH Receiver template route for C.1.3 report type {report_type}; found {}", routes.len()) });
-			}
-			(
-				required_header_value(
-					"Receiver template batch receiver identifier",
-					routes[0].batch_receiver_identifier.as_deref(),
-				)?,
-				required_header_value(
-					"Receiver template message receiver identifier",
-					Some(&routes[0].message_receiver_identifier),
-				)?,
-			)
-		}
-		RegulatoryAuthority::Fda | RegulatoryAuthority::Mfds => {
-			let product_id = required_header_value(
-				"Case Product ID",
-				case.dg_prd_key.as_deref(),
-			)?;
-			let products = ProductPresaveBmc::list_by_product_and_sender(
-				ctx,
-				mm,
-				&product_id,
-				sender_presave_id,
-			)
-			.await?;
-			if products.len() != 1 {
-				return Err(Error::BadRequest {
-					message: "case Product ID and Sender must identify exactly one active Product template".into(),
-				});
-			}
-			let receiver_id = products[0]
-				.receiver_presave_id
-				.ok_or_else(|| Error::BadRequest {
-					message: "case Product must reference a Receiver template before export or submission".into(),
-				})?;
-			let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id).await?;
-			if receiver.deleted {
-				return Err(Error::BadRequest {
-					message: "case Product Receiver template is deleted".into(),
-				});
-			}
-			let report_type = match authority {
-				RegulatoryAuthority::Fda => case.fda_report_type.as_deref(),
-				RegulatoryAuthority::Mfds => case.mfds_report_type.as_deref(),
-				RegulatoryAuthority::Ich => unreachable!(),
-			};
-			let report_type = required_header_value(
-				&format!("{authority_name} report type"),
-				report_type,
-			)?;
-			let condition_field_code = match authority {
-				RegulatoryAuthority::Fda => "FDA_REPORT_TYPE",
-				RegulatoryAuthority::Mfds => "MFDS_REPORT_TYPE",
-				RegulatoryAuthority::Ich => unreachable!(),
-			};
-			let matches =
-				ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, receiver_id)
-					.await?
-					.into_iter()
-					.filter(|route| {
-						route.authority.eq_ignore_ascii_case(authority_name)
-							&& route.condition_page.eq_ignore_ascii_case("CI")
-							&& route.condition_field_code == condition_field_code
-							&& route.condition_operator.eq_ignore_ascii_case("Equal")
-							&& route.condition_value_code == report_type
-					})
-					.collect::<Vec<_>>();
-			if matches.len() != 1 {
-				return Err(Error::BadRequest {
-					message: format!(
-						"expected exactly one configured {authority_name} receiver for report type {report_type}; found {}",
-						matches.len()
-					),
-				});
-			}
-			let route = &matches[0];
-			(
-				required_header_value(
-					"Receiver template batch receiver identifier",
-					route.batch_receiver_identifier.as_deref(),
-				)?,
-				required_header_value(
-					"Receiver template message receiver identifier",
-					Some(&route.message_receiver_identifier),
-				)?,
-			)
-		}
-	};
+pub async fn prepare_outbound_message_header(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: RegulatoryAuthority,
+) -> Result<OutboundMessageHeader> {
+	submission_sender_gateway(ctx, mm, case_id, authority).await?;
+	let header = prepare_export_message_header(ctx, mm, case_id, authority).await?;
+	for (field, value) in [
+		("C.1.1 Safety Report ID", header.message_number.as_deref()),
+		("C.1.2 Date of Creation", header.message_date.as_deref()),
+		(
+			"Sender template Sender ID",
+			header.message_sender_identifier.as_deref(),
+		),
+		(
+			"Receiver template batch receiver identifier",
+			header.batch_receiver_identifier.as_deref(),
+		),
+		(
+			"Receiver template message receiver identifier",
+			header.message_receiver_identifier.as_deref(),
+		),
+	] {
+		required_header_value(field, value)?;
+	}
+	Ok(header)
+}
 
+// Downloads preserve incomplete data; only submission requires a complete header.
+pub(crate) async fn prepare_export_message_header(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: RegulatoryAuthority,
+) -> Result<OutboundMessageHeader> {
+	let case = CaseBmc::get(ctx, mm, case_id).await?;
+	let report =
+		SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await?;
 	let now = OffsetDateTime::now_utc();
-	Ok(OutboundMessageHeader {
+	let mut header = OutboundMessageHeader {
 		batch_number: Some(format!("BATCH-{case_id}")),
-		batch_sender_identifier: Some(sender_identifier.clone()),
-		batch_receiver_identifier: Some(batch_receiver_identifier),
+		batch_sender_identifier: None,
+		batch_receiver_identifier: None,
 		batch_transmission_date: Some(format!(
 			"{}+0000",
 			lib_utils::time::format_e2b_timestamp(
 				now.to_offset(time::UtcOffset::UTC)
 			)
 		)),
-		message_number,
-		message_date,
-		message_sender_identifier: sender_identifier,
-		message_receiver_identifier,
-	})
+		message_number: report.safety_report_id,
+		message_date: report.transmission_date,
+		message_sender_identifier: None,
+		message_receiver_identifier: None,
+	};
+	let senders = SenderInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![SenderInformationFilter {
+			case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+				case_id.to_string()
+			))])),
+		}]),
+		None,
+	)
+	.await?;
+	let [sender] = senders.as_slice() else {
+		if senders.len() > 1 {
+			tracing::warn!(%case_id, "XML export omits routing identifiers for ambiguous Case Senders");
+		}
+		return Ok(header);
+	};
+	let Some(sender_presave_id) = sender.source_sender_presave_id else {
+		return Ok(header);
+	};
+	let gateways =
+		SenderPresaveGatewayBmc::list_by_parent(ctx, mm, sender_presave_id)
+			.await?
+			.into_iter()
+			.filter(|gateway| {
+				!gateway.deleted
+					&& gateway.is_default_for_authority
+					&& gateway
+						.gateway_authority
+						.trim()
+						.eq_ignore_ascii_case(authority.as_str())
+			})
+			.collect::<Vec<_>>();
+	if let [gateway] = gateways.as_slice() {
+		let sender_identifier = gateway
+			.sender_identifier
+			.as_deref()
+			.map(str::trim)
+			.map(str::to_owned);
+		header.batch_sender_identifier = sender_identifier.clone();
+		header.message_sender_identifier = sender_identifier;
+	} else if gateways.len() > 1 {
+		tracing::warn!(%case_id, "XML export omits ambiguous Sender gateway identifiers");
+	}
+	let Some(product_id) = case
+		.dg_prd_key
+		.as_deref()
+		.filter(|value| !value.trim().is_empty())
+	else {
+		return Ok(header);
+	};
+	let products = ProductPresaveBmc::list_by_product_and_sender(
+		ctx,
+		mm,
+		product_id,
+		sender_presave_id,
+	)
+	.await?;
+	let [product] = products.as_slice() else {
+		if products.len() > 1 {
+			tracing::warn!(%case_id, "XML export omits Receiver identifiers for ambiguous Product templates");
+		}
+		return Ok(header);
+	};
+	let Some(receiver_id) = product.receiver_presave_id else {
+		return Ok(header);
+	};
+	let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id).await?;
+	if receiver.deleted {
+		return Ok(header);
+	}
+	let (condition_field_code, report_type) = match authority {
+		RegulatoryAuthority::Ich => ("C.1.3", report.report_type.as_deref()),
+		RegulatoryAuthority::Fda => {
+			("FDA_REPORT_TYPE", case.fda_report_type.as_deref())
+		}
+		RegulatoryAuthority::Mfds => {
+			("MFDS_REPORT_TYPE", case.mfds_report_type.as_deref())
+		}
+	};
+	let Some(report_type) = report_type.filter(|value| !value.trim().is_empty())
+	else {
+		return Ok(header);
+	};
+	let routes = ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, receiver_id)
+		.await?
+		.into_iter()
+		.filter(|route| {
+			route.authority.eq_ignore_ascii_case(authority.as_str())
+				&& route.condition_page.eq_ignore_ascii_case("CI")
+				&& route.condition_field_code == condition_field_code
+				&& route.condition_operator.eq_ignore_ascii_case("Equal")
+				&& route.condition_value_code == report_type
+		})
+		.collect::<Vec<_>>();
+	if let [route] = routes.as_slice() {
+		header.batch_receiver_identifier = route.batch_receiver_identifier.clone();
+		header.message_receiver_identifier =
+			Some(route.message_receiver_identifier.clone());
+	} else if routes.len() > 1 {
+		tracing::warn!(%case_id, "XML export omits ambiguous Receiver route identifiers");
+	}
+	Ok(header)
 }
 
 fn required_header_value(field: &str, value: Option<&str>) -> Result<String> {

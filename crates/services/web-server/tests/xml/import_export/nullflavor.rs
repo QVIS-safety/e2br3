@@ -113,10 +113,10 @@ async fn study_numbers_and_null_flavors_survive_cross_organization_export_import
 				batch_sender_identifier: Some("TEST-SENDER".into()),
 				batch_receiver_identifier: Some("ZZFDA".into()),
 				batch_transmission_date: Some("20261122080000+0000".into()),
-				message_number: "STUDY-ROUNDTRIP".into(),
-				message_date: "20261122080000+0000".into(),
-				message_sender_identifier: "TEST-SENDER".into(),
-				message_receiver_identifier: "CDER".into(),
+				message_number: Some("STUDY-ROUNDTRIP".into()),
+				message_date: Some("20261122080000+0000".into()),
+				message_sender_identifier: Some("TEST-SENDER".into()),
+				message_receiver_identifier: Some("CDER".into()),
 			};
 			xml = xml::export::serialize_case_xml_for_authority(
 				&ctx,

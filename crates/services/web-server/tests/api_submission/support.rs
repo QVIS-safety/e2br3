@@ -1,6 +1,5 @@
 pub(super) use crate::common::{
-	cookie_header, init_test_mm, seed_active_test_meddra_term, seed_org_with_users,
-	Result,
+	cookie_header, init_test_mm, seed_active_test_meddra_term, Result,
 };
 pub(super) use axum::body::{to_bytes, Body};
 pub(super) use axum::extract::State;
@@ -19,6 +18,53 @@ pub(super) use tokio::time::{sleep, Duration};
 pub(super) use tower::ServiceExt;
 pub(super) use uuid::Uuid;
 
+const PROFILE_TEST_KEY: &str = "test-only-profile-key-32-characters";
+
+pub(super) fn profile_input(
+) -> lib_core::model::organization_as2_profile::OrganizationAs2ProfileInput {
+	lib_core::model::organization_as2_profile::OrganizationAs2ProfileInput {
+		endpoint_url: "http://127.0.0.1:9/as2".into(),
+		as2_to: "TEST-PARTNER".into(),
+		expected_ack_as2_from: "TEST-PARTNER".into(),
+		extra_headers: json!({}),
+		signing_pkcs12_base64: include_str!("../fixtures/as2/test-only.p12.b64")
+			.trim()
+			.into(),
+		signing_pkcs12_password: "changeit".into(),
+		signing_key_alias: None,
+		partner_certificate_pem: include_str!(
+			"../fixtures/as2/test-only-partner.pem"
+		)
+		.into(),
+		async_mdn_url: None,
+	}
+}
+
+pub(super) async fn seed_org_with_users(
+	mm: &lib_core::model::ModelManager,
+	admin_pwd: &str,
+	viewer_pwd: &str,
+) -> Result<crate::common::SeedOrgUsers> {
+	let seed = crate::common::seed_org_with_users(mm, admin_pwd, viewer_pwd).await?;
+	let previous_key = std::env::var("AS2_PROFILE_ENCRYPTION_KEY").ok();
+	std::env::set_var("AS2_PROFILE_ENCRYPTION_KEY", PROFILE_TEST_KEY);
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	for authority in ["fda", "mfds"] {
+		lib_core::model::organization_as2_profile::OrganizationAs2ProfileBmc::upsert(
+			&ctx, mm, seed.org_id, authority, profile_input(),
+		).await?;
+	}
+	match previous_key {
+		Some(key) => std::env::set_var("AS2_PROFILE_ENCRYPTION_KEY", key),
+		None => std::env::remove_var("AS2_PROFILE_ENCRYPTION_KEY"),
+	}
+	Ok(seed)
+}
+
 pub(super) fn parse_json_or_raw(body: &[u8]) -> Value {
 	let raw = String::from_utf8_lossy(body).trim().to_string();
 	if raw.is_empty() {
@@ -27,24 +73,14 @@ pub(super) fn parse_json_or_raw(body: &[u8]) -> Value {
 	serde_json::from_slice::<Value>(body).unwrap_or_else(|_| json!({ "raw": raw }))
 }
 
-pub(super) fn clear_esg_env() {
-	std::env::remove_var("FDA_ESG_BASE_URL");
-	std::env::remove_var("FDA_ESG_SUBMIT_PATH");
-	std::env::remove_var("FDA_ESG_TIMEOUT_SECS");
-	std::env::remove_var("FDA_ESG_BEARER_TOKEN");
-	std::env::remove_var("FDA_ESG_API_KEY");
+pub(super) fn clear_submission_env() {
 	std::env::remove_var("AS2_SUBMITTER_URL");
 	std::env::remove_var("AS2_SUBMITTER_TOKEN");
 	std::env::remove_var("AS2_SUBMITTER_TIMEOUT_SECS");
 	std::env::remove_var("AS2_ACK_CALLBACK_URL");
 	std::env::remove_var("AS2_CALLBACK_TOKEN");
+	std::env::remove_var("AS2_PROFILE_ENCRYPTION_KEY");
 	std::env::remove_var("SUBMISSION_RECONCILE_TOKEN");
-}
-
-pub(super) fn configure_esg_test_endpoint(url: impl AsRef<str>) {
-	std::env::set_var("FDA_ESG_BASE_URL", url.as_ref());
-	std::env::set_var("FDA_ESG_SUBMIT_PATH", "/submissions");
-	std::env::set_var("FDA_ESG_TIMEOUT_SECS", "5");
 }
 
 pub(super) fn configure_as2_test_endpoint(url: impl AsRef<str>) {
@@ -56,6 +92,7 @@ pub(super) fn configure_as2_test_endpoint(url: impl AsRef<str>) {
 		"http://127.0.0.1:9/internal/submissions/callbacks/ack",
 	);
 	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
+	std::env::set_var("AS2_PROFILE_ENCRYPTION_KEY", PROFILE_TEST_KEY);
 }
 
 pub(super) fn valid_compliance_payload() -> Value {
@@ -151,13 +188,6 @@ pub(super) struct MockSubmitterState {
 	received: Arc<Mutex<Vec<Value>>>,
 }
 
-#[derive(Clone)]
-pub(super) struct MockEsgState {
-	received: Arc<Mutex<Vec<Value>>>,
-	response_status: StatusCode,
-	response_body: Value,
-}
-
 pub(super) async fn start_mock_submitter() -> Result<(String, Arc<Mutex<Vec<Value>>>)>
 {
 	let received = Arc::new(Mutex::new(Vec::<Value>::new()));
@@ -189,63 +219,6 @@ pub(super) async fn mock_submitter_submit(
 	)
 }
 
-pub(super) async fn start_mock_esg(
-	response_status: StatusCode,
-	response_body: Value,
-) -> Result<(String, Arc<Mutex<Vec<Value>>>)> {
-	let received = Arc::new(Mutex::new(Vec::<Value>::new()));
-	let state = MockEsgState {
-		received: received.clone(),
-		response_status,
-		response_body,
-	};
-	let app = Router::new()
-		.route("/submissions", post(mock_esg_submit))
-		.with_state(state);
-	let listener = TcpListener::bind("127.0.0.1:0").await?;
-	let addr = listener.local_addr()?;
-	tokio::spawn(async move {
-		let _ = axum::serve(listener, app).await;
-	});
-	Ok((format!("http://{addr}"), received))
-}
-
-pub(super) async fn mock_esg_submit(
-	State(state): State<MockEsgState>,
-	headers: axum::http::HeaderMap,
-	Json(payload): Json<Value>,
-) -> (StatusCode, Json<Value>) {
-	let auth = headers
-		.get("authorization")
-		.and_then(|v| v.to_str().ok())
-		.unwrap_or("")
-		.to_string();
-	let api_key = headers
-		.get("x-api-key")
-		.and_then(|v| v.to_str().ok())
-		.unwrap_or("")
-		.to_string();
-	state.received.lock().await.push(json!({
-		"authorization": auth,
-		"x_api_key": api_key,
-		"body": payload,
-	}));
-	(state.response_status, Json(state.response_body.clone()))
-}
-
-pub(super) async fn configure_mock_esg_transport() -> Result<()> {
-	let (esg_url, _received) = start_mock_esg(
-		StatusCode::OK,
-		json!({
-			"submission_id": format!("ESG-{}", Uuid::new_v4().simple()),
-			"ack": { "level": 1, "success": true, "code": "ACK1" }
-		}),
-	)
-	.await?;
-	configure_esg_test_endpoint(esg_url);
-	Ok(())
-}
-
 pub(super) async fn configure_mock_as2_transport() -> Result<()> {
 	let (submitter_url, _received) = start_mock_submitter().await?;
 	configure_as2_test_endpoint(submitter_url);
@@ -271,7 +244,7 @@ pub(super) async fn create_case_with_profile(
 		"data": {
 			"status": "draft",
 			"fdaReportType": "1",
-			"mfdsReportType": "1",
+			"mfdsReportType": "4",
 			"safetyReportIdentification": {
 				"safetyReportId": initial_report_id
 			}
@@ -326,62 +299,6 @@ pub(super) async fn create_safety_report(
 	Ok(())
 }
 
-pub(super) async fn create_message_header(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-) -> Result<()> {
-	let body = json!({
-		"data": {
-			"case_id": case_id,
-			"message_number": format!("US-SENDER-{}", case_id.simple()),
-			"message_sender_identifier": "SENDER01",
-			"message_receiver_identifier": "CDER",
-			"message_date": "20241001000000"
-		}
-	});
-	let (status, value) = post_json(
-		app,
-		cookie,
-		&format!("/api/cases/{case_id}/message-header"),
-		body,
-	)
-	.await?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create message header failed: status={status} body={value}"
-		)
-		.into());
-	}
-	let req = Request::builder()
-		.method("PUT")
-		.uri(format!("/api/cases/{case_id}/message-header"))
-		.header("cookie", cookie)
-		.header("content-type", "application/json")
-		.body(Body::from(
-			json!({
-				"data": {
-					"batch_number": format!("BATCH-{case_id}"),
-					"batch_sender_identifier": "SENDER01",
-					"batch_receiver_identifier": "ZZFDA",
-					"batch_transmission_date": [2024, 10, 1, 0, 0, 0, 0, 0, 0]
-				}
-			})
-			.to_string(),
-		))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = parse_json_or_raw(&body);
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update message header failed: status={status} body={value}"
-		)
-		.into());
-	}
-	Ok(())
-}
-
 pub(super) async fn create_sender(
 	app: &axum::Router,
 	cookie: &str,
@@ -395,6 +312,7 @@ pub(super) async fn create_sender(
 				"sequenceNumber": index + 1,
 				"gatewayAuthority": authority,
 				"senderIdentifier": format!("TEST-{}", authority.to_ascii_uppercase()),
+				"routingIdentifier": format!("ROUTE-{case_id}-{authority}"),
 				"isDefaultForAuthority": true
 			})
 		})
@@ -424,6 +342,86 @@ pub(super) async fn create_sender(
 	let sender_presave_id = value["data"]["rows"]["sender"]["id"]
 		.as_str()
 		.ok_or("missing sender presave id")?;
+	let (status, receiver) = post_json(
+		app,
+		cookie,
+		"/api/presaves/receivers",
+		json!({"data": {"rows": {
+			"receiver": {
+				"receiverType": "Regulatory Authority",
+				"organizationName": format!("Test Receiver {case_id}")
+			},
+			"consignees": [],
+			"routes": [
+				{
+					"sequenceNumber": 1, "authority": "ich", "receiverLabel": "ICH",
+					"batchReceiverIdentifier": "ICH-BATCH", "messageReceiverIdentifier": "ICH-RECEIVER",
+					"conditionPage": "CI", "conditionFieldCode": "C.1.3", "conditionOperator": "Equal",
+					"conditionValueCode": "1", "conditionValueLabel": "Spontaneous"
+				},
+				{
+					"sequenceNumber": 2, "authority": "fda", "receiverLabel": "FDA(CDER IND)",
+					"batchReceiverIdentifier": "ZZFDA_PREMKT", "messageReceiverIdentifier": "CDER_IND",
+					"conditionPage": "CI", "conditionFieldCode": "FDA_REPORT_TYPE", "conditionOperator": "Equal",
+					"conditionValueCode": "1", "conditionValueLabel": "CDER IND"
+				},
+				{
+					"sequenceNumber": 3, "authority": "mfds", "receiverLabel": "MFDS(FR)",
+					"batchReceiverIdentifier": "MFDS-O-FR", "messageReceiverIdentifier": "MFDS-O-FR",
+					"conditionPage": "CI", "conditionFieldCode": "MFDS_REPORT_TYPE", "conditionOperator": "Equal",
+					"conditionValueCode": "4", "conditionValueLabel": "FR"
+				}
+			]
+		}}}),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create receiver presave failed: status={status} body={receiver}"
+		)
+		.into());
+	}
+	let receiver_presave_id = receiver["data"]["rows"]["receiver"]["id"]
+		.as_str()
+		.ok_or("missing receiver presave id")?;
+	let product_id = format!("TEST-PRODUCT-{}", case_id.simple());
+	let (status, product) = post_json(
+		app,
+		cookie,
+		"/api/presaves/products",
+		json!({"data": {"rows": {
+			"product": {
+				"senderPresaveId": sender_presave_id,
+				"receiverPresaveId": receiver_presave_id,
+				"productId": product_id,
+				"medicinalProduct": "Test Product"
+			},
+			"activeSubstances": []
+		}}}),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create product presave failed: status={status} body={product}"
+		)
+		.into());
+	}
+	let (status, case) = put_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {"dg_prd_key": product_id},
+			"reason_for_change": "test fixture product assignment"
+		}),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"link case product failed: status={status} body={case}"
+		)
+		.into());
+	}
 	let body = json!({
 		"data": {
 			"case_id": case_id,
@@ -512,6 +510,50 @@ pub(super) async fn create_primary_source(
 	if status != StatusCode::OK {
 		return Err(format!(
 			"update primary source failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(())
+}
+
+pub(super) async fn create_fda_ind_details(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<()> {
+	let (status, study) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/safety-report/studies"),
+		json!({"data": {
+			"case_id": case_id,
+			"fda_ind_number_occurred": "123456"
+		}}),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create FDA IND details failed: status={status} body={study}"
+		)
+		.into());
+	}
+	let study_id = study["data"]["id"].as_str().ok_or("missing study id")?;
+	let (status, cross_reported) = post_json(
+		app,
+		cookie,
+		&format!(
+			"/api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds"
+		),
+		json!({"data": {
+			"study_information_id": study_id,
+			"sequence_number": 1,
+			"ind_number_null_flavor": "NA"
+		}}),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create FDA cross-reported IND failed: status={status} body={cross_reported}"
 		)
 		.into());
 	}
@@ -636,7 +678,9 @@ pub(super) async fn create_drug(
 			"drug_characterization": "1",
 			"medicinal_product": "Drug A",
 			"mpid": "MPID-TEST",
-			"mpid_version": "1"
+			"mpid_version": "1",
+			"mfds_mpid": "KR-MPID",
+			"mfds_mpid_version": "KR-V1"
 		}
 	});
 	let (status, value) =
@@ -684,7 +728,7 @@ pub(super) async fn seed_rule_clean_case(
 ) -> Result<()> {
 	seed_active_test_meddra_term(mm).await?;
 	create_safety_report(app, cookie, case_id).await?;
-	create_message_header(app, cookie, case_id).await?;
+	create_fda_ind_details(app, cookie, case_id).await?;
 	create_sender(app, cookie, case_id).await?;
 	create_primary_source(app, cookie, case_id).await?;
 	create_patient(app, cookie, case_id).await?;
