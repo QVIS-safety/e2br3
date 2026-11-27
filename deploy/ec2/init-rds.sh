@@ -225,7 +225,7 @@ PY
     -f "${recreate_path}"
 fi
 
-echo "Initializing database with verified migration history"
+echo "Initializing database from the frozen schema"
 
 if [ "${RESET_DB}" = "1" ] && [ "${RESET_PRESERVE_TERMINOLOGY}" = "1" ] && [ -n "${TERMINOLOGY_DUMP_FILE}" ] && [ -s "${TERMINOLOGY_DUMP_FILE}" ]; then
   DATABASE_URL="${SQL_EXEC_URL}" APP_DB_USER="${APP_DB_USER}" \

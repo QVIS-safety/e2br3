@@ -35,7 +35,7 @@ VALUES (1, '1', TRUE, FALSE), (2, '1', FALSE, TRUE), (3, '4', FALSE, NULL);
 INSERT INTO test_results (id, test_result_value, test_result_qualifier)
 VALUES (1, '10', 'EQ');
 
-\ir ../../db/migrations/20261123_reaction_serious_and_test_result_canonical.sql
+\ir ../../tests/fixtures/prebaseline/20261123_reaction_serious_and_test_result_canonical.sql
 
 DO $$
 DECLARE

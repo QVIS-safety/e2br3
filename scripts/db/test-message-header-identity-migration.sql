@@ -10,7 +10,7 @@ CREATE TEMP TABLE message_headers (
     CONSTRAINT unique_message_per_case UNIQUE (case_id)
 );
 INSERT INTO message_headers VALUES (1, 1, 'EXTERNAL-ID', '20240102030405');
-\ir ../../db/migrations/20261121_xml_message_header_identity.sql
+\ir ../../tests/fixtures/prebaseline/20261121_xml_message_header_identity.sql
 INSERT INTO message_headers VALUES (2, 2, 'EXTERNAL-ID', '20240229123059.1234+0900');
 DO $$
 BEGIN

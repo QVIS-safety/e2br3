@@ -145,20 +145,28 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 pub async fn init_clean_bootstrap_authorization_test_db(
 ) -> Result<AuthorizationTestDb> {
 	let database = new_isolated_database().await?;
-	let bootstrap =
-		include_str!("../../../../../db/bootstrap/01-safetydb-schema.sql")
-			.lines()
-			.filter(|line| {
-				!line.starts_with('\\') && !line.contains(":\"app_db_user\"")
-			})
-			.collect::<Vec<_>>()
-			.join("\n")
-			.replace(
-				"IN SCHEMA public",
-				&format!("IN SCHEMA \"{}\"", database.schema),
-			);
+	let schema = format!("\"{}\"", database.schema);
+	let bootstrap = [
+		include_str!("../../../../../db/bootstrap/01-safetydb-schema.sql"),
+		include_str!("../../../../../db/bootstrap/02-reference-data.sql"),
+		include_str!("../../../../../db/bootstrap/03-constraints.sql"),
+		include_str!("../../../../../db/bootstrap/12-triggers.sql"),
+	]
+	.concat()
+	.replace("public.", &format!("{schema}."))
+	.replace("SCHEMA public", &format!("SCHEMA {schema}"));
+	let bootstrap = ["gen_random_uuid", "digest", "gin_trgm_ops"].iter().fold(
+		bootstrap,
+		|sql, name| {
+			sql.replace(&format!("{schema}.{name}"), &format!("public.{name}"))
+		},
+	);
 	sqlx::raw_sql(&bootstrap).execute(database.pool()).await?;
-	apply_authorization_migrations(&database).await?;
+	AuthorizationMigrationService::reconcile_database(
+		database.pool(),
+		policy_registry()?,
+	)
+	.await?;
 	Ok(database)
 }
 
@@ -210,7 +218,7 @@ pub async fn apply_authorization_migrations(
 	database: &AuthorizationTestDb,
 ) -> Result<()> {
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260720_authorization_kernel.sql"
+		"../../../../../tests/fixtures/prebaseline/20260720_authorization_kernel.sql"
 	))
 	.execute(database.pool())
 	.await?;
@@ -226,7 +234,7 @@ pub async fn apply_authorization_revision_migration(
 	database: &AuthorizationTestDb,
 ) -> Result<()> {
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260720_authorization_revisions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260720_authorization_revisions.sql"
 	))
 	.execute(database.pool())
 	.await?;
@@ -237,7 +245,7 @@ pub async fn apply_authorization_isolation_migration(
 	database: &AuthorizationTestDb,
 ) -> Result<()> {
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260722_authorization_isolation_audit.sql"
+		"../../../../../tests/fixtures/prebaseline/20260722_authorization_isolation_audit.sql"
 	))
 	.execute(database.pool())
 	.await?;

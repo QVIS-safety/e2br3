@@ -60,14 +60,14 @@ async fn migration_accepts_fresh_varchar_bootstrap_schema() -> TestResult {
 	.await?;
 
 	let migration = sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260725_reaction_term_highlight_code.sql"
+		"../../../../../tests/fixtures/prebaseline/20260725_reaction_term_highlight_code.sql"
 	))
 	.execute(&pool)
 	.await;
 	let rerun = if migration.is_ok() {
 		Some(
 			sqlx::raw_sql(include_str!(
-			"../../../../../db/migrations/20260725_reaction_term_highlight_code.sql"
+			"../../../../../tests/fixtures/prebaseline/20260725_reaction_term_highlight_code.sql"
 		))
 			.execute(&pool)
 			.await,
@@ -114,7 +114,7 @@ async fn migration_converts_legacy_boolean_values() -> TestResult {
 	.await?;
 
 	let migration = sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260725_reaction_term_highlight_code.sql"
+		"../../../../../tests/fixtures/prebaseline/20260725_reaction_term_highlight_code.sql"
 	))
 	.execute(&pool)
 	.await;

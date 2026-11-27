@@ -91,8 +91,7 @@ It checks UI path resolution, not business-rule behavior.
 locked dependencies and embedded vocabularies. Validation summary caches also
 record the active terminology releases and their update timestamps. A mismatch
 or a legacy cache without a revision returns `Not checked` until revalidation.
-Apply `db/migrations/20261031_validation_revision.sql` before deploying this
-cache reader/writer. No background full-case validation is added.
+The frozen `db/bootstrap` schema includes the validation revision columns. No background full-case validation is added.
 
 CI selects tests on `dev`/`main` pushes and PRs targeting either branch:
 

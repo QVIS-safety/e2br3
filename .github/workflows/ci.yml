@@ -329,8 +329,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  migration-tests:
-    name: PostgreSQL migration runner
+  bootstrap-tests:
+    name: PostgreSQL frozen bootstrap
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -348,7 +348,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Verify actual migrations, rollback, history and concurrency
+      - name: Verify frozen schema, atomic rollback, baseline and concurrency
         env:
           MIGRATION_TEST_ADMIN_URL: postgres://app_user:dev_only_pwd@localhost:5432/postgres
         run: python3 -m unittest discover -s deploy/ec2 -p 'test_migrations_postgres.py' -v
@@ -357,7 +357,7 @@ jobs:
     name: Publish Dev Backend Image
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && github.ref_name == 'dev' &&
-          needs.test-plan.result == 'success' && needs.migration-tests.result == 'success' &&
+          needs.test-plan.result == 'success' && needs.bootstrap-tests.result == 'success' &&
           needs.fmt.result == 'success' && needs.clippy.result == 'success' &&
           ((needs.test-plan.outputs.validator == 'true' && needs.validator.result == 'success') ||
            (needs.test-plan.outputs.validator == 'false' && needs.validator.result == 'skipped')) &&
@@ -365,7 +365,7 @@ jobs:
            (needs.test-plan.outputs.registry == 'false' && needs.registry.result == 'skipped')) &&
           ((needs.test-plan.outputs.backend == 'true' && needs.test.result == 'success') ||
            (needs.test-plan.outputs.backend == 'false' && needs.test.result == 'skipped')) }}
-    needs: [test-plan, registry, fmt, clippy, validator, test, migration-tests]
+    needs: [test-plan, registry, fmt, clippy, validator, test, bootstrap-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -374,7 +374,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check database migration changes
+      - name: Check frozen database bootstrap
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: |

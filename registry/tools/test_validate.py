@@ -802,11 +802,11 @@ class RegistryValidatorTests(unittest.TestCase):
             },
             fields["G.k.1"]["control"],
         )
-        terminology_source = (repo / "db/bootstrap/09-terminology.sql").read_text(
+        terminology_source = (repo / "db/bootstrap/02-reference-data.sql").read_text(
             encoding="utf-8"
         )
         self.assertIn(
-            "('drug_characterization', '4', 'Drug Not Administered', 4)",
+            "'drug_characterization', '4', 'Drug Not Administered', NULL, 4",
             terminology_source,
         )
 
@@ -2537,11 +2537,11 @@ class DictionaryValidatorTests(unittest.TestCase):
         deploy_job = workflow.split("\n  deploy-dev:\n", 1)[1]
 
         self.assertIn(
-            "needs: [test-plan, registry, fmt, clippy, validator, test, migration-tests]",
+            "needs: [test-plan, registry, fmt, clippy, validator, test, bootstrap-tests]",
             deploy_job,
         )
         self.assertIn("needs.test-plan.result == 'success'", deploy_job)
-        self.assertIn("needs.migration-tests.result == 'success'", deploy_job)
+        self.assertIn("needs.bootstrap-tests.result == 'success'", deploy_job)
         self.assertIn("needs.fmt.result == 'success' && needs.clippy.result == 'success'", deploy_job)
         for output, job in (("registry", "registry"), ("validator", "validator"), ("backend", "test")):
             self.assertIn(f"needs.test-plan.outputs.{output} == 'true' && needs.{job}.result == 'success'", deploy_job)
@@ -2607,9 +2607,9 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
                 repo / "crates/libs/lib-core/src/model/drug.rs",
                 repo / "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
                 repo / "crates/libs/lib-core/src/model/reaction.rs",
-                repo / "db/bootstrap/04-patient-information.sql",
-                repo / "db/bootstrap/05-reactions.sql",
-                repo / "db/bootstrap/07-drug-information.sql",
+                repo / "db/bootstrap/01-safetydb-schema.sql",
+                repo / "db/bootstrap/01-safetydb-schema.sql",
+                repo / "db/bootstrap/01-safetydb-schema.sql",
             ]
         )
         for field in (
@@ -2630,8 +2630,8 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
         drug_source = (repo / "crates/libs/lib-core/src/model/drug.rs").read_text()
         drug_information_source = drug_source.split("// -- DosageInformation", 1)[0]
         self.assertNotIn("pub dosage_text: Option<String>", drug_information_source)
-        bootstrap = (repo / "db/bootstrap/07-drug-information.sql").read_text()
-        drug_table = bootstrap.split("CREATE TABLE dosage_information", 1)[0]
+        bootstrap = (repo / "db/bootstrap/01-safetydb-schema.sql").read_text()
+        drug_table = bootstrap.split("CREATE TABLE public.drug_information (", 1)[1].split("\n);", 1)[0]
         self.assertNotIn("dosage_text", drug_table)
 
 

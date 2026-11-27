@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-27",
+  "scope": "Freeze the final pre-release PostgreSQL schema; remove runtime migration replay",
+  "baseline": {
+    "runtimeMigrationsRemoved": 143,
+    "bootstrapSqlFiles": 7,
+    "historicalSqlFixturesRetainedForIsolatedTestsOnly": 28,
+    "source": "Full copy of the actual running server database, upgraded from 135 recorded changes to the final 143-change state",
+    "originalDatabaseModified": false,
+    "customerDataOrCredentialsIncludedInBootstrap": false,
+    "initialDataSource": "Fresh legacy initialization without development seed; canonical reference data and internal system principal only"
+  },
+  "schemaComparison": {
+    "inventoryItems": 3549,
+    "tables": 94,
+    "columns": 1339,
+    "indexes": 305,
+    "constraints": 1244,
+    "applicationFunctions": 76,
+    "triggers": 222,
+    "policies": 110,
+    "sequences": 12,
+    "missingObjects": 0,
+    "completeNormalizedSchemaDumpMatches": true,
+    "normalizations": [
+      "Exclude old migration/UI bookkeeping and the new baseline marker",
+      "Initializer owns portable objects; preserve the dedicated WHODrug search owner",
+      "Replace server-specific direct e2br3_app login grants with configured runtime membership in the canonical application roles",
+      "Two equivalent varchar-array-to-text-array casts are rendered differently by PostgreSQL dump/restore"
+    ]
+  },
+  "actualDataRestore": {
+    "tablesCompared": 94,
+    "rowsCompared": 130905,
+    "allRowCountsAndSortedRowContentHashesMatch": true,
+    "method": "Restore actual copied rows into the new bootstrap schema in a disposable DB; compare before backend smoke testing",
+    "restoreOnlyTriggerHandling": "Triggers disabled during standard data restore and re-enabled afterwards; complete schema comparison confirmed the final state"
+  },
+  "actualBackendSmoke": {
+    "healthStatus": 204,
+    "existingAccountLoginStatus": 200,
+    "existingCaseReadStatus": 200,
+    "ichXmlStatus": 200,
+    "fdaXmlStatus": 200,
+    "mfdsXmlStatus": 200,
+    "allXmlWellFormed": true,
+    "separateInitializerCredentialUsed": true,
+    "externalSubmissionDisabled": true
+  },
+  "checks": {
+    "bootstrapRunnerAndActualPostgres": {"passed": 10, "failed": 0},
+    "authorization": {"passed": 45, "failed": 0},
+    "presave": {"passed": 33, "failed": 0},
+    "nullFlavorStorage": {"passed": 2, "failed": 0},
+    "deploymentGuards": {"passed": 8, "failed": 0},
+    "ciSelection": {"passed": 35, "failed": 0},
+    "fdaCodeGenerator": {"passed": 4, "failed": 0},
+    "uiAndIsolatedDbShellContracts": "passed; isolated command fixtures only",
+    "terminologyRlsPolicy": "passed",
+    "cargoFmtAndDiffCheck": "passed",
+    "databaseSuite": {
+      "passed": 21,
+      "failed": 1,
+      "failure": "audit_verifier_detects_every_protected_field_and_unknown_versions writes an empty string rejected by the existing audit nonblank constraint",
+      "preexistingConfirmed": "Same failure reproduced against the retained fresh legacy bootstrap plus all original migrations"
+    },
+    "registrySuite": {
+      "passed": 130,
+      "failed": 4,
+      "failures": [
+        "Presave-to-case mapping inventory",
+        "Frontend field mapping inventory",
+        "DrugInformation.source_product_id mapping",
+        "Removed model/message_header.rs referenced by section N inventory"
+      ],
+      "preexistingConfirmed": "All four reproduced with the committed pre-change test definitions; unchanged application and registry sources"
+    }
+  },
+  "cleanup": {
+    "threeTaskDatabaseCopiesRemoved": true,
+    "originalBackendStillRunning": true,
+    "privateEvidenceRetained": "/home/opc/e2br3/runtime-dev/bootstrap-freeze-20261127"
+  },
+  "limits": [
+    "Not a deployment or automatic adoption of an existing development database",
+    "Existing databases without this verified baseline are rejected by the new initializer/checker",
+    "No licensed terminology or agency AS2 credentials fabricated",
+    "No claim that all repository tests pass; the five preexisting failures above remain",
+    "Verification completed before committing or pushing this change"
+  ]
+}

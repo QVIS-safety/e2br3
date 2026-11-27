@@ -97,9 +97,9 @@ assert_success_contract() {
 	grep -F -- "$database_name" "$case_dir/createdb.args" >/dev/null
 	grep -F -- "$database_name" "$case_dir/dropdb.args" >/dev/null
 
-	grep -Fx -- "-X -w -d $test_url -v ON_ERROR_STOP=1 -f - -v app_db_user=user" "$case_dir/psql.args" >/dev/null
-	grep -F -- 'CREATE TABLE public.schema_migrations' "$case_dir/psql.stdin" >/dev/null
-	grep -F -- 'pg_try_advisory_lock' "$case_dir/psql.stdin" >/dev/null
+	grep -Fx -- "-X -w -d $test_url --single-transaction -v ON_ERROR_STOP=1 -f - -v app_db_user=user" "$case_dir/psql.args" >/dev/null
+	grep -F -- 'CREATE TABLE public.schema_baseline' "$case_dir/psql.stdin" >/dev/null
+	grep -F -- 'pg_try_advisory_xact_lock' "$case_dir/psql.stdin" >/dev/null
 
 	if grep -F -- 'user:secret' "$case_dir/stdout" "$case_dir/stderr" >/dev/null; then
 		printf 'runner leaked database credentials\n' >&2
@@ -111,9 +111,9 @@ assert_bootstrap_role_wiring() {
 	grep -F -- 'migrate-rds.py' "$repo_root/deploy/docker/postgres-init/01-run-all.sh" >/dev/null
 	grep -F -- 'app_db_user=' "$repo_root/deploy/ec2/migrate-rds.py" >/dev/null
 	grep -F -- 'GRANT e2br3_app_role TO :"app_db_user";' \
-		"$repo_root/db/bootstrap/01-safetydb-schema.sql" >/dev/null
+		"$repo_root/db/bootstrap/00-roles.sql" >/dev/null
 	grep -F -- 'GRANT e2br3_auditor_role TO :"app_db_user";' \
-		"$repo_root/db/bootstrap/01-safetydb-schema.sql" >/dev/null
+		"$repo_root/db/bootstrap/00-roles.sql" >/dev/null
 }
 
 assert_interrupt_forwards_signal_and_cleans_up() {

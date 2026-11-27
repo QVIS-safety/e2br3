@@ -76,7 +76,11 @@ changes. No successful Object Lock enrollment has been recorded. Before enrollme
 
 These are prerequisites, not actions performed by this repository or script.
 
-## Database rollout order
+## Historical database rollout order
+
+The following describes the pre-baseline upgrade. New databases use `db/bootstrap`;
+the named historical migration is no longer an executable deployment path.
+
 
 The checkpoint command depends on the `hash_version` column and bounded range verifier introduced by
 `db/migrations/20261102_hash_chain_integrity.sql`. Apply that migration transactionally under the production

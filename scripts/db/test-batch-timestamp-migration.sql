@@ -14,7 +14,7 @@ INSERT INTO cases VALUES
     (4, NULL);
 INSERT INTO message_headers VALUES
     (1, 1, NULL), (2, 2, '2025-01-01 00:00:00+00'), (3, 3, NULL), (4, 4, NULL);
-\ir ../../db/migrations/20261121_message_header_batch_date_raw.sql
+\ir ../../tests/fixtures/prebaseline/20261121_message_header_batch_date_raw.sql
 DO $$
 BEGIN
     IF (SELECT batch_transmission_date_raw FROM message_headers WHERE id = 1)

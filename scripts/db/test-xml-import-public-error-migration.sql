@@ -4,7 +4,7 @@ SET LOCAL search_path = pg_temp, pg_catalog;
 -- Isolated schema fixtures; never application or clinical data.
 CREATE TEMP TABLE xml_import_history (id INTEGER PRIMARY KEY, status TEXT NOT NULL, error_message TEXT);
 INSERT INTO xml_import_history VALUES (1, 'error', 'PRIVATE_LEGACY_DIAGNOSTIC'), (2, 'success', NULL);
-\ir ../../db/migrations/20261121_zz_xml_import_public_error.sql
+\ir ../../tests/fixtures/prebaseline/20261121_zz_xml_import_public_error.sql
 DO $$
 BEGIN
     IF (SELECT error_message FROM xml_import_history WHERE id=1) IS DISTINCT FROM 'PRIVATE_LEGACY_DIAGNOSTIC'

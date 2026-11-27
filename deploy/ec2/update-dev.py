@@ -20,13 +20,9 @@ IMAGES = {
 }
 
 
-def migration_plan(expected, applied):
-    unknown = sorted(set(applied) - set(expected))
-    changed = sorted(name for name in applied.keys() & expected.keys()
-                     if applied[name] != expected[name])
-    if unknown or changed:
-        raise ValueError(f"Incompatible migration history: unknown={unknown}, changed={changed}")
-    return sorted(set(expected) - set(applied))
+def verify_baseline(expected, applied):
+    if not expected or not isinstance(applied, dict) or expected != applied:
+        raise ValueError("Frozen schema baseline mismatch; explicit database reconciliation required")
 
 
 def image_reference(image, repository):
@@ -106,28 +102,18 @@ def deploy(compose_file, state_dir, check_only):
         finally:
             run(["docker", "rm", container])
         expected = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                    for p in (candidate / "db/migrations").glob("*.sql")}
+                    for p in (candidate / "db/bootstrap").glob("*.sql")}
         if not expected:
-            raise ValueError("Candidate image contains no migrations")
-        query = "SELECT json_object_agg(filename, checksum) FROM public.schema_migrations;"
+            raise ValueError("Candidate image contains no bootstrap SQL")
+        query = "SELECT manifest FROM public.schema_baseline WHERE singleton;"
         applied = json.loads(run(["psql", "-XAt", "-v", "ON_ERROR_STOP=1", "-c", query], env=pg_env))
-        if not isinstance(applied, dict) or not applied:
-            raise ValueError("Existing database needs an explicitly verified migration baseline")
-        pending = migration_plan(expected, applied)
-        plan = {"revisions": revisions, "changed": changed, "pending_migrations": pending,
+        verify_baseline(expected, applied)
+        plan = {"revisions": revisions, "changed": changed, "baseline_verified": True,
                 "database": database.path[1:]}
         print(json.dumps(plan), flush=True)
         if check_only:
             write_json(state_dir / "preflight.json", plan)
             return
-        if pending:
-            backup = state_dir / ("database-before-" + str(time.time_ns()) + ".dump")
-            run(["pg_dump", "--format=custom", "--file", str(backup)], env=pg_env)
-            backup.chmod(0o600)
-            run(["pg_restore", "--list", str(backup)])
-            migration_env = dict(os.environ, DATABASE_URL=environment["SERVICE_MIGRATION_DB_URL"],
-                                 PROJECT_DIR=str(candidate), BASELINE="0", BASELINE_IF_EMPTY="0")
-            run(["sh", str(candidate / "deploy/ec2/migrate-rds.sh")], env=migration_env)
 
     if not changed:
         write_json(state_dir / "last-success.json", dict(plan, status="UNCHANGED"))

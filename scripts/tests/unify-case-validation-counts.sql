@@ -23,9 +23,9 @@ DO $$ BEGIN
     ASSERT (SELECT COUNT(*) FROM case_validation_summaries) = 0;
 END $$;
 
-\ir ../../db/migrations/20260907_unify_case_validation_counts.sql
+\ir ../../tests/fixtures/prebaseline/20260907_unify_case_validation_counts.sql
 -- The second run must also work against the new schema.
-\ir ../../db/migrations/20260907_unify_case_validation_counts.sql
+\ir ../../tests/fixtures/prebaseline/20260907_unify_case_validation_counts.sql
 
 DO $$
 BEGIN

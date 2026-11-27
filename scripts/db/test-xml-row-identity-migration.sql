@@ -5,7 +5,7 @@ CREATE TEMP TABLE reactions (id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL);
 CREATE TEMP TABLE drug_information (id INTEGER PRIMARY KEY, case_id INTEGER NOT NULL);
 INSERT INTO reactions VALUES (1, 1), (2, 2), (3, 1);
 INSERT INTO drug_information VALUES (1, 1), (2, 2), (3, 1);
-\ir ../../db/migrations/20261121_zzz_xml_row_identity.sql
+\ir ../../tests/fixtures/prebaseline/20261121_zzz_xml_row_identity.sql
 DO $$
 DECLARE table_name TEXT;
 BEGIN

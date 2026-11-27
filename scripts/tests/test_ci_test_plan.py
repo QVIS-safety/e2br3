@@ -380,7 +380,7 @@ class TestPlanTests(unittest.TestCase):
         self.assertEqual(mixed['selections'], {'web-server': ['api_editor']})
 
     def test_shared_inputs_select_consumers_and_unknown_inputs_are_explicit(self):
-        db = self.plan('db/migrations/new.sql')
+        db = self.plan('db/bootstrap/01-safetydb-schema.sql')
         self.assertEqual(db['selections'], self.plan('crates/libs/lib-core/src/model.rs')['selections'])
         registry = self.plan('registry/editor-contracts/ci.json')
         self.assertEqual({'web-server': ['api_editor']}, registry['selections'])

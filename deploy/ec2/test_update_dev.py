@@ -9,17 +9,16 @@ spec.loader.exec_module(updater)
 
 
 class DeploymentGuards(unittest.TestCase):
-    def test_pending_migrations_are_ordered(self):
-        self.assertEqual(updater.migration_plan({"003.sql": "c", "001.sql": "a", "002.sql": "b"},
-                                               {"001.sql": "a"}), ["002.sql", "003.sql"])
+    def test_matching_baseline_is_accepted(self):
+        updater.verify_baseline({"01.sql": "a"}, {"01.sql": "a"})
 
     def test_another_branch_database_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "unknown=.*other.sql"):
-            updater.migration_plan({"001.sql": "a"}, {"001.sql": "a", "other.sql": "x"})
+        with self.assertRaisesRegex(ValueError, "baseline mismatch"):
+            updater.verify_baseline({"01.sql": "a"}, {"01.sql": "a", "other.sql": "x"})
 
     def test_rewritten_applied_migration_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "changed=.*001.sql"):
-            updater.migration_plan({"001.sql": "b"}, {"001.sql": "a"})
+        with self.assertRaisesRegex(ValueError, "baseline mismatch"):
+            updater.verify_baseline({"01.sql": "b"}, {"01.sql": "a"})
 
     def image(self):
         return {"Config": {"Labels": {"io.qvis.staging.ci": "passed",

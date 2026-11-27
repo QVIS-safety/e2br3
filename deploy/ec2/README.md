@@ -8,7 +8,7 @@
 - `run-terminology-manifest.sh`: Loads every terminology release listed in the EC2 terminology manifest.
 - `terminology-manifest.prod.example`: Production manifest format. Real licensed dictionary files stay outside git.
 - `terminology-load.sh`: Docker Compose wrapper for one-off terminology dry-run/load operations.
-- `../../db/`: Organized SQL source tree (`admin/`, `bootstrap/`, `migrations/`, `seed/`).
+- `../../db/`: Organized SQL source tree (`admin/`, `bootstrap/`, `seed/`).
 
 ## Dev staging automatic deployment
 
@@ -20,11 +20,9 @@ existing GHCR credentials; GitHub Actions publication success alone is not deplo
 
 `update-dev.py` updates the existing `safetydb-staging` Compose project. It preserves
 the database credential, schema/upload mounts, network, and port mappings. It pins both
-images by registry digest, rejects missing CI metadata, and checks the complete applied
-migration history before touching a running service. Unknown or rewritten migrations
-require a deliberate database reconciliation; they are never baselined automatically.
-Pending migrations use the existing migration runner after a successful private DB dump.
-No database reset, seed, image prune, or legacy container creation is performed.
+images by registry digest, rejects missing CI metadata, and requires the exact frozen
+schema baseline before touching a running service. It never upgrades, resets, or
+automatically adopts an existing database. No seed or image prune is performed.
 
 Install only after both CI-published images and a compatible database are available:
 
@@ -44,9 +42,7 @@ Inspect `systemctl status e2br3-dev-update.service`, its journal, and private
 
 Rollout verifies both backend ports, frontend HTTP, the frontend API proxy, and the
 staging HTTPS health endpoint. Failed rollout restores the previous images and reports
-failure. Applied SQL remains applied; image restoration is not a database rollback.
-Future SQL migrations must therefore preserve rollback compatibility. Backups remain
-on the instance and do not provide recovery after loss of that instance.
+failure. The updater does not execute schema changes.
 
 The selected images are persisted as `STATE_DIR/images.json`. Manual Compose operations
 must include `-f STATE_DIR/images.json` after the original Compose file, otherwise they
@@ -146,81 +142,17 @@ RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 When `ROOT_DATABASE_URL` is available, it derives an admin connection to the target app database
 and uses that for applying `db/bootstrap/*.sql` and `db/seed/*.sql`. This avoids role/GRANT failures
 when `SERVICE_DB_URL` points at the lower-privilege `app_user`.
-Initialization requires an empty public schema. It uses the common migration runner for
-`bootstrap`, every migration with its original SHA-256 history, and optional development
-seed data. `INCLUDE_SEED` defaults to `0`; use `INCLUDE_SEED=1` only for development fixtures.
-The Docker development image explicitly enables seed and installs Python 3 for the same runner.
+Initialization requires an empty public schema. All frozen bootstrap SQL and optional
+development seed commit atomically. `INCLUDE_SEED` defaults to `0`; use `1` only
+for development. See [the frozen database baseline](../../db/README.md).
 
-For an existing database, use the migration credential and the exact deployed image's SQL:
+`migrate-rds.sh --check` (or no arguments) only verifies the recorded baseline
+checksums in a read-only transaction. It does not replay migrations. Missing or
+mismatched baselines fail without modifying data; existing development databases
+need a separately reviewed adoption or a newly created database. No automatic
+reset, seed, or baseline marker insertion occurs.
 
-```sh
-SERVICE_MIGRATION_DB_URL='postgres://<migration-user>:<password>@<host>/<db>?sslmode=require' \
-  ./deploy/ec2/migrate-rds.sh --check
-SERVICE_MIGRATION_DB_URL='postgres://<migration-user>:<password>@<host>/<db>?sslmode=require' \
-  ./deploy/ec2/migrate-rds.sh
-```
-
-The runner requires Python 3.9+ and psql 13+. `--check` uses a read-only transaction.
-Before writes, the runner takes a database session advisory lock and verifies the complete
-history. Unknown, modified or out-of-order migrations stop execution. Each pending file
-and its history row commit together. A failed file rolls back; earlier committed files
-remain applied and are skipped on retry. Lock acquisition fails immediately when another
-runner is active; DDL lock waits are bounded to 5 seconds and statements to 15 minutes.
-
-Five historical files contain transaction wrappers. Their original bytes and SHA-256
-remain unchanged. Only the reviewed filename/hash pairs may have those exact wrapper
-lines removed from a private execution copy; the runner logs that transformation.
-New migrations must not contain transaction-control or psql commands. File validation
-runs in CI, and the executed SQL is the same snapshot that was checksummed.
-
-Missing or empty history on an existing database is an error. `BASELINE` and
-`BASELINE_IF_EMPTY` cannot mark unexecuted files as applied. Reconcile such a database
-separately using its actual release artifacts, schema/data evidence and backups; do not
-infer historical data changes from current schema alone. Existing UI databases and cloned
-terminology templates follow the same requirement. No automatic reset or seed occurs on
-upgrade. Application startup never recreates a database.
-
-Before adopting an existing database without history:
-
-1. Pin the running binary/image and its source commit, hash the exact SQL artifacts,
-   and verify available backups and deployment logs. A file present in a release
-   does not prove that it ran against this database.
-2. Capture the live catalogs read-only: columns/defaults, constraints, indexes,
-   functions/configuration, triggers, RLS policies, owners and grants. Compare them
-   with a fresh initialization from the pinned candidate. Compare catalog definitions
-   as well as dumps: dump rendering and column order can differ without a contract change.
-3. Check data-changing migrations against actual data and retained before/after
-   evidence. Classify each file's execution evidence separately from its current
-   effects; absent effects may also reflect a later replacement. Preserve intentional
-   local differences until their policy and provenance are resolved.
-4. Rehearse the reviewed reconciliation on an isolated full-data restore, retaining
-   data checksums/counts and rollback/retry evidence. A schema-only restore proves DDL
-   compatibility and guard behavior only. Do not populate history while any required
-   evidence or reconciliation remains unresolved, and do not replay all historical SQL.
-
-New migration filenames must sort after the last migration in the comparison base;
-CI rejects backdated additions before image publication. For a backdated file already
-present in a release, preserve its bytes and handle its ordering explicitly in the
-database-specific reconciliation. Renaming historical files or inserting an unverified
-history row is not an ordering fix. The runner has no automatic adoption override.
-
-`20261102_reconcile_runtime_schema.sql` repairs the confirmed runtime omissions:
-WHODrug search and its restricted owner grants, Unicode audit comparisons, FDA device
-and source-document audit triggers, the Foetus/Drug Not Administered codes, and nullable
-validation revisions. It also preserves MFDS `MSK` alongside `UNK` for test dates.
-It requires the same superuser migration credential as the WHODrug migration and the
-known patient-age/test-date constraints; an unexpected schema fails instead of being
-silently accepted. Existing audit rows are not rewritten or backfilled, and unchanged
-code-list entries do not generate additional audit events on replay.
-
-On a database with verified migration history, apply it through the normal runner.
-For the existing AS2 database without history, this file is a reconciliation candidate,
-not a baseline or an automatic upgrade path. The isolated rehearsal covered the actual
-schema and 16 complete selected tables, including their foreign-key dependencies and
-WHODrug releases/products; it did not restore the full audit history or all database data.
-The full-data restore and history-adoption requirements above still apply.
-
-Migration regression tests create and clean up only their own named databases:
+Bootstrap regression tests create and clean up only their own named databases:
 
 ```sh
 python3 -m unittest discover -s deploy/ec2 -p 'test_migrations.py'
@@ -437,7 +369,7 @@ boundary plus `AS2_INBOUND_TOKEN`.
    sudo git clone https://github.com/donihyun/as2-submitter /opt/as2-submitter
    ```
 
-2. Apply `20261127_organization_as2_profiles.sql`. Register each submitting
+2. Initialize the frozen schema (which includes AS2 profiles). Register each submitting
    organization's endpoint and certificates through
    `PUT /api/organizations/{id}/as2-profiles/{fda|mfds}` (organization update
    permission required). Profiles live in the application DB. Do not configure

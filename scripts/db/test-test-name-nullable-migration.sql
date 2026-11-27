@@ -4,7 +4,7 @@ BEGIN;
 SET LOCAL search_path = pg_temp, pg_catalog;
 CREATE TEMP TABLE test_results (id INTEGER PRIMARY KEY, test_name TEXT NOT NULL);
 INSERT INTO test_results VALUES (1, ''), (2, '  '), (3, 'ALT');
-\ir ../../db/migrations/20261121_z_test_name_nullable.sql
+\ir ../../tests/fixtures/prebaseline/20261121_z_test_name_nullable.sql
 INSERT INTO test_results VALUES (4, NULL);
 DO $$
 BEGIN

@@ -80,14 +80,14 @@ mkdir -p "$log_dir"
 ui_tsconfig="$log_dir/tsconfig.json"
 printf '{"extends":"%s","compilerOptions":{"baseUrl":"%s"}}\n' "$frontend_root/tsconfig.json" "$frontend_root" >"$ui_tsconfig"
 ui_tsconfig_path="$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[2], sys.argv[1]))' "$frontend_root" "$ui_tsconfig")"
-upgrade_reused_database=0
+verify_reused_database=0
 
 if psql "$admin_url" -Atqc "SELECT 1 FROM pg_database WHERE datname = '$database_name'" | grep -q 1; then
 	psql "$admin_ui_url" -Atqc "SELECT to_regclass('public.ui_env_ready')" | grep -q ui_env_ready || {
 		printf 'Incomplete UI database %s; run: scripts/ui-env.sh reset %s\n' "$database_name" "$name" >&2
 		exit 2
 	}
-	upgrade_reused_database=1
+	verify_reused_database=1
 elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
 	validate_name "$UI_DB_TEMPLATE"
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" --template="$UI_DB_TEMPLATE" "$database_name"
@@ -95,7 +95,7 @@ elif [[ -n "${UI_DB_TEMPLATE:-}" ]]; then
 		printf 'Template %s is not a ready UI database.\n' "$UI_DB_TEMPLATE" >&2
 		exit 2
 	}
-	upgrade_reused_database=1
+	verify_reused_database=1
 else
 	createdb --maintenance-db="$admin_url" --owner="$app_db_user" "$database_name"
 	: >"$log_dir/init.log"
@@ -110,8 +110,8 @@ SQL
 	psql "$admin_ui_url" -v ON_ERROR_STOP=1 -qc 'CREATE TABLE ui_env_ready (ready BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (ready)); INSERT INTO ui_env_ready DEFAULT VALUES;'
 fi
 
-if [[ "$upgrade_reused_database" -eq 1 ]]; then
-	DATABASE_URL="$admin_ui_url" "$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db"
+if [[ "$verify_reused_database" -eq 1 ]]; then
+	DATABASE_URL="$admin_ui_url" "$repo_root/deploy/ec2/migrate-rds.sh" --db-dir "$repo_root/db" --check
 fi
 
 if [[ "${UI_TEST_TERMINOLOGY_FIXTURE:-0}" == "1" ]]; then

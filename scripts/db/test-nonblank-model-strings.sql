@@ -7,7 +7,7 @@ CREATE TABLE public.nonblank_model_probe (
     labels text[]
 );
 INSERT INTO public.nonblank_model_probe VALUES ('', 'present', ARRAY['present']);
-\ir ../../db/migrations/20261123_nonblank_model_strings.sql
+\ir ../../tests/fixtures/prebaseline/20261123_nonblank_model_strings.sql
 DO $$
 DECLARE
     rejected boolean;

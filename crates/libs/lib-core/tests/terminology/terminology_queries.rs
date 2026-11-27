@@ -8,8 +8,9 @@ use serial_test::serial;
 
 #[test]
 fn whodrug_search_migration_keeps_the_rls_bypass_narrow() {
-	let migration =
-		include_str!("../../../../../db/migrations/20261027_whodrug_rls_search.sql");
+	let migration = include_str!(
+		"../../../../../tests/fixtures/prebaseline/20261027_whodrug_rls_search.sql"
+	);
 	for required in [
 		"requires a superuser migration credential",
 		"CREATE ROLE e2br3_whodrug_search_owner NOLOGIN NOINHERIT BYPASSRLS",

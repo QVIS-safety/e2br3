@@ -1,3 +1,4 @@
+<!-- Database initialization is now the frozen pre-release baseline; see db/README.md. -->
 # E2B(R3) Safety Case Management
 
 ICSR 작성·검증·XML 입출력, Presave, 검토·전자서명, 감사 이력 및 기관 전송을 다루는 프로그램이다. 현재 제품 범위는 ICH 공통 형식과 FDA·MFDS 지역 규칙이며, ICH 화면은 XML 내보내기용이다.
@@ -39,7 +40,7 @@ ICSR 작성·검증·XML 입출력, Presave, 검토·전자서명, 감사 이력
 | 운영 전 3 | **백업·복구·장애 운영 — 대상 배포 환경 증거 부족.** EC2 새 DB는 마지막 확인 시 로컬 디스크와 로컬 백업에 의존 | DB·업로드·원문 XML/ACK·submitter 상태·필요 키를 보호된 외부 저장소에 백업. 승인된 복구 목표로 새 호스트 복원, count/hash·감사 검증, 기존 송신기 차단 및 불명확한 전송의 중복 송신 방지 확인. 디스크/DB/인증서 만료/ACK 지연 경보와 담당자 확정 |
 | 운영 전 4 | **정식 인수·운영 검증 — 미완료.** 선별 회귀와 API 문서가 전체 제품 인수 증거를 대신하지 않음 | 릴리스 SHA·규격/사전 버전 고정, 요구사항→코드→테스트→실행 증거 연결, 업무 담당자의 UAT 승인, 권한·전자서명·감사·보존/복구·장애 대응 절차 인계. 동시 편집·응답 유실·서버/DB 재시작·실제 데이터량 성능의 허용 기준과 결과 확보 |
 
-전자서명 보완 근거는 [schema/서명 context](db/bootstrap/01-safetydb-schema.sql), [서명 모델](crates/libs/lib-core/src/model/e_signature.rs), [감사·서명 trigger](db/bootstrap/10-triggers.sql)다. 감사 hash 검증이 통과해도 독립적인 과거 진본성이나 전자서명 통제 완료까지 증명하지 않는다. Oracle의 기존 이력 정리 내역과 한계는 [감사 runbook](deploy/ec2/AUDIT-CHECKPOINT.md#historical-link-failures-and-authorized-removal-2026-11-02)을 따른다.
+전자서명 보완 근거는 [schema/서명 context](db/bootstrap/01-safetydb-schema.sql), [서명 모델](crates/libs/lib-core/src/model/e_signature.rs), [감사·서명 trigger](db/bootstrap/12-triggers.sql)다. 감사 hash 검증이 통과해도 독립적인 과거 진본성이나 전자서명 통제 완료까지 증명하지 않는다. Oracle의 기존 이력 정리 내역과 한계는 [감사 runbook](deploy/ec2/AUDIT-CHECKPOINT.md#historical-link-failures-and-authorized-removal-2026-11-02)을 따른다.
 
 ### 후속 점검과 유지보수
 

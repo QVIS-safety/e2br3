@@ -858,7 +858,7 @@ async fn conflicting_catalog_hash_fails_closed() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn reviewed_catalog_predecessor_upgrades_explicitly() -> Result<()> {
+async fn historical_catalog_fixture_stops_at_its_reviewed_revision() -> Result<()> {
 	let database = init_authorization_test_db().await?;
 	sqlx::query(
 		"UPDATE authorization_catalog_state SET catalog_hash = 'a8cbca03d528beb474ba7beb0658a5e22103df9b1a2693c9cce22708530a79e5' WHERE singleton",
@@ -866,62 +866,62 @@ async fn reviewed_catalog_predecessor_upgrades_explicitly() -> Result<()> {
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260722_authorization_ui_binding_catalog.sql"
+		"../../../../../tests/fixtures/prebaseline/20260722_authorization_ui_binding_catalog.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260724_authorization_direct_grant_actions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260724_authorization_direct_grant_actions.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260724_authorization_operational_grant_actions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260724_authorization_operational_grant_actions.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260724_authorization_workflow_config_action.sql"
+		"../../../../../tests/fixtures/prebaseline/20260724_authorization_workflow_config_action.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260725_authorization_export_history_actions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260725_authorization_export_history_actions.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260725_authorization_built_in_role_assignment_actions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260725_authorization_built_in_role_assignment_actions.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260725_authorization_home_workflow_case_read.sql"
+		"../../../../../tests/fixtures/prebaseline/20260725_authorization_home_workflow_case_read.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260804_authorization_home_workflow_action.sql"
+		"../../../../../tests/fixtures/prebaseline/20260804_authorization_home_workflow_action.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260804_remove_user_delete_actions.sql"
+		"../../../../../tests/fixtures/prebaseline/20260804_remove_user_delete_actions.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260809_authorization_terminology_read.sql"
+		"../../../../../tests/fixtures/prebaseline/20260809_authorization_terminology_read.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260819_authorization_audit_catalog.sql"
+		"../../../../../tests/fixtures/prebaseline/20260819_authorization_audit_catalog.sql"
 	))
 	.execute(database.pool())
 	.await?;
 	sqlx::raw_sql(include_str!(
-		"../../../../../db/migrations/20260904_authorization_operational_dependencies.sql"
+		"../../../../../tests/fixtures/prebaseline/20260904_authorization_operational_dependencies.sql"
 	))
 	.execute(database.pool())
 	.await?;
@@ -931,9 +931,8 @@ async fn reviewed_catalog_predecessor_upgrades_explicitly() -> Result<()> {
 	.fetch_one(database.pool())
 	.await?;
 	assert_eq!(
-		stored,
-		export_contract(policy_registry()?)?.catalog_hash,
-		"only the reviewed predecessor should advance to the deployed catalog"
+		stored, "933bd65fdf8ddbebc6885c9098256b80e8d636941b5fa014774ace637e4224cf",
+		"historical fixture must not claim to install the current frozen catalog"
 	);
 	database.close().await?;
 	Ok(())

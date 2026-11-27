@@ -1,3 +1,4 @@
+<!-- Historical audit: SQL paths describe that revision. Current schema is db/bootstrap; see db/README.md. -->
 # QVIS Safety UI Specification implementation audit
 
 - Source: `QVIS Safety Database_UI Specification_15Jul2026.pdf` (50 pages)
